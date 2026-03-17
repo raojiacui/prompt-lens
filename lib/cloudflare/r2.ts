@@ -1,0 +1,184 @@
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  GetObjectCommand,
+} from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
+import { readFile, unlink } from "fs/promises";
+import { join } from "path";
+import { randomUUID } from "crypto";
+
+// Backblaze B2 配置
+const b2Config = {
+  region: process.env.B2_REGION || "us-west-000",
+  endpoint: `https://s3.${process.env.B2_REGION || "us-west-000"}.backblazeb2.com`,
+  credentials: {
+    accessKeyId: process.env.B2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.B2_SECRET_ACCESS_KEY!,
+  },
+};
+
+const bucketName = process.env.B2_BUCKET_NAME!;
+const publicUrl = process.env.B2_PUBLIC_URL!;
+
+// 创建 S3 客户端
+const s3Client = new S3Client(b2Config);
+
+/**
+ * 上传文件到 B2
+ */
+export async function uploadToB2(
+  file: Buffer | string,
+  key: string,
+  contentType: string
+): Promise<string> {
+  try {
+    const upload = new Upload({
+      client: s3Client,
+      params: {
+        Bucket: bucketName,
+        Key: key,
+        Body: file,
+        ContentType: contentType,
+      },
+    });
+
+    await upload.done();
+    return `${publicUrl}/${key}`;
+  } catch (error) {
+    console.error("B2 upload error:", error);
+    throw new Error("Failed to upload file");
+  }
+}
+
+/**
+ * 从 B2 删除文件
+ */
+export async function deleteFromB2(key: string): Promise<void> {
+  try {
+    await s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      })
+    );
+  } catch (error) {
+    console.error("B2 delete error:", error);
+    throw new Error("Failed to delete file");
+  }
+}
+
+/**
+ * 从 B2 获取文件
+ */
+export async function getFromB2(key: string): Promise<Buffer> {
+  try {
+    const response = await s3Client.send(
+      new GetObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      })
+    );
+
+    // 将流转换为 Buffer
+    const stream = response.Body as any;
+    const chunks: Buffer[] = [];
+
+    for await (const chunk of stream) {
+      chunks.push(chunk);
+    }
+
+    return Buffer.concat(chunks);
+  } catch (error) {
+    console.error("B2 get error:", error);
+    throw new Error("Failed to get file");
+  }
+}
+
+// 兼容旧函数名
+export const uploadToR2 = uploadToB2;
+export const deleteFromR2 = deleteFromB2;
+export const getFromR2 = getFromB2;
+
+/**
+ * 生成用户文件路径
+ */
+export function generateUserFilePath(
+  userId: string,
+  filename: string,
+  type: "video" | "image"
+): string {
+  const ext = filename.split(".").pop();
+  const uniqueName = `${randomUUID()}.${ext}`;
+  return `users/${userId}/${type}/${uniqueName}`;
+}
+
+/**
+ * 临时文件上传（用于视频处理）
+ */
+export async function uploadTempFile(
+  filePath: string,
+  filename: string
+): Promise<string> {
+  const fileBuffer = await readFile(filePath);
+  const contentType = getContentType(filename);
+  const key = `temp/${randomUUID()}-${filename}`;
+
+  const url = await uploadToB2(fileBuffer, key, contentType);
+
+  // 删除本地临时文件
+  try {
+    await unlink(filePath);
+  } catch (error) {
+    console.warn("Failed to delete local temp file:", error);
+  }
+
+  return url;
+}
+
+/**
+ * 根据文件扩展名获取 Content-Type
+ */
+function getContentType(filename: string): string {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  const mimeTypes: Record<string, string> = {
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    avi: "video/x-msvideo",
+    mkv: "video/x-matroska",
+    webm: "video/webm",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    webp: "image/webp",
+  };
+  return mimeTypes[ext || ""] || "application/octet-stream";
+}
+
+/**
+ * 检查文件类型是否允许
+ */
+export function isAllowedFileType(
+  filename: string,
+  allowedTypes: ("video" | "image")[]
+): boolean {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  const allowedExtensions: Record<string, string[]> = {
+    video: ["mp4", "mov", "avi", "mkv", "webm"],
+    image: ["jpg", "jpeg", "png", "gif", "webp"],
+  };
+
+  return allowedTypes.some((type) =>
+    allowedExtensions[type].includes(ext || "")
+  );
+}
+
+/**
+ * 检查文件大小是否超过限制
+ */
+export function isFileSizeValid(size: number, maxSizeMB: number = 100): boolean {
+  const maxSizeBytes = maxSizeMB * 1024 * 1024;
+  return size <= maxSizeBytes;
+}

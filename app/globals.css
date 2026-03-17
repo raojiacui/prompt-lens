@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* 莫兰迪色系 */
+    --background: 40 20% 97%;
+    --foreground: 0 0% 24%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 24%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 24%;
+
+    /* 主色：灰绿色 */
+    --primary: 165 18% 54%;
+    --primary-foreground: 0 0% 100%;
+
+    /* 辅助色：雾蓝色 */
+    --secondary: 214 28% 82%;
+    --secondary-foreground: 0 0% 24%;
+
+    --muted: 40 15% 94%;
+    --muted-foreground: 0 0% 45%;
+
+    /* 强调色：暖杏色 */
+    --accent: 28 55% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 63% 56%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 28% 82%;
+    --input: 214 28% 82%;
+    --ring: 165 18% 54%;
+
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 0 0% 10%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 15%;
+    --card-foreground: 0 0% 95%;
+    --primary: 165 18% 45%;
+    --secondary: 214 28% 20%;
+    --muted: 0 0% 15%;
+    --accent: 28 55% 55%;
+    --border: 214 28% 25%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+  }
+}
+
+/* 页面切换动画 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* 拖拽上传高亮 */
+.drop-highlight {
+  @apply border-[#7C9A92] bg-[#7C9A92]/5;
+}
