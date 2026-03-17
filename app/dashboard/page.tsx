@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
 import { VideoEditTab } from "@/components/video-edit-tab";
 import { cn } from "@/lib/utils";
 
-type Tab = "analyze" | "audio" | "edit" | "history" | "settings";
+type Tab = "analyze" | "audio" | "edit" | "history" | "stats" | "settings";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -27,6 +27,9 @@ export default function DashboardPage() {
   const [progress, setProgress] = useState("");
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,6 +91,29 @@ export default function DashboardPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // 检查是否是管理员并获取统计数据
+  useEffect(() => {
+    if (session?.user) {
+      // 检查是否是管理员
+      const userRole = (session.user as any).role;
+      setIsAdmin(userRole === "admin");
+
+      // 如果是管理员，获取统计数据
+      if (userRole === "admin") {
+        setStatsLoading(true);
+        fetch("/api/stats")
+          .then(res => res.json())
+          .then(data => {
+            setStats(data);
+            setStatsLoading(false);
+          })
+          .catch(() => {
+            setStatsLoading(false);
+          });
+      }
+    }
+  }, [session]);
+
   return (
     <div className="min-h-screen bg-[#F7F6F3]">
       {/* 顶部导航 */}
@@ -127,6 +153,7 @@ export default function DashboardPage() {
               { key: "audio", label: "音频分析", icon: "🎵" },
               { key: "edit", label: "视频剪辑", icon: "✂️" },
               { key: "history", label: "历史记录", icon: "📋" },
+              { key: "stats", label: "统计", icon: "📊" },
               { key: "settings", label: "设置", icon: "⚙️" }
             ].map((tab) => (
               <button
@@ -319,6 +346,119 @@ export default function DashboardPage() {
                 <HistoryList refreshTrigger={historyRefreshTrigger} />
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* 统计页面 - 仅管理员可见 */}
+        {activeTab === "stats" && (
+          <div className="animate-fade-in">
+            {!isAdmin ? (
+              <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                <CardContent className="py-10 text-center text-[#6B6B6B]">
+                  只有管理员可以查看统计信息
+                </CardContent>
+              </Card>
+            ) : statsLoading ? (
+              <div className="flex justify-center py-10">
+                <Spinner />
+              </div>
+            ) : stats ? (
+              <div className="space-y-6">
+                {/* 概览统计 */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                    <CardContent className="pt-4">
+                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.overview?.totalUsers || 0}</div>
+                      <div className="text-sm text-[#6B6B6B]">总用户</div>
+                      <div className="text-xs text-green-600">+{stats.overview?.newUsers || 0} 新增</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                    <CardContent className="pt-4">
+                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.overview?.totalAnalyses || 0}</div>
+                      <div className="text-sm text-[#6B6B6B]">画面分析</div>
+                      <div className="text-xs text-green-600">+{stats.overview?.newAnalyses || 0} 新增</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                    <CardContent className="pt-4">
+                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.overview?.totalAudioAnalyses || 0}</div>
+                      <div className="text-sm text-[#6B6B6B]">音频分析</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                    <CardContent className="pt-4">
+                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.overview?.totalVideoClips || 0}</div>
+                      <div className="text-sm text-[#6B6B6B]">视频剪辑</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                    <CardContent className="pt-4">
+                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.dailyTrend?.length || 0}</div>
+                      <div className="text-sm text-[#6B6B6B]">活跃天数</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                    <CardContent className="pt-4">
+                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.period || 30}</div>
+                      <div className="text-sm text-[#6B6B6B]">统计周期(天)</div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* 最近7天趋势 */}
+                <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-[#3D3D3D]">最近7天分析趋势</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex items-end gap-2 h-32">
+                      {stats.dailyTrend?.map((day: any, i: number) => (
+                        <div key={i} className="flex-1 flex flex-col items-center">
+                          <div
+                            className="w-full bg-[#7C9A92] rounded-t"
+                            style={{ height: `${Math.min(100, (day.count / Math.max(1, stats.dailyTrend?.reduce((a: number, b: any) => Math.max(a, b.count), 0))) * 100)}%` }}
+                          />
+                          <div className="text-xs text-[#6B6B6B] mt-1">{day.date?.slice(5) || ""}</div>
+                          <div className="text-xs font-medium">{day.count || 0}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 最近注册用户 */}
+                <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-[#3D3D3D]">最近注册用户</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {stats.recentUsers?.map((u: any) => (
+                        <div key={u.id} className="flex items-center justify-between py-2 border-b border-[#B8C5D6]/20 last:border-0">
+                          <div>
+                            <div className="font-medium text-[#3D3D3D]">{u.name || "未设置名字"}</div>
+                            <div className="text-sm text-[#6B6B6B]">{u.email}</div>
+                          </div>
+                          <div className="text-sm text-[#6B6B6B]">
+                            {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ""}
+                          </div>
+                        </div>
+                      ))}
+                      {(!stats.recentUsers || stats.recentUsers.length === 0) && (
+                        <div className="text-center text-[#6B6B6B] py-4">暂无用户</div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                <CardContent className="py-10 text-center text-[#6B6B6B]">
+                  加载统计数据失败
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
 
