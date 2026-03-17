@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user, analysisHistory, audioAnalysis, videoClip } from "@/lib/db/schema";
-import { eq, count, sql, and, gte } from "drizzle-orm";
+import { eq, count, gte, desc } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,11 +13,11 @@ export async function GET(request: NextRequest) {
     }
 
     // 检查是否是管理员
-    if (session.user.role !== "admin") {
+    if ((session.user as any).role !== "admin") {
       return NextResponse.json({ error: "Admin only" }, { status: 403 });
     }
 
-    // 获取统计数据的日期范围（可选参数）
+    // 获取统计数据的日期范围
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get("days") || "30");
 
@@ -25,76 +25,82 @@ export async function GET(request: NextRequest) {
     startDate.setDate(startDate.getDate() - days);
 
     // 1. 总用户数
-    const totalUsers = await db.select({ count: count() }).from(user);
+    const totalUsersResult = await db.select({ count: count() }).from(user);
+    const totalUsers = totalUsersResult[0]?.count || 0;
 
-    // 2. 新增用户数（指定时间段内）
-    const newUsers = await db
+    // 2. 新增用户数
+    const newUsersResult = await db
       .select({ count: count() })
       .from(user)
       .where(gte(user.createdAt, startDate));
+    const newUsers = newUsersResult[0]?.count || 0;
 
     // 3. 总分析次数
-    const totalAnalyses = await db
+    const totalAnalysesResult = await db
       .select({ count: count() })
       .from(analysisHistory);
+    const totalAnalyses = totalAnalysesResult[0]?.count || 0;
 
     // 4. 新增分析次数
-    const newAnalyses = await db
+    const newAnalysesResult = await db
       .select({ count: count() })
       .from(analysisHistory)
       .where(gte(analysisHistory.createdAt, startDate));
+    const newAnalyses = newAnalysesResult[0]?.count || 0;
 
     // 5. 总音频分析次数
-    const totalAudioAnalyses = await db
+    const totalAudioResult = await db
       .select({ count: count() })
       .from(audioAnalysis);
+    const totalAudioAnalyses = totalAudioResult[0]?.count || 0;
 
     // 6. 总视频剪辑次数
-    const totalVideoClips = await db
+    const totalVideoResult = await db
       .select({ count: count() })
       .from(videoClip);
+    const totalVideoClips = totalVideoResult[0]?.count || 0;
 
-    // 7. 最近7天的每日分析趋势
+    // 7. 最近7天的分析记录
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const dailyAnalyses = await db
+    const recentAnalyses = await db
       .select({
-        date: sql<string>`DATE(${analysisHistory.createdAt})`,
-        count: count(),
+        createdAt: analysisHistory.createdAt,
       })
       .from(analysisHistory)
       .where(gte(analysisHistory.createdAt, sevenDaysAgo))
-      .groupBy(sql`DATE(${analysisHistory.createdAt})`)
-      .orderBy(sql`DATE(${analysisHistory.createdAt})`);
+      .orderBy(desc(analysisHistory.createdAt));
 
-    // 8. 按 Provider 统计
-    const providerStats = await db
-      .select({
-        provider: analysisHistory.mediaType,
-        count: count(),
-      })
-      .from(analysisHistory)
-      .groupBy(analysisHistory.mediaType);
+    // 按日期分组统计
+    const dailyMap = new Map<string, number>();
+    recentAnalyses.forEach((item) => {
+      const date = new Date(item.createdAt).toISOString().slice(0, 10);
+      dailyMap.set(date, (dailyMap.get(date) || 0) + 1);
+    });
 
-    // 9. 最近注册的用户
+    const dailyTrend = Array.from(dailyMap.entries()).map(([date, count]) => ({
+      date,
+      count,
+    })).sort((a, b) => a.date.localeCompare(b.date));
+
+    // 8. 最近注册的用户
     const recentUsers = await db.query.user.findMany({
-      orderBy: (user, { desc }) => [desc(user.createdAt)],
+      orderBy: (users, { desc }) => [desc(users.createdAt)],
       limit: 5,
     });
 
     return NextResponse.json({
       overview: {
-        totalUsers: totalUsers[0]?.count || 0,
-        newUsers: newUsers[0]?.count || 0,
-        totalAnalyses: totalAnalyses[0]?.count || 0,
-        newAnalyses: newAnalyses[0]?.count || 0,
-        totalAudioAnalyses: totalAudioAnalyses[0]?.count || 0,
-        totalVideoClips: totalVideoClips[0]?.count || 0,
+        totalUsers,
+        newUsers,
+        totalAnalyses,
+        newAnalyses,
+        totalAudioAnalyses,
+        totalVideoClips,
       },
-      dailyTrend: dailyAnalyses,
-      typeBreakdown: providerStats,
-      recentUsers: recentUsers.map(u => ({
+      dailyTrend,
+      recentUsers: recentUsers.map((u) => ({
         id: u.id,
         name: u.name,
         email: u.email,
