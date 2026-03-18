@@ -6,8 +6,9 @@ import { nextCookies } from "better-auth/next-js";
 import { admin, anonymous } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
 
-// 配置代理（用于 OAuth 请求）
-const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897";
+// 配置代理（仅本地开发环境使用）
+const isLocalhost = process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_SITE_URL?.includes("localhost");
+const proxyUrl = isLocalhost ? (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897") : undefined;
 
 if (proxyUrl) {
   try {
