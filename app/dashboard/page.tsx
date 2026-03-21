@@ -91,14 +91,11 @@ export default function DashboardPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // 检查是否是管理员并获取统计数据
   useEffect(() => {
     if (session?.user) {
-      // 检查是否是管理员
       const userRole = (session.user as any).role;
       setIsAdmin(userRole === "admin");
 
-      // 如果是管理员，获取统计数据
       if (userRole === "admin") {
         setStatsLoading(true);
         fetch("/api/stats")
@@ -115,28 +112,28 @@ export default function DashboardPage() {
   }, [session]);
 
   return (
-    <div className="min-h-screen bg-[#F7F6F3]">
+    <div className="min-h-screen bg-anthropic">
       {/* 顶部导航 */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-[#B8C5D6]/30 sticky top-0 z-50">
+      <header className="bg-[#F5F3EC]/90 backdrop-blur-md border-b border-[#D8D5CC] sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[#7C9A92] to-[#8FA9A3] flex items-center justify-center">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            <div className="w-9 h-9 rounded-lg bg-[#D97757] flex items-center justify-center shadow-sm">
+              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
-            <span className="text-lg font-semibold text-[#3D3D3D]">Prompt Analyzer</span>
+            <span className="text-lg font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Prompt Analyzer</span>
           </div>
 
           {session?.user && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 {session.user.image && (
-                  <img src={session.user.image} alt="" className="w-8 h-8 rounded-full ring-2 ring-[#7C9A92]/30" />
+                  <img src={session.user.image} alt="" className="w-8 h-8 rounded-full ring-2 ring-[#D97757]/20" />
                 )}
-                <span className="text-sm text-[#6B6B6B] hidden sm:inline">{session.user.email}</span>
+                <span className="text-sm text-[#6B6860] hidden sm:inline">{session.user.email}</span>
               </div>
-              <Button variant="outline" size="sm" onClick={() => signOut()} className="border-[#B8C5D6] text-[#6B6B6B] hover:text-[#D4A574]">
+              <Button variant="outline" size="sm" onClick={() => signOut()} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg">
                 退出
               </Button>
             </div>
@@ -145,9 +142,9 @@ export default function DashboardPage() {
       </header>
 
       {/* 标签栏 */}
-      <div className="bg-white border-b border-[#B8C5D6]/30 sticky top-[65px] z-40">
+      <div className="bg-[#F5F3EC]/50 border-b border-[#D8D5CC] sticky top-[65px] z-40">
         <div className="max-w-7xl mx-auto px-6">
-          <nav className="flex gap-1">
+          <nav className="flex gap-1 overflow-x-auto">
             {[
               { key: "analyze", label: "画面分析", icon: "⚡" },
               { key: "audio", label: "音频分析", icon: "🎵" },
@@ -160,10 +157,10 @@ export default function DashboardPage() {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as Tab)}
                 className={cn(
-                  "px-5 py-3 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2",
+                  "px-5 py-3 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap",
                   activeTab === tab.key
-                    ? "bg-[#F7F6F3] text-[#7C9A92] border-t-2 border-[#7C9A92]"
-                    : "text-[#6B6B6B] hover:text-[#3D3D3D] hover:bg-[#F7F6F3]/50"
+                    ? "bg-[#F5F3EC] text-[#D97757] border-t-2 border-[#D97757]"
+                    : "text-[#6B6860] hover:text-[#141413] hover:bg-[#F5F3EC]/50"
                 )}
               >
                 <span>{tab.icon}</span>
@@ -179,10 +176,14 @@ export default function DashboardPage() {
         {/* 分析页面 */}
         <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-8", activeTab === "analyze" ? "block" : "hidden")}>
           {/* 左侧：上传区域 */}
-          <Card className="bg-white border-[#B8C5D6]/30 shadow-sm animate-fade-in">
+          <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm animate-fade-in">
             <CardHeader>
-              <CardTitle className="text-[#3D3D3D] flex items-center gap-2">
-                <span className="w-8 h-8 rounded-lg bg-[#7C9A92]/10 flex items-center justify-center text-[#7C9A92]">📁</span>
+              <CardTitle className="text-[#141413] flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
+                <span className="w-10 h-10 rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                  </svg>
+                </span>
                 上传文件
               </CardTitle>
             </CardHeader>
@@ -195,8 +196,8 @@ export default function DashboardPage() {
                 onDrop={handleDrop}
                 className={cn(
                   "relative border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-300 min-h-[220px] flex flex-col items-center justify-center",
-                  isDragging ? "border-[#7C9A92] bg-[#7C9A92]/5" : "border-[#B8C5D6] hover:border-[#7C9A92]/50",
-                  preview && "border-transparent bg-[#F7F6F3]"
+                  isDragging ? "border-[#D97757] bg-[#D97757]/5" : "border-[#C8C4BC] hover:border-[#D97757]/50",
+                  preview && "border-transparent bg-[#ECE9E0]"
                 )}
               >
                 {preview ? (
@@ -208,51 +209,51 @@ export default function DashboardPage() {
                     )}
                     <button
                       onClick={(e) => { e.stopPropagation(); resetUpload(); }}
-                      className="absolute -top-2 -right-2 w-7 h-7 bg-[#D4A574] text-white rounded-full flex items-center justify-center shadow-md hover:bg-[#C49564] transition-colors"
+                      className="absolute -top-2 -right-2 w-7 h-7 bg-[#D97757] text-white rounded-full flex items-center justify-center shadow-md hover:bg-[#C96848] transition-colors"
                     >
                       ×
                     </button>
                   </div>
                 ) : (
                   <>
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#7C9A92]/10 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-[#7C9A92]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#D97757]/10 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-[#D97757]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
                     </div>
-                    <p className="text-[#3D3D3D] font-medium mb-1">点击或拖拽文件到此处</p>
-                    <p className="text-sm text-[#6B6B6B]">支持 MP4, MOV, AVI, MKV, WebM, JPG, PNG, WebP</p>
+                    <p className="text-[#141413] font-medium mb-1">点击或拖拽文件到此处</p>
+                    <p className="text-sm text-[#6B6860]">支持 MP4, MOV, AVI, MKV, WebM, JPG, PNG, WebP</p>
                   </>
                 )}
                 <input ref={fileInputRef} type="file" accept="video/*,image/*" onChange={handleFileSelect} className="hidden" />
               </div>
 
               {selectedFile && (
-                <div className="flex items-center justify-between bg-[#F7F6F3] rounded-lg px-4 py-2">
-                  <span className="text-sm text-[#6B6B6B] truncate">{selectedFile.name}</span>
-                  <span className="text-xs text-[#7C9A92] bg-[#7C9A92]/10 px-2 py-1 rounded">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                <div className="flex items-center justify-between bg-[#ECE9E0] rounded-lg px-4 py-2">
+                  <span className="text-sm text-[#6B6860] truncate">{selectedFile.name}</span>
+                  <span className="text-xs text-[#D97757] bg-[#D97757]/10 px-2 py-1 rounded">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
                 </div>
               )}
 
               {/* 设置选项 */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-[#3D3D3D] block mb-2">提取帧数</label>
+                  <label className="text-sm font-medium text-[#141413] block mb-2">提取帧数</label>
                   <Input
                     type="number"
                     min={1}
                     max={30}
                     value={frameCount}
                     onChange={(e) => setFrameCount(Number(e.target.value))}
-                    className="border-[#B8C5D6] focus:border-[#7C9A92]"
+                    className="border-[#C8C4BC] focus:border-[#D97757] bg-white"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#3D3D3D] block mb-2">分析模式</label>
+                  <label className="text-sm font-medium text-[#141413] block mb-2">分析模式</label>
                   <select
                     value={analyzeMode}
                     onChange={(e) => setAnalyzeMode(e.target.value as any)}
-                    className="w-full h-10 px-3 border border-[#B8C5D6] rounded-lg focus:border-[#7C9A92] outline-none bg-white"
+                    className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                   >
                     <option value="single">逐帧分析</option>
                     <option value="batch">批量对比</option>
@@ -261,11 +262,11 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-[#3D3D3D] block mb-2">API 提供商</label>
+                <label className="text-sm font-medium text-[#141413] block mb-2">API 提供商</label>
                 <select
                   value={provider}
                   onChange={(e) => setProvider(e.target.value as any)}
-                  className="w-full h-10 px-3 border border-[#B8C5D6] rounded-lg focus:border-[#7C9A92] outline-none bg-white"
+                  className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
                   <option value="zhipu">智谱AI (glm-4v)</option>
                   <option value="gemini">Google Gemini</option>
@@ -276,7 +277,7 @@ export default function DashboardPage() {
               <Button
                 onClick={handleAnalyze}
                 disabled={!selectedFile || isLoading}
-                className="w-full h-12 bg-[#7C9A92] hover:bg-[#6B8A82] text-white rounded-xl font-medium text-base"
+                className="w-full h-12 bg-[#D97757] hover:bg-[#C96848] text-white rounded-xl font-medium text-base shadow-sm hover:shadow-md transition-all"
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
@@ -291,31 +292,35 @@ export default function DashboardPage() {
           </Card>
 
           {/* 右侧：结果区域 */}
-          <Card className="bg-white border-[#B8C5D6]/30 shadow-sm animate-fade-in">
+          <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm animate-fade-in">
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-[#3D3D3D] flex items-center gap-2">
-                <span className="w-8 h-8 rounded-lg bg-[#D4A574]/10 flex items-center justify-center text-[#D4A574]">✨</span>
+              <CardTitle className="text-[#141413] flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
+                <span className="w-10 h-10 rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                  </svg>
+                </span>
                 分析结果
               </CardTitle>
               {result && (
-                <Button variant="outline" size="sm" onClick={copyToClipboard} className="border-[#B8C5D6] text-[#6B6B6B] hover:text-[#7C9A92] hover:border-[#7C9A92]">
+                <Button variant="outline" size="sm" onClick={copyToClipboard} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg">
                   复制
                 </Button>
               )}
             </CardHeader>
             <CardContent>
               {result ? (
-                <div className="bg-[#F7F6F3] rounded-xl p-5 max-h-[550px] overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-sm text-[#3D3D3D] font-mono leading-relaxed">{result}</pre>
+                <div className="bg-[#ECE9E0] rounded-xl p-5 max-h-[550px] overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-sm text-[#141413] font-mono leading-relaxed">{result}</pre>
                 </div>
               ) : (
                 <div className="text-center py-16">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#B8C5D6]/20 flex items-center justify-center">
-                    <svg className="w-10 h-10 text-[#B8C5D6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#D8D5CC]/30 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-[#9C9890]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <p className="text-[#6B6B6B]">上传视频或图片，点击"开始分析"查看结果</p>
+                  <p className="text-[#6B6860]">上传视频或图片，点击"开始分析"查看结果</p>
                 </div>
               )}
             </CardContent>
@@ -335,10 +340,14 @@ export default function DashboardPage() {
         {/* 历史记录页面 */}
         {activeTab === "history" && (
           <div className="animate-fade-in">
-            <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+            <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
               <CardHeader>
-                <CardTitle className="text-[#3D3D3D] flex items-center gap-2">
-                  <span className="w-8 h-8 rounded-lg bg-[#B8C5D6]/30 flex items-center justify-center">📋</span>
+                <CardTitle className="text-[#141413] flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
+                  <span className="w-10 h-10 rounded-xl bg-[#D8D5CC]/30 flex items-center justify-center text-[#6B6860]">
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </span>
                   历史记录
                 </CardTitle>
               </CardHeader>
@@ -353,8 +362,8 @@ export default function DashboardPage() {
         {activeTab === "stats" && (
           <div className="animate-fade-in">
             {!isAdmin ? (
-              <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
-                <CardContent className="py-10 text-center text-[#6B6B6B]">
+              <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
+                <CardContent className="py-10 text-center text-[#6B6860]">
                   只有管理员可以查看统计信息
                 </CardContent>
               </Card>
@@ -366,61 +375,41 @@ export default function DashboardPage() {
               <div className="space-y-6">
                 {/* 概览统计 */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
-                    <CardContent className="pt-4">
-                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.overview?.totalUsers || 0}</div>
-                      <div className="text-sm text-[#6B6B6B]">总用户</div>
-                      <div className="text-xs text-green-600">+{stats.overview?.newUsers || 0} 新增</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
-                    <CardContent className="pt-4">
-                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.overview?.totalAnalyses || 0}</div>
-                      <div className="text-sm text-[#6B6B6B]">画面分析</div>
-                      <div className="text-xs text-green-600">+{stats.overview?.newAnalyses || 0} 新增</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
-                    <CardContent className="pt-4">
-                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.overview?.totalAudioAnalyses || 0}</div>
-                      <div className="text-sm text-[#6B6B6B]">音频分析</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
-                    <CardContent className="pt-4">
-                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.overview?.totalVideoClips || 0}</div>
-                      <div className="text-sm text-[#6B6B6B]">视频剪辑</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
-                    <CardContent className="pt-4">
-                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.dailyTrend?.length || 0}</div>
-                      <div className="text-sm text-[#6B6B6B]">活跃天数</div>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
-                    <CardContent className="pt-4">
-                      <div className="text-2xl font-bold text-[#7C9A92]">{stats.period || 30}</div>
-                      <div className="text-sm text-[#6B6B6B]">统计周期(天)</div>
-                    </CardContent>
-                  </Card>
+                  {[
+                    { label: "总用户", value: stats.overview?.totalUsers || 0, change: stats.overview?.newUsers || 0 },
+                    { label: "画面分析", value: stats.overview?.totalAnalyses || 0, change: stats.overview?.newAnalyses || 0 },
+                    { label: "音频分析", value: stats.overview?.totalAudioAnalyses || 0 },
+                    { label: "视频剪辑", value: stats.overview?.totalVideoClips || 0 },
+                    { label: "活跃天数", value: stats.dailyTrend?.length || 0 },
+                    { label: "统计周期", value: stats.period || 30, suffix: "天" }
+                  ].map((item, i) => (
+                    <Card key={i} className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
+                      <CardContent className="pt-4">
+                        <div className="text-2xl font-medium text-[#D97757]" style={{ fontFamily: 'var(--font-display)' }}>{item.value}{item.suffix}</div>
+                        <div className="text-sm text-[#6B6860]">{item.label}</div>
+                        {item.change !== undefined && (
+                          <div className="text-xs text-[#5B8C5A]">+{item.change} 新增</div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
 
                 {/* 最近7天趋势 */}
-                <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-[#3D3D3D]">最近7天分析趋势</CardTitle>
+                    <CardTitle className="text-[#141413]" style={{ fontFamily: 'var(--font-display)' }}>最近7天分析趋势</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-end gap-2 h-32">
                       {stats.dailyTrend?.map((day: any, i: number) => (
                         <div key={i} className="flex-1 flex flex-col items-center">
                           <div
-                            className="w-full bg-[#7C9A92] rounded-t"
+                            className="w-full bg-[#D97757] rounded-t transition-all hover:bg-[#C96848]"
                             style={{ height: `${Math.min(100, (day.count / Math.max(1, stats.dailyTrend?.reduce((a: number, b: any) => Math.max(a, b.count), 0))) * 100)}%` }}
                           />
-                          <div className="text-xs text-[#6B6B6B] mt-1">{day.date?.slice(5) || ""}</div>
-                          <div className="text-xs font-medium">{day.count || 0}</div>
+                          <div className="text-xs text-[#6B6860] mt-1">{day.date?.slice(5) || ""}</div>
+                          <div className="text-xs font-medium text-[#141413]">{day.count || 0}</div>
                         </div>
                       ))}
                     </div>
@@ -428,33 +417,33 @@ export default function DashboardPage() {
                 </Card>
 
                 {/* 最近注册用户 */}
-                <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+                <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
                   <CardHeader>
-                    <CardTitle className="text-[#3D3D3D]">最近注册用户</CardTitle>
+                    <CardTitle className="text-[#141413]" style={{ fontFamily: 'var(--font-display)' }}>最近注册用户</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
                       {stats.recentUsers?.map((u: any) => (
-                        <div key={u.id} className="flex items-center justify-between py-2 border-b border-[#B8C5D6]/20 last:border-0">
+                        <div key={u.id} className="flex items-center justify-between py-2 border-b border-[#D8D5CC]/50 last:border-0">
                           <div>
-                            <div className="font-medium text-[#3D3D3D]">{u.name || "未设置名字"}</div>
-                            <div className="text-sm text-[#6B6B6B]">{u.email}</div>
+                            <div className="font-medium text-[#141413]">{u.name || "未设置名字"}</div>
+                            <div className="text-sm text-[#6B6860]">{u.email}</div>
                           </div>
-                          <div className="text-sm text-[#6B6B6B]">
+                          <div className="text-sm text-[#6B6860]">
                             {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ""}
                           </div>
                         </div>
                       ))}
                       {(!stats.recentUsers || stats.recentUsers.length === 0) && (
-                        <div className="text-center text-[#6B6B6B] py-4">暂无用户</div>
+                        <div className="text-center text-[#6B6860] py-4">暂无用户</div>
                       )}
                     </div>
                   </CardContent>
                 </Card>
               </div>
             ) : (
-              <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
-                <CardContent className="py-10 text-center text-[#6B6B6B]">
+              <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
+                <CardContent className="py-10 text-center text-[#6B6860]">
                   加载统计数据失败
                 </CardContent>
               </Card>

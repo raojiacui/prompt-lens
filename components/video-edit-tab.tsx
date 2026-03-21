@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
@@ -61,7 +62,6 @@ export function VideoEditTab() {
     setProgress("正在上传视频...");
 
     try {
-      // 使用 FormData 上传视频
       const formData = new FormData();
       formData.append("file", videoFile);
       formData.append("prompt", prompt);
@@ -90,8 +90,8 @@ export function VideoEditTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-[#3D3D3D]">AI 视频剪辑</h2>
-        <p className="text-[#6B6B6B]">输入一句描述，AI 自动帮你剪辑视频</p>
+        <h2 className="text-2xl font-medium text-[#141413]" style={{ fontFamily: 'var(--font-display)' }}>AI 视频剪辑</h2>
+        <p className="text-[#6B6860] mt-1">输入一句描述，AI 自动帮你剪辑视频</p>
       </div>
 
       {/* 示例提示词 */}
@@ -100,7 +100,7 @@ export function VideoEditTab() {
           <button
             key={i}
             onClick={() => setPrompt(example)}
-            className="text-xs px-3 py-1 rounded-full bg-[#7C9A92]/10 text-[#7C9A92] hover:bg-[#7C9A92]/20 transition-colors"
+            className="text-xs px-3 py-1.5 rounded-full bg-[#D97757]/10 text-[#D97757] hover:bg-[#D97757]/20 transition-colors"
           >
             {example}
           </button>
@@ -108,15 +108,15 @@ export function VideoEditTab() {
       </div>
 
       {/* 输入区域 */}
-      <Card>
+      <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
         <CardContent className="pt-6 space-y-4">
           {/* 视频上传区域 */}
           <div
             className={cn(
-              "border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer",
+              "border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer",
               isDragging
-                ? "border-[#7C9A92] bg-[#7C9A92]/5"
-                : "border-[#B8C5D6] hover:border-[#7C9A92]",
+                ? "border-[#D97757] bg-[#D97757]/5"
+                : "border-[#C8C4BC] hover:border-[#D97757]",
               videoPreview && "p-4"
             )}
             onDragOver={(e) => {
@@ -131,15 +131,19 @@ export function VideoEditTab() {
               <video
                 src={videoPreview}
                 controls
-                className="max-h-[300px] mx-auto rounded-lg"
+                className="max-h-[300px] mx-auto rounded-lg shadow-md"
               />
             ) : (
               <div className="py-8">
-                <div className="text-4xl mb-3">🎬</div>
-                <p className="text-[#3D3D3D] font-medium">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#D97757]/10 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-[#D97757]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <p className="text-[#141413] font-medium">
                   点击或拖拽上传视频
                 </p>
-                <p className="text-sm text-[#6B6B6B] mt-1">
+                <p className="text-sm text-[#6B6860] mt-1">
                   支持 MP4, MOV, AVI 等格式
                 </p>
               </div>
@@ -155,11 +159,11 @@ export function VideoEditTab() {
 
           {/* 剪辑描述 */}
           <div>
-            <label className="text-sm font-medium text-[#3D3D3D] block mb-2">
+            <label className="text-sm font-medium text-[#141413] block mb-2">
               剪辑描述
             </label>
-            <textarea
-              className="w-full min-h-[100px] px-3 py-2 rounded-lg border border-[#B8C5D6] focus:outline-none focus:ring-2 focus:ring-[#7C9A92] focus:border-transparent resize-none"
+            <Textarea
+              className="bg-white border-[#C8C4BC] focus:border-[#D97757] min-h-[100px]"
               placeholder="描述你的剪辑需求，如：把前5秒和10-20秒拼接，加上淡入淡出转场，配欢快的音乐"
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -168,14 +172,14 @@ export function VideoEditTab() {
 
           {/* 错误信息 */}
           {error && (
-            <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">
+            <div className="p-3 rounded-lg bg-[#C0453A]/10 text-[#C0453A] text-sm">
               {error}
             </div>
           )}
 
           {/* 进度 */}
           {progress && (
-            <div className="flex items-center gap-2 text-[#7C9A92]">
+            <div className="flex items-center gap-2 text-[#D97757]">
               <Spinner size="sm" />
               <span>{progress}</span>
             </div>
@@ -185,7 +189,7 @@ export function VideoEditTab() {
           <Button
             onClick={handleEdit}
             disabled={isLoading || !videoFile || !prompt}
-            className="w-full bg-[#7C9A92] hover:bg-[#6B8A82]"
+            className="w-full bg-[#D97757] hover:bg-[#C96848] shadow-sm hover:shadow-md transition-all"
           >
             {isLoading ? "处理中..." : "开始剪辑"}
           </Button>
@@ -194,22 +198,22 @@ export function VideoEditTab() {
 
       {/* 结果展示 */}
       {result && result.outputUrl && (
-        <Card>
+        <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
           <CardHeader>
-            <CardTitle>剪辑结果</CardTitle>
+            <CardTitle style={{ fontFamily: 'var(--font-display)' }}>剪辑结果</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* 视频预览 */}
             <video
               src={result.outputUrl}
               controls
-              className="w-full rounded-lg"
+              className="w-full rounded-lg shadow-md"
             />
 
             {/* 下载按钮 */}
             <div className="flex gap-3">
               <a href={result.outputUrl} download className="flex-1">
-                <Button className="w-full bg-[#7C9A92] hover:bg-[#6B8A82]">
+                <Button className="w-full bg-[#D97757] hover:bg-[#C96848]">
                   下载视频
                 </Button>
               </a>
@@ -217,9 +221,9 @@ export function VideoEditTab() {
 
             {/* AI 解析的指令 */}
             {result.instruction && (
-              <div className="p-4 rounded-lg bg-[#F7F6F3]">
-                <h4 className="font-medium text-[#3D3D3D] mb-2">AI 解析的剪辑指令：</h4>
-                <pre className="text-xs text-[#6B6B6B] overflow-auto">
+              <div className="p-4 rounded-xl bg-[#ECE9E0]">
+                <h4 className="font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>AI 解析的剪辑指令：</h4>
+                <pre className="text-xs text-[#6B6860] overflow-auto font-mono">
                   {JSON.stringify(result.instruction, null, 2)}
                 </pre>
               </div>
@@ -229,27 +233,27 @@ export function VideoEditTab() {
       )}
 
       {/* 功能说明 */}
-      <Card className="bg-[#F7F6F3]">
+      <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
         <CardHeader>
-          <CardTitle className="text-lg">支持的功能</CardTitle>
+          <CardTitle className="text-lg" style={{ fontFamily: 'var(--font-display)' }}>支持的功能</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
             <div>
-              <h4 className="font-medium text-[#3D3D3D] mb-1">片段拼接</h4>
-              <p className="text-[#6B6B6B]">指定要保留的视频时间段，自动拼接</p>
+              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>片段拼接</h4>
+              <p className="text-[#6B6860]">指定要保留的视频时间段，自动拼接</p>
             </div>
             <div>
-              <h4 className="font-medium text-[#3D3D3D] mb-1">转场效果</h4>
-              <p className="text-[#6B6B6B]">淡入淡出、溶解、擦除等多种效果</p>
+              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>转场效果</h4>
+              <p className="text-[#6B6860]">淡入淡出、溶解、擦除等多种效果</p>
             </div>
             <div>
-              <h4 className="font-medium text-[#3D3D3D] mb-1">智能配乐</h4>
-              <p className="text-[#6B6B6B]">自动匹配背景音乐，可调节音量</p>
+              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>智能配乐</h4>
+              <p className="text-[#6B6860]">自动匹配背景音乐，可调节音量</p>
             </div>
             <div>
-              <h4 className="font-medium text-[#3D3D3D] mb-1">调色预设</h4>
-              <p className="text-[#6B6B6B]">复古、电影感、暖色调等多种风格</p>
+              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>调色预设</h4>
+              <p className="text-[#6B6860]">复古、电影感、暖色调等多种风格</p>
             </div>
           </div>
         </CardContent>

@@ -90,9 +90,9 @@ export function ApiKeySettings() {
   return (
     <div className="space-y-6">
       {/* 添加 API Key */}
-      <Card>
+      <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
         <CardHeader>
-          <CardTitle>添加 API Key</CardTitle>
+          <CardTitle style={{ fontFamily: 'var(--font-display)' }}>添加 API Key</CardTitle>
           <CardDescription>
             选择一个 API 提供商并输入您的 API Key。您的 API Key 将安全地存储在数据库中。
           </CardDescription>
@@ -100,15 +100,15 @@ export function ApiKeySettings() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium block mb-1">提供商</label>
-              <Select value={provider} onChange={(e) => setProvider(e.target.value)}>
+              <label className="text-sm font-medium text-[#141413] block mb-2">提供商</label>
+              <Select value={provider} onChange={(e) => setProvider(e.target.value)} className="bg-white">
                 <option value="zhipu">智谱AI (glm-4v)</option>
                 <option value="gemini">Google Gemini</option>
                 <option value="openrouter">OpenRouter</option>
               </Select>
             </div>
             <div className="md:col-span-2">
-              <label className="text-sm font-medium block mb-1">API Key</label>
+              <label className="text-sm font-medium text-[#141413] block mb-2">API Key</label>
               <div className="flex gap-2">
                 <Input
                   type="password"
@@ -121,8 +121,9 @@ export function ApiKeySettings() {
                       ? "输入 Google API Key (格式: AIza...)"
                       : "输入 OpenRouter API Key"
                   }
+                  className="bg-white"
                 />
-                <Button onClick={saveApiKey} disabled={saving}>
+                <Button onClick={saveApiKey} disabled={saving} className="bg-[#D97757] hover:bg-[#C96848]">
                   {saving ? <Spinner size="sm" /> : "保存"}
                 </Button>
               </div>
@@ -133,8 +134,8 @@ export function ApiKeySettings() {
             <div
               className={`p-3 rounded-lg ${
                 message.type === "success"
-                  ? "bg-green-50 text-green-700"
-                  : "bg-red-50 text-red-700"
+                  ? "bg-[#5B8C5A]/10 text-[#5B8C5A]"
+                  : "bg-[#C0453A]/10 text-[#C0453A]"
               }`}
             >
               {message.text}
@@ -144,9 +145,9 @@ export function ApiKeySettings() {
       </Card>
 
       {/* 已保存的 API Key */}
-      <Card>
+      <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
         <CardHeader>
-          <CardTitle>已保存的 API Key</CardTitle>
+          <CardTitle style={{ fontFamily: 'var(--font-display)' }}>已保存的 API Key</CardTitle>
           <CardDescription>已配置的 API 提供商列表</CardDescription>
         </CardHeader>
         <CardContent>
@@ -155,7 +156,7 @@ export function ApiKeySettings() {
               <Spinner />
             </div>
           ) : apiKeys.length === 0 ? (
-            <p className="text-center text-gray-400 py-8">
+            <p className="text-center text-[#9C9890] py-8">
               尚未配置任何 API Key
             </p>
           ) : (
@@ -163,11 +164,11 @@ export function ApiKeySettings() {
               {apiKeys.map((key) => (
                 <div
                   key={key.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="flex items-center justify-between p-4 border border-[#D8D5CC] rounded-xl bg-white"
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium">
+                      <span className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>
                         {key.provider === "zhipu"
                           ? "智谱AI"
                           : key.provider === "gemini"
@@ -175,13 +176,13 @@ export function ApiKeySettings() {
                           : "OpenRouter"}
                       </span>
                       {key.isActive && (
-                        <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                        <span className="text-xs bg-[#5B8C5A]/10 text-[#5B8C5A] px-2 py-0.5 rounded">
                           启用中
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500 mt-1">{key.apiKey}</p>
-                    <p className="text-xs text-gray-400 mt-1">
+                    <p className="text-sm text-[#6B6860] mt-1 font-mono">{key.apiKey}</p>
+                    <p className="text-xs text-[#9C9890] mt-1">
                       添加于 {new Date(key.createdAt).toLocaleDateString("zh-CN")}
                     </p>
                   </div>
@@ -189,6 +190,7 @@ export function ApiKeySettings() {
                     variant="outline"
                     size="sm"
                     onClick={() => deleteApiKey(key.id)}
+                    className="border-[#C8C4BC] text-[#6B6860] hover:text-[#C0453A] hover:border-[#C0453A]"
                   >
                     删除
                   </Button>
@@ -200,20 +202,20 @@ export function ApiKeySettings() {
       </Card>
 
       {/* API 提供商说明 */}
-      <Card>
+      <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
         <CardHeader>
-          <CardTitle>API 提供商说明</CardTitle>
+          <CardTitle style={{ fontFamily: 'var(--font-display)' }}>API 提供商说明</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           <div>
-            <h4 className="font-medium">智谱AI (推荐)</h4>
-            <p className="text-sm text-gray-500 mt-1">
+            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>智谱AI (推荐)</h4>
+            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
               国内访问，无需代理。访问{" "}
               <a
                 href="https://open.bigmodel.cn/usercenter/apikeys"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                className="text-[#D97757] hover:underline"
               >
                 智谱AI开放平台
               </a>{" "}
@@ -221,14 +223,14 @@ export function ApiKeySettings() {
             </p>
           </div>
           <div>
-            <h4 className="font-medium">Google Gemini</h4>
-            <p className="text-sm text-gray-500 mt-1">
+            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Google Gemini</h4>
+            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
               需要代理/VPN。访问{" "}
               <a
                 href="https://aistudio.google.com/app/apikey"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                className="text-[#D97757] hover:underline"
               >
                 Google AI Studio
               </a>{" "}
@@ -236,14 +238,14 @@ export function ApiKeySettings() {
             </p>
           </div>
           <div>
-            <h4 className="font-medium">OpenRouter</h4>
-            <p className="text-sm text-gray-500 mt-1">
+            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>OpenRouter</h4>
+            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
               支持多种模型。访问{" "}
               <a
                 href="https://openrouter.ai/keys"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-primary hover:underline"
+                className="text-[#D97757] hover:underline"
               >
                 OpenRouter
               </a>{" "}

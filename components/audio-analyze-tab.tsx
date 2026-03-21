@@ -31,7 +31,7 @@ interface AudioAnalyzeTabProps {
 export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string>(""); // 保存原始视频URL用于剪辑
+  const [videoUrl, setVideoUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState("");
   const [result, setResult] = useState<{
@@ -84,7 +84,6 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
       setProgress("正在上传文件...");
 
       try {
-        // 1. 上传视频
         const formData = new FormData();
         formData.append("file", selectedFile);
 
@@ -110,7 +109,6 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
         return;
       }
     } else {
-      // URL 模式
       if (!videoUrlInput.trim()) {
         alert("请输入视频 URL");
         return;
@@ -120,12 +118,11 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
       url = videoUrlInput.trim();
     }
 
-    setVideoUrl(url); // 保存原始视频URL
+    setVideoUrl(url);
 
     try {
       setProgress("正在提取音频并识别...");
 
-      // 2. 音频分析
       let analyzeRes;
       try {
         analyzeRes = await fetch("/api/audio-analyze", {
@@ -139,7 +136,6 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
           }),
         });
       } catch (fetchError: any) {
-        // 网络错误
         console.error("Network fetch error:", fetchError);
         throw new Error(`网络请求失败: ${fetchError.message}\n请检查：\n1. Next.js 服务器是否在运行 (pnpm dev)\n2. 网络是否正常`);
       }
@@ -157,8 +153,6 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
 
       const data = await analyzeRes.json();
       setResult(data);
-
-      // 默认全选所有片段
       setSelectedSegments(data.segments.map((_: any, i: number) => i));
     } catch (error: any) {
       console.error("Audio analysis error:", error);
@@ -229,10 +223,14 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
     <div className="animate-fade-in space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 左侧：上传区域 */}
-        <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+        <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
           <CardHeader>
-            <CardTitle className="text-[#3D3D3D] flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-[#7C9A92]/10 flex items-center justify-center text-[#7C9A92]">🎵</span>
+            <CardTitle className="text-[#141413] flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
+              <span className="w-10 h-10 rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+              </span>
               音频分析
             </CardTitle>
           </CardHeader>
@@ -243,8 +241,8 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                 onClick={() => { setInputMode("file"); resetUpload(); }}
                 className={`px-4 py-2 text-sm rounded-lg transition-all ${
                   inputMode === "file"
-                    ? "bg-[#7C9A92] text-white"
-                    : "bg-[#F7F6F3] text-[#6B6B6B] hover:bg-[#F7F6F3]/80"
+                    ? "bg-[#D97757] text-white"
+                    : "bg-[#ECE9E0] text-[#6B6860] hover:bg-[#D8D5CC]"
                 }`}
               >
                 上传文件
@@ -253,8 +251,8 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                 onClick={() => { setInputMode("url"); resetUpload(); }}
                 className={`px-4 py-2 text-sm rounded-lg transition-all ${
                   inputMode === "url"
-                    ? "bg-[#7C9A92] text-white"
-                    : "bg-[#F7F6F3] text-[#6B6B6B] hover:bg-[#F7F6F3]/80"
+                    ? "bg-[#D97757] text-white"
+                    : "bg-[#ECE9E0] text-[#6B6860] hover:bg-[#D8D5CC]"
                 }`}
               >
                 输入 URL
@@ -269,9 +267,9 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                   value={videoUrlInput}
                   onChange={(e) => setVideoUrlInput(e.target.value)}
                   placeholder="输入视频 URL，如 https://example.com/video.mp4"
-                  className="border-[#B8C5D6] focus:border-[#7C9A92]"
+                  className="bg-white border-[#C8C4BC] focus:border-[#D97757]"
                 />
-                <p className="text-xs text-[#6B6B6B]">支持 MP4, MOV, AVI, MKV 等格式的直链</p>
+                <p className="text-xs text-[#6B6860]">支持 MP4, MOV, AVI, MKV 等格式的直链</p>
               </div>
             )}
 
@@ -284,8 +282,8 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
               onDrop={handleDrop}
               className={cn(
                 "relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300",
-                isDragging ? "border-[#7C9A92] bg-[#7C9A92]/5" : "border-[#B8C5D6] hover:border-[#7C9A92]/50",
-                preview && "border-transparent bg-[#F7F6F3]"
+                isDragging ? "border-[#D97757] bg-[#D97757]/5" : "border-[#C8C4BC] hover:border-[#D97757]/50",
+                preview && "border-transparent bg-[#ECE9E0]"
               )}
             >
               {preview ? (
@@ -293,20 +291,20 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                   <video src={preview} className="max-h-48 rounded-lg shadow-md" controls />
                   <button
                     onClick={(e) => { e.stopPropagation(); resetUpload(); }}
-                    className="absolute -top-2 -right-2 w-7 h-7 bg-[#D4A574] text-white rounded-full flex items-center justify-center shadow-md hover:bg-[#C49564]"
+                    className="absolute -top-2 -right-2 w-7 h-7 bg-[#D97757] text-white rounded-full flex items-center justify-center shadow-md hover:bg-[#C96848]"
                   >
                     ×
                   </button>
                 </div>
               ) : (
                 <>
-                  <div className="w-14 h-14 mx-auto mb-3 rounded-xl bg-[#7C9A92]/10 flex items-center justify-center">
-                    <svg className="w-7 h-7 text-[#7C9A92]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="w-14 h-14 mx-auto mb-3 rounded-xl bg-[#D97757]/10 flex items-center justify-center">
+                    <svg className="w-7 h-7 text-[#D97757]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                     </svg>
                   </div>
-                  <p className="text-[#3D3D3D] font-medium mb-1">点击或拖拽视频文件</p>
-                  <p className="text-sm text-[#6B6B6B]">支持 MP4, MOV, AVI, MKV</p>
+                  <p className="text-[#141413] font-medium mb-1">点击或拖拽视频文件</p>
+                  <p className="text-sm text-[#6B6860]">支持 MP4, MOV, AVI, MKV</p>
                 </>
               )}
               <input ref={fileInputRef} type="file" accept="video/*" onChange={handleFileSelect} className="hidden" />
@@ -314,9 +312,9 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
             )}
 
             {selectedFile && (
-              <div className="flex items-center justify-between bg-[#F7F6F3] rounded-lg px-4 py-2">
-                <span className="text-sm text-[#6B6B6B] truncate">{selectedFile.name}</span>
-                <span className="text-xs text-[#7C9A92] bg-[#7C9A92]/10 px-2 py-1 rounded">
+              <div className="flex items-center justify-between bg-[#ECE9E0] rounded-lg px-4 py-2">
+                <span className="text-sm text-[#6B6860] truncate">{selectedFile.name}</span>
+                <span className="text-xs text-[#D97757] bg-[#D97757]/10 px-2 py-1 rounded">
                   {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                 </span>
               </div>
@@ -325,11 +323,11 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
             {/* 设置选项 */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-[#3D3D3D] block mb-2">Whisper 模型</label>
+                <label className="text-sm font-medium text-[#141413] block mb-2">Whisper 模型</label>
                 <select
                   value={whisperModel}
                   onChange={(e) => setWhisperModel(e.target.value)}
-                  className="w-full h-10 px-3 border border-[#B8C5D6] rounded-lg focus:border-[#7C9A92] outline-none bg-white"
+                  className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
                   <option value="tiny">tiny (最快)</option>
                   <option value="base">base</option>
@@ -338,11 +336,11 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium text-[#3D3D3D] block mb-2">LLM 提供商</label>
+                <label className="text-sm font-medium text-[#141413] block mb-2">LLM 提供商</label>
                 <select
                   value={llmProvider}
                   onChange={(e) => setLlmProvider(e.target.value)}
-                  className="w-full h-10 px-3 border border-[#B8C5D6] rounded-lg focus:border-[#7C9A92] outline-none bg-white"
+                  className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
                   <option value="deepseek">DeepSeek</option>
                   <option value="zhipu">智谱AI</option>
@@ -351,12 +349,12 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-[#3D3D3D] block mb-2">自定义提示词（可选）</label>
+              <label className="text-sm font-medium text-[#141413] block mb-2">自定义提示词（可选）</label>
               <Textarea
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 placeholder="例如：提取产品演示和价格介绍部分"
-                className="border-[#B8C5D6] focus:border-[#7C9A92]"
+                className="bg-white border-[#C8C4BC] focus:border-[#D97757]"
                 rows={2}
               />
             </div>
@@ -364,7 +362,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
             <Button
               onClick={handleAnalyze}
               disabled={(inputMode === "file" && !selectedFile) || (inputMode === "url" && !videoUrlInput.trim()) || isLoading}
-              className="w-full h-11 bg-[#7C9A92] hover:bg-[#6B8A82] text-white rounded-xl font-medium"
+              className="w-full h-11 bg-[#D97757] hover:bg-[#C96848] text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-all"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -379,10 +377,14 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
         </Card>
 
         {/* 右侧：结果区域 */}
-        <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+        <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
           <CardHeader>
-            <CardTitle className="text-[#3D3D3D] flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-[#D4A574]/10 flex items-center justify-center text-[#D4A574]">📝</span>
+            <CardTitle className="text-[#141413] flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
+              <span className="w-10 h-10 rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </span>
               分析结果
             </CardTitle>
           </CardHeader>
@@ -390,7 +392,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
             {result ? (
               <div className="space-y-4">
                 {/* 基本信息 */}
-                <div className="flex items-center gap-4 text-sm text-[#6B6B6B] bg-[#F7F6F3] rounded-lg px-3 py-2">
+                <div className="flex items-center gap-4 text-sm text-[#6B6860] bg-[#ECE9E0] rounded-lg px-3 py-2">
                   <span>语言: {result.language}</span>
                   <span>时长: {formatTime(result.duration)}</span>
                   <span>片段: {result.segments.length} 个</span>
@@ -398,16 +400,16 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
 
                 {/* 片段列表 */}
                 <div className="max-h-[350px] overflow-y-auto space-y-2">
-                  <p className="text-sm font-medium text-[#3D3D3D] mb-2">选择要保留的片段：</p>
+                  <p className="text-sm font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>选择要保留的片段：</p>
                   {result.segments.map((seg, i) => (
                     <div
                       key={i}
                       onClick={() => toggleSegment(i)}
                       className={cn(
-                        "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all",
+                        "flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all",
                         selectedSegments.includes(i)
-                          ? "bg-[#7C9A92]/10 border border-[#7C9A92]/30"
-                          : "bg-[#F7F6F3] hover:bg-[#F7F6F3]/80"
+                          ? "bg-[#D97757]/10 border border-[#D97757]/30"
+                          : "bg-[#ECE9E0] hover:bg-[#D8D5CC]"
                       )}
                     >
                       <Checkbox
@@ -416,15 +418,15 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                         className="mt-1"
                       />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-mono text-[#7C9A92] bg-[#7C9A92]/10 px-2 py-0.5 rounded">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="text-xs font-mono text-[#D97757] bg-[#D97757]/10 px-2 py-0.5 rounded">
                             {formatTime(seg.start)} - {formatTime(seg.end)}
                           </span>
                           {seg.tags.slice(0, 2).map((tag, j) => (
-                            <span key={j} className="text-xs text-[#6B6B6B]">#{tag}</span>
+                            <span key={j} className="text-xs text-[#6B6860]">#{tag}</span>
                           ))}
                         </div>
-                        <p className="text-sm text-[#3D3D3D] line-clamp-2">{seg.summary}</p>
+                        <p className="text-sm text-[#141413] line-clamp-2">{seg.summary}</p>
                       </div>
                     </div>
                   ))}
@@ -435,7 +437,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                   <Button
                     onClick={handleClip}
                     disabled={selectedSegments.length === 0 || clipLoading}
-                    className="flex-1 h-10 bg-[#D4A574] hover:bg-[#C49564] text-white rounded-lg font-medium"
+                    className="flex-1 h-10 bg-[#D97757] hover:bg-[#C96848] text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-all"
                   >
                     {clipLoading ? (
                       <span className="flex items-center gap-2">
@@ -450,14 +452,14 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
 
                 {/* 剪辑结果 */}
                 {clipUrl && (
-                  <div className="mt-4 p-4 bg-[#7C9A92]/10 rounded-lg">
-                    <p className="text-sm font-medium text-[#7C9A92] mb-2">剪辑完成！</p>
+                  <div className="mt-4 p-4 bg-[#D97757]/10 rounded-xl">
+                    <p className="text-sm font-medium text-[#D97757] mb-2">剪辑完成！</p>
                     <video src={clipUrl} className="w-full rounded-lg" controls />
                     <a
                       href={clipUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block mt-2 text-sm text-[#7C9A92] hover:underline"
+                      className="block mt-2 text-sm text-[#D97757] hover:underline"
                     >
                       点击下载视频 ↗
                     </a>
@@ -466,13 +468,13 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
               </div>
             ) : (
               <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#B8C5D6]/20 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-[#B8C5D6]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#D8D5CC]/30 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-[#9C9890]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 </div>
-                <p className="text-[#6B6B6B]">上传视频，点击"开始音频分析"</p>
-                <p className="text-sm text-[#B8C5D6] mt-1">自动识别语音并智能分段</p>
+                <p className="text-[#6B6860]">上传视频，点击"开始音频分析"</p>
+                <p className="text-sm text-[#9C9890] mt-1">自动识别语音并智能分段</p>
               </div>
             )}
           </CardContent>
@@ -481,15 +483,15 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
 
       {/* 文字稿区域 */}
       {result && (
-        <Card className="bg-white border-[#B8C5D6]/30 shadow-sm">
+        <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
           <CardHeader>
-            <CardTitle className="text-[#3D3D3D] text-sm">完整文字稿</CardTitle>
+            <CardTitle className="text-[#141413] text-sm" style={{ fontFamily: 'var(--font-display)' }}>完整文字稿</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="max-h-60 overflow-y-auto bg-[#F7F6F3] rounded-lg p-4">
+            <div className="max-h-60 overflow-y-auto bg-[#ECE9E0] rounded-lg p-4">
               {result.transcription.map((seg, i) => (
-                <span key={i} className="text-sm text-[#3D3D3D]">
-                  <span className="text-xs text-[#7C9A92] mr-2">[{formatTime(seg.start)}]</span>
+                <span key={i} className="text-sm text-[#141413]">
+                  <span className="text-xs text-[#D97757] mr-2">[{formatTime(seg.start)}]</span>
                   {seg.text}{" "}
                 </span>
               ))}
