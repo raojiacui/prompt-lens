@@ -115,25 +115,25 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-anthropic">
       {/* 顶部导航 */}
       <header className="bg-[#F5F3EC]/90 backdrop-blur-md border-b border-[#D8D5CC] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-[#D97757] flex items-center justify-center shadow-sm">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="w-8 md:w-9 h-8 md:h-9 rounded-lg bg-[#D97757] flex items-center justify-center shadow-sm">
+              <svg className="w-4 md:w-5 h-4 md:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
-            <span className="text-lg font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Prompt Analyzer</span>
+            <span className="text-base md:text-lg font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Prompt Analyzer</span>
           </div>
 
           {session?.user && (
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 md:gap-4">
               <div className="flex items-center gap-2">
                 {session.user.image && (
-                  <img src={session.user.image} alt="" className="w-8 h-8 rounded-full ring-2 ring-[#D97757]/20" />
+                  <img src={session.user.image} alt="" className="w-7 md:w-8 h-7 md:h-8 rounded-full ring-2 ring-[#D97757]/20" />
                 )}
                 <span className="text-sm text-[#6B6860] hidden sm:inline">{session.user.email}</span>
               </div>
-              <Button variant="outline" size="sm" onClick={() => signOut()} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg">
+              <Button variant="outline" size="sm" onClick={() => signOut()} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg text-xs md:text-sm">
                 退出
               </Button>
             </div>
@@ -141,15 +141,15 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* 标签栏 */}
-      <div className="bg-[#F5F3EC]/50 border-b border-[#D8D5CC] sticky top-[65px] z-40">
-        <div className="max-w-7xl mx-auto px-6">
-          <nav className="flex gap-1 overflow-x-auto">
+      {/* 标签栏 - 移动端可横向滚动 */}
+      <div className="bg-[#F5F3EC]/50 border-b border-[#D8D5CC] sticky top-[52px] md:top-[65px] z-40">
+        <div className="max-w-7xl mx-0 md:mx-auto px-2 md:px-6">
+          <nav className="flex gap-1 overflow-x-auto pb-px md:pb-0 -mx-2 px-2 md:mx-0 md:px-0">
             {[
-              { key: "analyze", label: "画面分析", icon: "⚡" },
-              { key: "audio", label: "音频分析", icon: "🎵" },
-              { key: "edit", label: "视频剪辑", icon: "✂️" },
-              { key: "history", label: "历史记录", icon: "📋" },
+              { key: "analyze", label: "画面", shortLabel: "分析", icon: "⚡" },
+              { key: "audio", label: "音频", shortLabel: "分析", icon: "🎵" },
+              { key: "edit", label: "视频", shortLabel: "剪辑", icon: "✂️" },
+              { key: "history", label: "历史", shortLabel: "记录", icon: "📋" },
               { key: "stats", label: "统计", icon: "📊" },
               { key: "settings", label: "设置", icon: "⚙️" }
             ].map((tab) => (
@@ -157,14 +157,15 @@ export default function DashboardPage() {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as Tab)}
                 className={cn(
-                  "px-5 py-3 text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap",
+                  "px-3 md:px-5 py-2 md:py-3 text-xs md:text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-1 md:gap-2 whitespace-nowrap min-h-[44px]",
                   activeTab === tab.key
                     ? "bg-[#F5F3EC] text-[#D97757] border-t-2 border-[#D97757]"
                     : "text-[#6B6860] hover:text-[#141413] hover:bg-[#F5F3EC]/50"
                 )}
               >
-                <span>{tab.icon}</span>
-                {tab.label}
+                <span className="text-sm md:text-base">{tab.icon}</span>
+                <span className="md:hidden">{tab.label}</span>
+                <span className="hidden md:inline">{tab.shortLabel}</span>
               </button>
             ))}
           </nav>
@@ -172,22 +173,22 @@ export default function DashboardPage() {
       </div>
 
       {/* 主内容区 */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-8">
         {/* 分析页面 */}
-        <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-8", activeTab === "analyze" ? "block" : "hidden")}>
+        <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8", activeTab === "analyze" ? "block" : "hidden")}>
           {/* 左侧：上传区域 */}
           <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm animate-fade-in">
-            <CardHeader>
-              <CardTitle className="text-[#141413] flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
-                <span className="w-10 h-10 rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <CardHeader className="pb-2 md:pb-0">
+              <CardTitle className="text-base md:text-lg text-[#141413] flex items-center gap-2 md:gap-3" style={{ fontFamily: 'var(--font-display)' }}>
+                <span className="w-8 md:w-10 h-8 md:h-10 rounded-lg md:rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
+                  <svg className="w-4 md:w-5 h-4 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                 </span>
                 上传文件
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-5">
+            <CardContent className="space-y-4 md:space-y-5">
               {/* 拖拽上传区域 */}
               <div
                 onClick={() => fileInputRef.current?.click()}
@@ -195,7 +196,7 @@ export default function DashboardPage() {
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleDrop}
                 className={cn(
-                  "relative border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-300 min-h-[220px] flex flex-col items-center justify-center",
+                  "relative border-2 border-dashed rounded-xl p-6 md:p-10 text-center cursor-pointer transition-all duration-300 min-h-[180px] md:min-h-[220px] flex flex-col items-center justify-center",
                   isDragging ? "border-[#D97757] bg-[#D97757]/5" : "border-[#C8C4BC] hover:border-[#D97757]/50",
                   preview && "border-transparent bg-[#ECE9E0]"
                 )}
@@ -203,9 +204,9 @@ export default function DashboardPage() {
                 {preview ? (
                   <div className="relative">
                     {selectedFile?.type.startsWith("video/") ? (
-                      <video src={preview} className="max-h-56 rounded-lg shadow-md" controls />
+                      <video src={preview} className="max-h-40 md:max-h-56 rounded-lg shadow-md" controls />
                     ) : (
-                      <img src={preview} alt="Preview" className="max-h-56 rounded-lg shadow-md" />
+                      <img src={preview} alt="Preview" className="max-h-40 md:max-h-56 rounded-lg shadow-md" />
                     )}
                     <button
                       onClick={(e) => { e.stopPropagation(); resetUpload(); }}
@@ -216,13 +217,13 @@ export default function DashboardPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#D97757]/10 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-[#D97757]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-12 md:w-16 h-12 md:h-16 mx-auto mb-3 md:mb-4 rounded-xl md:rounded-2xl bg-[#D97757]/10 flex items-center justify-center">
+                      <svg className="w-6 md:w-8 h-6 md:h-8 text-[#D97757]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
                     </div>
-                    <p className="text-[#141413] font-medium mb-1">点击或拖拽文件到此处</p>
-                    <p className="text-sm text-[#6B6860]">支持 MP4, MOV, AVI, MKV, WebM, JPG, PNG, WebP</p>
+                    <p className="text-[#141413] font-medium mb-1 text-sm md:text-base">点击或拖拽文件到此处</p>
+                    <p className="text-xs md:text-sm text-[#6B6860]">支持 MP4, MOV, AVI, MKV, WebM, JPG, PNG, WebP</p>
                   </>
                 )}
                 <input ref={fileInputRef} type="file" accept="video/*,image/*" onChange={handleFileSelect} className="hidden" />
@@ -277,7 +278,7 @@ export default function DashboardPage() {
               <Button
                 onClick={handleAnalyze}
                 disabled={!selectedFile || isLoading}
-                className="w-full h-12 bg-[#D97757] hover:bg-[#C96848] text-white rounded-xl font-medium text-base shadow-sm hover:shadow-md transition-all"
+                className="w-full h-12 md:h-12 bg-[#D97757] hover:bg-[#C96848] text-white rounded-xl font-medium text-base shadow-sm hover:shadow-md transition-all min-h-[48px]"
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
@@ -293,34 +294,34 @@ export default function DashboardPage() {
 
           {/* 右侧：结果区域 */}
           <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm animate-fade-in">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="text-[#141413] flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
-                <span className="w-10 h-10 rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <CardHeader className="flex flex-row items-center justify-between pb-2 md:pb-0">
+              <CardTitle className="text-base md:text-lg text-[#141413] flex items-center gap-2 md:gap-3" style={{ fontFamily: 'var(--font-display)' }}>
+                <span className="w-8 md:w-10 h-8 md:h-10 rounded-lg md:rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
+                  <svg className="w-4 md:w-5 h-4 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                   </svg>
                 </span>
                 分析结果
               </CardTitle>
               {result && (
-                <Button variant="outline" size="sm" onClick={copyToClipboard} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg">
+                <Button variant="outline" size="sm" onClick={copyToClipboard} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg text-xs md:text-sm">
                   复制
                 </Button>
               )}
             </CardHeader>
             <CardContent>
               {result ? (
-                <div className="bg-[#ECE9E0] rounded-xl p-5 max-h-[550px] overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-sm text-[#141413] font-mono leading-relaxed">{result}</pre>
+                <div className="bg-[#ECE9E0] rounded-xl p-4 md:p-5 max-h-[300px] md:max-h-[550px] overflow-y-auto">
+                  <pre className="whitespace-pre-wrap text-xs md:text-sm text-[#141413] font-mono leading-relaxed">{result}</pre>
                 </div>
               ) : (
-                <div className="text-center py-16">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-[#D8D5CC]/30 flex items-center justify-center">
-                    <svg className="w-10 h-10 text-[#9C9890]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="text-center py-10 md:py-16">
+                  <div className="w-16 md:w-20 h-16 md:h-20 mx-auto mb-3 md:4 rounded-full bg-[#D8D5CC]/30 flex items-center justify-center">
+                    <svg className="w-8 md:w-10 h-8 md:h-10 text-[#9C9890]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <p className="text-[#6B6860]">上传视频或图片，点击"开始分析"查看结果</p>
+                  <p className="text-[#6B6860] text-sm md:text-base">上传视频或图片，点击"开始分析"查看结果</p>
                 </div>
               )}
             </CardContent>

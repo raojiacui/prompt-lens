@@ -1,21 +1,28 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useState } from "react";
 
 export default function HomePage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-anthropic">
-      {/* 导航栏 - 简洁克制 */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#F5F3EC]/80 backdrop-blur-md border-b border-[#D8D5CC]">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-xl bg-[#D97757] flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      {/* 导航栏 - 移动端优化 */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#F5F3EC]/95 backdrop-blur-md border-b border-[#D8D5CC]">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 md:gap-3 group">
+            <div className="w-9 md:w-10 h-9 md:h-10 rounded-xl bg-[#D97757] flex items-center justify-center shadow-md">
+              <svg className="w-4 md:w-5 h-4 md:h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </div>
-            <span className="text-lg font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Prompt Analyzer</span>
+            <span className="text-base md:text-lg font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Prompt Analyzer</span>
           </Link>
-          <div className="flex items-center gap-3">
+
+          {/* 桌面端导航 */}
+          <div className="hidden md:flex items-center gap-3">
             <Link href="/login">
               <Button variant="ghost" className="text-[#6B6860] hover:text-[#141413] hover:bg-[#D8D5CC]/50 rounded-lg px-4">
                 登录
@@ -27,32 +34,63 @@ export default function HomePage() {
               </Button>
             </Link>
           </div>
+
+          {/* 移动端菜单按钮 */}
+          <button
+            className="md:hidden p-2 text-[#6B6860]"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {mobileMenuOpen ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              )}
+            </svg>
+          </button>
         </div>
+
+        {/* 移动端下拉菜单 */}
+        {mobileMenuOpen && (
+          <div className="md:hidden bg-[#F5F3EC] border-t border-[#D8D5CC] px-4 py-4 space-y-3">
+            <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
+              <Button variant="outline" className="w-full border-[#C8C4BC] text-[#6B6860]">
+                登录
+              </Button>
+            </Link>
+            <Link href="/dashboard" className="block" onClick={() => setMobileMenuOpen(false)}>
+              <Button className="w-full bg-[#D97757] hover:bg-[#C96848] text-white">
+                开始使用
+              </Button>
+            </Link>
+          </div>
+        )}
       </header>
 
-      {/* 主内容区 - 非对称布局 */}
-      <main className="pt-32 pb-20 px-6">
+      {/* 主内容区 */}
+      <main className="pt-24 md:pt-32 pb-16 md:pb-20 px-4 md:px-6">
         <div className="max-w-5xl mx-auto">
-          {/* 标题区域 - 叙事感排版 */}
-          <div className="mb-16 relative">
-            {/* 装饰元素 - 突破网格 */}
-            <div className="absolute -left-16 top-0 w-32 h-32 bg-[#D97757]/5 rounded-full blur-3xl"></div>
-            <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-[#6B8C5A]/5 rounded-full blur-3xl"></div>
+          {/* 标题区域 */}
+          <div className="mb-12 md:mb-16 relative">
+            {/* 装饰元素 - 移动端隐藏 */}
+            <div className="hidden md:block absolute -left-16 top-0 w-32 h-32 bg-[#D97757]/5 rounded-full blur-3xl"></div>
+            <div className="hidden md:block absolute -right-8 -bottom-8 w-40 h-40 bg-[#6B8C5A]/5 rounded-full blur-3xl"></div>
 
             <div className="relative">
-              <h1 className="text-5xl md:text-6xl font-medium text-[#141413] leading-[1.15] mb-6" style={{ fontFamily: 'var(--font-display)' }}>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium text-[#141413] leading-[1.2] md:leading-[1.15] mb-4 md:mb-6" style={{ fontFamily: 'var(--font-display)' }}>
                 用 AI 读懂画面
-                <br />
+                <br className="md:hidden" />
+                <span className="md:inline"> </span>
                 <span className="text-[#D97757]">生成提示词</span>
               </h1>
-              <p className="text-xl text-[#6B6860] max-w-xl leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
-                上传视频或图片，AI 自动分析场景、动作、光影，生成精准的提示词，助您创作精彩 AI 视频。
+              <p className="text-base md:text-xl text-[#6B6860] max-w-xl leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
+                上传视频或图片，AI 自动分析场景、动作，光影，生成精准的提示词，助您创作精彩 AI 视频。
               </p>
             </div>
           </div>
 
-          {/* 功能卡片 - 2:1 布局 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+          {/* 功能卡片 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-12 md:mb-16">
             {[
               {
                 icon: (
@@ -61,7 +99,7 @@ export default function HomePage() {
                   </svg>
                 ),
                 title: "视频分析",
-                desc: "智能提取关键帧，分析场景转换、人物动作、光影氛围",
+                desc: "智能提取关键帧，分析场景转换、人物动作，光影氛围",
                 color: "orange"
               },
               {
@@ -87,46 +125,46 @@ export default function HomePage() {
             ].map((item, i) => (
               <div
                 key={i}
-                className={`stagger-item bg-[#F5F3EC] rounded-2xl p-6 border border-[#D8D5CC] hover:border-[#D97757]/30 transition-all duration-300 hover:shadow-lg group`}
+                className="stagger-item bg-[#F5F3EC] rounded-2xl p-5 md:p-6 border border-[#D8D5CC] hover:border-[#D97757]/30 transition-all duration-300 hover:shadow-lg group"
               >
-                <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 ${
+                <div className={`w-11 md:w-12 h-11 md:h-12 rounded-xl flex items-center justify-center mb-3 md:mb-4 transition-transform group-hover:scale-110 ${
                   item.color === 'orange' ? 'bg-[#D97757]/10 text-[#D97757]' :
                   item.color === 'green' ? 'bg-[#5B8C5A]/10 text-[#5B8C5A]' :
                   'bg-[#6A9BCC]/10 text-[#6A9BCC]'
                 }`}>
                   {item.icon}
                 </div>
-                <h3 className="text-lg font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{item.title}</h3>
-                <p className="text-[#6B6860] text-sm leading-relaxed">{item.desc}</p>
+                <h3 className="text-base md:text-lg font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{item.title}</h3>
+                <p className="text-sm text-[#6B6860] leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
 
-          {/* CTA 按钮 - 简洁有力 */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-start">
+          {/* CTA 按钮 - 移动端优化 */}
+          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-start">
             <Link href="/dashboard">
-              <Button size="lg" className="bg-[#D97757] hover:bg-[#C96848] text-white text-base px-8 py-5 rounded-xl shadow-md hover:shadow-lg transition-all">
+              <Button size="lg" className="w-full sm:w-auto bg-[#D97757] hover:bg-[#C96848] text-white text-base md:text-lg px-6 md:px-8 py-4 md:py-5 rounded-xl shadow-md hover:shadow-lg transition-all min-h-[52px] md:min-h-[60px]">
                 立即体验 →
               </Button>
             </Link>
             <Link href="/login">
-              <Button size="lg" variant="outline" className="border-[#C8C4BC] text-[#6B6860] hover:text-[#141413] hover:border-[#141413] text-base px-8 py-5 rounded-xl bg-transparent">
+              <Button size="lg" variant="outline" className="w-full sm:w-auto border-[#C8C4BC] text-[#6B6860] hover:text-[#141413] hover:border-[#141413] text-base md:text-lg px-6 md:px-8 py-4 md:py-5 rounded-xl bg-transparent min-h-[52px] md:min-h-[60px]">
                 登录保存历史
               </Button>
             </Link>
           </div>
 
-          {/* 装饰线条 - 对角流 */}
-          <div className="mt-24 relative">
+          {/* 装饰线条 */}
+          <div className="mt-16 md:mt-24 relative">
             <div className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#D8D5CC] to-transparent"></div>
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-[#D97757] rounded-full"></div>
           </div>
         </div>
       </main>
 
-      {/* 页脚 - 简洁克制 */}
-      <footer className="border-t border-[#D8D5CC] py-8">
-        <div className="max-w-6xl mx-auto px-6 text-center">
+      {/* 页脚 */}
+      <footer className="border-t border-[#D8D5CC] py-6 md:py-8">
+        <div className="max-w-6xl mx-auto px-4 md:px-6 text-center">
           <p className="text-[#9C9890] text-sm" style={{ fontFamily: 'var(--font-body)' }}>
             © 2024 Prompt Analyzer · AI 视频提示词分析工具
           </p>
