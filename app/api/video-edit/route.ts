@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db, operationLogs } from "@/lib/db";
 import { parseEditInstruction, ApiProvider } from "@/lib/ai/video-editor";
 import { editVideo, getVideoInfo } from "@/lib/video-processor/editor";
+import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import path from "path";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
@@ -25,6 +26,20 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
       userId = session.user.id;
+
+      // 速率限制检查
+      const { allowed, resetIn } = checkRateLimit(
+        userId,
+        RateLimitConfigs.upload.limit,
+        RateLimitConfigs.upload.windowMs
+      );
+
+      if (!allowed) {
+        return NextResponse.json(
+          { error: "请求过于频繁，请稍后再试", retryAfter: Math.ceil(resetIn / 1000) },
+          { status: 429 }
+        );
+      }
 
       const formData = await request.formData();
       const file = formData.get("file") as File;

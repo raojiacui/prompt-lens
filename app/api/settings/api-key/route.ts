@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, userApiKeys } from "@/lib/db";
 import { eq, and, count } from "drizzle-orm";
+import { encryptApiKey, decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
 // GET /api/settings/api-key - 获取用户的 API Key
 export async function GET(request: NextRequest) {
@@ -16,14 +17,29 @@ export async function GET(request: NextRequest) {
       where: eq(userApiKeys.userId, session.user.id),
     });
 
-    // 返回时隐藏 API Key
-    const sanitizedKeys = apiKeys.map((key) => ({
-      id: key.id,
-      provider: key.provider,
-      isActive: key.isActive,
-      createdAt: key.createdAt,
-      apiKey: key.apiKey.substring(0, 8) + "***" + key.apiKey.substring(key.apiKey.length - 4),
-    }));
+    // 返回时隐藏 API Key（解密后显示部分）
+    const sanitizedKeys = apiKeys.map((key) => {
+      let displayKey = "••••••••";
+      try {
+        if (isValidEncryptedKey(key.apiKey)) {
+          const decrypted = decryptApiKey(key.apiKey);
+          displayKey = decrypted.substring(0, 8) + "••••••••" + decrypted.substring(decrypted.length - 4);
+        } else {
+          // 兼容旧数据（未加密的）
+          displayKey = key.apiKey.substring(0, 8) + "••••••••" + key.apiKey.substring(key.apiKey.length - 4);
+        }
+      } catch (e) {
+        console.error("Failed to decrypt API key:", e);
+      }
+
+      return {
+        id: key.id,
+        provider: key.provider,
+        isActive: key.isActive,
+        createdAt: key.createdAt,
+        apiKey: displayKey,
+      };
+    });
 
     return NextResponse.json({ apiKeys: sanitizedKeys });
   } catch (error) {
@@ -56,6 +72,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid Gemini API Key format" }, { status: 400 });
     }
 
+    // 加密 API Key
+    const encryptedApiKey = encryptApiKey(apiKey);
+
     // 检查是否已存在该提供商的 API Key
     const existing = await db.query.userApiKeys.findFirst({
       where: and(
@@ -65,21 +84,21 @@ export async function POST(request: NextRequest) {
     });
 
     if (existing) {
-      // 更新现有
+      // 更新现有（使用加密的 Key）
       await db
         .update(userApiKeys)
         .set({
-          apiKey,
+          apiKey: encryptedApiKey,
           isActive: true,
           updatedAt: new Date(),
         })
         .where(eq(userApiKeys.id, existing.id));
     } else {
-      // 创建新的
+      // 创建新的（使用加密的 Key）
       await db.insert(userApiKeys).values({
         userId: session.user.id,
         provider: provider as any,
-        apiKey,
+        apiKey: encryptedApiKey,
         isActive: true,
       });
     }

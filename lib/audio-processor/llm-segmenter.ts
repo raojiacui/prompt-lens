@@ -2,6 +2,7 @@ import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 import { getDefaultWhisperModel, WhisperModelSize } from "./index";
 import path from "path";
 
@@ -149,7 +150,17 @@ async function getUserApiKey(userId: string, provider: LLMProvider): Promise<str
     return null;
   }
 
-  return result.apiKey;
+  // 解密 API Key（支持加密和未加密的旧数据）
+  try {
+    if (isValidEncryptedKey(result.apiKey)) {
+      return decryptApiKey(result.apiKey);
+    }
+    // 兼容旧数据：未加密的明文
+    return result.apiKey;
+  } catch (error) {
+    console.error(`[LLM] Failed to decrypt API key for ${provider}:`, error);
+    return null;
+  }
 }
 
 /**

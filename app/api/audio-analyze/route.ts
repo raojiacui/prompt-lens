@@ -4,6 +4,7 @@ import { db, audioAnalysis, operationLogs } from "@/lib/db";
 import { extractAudio, cleanupTempAudio, getDefaultWhisperModel, WhisperModelSize } from "@/lib/audio-processor";
 import { transcribeAudio, segmentWithLLM, LLMProvider } from "@/lib/audio-processor/llm-segmenter";
 import { getFromR2, uploadToR2 } from "@/lib/cloudflare/r2";
+import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import path from "path";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
@@ -16,6 +17,20 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 速率限制检查
+    const { allowed, resetIn } = checkRateLimit(
+      session.user.id,
+      RateLimitConfigs.analyze.limit,
+      RateLimitConfigs.analyze.windowMs
+    );
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "请求过于频繁，请稍后再试", retryAfter: Math.ceil(resetIn / 1000) },
+        { status: 429 }
+      );
     }
 
     const body = await request.json();

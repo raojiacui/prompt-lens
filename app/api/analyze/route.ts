@@ -4,6 +4,7 @@ import { db, analysisHistory, operationLogs } from "@/lib/db";
 import { analyzeFrames, ApiProvider } from "@/lib/ai/analyzer";
 import { extractFrames, frameToBase64, cleanupTempFiles } from "@/lib/video-processor";
 import { getFromR2 } from "@/lib/cloudflare/r2";
+import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import path from "path";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
@@ -16,6 +17,31 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 速率限制检查 - 使用用户 ID 作为标识符
+    const userId = session.user.id;
+    const { allowed, remaining, resetIn } = checkRateLimit(
+      userId,
+      RateLimitConfigs.analyze.limit,
+      RateLimitConfigs.analyze.windowMs
+    );
+
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          error: "请求过于频繁，请稍后再试",
+          retryAfter: Math.ceil(resetIn / 1000),
+        },
+        {
+          status: 429,
+          headers: {
+            "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Reset": String(Math.ceil(resetIn / 1000)),
+            "Retry-After": String(Math.ceil(resetIn / 1000)),
+          },
+        }
+      );
     }
 
     const body = await request.json();

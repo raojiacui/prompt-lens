@@ -2,6 +2,7 @@ import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
+import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
 // 代理配置
 const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897";
@@ -84,7 +85,17 @@ async function getUserApiKey(
     return null;
   }
 
-  return result.apiKey;
+  // 解密 API Key（支持加密和未加密的旧数据）
+  try {
+    if (isValidEncryptedKey(result.apiKey)) {
+      return decryptApiKey(result.apiKey);
+    }
+    // 兼容旧数据：未加密的明文
+    return result.apiKey;
+  } catch (error) {
+    console.error(`[Analyzer] Failed to decrypt API key for ${provider}:`, error);
+    return null;
+  }
 }
 
 /**

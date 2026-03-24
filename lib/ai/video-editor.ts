@@ -2,6 +2,7 @@ import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
 // 时间轴片段
 export interface VideoSegment {
@@ -83,7 +84,16 @@ async function getUserApiKey(
   });
 
   if (result && result.isActive) {
-    return result.apiKey;
+    // 解密 API Key（支持加密和未加密的旧数据）
+    try {
+      if (isValidEncryptedKey(result.apiKey)) {
+        return decryptApiKey(result.apiKey);
+      }
+      // 兼容旧数据：未加密的明文
+      return result.apiKey;
+    } catch (error) {
+      console.error(`[VideoEditor] Failed to decrypt API key for ${provider}:`, error);
+    }
   }
 
   // 数据库没有，则从环境变量读取

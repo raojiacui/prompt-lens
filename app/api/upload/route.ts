@@ -8,6 +8,8 @@ import {
   isAllowedFileType,
   isFileSizeValid,
 } from "@/lib/cloudflare/r2";
+import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
+import { validateFile } from "@/lib/utils/file-validation";
 import { randomUUID } from "crypto";
 import path from "path";
 import fs from "fs/promises";
@@ -24,6 +26,20 @@ export async function POST(request: NextRequest) {
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // 速率限制检查
+    const { allowed, resetIn } = checkRateLimit(
+      session.user.id,
+      RateLimitConfigs.upload.limit,
+      RateLimitConfigs.upload.windowMs
+    );
+
+    if (!allowed) {
+      return NextResponse.json(
+        { error: "上传过于频繁，请稍后再试", retryAfter: Math.ceil(resetIn / 1000) },
+        { status: 429 }
+      );
     }
 
     const formData = await request.formData();
@@ -54,12 +70,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 生成 R2 存储路径
-    const mediaType = isVideo ? "video" : "image";
-
-    // 读取文件内容
+    // 读取文件内容用于验证
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+
+    // 验证文件 Magic Number（防止扩展名伪造）
+    const validation = validateFile(file.name, buffer);
+    if (!validation.valid) {
+      return NextResponse.json(
+        { error: validation.error },
+        { status: 400 }
+      );
+    }
+
+    // 生成 R2 存储路径
+    const mediaType = isVideo ? "video" : "image";
 
     // 获取 Content-Type
     const contentType = file.type || (isVideo ? "video/mp4" : "image/jpeg");
