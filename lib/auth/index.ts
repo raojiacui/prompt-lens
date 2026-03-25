@@ -107,6 +107,7 @@ export const auth = betterAuth({
   },
   trustedOrigins: [
     "http://localhost:3000",
+    "https://prompt-lens.cc.cd",
     process.env.NEXT_PUBLIC_SITE_URL || "",
     process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "",
   ].filter(Boolean),
