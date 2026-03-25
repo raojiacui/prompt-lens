@@ -62,14 +62,14 @@ export default function LoginPage() {
 
     try {
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const response = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+      const response = await fetch(`${baseUrl}/api/auth/email-otp/send-verification-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: email,
-          callbackURL: "/dashboard",
+          type: "sign-in",
         }),
       });
 
@@ -113,7 +113,7 @@ export default function LoginPage() {
 
     try {
       const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const response = await fetch(`${baseUrl}/api/auth/sign-in/email`, {
+      const response = await fetch(`${baseUrl}/api/auth/sign-in/email-otp`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

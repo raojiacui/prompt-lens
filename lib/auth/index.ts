@@ -86,11 +86,9 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
   },
-  // 禁用邮箱密码登录，只用邮箱验证码
-  // emailAndPassword: {
-  //   enabled: true,
-  //   requireEmailVerification: false,
-  // },
+  emailAndPassword: {
+    enabled: false, // 禁用密码登录
+  },
   email: {
     enabled: true,
     sendVerificationEmail: {
