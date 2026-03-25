@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { toNextJsHandler } from "better-auth/next-js";
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 const handler = toNextJsHandler(auth);
 export const GET = handler.GET;
