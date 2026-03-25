@@ -5,6 +5,7 @@
 
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { encryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 import { readFileSync } from "fs";
@@ -81,7 +82,7 @@ async function migrate() {
           apiKey: encryptedKey,
           updatedAt: new Date(),
         })
-        .where(schema.eq(schema.userApiKeys.id, key.id));
+        .where(eq(schema.userApiKeys.id, key.id));
 
       console.log(`  [${key.id}] Encrypted successfully (provider: ${key.provider})`);
       encryptedCount++;
