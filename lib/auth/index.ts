@@ -93,7 +93,7 @@ export const auth = betterAuth({
   email: {
     enabled: true,
     sendVerificationEmail: {
-      async sendEmail({ email, code }) {
+      async sendEmail({ email, code }: { email: string; code: string }) {
         const nodemailer = require("nodemailer");
 
         const transporter = nodemailer.createTransport({
