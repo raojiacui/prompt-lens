@@ -86,6 +86,46 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     },
   },
+  emailAndPassword: {
+    enabled: true,
+    requireEmailVerification: false, // 验证码登录，不需要预先验证邮箱
+  },
+  email: {
+    enabled: true,
+    sendVerificationEmail: {
+      async sendEmail({ email, code }) {
+        const nodemailer = require("nodemailer");
+
+        const transporter = nodemailer.createTransport({
+          host: process.env.SMTP_HOST,
+          port: parseInt(process.env.SMTP_PORT || "587"),
+          secure: false,
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          },
+        });
+
+        await transporter.sendMail({
+          from: process.env.SMTP_FROM,
+          to: email,
+          subject: "Prompt Lens 登录验证码",
+          html: `
+            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #D97757;">Prompt Lens 登录验证码</h2>
+              <p>您的登录验证码是：</p>
+              <div style="background: #f5f5f5; padding: 20px; font-size: 32px; letter-spacing: 8px; text-align: center; border-radius: 8px; font-family: monospace;">
+                ${code}
+              </div>
+              <p style="color: #666; font-size: 14px; margin-top: 20px;">
+                验证码有效期为 10 分钟，请尽快完成登录。
+              </p>
+            </div>
+          `,
+        });
+      },
+    },
+  },
   databaseHooks: {
     user: {
       create: {
