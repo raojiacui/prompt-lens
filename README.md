@@ -73,7 +73,7 @@ pnpm db:migrate
 pnpm dev
 ```
 
-访问 http://localhost:3000
+访问 https://prompt-lens.cc.cd
 
 ## 使用说明
 
