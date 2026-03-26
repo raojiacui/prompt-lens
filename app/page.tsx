@@ -166,7 +166,7 @@ export default function HomePage() {
       <footer className="border-t border-[#D8D5CC] py-6 md:py-8">
         <div className="max-w-6xl mx-auto px-4 md:px-6 text-center">
           <p className="text-[#9C9890] text-sm" style={{ fontFamily: 'var(--font-body)' }}>
-            © 2024 Prompt Analyzer · AI 视频提示词分析工具
+            © 2026 Prompt Lens · AI 视频提示词分析工具
           </p>
         </div>
       </footer>
