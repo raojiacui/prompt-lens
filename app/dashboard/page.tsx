@@ -119,7 +119,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-2 md:gap-3">
             <div className="w-8 md:w-9 h-8 md:h-9 rounded-lg bg-[#D97757] flex items-center justify-center shadow-sm">
               <svg className="w-4 md:w-5 h-4 md:h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C9.5 2 7.5 4 7.5 6.5C7.5 7.5 7.8 8.4 8.3 9.1C7.5 10.5 7 12.2 7 14C7 18.4 10.4 22 15 22C19.6 22 23 18.4 23 14C23 12.2 22.5 10.5 21.7 9.1C22.2 8.4 22.5 7.5 22.5 6.5C22.5 4 20.5 2 18 2C15.5 2 13.5 3.5 12.5 5.5C12.3 5.3 12 2 12 2Z"/>
+                <path d="M12 2C10.5 2 9 2.8 8 4C7 5.2 6.5 6.8 6.8 8.3C6.5 8.1 6.2 8 6 8C4.3 8 3 9.3 3 11C3 12.2 3.5 13.2 4.3 13.8C3.8 15.5 4 17.2 4.8 18.7C5.6 20.2 6.9 21.3 8.5 21.8L9 23H15L15.5 21.8C17.1 21.3 18.4 20.2 19.2 18.7C20 17.2 20.2 15.5 19.7 13.8C20.5 13.2 21 12.2 21 11C21 9.3 19.7 8 18 8C17.8 8 17.5 8.1 17.2 8.3C17.5 6.8 17 5.2 16 4C15 2.8 13.5 2 12 2Z"/>
               </svg>
             </div>
             <span className="text-base md:text-lg font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Prompt Lens</span>
