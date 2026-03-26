@@ -8,9 +8,11 @@ export function Globe() {
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const globeRef = useRef<THREE.Mesh | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const isDragging = useRef(false);
   const previousMousePosition = useRef({ x: 0, y: 0 });
   const targetRotation = useRef({ x: 0, y: 0 });
+  const targetZoom = useRef(1);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -27,6 +29,7 @@ export function Globe() {
       1000
     );
     camera.position.z = 500;
+    cameraRef.current = camera;
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({
@@ -38,10 +41,10 @@ export function Globe() {
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Create globe
-    const globeGeometry = new THREE.SphereGeometry(180, 64, 64);
+    // Create globe - thinner wireframe
+    const globeGeometry = new THREE.SphereGeometry(180, 128, 128);
 
-    // Custom shader for wireframe globe
+    // Custom shader for thin wireframe globe
     const globeMaterial = new THREE.ShaderMaterial({
       uniforms: {
         color: { value: new THREE.Color("#D97757") },
@@ -63,20 +66,24 @@ export function Globe() {
         varying vec3 vPosition;
 
         void main() {
-          // Create grid pattern
+          // Create thinner grid pattern
           float lat = vPosition.y / 180.0;
           float lon = atan(vPosition.x, vPosition.z) / 3.14159;
 
-          float gridX = abs(sin(lon * 20.0));
-          float gridY = abs(sin(lat * 20.0));
+          // Thinner lines - higher threshold = thinner lines
+          float gridX = abs(sin(lon * 30.0));
+          float gridY = abs(sin(lat * 30.0));
 
-          float grid = max(step(0.95, gridX), step(0.95, gridY));
+          float grid = max(step(0.97, gridX), step(0.97, gridY));
 
           // Gradient based on position
-          float gradient = 0.3 + 0.7 * (vPosition.y / 180.0 + 0.5);
+          float gradient = 0.2 + 0.6 * (vPosition.y / 180.0 + 0.5);
+
+          // Add subtle glow effect
+          float fresnel = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
 
           vec3 finalColor = color * gradient;
-          float alpha = 0.15 + grid * 0.4;
+          float alpha = 0.08 + grid * 0.25 + fresnel * 0.1;
 
           gl_FragColor = vec4(finalColor, alpha);
         }
@@ -89,35 +96,39 @@ export function Globe() {
     scene.add(globe);
     globeRef.current = globe;
 
-    // Add glowing ring (orbital rings like Anthropic)
-    const ringGeometry = new THREE.TorusGeometry(220, 2, 16, 100);
-    const ringMaterial = new THREE.MeshBasicMaterial({
-      color: "#D97757",
-      transparent: true,
-      opacity: 0.3,
-    });
+    // Add glowing orbital rings (thinner)
+    const createRing = (radius: number, thickness: number, opacity: number) => {
+      const geometry = new THREE.TorusGeometry(radius, thickness, 8, 100);
+      const material = new THREE.MeshBasicMaterial({
+        color: "#D97757",
+        transparent: true,
+        opacity: opacity,
+      });
+      return new THREE.Mesh(geometry, material);
+    };
 
-    const ring1 = new THREE.Mesh(ringGeometry, ringMaterial);
+    const ring1 = createRing(210, 1, 0.25);
     ring1.rotation.x = Math.PI / 2;
-    ring1.scale.set(1, 0.3, 1);
+    ring1.scale.set(1, 0.25, 1);
     scene.add(ring1);
 
-    const ring2 = new THREE.Mesh(ringGeometry.clone(), ringMaterial.clone());
+    const ring2 = createRing(240, 0.8, 0.2);
     ring2.rotation.x = Math.PI / 2;
     ring2.rotation.z = Math.PI / 4;
-    ring2.scale.set(1.2, 0.25, 1);
+    ring2.scale.set(1.1, 0.2, 1);
     scene.add(ring2);
 
-    const ring3 = new THREE.Mesh(ringGeometry.clone(), ringMaterial.clone());
+    const ring3 = createRing(270, 0.6, 0.15);
     ring3.rotation.x = Math.PI / 2;
     ring3.rotation.z = -Math.PI / 4;
-    ring3.scale.set(1.4, 0.2, 1);
+    ring3.scale.set(1.2, 0.15, 1);
     scene.add(ring3);
 
-    // Mouse controls
+    // Mouse/touch controls
     const onMouseDown = (e: MouseEvent) => {
       isDragging.current = true;
       previousMousePosition.current = { x: e.clientX, y: e.clientY };
+      containerRef.current!.style.cursor = "grabbing";
     };
 
     const onMouseMove = (e: MouseEvent) => {
@@ -129,11 +140,21 @@ export function Globe() {
       targetRotation.current.y += deltaX * 0.005;
       targetRotation.current.x += deltaY * 0.005;
 
+      // Clamp vertical rotation
+      targetRotation.current.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, targetRotation.current.x));
+
       previousMousePosition.current = { x: e.clientX, y: e.clientY };
     };
 
     const onMouseUp = () => {
       isDragging.current = false;
+      containerRef.current!.style.cursor = "grab";
+    };
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      targetZoom.current += e.deltaY * 0.001;
+      targetZoom.current = Math.max(0.5, Math.min(2, targetZoom.current));
     };
 
     const onTouchStart = (e: TouchEvent) => {
@@ -154,6 +175,7 @@ export function Globe() {
 
       targetRotation.current.y += deltaX * 0.005;
       targetRotation.current.x += deltaY * 0.005;
+      targetRotation.current.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, targetRotation.current.x));
 
       previousMousePosition.current = {
         x: e.touches[0].clientX,
@@ -168,6 +190,7 @@ export function Globe() {
     window.addEventListener("mousedown", onMouseDown);
     window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("wheel", onWheel, { passive: false });
     window.addEventListener("touchstart", onTouchStart);
     window.addEventListener("touchmove", onTouchMove);
     window.addEventListener("touchend", onTouchEnd);
@@ -183,14 +206,19 @@ export function Globe() {
 
       // Smooth rotation
       if (globe) {
-        globe.rotation.y += (targetRotation.current.y - globe.rotation.y) * 0.1;
-        globe.rotation.x += (targetRotation.current.x - globe.rotation.x) * 0.1;
+        globe.rotation.y += (targetRotation.current.y - globe.rotation.y) * 0.08;
+        globe.rotation.x += (targetRotation.current.x - globe.rotation.x) * 0.08;
       }
 
-      // Auto-rotate rings
-      if (ring1) ring1.rotation.z = elapsed * 0.1;
-      if (ring2) ring2.rotation.z = elapsed * 0.08 + Math.PI / 4;
-      if (ring3) ring3.rotation.z = elapsed * 0.06 - Math.PI / 4;
+      // Smooth zoom
+      if (camera) {
+        camera.position.z += (500 / targetZoom.current - camera.position.z) * 0.1;
+      }
+
+      // Animate rings
+      if (ring1) ring1.rotation.z = elapsed * 0.08;
+      if (ring2) ring2.rotation.z = elapsed * 0.06 + Math.PI / 4;
+      if (ring3) ring3.rotation.z = elapsed * 0.04 - Math.PI / 4;
 
       renderer.render(scene, camera);
     };
@@ -213,6 +241,7 @@ export function Globe() {
       window.removeEventListener("mousedown", onMouseDown);
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("wheel", onWheel);
       window.removeEventListener("touchstart", onTouchStart);
       window.removeEventListener("touchmove", onTouchMove);
       window.removeEventListener("touchend", onTouchEnd);
