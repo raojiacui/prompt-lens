@@ -150,8 +150,8 @@ export default function LoginPage() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 mb-8 justify-center">
           <div className="w-12 h-12 rounded-xl bg-[#D97757] flex items-center justify-center shadow-md">
-            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C9.5 2 7.5 4 7.5 6.5C7.5 7.5 7.8 8.4 8.3 9.1C7.5 10.5 7 12.2 7 14C7 18.4 10.4 22 15 22C19.6 22 23 18.4 23 14C23 12.2 22.5 10.5 21.7 9.1C22.2 8.4 22.5 7.5 22.5 6.5C22.5 4 20.5 2 18 2C15.5 2 13.5 3.5 12.5 5.5C12.3 5.3 12 2 12 2Z"/>
             </svg>
           </div>
           <span className="text-xl font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Prompt Lens</span>
