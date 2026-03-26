@@ -73,16 +73,16 @@ export async function POST(request: NextRequest) {
     let videoBuffer: Buffer;
 
     // 判断 URL 类型
-    const r2PublicUrl = process.env.R2_PUBLIC_URL || "";
+    const b2PublicUrl = process.env.B2_PUBLIC_URL || "";
 
     if (mediaUrl.startsWith("file://")) {
       // 本地文件路径
       const localPath = mediaUrl.replace("file://", "").replace(/\//g, "\\");
       console.log("Reading from local file:", localPath);
       videoBuffer = await fs.readFile(localPath);
-    } else if (mediaUrl.includes(r2PublicUrl) && r2PublicUrl) {
-      // 从 R2 下载
-      const key = mediaUrl.replace(`${r2PublicUrl}/`, "");
+    } else if (mediaUrl.includes(b2PublicUrl) && b2PublicUrl) {
+      // 从 B2 下载
+      const key = mediaUrl.replace(`${b2PublicUrl}/`, "");
       videoBuffer = await getFromR2(key);
     } else {
       // 直接从 URL 下载

@@ -98,10 +98,10 @@ export async function POST(request: NextRequest) {
         const localPath = path.join(process.cwd(), mediaUrl.replace(/.*\/temp_uploads\//, "temp_uploads\\"));
         console.log("Reading from temp_uploads:", localPath);
         videoBuffer = await fs.readFile(localPath);
-      } else if (process.env.R2_PUBLIC_URL && mediaUrl.includes(process.env.R2_PUBLIC_URL)) {
-        // 从 R2 下载
-        const key = mediaUrl.replace(`${process.env.R2_PUBLIC_URL}/`, "");
-        console.log("Reading from R2, key:", key);
+      } else if (process.env.B2_PUBLIC_URL && mediaUrl.includes(process.env.B2_PUBLIC_URL)) {
+        // 从 B2 下载
+        const key = mediaUrl.replace(`${process.env.B2_PUBLIC_URL}/`, "");
+        console.log("Reading from B2, key:", key);
         videoBuffer = await getFromR2(key);
       } else {
         // 直接从 URL 下载
@@ -137,9 +137,9 @@ export async function POST(request: NextRequest) {
         // 本地临时文件
         const localPath = path.join(process.cwd(), mediaUrl.replace(/.*\/temp_uploads\//, "temp_uploads\\"));
         imageBuffer = await fs.readFile(localPath);
-      } else if (process.env.R2_PUBLIC_URL && mediaUrl.includes(process.env.R2_PUBLIC_URL)) {
-        // 从 R2 下载
-        const key = mediaUrl.replace(`${process.env.R2_PUBLIC_URL}/`, "");
+      } else if (process.env.B2_PUBLIC_URL && mediaUrl.includes(process.env.B2_PUBLIC_URL)) {
+        // 从 B2 下载
+        const key = mediaUrl.replace(`${process.env.B2_PUBLIC_URL}/`, "");
         imageBuffer = await getFromR2(key);
       } else {
         // 直接从 URL 下载

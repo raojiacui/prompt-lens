@@ -55,11 +55,11 @@ export async function POST(request: NextRequest) {
     const videoPath = path.join(tempDir, "source.mp4");
     let videoBuffer: Buffer;
 
-    // 判断是 R2 URL 还是直接 URL
-    const r2PublicUrl = process.env.R2_PUBLIC_URL || "";
-    if (mediaUrl.includes(r2PublicUrl) && r2PublicUrl) {
-      // 从 R2 下载
-      const key = mediaUrl.replace(`${r2PublicUrl}/`, "");
+    // 判断是 B2 URL 还是直接 URL
+    const b2PublicUrl = process.env.B2_PUBLIC_URL || "";
+    if (mediaUrl.includes(b2PublicUrl) && b2PublicUrl) {
+      // 从 B2 下载
+      const key = mediaUrl.replace(`${b2PublicUrl}/`, "");
       videoBuffer = await getFromR2(key);
     } else {
       // 直接从 URL 下载

@@ -89,14 +89,14 @@ export async function POST(request: NextRequest) {
     // 获取 Content-Type
     const contentType = file.type || (isVideo ? "video/mp4" : "image/jpeg");
 
-    // 检查 R2 是否配置
-    const r2Configured = process.env.R2_ACCOUNT_ID && process.env.R2_ACCESS_KEY_ID && process.env.R2_SECRET_ACCESS_KEY;
+    // 检查 B2 是否配置
+    const b2Configured = process.env.B2_ACCESS_KEY_ID && process.env.B2_SECRET_ACCESS_KEY && process.env.B2_BUCKET_NAME;
 
     let url: string;
     let key: string | undefined;
 
-    if (r2Configured) {
-      // R2 已配置，上传到 R2
+    if (b2Configured) {
+      // B2 已配置，上传到 B2
       key = generateUserFilePath(session.user.id, file.name, mediaType);
       url = await uploadToR2(buffer, key, contentType);
     } else {
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       key,
-      uploadUrl: `${process.env.R2_PUBLIC_URL}/${key}`,
+      uploadUrl: `${process.env.B2_PUBLIC_URL}/${key}`,
     });
   } catch (error) {
     console.error("Get upload URL error:", error);
