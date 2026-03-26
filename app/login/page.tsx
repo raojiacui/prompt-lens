@@ -1,11 +1,12 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { Globe } from "@/components/globe";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -139,14 +140,14 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-anthropic flex items-center justify-center p-4">
-      {/* 背景装饰 - 径向渐变 */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-[#D97757]/5 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#5B8C5A]/5 rounded-full blur-[80px]"></div>
-      </div>
+    <div className="min-h-screen bg-anthropic flex items-center justify-center p-4 relative">
+      {/* 3D 地球仪背景 */}
+      <Globe />
 
-      <div className="relative w-full max-w-md">
+      {/* 遮罩层，让内容更清晰 */}
+      <div className="fixed inset-0 bg-[#F5F3EC]/60 pointer-events-none z-0"></div>
+
+      <div className="relative w-full max-w-md z-10">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 mb-8 justify-center">
           <div className="w-12 h-12 rounded-xl bg-[#D97757] flex items-center justify-center shadow-md">
