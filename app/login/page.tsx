@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { Globe } from "@/components/globe";
+import { Globe, DecorativeBackground } from "@/components/globe";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -143,6 +143,9 @@ export default function LoginPage() {
     <div className="min-h-screen bg-anthropic flex items-center justify-center p-4 relative">
       {/* 3D 地球仪背景 */}
       <Globe />
+
+      {/* 装饰性背景 */}
+      <DecorativeBackground />
 
       {/* 遮罩层，让内容更清晰 */}
       <div className="fixed inset-0 bg-[#F5F3EC]/60 pointer-events-none z-0"></div>

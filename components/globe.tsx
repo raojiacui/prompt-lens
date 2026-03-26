@@ -41,10 +41,9 @@ export function Globe() {
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Create globe - thinner wireframe
+    // Create globe
     const globeGeometry = new THREE.SphereGeometry(180, 128, 128);
 
-    // Custom shader for thin wireframe globe
     const globeMaterial = new THREE.ShaderMaterial({
       uniforms: {
         color: { value: new THREE.Color("#D97757") },
@@ -66,20 +65,15 @@ export function Globe() {
         varying vec3 vPosition;
 
         void main() {
-          // Create thinner grid pattern
           float lat = vPosition.y / 180.0;
           float lon = atan(vPosition.x, vPosition.z) / 3.14159;
 
-          // Thinner lines - higher threshold = thinner lines
           float gridX = abs(sin(lon * 30.0));
           float gridY = abs(sin(lat * 30.0));
 
           float grid = max(step(0.97, gridX), step(0.97, gridY));
 
-          // Gradient based on position
           float gradient = 0.2 + 0.6 * (vPosition.y / 180.0 + 0.5);
-
-          // Add subtle glow effect
           float fresnel = pow(1.0 - abs(dot(vNormal, vec3(0.0, 0.0, 1.0))), 2.0);
 
           vec3 finalColor = color * gradient;
@@ -96,7 +90,7 @@ export function Globe() {
     scene.add(globe);
     globeRef.current = globe;
 
-    // Add glowing orbital rings (thinner)
+    // Add glowing orbital rings
     const createRing = (radius: number, thickness: number, opacity: number) => {
       const geometry = new THREE.TorusGeometry(radius, thickness, 8, 100);
       const material = new THREE.MeshBasicMaterial({
@@ -107,24 +101,23 @@ export function Globe() {
       return new THREE.Mesh(geometry, material);
     };
 
-    const ring1 = createRing(210, 1, 0.25);
+    const ring1 = createRing(210, 1, 0.2);
     ring1.rotation.x = Math.PI / 2;
     ring1.scale.set(1, 0.25, 1);
     scene.add(ring1);
 
-    const ring2 = createRing(240, 0.8, 0.2);
+    const ring2 = createRing(240, 0.8, 0.15);
     ring2.rotation.x = Math.PI / 2;
     ring2.rotation.z = Math.PI / 4;
     ring2.scale.set(1.1, 0.2, 1);
     scene.add(ring2);
 
-    const ring3 = createRing(270, 0.6, 0.15);
+    const ring3 = createRing(270, 0.6, 0.1);
     ring3.rotation.x = Math.PI / 2;
     ring3.rotation.z = -Math.PI / 4;
     ring3.scale.set(1.2, 0.15, 1);
     scene.add(ring3);
 
-    // Mouse/touch controls
     const onMouseDown = (e: MouseEvent) => {
       isDragging.current = true;
       previousMousePosition.current = { x: e.clientX, y: e.clientY };
@@ -139,8 +132,6 @@ export function Globe() {
 
       targetRotation.current.y += deltaX * 0.005;
       targetRotation.current.x += deltaY * 0.005;
-
-      // Clamp vertical rotation
       targetRotation.current.x = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, targetRotation.current.x));
 
       previousMousePosition.current = { x: e.clientX, y: e.clientY };
@@ -195,7 +186,6 @@ export function Globe() {
     window.addEventListener("touchmove", onTouchMove);
     window.addEventListener("touchend", onTouchEnd);
 
-    // Animation
     let animationId: number;
     const clock = new THREE.Clock();
 
@@ -204,18 +194,15 @@ export function Globe() {
 
       const elapsed = clock.getElapsedTime();
 
-      // Smooth rotation
       if (globe) {
         globe.rotation.y += (targetRotation.current.y - globe.rotation.y) * 0.08;
         globe.rotation.x += (targetRotation.current.x - globe.rotation.x) * 0.08;
       }
 
-      // Smooth zoom
       if (camera) {
         camera.position.z += (500 / targetZoom.current - camera.position.z) * 0.1;
       }
 
-      // Animate rings
       if (ring1) ring1.rotation.z = elapsed * 0.08;
       if (ring2) ring2.rotation.z = elapsed * 0.06 + Math.PI / 4;
       if (ring3) ring3.rotation.z = elapsed * 0.04 - Math.PI / 4;
@@ -225,7 +212,6 @@ export function Globe() {
 
     animate();
 
-    // Handle resize
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;
       camera.updateProjectionMatrix();
@@ -234,7 +220,6 @@ export function Globe() {
 
     window.addEventListener("resize", handleResize);
 
-    // Cleanup
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener("resize", handleResize);
@@ -262,5 +247,32 @@ export function Globe() {
       className="fixed inset-0 z-0"
       style={{ cursor: "grab" }}
     />
+  );
+}
+
+// 装饰性背景元素
+export function DecorativeBackground() {
+  const dots = [];
+  for (let i = 0; i < 30; i++) {
+    dots.push(
+      <div
+        key={i}
+        className="absolute rounded-full"
+        style={{
+          width: `${Math.random() * 4 + 2}px`,
+          height: `${Math.random() * 4 + 2}px`,
+          backgroundColor: '#D97757',
+          opacity: Math.random() * 0.3 + 0.1,
+          left: `${Math.random() * 100}%`,
+          top: `${Math.random() * 100}%`,
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none opacity-40">
+      {dots}
+    </div>
   );
 }
