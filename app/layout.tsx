@@ -3,7 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-client";
 
 export const metadata: Metadata = {
-  title: "Prompt Analyzer - AI 视频提示词分析工具",
+  title: "Prompt Lens - AI 视频提示词分析工具",
   description: "上传视频或图片，AI 自动分析画面内容，生成精准的提示词",
 };
 
