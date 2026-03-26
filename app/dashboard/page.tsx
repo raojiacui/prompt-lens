@@ -118,8 +118,11 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-3">
             <div className="w-8 md:w-9 h-8 md:h-9 rounded-lg bg-[#D97757] flex items-center justify-center shadow-sm">
-              <svg className="w-4 md:w-5 h-4 md:h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C10.5 2 9 2.8 8 4C7 5.2 6.5 6.8 6.8 8.3C6.5 8.1 6.2 8 6 8C4.3 8 3 9.3 3 11C3 12.2 3.5 13.2 4.3 13.8C3.8 15.5 4 17.2 4.8 18.7C5.6 20.2 6.9 21.3 8.5 21.8L9 23H15L15.5 21.8C17.1 21.3 18.4 20.2 19.2 18.7C20 17.2 20.2 15.5 19.7 13.8C20.5 13.2 21 12.2 21 11C21 9.3 19.7 8 18 8C17.8 8 17.5 8.1 17.2 8.3C17.5 6.8 17 5.2 16 4C15 2.8 13.5 2 12 2Z"/>
+              <svg className="w-4 md:w-5 h-4 md:h-5 text-white" viewBox="0 0 32 32">
+                <path d="M16 2C10 4 6 9 5 14C4 18 5 22 7 25C9 28 13 30 16 30C19 30 23 28 25 25C27 22 28 18 27 14C26 9 22 4 16 2Z" fill="currentColor" opacity="0.9"/>
+                <path d="M16 6C12 8 9 12 8 16C7 20 9 24 11 26C13 28 16 29 16 29C16 29 19 28 21 26C23 24 25 20 24 16C23 12 20 8 16 6Z" fill="#E5685C"/>
+                <path d="M16 12C14 14 12 17 12 20C12 23 14 25 16 26C18 25 20 23 20 20C20 17 18 14 16 12Z" fill="#F0887A"/>
+                <ellipse cx="16" cy="18" rx="3" ry="2" fill="#FFCC00"/>
               </svg>
             </div>
             <span className="text-base md:text-lg font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Prompt Lens</span>
