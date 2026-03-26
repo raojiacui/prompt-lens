@@ -17,11 +17,9 @@ export function Globe() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Scene setup
     const scene = new THREE.Scene();
     sceneRef.current = scene;
 
-    // Camera
     const camera = new THREE.PerspectiveCamera(
       45,
       window.innerWidth / window.innerHeight,
@@ -31,7 +29,6 @@ export function Globe() {
     camera.position.z = 500;
     cameraRef.current = camera;
 
-    // Renderer
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
@@ -41,7 +38,6 @@ export function Globe() {
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Create globe
     const globeGeometry = new THREE.SphereGeometry(180, 128, 128);
 
     const globeMaterial = new THREE.ShaderMaterial({
@@ -90,7 +86,6 @@ export function Globe() {
     scene.add(globe);
     globeRef.current = globe;
 
-    // Add glowing orbital rings
     const createRing = (radius: number, thickness: number, opacity: number) => {
       const geometry = new THREE.TorusGeometry(radius, thickness, 8, 100);
       const material = new THREE.MeshBasicMaterial({
@@ -250,29 +245,41 @@ export function Globe() {
   );
 }
 
-// 装饰性背景元素
-export function DecorativeBackground() {
-  const dots = [];
-  for (let i = 0; i < 30; i++) {
-    dots.push(
-      <div
-        key={i}
-        className="absolute rounded-full"
-        style={{
-          width: `${Math.random() * 4 + 2}px`,
-          height: `${Math.random() * 4 + 2}px`,
-          backgroundColor: '#D97757',
-          opacity: Math.random() * 0.3 + 0.1,
-          left: `${Math.random() * 100}%`,
-          top: `${Math.random() * 100}%`,
-        }}
-      />
-    );
-  }
-
+// 世界地图背景
+export function WorldMapBackground() {
   return (
-    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none opacity-40">
-      {dots}
+    <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+      <svg
+        className="absolute inset-0 w-full h-full opacity-20"
+        viewBox="0 0 1000 500"
+        preserveAspectRatio="xMidYMid slice"
+      >
+        {/* 简化世界地图轮廓 */}
+        <defs>
+          <pattern id="worldMap" x="0" y="0" width="1000" height="500" patternUnits="userSpaceOnUse">
+            <path
+              fill="none"
+              stroke="#D97757"
+              strokeWidth="0.5"
+              d="M150,120 Q100,150 80,200 Q70,250 90,300 Q120,350 180,380 Q220,400 280,390 Q340,370 380,340 Q420,300 450,250 Q480,200 520,180 Q560,160 600,170 Q650,190 700,230 Q750,280 780,340 Q800,380 820,400 Q850,410 900,400 Q950,380 970,340 Q980,300 960,260 Q930,200 880,160 Q820,120 750,100 Q680,80 600,90 Q520,110 450,140 Q380,180 320,200 Q260,220 200,200 Q160,180 150,120"
+            />
+            {/* 各大洲轮廓 */}
+            {/* 北美 */}
+            <path fill="none" stroke="#D97757" strokeWidth="0.5" d="M50,80 Q80,60 120,70 Q180,90 200,120 Q210,150 190,180 Q160,200 120,190 Q80,170 50,140 Q30,110 50,80"/>
+            {/* 南美 */}
+            <path fill="none" stroke="#D97757" strokeWidth="0.5" d="M180,280 Q200,260 220,280 Q250,320 260,380 Q250,440 220,460 Q180,470 160,440 Q140,400 150,350 Q160,300 180,280"/>
+            {/* 欧洲 */}
+            <path fill="none" stroke="#D97757" strokeWidth="0.5" d="M420,60 Q480,50 520,70 Q560,90 550,130 Q530,160 490,150 Q450,130 420,100 Q400,80 420,60"/>
+            {/* 非洲 */}
+            <path fill="none" stroke="#D97757" strokeWidth="0.5" d="M450,180 Q500,170 530,200 Q560,240 560,300 Q540,360 500,380 Q450,390 420,360 Q390,320 400,270 Q410,220 450,180"/>
+            {/* 亚洲 */}
+            <path fill="none" stroke="#D97757" strokeWidth="0.5" d="M550,60 Q650,50 750,80 Q850,120 880,180 Q900,240 860,280 Q800,300 720,280 Q640,250 580,200 Q520,150 550,100 Q570,70 550,60"/>
+            {/* 澳洲 */}
+            <path fill="none" stroke="#D97757" strokeWidth="0.5" d="M780,350 Q850,330 890,360 Q920,400 900,440 Q860,470 810,460 Q760,440 750,400 Q740,360 780,350"/>
+          </pattern>
+        </defs>
+        <rect width="1000" height="500" fill="url(#worldMap)" />
+      </svg>
     </div>
   );
 }
