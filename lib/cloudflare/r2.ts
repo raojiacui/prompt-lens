@@ -10,17 +10,19 @@ import { join } from "path";
 import { randomUUID } from "crypto";
 
 // Backblaze B2 配置
+const b2Region = process.env.B2_REGION || "us-west-000";
 console.log("B2 env check:", {
-  region: process.env.B2_REGION,
+  region: b2Region,
   bucket: process.env.B2_BUCKET_NAME,
   hasAccessKey: !!process.env.B2_ACCESS_KEY_ID,
   hasSecretKey: !!process.env.B2_SECRET_ACCESS_KEY,
   publicUrl: process.env.B2_PUBLIC_URL,
+  accessKey: process.env.B2_ACCESS_KEY_ID,
 });
 
 const b2Config = {
-  region: process.env.B2_REGION || "us-west-000",
-  endpoint: `https://s3.${process.env.B2_REGION || "us-west-000"}.backblazeb2.com`,
+  region: b2Region,
+  endpoint: `https://s3.${b2Region}.backblazeb2.com`,
   credentials: {
     accessKeyId: process.env.B2_ACCESS_KEY_ID!,
     secretAccessKey: process.env.B2_SECRET_ACCESS_KEY!,
