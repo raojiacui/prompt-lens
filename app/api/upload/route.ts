@@ -92,7 +92,9 @@ export async function POST(request: NextRequest) {
 
     // 验证文件 Magic Number（防止扩展名伪造）
     const validation = validateFile(file.name, buffer);
+    console.log("[upload] Magic number validation:", validation);
     if (!validation.valid) {
+      console.log("[upload] Magic number failed, returning 400");
       return NextResponse.json(
         { error: validation.error },
         { status: 400 }
