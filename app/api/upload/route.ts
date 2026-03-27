@@ -108,9 +108,14 @@ export async function POST(request: NextRequest) {
     // 获取 Content-Type
     const contentType = file.type || (isVideo ? "video/mp4" : "image/jpeg");
 
-    // 检查 B2 是否配置
-    const b2Configured = process.env.B2_ACCESS_KEY_ID && process.env.B2_SECRET_ACCESS_KEY && process.env.B2_BUCKET_NAME;
-    console.log("B2 config check:", { b2Configured, bucket: process.env.B2_BUCKET_NAME, region: process.env.B2_REGION });
+    // 检查 B2 是否配置（必须三个都有值才算配置）
+    const b2Configured = !!(process.env.B2_ACCESS_KEY_ID && process.env.B2_SECRET_ACCESS_KEY && process.env.B2_BUCKET_NAME);
+    console.log("B2 config check:", {
+      hasKey: !!process.env.B2_ACCESS_KEY_ID,
+      hasSecret: !!process.env.B2_SECRET_ACCESS_KEY,
+      hasBucket: !!process.env.B2_BUCKET_NAME,
+      b2Configured
+    });
 
     let url: string;
     let key: string | undefined;
