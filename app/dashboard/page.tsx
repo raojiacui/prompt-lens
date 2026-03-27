@@ -59,9 +59,20 @@ export default function DashboardPage() {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
+      console.log("Uploading file:", selectedFile.name, selectedFile.size, selectedFile.type);
       const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!uploadRes.ok) throw new Error("Upload failed");
-      const { url, mediaType } = await uploadRes.json();
+      console.log("Upload response status:", uploadRes.status);
+      if (!uploadRes.ok) {
+        const errText = await uploadRes.text();
+        console.error("Upload failed:", uploadRes.status, errText);
+        throw new Error(`Upload failed (${uploadRes.status}): ${errText}`);
+      }
+      const uploadData = await uploadRes.json();
+      console.log("Upload data:", uploadData);
+      const { url, mediaType } = uploadData;
+      if (!url) {
+        throw new Error(`Upload returned empty URL: ${JSON.stringify(uploadData)}`);
+      }
       setProgress("AI 正在分析中...");
 
       const analyzeRes = await fetch("/api/analyze", {
