@@ -10,6 +10,14 @@ import { join } from "path";
 import { randomUUID } from "crypto";
 
 // Backblaze B2 配置
+console.log("B2 env check:", {
+  region: process.env.B2_REGION,
+  bucket: process.env.B2_BUCKET_NAME,
+  hasAccessKey: !!process.env.B2_ACCESS_KEY_ID,
+  hasSecretKey: !!process.env.B2_SECRET_ACCESS_KEY,
+  publicUrl: process.env.B2_PUBLIC_URL,
+});
+
 const b2Config = {
   region: process.env.B2_REGION || "us-west-000",
   endpoint: `https://s3.${process.env.B2_REGION || "us-west-000"}.backblazeb2.com`,
@@ -46,9 +54,10 @@ export async function uploadToB2(
 
     await upload.done();
     return `${publicUrl}/${key}`;
-  } catch (error) {
+  } catch (error: any) {
     console.error("B2 upload error:", error);
-    throw new Error("Failed to upload file");
+    const errorMessage = error?.message || error?.Code || JSON.stringify(error);
+    throw new Error(`B2 upload failed: ${errorMessage}`);
   }
 }
 

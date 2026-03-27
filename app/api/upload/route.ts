@@ -91,6 +91,7 @@ export async function POST(request: NextRequest) {
 
     // 检查 B2 是否配置
     const b2Configured = process.env.B2_ACCESS_KEY_ID && process.env.B2_SECRET_ACCESS_KEY && process.env.B2_BUCKET_NAME;
+    console.log("B2 config check:", { b2Configured, bucket: process.env.B2_BUCKET_NAME, region: process.env.B2_REGION });
 
     let url: string;
     let key: string | undefined;
@@ -98,7 +99,17 @@ export async function POST(request: NextRequest) {
     if (b2Configured) {
       // B2 已配置，上传到 B2
       key = generateUserFilePath(session.user.id, file.name, mediaType);
-      url = await uploadToR2(buffer, key, contentType);
+      console.log("Uploading to B2, key:", key);
+      try {
+        url = await uploadToR2(buffer, key, contentType);
+        console.log("B2 upload success, url:", url);
+      } catch (b2Error) {
+        console.error("B2 upload failed:", b2Error);
+        return NextResponse.json(
+          { error: `B2 upload failed: ${b2Error instanceof Error ? b2Error.message : 'Unknown error'}` },
+          { status: 500 }
+        );
+      }
     } else {
       // R2 未配置，保存到本地临时目录
       const tempDir = path.join(process.cwd(), "temp_uploads", session.user.id);
@@ -144,8 +155,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Upload error:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json(
-      { error: "Upload failed" },
+      { error: `Upload failed: ${errorMessage}` },
       { status: 500 }
     );
   }
