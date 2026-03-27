@@ -63,8 +63,10 @@ export async function POST(request: NextRequest) {
     const filename = file.name.toLowerCase();
     const isVideo = ALLOWED_VIDEO_TYPES.some((ext) => filename.endsWith(`.${ext}`));
     const isImage = ALLOWED_IMAGE_TYPES.some((ext) => filename.endsWith(`.${ext}`));
+    console.log("[upload] File type check:", { isVideo, isImage });
 
     if (!isVideo && !isImage) {
+      console.log("[upload] Invalid file type, returning 400");
       return NextResponse.json(
         { error: "Invalid file type. Allowed: mp4, mov, avi, mkv, webm, jpg, jpeg, png, webp" },
         { status: 400 }
@@ -73,7 +75,9 @@ export async function POST(request: NextRequest) {
 
     // 检查文件大小
     const maxSize = isVideo ? MAX_VIDEO_SIZE_MB : MAX_IMAGE_SIZE_MB;
+    console.log("[upload] Size check:", { fileSize: file.size, maxSizeMB: maxSize });
     if (!isFileSizeValid(file.size, maxSize)) {
+      console.log("[upload] File too large, returning 400");
       return NextResponse.json(
         { error: `File too large. Max size: ${maxSize}MB` },
         { status: 400 }
@@ -81,8 +85,10 @@ export async function POST(request: NextRequest) {
     }
 
     // 读取文件内容用于验证
+    console.log("[upload] Reading file buffer...");
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    console.log("[upload] Buffer size:", buffer.length);
 
     // 验证文件 Magic Number（防止扩展名伪造）
     const validation = validateFile(file.name, buffer);
