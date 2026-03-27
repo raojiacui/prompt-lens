@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
       size: file.size,
     };
 
-    if (!r2Configured) {
+    if (!b2Configured) {
       response.isLocal = true;
     } else {
       response.key = key;
