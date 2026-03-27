@@ -101,8 +101,20 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
           throw new Error(`上传失败 (${uploadRes.status}): ${errText}`);
         }
 
-        const uploadData = await uploadRes.json();
+        let uploadData;
+        try {
+          uploadData = await uploadRes.json();
+        } catch (e) {
+          console.error("Failed to parse upload response:", uploadRes);
+          throw new Error(`响应解析失败: ${uploadRes.status}`);
+        }
+
+        console.log("Upload response:", uploadData);
         url = uploadData.url;
+        if (!url) {
+          console.error("Upload returned empty URL, response:", uploadData);
+          throw new Error(`上传返回空 URL，响应: ${JSON.stringify(uploadData)}`);
+        }
       } catch (error: any) {
         alert(`上传失败: ${error.message}`);
         setIsLoading(false);
