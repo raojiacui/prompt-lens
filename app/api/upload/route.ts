@@ -21,14 +21,19 @@ const MAX_VIDEO_SIZE_MB = 200;
 const MAX_IMAGE_SIZE_MB = 20;
 
 export async function POST(request: NextRequest) {
+  console.log("[upload] Request received");
   try {
+    console.log("[upload] Getting session...");
     const session = await auth.api.getSession({ headers: request.headers });
+    console.log("[upload] Session:", session?.user ? "logged in" : "no session");
 
     if (!session?.user) {
+      console.log("[upload] Unauthorized, returning 401");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // 速率限制检查
+    console.log("[upload] Checking rate limit...");
     const { allowed, resetIn } = checkRateLimit(
       session.user.id,
       RateLimitConfigs.upload.limit,
@@ -36,18 +41,23 @@ export async function POST(request: NextRequest) {
     );
 
     if (!allowed) {
+      console.log("[upload] Rate limited, returning 429");
       return NextResponse.json(
         { error: "上传过于频繁，请稍后再试", retryAfter: Math.ceil(resetIn / 1000) },
         { status: 429 }
       );
     }
 
+    console.log("[upload] Parsing form data...");
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
 
     if (!file) {
+      console.log("[upload] No file provided, returning 400");
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
+
+    console.log("[upload] File:", file.name, file.size, file.type);
 
     // 确定文件类型
     const filename = file.name.toLowerCase();
