@@ -16,8 +16,9 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.750.0",
-    "@aws-sdk/lib-storage": "^3.750.0",
+    "@aws-sdk/client-s3": "^3.540.0",
+    "@aws-sdk/lib-storage": "^3.540.0",
+    "@aws-sdk/s3-request-presigner": "3.540.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@neondatabase/serverless": "^0.10.0",
     "@types/three": "^0.183.1",
