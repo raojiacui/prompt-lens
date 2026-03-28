@@ -10,6 +10,7 @@ import { HistoryList } from "@/components/history-list";
 import { ApiKeySettings } from "@/components/api-key-settings";
 import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
 import { VideoEditTab } from "@/components/video-edit-tab";
+import { extractVideoFrames, getImageBase64 } from "@/lib/utils/frame-extractor";
 import { cn } from "@/lib/utils";
 
 type Tab = "analyze" | "audio" | "edit" | "history" | "stats" | "settings";
@@ -54,31 +55,50 @@ export default function DashboardPage() {
   const handleAnalyze = async () => {
     if (!selectedFile) return;
     setIsLoading(true);
-    setProgress("正在上传文件...");
+    setProgress("正在提取帧...");
 
     try {
+      let frames: string[];
+      let mediaType: string;
+
+      if (selectedFile.type.startsWith("video/")) {
+        // 视频：在客户端提取帧
+        frames = await extractVideoFrames(selectedFile, frameCount, (current, total) => {
+          setProgress(`正在提取帧: ${current}/${total}`);
+        });
+        mediaType = "video";
+      } else {
+        // 图片：直接转 base64
+        const base64 = await getImageBase64(selectedFile);
+        frames = [base64];
+        mediaType = "image";
+      }
+
+      setProgress("正在上传文件...");
+
+      // 上传文件到 B2（用于存储）
       const formData = new FormData();
       formData.append("file", selectedFile);
-      console.log("Uploading file:", selectedFile.name, selectedFile.size, selectedFile.type);
       const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      console.log("Upload response status:", uploadRes.status);
       if (!uploadRes.ok) {
         const errText = await uploadRes.text();
-        console.error("Upload failed:", uploadRes.status, errText);
         throw new Error(`Upload failed (${uploadRes.status}): ${errText}`);
       }
       const uploadData = await uploadRes.json();
-      console.log("Upload data:", uploadData);
-      const { url, mediaType } = uploadData;
-      if (!url) {
-        throw new Error(`Upload returned empty URL: ${JSON.stringify(uploadData)}`);
-      }
+
       setProgress("AI 正在分析中...");
 
+      // 发送帧给后端分析（而不是发送视频 URL）
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaUrl: url, mediaType, frameCount, analyzeMode, provider }),
+        body: JSON.stringify({
+          mediaUrl: uploadData.url,
+          mediaType,
+          frames, // 直接发送客户端提取的帧
+          analyzeMode,
+          provider,
+        }),
       });
 
       if (!analyzeRes.ok) throw new Error("Analysis failed");
