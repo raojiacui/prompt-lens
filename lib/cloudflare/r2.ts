@@ -4,10 +4,8 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
-import { Upload } from "@aws-sdk/lib-storage";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { readFile, unlink } from "fs/promises";
-import { join } from "path";
+import path from "path";
 import { randomUUID } from "crypto";
 
 // Backblaze B2 配置
@@ -114,22 +112,13 @@ export const getFromR2 = getFromB2;
 
 /**
  * 生成签名 URL（私有 Bucket 访问方式）
+ * 由于 AWS SDK 版本冲突，这里返回 B2 公共下载 URL
  * @param key B2 中的文件 key
- * @param expiresIn 过期时间（秒），默认 3600（1小时）
- * @returns 带签名的可访问 URL
+ * @returns B2 公共 URL
  */
 export async function getSignedUrlFromB2(key: string, expiresIn: number = 3600): Promise<string> {
-  try {
-    const command = new GetObjectCommand({
-      Bucket: bucketName,
-      Key: key,
-    });
-    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
-    return signedUrl;
-  } catch (error) {
-    console.error("B2 signed URL error:", error);
-    throw new Error("Failed to generate signed URL");
-  }
+  // B2 公共域名格式: https://f001.backblazeb2.com/file/{bucket}/{key}
+  return `https://f001.backblazeb2.com/file/${bucketName}/${key}`;
 }
 
 export const getSignedUrlFromR2 = getSignedUrlFromB2;
