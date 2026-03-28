@@ -83,30 +83,41 @@ export async function POST(request: NextRequest) {
       // 处理视频：下载 → 提取帧 → 转 base64
       const videoPath = path.join(tempDir, "video.mp4");
 
-      let videoBuffer: Buffer;
-
       console.log("Processing video, mediaUrl:", mediaUrl);
 
-      // 判断 URL 类型
-      if (mediaUrl.startsWith("file://")) {
-        // 本地文件路径
-        const localPath = mediaUrl.replace("file://", "").replace(/\//g, "\\");
-        console.log("Reading from local file:", localPath);
-        videoBuffer = await fs.readFile(localPath);
-      } else if (mediaUrl.includes("temp_uploads")) {
-        // 本地临时文件（没有配置 R2 时）
-        const localPath = path.join(process.cwd(), mediaUrl.replace(/.*\/temp_uploads\//, "temp_uploads\\"));
-        console.log("Reading from temp_uploads:", localPath);
-        videoBuffer = await fs.readFile(localPath);
-      } else if (process.env.B2_PUBLIC_URL && mediaUrl.includes(process.env.B2_PUBLIC_URL)) {
-        // 从 B2 下载
-        const key = mediaUrl.replace(`${process.env.B2_PUBLIC_URL}/`, "");
-        console.log("Reading from B2, key:", key);
-        videoBuffer = await getFromR2(key);
+      // 判断 URL 类型 - 支持 B2 签名 URL 或带 B2_PUBLIC_URL 的 URL
+      let videoBuffer: Buffer;
+
+      // 从签名 URL 或普通 URL 中提取 B2 key
+      const extractB2Key = (url: string): string | null => {
+        // 匹配格式: https://s3.{region}.backblazeb2.com/{bucket}/{key}
+        const s3Match = url.match(/s3\.[a-z0-9-]+\.backblazeb2\.com\/[^/]+\/(.+)$/);
+        if (s3Match) return s3Match[1];
+
+        // 匹配格式: {B2_PUBLIC_URL}/{key}
+        if (process.env.B2_PUBLIC_URL) {
+          const publicUrlMatch = url.match(`${process.env.B2_PUBLIC_URL}/(.+)$`);
+          if (publicUrlMatch) return publicUrlMatch[1];
+        }
+
+        // 匹配 B2 公共域名格式: https://f001.backblazeb2.com/file/{bucket}/{key}
+        const b2FileMatch = url.match(/f\d{3}\.backblazeb2\.com\/file\/[^/]+\/(.+)$/);
+        if (b2FileMatch) return b2FileMatch[1];
+
+        return null;
+      };
+
+      const b2Key = extractB2Key(mediaUrl);
+      if (b2Key) {
+        console.log("Reading from B2, key:", b2Key);
+        videoBuffer = await getFromR2(b2Key);
       } else {
         // 直接从 URL 下载
         console.log("Downloading from URL:", mediaUrl);
         const response = await fetch(mediaUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to download video: ${response.status}`);
+        }
         const arrayBuffer = await response.arrayBuffer();
         videoBuffer = Buffer.from(arrayBuffer);
       }
@@ -129,21 +140,36 @@ export async function POST(request: NextRequest) {
       // 处理图片：直接下载 → 转 base64
       let imageBuffer: Buffer;
 
-      if (mediaUrl.startsWith("file://")) {
-        // 本地文件路径
-        const localPath = mediaUrl.replace("file://", "").replace(/\//g, "\\");
-        imageBuffer = await fs.readFile(localPath);
-      } else if (mediaUrl.includes("temp_uploads")) {
-        // 本地临时文件
-        const localPath = path.join(process.cwd(), mediaUrl.replace(/.*\/temp_uploads\//, "temp_uploads\\"));
-        imageBuffer = await fs.readFile(localPath);
-      } else if (process.env.B2_PUBLIC_URL && mediaUrl.includes(process.env.B2_PUBLIC_URL)) {
-        // 从 B2 下载
-        const key = mediaUrl.replace(`${process.env.B2_PUBLIC_URL}/`, "");
-        imageBuffer = await getFromR2(key);
+      // 判断 URL 类型 - 支持 B2 签名 URL 或带 B2_PUBLIC_URL 的 URL
+      const extractB2Key = (url: string): string | null => {
+        // 匹配格式: https://s3.{region}.backblazeb2.com/{bucket}/{key}
+        const s3Match = url.match(/s3\.[a-z0-9-]+\.backblazeb2\.com\/[^/]+\/(.+)$/);
+        if (s3Match) return s3Match[1];
+
+        // 匹配格式: {B2_PUBLIC_URL}/{key}
+        if (process.env.B2_PUBLIC_URL) {
+          const publicUrlMatch = url.match(`${process.env.B2_PUBLIC_URL}/(.+)$`);
+          if (publicUrlMatch) return publicUrlMatch[1];
+        }
+
+        // 匹配 B2 公共域名格式: https://f001.backblazeb2.com/file/{bucket}/{key}
+        const b2FileMatch = url.match(/f\d{3}\.backblazeb2\.com\/file\/[^/]+\/(.+)$/);
+        if (b2FileMatch) return b2FileMatch[1];
+
+        return null;
+      };
+
+      let imageBuffer: Buffer;
+      const imageB2Key = extractB2Key(mediaUrl);
+      if (imageB2Key) {
+        console.log("Reading image from B2, key:", imageB2Key);
+        imageBuffer = await getFromR2(imageB2Key);
       } else {
         // 直接从 URL 下载
         const response = await fetch(mediaUrl);
+        if (!response.ok) {
+          throw new Error(`Failed to download image: ${response.status}`);
+        }
         const arrayBuffer = await response.arrayBuffer();
         imageBuffer = Buffer.from(arrayBuffer);
       }

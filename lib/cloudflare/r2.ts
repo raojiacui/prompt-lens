@@ -5,6 +5,7 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { readFile, unlink } from "fs/promises";
 import { join } from "path";
 import { randomUUID } from "crypto";
@@ -21,12 +22,13 @@ console.log("B2 env check:", {
 });
 
 const b2Config = {
-  region: b2Region,
+  region: "us-east-1", // B2 S3 API 固定用 AWS 标准 region
   endpoint: `https://s3.${b2Region}.backblazeb2.com`,
   credentials: {
     accessKeyId: process.env.B2_ACCESS_KEY_ID!,
     secretAccessKey: process.env.B2_SECRET_ACCESS_KEY!,
   },
+  forcePathStyle: true,
 };
 
 const bucketName = process.env.B2_BUCKET_NAME!;
@@ -44,17 +46,15 @@ export async function uploadToB2(
   contentType: string
 ): Promise<string> {
   try {
-    const upload = new Upload({
-      client: s3Client,
-      params: {
-        Bucket: bucketName,
-        Key: key,
-        Body: file,
-        ContentType: contentType,
-      },
+    // 直接使用 PutObjectCommand（与测试接口一致）
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: file,
+      ContentType: contentType,
     });
 
-    await upload.done();
+    await s3Client.send(command);
     return `${publicUrl}/${key}`;
   } catch (error: any) {
     console.error("B2 upload error:", error);
@@ -111,6 +111,28 @@ export async function getFromB2(key: string): Promise<Buffer> {
 export const uploadToR2 = uploadToB2;
 export const deleteFromR2 = deleteFromB2;
 export const getFromR2 = getFromB2;
+
+/**
+ * 生成签名 URL（私有 Bucket 访问方式）
+ * @param key B2 中的文件 key
+ * @param expiresIn 过期时间（秒），默认 3600（1小时）
+ * @returns 带签名的可访问 URL
+ */
+export async function getSignedUrlFromB2(key: string, expiresIn: number = 3600): Promise<string> {
+  try {
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
+    return signedUrl;
+  } catch (error) {
+    console.error("B2 signed URL error:", error);
+    throw new Error("Failed to generate signed URL");
+  }
+}
+
+export const getSignedUrlFromR2 = getSignedUrlFromB2;
 
 /**
  * 生成用户文件路径

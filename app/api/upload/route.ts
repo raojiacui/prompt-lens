@@ -7,12 +7,10 @@ import {
   generateUserFilePath,
   isAllowedFileType,
   isFileSizeValid,
+  getSignedUrlFromR2,
 } from "@/lib/cloudflare/r2";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { validateFile } from "@/lib/utils/file-validation";
-import { randomUUID } from "crypto";
-import path from "path";
-import fs from "fs/promises";
 
 // 允许的文件类型和大小限制
 const ALLOWED_VIDEO_TYPES = ["mp4", "mov", "avi", "mkv", "webm"];
@@ -102,52 +100,31 @@ export async function POST(request: NextRequest) {
     //   );
     // }
 
-    // 生成 R2 存储路径
+    // 生成 B2 存储路径（强制使用 B2，不再回退本地存储）
     const mediaType = isVideo ? "video" : "image";
-
-    // 获取 Content-Type
     const contentType = file.type || (isVideo ? "video/mp4" : "image/jpeg");
 
-    // 检查 B2 是否配置（必须三个都有值才算配置）
-    const b2Configured = !!(process.env.B2_ACCESS_KEY_ID && process.env.B2_SECRET_ACCESS_KEY && process.env.B2_BUCKET_NAME);
-    console.log("B2 config check:", {
-      hasKey: !!process.env.B2_ACCESS_KEY_ID,
-      hasSecret: !!process.env.B2_SECRET_ACCESS_KEY,
-      hasBucket: !!process.env.B2_BUCKET_NAME,
-      b2Configured
-    });
+    // 强制使用 B2，不再检查配置
+    const key = generateUserFilePath(session.user.id, file.name, mediaType);
+    console.log("Uploading to B2, key:", key, "contentType:", contentType, "buffer size:", buffer.length);
 
     let url: string;
-    let key: string | undefined;
+    try {
+      // 先直接上传（不生成签名），验证上传是否成功
+      console.log("Step 1: Uploading to B2...");
+      await uploadToR2(buffer, key, contentType);
+      console.log("Step 1 complete: Upload successful");
 
-    if (b2Configured) {
-      // B2 已配置，上传到 B2
-      key = generateUserFilePath(session.user.id, file.name, mediaType);
-      console.log("Uploading to B2, key:", key);
-      try {
-        url = await uploadToR2(buffer, key, contentType);
-        console.log("B2 upload success, url:", url);
-      } catch (b2Error) {
-        console.error("B2 upload failed:", b2Error);
-        return NextResponse.json(
-          { error: `B2 upload failed: ${b2Error instanceof Error ? b2Error.message : 'Unknown error'}` },
-          { status: 500 }
-        );
-      }
-    } else {
-      // R2 未配置，保存到本地临时目录
-      const tempDir = path.join(process.cwd(), "temp_uploads", session.user.id);
-      await fs.mkdir(tempDir, { recursive: true });
-
-      const ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
-      const tempFileName = `${randomUUID()}.${ext}`;
-      const tempFilePath = path.join(tempDir, tempFileName);
-
-      await fs.writeFile(tempFilePath, buffer);
-      // 返回 file:// URL 格式，让音频分析 API 可以识别
-      url = `file://${tempFilePath.replace(/\\/g, "/")}`;
-
-      console.log("R2 not configured, saved to local temp:", tempFilePath);
+      // 生成签名 URL（1小时有效期）
+      console.log("Step 2: Generating signed URL...");
+      url = await getSignedUrlFromR2(key, 3600);
+      console.log("Step 2 complete: Signed URL generated", url.substring(0, 50) + "...");
+    } catch (b2Error) {
+      console.error("B2 error:", b2Error);
+      return NextResponse.json(
+        { error: `B2 upload failed: ${b2Error instanceof Error ? b2Error.message : 'Unknown error'}` },
+        { status: 500 }
+      );
     }
 
     // 记录操作日志
@@ -168,13 +145,11 @@ export async function POST(request: NextRequest) {
       filename: file.name,
       mediaType,
       size: file.size,
+      key: key,
     };
 
-    if (!b2Configured) {
-      response.isLocal = true;
-    } else {
-      response.key = key;
-    }
+    // 返回 key，便于后续分析 API 使用
+    response.key = key;
 
     return NextResponse.json(response);
   } catch (error) {
