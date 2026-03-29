@@ -8,7 +8,7 @@ import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 const isLocalDev = process.env.NODE_ENV === "development";
 const proxyUrl = isLocalDev ? (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897") : undefined;
 
-let axiosProxy = undefined;
+let axiosProxy: { host: string; port: number; protocol: string } | undefined = undefined;
 if (proxyUrl) {
   try {
     const url = new URL(proxyUrl);
