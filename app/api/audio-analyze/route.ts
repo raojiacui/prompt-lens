@@ -160,8 +160,8 @@ export async function POST(request: NextRequest) {
     const transcript = await client.transcripts.transcribe({
       audio: mediaUrl,
       speaker_labels: true,
-      // @ts-ignore - API supports universal-2 but types are outdated
-      speech_model: "universal-2" as any,
+      // @ts-ignore - API uses speech_models
+      speech_models: ["universal-2"] as any,
     });
 
     console.log("AssemblyAI transcription completed, status:", transcript.status);
