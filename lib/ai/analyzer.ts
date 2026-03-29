@@ -4,21 +4,24 @@ import { userApiKeys } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
-// 代理配置
-const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897";
-function getAxiosProxy() {
+// 代理配置（仅本地开发环境使用）
+const isLocalDev = process.env.NODE_ENV === "development";
+const proxyUrl = isLocalDev ? (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897") : undefined;
+
+let axiosProxy = undefined;
+if (proxyUrl) {
   try {
     const url = new URL(proxyUrl);
-    return {
+    axiosProxy = {
       host: url.hostname,
       port: parseInt(url.port) || (url.protocol === "https:" ? 443 : 80),
       protocol: url.protocol.replace(":", ""),
     };
+    console.log("[AI] Proxy enabled (local dev only):", axiosProxy);
   } catch {
-    return { host: "127.0.0.1", port: 7897, protocol: "http" };
+    console.warn("[AI] Failed to parse proxy URL");
   }
 }
-const axiosProxy = getAxiosProxy();
 
 // API 配置
 const API_CONFIGS = {
@@ -120,7 +123,7 @@ async function callZhipuApi(
   const response = await axios.post(API_CONFIGS.zhipu.url, payload, {
     headers,
     timeout: 180000,
-    proxy: axiosProxy,
+    ...(axiosProxy ? { proxy: axiosProxy } : {}),
   });
 
   if (!response.data.choices || response.data.choices.length === 0) {
@@ -158,7 +161,7 @@ async function callGeminiApi(
   const url = `${API_CONFIGS.gemini.url}?key=${apiKey}`;
   const response = await axios.post(url, payload, {
     timeout: 180000,
-    proxy: axiosProxy,
+    ...(axiosProxy ? { proxy: axiosProxy } : {}),
   });
 
   if (!response.data.candidates || response.data.candidates.length === 0) {
@@ -193,7 +196,7 @@ async function callOpenRouterApi(
   const response = await axios.post(API_CONFIGS.openrouter.url, payload, {
     headers,
     timeout: 180000,
-    proxy: axiosProxy,
+    ...(axiosProxy ? { proxy: axiosProxy } : {}),
   });
 
   console.log("[OpenRouter] Response status:", response.status, response.data);

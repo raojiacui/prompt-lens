@@ -7,16 +7,16 @@ import { admin, anonymous } from "better-auth/plugins";
 import { emailOTP } from "better-auth/plugins/email-otp";
 import { eq } from "drizzle-orm";
 
-// 配置代理（仅本地开发环境使用）
-const isLocalhost = process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_SITE_URL?.includes("localhost");
-const proxyUrl = isLocalhost ? (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897") : undefined;
+// 配置代理（仅本地开发环境使用，禁止在生产环境使用）
+const isLocalDev = process.env.NODE_ENV === "development";
+const proxyUrl = isLocalDev ? (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897") : undefined;
 
 if (proxyUrl) {
   try {
     const { setGlobalDispatcher, ProxyAgent } = require("undici");
     const agent = new ProxyAgent(proxyUrl);
     setGlobalDispatcher(agent);
-    console.log("[Auth] Proxy enabled:", proxyUrl);
+    console.log("[Auth] Proxy enabled (local dev only):", proxyUrl);
   } catch (error) {
     console.warn("[Auth] Failed to set up proxy:", error);
   }
