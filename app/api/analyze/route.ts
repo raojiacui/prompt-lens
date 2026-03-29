@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
       mediaType,
       frames: clientFrames,
       analyzeMode = "single",
-      provider = "zhipu",
+      provider = "openrouter",
     } = body;
 
     if (!mediaUrl || !mediaType) {

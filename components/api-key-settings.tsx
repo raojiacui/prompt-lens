@@ -19,7 +19,7 @@ export function ApiKeySettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [provider, setProvider] = useState("zhipu");
+  const [provider, setProvider] = useState("openrouter");
   const [apiKey, setApiKey] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 

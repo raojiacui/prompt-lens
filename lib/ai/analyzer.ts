@@ -212,7 +212,7 @@ async function callOpenRouterApi(
  * 分析图片/帧
  */
 export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeResult> {
-  const { userId, provider = "zhipu", frames, mode } = options;
+  const { userId, provider = "openrouter", frames, mode } = options;
 
   // 获取用户 API Key
   const apiKey = await getUserApiKey(userId, provider);

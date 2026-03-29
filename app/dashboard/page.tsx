@@ -24,7 +24,7 @@ export default function DashboardPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [frameCount, setFrameCount] = useState(8);
   const [analyzeMode, setAnalyzeMode] = useState<"single" | "batch">("single");
-  const [provider, setProvider] = useState<"zhipu" | "gemini" | "openrouter">("zhipu");
+  const [provider, setProvider] = useState<"zhipu" | "gemini" | "openrouter">("openrouter");
   const [progress, setProgress] = useState("");
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
