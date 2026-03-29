@@ -26,6 +26,9 @@ importers:
       '@types/three':
         specifier: ^0.183.1
         version: 0.183.1
+      assemblyai:
+        specifier: ^4.29.0
+        version: 4.29.0
       axios:
         specifier: ^1.7.9
         version: 1.13.6
@@ -61,7 +64,7 @@ importers:
         version: 8.0.4
       openai:
         specifier: ^6.29.0
-        version: 6.29.0(zod@3.25.76)
+        version: 6.29.0(ws@8.20.0)(zod@3.25.76)
       postgres:
         specifier: ^3.4.5
         version: 3.4.8
@@ -2093,6 +2096,10 @@ packages:
   arraybuffer.prototype.slice@1.0.4:
     resolution: {integrity: sha512-BNoCY6SXXPQ7gF2opIP4GBE+Xw7U+pHMYKuzjgCN3GwiaIR09UUeKfheyIry77QtrCBlC0KK0q5/TER/tYh3PQ==}
     engines: {node: '>= 0.4'}
+
+  assemblyai@4.29.0:
+    resolution: {integrity: sha512-Mi3katVJNq3F+UJtY7+DV5zOSCBBn4SQdoF8Jr3SHKCgFqUWGqsd3c99meFKxJ2hrnX3rKnmFmZNF3zuxWqahA==}
+    engines: {node: '>=18'}
 
   assertion-error@2.0.1:
     resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
@@ -4319,6 +4326,18 @@ packages:
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
 
+  ws@8.20.0:
+    resolution: {integrity: sha512-sAt8BhgNbzCtgGbt2OxmpuryO63ZoDk/sqaB/znQm94T4fCEsy/yV+7CdC1kJhOU9lboAEU7R3kquuycDoibVA==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+
   yallist@3.1.1:
     resolution: {integrity: sha512-a4UGQaWPH59mOXUYnAG2ewncQS4i4F43Tv3JoAM+s2VDAmS9NsK8GpDMLrCHPksFT7h3K6TOoUNn2pb7RoXx4g==}
 
@@ -6505,6 +6524,13 @@ snapshots:
       get-intrinsic: 1.3.0
       is-array-buffer: 3.0.5
 
+  assemblyai@4.29.0:
+    dependencies:
+      ws: 8.20.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   assertion-error@2.0.1: {}
 
   ast-types-flow@0.0.8: {}
@@ -7973,8 +7999,9 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  openai@6.29.0(zod@3.25.76):
+  openai@6.29.0(ws@8.20.0)(zod@3.25.76):
     optionalDependencies:
+      ws: 8.20.0
       zod: 3.25.76
 
   optionator@0.9.4:
@@ -8906,6 +8933,8 @@ snapshots:
   word-wrap@1.2.5: {}
 
   wrappy@1.0.2: {}
+
+  ws@8.20.0: {}
 
   yallist@3.1.1: {}
 

@@ -22,6 +22,7 @@
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@neondatabase/serverless": "^0.10.0",
     "@types/three": "^0.183.1",
+    "assemblyai": "^4.29.0",
     "axios": "^1.7.9",
     "better-auth": "^1.5.0",
     "class-variance-authority": "^0.7.1",
