@@ -46,10 +46,14 @@ async function uploadToMux(videoUrl: string, client: any) {
     throw new Error(`Mux API error: ${error.response?.status} - ${JSON.stringify(error.response?.data) || error.message}`);
   });
 
-  console.log("Mux create upload response:", JSON.stringify(createUploadRes.data).substring(0, 200));
+  console.log("Mux create upload response:", JSON.stringify(createUploadRes.data).substring(0, 500));
 
   if (!createUploadRes.data?.data?.url) {
-    console.error("Mux response:", createUploadRes.data);
+    console.error("Mux response:", JSON.stringify(createUploadRes.data));
+    // 检查是否是错误响应
+    if (createUploadRes.data?.message) {
+      throw new Error(`Mux API error: ${createUploadRes.data.message}`);
+    }
     throw new Error("Mux API returned unexpected response: " + JSON.stringify(createUploadRes.data));
   }
 
