@@ -72,7 +72,12 @@ async function segmentWithLLM(
       // 提取 JSON 部分
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        const parsed = JSON.parse(jsonMatch[0]);
+        // 确保 tags 是数组
+        return parsed.map((item: any) => ({
+          ...item,
+          tags: typeof item.tags === 'string' ? item.tags.split(',').map((t: string) => t.trim()) : item.tags || []
+        }));
       }
     }
 
