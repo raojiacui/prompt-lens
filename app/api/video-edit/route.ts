@@ -279,25 +279,35 @@ export async function POST(request: NextRequest) {
     let action = "trim";
 
     if (contentType.includes("multipart/form-data")) {
-      // 文件上传模式 - 先获取媒体 URL
+      // 文件上传模式
       const formData = await request.formData();
       const file = formData.get("file") as File | null;
-      prompt = formData.get("prompt") as string || "";
-      const urlFromForm = formData.get("mediaUrl") as string;
+      const urlFromForm = formData.get("mediaUrl") as string | null;
+      prompt = (formData.get("prompt") as string) || "";
 
+      // 如果有文件，先上传到 B2 获取 URL
       if (file && !urlFromForm) {
-        // 需要先上传文件获取 URL
-        // 这里暂时不支持直接上传文件，需要先调用 /api/upload
-        return NextResponse.json(
-          { error: "Please upload the file first and pass the mediaUrl, or pass mediaUrl directly" },
-          { status: 400 }
-        );
-      }
+        console.log("[video-edit] Processing file upload...");
 
-      mediaUrl = urlFromForm;
-      if (!mediaUrl) {
+        // 调用 B2 上传 API（直接用已有的 uploadToR2）
+        const { uploadToR2, generateUserFilePath } = await import("@/lib/cloudflare/r2");
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const key = generateUserFilePath(session.user.id, file.name, "video");
+
+        try {
+          await uploadToR2(buffer, key, file.type || "video/mp4");
+          // 构造 B2 URL
+          mediaUrl = `${process.env.B2_PUBLIC_URL}/${key}`;
+          console.log("[video-edit] File uploaded to B2:", mediaUrl);
+        } catch (uploadError) {
+          console.error("[video-edit] B2 upload error:", uploadError);
+          throw new Error("Failed to upload file to B2");
+        }
+      } else if (urlFromForm) {
+        mediaUrl = urlFromForm;
+      } else {
         return NextResponse.json(
-          { error: "Missing mediaUrl" },
+          { error: "Missing file or mediaUrl" },
           { status: 400 }
         );
       }
