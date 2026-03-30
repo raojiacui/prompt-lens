@@ -220,9 +220,15 @@ async function parseEditInstructionWithLLM(
     );
 
     const content = response.data.choices[0]?.message?.content || "{}";
+    console.log("LLM response content:", content.substring(0, 500));
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (parseError) {
+        console.error("JSON parse error:", parseError, "content:", jsonMatch[0]);
+        return { action: "none" };
+      }
     }
     return { action: "none" };
   } catch (error) {
@@ -233,7 +239,10 @@ async function parseEditInstructionWithLLM(
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[video-edit] Request received");
+
     const session = await auth.api.getSession({ headers: request.headers });
+    console.log("[video-edit] Session:", session?.user ? "logged in" : "no session");
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
