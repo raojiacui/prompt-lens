@@ -4,206 +4,54 @@ import { db, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import axios from "axios";
 
-// 初始化 Mux 客户端
-function getMuxClient() {
-  const tokenId = process.env.MUX_TOKEN_ID;
-  const tokenSecret = process.env.MUX_TOKEN_SECRET;
+// Shotstack API 配置
+const SHOTSTACK_API_URL = "https://api.shotstack.io/v1";
+const SHOTSTACK_API_KEY_ID = process.env.SHOTSTACK_API_KEY_ID;
+const SHOTSTACK_API_SECRET = process.env.SHOTSTACK_API_SECRET;
 
-  if (!tokenId || !tokenSecret) {
-    throw new Error("MUX_TOKEN_ID and MUX_TOKEN_SECRET are not configured");
+function getShotstackHeaders() {
+  if (!SHOTSTACK_API_KEY_ID || !SHOTSTACK_API_SECRET) {
+    throw new Error("Shotstack API keys are not configured");
   }
-
-  // 使用 Basic Auth
   return {
-    tokenId,
-    tokenSecret,
-    baseUrl: "https://api.mux.com"
+    "x-api-key": `${SHOTSTACK_API_KEY_ID}:${SHOTSTACK_API_SECRET}`,
+    "Content-Type": "application/json"
   };
 }
 
-// 上传视频到 Mux
-async function uploadToMux(videoUrl: string, client: any) {
-  const auth = Buffer.from(`${client.tokenId}:${client.tokenSecret}`).toString("base64");
-
-  // 创建上传 URL
-  const createUploadRes = await axios.post(
-    `${client.baseUrl}/video/v1/uploads`,
-    {
-      cors_origin: process.env.NEXT_PUBLIC_SITE_URL || "*",
-      new_asset_settings: {
-        playback_policy: ["public"],
-        mp4_support: "capped-1080p"
-      }
-    },
-    {
-      headers: {
-        Authorization: `Basic ${auth}`,
-        "Content-Type": "application/json"
-      }
-    }
-  ).catch((error) => {
-    console.error("Mux API error:", error.response?.status, error.response?.data || error.message);
-    throw new Error(`Mux API error: ${error.response?.status} - ${JSON.stringify(error.response?.data) || error.message}`);
-  });
-
-  console.log("Mux create upload response:", JSON.stringify(createUploadRes.data).substring(0, 500));
-
-  if (!createUploadRes.data?.data?.url) {
-    console.error("Mux response:", JSON.stringify(createUploadRes.data));
-    // 检查是否是错误响应
-    if (createUploadRes.data?.message) {
-      throw new Error(`Mux API error: ${createUploadRes.data.message}`);
-    }
-    throw new Error("Mux API returned unexpected response: " + JSON.stringify(createUploadRes.data));
-  }
-
-  const uploadUrl = createUploadRes.data.data.url;
-  const uploadId = createUploadRes.data.data.id;
-  console.log("Mux upload URL created:", uploadUrl.substring(0, 50));
-
-  // 下载原视频并上传到 Mux
-  console.log("Downloading video from:", videoUrl.substring(0, 100));
-  const videoResponse = await axios.get(videoUrl, {
-    responseType: "arraybuffer",
-    timeout: 300000 // 5分钟超时
-  }).catch((error) => {
-    console.error("Download video error:", error.response?.data || error.message);
-    throw new Error(`Failed to download video: ${error.message}`);
-  });
-
-  console.log("Video downloaded, size:", videoResponse.data.length);
-  const videoBuffer = Buffer.from(videoResponse.data);
-
-  await axios.put(uploadUrl, videoBuffer, {
-    headers: {
-      "Content-Type": "video/mp4"
-    }
-  });
-
-  // 等待上传完成并获取 asset ID
-  let assetId = null;
-  let status = "preparing";
-
-  for (let i = 0; i < 30; i++) {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const uploadStatus = await axios.get(
-      `${client.baseUrl}/video/v1/uploads/${uploadId}`,
-      {
-        headers: { Authorization: `Basic ${auth}` }
-      }
-    );
-
-    status = uploadStatus.data.data.status;
-
-    if (status === "asset_created") {
-      assetId = uploadStatus.data.data.asset_id;
-      break;
-    }
-
-    if (status === "errored") {
-      throw new Error("Mux upload failed");
-    }
-  }
-
-  if (!assetId) {
-    throw new Error("Mux upload timeout");
-  }
-
-  // 获取播放 ID
-  const assetRes = await axios.get(
-    `${client.baseUrl}/video/v1/assets/${assetId}`,
-    {
-      headers: { Authorization: `Basic ${auth}` }
-    }
-  );
-
-  const playbackId = assetRes.data.data.playback_ids?.[0]?.id;
-
-  return {
-    assetId,
-    playbackId,
-    streamUrl: playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null,
-    thumbnailUrl: `https://image.mux.com/${playbackId}/thumbnail.jpg`
-  };
-}
-
-// 解析剪辑指令并生成 Mux 剪辑
-async function createMuxClip(client: any, assetId: string, instruction: any) {
-  const auth = Buffer.from(`${client.tokenId}:${client.tokenSecret}`).toString("base64");
-
-  // Mux 支持基于时间的剪辑通过 create-asset-from-live-stream
-  // 对于简单剪辑，使用 time range trim
-  const { startTime = 0, endTime, cutStart, cutEnd } = instruction;
-
-  const trimStart = cutStart || startTime;
-  const trimEnd = cutEnd || endTime;
-
-  // 使用 Mux 的片段剪辑功能
-  const trimStartMs = Math.floor(trimStart * 1000);
-  const trimEndMs = trimEnd ? Math.floor(trimEnd * 1000) : null;
-
-  // 创建剪辑后的资产
-  // 注意：Mux 需要使用视频编辑功能，这需要企业版
-  // 对于基础版，我们返回原始视频的签名 URL
-
-  const assetRes = await axios.get(
-    `${client.baseUrl}/video/v1/assets/${assetId}`,
-    {
-      headers: { Authorization: `Basic ${auth}` }
-    }
-  );
-
-  const playbackId = assetRes.data.data.playback_ids?.[0]?.id;
-
-  return {
-    success: true,
-    outputUrl: playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null,
-    thumbnailUrl: playbackId ? `https://image.mux.com/${playbackId}/thumbnail.jpg` : null,
-    assetId,
-    message: trimStart > 0 || trimEnd ? `视频已准备，裁剪范围: ${trimStart}s - ${trimEnd}s` : "视频已上传",
-    trimStart,
-    trimEnd
-  };
-}
-
-// LLM 解析剪辑指令
-async function parseEditInstructionWithLLM(
+// 解析剪辑指令
+async function parseEditInstruction(
   prompt: string,
   duration: number,
-  provider: string,
-  apiKey: string
+  llmApiKey: string
 ): Promise<any> {
   const systemPrompt = `你是一个专业的视频剪辑助手。用户给出一段剪辑指令，你需要解析并返回 JSON 格式的指令。
 
 当前支持的指令格式：
-- start_time: 视频开始时间（秒）
-- end_time: 视频结束时间（秒）
-- cut_start: 裁剪开始时间（秒）
-- cut_end: 裁剪结束时间（秒）
-- speed: 播放速度（1 = 正常）
+- trim: 裁剪视频的一部分
+- start: 裁剪开始时间（秒）
+- end: 裁剪结束时间（秒）
+- speed: 播放速度（1 = 正常，2 = 2倍速）
 
-示例输入：把视频从第10秒到第30秒的部分裁剪出来
-示例输出：{"start_time": 0, "end_time": null, "cut_start": 10, "cut_end": 30, "speed": 1, "action": "trim"}
+示例输入：只保留前5秒
+示例输出：{"action": "trim", "start": 0, "end": 5}
 
-示例输入：加速播放视频
-示例输出：{"start_time": 0, "end_time": null, "cut_start": null, "cut_end": null, "speed": 2, "action": "speed"}
+示例输入：从第10秒到30秒
+示例输出：{"action": "trim", "start": 10, "end": 30}
 
-示例输入：裁剪中间部分，从5秒到15秒
-示例输出：{"start_time": 0, "end_time": null, "cut_start": 5, "cut_end": 15, "speed": 1, "action": "trim"}
+示例输入：加速2倍
+示例输出：{"action": "speed", "speed": 2}
+
+示例输入：裁剪中间部分，5到15秒
+示例输出：{"action": "trim", "start": 5, "end": 15}
 
 请返回 JSON 格式，不要有其他内容。`;
 
   try {
-    const baseUrl = provider === "deepseek"
-      ? "https://api.deepseek.com/v1"
-      : "https://openrouter.ai/api/v1";
-    const model = provider === "deepseek" ? "deepseek-chat" : "anthropic/claude-3-haiku";
-
     const response = await axios.post(
-      `${baseUrl}/chat/completions`,
+      "https://api.deepseek.com/v1/chat/completions",
       {
-        model,
+        model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `视频总时长 ${duration} 秒，剪辑指令：${prompt}` }
@@ -212,7 +60,7 @@ async function parseEditInstructionWithLLM(
       },
       {
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${llmApiKey}`,
           "Content-Type": "application/json",
         },
         timeout: 60000,
@@ -220,15 +68,9 @@ async function parseEditInstructionWithLLM(
     );
 
     const content = response.data.choices[0]?.message?.content || "{}";
-    console.log("LLM response content:", content.substring(0, 500));
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      try {
-        return JSON.parse(jsonMatch[0]);
-      } catch (parseError) {
-        console.error("JSON parse error:", parseError, "content:", jsonMatch[0]);
-        return { action: "none" };
-      }
+      return JSON.parse(jsonMatch[0]);
     }
     return { action: "none" };
   } catch (error) {
@@ -237,12 +79,102 @@ async function parseEditInstructionWithLLM(
   }
 }
 
+// 使用 Shotstack 进行视频剪辑
+async function editVideoWithShotstack(
+  videoUrl: string,
+  instruction: any
+): Promise<any> {
+  const headers = getShotstackHeaders();
+
+  // 构建剪辑命令
+  const clip: any = {
+    asset: {
+      type: "video",
+      src: videoUrl
+    },
+    start: 0,
+    length: instruction.end ? instruction.end - instruction.start : 10,
+    position: 0
+  };
+
+  // 如果有裁剪设置
+  if (instruction.action === "trim" && instruction.start !== undefined) {
+    clip.start = instruction.start;
+    if (instruction.end) {
+      clip.length = instruction.end - instruction.start;
+    }
+  }
+
+  // 如果有速度设置
+  if (instruction.action === "speed" && instruction.speed) {
+    clip.fit = "crop";
+    clip.speed = instruction.speed;
+  }
+
+  const timeline: any = {
+    background: "#000000",
+    tracks: [
+      {
+        clips: [clip]
+      }
+    ]
+  };
+
+  const payload = {
+    timeline,
+    output: {
+      format: "mp4",
+      resolution: "1080p"
+    }
+  };
+
+  console.log("[Shotstack] Sending edit request...");
+
+  // 发送编辑任务
+  const response = await axios.post(
+    `${SHOTSTACK_API_URL}/render`,
+    payload,
+    { headers }
+  );
+
+  const renderId = response.data.response.id;
+  console.log("[Shotstack] Render started, ID:", renderId);
+
+  // 等待渲染完成
+  let resultUrl = null;
+  for (let i = 0; i < 60; i++) {
+    await new Promise(resolve => setTimeout(resolve, 5000));
+
+    const statusRes = await axios.get(
+      `${SHOTSTACK_API_URL}/render/${renderId}`,
+      { headers }
+    );
+
+    const status = statusRes.data.response.status;
+    console.log("[Shotstack] Status:", status);
+
+    if (status === "failed") {
+      throw new Error("Shotstack render failed");
+    }
+
+    if (status === "done") {
+      resultUrl = statusRes.data.response.url;
+      break;
+    }
+  }
+
+  if (!resultUrl) {
+    throw new Error("Shotstack render timeout");
+  }
+
+  return resultUrl;
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log("[video-edit] Request received");
 
     const session = await auth.api.getSession({ headers: request.headers });
-    console.log("[video-edit] Session:", session?.user ? "logged in" : "no session");
 
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -262,10 +194,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 检查 Mux 配置
-    if (!process.env.MUX_TOKEN_ID || !process.env.MUX_TOKEN_SECRET) {
+    // 检查 Shotstack 配置
+    if (!SHOTSTACK_API_KEY_ID || !SHOTSTACK_API_SECRET) {
       return NextResponse.json(
-        { error: "Mux is not configured. Please add MUX_TOKEN_ID and MUX_TOKEN_SECRET to environment variables." },
+        { error: "Shotstack is not configured. Please add SHOTSTACK_API_KEY_ID and SHOTSTACK_API_SECRET to environment variables." },
         { status: 500 }
       );
     }
@@ -274,9 +206,8 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get("content-type") || "";
     console.log("[video-edit] Content-Type:", contentType);
 
-    let mediaUrl: string;
+    let videoUrl: string;
     let prompt: string;
-    let action = "trim";
 
     if (contentType.includes("multipart/form-data")) {
       // 文件上传模式
@@ -285,104 +216,17 @@ export async function POST(request: NextRequest) {
       const urlFromForm = formData.get("mediaUrl") as string | null;
       prompt = (formData.get("prompt") as string) || "";
 
-      // 如果有文件，先上传到 B2，然后上传到 Mux
       if (file && !urlFromForm) {
-        console.log("[video-edit] Processing file upload...");
-
-        // 调用 B2 上传 API
-        const { uploadToR2, generateUserFilePath, getFromB2 } = await import("@/lib/cloudflare/r2");
+        // 需要先上传文件到 B2 获取 URL
+        const { uploadToR2, generateUserFilePath } = await import("@/lib/cloudflare/r2");
         const buffer = Buffer.from(await file.arrayBuffer());
         const key = generateUserFilePath(session.user.id, file.name, "video");
 
-        try {
-          await uploadToR2(buffer, key, file.type || "video/mp4");
-          console.log("[video-edit] File uploaded to B2, key:", key);
-
-          // 获取文件内容
-          const videoBuffer = await getFromB2(key);
-          console.log("[video-edit] File retrieved from B2, size:", videoBuffer.length);
-
-          // 上传到 Mux
-          const client = getMuxClient();
-          const auth = Buffer.from(`${client.tokenId}:${client.tokenSecret}`).toString("base64");
-
-          // 创建 Mux 上传
-          const createUploadRes = await axios.post(
-            `${client.baseUrl}/video/v1/uploads`,
-            {
-              cors_origin: process.env.NEXT_PUBLIC_SITE_URL || "*",
-              new_asset_settings: {
-                playback_policy: ["public"],
-                mp4_support: "capped-1080p"
-              }
-            },
-            {
-              headers: {
-                Authorization: `Basic ${auth}`,
-                "Content-Type": "application/json"
-              }
-            }
-          );
-
-          const uploadUrl = createUploadRes.data.data.url;
-          console.log("[video-edit] Mux upload URL created");
-
-          // 直接上传 buffer 到 Mux
-          await axios.put(uploadUrl, videoBuffer, {
-            headers: {
-              "Content-Type": "video/mp4"
-            },
-            maxBodyLength: Infinity,
-            maxContentLength: Infinity,
-          });
-          console.log("[video-edit] Video uploaded to Mux");
-
-          // 等待 Mux 处理完成
-          const uploadId = createUploadRes.data.data.id;
-          let assetId = null;
-
-          for (let i = 0; i < 30; i++) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const statusRes = await axios.get(
-              `${client.baseUrl}/video/v1/uploads/${uploadId}`,
-              { headers: { Authorization: `Basic ${auth}` } }
-            );
-
-            if (statusRes.data.data.status === "asset_created") {
-              assetId = statusRes.data.data.asset_id;
-              break;
-            }
-          }
-
-          if (!assetId) {
-            throw new Error("Mux processing timeout");
-          }
-
-          // 获取播放 URL
-          const assetRes = await axios.get(
-            `${client.baseUrl}/video/v1/assets/${assetId}`,
-            { headers: { Authorization: `Basic ${auth}` } }
-          );
-
-          const playbackId = assetRes.data.data.playback_ids?.[0]?.id;
-          const streamUrl = playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null;
-          const thumbnailUrl = playbackId ? `https://image.mux.com/${playbackId}/thumbnail.jpg` : null;
-
-          console.log("[video-edit] Complete! Stream URL:", streamUrl);
-
-          return NextResponse.json({
-            success: true,
-            outputUrl: streamUrl,
-            thumbnailUrl,
-            assetId,
-            message: "视频已上传并处理完成"
-          });
-        } catch (uploadError) {
-          console.error("[video-edit] Upload error:", uploadError);
-          throw new Error(`Upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
-        }
+        await uploadToR2(buffer, key, file.type || "video/mp4");
+        videoUrl = `${process.env.B2_PUBLIC_URL}/${key}`;
+        console.log("[video-edit] File uploaded to B2:", videoUrl);
       } else if (urlFromForm) {
-        mediaUrl = urlFromForm;
+        videoUrl = urlFromForm;
       } else {
         return NextResponse.json(
           { error: "Missing file or mediaUrl" },
@@ -395,13 +239,11 @@ export async function POST(request: NextRequest) {
         console.error("[video-edit] JSON parse error:", err);
         throw new Error("Invalid JSON in request body");
       });
-      console.log("[video-edit] Body parsed:", JSON.stringify(body).substring(0, 200));
 
-      mediaUrl = body.mediaUrl;
+      videoUrl = body.mediaUrl;
       prompt = body.prompt || "";
-      action = body.action || "trim";
 
-      if (!mediaUrl) {
+      if (!videoUrl) {
         return NextResponse.json(
           { error: "Missing mediaUrl" },
           { status: 400 }
@@ -409,150 +251,39 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log("Video edit request:", { mediaUrl: mediaUrl?.substring(0, 50), prompt, action });
-
-    // 记录操作开始
-    try {
-      await db.insert(operationLogs).values({
-        userId: session.user.id,
-        action: "video.edit.start",
-        resourceType: "video",
-        metadata: { mediaUrl, prompt, action },
-      });
-    } catch (e) {
-      console.warn("Failed to log:", e);
-    }
-
-    const client = getMuxClient();
-
-    // 上传视频到 Mux
-    console.log("Uploading to Mux...", { mediaUrl: mediaUrl?.substring(0, 50) });
-    let uploadResult;
-    try {
-      uploadResult = await uploadToMux(mediaUrl, client);
-      console.log("Mux upload result:", JSON.stringify(uploadResult).substring(0, 200));
-    } catch (muxError) {
-      console.error("Mux upload error:", muxError);
-      throw new Error(`Mux upload failed: ${muxError instanceof Error ? muxError.message : 'Unknown error'}`);
-    }
+    console.log("[video-edit] Processing:", { videoUrl: videoUrl?.substring(0, 50), prompt });
 
     // 解析剪辑指令
     let instruction = { action: "upload" };
-    let result: any = {
-      success: true,
-      outputUrl: uploadResult.streamUrl,
-      thumbnailUrl: uploadResult.thumbnailUrl,
-      assetId: uploadResult.assetId,
-      message: "视频已上传到 Mux CDN"
-    };
-
-    if (prompt && action !== "upload") {
-      // 获取视频时长（如果提供了）
-      const duration = 60;
-
-      // 解析 LLM 指令
+    if (prompt) {
       const llmApiKey = process.env.DEEPSEEK_API_KEY;
       if (llmApiKey) {
-        instruction = await parseEditInstructionWithLLM(
-          prompt,
-          duration,
-          "deepseek",
-          llmApiKey
-        );
-      }
-
-      // 执行剪辑
-      if (instruction.action === "trim" || instruction.action === "cut") {
-        const clipResult = await createMuxClip(client, uploadResult.assetId, instruction);
-        result = { ...result, ...clipResult };
+        instruction = await parseEditInstruction(prompt, 60, llmApiKey);
+        console.log("[video-edit] Parsed instruction:", instruction);
       }
     }
 
-    // 记录操作完成
-    try {
-      await db.insert(operationLogs).values({
-        userId: session.user.id,
-        action: "video.edit.complete",
-        resourceType: "video",
-        metadata: {
-          assetId: uploadResult.assetId,
-          instruction,
-          result: result.message
-        },
-      });
-    } catch (e) {
-      console.warn("Failed to log:", e);
+    // 执行剪辑
+    let outputUrl: string;
+    if (instruction.action === "trim" || instruction.action === "speed" || instruction.action === "cut") {
+      outputUrl = await editVideoWithShotstack(videoUrl, instruction);
+      console.log("[video-edit] Edit complete, URL:", outputUrl);
+    } else {
+      // 没有剪辑指令，返回原视频 URL
+      outputUrl = videoUrl;
+      console.log("[video-edit] No edit needed, returning original URL");
     }
-
-    return NextResponse.json(result);
-  } catch (error: any) {
-    console.error("Video edit error:", error);
-
-    try {
-      const session = await auth.api.getSession({ headers: request.headers });
-      if (session?.user) {
-        await db.insert(operationLogs).values({
-          userId: session.user.id,
-          action: "video.edit.error",
-          resourceType: "video",
-          metadata: { error: error.message },
-        });
-      }
-    } catch (e) {
-      console.warn("Failed to log error:", e);
-    }
-
-    return NextResponse.json(
-      { error: error.message || "Video edit failed" },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * 获取视频编辑状态
- */
-export async function GET(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({ headers: request.headers });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const assetId = searchParams.get("assetId");
-
-    if (!assetId) {
-      return NextResponse.json(
-        { error: "Missing assetId" },
-        { status: 400 }
-      );
-    }
-
-    const client = getMuxClient();
-    const authBasic = Buffer.from(`${client.tokenId}:${client.tokenSecret}`).toString("base64");
-
-    const assetRes = await axios.get(
-      `${client.baseUrl}/video/v1/assets/${assetId}`,
-      {
-        headers: { Authorization: `Basic ${authBasic}` }
-      }
-    );
-
-    const asset = assetRes.data.data;
-    const playbackId = asset.playback_ids?.[0]?.id;
 
     return NextResponse.json({
       success: true,
-      status: asset.status,
-      duration: asset.duration,
-      outputUrl: playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null,
+      outputUrl,
+      message: instruction.action === "none" ? "原视频" : "视频已剪辑完成"
     });
   } catch (error: any) {
-    console.error("Get video status error:", error);
+    console.error("[video-edit] Error:", error);
+
     return NextResponse.json(
-      { error: error.message || "Failed to get video status" },
+      { error: error.message || "Video edit failed" },
       { status: 500 }
     );
   }
