@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
             start: currentStart,
             end: currentEnd,
             summary: segmentWords.map((w) => w.text).join(" ").substring(0, 100),
-            tags: "auto,segment",
+            tags: ["auto", "segment"],
           });
         }
 
@@ -269,12 +269,18 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // 确保所有 segments 的 tags 都是数组
+    const safeSegments = llmSegments.map((seg: any) => ({
+      ...seg,
+      tags: Array.isArray(seg.tags) ? seg.tags : (typeof seg.tags === 'string' ? seg.tags.split(',').map((t: string) => t.trim()) : [])
+    }));
+
     return NextResponse.json({
       success: true,
       id: audioAnalysisRecord[0].id,
       language: finalTranscript.language_code || "unknown",
       transcription: transcriptionSegments,
-      segments: llmSegments,
+      segments: safeSegments,
       duration: Math.round(finalTranscript.audio_duration || 0),
     });
   } catch (error: any) {
