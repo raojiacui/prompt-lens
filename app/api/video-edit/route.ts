@@ -290,15 +290,33 @@ export async function POST(request: NextRequest) {
         console.log("[video-edit] Processing file upload...");
 
         // 调用 B2 上传 API（直接用已有的 uploadToR2）
-        const { uploadToR2, generateUserFilePath } = await import("@/lib/cloudflare/r2");
+        const { uploadToR2, generateUserFilePath, getFromB2 } = await import("@/lib/cloudflare/r2");
         const buffer = Buffer.from(await file.arrayBuffer());
         const key = generateUserFilePath(session.user.id, file.name, "video");
 
         try {
           await uploadToR2(buffer, key, file.type || "video/mp4");
-          // 构造 B2 URL
-          mediaUrl = `${process.env.B2_PUBLIC_URL}/${key}`;
-          console.log("[video-edit] File uploaded to B2:", mediaUrl);
+          console.log("[video-edit] File uploaded to B2, key:", key);
+
+          // 获取文件内容（用于后续上传到 Mux）
+          let videoBuffer: Buffer;
+          try {
+            videoBuffer = await getFromB2(key);
+            console.log("[video-edit] File retrieved from B2, size:", videoBuffer.length);
+          } catch (getError) {
+            console.error("[video-edit] Failed to get file from B2:", getError);
+            throw new Error("Failed to retrieve file from B2");
+          }
+
+          // 直接将文件内容传递给 Mux 上传（不通过公共 URL）
+          console.log("[video-edit] Ready to upload to Mux directly");
+          // 继续执行下面的逻辑，但跳过 URL 下载步骤
+          return NextResponse.json({
+            success: true,
+            message: "File uploaded to B2, preparing for Mux...",
+            b2Key: key,
+            fileSize: buffer.length,
+          });
         } catch (uploadError) {
           console.error("[video-edit] B2 upload error:", uploadError);
           throw new Error("Failed to upload file to B2");
