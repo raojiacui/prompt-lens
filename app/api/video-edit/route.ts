@@ -285,11 +285,11 @@ export async function POST(request: NextRequest) {
       const urlFromForm = formData.get("mediaUrl") as string | null;
       prompt = (formData.get("prompt") as string) || "";
 
-      // 如果有文件，先上传到 B2 获取 URL
+      // 如果有文件，先上传到 B2，然后上传到 Mux
       if (file && !urlFromForm) {
         console.log("[video-edit] Processing file upload...");
 
-        // 调用 B2 上传 API（直接用已有的 uploadToR2）
+        // 调用 B2 上传 API
         const { uploadToR2, generateUserFilePath, getFromB2 } = await import("@/lib/cloudflare/r2");
         const buffer = Buffer.from(await file.arrayBuffer());
         const key = generateUserFilePath(session.user.id, file.name, "video");
@@ -298,28 +298,88 @@ export async function POST(request: NextRequest) {
           await uploadToR2(buffer, key, file.type || "video/mp4");
           console.log("[video-edit] File uploaded to B2, key:", key);
 
-          // 获取文件内容（用于后续上传到 Mux）
-          let videoBuffer: Buffer;
-          try {
-            videoBuffer = await getFromB2(key);
-            console.log("[video-edit] File retrieved from B2, size:", videoBuffer.length);
-          } catch (getError) {
-            console.error("[video-edit] Failed to get file from B2:", getError);
-            throw new Error("Failed to retrieve file from B2");
+          // 获取文件内容
+          const videoBuffer = await getFromB2(key);
+          console.log("[video-edit] File retrieved from B2, size:", videoBuffer.length);
+
+          // 上传到 Mux
+          const client = getMuxClient();
+          const auth = Buffer.from(`${client.tokenId}:${client.tokenSecret}`).toString("base64");
+
+          // 创建 Mux 上传
+          const createUploadRes = await axios.post(
+            `${client.baseUrl}/video/v1/uploads`,
+            {
+              cors_origin: process.env.NEXT_PUBLIC_SITE_URL || "*",
+              new_asset_settings: {
+                playback_policy: ["public"],
+                mp4_support: "capped-1080p"
+              }
+            },
+            {
+              headers: {
+                Authorization: `Basic ${auth}`,
+                "Content-Type": "application/json"
+              }
+            }
+          );
+
+          const uploadUrl = createUploadRes.data.data.url;
+          console.log("[video-edit] Mux upload URL created");
+
+          // 直接上传 buffer 到 Mux
+          await axios.put(uploadUrl, videoBuffer, {
+            headers: {
+              "Content-Type": "video/mp4"
+            },
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity,
+          });
+          console.log("[video-edit] Video uploaded to Mux");
+
+          // 等待 Mux 处理完成
+          const uploadId = createUploadRes.data.data.id;
+          let assetId = null;
+
+          for (let i = 0; i < 30; i++) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const statusRes = await axios.get(
+              `${client.baseUrl}/video/v1/uploads/${uploadId}`,
+              { headers: { Authorization: `Basic ${auth}` } }
+            );
+
+            if (statusRes.data.data.status === "asset_created") {
+              assetId = statusRes.data.data.asset_id;
+              break;
+            }
           }
 
-          // 直接将文件内容传递给 Mux 上传（不通过公共 URL）
-          console.log("[video-edit] Ready to upload to Mux directly");
-          // 继续执行下面的逻辑，但跳过 URL 下载步骤
+          if (!assetId) {
+            throw new Error("Mux processing timeout");
+          }
+
+          // 获取播放 URL
+          const assetRes = await axios.get(
+            `${client.baseUrl}/video/v1/assets/${assetId}`,
+            { headers: { Authorization: `Basic ${auth}` } }
+          );
+
+          const playbackId = assetRes.data.data.playback_ids?.[0]?.id;
+          const streamUrl = playbackId ? `https://stream.mux.com/${playbackId}.m3u8` : null;
+          const thumbnailUrl = playbackId ? `https://image.mux.com/${playbackId}/thumbnail.jpg` : null;
+
+          console.log("[video-edit] Complete! Stream URL:", streamUrl);
+
           return NextResponse.json({
             success: true,
-            message: "File uploaded to B2, preparing for Mux...",
-            b2Key: key,
-            fileSize: buffer.length,
+            outputUrl: streamUrl,
+            thumbnailUrl,
+            assetId,
+            message: "视频已上传并处理完成"
           });
         } catch (uploadError) {
-          console.error("[video-edit] B2 upload error:", uploadError);
-          throw new Error("Failed to upload file to B2");
+          console.error("[video-edit] Upload error:", uploadError);
+          throw new Error(`Upload failed: ${uploadError instanceof Error ? uploadError.message : 'Unknown error'}`);
         }
       } else if (urlFromForm) {
         mediaUrl = urlFromForm;
