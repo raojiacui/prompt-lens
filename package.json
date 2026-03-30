@@ -20,6 +20,7 @@
     "@aws-sdk/lib-storage": "^3.540.0",
     "@aws-sdk/s3-request-presigner": "3.540.0",
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@mux/mux-node": "^12.8.1",
     "@neondatabase/serverless": "^0.10.0",
     "@types/three": "^0.183.1",
     "assemblyai": "^4.29.0",
