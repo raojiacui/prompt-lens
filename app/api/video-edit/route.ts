@@ -41,13 +41,33 @@ async function uploadToMux(videoUrl: string, client: any) {
         "Content-Type": "application/json"
       }
     }
-  );
+  ).catch((error) => {
+    console.error("Mux API error:", error.response?.status, error.response?.data || error.message);
+    throw new Error(`Mux API error: ${error.response?.status} - ${JSON.stringify(error.response?.data) || error.message}`);
+  });
+
+  console.log("Mux create upload response:", JSON.stringify(createUploadRes.data).substring(0, 200));
+
+  if (!createUploadRes.data?.data?.url) {
+    console.error("Mux response:", createUploadRes.data);
+    throw new Error("Mux API returned unexpected response: " + JSON.stringify(createUploadRes.data));
+  }
 
   const uploadUrl = createUploadRes.data.data.url;
   const uploadId = createUploadRes.data.data.id;
+  console.log("Mux upload URL created:", uploadUrl.substring(0, 50));
 
   // 下载原视频并上传到 Mux
-  const videoResponse = await axios.get(videoUrl, { responseType: "arraybuffer" });
+  console.log("Downloading video from:", videoUrl.substring(0, 100));
+  const videoResponse = await axios.get(videoUrl, {
+    responseType: "arraybuffer",
+    timeout: 300000 // 5分钟超时
+  }).catch((error) => {
+    console.error("Download video error:", error.response?.data || error.message);
+    throw new Error(`Failed to download video: ${error.message}`);
+  });
+
+  console.log("Video downloaded, size:", videoResponse.data.length);
   const videoBuffer = Buffer.from(videoResponse.data);
 
   await axios.put(uploadUrl, videoBuffer, {
