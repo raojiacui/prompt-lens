@@ -270,22 +270,58 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json().catch((err) => {
-      console.error("[video-edit] JSON parse error:", err);
-      throw new Error("Invalid JSON in request body");
-    });
-    console.log("[video-edit] Body parsed:", JSON.stringify(body).substring(0, 200));
+    // 检查 content-type
+    const contentType = request.headers.get("content-type") || "";
+    console.log("[video-edit] Content-Type:", contentType);
 
-    const { mediaUrl, prompt, action = "trim" } = body;
+    let mediaUrl: string;
+    let prompt: string;
+    let action = "trim";
 
-    if (!mediaUrl) {
-      return NextResponse.json(
-        { error: "Missing mediaUrl" },
-        { status: 400 }
-      );
+    if (contentType.includes("multipart/form-data")) {
+      // 文件上传模式 - 先获取媒体 URL
+      const formData = await request.formData();
+      const file = formData.get("file") as File | null;
+      prompt = formData.get("prompt") as string || "";
+      const urlFromForm = formData.get("mediaUrl") as string;
+
+      if (file && !urlFromForm) {
+        // 需要先上传文件获取 URL
+        // 这里暂时不支持直接上传文件，需要先调用 /api/upload
+        return NextResponse.json(
+          { error: "Please upload the file first and pass the mediaUrl, or pass mediaUrl directly" },
+          { status: 400 }
+        );
+      }
+
+      mediaUrl = urlFromForm;
+      if (!mediaUrl) {
+        return NextResponse.json(
+          { error: "Missing mediaUrl" },
+          { status: 400 }
+        );
+      }
+    } else {
+      // JSON 模式
+      const body = await request.json().catch((err) => {
+        console.error("[video-edit] JSON parse error:", err);
+        throw new Error("Invalid JSON in request body");
+      });
+      console.log("[video-edit] Body parsed:", JSON.stringify(body).substring(0, 200));
+
+      mediaUrl = body.mediaUrl;
+      prompt = body.prompt || "";
+      action = body.action || "trim";
+
+      if (!mediaUrl) {
+        return NextResponse.json(
+          { error: "Missing mediaUrl" },
+          { status: 400 }
+        );
+      }
     }
 
-    console.log("Video edit request:", { mediaUrl, prompt, action });
+    console.log("Video edit request:", { mediaUrl: mediaUrl?.substring(0, 50), prompt, action });
 
     // 记录操作开始
     try {
@@ -324,7 +360,7 @@ export async function POST(request: NextRequest) {
 
     if (prompt && action !== "upload") {
       // 获取视频时长（如果提供了）
-      const duration = body.duration || 60;
+      const duration = 60;
 
       // 解析 LLM 指令
       const llmApiKey = process.env.DEEPSEEK_API_KEY;
@@ -332,7 +368,7 @@ export async function POST(request: NextRequest) {
         instruction = await parseEditInstructionWithLLM(
           prompt,
           duration,
-          body.provider || "deepseek",
+          "deepseek",
           llmApiKey
         );
       }
