@@ -270,7 +270,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    const body = await request.json().catch((err) => {
+      console.error("[video-edit] JSON parse error:", err);
+      throw new Error("Invalid JSON in request body");
+    });
+    console.log("[video-edit] Body parsed:", JSON.stringify(body).substring(0, 200));
+
     const { mediaUrl, prompt, action = "trim" } = body;
 
     if (!mediaUrl) {
@@ -297,9 +302,15 @@ export async function POST(request: NextRequest) {
     const client = getMuxClient();
 
     // 上传视频到 Mux
-    console.log("Uploading to Mux...");
-    const uploadResult = await uploadToMux(mediaUrl, client);
-    console.log("Mux upload result:", uploadResult);
+    console.log("Uploading to Mux...", { mediaUrl: mediaUrl?.substring(0, 50) });
+    let uploadResult;
+    try {
+      uploadResult = await uploadToMux(mediaUrl, client);
+      console.log("Mux upload result:", JSON.stringify(uploadResult).substring(0, 200));
+    } catch (muxError) {
+      console.error("Mux upload error:", muxError);
+      throw new Error(`Mux upload failed: ${muxError instanceof Error ? muxError.message : 'Unknown error'}`);
+    }
 
     // 解析剪辑指令
     let instruction = { action: "upload" };
