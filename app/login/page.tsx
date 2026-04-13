@@ -167,7 +167,7 @@ export default function LoginPage() {
         <Card className="bg-[#F5F3EC]/90 backdrop-blur-sm border border-[#D8D5CC] shadow-xl">
           <CardHeader className="text-center pb-4">
             <CardTitle className="text-2xl text-[#141413]" style={{ fontFamily: 'var(--font-display)' }}>
-              欢迎回来
+              世界灿烂盛大，欢迎回家
             </CardTitle>
             <CardDescription className="text-[#6B6860]">
               登录以保存您的分析历史
