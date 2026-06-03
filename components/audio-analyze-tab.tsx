@@ -335,16 +335,14 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
             {/* 设置选项 */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-[#141413] block mb-2">Whisper 模型</label>
+                <label className="text-sm font-medium text-[#141413] block mb-2">识别引擎</label>
                 <select
                   value={whisperModel}
                   onChange={(e) => setWhisperModel(e.target.value)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="tiny">tiny (最快)</option>
-                  <option value="base">base</option>
-                  <option value="small">small (推荐)</option>
-                  <option value="medium">medium</option>
+                  <option value="assemblyai">AssemblyAI (推荐)</option>
+                  <option value="universal">Universal</option>
                 </select>
               </div>
               <div>
