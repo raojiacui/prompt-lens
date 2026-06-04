@@ -10,10 +10,12 @@ import { HistoryList } from "@/components/history-list";
 import { ApiKeySettings } from "@/components/api-key-settings";
 import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
 import { VideoEditTab } from "@/components/video-edit-tab";
+import { AgentQATab } from "@/components/agent-qa-tab";
+import { VideoGenerateTab } from "@/components/video-generate-tab";
 import { extractVideoFrames, getImageBase64 } from "@/lib/utils/frame-extractor";
 import { cn } from "@/lib/utils";
 
-type Tab = "analyze" | "audio" | "edit" | "history" | "stats" | "settings";
+type Tab = "analyze" | "audio" | "edit" | "agent-qa" | "video-gen" | "history" | "stats" | "settings";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -31,6 +33,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [sharedPrompt, setSharedPrompt] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,6 +186,8 @@ export default function DashboardPage() {
               { key: "analyze", label: "画面", shortLabel: "分析", icon: "⚡" },
               { key: "audio", label: "音频", shortLabel: "分析", icon: "🎵" },
               { key: "edit", label: "视频", shortLabel: "剪辑", icon: "✂️" },
+              { key: "agent-qa", label: "助手", shortLabel: "助手", icon: "🤖" },
+              { key: "video-gen", label: "生成", shortLabel: "视频", icon: "🎬" },
               { key: "history", label: "历史", shortLabel: "记录", icon: "📋" },
               { key: "stats", label: "统计", icon: "📊" },
               { key: "settings", label: "设置", icon: "⚙️" }
@@ -338,9 +343,14 @@ export default function DashboardPage() {
                 分析结果
               </CardTitle>
               {result && (
-                <Button variant="outline" size="sm" onClick={copyToClipboard} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg text-xs md:text-sm">
-                  复制
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={copyToClipboard} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg text-xs md:text-sm">
+                    复制
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => { setSharedPrompt(result); setActiveTab("video-gen"); }} className="border-[#D97757]/50 text-[#D97757] hover:bg-[#D97757]/10 rounded-lg text-xs md:text-sm">
+                    生成视频
+                  </Button>
+                </div>
               )}
             </CardHeader>
             <CardContent>
@@ -369,6 +379,20 @@ export default function DashboardPage() {
         {activeTab === "edit" && (
           <div className="animate-fade-in">
             <VideoEditTab />
+          </div>
+        )}
+
+        {/* AI Agent 问答页面 */}
+        {activeTab === "agent-qa" && (
+          <div className="animate-fade-in">
+            <AgentQATab />
+          </div>
+        )}
+
+        {/* AI 视频生成页面 */}
+        {activeTab === "video-gen" && (
+          <div className="animate-fade-in">
+            <VideoGenerateTab sharedPrompt={sharedPrompt} onClearPrompt={() => setSharedPrompt("")} />
           </div>
         )}
 
