@@ -198,6 +198,15 @@
   }
 }
 
+@keyframes pixelPetIdle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.4s var(--ease-default) forwards;
 }
@@ -208,6 +217,15 @@
 
 .animate-scale-in {
   animation: scaleIn 0.3s var(--ease-default) forwards;
+}
+
+.pixel-pet-idle {
+  animation: pixelPetIdle 2.8s ease-in-out infinite;
+}
+
+.pixel-desk-pet {
+  image-rendering: pixelated;
+  transform: translateZ(0);
 }
 
 /* 交错动画 - 用于列表项 */
