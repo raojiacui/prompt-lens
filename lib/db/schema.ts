@@ -263,6 +263,43 @@ export const videoClip = pgTable(
   }
 );
 
+// ============ 新增：视频生成记录 ============
+export const videoGeneration = pgTable(
+  "video_generation",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    taskId: text("task_id").notNull().unique(),
+    prompt: text("prompt").notNull(),
+    negativePrompt: text("negative_prompt"),
+    duration: integer("duration"),
+    resolution: varchar("resolution", { length: 20 }),
+    model: varchar("model", { length: 100 }),
+    status: varchar("status", { length: 20 }).default("pending").notNull(),
+    progress: varchar("progress", { length: 50 }),
+    videoUrl: text("video_url"),
+    error: text("error"),
+    rawResponse: jsonb("raw_response").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => {
+    return {
+      userIdIdx: index("idx_video_generation_user_id").on(table.userId),
+      taskIdIdx: index("idx_video_generation_task_id").on(table.taskId),
+      statusIdx: index("idx_video_generation_status").on(table.status),
+      createdAtIdx: index("idx_video_generation_created_at").on(table.createdAt),
+    };
+  }
+);
+
 // ============ 类型导出 ============
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
@@ -276,3 +313,5 @@ export type AudioAnalysis = typeof audioAnalysis.$inferSelect;
 export type NewAudioAnalysis = typeof audioAnalysis.$inferInsert;
 export type VideoClip = typeof videoClip.$inferSelect;
 export type NewVideoClip = typeof videoClip.$inferInsert;
+export type VideoGeneration = typeof videoGeneration.$inferSelect;
+export type NewVideoGeneration = typeof videoGeneration.$inferInsert;

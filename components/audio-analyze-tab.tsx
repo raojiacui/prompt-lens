@@ -22,7 +22,7 @@ interface VideoSegment {
   tags: string[];
 }
 
-type Tab = "analyze" | "history" | "settings" | "audio" | "edit" | "stats";
+type Tab = "analyze" | "history" | "settings" | "audio" | "edit" | "video-gen" | "stats";
 
 interface AudioAnalyzeTabProps {
   activeTab: Tab;

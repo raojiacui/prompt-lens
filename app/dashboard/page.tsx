@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useSession, signOut } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,10 +10,12 @@ import { HistoryList } from "@/components/history-list";
 import { ApiKeySettings } from "@/components/api-key-settings";
 import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
 import { VideoEditTab } from "@/components/video-edit-tab";
+import { VideoGenerateTab } from "@/components/video-generate-tab";
+import { FloatingChat } from "@/components/floating-chat";
 import { extractVideoFrames, getImageBase64 } from "@/lib/utils/frame-extractor";
 import { cn } from "@/lib/utils";
 
-type Tab = "analyze" | "audio" | "edit" | "history" | "stats" | "settings";
+type Tab = "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
@@ -28,9 +30,6 @@ export default function DashboardPage() {
   const [progress, setProgress] = useState("");
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [stats, setStats] = useState<any>(null);
-  const [statsLoading, setStatsLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -122,26 +121,6 @@ export default function DashboardPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  useEffect(() => {
-    if (session?.user) {
-      const userRole = (session.user as any).role;
-      setIsAdmin(userRole === "admin");
-
-      if (userRole === "admin") {
-        setStatsLoading(true);
-        fetch("/api/stats")
-          .then(res => res.json())
-          .then(data => {
-            setStats(data);
-            setStatsLoading(false);
-          })
-          .catch(() => {
-            setStatsLoading(false);
-          });
-      }
-    }
-  }, [session]);
-
   return (
     <div className="min-h-screen bg-anthropic">
       {/* 顶部导航 */}
@@ -180,26 +159,24 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-0 md:mx-auto px-2 md:px-6">
           <nav className="flex gap-1 overflow-x-auto pb-px md:pb-0 -mx-2 px-2 md:mx-0 md:px-0">
             {[
-              { key: "analyze", label: "画面", shortLabel: "分析", icon: "⚡" },
-              { key: "audio", label: "音频", shortLabel: "分析", icon: "🎵" },
-              { key: "edit", label: "视频", shortLabel: "剪辑", icon: "✂️" },
-              { key: "history", label: "历史", shortLabel: "记录", icon: "📋" },
-              { key: "stats", label: "统计", icon: "📊" },
-              { key: "settings", label: "设置", icon: "⚙️" }
+              { key: "analyze", label: "视频分析" },
+              { key: "audio", label: "音频分析" },
+              { key: "edit", label: "视频剪辑" },
+              { key: "video-gen", label: "视频生成" },
+              { key: "history", label: "历史记录" },
+              { key: "settings", label: "设置" }
             ].map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as Tab)}
                 className={cn(
-                  "px-3 md:px-5 py-2 md:py-3 text-xs md:text-sm font-medium rounded-t-lg transition-all duration-200 flex items-center gap-1 md:gap-2 whitespace-nowrap min-h-[44px]",
+                  "px-3 md:px-5 py-2 md:py-3 text-xs md:text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap min-h-[44px]",
                   activeTab === tab.key
                     ? "bg-[#F5F3EC] text-[#D97757] border-t-2 border-[#D97757]"
                     : "text-[#6B6860] hover:text-[#141413] hover:bg-[#F5F3EC]/50"
                 )}
               >
-                <span className="text-sm md:text-base">{tab.icon}</span>
-                <span className="md:hidden">{tab.label}</span>
-                <span className="hidden md:inline">{tab.shortLabel}</span>
+                {tab.label}
               </button>
             ))}
           </nav>
@@ -372,6 +349,13 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {/* 视频生成页面 */}
+        {activeTab === "video-gen" && (
+          <div className="animate-fade-in">
+            <VideoGenerateTab />
+          </div>
+        )}
+
         {/* 历史记录页面 */}
         {activeTab === "history" && (
           <div className="animate-fade-in">
@@ -393,99 +377,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* 统计页面 - 仅管理员可见 */}
-        {activeTab === "stats" && (
-          <div className="animate-fade-in">
-            {!isAdmin ? (
-              <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
-                <CardContent className="py-10 text-center text-[#6B6860]">
-                  只有管理员可以查看统计信息
-                </CardContent>
-              </Card>
-            ) : statsLoading ? (
-              <div className="flex justify-center py-10">
-                <Spinner />
-              </div>
-            ) : stats ? (
-              <div className="space-y-6">
-                {/* 概览统计 */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {[
-                    { label: "总用户", value: stats.overview?.totalUsers || 0, change: stats.overview?.newUsers || 0 },
-                    { label: "画面分析", value: stats.overview?.totalAnalyses || 0, change: stats.overview?.newAnalyses || 0 },
-                    { label: "音频分析", value: stats.overview?.totalAudioAnalyses || 0 },
-                    { label: "视频剪辑", value: stats.overview?.totalVideoClips || 0 },
-                    { label: "活跃天数", value: stats.dailyTrend?.length || 0 },
-                    { label: "统计周期", value: stats.period || 30, suffix: "天" }
-                  ].map((item, i) => (
-                    <Card key={i} className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
-                      <CardContent className="pt-4">
-                        <div className="text-2xl font-medium text-[#D97757]" style={{ fontFamily: 'var(--font-display)' }}>{item.value}{item.suffix}</div>
-                        <div className="text-sm text-[#6B6860]">{item.label}</div>
-                        {item.change !== undefined && (
-                          <div className="text-xs text-[#5B8C5A]">+{item.change} 新增</div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-
-                {/* 最近7天趋势 */}
-                <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-[#141413]" style={{ fontFamily: 'var(--font-display)' }}>最近7天分析趋势</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-end gap-2 h-32">
-                      {stats.dailyTrend?.map((day: any, i: number) => (
-                        <div key={i} className="flex-1 flex flex-col items-center">
-                          <div
-                            className="w-full bg-[#D97757] rounded-t transition-all hover:bg-[#C96848]"
-                            style={{ height: `${Math.min(100, (day.count / Math.max(1, stats.dailyTrend?.reduce((a: number, b: any) => Math.max(a, b.count), 0))) * 100)}%` }}
-                          />
-                          <div className="text-xs text-[#6B6860] mt-1">{day.date?.slice(5) || ""}</div>
-                          <div className="text-xs font-medium text-[#141413]">{day.count || 0}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* 最近注册用户 */}
-                <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
-                  <CardHeader>
-                    <CardTitle className="text-[#141413]" style={{ fontFamily: 'var(--font-display)' }}>最近注册用户</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {stats.recentUsers?.map((u: any) => (
-                        <div key={u.id} className="flex items-center justify-between py-2 border-b border-[#D8D5CC]/50 last:border-0">
-                          <div>
-                            <div className="font-medium text-[#141413]">{u.name || "未设置名字"}</div>
-                            <div className="text-sm text-[#6B6860]">{u.email}</div>
-                          </div>
-                          <div className="text-sm text-[#6B6860]">
-                            {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : ""}
-                          </div>
-                        </div>
-                      ))}
-                      {(!stats.recentUsers || stats.recentUsers.length === 0) && (
-                        <div className="text-center text-[#6B6860] py-4">暂无用户</div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : (
-              <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
-                <CardContent className="py-10 text-center text-[#6B6860]">
-                  加载统计数据失败
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
         {/* 设置页面 */}
         {activeTab === "settings" && (
           <div className="animate-fade-in">
@@ -493,6 +384,9 @@ export default function DashboardPage() {
           </div>
         )}
       </main>
+
+      {/* 悬浮聊天助手 */}
+      <FloatingChat />
     </div>
   );
 }

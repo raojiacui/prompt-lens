@@ -15,6 +15,13 @@
       "when": 1773323880032,
       "tag": "0001_elite_aaron_stack",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780913220000,
+      "tag": "0002_video_generation",
+      "breakpoints": true
     }
   ]
 }
