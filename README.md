@@ -76,7 +76,7 @@ AI 视频提示词分析工具 - 网页版
 - 🤖 **多 API 支持**: 智谱AI、Google Gemini、OpenRouter
 - 📝 **历史记录**: 保存和分析您的提示词历史
 - 🔐 **用户系统**: Google 登录，数据隔离
-- 👨‍💼 **管理员后台**: 用户管理、操作日志审计
+- 👨‍💼 **智能对话助手**：可聊天
 - 📊 **日志系统**: 完整操作记录追踪
 
 ## 技术栈
@@ -87,7 +87,7 @@ AI 视频提示词分析工具 - 网页版
 - **数据库**: Supabase PostgreSQL, Drizzle ORM
 - **认证**: better-auth
 - **存储**: Backblaze B2
-- **视频处理**: FFmpeg
+- **视频处理**: 调用shotstack api（没买服务器部署ffmpeg）
 - **测试**: Vitest, Playwright
 
 ## 快速开始
