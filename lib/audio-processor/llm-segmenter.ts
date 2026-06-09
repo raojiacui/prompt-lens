@@ -1,7 +1,7 @@
 import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 import { getDefaultWhisperModel, WhisperModelSize } from "./index";
 import path from "path";
@@ -143,10 +143,22 @@ async function getUserApiKey(userId: string, provider: LLMProvider): Promise<str
   }
 
   const result = await db.query.userApiKeys.findFirst({
-    where: eq(userApiKeys.userId, userId),
+    where: and(
+      eq(userApiKeys.userId, userId),
+      eq(userApiKeys.provider, provider)
+    ),
   });
 
   if (!result || !result.isActive) {
+    if (provider === "openrouter") {
+      return process.env.OPENROUTER_API_KEY || null;
+    }
+    if (provider === "zhipu") {
+      return process.env.ZHIPU_API_KEY || null;
+    }
+    if (provider === "gemini") {
+      return process.env.GEMINI_API_KEY || null;
+    }
     return null;
   }
 
@@ -159,6 +171,15 @@ async function getUserApiKey(userId: string, provider: LLMProvider): Promise<str
     return result.apiKey;
   } catch (error) {
     console.error(`[LLM] Failed to decrypt API key for ${provider}:`, error);
+    if (provider === "openrouter") {
+      return process.env.OPENROUTER_API_KEY || null;
+    }
+    if (provider === "zhipu") {
+      return process.env.ZHIPU_API_KEY || null;
+    }
+    if (provider === "gemini") {
+      return process.env.GEMINI_API_KEY || null;
+    }
     return null;
   }
 }
