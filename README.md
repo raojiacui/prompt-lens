@@ -111,7 +111,7 @@ cp .env.example .env
 - `BETTER_AUTH_SECRET` - better-auth 密钥
 - `NEXT_PUBLIC_GOOGLE_CLIENT_ID` - Google OAuth Client ID
 - `GOOGLE_CLIENT_SECRET` - Google OAuth Client Secret
-- `R2_*` - Cloudflare R2 存储配置
+- `b2_*` - backblaze b2 存储配置
 
 ### 3. 数据库设置
 
@@ -143,7 +143,7 @@ pnpm dev
 
 ### 分析视频/图片
 
-1. 在首页点击上传或拖拽文件（建议不要上传一个几分钟的视频，可以将视频切片成大概6-10秒的镜头来分析，这样抽8帧进行分析的话，提示词就会非常详细，如果你直接上传一个几分钟的视频，还是抽8帧进行分析，这样生成的提示词就会略过很多内容，你再拿起生成视频就不能达到原效果）
+1. 在首页点击上传或拖拽文件（建议不要上传a for several minutes视频，可以将视频切片成大概6-10秒的镜头来分析，这样抽8帧进行分析的话，提示词就会非常详细，如果你直接上传a for several minutes视频，还是抽8帧进行分析，这样生成的提示词就会略过很多内容，你再拿去生成视频就不能达到原效果）
 2. 点击「开始分析」
 3. 等待 AI 分析完成（大概30秒）
 4. 复制生成的提示词
