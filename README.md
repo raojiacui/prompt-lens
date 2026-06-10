@@ -14,6 +14,9 @@ AI 视频提示词分析工具 - 网页版
 
 ## 功能预览
 
+### 视频演示
+<video src="demo.mp4" autoplay loop muted playsinline style="border-radius:12px; max-width:100%; box-shadow:0 4px 20px rgba(0,0,0,0.15);"></video>
+
 ### 画面分析
 ![画面分析](./public/feature-video-analysis.png)
 
