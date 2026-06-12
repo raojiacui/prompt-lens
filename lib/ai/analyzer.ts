@@ -35,7 +35,7 @@ const API_CONFIGS = {
   },
   openrouter: {
     url: "https://openrouter.ai/api/v1/chat/completions",
-    model: "anthropic/claude-3-haiku",  // 使用支持vision的稳定模型
+    model: "google/gemini-2.5-pro",
   },
 };
 
