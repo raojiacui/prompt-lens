@@ -13,6 +13,7 @@ import { VideoEditTab } from "@/components/video-edit-tab";
 import { VideoGenerateTab } from "@/components/video-generate-tab";
 import { FloatingChat } from "@/components/floating-chat";
 import { extractVideoFrames, getImageBase64 } from "@/lib/utils/frame-extractor";
+import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { cn } from "@/lib/utils";
 
 type Tab = "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
@@ -76,14 +77,9 @@ export default function DashboardPage() {
       setProgress("正在上传文件...");
 
       // 上传到 Vercel Blob（原生支持大文件）
-      const formData = new FormData();
-      formData.append("file", selectedFile);
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      if (!uploadRes.ok) {
-        const errText = await uploadRes.text();
-        throw new Error(`Upload failed (${uploadRes.status}): ${errText}`);
-      }
-      const uploadData = await uploadRes.json();
+      const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
+        setProgress("Uploading file... " + Math.round(percentage) + "%");
+      });
 
       setProgress("AI 正在分析中...");
 

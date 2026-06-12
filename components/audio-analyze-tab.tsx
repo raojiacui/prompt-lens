@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 
 interface TranscriptionSegment {
   start: number;
@@ -84,30 +85,9 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
       setProgress("正在上传文件...");
 
       try {
-        const formData = new FormData();
-        formData.append("file", selectedFile);
-
-        let uploadRes;
-        try {
-          uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-        } catch (fetchError: any) {
-          console.error("Upload fetch error:", fetchError);
-          throw new Error(`上传请求失败: ${fetchError.message}\n请检查 Next.js 服务器是否在运行`);
-        }
-
-        if (!uploadRes.ok) {
-          const errText = await uploadRes.text();
-          console.error("Upload failed:", uploadRes.status, errText);
-          throw new Error(`上传失败 (${uploadRes.status}): ${errText}`);
-        }
-
-        let uploadData;
-        try {
-          uploadData = await uploadRes.json();
-        } catch (e) {
-          console.error("Failed to parse upload response:", uploadRes);
-          throw new Error(`响应解析失败: ${uploadRes.status}`);
-        }
+        const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
+          setProgress("Uploading file... " + Math.round(percentage) + "%");
+        });
 
         console.log("Upload response:", uploadData);
         url = uploadData.url;
