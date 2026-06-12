@@ -3,6 +3,10 @@ import {
   PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
+  CreateMultipartUploadCommand,
+  UploadPartCommand,
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { readFile, unlink } from "fs/promises";
@@ -132,6 +136,32 @@ export async function getSignedUrlFromB2(key: string, expiresIn: number = 3600):
 }
 
 export const getSignedUrlFromR2 = getSignedUrlFromB2;
+
+/**
+ * 生成预签名上传 URL（用于大文件直传）
+ * @param key B2 中的文件 key
+ * @param contentType 文件的 MIME 类型
+ * @param expiresIn 过期时间（秒），默认 3600（1小时）
+ * @returns 预签名上传 URL
+ */
+export async function getPresignedUploadUrl(
+  key: string,
+  contentType: string,
+  expiresIn: number = 3600
+): Promise<string> {
+  try {
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      ContentType: contentType,
+    });
+    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
+    return signedUrl;
+  } catch (error) {
+    console.error("B2 presigned upload URL error:", error);
+    throw new Error("Failed to generate presigned upload URL");
+  }
+}
 
 /**
  * 生成用户文件路径

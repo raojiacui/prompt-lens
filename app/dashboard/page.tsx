@@ -75,7 +75,7 @@ export default function DashboardPage() {
 
       setProgress("正在上传文件...");
 
-      // 上传文件到 B2（用于存储）
+      // 上传到 Vercel Blob（原生支持大文件）
       const formData = new FormData();
       formData.append("file", selectedFile);
       const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
@@ -87,7 +87,7 @@ export default function DashboardPage() {
 
       setProgress("AI 正在分析中...");
 
-      // 发送帧给后端分析（而不是发送视频 URL）
+      // 发送帧给后端分析
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

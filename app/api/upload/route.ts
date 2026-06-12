@@ -1,22 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, operationLogs } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import {
-  uploadToR2,
-  generateUserFilePath,
-  isAllowedFileType,
-  isFileSizeValid,
-  getSignedUrlFromR2,
-} from "@/lib/cloudflare/r2";
+import { put } from "@vercel/blob";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
-import { validateFile } from "@/lib/utils/file-validation";
+import { isFileSizeValid } from "@/lib/cloudflare/r2";
+import { randomUUID } from "crypto";
 
 // 允许的文件类型和大小限制
 const ALLOWED_VIDEO_TYPES = ["mp4", "mov", "avi", "mkv", "webm"];
 const ALLOWED_IMAGE_TYPES = ["jpg", "jpeg", "png", "webp"];
 const MAX_VIDEO_SIZE_MB = 200;
 const MAX_IMAGE_SIZE_MB = 20;
+
+// 生成用户文件路径
+function generateUserFilePath(
+  userId: string,
+  filename: string,
+  type: "video" | "image"
+): string {
+  const ext = filename.split(".").pop();
+  const uniqueName = `${randomUUID()}.${ext}`;
+  return `users/${userId}/${type}/${uniqueName}`;
+}
 
 export async function POST(request: NextRequest) {
   console.log("[upload] Request received");
@@ -82,76 +87,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 读取文件内容用于验证
-    console.log("[upload] Reading file buffer...");
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    console.log("[upload] Buffer size:", buffer.length);
-
-    // 临时禁用 Magic Number 验证（如果遇到问题可以重新启用）
-    // 验证文件 Magic Number（防止扩展名伪造）
-    // const validation = validateFile(file.name, buffer);
-    // console.log("[upload] Magic number validation:", validation);
-    // if (!validation.valid) {
-    //   console.log("[upload] Magic number failed, returning 400");
-    //   return NextResponse.json(
-    //     { error: validation.error },
-    //     { status: 400 }
-    //   );
-    // }
-
-    // 生成 B2 存储路径（强制使用 B2，不再回退本地存储）
+    // 生成存储路径
     const mediaType = isVideo ? "video" : "image";
-    const contentType = file.type || (isVideo ? "video/mp4" : "image/jpeg");
-
-    // 强制使用 B2，不再检查配置
     const key = generateUserFilePath(session.user.id, file.name, mediaType);
-    console.log("Uploading to B2, key:", key, "contentType:", contentType, "buffer size:", buffer.length);
 
-    let url: string;
+    console.log("[upload] Uploading to Vercel Blob, key:", key);
+
     try {
-      // 先直接上传（不生成签名），验证上传是否成功
-      console.log("Step 1: Uploading to B2...");
-      await uploadToR2(buffer, key, contentType);
-      console.log("Step 1 complete: Upload successful");
+      // 使用 Vercel Blob 上传（支持大文件流式上传）
+      const blob = await put(key, file, {
+        access: "public",
+        token: process.env.BLOB_READ_WRITE_TOKEN,
+      });
 
-      // 生成签名 URL（1小时有效期）
-      console.log("Step 2: Generating signed URL...");
-      url = await getSignedUrlFromR2(key, 3600);
-      console.log("Step 2 complete: Signed URL generated", url.substring(0, 50) + "...");
-    } catch (b2Error) {
-      console.error("B2 error:", b2Error);
+      console.log("[upload] Upload successful, url:", blob.url);
+
+      // 记录操作日志
+      await db.insert(operationLogs).values({
+        userId: session.user.id,
+        action: "file.upload",
+        resourceType: mediaType,
+        metadata: {
+          filename: file.name,
+          size: file.size,
+          url: blob.url,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        url: blob.url,
+        filename: file.name,
+        mediaType,
+        size: file.size,
+        key: key,
+      });
+    } catch (blobError) {
+      console.error("Blob error:", blobError);
       return NextResponse.json(
-        { error: `B2 upload failed: ${b2Error instanceof Error ? b2Error.message : 'Unknown error'}` },
+        { error: `Upload failed: ${blobError instanceof Error ? blobError.message : 'Unknown error'}` },
         { status: 500 }
       );
     }
-
-    // 记录操作日志
-    await db.insert(operationLogs).values({
-      userId: session.user.id,
-      action: "file.upload",
-      resourceType: mediaType,
-      metadata: {
-        filename: file.name,
-        size: file.size,
-        url: url,
-      },
-    });
-
-    const response: any = {
-      success: true,
-      url,
-      filename: file.name,
-      mediaType,
-      size: file.size,
-      key: key,
-    };
-
-    // 返回 key，便于后续分析 API 使用
-    response.key = key;
-
-    return NextResponse.json(response);
   } catch (error) {
     console.error("Upload error:", error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -162,46 +139,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 获取上传 URL（用于大文件分片上传）
+// 获取上传 URL（保留兼容）
 export async function GET(request: NextRequest) {
-  try {
-    const session = await auth.api.getSession({ headers: request.headers });
-
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const filename = searchParams.get("filename");
-    const mediaType = searchParams.get("type") as "video" | "image";
-
-    if (!filename || !mediaType) {
-      return NextResponse.json(
-        { error: "Missing filename or type" },
-        { status: 400 }
-      );
-    }
-
-    // 验证文件类型
-    if (!isAllowedFileType(filename, [mediaType])) {
-      return NextResponse.json(
-        { error: "Invalid file type" },
-        { status: 400 }
-      );
-    }
-
-    // 生成预签名的上传 URL（这里简化为直接返回路径）
-    const key = generateUserFilePath(session.user.id, filename, mediaType);
-
-    return NextResponse.json({
-      key,
-      uploadUrl: `${process.env.B2_PUBLIC_URL}/${key}`,
-    });
-  } catch (error) {
-    console.error("Get upload URL error:", error);
-    return NextResponse.json(
-      { error: "Failed to get upload URL" },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    { error: "GET upload is not supported, use POST to upload directly" },
+    { status: 405 }
+  );
 }
