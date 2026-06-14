@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 
 export function VideoGenerateTab() {
   const [prompt, setPrompt] = useState("");
@@ -14,7 +16,14 @@ export function VideoGenerateTab() {
   const [duration, setDuration] = useState("10");
   const [resolution, setResolution] = useState("720p");
   const [negativePrompt, setNegativePrompt] = useState("");
+  const [aspectRatio, setAspectRatio] = useState("16:9");
+  const [referenceImages, setReferenceImages] = useState<File[]>([]);
+  const [referenceImagePreviews, setReferenceImagePreviews] = useState<string[]>([]);
   const [records, setRecords] = useState<any[]>([]);
+  const refImageInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
+  const MAX_REF_IMAGES = 6;
 
   const loadRecords = async () => {
     try {
@@ -30,39 +39,6 @@ export function VideoGenerateTab() {
   useEffect(() => {
     loadRecords();
   }, []);
-
-  const handleGenerate = async () => {
-    if (!prompt.trim()) return;
-    setIsGenerating(true);
-    setStatus("正在创建任务...");
-    setVideoUrl(null);
-
-    try {
-      const res = await fetch("/api/video-generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt, duration: Number(duration), resolution, negativePrompt }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => null);
-        throw new Error(errorData?.error || "创建失败");
-      }
-
-      const data = await res.json();
-      if (!data.taskId) throw new Error("创建失败：缺少任务 ID");
-      if (data.record) {
-        setRecords((prev) => [data.record, ...prev.filter((item) => item.taskId !== data.record.taskId)]);
-      }
-      setStatus("视频生成中...");
-
-      const taskId = data.taskId;
-      pollStatus(taskId);
-    } catch (error: any) {
-      setStatus(`Error: ${error.message}`);
-      setIsGenerating(false);
-    }
-  };
 
   const pollStatus = async (taskId: string) => {
     const checkStatus = async () => {
@@ -125,6 +101,92 @@ export function VideoGenerateTab() {
     }
   };
 
+  const handleRefImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    addRefImages(files);
+  };
+
+  const handleRefImageDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"));
+    if (files.length > 0) {
+      addRefImages(files);
+    }
+  };
+
+  const addRefImages = (files: File[]) => {
+    const remainingSlots = MAX_REF_IMAGES - referenceImages.length;
+    if (remainingSlots <= 0) return;
+    const filesToAdd = files.slice(0, remainingSlots);
+    setReferenceImages(prev => [...prev, ...filesToAdd]);
+    filesToAdd.forEach(file => {
+      setReferenceImagePreviews(prev => [...prev, URL.createObjectURL(file)]);
+    });
+  };
+
+  const removeRefImage = (index: number) => {
+    setReferenceImages(prev => prev.filter((_, i) => i !== index));
+    setReferenceImagePreviews(prev => {
+      const newPreviews = prev.filter((_, i) => i !== index);
+      prev.forEach((url, i) => { if (i !== index) URL.revokeObjectURL(url); });
+      return newPreviews;
+    });
+    if (refImageInputRef.current) refImageInputRef.current.value = "";
+  };
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) return;
+    setIsGenerating(true);
+    setStatus("正在创建任务...");
+    setVideoUrl(null);
+
+    try {
+      let referenceImageUrls: string[] = [];
+      if (referenceImages.length > 0) {
+        for (let i = 0; i < referenceImages.length; i++) {
+          setStatus(`正在上传参考图 ${i + 1}/${referenceImages.length}...`);
+          const uploadData = await uploadMediaToBlob(referenceImages[i], (percentage) => {
+            setStatus(`上传参考图 ${i + 1}/${referenceImages.length}... ${Math.round(percentage)}%`);
+          });
+          referenceImageUrls.push(uploadData.url);
+        }
+      }
+
+      const res = await fetch("/api/video-generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt,
+          duration: Number(duration),
+          resolution,
+          negativePrompt,
+          aspectRatio,
+          referenceImageUrls,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => null);
+        throw new Error(errorData?.error || "创建失败");
+      }
+
+      const data = await res.json();
+      if (!data.taskId) throw new Error("创建失败：缺少任务 ID");
+      if (data.record) {
+        setRecords((prev) => [data.record, ...prev.filter((item) => item.taskId !== data.record.taskId)]);
+      }
+      setStatus("视频生成中...");
+
+      const taskId = data.taskId;
+      pollStatus(taskId);
+    } catch (error: any) {
+      setStatus(`Error: ${error.message}`);
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="animate-fade-in space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -147,6 +209,67 @@ export function VideoGenerateTab() {
               placeholder="描述你想要生成的视频内容..."
               className="min-h-[180px] border-[#D8D5CC] focus:border-[#D97757]"
             />
+
+            {/* 多张参考图上传 */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-[#141413]">参考图（可选）</label>
+                <span className="text-xs text-[#9C9890]">{referenceImages.length}/{MAX_REF_IMAGES}</span>
+              </div>
+              <div
+                onClick={() => referenceImages.length < MAX_REF_IMAGES && refImageInputRef.current?.click()}
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleRefImageDrop}
+                className={cn(
+                  "border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all min-h-[100px]",
+                  isDragging ? "border-[#D97757] bg-[#D97757]/5" : "border-[#C8C4BC] hover:border-[#D97757]/50",
+                  referenceImages.length >= MAX_REF_IMAGES && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {referenceImagePreviews.length > 0 ? (
+                  <div className="flex flex-wrap gap-3 justify-center">
+                    {referenceImagePreviews.map((preview, index) => (
+                      <div key={index} className="relative group">
+                        <img src={preview} alt={`参考图 ${index + 1}`} className="w-20 h-20 object-cover rounded-lg shadow-md" />
+                        <button
+                          onClick={(e) => { e.stopPropagation(); removeRefImage(index); }}
+                          className="absolute -top-2 -right-2 w-6 h-6 bg-[#D97757] text-white rounded-full flex items-center justify-center shadow-md hover:bg-[#C96848] transition-colors text-sm opacity-0 group-hover:opacity-100"
+                        >
+                          ×
+                        </button>
+                        <span className="absolute bottom-1 left-1 bg-black/50 text-white text-xs px-1 rounded">{index + 1}</span>
+                      </div>
+                    ))}
+                    {referenceImages.length < MAX_REF_IMAGES && (
+                      <div className="w-20 h-20 border-2 border-dashed border-[#C8C4BC] rounded-lg flex items-center justify-center text-[#9C9890]">
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-[#D97757]/10 flex items-center justify-center">
+                      <svg className="w-5 h-5 text-[#D97757]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-sm text-[#6B6860]">点击或拖拽上传参考图</p>
+                    <p className="text-xs text-[#9C9890]">支持 JPG, PNG, WebP，最多 {MAX_REF_IMAGES} 张</p>
+                  </>
+                )}
+                <input
+                  ref={refImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleRefImageSelect}
+                  className="hidden"
+                />
+              </div>
+            </div>
 
             {/* 设置选项 */}
             <div className="grid grid-cols-2 gap-4">
@@ -175,15 +298,29 @@ export function VideoGenerateTab() {
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-[#141413] block mb-2">负面提示词（可选）</label>
-              <Textarea
-                value={negativePrompt}
-                onChange={(e) => setNegativePrompt(e.target.value)}
-                placeholder="描述不想出现的元素..."
-                className="bg-white border-[#C8C4BC] focus:border-[#D97757]"
-                rows={2}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-[#141413] block mb-2">画面比例</label>
+                <select
+                  value={aspectRatio}
+                  onChange={(e) => setAspectRatio(e.target.value)}
+                  className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
+                >
+                  <option value="16:9">16:9 横版</option>
+                  <option value="9:16">9:16 竖版</option>
+                  <option value="1:1">1:1 方形</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-[#141413] block mb-2">负面提示词</label>
+                <input
+                  type="text"
+                  value={negativePrompt}
+                  onChange={(e) => setNegativePrompt(e.target.value)}
+                  placeholder="可选"
+                  className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413] text-sm"
+                />
+              </div>
             </div>
 
             <Button
