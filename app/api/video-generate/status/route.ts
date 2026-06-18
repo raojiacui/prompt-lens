@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getVideoTaskStatus } from "@/lib/ai/video-generator";
+import { createVideoProvider, getUserProviderApiKey } from "@/lib/ai/video-generator";
 import { db, videoGeneration } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
 
@@ -27,7 +27,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Record not found" }, { status: 404 });
     }
 
-    const status = await getVideoTaskStatus(taskId);
+    const provider = record.provider || "kie";
+    const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
+    const effectiveApiKey = userApiKey || process.env.KIE_API_KEY;
+    if (!effectiveApiKey) {
+      return NextResponse.json({ error: "未配置 API Key" }, { status: 400 });
+    }
+
+    const videoProvider = createVideoProvider(provider as any, effectiveApiKey);
+    const status = await videoProvider.getStatus(taskId);
     const progress = status.progress === undefined ? undefined : String(status.progress);
 
     const records = await db

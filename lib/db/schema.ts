@@ -88,6 +88,7 @@ export const apiProviderEnum = pgEnum("api_provider", [
   "zhipu",   // 智谱AI
   "gemini",  // Google Gemini
   "openrouter", // OpenRouter
+  "kie",     // Kie.ai 视频生成
 ]);
 
 export const userApiKeys = pgTable(
@@ -277,6 +278,7 @@ export const videoGeneration = pgTable(
     duration: integer("duration"),
     resolution: varchar("resolution", { length: 20 }),
     model: varchar("model", { length: 100 }),
+    provider: varchar("provider", { length: 20 }).default("kie").notNull(),
     status: varchar("status", { length: 20 }).default("pending").notNull(),
     progress: varchar("progress", { length: 50 }),
     videoUrl: text("video_url"),

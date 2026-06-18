@@ -102,9 +102,10 @@ export function ApiKeySettings() {
             <div>
               <label className="text-sm font-medium text-[#141413] block mb-2">提供商</label>
               <Select value={provider} onChange={(e) => setProvider(e.target.value)} className="bg-white">
-                <option value="zhipu">智谱AI (glm-4v)</option>
-                <option value="gemini">Google Gemini</option>
-                <option value="openrouter">OpenRouter</option>
+                <option value="zhipu">智谱AI (视频分析)</option>
+                <option value="gemini">Google Gemini (视频分析)</option>
+                <option value="openrouter">OpenRouter (视频分析)</option>
+                <option value="kie">Kie.ai (视频生成)</option>
               </Select>
             </div>
             <div className="md:col-span-2">
@@ -173,6 +174,8 @@ export function ApiKeySettings() {
                           ? "智谱AI"
                           : key.provider === "gemini"
                           ? "Google Gemini"
+                          : key.provider === "kie"
+                          ? "Kie.ai"
                           : "OpenRouter"}
                       </span>
                       {key.isActive && (
@@ -249,6 +252,21 @@ export function ApiKeySettings() {
               >
                 OpenRouter
               </a>{" "}
+              获取 API Key。
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Kie.ai (视频生成)</h4>
+            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
+              用于视频生成（Sora 2）。访问{" "}
+              <a
+                href="https://api.kie.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#D97757] hover:underline"
+              >
+                Kie.ai
+              </a>
               获取 API Key。
             </p>
           </div>

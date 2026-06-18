@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { createVideoTask, KIE_VIDEO_MODEL } from "@/lib/ai/video-generator";
+import {
+  createVideoProvider,
+  getUserProviderApiKey,
+  KIE_VIDEO_MODEL,
+  DEFAULT_VIDEO_PROVIDER,
+} from "@/lib/ai/video-generator";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { db, videoGeneration } from "@/lib/db";
 import { and, desc, eq } from "drizzle-orm";
@@ -33,11 +38,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
     }
 
+    const provider = (body?.provider as string) || DEFAULT_VIDEO_PROVIDER;
     const duration = Number(body?.duration);
     const normalizedDuration = Number.isFinite(duration) ? duration : undefined;
     const resolution = typeof body?.resolution === "string" ? body.resolution : undefined;
     const negativePrompt = typeof body?.negativePrompt === "string" ? body.negativePrompt : undefined;
-    const result = await createVideoTask({
+
+    // 获取用户配置的 provider API Key
+    const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
+    const effectiveApiKey = userApiKey || process.env.KIE_API_KEY;
+    if (!effectiveApiKey) {
+      return NextResponse.json({ error: "未配置 API Key，请先在设置中添加" }, { status: 400 });
+    }
+
+    const videoProvider = createVideoProvider(provider as any, effectiveApiKey);
+    const result = await videoProvider.createTask({
       prompt,
       duration: normalizedDuration,
       resolution,
@@ -54,6 +69,7 @@ export async function POST(request: NextRequest) {
         duration: normalizedDuration,
         resolution,
         model: KIE_VIDEO_MODEL,
+        provider,
         status: "pending",
         rawResponse: result.raw as any,
       })
@@ -63,6 +79,7 @@ export async function POST(request: NextRequest) {
       success: true,
       taskId: result.taskId,
       record: records[0],
+      provider,
     });
   } catch (error: any) {
     console.error("[video-generate] Error:", error);
