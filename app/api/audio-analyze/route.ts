@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
       whisperModelSize,
       llmProvider = "deepseek",
       prompt,
+      funasrUrl,
     } = body;
 
     if (!mediaUrl) {
@@ -137,15 +138,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 检查 AssemblyAI API Key
-    if (!process.env.ASSEMBLYAI_API_KEY) {
+    // 检查 AssemblyAI API Key（仅 AssemblyAI 模式需要）
+    if (whisperModelSize !== "funasr" && !process.env.ASSEMBLYAI_API_KEY) {
       return NextResponse.json(
         { error: "AssemblyAI API key is not configured. Please add ASSEMBLYAI_API_KEY to environment variables." },
         { status: 500 }
       );
     }
 
-    console.log("Starting AssemblyAI transcription for:", mediaUrl);
+    // FunASR 模式需要用户提供地址
+    if (whisperModelSize === "funasr" && !funasrUrl) {
+      return NextResponse.json(
+        { error: "FunASR 服务地址不能为空" },
+        { status: 400 }
+      );
+    }
+
+    console.log(`Starting ${whisperModelSize === "funasr" ? "FunASR" : "AssemblyAI"} transcription for:`, mediaUrl);
 
     // 记录分析开始
     try {
@@ -153,53 +162,85 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         action: "analysis.start",
         resourceType: "audio",
-        metadata: { mediaUrl, whisperModelSize, llmProvider },
+        metadata: { mediaUrl, whisperModelSize, llmProvider, funasrUrl },
       });
     } catch (logError) {
       console.warn("Failed to log analysis start:", logError);
     }
 
-    // 使用 AssemblyAI 转录
-    const client = getAssemblyClient();
+    let transcriptionSegments: any[] = [];
+    let fullText = "";
+    let audioDuration = 0;
 
-    const transcript = await client.transcripts.transcribe({
-      audio: mediaUrl,
-      speaker_labels: true,
-      // @ts-ignore - API uses speech_models
-      speech_models: ["universal-2"] as any,
-    });
+    if (whisperModelSize === "funasr") {
+      // FunASR 自托管模式
+      try {
+        const funasrRes = await axios.post(
+          `${funasrUrl}/recognition`,
+          { audio_url: mediaUrl },
+          { timeout: 120000 }
+        );
 
-    console.log("AssemblyAI transcription completed, status:", transcript.status);
+        const funasrData = funasrRes.data;
+        // FunASR 返回格式: { text: "...", sentences: [{ start: 0, end: 5, text: "..." }] }
+        const sentences = funasrData.sentences || [];
+        transcriptionSegments = sentences.map((s: any) => ({
+          start: s.start || 0,
+          end: s.end || 0,
+          text: s.text || "",
+          speaker: s.speaker || "unknown",
+        }));
+        fullText = sentences.map((s: any) => s.text).join(" ");
+        audioDuration = sentences.length > 0 ? sentences[sentences.length - 1].end : 0;
+      } catch (funasrError: any) {
+        console.error("FunASR error:", funasrError.message);
+        throw new Error(`FunASR 调用失败: ${funasrError.message}`);
+      }
+    } else {
+      // AssemblyAI 模式
+      const client = getAssemblyClient();
 
-    if (transcript.status === "error") {
-      throw new Error(transcript.error || "Transcription failed");
+      const transcript = await client.transcripts.transcribe({
+        audio: mediaUrl,
+        speaker_labels: true,
+        // @ts-ignore - API uses speech_models
+        speech_models: ["universal-2"] as any,
+      });
+
+      console.log("AssemblyAI transcription completed, status:", transcript.status);
+
+      if (transcript.status === "error") {
+        throw new Error(transcript.error || "Transcription failed");
+      }
+
+      // 等待转录完成（轮询）
+      let finalTranscript = transcript;
+      while (finalTranscript.status !== "completed" && finalTranscript.status !== "error") {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        const statusResponse = await client.transcripts.get(finalTranscript.id);
+        finalTranscript = statusResponse;
+        console.log("Transcription status:", finalTranscript.status);
+      }
+
+      if (finalTranscript.status === "error") {
+        throw new Error(finalTranscript.error || "Transcription failed");
+      }
+
+      // 转换 AssemblyAI 结果为内部格式
+      transcriptionSegments = (finalTranscript.words || []).map((word: any) => ({
+        start: word.start / 1000, // 转换为秒
+        end: word.end / 1000,
+        text: word.text,
+        speaker: word.speaker || "unknown",
+      }));
+
+      // 合并文本用于 LLM 分析
+      fullText = (finalTranscript.words || [])
+        .map((word: any) => word.text)
+        .join(" ");
+
+      audioDuration = finalTranscript.audio_duration || 0;
     }
-
-    // 等待转录完成（轮询）
-    let finalTranscript = transcript;
-    while (finalTranscript.status !== "completed" && finalTranscript.status !== "error") {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      const statusResponse = await client.transcripts.get(finalTranscript.id);
-      finalTranscript = statusResponse;
-      console.log("Transcription status:", finalTranscript.status);
-    }
-
-    if (finalTranscript.status === "error") {
-      throw new Error(finalTranscript.error || "Transcription failed");
-    }
-
-    // 转换 AssemblyAI 结果为内部格式
-    const transcriptionSegments = (finalTranscript.words || []).map((word: any) => ({
-      start: word.start / 1000, // 转换为秒
-      end: word.end / 1000,
-      text: word.text,
-      speaker: word.speaker || "unknown",
-    }));
-
-    // 合并文本用于 LLM 分析
-    const fullText = (finalTranscript.words || [])
-      .map((word: any) => word.text)
-      .join(" ");
 
     console.log("Transcription text length:", fullText.length);
 
@@ -217,7 +258,7 @@ export async function POST(request: NextRequest) {
 
     // 如果 LLM 分段失败，使用简单的基于时间的分段
     if (llmSegments.length === 0 && transcriptionSegments.length > 0) {
-      const duration = finalTranscript.audio_duration || 0;
+      const duration = audioDuration || 0;
       const segmentDuration = 30; // 每30秒一个片段
       let currentStart = 0;
 
@@ -231,7 +272,7 @@ export async function POST(request: NextRequest) {
           llmSegments.push({
             start: currentStart,
             end: currentEnd,
-            summary: segmentWords.map((w) => w.text).join(" ").substring(0, 100),
+            summary: segmentWords.map((w: any) => w.text).join(" ").substring(0, 100),
             tags: ["auto", "segment"],
           });
         }
@@ -246,10 +287,10 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       mediaUrl,
       mediaName,
-      language: finalTranscript.language_code || "unknown",
+      language: "unknown",
       transcription: transcriptionSegments,
       segments: llmSegments,
-      duration: Math.round(finalTranscript.audio_duration || 0),
+      duration: Math.round(audioDuration || 0),
       whisperModel: whisperModelSize || "assemblyai",
       prompt: prompt || null,
       status: "completed",
@@ -264,8 +305,8 @@ export async function POST(request: NextRequest) {
       metadata: {
         mediaUrl,
         segmentCount: llmSegments.length,
-        language: finalTranscript.language_code,
-        duration: Math.round(finalTranscript.audio_duration || 0),
+        language: "unknown",
+        duration: Math.round(audioDuration || 0),
       },
     });
 
@@ -278,10 +319,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       id: audioAnalysisRecord[0].id,
-      language: finalTranscript.language_code || "unknown",
+      language: "unknown",
       transcription: transcriptionSegments,
       segments: safeSegments,
-      duration: Math.round(finalTranscript.audio_duration || 0),
+      duration: Math.round(audioDuration || 0),
     });
   } catch (error: any) {
     console.error("Audio analysis error:", error);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useSession, signOut } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,12 +15,25 @@ import { FloatingChat } from "@/components/floating-chat";
 import { extractVideoFrames, getImageBase64 } from "@/lib/utils/frame-extractor";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { cn } from "@/lib/utils";
+import { useTranslations, useLocale } from "next-intl";
+import { useRouter } from "next/navigation";
+import type { Locale } from "@/i18n/config";
 
 type Tab = "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
+  const t = useTranslations();
+  const locale = useLocale() as Locale;
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("analyze");
+
+  // 未登录时刷新 /dashboard 自动跳回首页
+  useEffect(() => {
+    if (!isPending && !session?.user) {
+      router.replace("/");
+    }
+  }, [isPending, session, router]);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -55,7 +68,7 @@ export default function DashboardPage() {
   const handleAnalyze = async () => {
     if (!selectedFile) return;
     setIsLoading(true);
-    setProgress("正在提取帧...");
+    setProgress(t("analyze.extractingFrames"));
 
     try {
       let frames: string[];
@@ -64,7 +77,7 @@ export default function DashboardPage() {
       if (selectedFile.type.startsWith("video/")) {
         // 视频：在客户端提取帧
         frames = await extractVideoFrames(selectedFile, frameCount, (current, total) => {
-          setProgress(`正在提取帧: ${current}/${total}`);
+          setProgress(t("analyze.extractingFrameProgress", { current, total }));
         });
         mediaType = "video";
       } else {
@@ -74,16 +87,16 @@ export default function DashboardPage() {
         mediaType = "image";
       }
 
-      setProgress("正在上传文件...");
+      setProgress(t("analyze.uploadingFile"));
 
       // 上传到 Vercel Blob（原生支持大文件）
       const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
-        setProgress("Uploading file... " + Math.round(percentage) + "%");
+        setProgress(t("analyze.uploadingProgress", { percent: Math.round(percentage) }));
       });
 
-      setProgress("AI 正在分析中...");
+      setProgress(t("analyze.aiAnalyzing"));
 
-      // 发送帧给后端分析
+      // 发送帧给后端分析（透传当前 locale 给 AI 输出语言）
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -93,10 +106,11 @@ export default function DashboardPage() {
           frames, // 直接发送客户端提取的帧
           analyzeMode,
           provider,
+          outputLanguage: locale,
         }),
       });
 
-      if (!analyzeRes.ok) throw new Error("Analysis failed");
+      if (!analyzeRes.ok) throw new Error(t("analyze.analysisFailed"));
       const data = await analyzeRes.json();
       setResult(data.prompt);
       setHistoryRefreshTrigger((prev) => prev + 1);
@@ -131,22 +145,24 @@ export default function DashboardPage() {
                 <ellipse cx="16" cy="18" rx="3" ry="2" fill="#FFCC00"/>
               </svg>
             </div>
-            <span className="text-base md:text-lg font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Prompt Lens</span>
+            <span className="text-base md:text-lg font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("dashboard.appName")}</span>
           </div>
 
-          {session?.user && (
-            <div className="flex items-center gap-2 md:gap-4">
-              <div className="flex items-center gap-2">
-                {session.user.image && (
-                  <img src={session.user.image} alt="" className="w-7 md:w-8 h-7 md:h-8 rounded-full ring-2 ring-[#D97757]/20" />
-                )}
-                <span className="text-sm text-[#6B6860] hidden sm:inline">{session.user.email}</span>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => signOut()} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg text-xs md:text-sm">
-                退出
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center gap-2 md:gap-4">
+            {session?.user && (
+              <>
+                <div className="flex items-center gap-2">
+                  {session.user.image && (
+                    <img src={session.user.image} alt="" className="w-7 md:w-8 h-7 md:h-8 rounded-full ring-2 ring-[#D97757]/20" />
+                  )}
+                  <span className="text-sm text-[#6B6860] hidden sm:inline">{session.user.email}</span>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => signOut()} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg text-xs md:text-sm">
+                  {t("auth.logout")}
+                </Button>
+              </>
+            )}
+          </div>
         </div>
       </header>
 
@@ -155,12 +171,12 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-0 md:mx-auto px-2 md:px-6">
           <nav className="flex gap-1 overflow-x-auto pb-px md:pb-0 -mx-2 px-2 md:mx-0 md:px-0">
             {[
-              { key: "analyze", label: "视频分析" },
-              { key: "audio", label: "音频分析" },
-              { key: "edit", label: "视频剪辑" },
-              { key: "video-gen", label: "视频生成" },
-              { key: "history", label: "历史记录" },
-              { key: "settings", label: "设置" }
+              { key: "analyze", label: t("dashboard.tabs.analyze") },
+              { key: "audio", label: t("dashboard.tabs.audio") },
+              { key: "edit", label: t("dashboard.tabs.edit") },
+              { key: "video-gen", label: t("dashboard.tabs.videoGen") },
+              { key: "history", label: t("dashboard.tabs.history") },
+              { key: "settings", label: t("dashboard.tabs.settings") }
             ].map((tab) => (
               <button
                 key={tab.key}
@@ -192,7 +208,7 @@ export default function DashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                 </span>
-                上传文件
+                {t("analyze.upload")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 md:space-y-5">
@@ -229,8 +245,8 @@ export default function DashboardPage() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                       </svg>
                     </div>
-                    <p className="text-[#141413] font-medium mb-1 text-sm md:text-base">点击或拖拽文件到此处</p>
-                    <p className="text-xs md:text-sm text-[#6B6860]">支持 MP4, MOV, AVI, MKV, WebM, JPG, PNG, WebP</p>
+                    <p className="text-[#141413] font-medium mb-1 text-sm md:text-base">{t("analyze.dropHere")}</p>
+                    <p className="text-xs md:text-sm text-[#6B6860]">{t("analyze.uploadHint")}</p>
                   </>
                 )}
                 <input ref={fileInputRef} type="file" accept="video/*,image/*" onChange={handleFileSelect} className="hidden" />
@@ -246,7 +262,7 @@ export default function DashboardPage() {
               {/* 设置选项 */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-[#141413] block mb-2">提取帧数</label>
+                  <label className="text-sm font-medium text-[#141413] block mb-2">{t("analyze.frameCount")}</label>
                   <Input
                     type="number"
                     min={1}
@@ -257,28 +273,28 @@ export default function DashboardPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#141413] block mb-2">分析模式</label>
+                  <label className="text-sm font-medium text-[#141413] block mb-2">{t("analyze.analyzeMode")}</label>
                   <select
                     value={analyzeMode}
                     onChange={(e) => setAnalyzeMode(e.target.value as any)}
                     className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                   >
-                    <option value="single">逐帧分析</option>
-                    <option value="batch">批量对比</option>
+                    <option value="single">{t("analyze.singleMode")}</option>
+                    <option value="batch">{t("analyze.batchMode")}</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-[#141413] block mb-2">API 提供商</label>
+                <label className="text-sm font-medium text-[#141413] block mb-2">{t("analyze.provider")}</label>
                 <select
                   value={provider}
                   onChange={(e) => setProvider(e.target.value as any)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="zhipu">智谱AI (glm-4v)</option>
-                  <option value="gemini">Google Gemini</option>
-                  <option value="openrouter">OpenRouter</option>
+                  <option value="zhipu">{t("analyze.providerZhipu")}</option>
+                  <option value="gemini">{t("analyze.providerGemini")}</option>
+                  <option value="openrouter">{t("analyze.providerOpenrouter")}</option>
                 </select>
               </div>
 
@@ -290,10 +306,10 @@ export default function DashboardPage() {
                 {isLoading ? (
                   <span className="flex items-center gap-2">
                     <Spinner size="sm" className="border-white" />
-                    {progress || "处理中..."}
+                    {progress || t("analyze.processing")}
                   </span>
                 ) : (
-                  "开始分析"
+                  t("analyze.startAnalyze")
                 )}
               </Button>
             </CardContent>
@@ -308,11 +324,11 @@ export default function DashboardPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
                   </svg>
                 </span>
-                分析结果
+                {t("analyze.result")}
               </CardTitle>
               {result && (
                 <Button variant="outline" size="sm" onClick={copyToClipboard} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg text-xs md:text-sm">
-                  复制
+                  {t("analyze.copy")}
                 </Button>
               )}
             </CardHeader>
@@ -328,7 +344,7 @@ export default function DashboardPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <p className="text-[#6B6860] text-sm md:text-base">上传视频或图片，点击"开始分析"查看结果</p>
+                  <p className="text-[#6B6860] text-sm md:text-base">{t("analyze.noResult")}</p>
                 </div>
               )}
             </CardContent>
@@ -363,7 +379,7 @@ export default function DashboardPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                     </svg>
                   </span>
-                  历史记录
+                  {t("dashboard.tabs.history")}
                 </CardTitle>
               </CardHeader>
               <CardContent>

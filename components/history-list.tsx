@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDate, truncate } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface HistoryRecord {
   id: string;
@@ -18,6 +19,7 @@ interface HistoryRecord {
   tags: string[];
   favorite: boolean;
   createdAt: string;
+  language?: string;
 }
 
 interface HistoryListProps {
@@ -25,6 +27,7 @@ interface HistoryListProps {
 }
 
 export function HistoryList({ refreshTrigger }: HistoryListProps) {
+  const t = useTranslations("history");
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -79,7 +82,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
   };
 
   const deleteRecord = async (id: string) => {
-    if (!confirm("确定要删除这条记录吗？")) return;
+    if (!confirm(t("deleteConfirm"))) return;
 
     try {
       await fetch(`/api/history?id=${id}`, { method: "DELETE" });
@@ -120,7 +123,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
     if (format === "json") {
       content = JSON.stringify({ prompt: record.prompt, note: record.note }, null, 2);
     } else if (format === "md") {
-      content = `# ${record.mediaName}\n\n## Prompt\n${record.prompt}\n\n## Note\n${record.note || "无"}\n`;
+      content = `# ${record.mediaName}\n\n## Prompt\n${record.prompt}\n\n## Note\n${record.note || t("exportNoteEmpty")}\n`;
     } else {
       content = record.prompt;
     }
@@ -143,14 +146,14 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
         {/* 搜索框 */}
         <div className="flex gap-2">
           <Input
-            placeholder="搜索提示词..."
+            placeholder={t("searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             className="bg-white"
           />
           <Button onClick={handleSearch} className="bg-[#D97757] hover:bg-[#C96848]">
-            搜索
+            {t("search")}
           </Button>
         </div>
 
@@ -161,7 +164,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
               <Spinner />
             </div>
           ) : records.length === 0 ? (
-            <p className="text-center text-[#9C9890] py-8">暂无历史记录</p>
+            <p className="text-center text-[#9C9890] py-8">{t("noHistory")}</p>
           ) : (
             records.map((record) => (
               <div
@@ -180,7 +183,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                         {record.mediaType === "video" ? "📹" : "🖼️"}
                       </span>
                       <span className="font-medium text-sm text-[#141413] truncate" style={{ fontFamily: 'var(--font-heading)' }}>
-                        {record.mediaName || "未命名"}
+                        {record.mediaName || t("unnamed")}
                       </span>
                       {record.favorite && <span className="text-[#D97757]">⭐</span>}
                     </div>
@@ -207,7 +210,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
               onClick={() => setPage(page - 1)}
               className="border-[#C8C4BC] text-[#6B6860]"
             >
-              上一页
+              {t("prevPage")}
             </Button>
             <span className="flex items-center text-sm text-[#6B6860]">
               {page} / {totalPages}
@@ -219,7 +222,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
               onClick={() => setPage(page + 1)}
               className="border-[#C8C4BC] text-[#6B6860]"
             >
-              下一页
+              {t("nextPage")}
             </Button>
           </div>
         )}
@@ -229,7 +232,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
       <div className="lg:col-span-2">
         <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle style={{ fontFamily: 'var(--font-display)' }}>详情</CardTitle>
+            <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("detail")}</CardTitle>
             {selectedRecord && (
               <div className="flex gap-2">
                 <Button
@@ -246,7 +249,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                   onClick={() => copyPrompt(selectedRecord.prompt)}
                   className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757]"
                 >
-                  复制
+                  {t("copy")}
                 </Button>
                 <Button
                   variant="outline"
@@ -254,7 +257,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                   onClick={() => deleteRecord(selectedRecord.id)}
                   className="border-[#C8C4BC] text-[#6B6860] hover:text-[#C0453A] hover:border-[#C0453A]"
                 >
-                  删除
+                  {t("delete")}
                 </Button>
               </div>
             )}
@@ -265,17 +268,17 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                 {/* 元信息 */}
                 <div className="flex flex-wrap gap-4 text-sm text-[#6B6860]">
                   <span>
-                    类型: {selectedRecord.mediaType === "video" ? "视频" : "图片"}
+                    {t("type")}: {selectedRecord.mediaType === "video" ? t("typeVideo") : t("typeImage")}
                   </span>
-                  <span>创建时间: {formatDate(selectedRecord.createdAt)}</span>
+                  <span>{t("createdAt")}: {formatDate(selectedRecord.createdAt)}</span>
                   {selectedRecord.note && (
-                    <span>备注: {selectedRecord.note}</span>
+                    <span>{t("note")}: {selectedRecord.note}</span>
                   )}
                 </div>
 
                 {/* 提示词内容 */}
                 <div>
-                  <h4 className="font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>提示词内容</h4>
+                  <h4 className="font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{t("promptContent")}</h4>
                   <pre className="whitespace-pre-wrap text-sm text-[#141413] bg-[#ECE9E0] p-4 rounded-lg max-h-[400px] overflow-y-auto font-mono leading-relaxed">
                     {selectedRecord.prompt}
                   </pre>
@@ -284,7 +287,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                 {/* 备注编辑 */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>备注</h4>
+                    <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("note")}</h4>
                     {!editingNote && (
                       <Button
                         variant="ghost"
@@ -295,7 +298,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                         }}
                         className="text-[#D97757] hover:text-[#C96848]"
                       >
-                        编辑
+                        {t("editNote")}
                       </Button>
                     )}
                   </div>
@@ -304,13 +307,13 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                       <Textarea
                         value={noteContent}
                         onChange={(e) => setNoteContent(e.target.value)}
-                        placeholder="添加备注..."
+                        placeholder={t("notePlaceholder")}
                         rows={3}
                         className="bg-white border-[#C8C4BC] focus:border-[#D97757]"
                       />
                       <div className="flex gap-2">
                         <Button size="sm" onClick={saveNote} className="bg-[#D97757] hover:bg-[#C96848]">
-                          保存
+                          {t("save")}
                         </Button>
                         <Button
                           variant="outline"
@@ -318,13 +321,13 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                           onClick={() => setEditingNote(false)}
                           className="border-[#C8C4BC] text-[#6B6860]"
                         >
-                          取消
+                          {t("cancel")}
                         </Button>
                       </div>
                     </div>
                   ) : (
                     <p className="text-[#6B6860]">
-                      {selectedRecord.note || "暂无备注"}
+                      {selectedRecord.note || t("noNote")}
                     </p>
                   )}
                 </div>
@@ -337,7 +340,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                     onClick={() => exportRecord(selectedRecord, "txt")}
                     className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757]"
                   >
-                    导出 TXT
+                    {t("exportTxt")}
                   </Button>
                   <Button
                     variant="outline"
@@ -345,7 +348,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                     onClick={() => exportRecord(selectedRecord, "md")}
                     className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757]"
                   >
-                    导出 MD
+                    {t("exportMd")}
                   </Button>
                   <Button
                     variant="outline"
@@ -353,13 +356,13 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                     onClick={() => exportRecord(selectedRecord, "json")}
                     className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757]"
                   >
-                    导出 JSON
+                    {t("exportJson")}
                   </Button>
                 </div>
               </div>
             ) : (
               <p className="text-center text-[#9C9890] py-12">
-                点击左侧记录查看详情
+                {t("selectToView")}
               </p>
             )}
           </CardContent>

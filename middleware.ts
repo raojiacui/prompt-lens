@@ -1,29 +1,47 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { defaultLocale, isLocale, LOCALE_COOKIE } from "./i18n/config";
 
 export function middleware(request: NextRequest) {
+  // 1. 解析 locale：cookie 优先，未命中检测 Accept-Language
+  const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
+  const acceptLang = request.headers.get("accept-language") ?? "";
+  const prefersEn = acceptLang
+    .split(",")
+    .map((part) => part.split(";")[0].trim().toLowerCase())
+    .some((tag) => tag.startsWith("en"));
+
+  const detectedLocale = isLocale(cookieLocale)
+    ? cookieLocale
+    : prefersEn
+    ? "en"
+    : defaultLocale;
+
   const response = NextResponse.next();
 
-  // 安全头部配置
+  // 2. 若 cookie 不存在，写入检测到的 locale（不重写 URL —— cookie 模式核心）
+  if (!isLocale(cookieLocale)) {
+    response.cookies.set(LOCALE_COOKIE, detectedLocale, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: "lax",
+    });
+  }
+
+  // 3. 安全头部配置（原有逻辑保留）
   const securityHeaders = {
-    // 防止 XSS 攻击
     "X-XSS-Protection": "1; mode=block",
-    // 防止点击劫持
     "X-Frame-Options": "DENY",
-    // 防止 MIME 类型嗅探
     "X-Content-Type-Options": "nosniff",
-    // 引用者策略
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    // 权限策略
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
   };
 
-  // 应用安全头部
   Object.entries(securityHeaders).forEach(([key, value]) => {
     response.headers.set(key, value);
   });
 
-  // Content Security Policy
+  // 4. Content Security Policy
   const cspHeader = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
@@ -37,7 +55,7 @@ export function middleware(request: NextRequest) {
 
   response.headers.set("Content-Security-Policy", cspHeader);
 
-  // 移除暴露服务器信息的头部
+  // 5. 移除暴露服务器信息的头部
   response.headers.delete("X-Powered-By");
   response.headers.delete("Server");
 
@@ -46,13 +64,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * 匹配所有路径除了:
-     * - _next/static (静态文件)
-     * - _next/image (图片优化)
-     * - favicon.ico (图标)
-     * - public 目录下的静态文件
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\..*$).*)",
   ],
 };

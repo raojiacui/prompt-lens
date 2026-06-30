@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { extractCorePrompt } from "@/lib/ai/analyzer";
+import { extractCorePrompt } from "@/lib/ai/prompts";
 
 describe("AI Analyzer", () => {
   it("should extract core prompt from result", () => {

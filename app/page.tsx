@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { LanguageSwitcher } from "@/components/language-switcher";
+import { useTranslations } from "next-intl";
 
 export default function HomePage() {
+  const t = useTranslations("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
@@ -30,31 +33,36 @@ export default function HomePage() {
 
           {/* 桌面端导航 */}
           <div className="hidden md:flex items-center gap-3">
+            <LanguageSwitcher />
             <Link href="/login">
               <Button variant="ghost" className="text-[#6B6860] hover:text-[#141413] hover:bg-[#D8D5CC]/50 rounded-lg px-4">
-                登录
+                {t("login")}
               </Button>
             </Link>
             <Link href="/dashboard">
               <Button className="bg-[#D97757] hover:bg-[#C96848] text-white rounded-lg px-5 shadow-sm hover:shadow-md transition-all">
-                开始使用
+                {t("getStarted")}
               </Button>
             </Link>
           </div>
 
           {/* 移动端菜单按钮 */}
-          <button
-            className="md:hidden p-2 text-[#6B6860]"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              {mobileMenuOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              )}
-            </svg>
-          </button>
+          {/* 移动端：语言切换 + 菜单按钮 */}
+          <div className="md:hidden flex items-center gap-2">
+            <LanguageSwitcher />
+            <button
+              className="p-2 text-[#6B6860]"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* 移动端下拉菜单 */}
@@ -62,12 +70,12 @@ export default function HomePage() {
           <div className="md:hidden bg-[#F5F3EC] border-t border-[#D8D5CC] px-4 py-4 space-y-3">
             <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="outline" className="w-full border-[#C8C4BC] text-[#6B6860]">
-                登录
+                {t("login")}
               </Button>
             </Link>
             <Link href="/dashboard" className="block" onClick={() => setMobileMenuOpen(false)}>
               <Button className="w-full bg-[#D97757] hover:bg-[#C96848] text-white">
-                开始使用
+                {t("getStarted")}
               </Button>
             </Link>
           </div>
@@ -85,13 +93,13 @@ export default function HomePage() {
 
             <div className="relative">
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium text-[#141413] leading-[1.2] md:leading-[1.15] mb-4 md:mb-6" style={{ fontFamily: 'var(--font-display)' }}>
-                用 AI 读懂画面
+                {t("heroTitle1")}
                 <br className="md:hidden" />
                 <span className="md:inline"> </span>
-                <span className="text-[#D97757]">生成提示词</span>
+                <span className="text-[#D97757]">{t("heroTitle2")}</span>
               </h1>
               <p className="text-base md:text-xl text-[#6B6860] max-w-xl leading-relaxed" style={{ fontFamily: 'var(--font-body)' }}>
-                上传视频或图片，AI 自动分析场景、动作，光影，生成精准的提示词，助您创作精彩 AI 视频。
+                {t("heroDesc")}
               </p>
             </div>
           </div>
@@ -108,8 +116,8 @@ export default function HomePage() {
                     <ellipse cx="16" cy="18" rx="3" ry="2" fill="#FFCC00"/>
                   </svg>
                 ),
-                title: "视频分析",
-                desc: "智能提取关键帧，分析场景转换、人物动作，光影氛围",
+                title: t("feature1Title"),
+                desc: t("feature1Desc"),
                 color: "orange"
               },
               {
@@ -118,8 +126,8 @@ export default function HomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 ),
-                title: "图片分析",
-                desc: "单图或多图批量分析，提取视觉特征与风格",
+                title: t("feature2Title"),
+                desc: t("feature2Desc"),
                 color: "green"
               },
               {
@@ -128,8 +136,8 @@ export default function HomePage() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 ),
-                title: "多 API 支持",
-                desc: "智谱 AI、Google Gemini、OpenRouter 自由切换",
+                title: t("feature3Title"),
+                desc: t("feature3Desc"),
                 color: "blue"
               }
             ].map((item, i) => (
@@ -154,12 +162,12 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-start">
             <Link href="/dashboard">
               <Button size="lg" className="w-full sm:w-auto bg-[#D97757] hover:bg-[#C96848] text-white text-base md:text-lg px-6 md:px-8 py-4 md:py-5 rounded-xl shadow-md hover:shadow-lg transition-all min-h-[52px] md:min-h-[60px]">
-                立即体验 →
+                {t("ctaExperience")}
               </Button>
             </Link>
             <Link href="/login">
               <Button size="lg" variant="outline" className="w-full sm:w-auto border-[#C8C4BC] text-[#6B6860] hover:text-[#141413] hover:border-[#141413] text-base md:text-lg px-6 md:px-8 py-4 md:py-5 rounded-xl bg-transparent min-h-[52px] md:min-h-[60px]">
-                登录保存历史
+                {t("ctaLoginHistory")}
               </Button>
             </Link>
           </div>
@@ -176,7 +184,7 @@ export default function HomePage() {
       <footer className="border-t border-[#D8D5CC] py-6 md:py-8">
         <div className="max-w-6xl mx-auto px-4 md:px-6 text-center">
           <p className="text-[#9C9890] text-sm" style={{ fontFamily: 'var(--font-body)' }}>
-            © 2026 Prompt Lens · AI 视频提示词分析工具
+            {t("footer")}
           </p>
         </div>
       </footer>

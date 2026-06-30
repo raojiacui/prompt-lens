@@ -22,6 +22,13 @@
       "when": 1780913220000,
       "tag": "0002_video_generation",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782745359117,
+      "tag": "0003_blushing_thor",
+      "breakpoints": true
     }
   ]
 }

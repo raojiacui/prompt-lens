@@ -6,8 +6,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export function VideoEditTab() {
+  const t = useTranslations("videoEdit");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [prompt, setPrompt] = useState("");
@@ -18,11 +20,7 @@ export function VideoEditTab() {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const examplePrompts = [
-    "把前5秒和10-20秒拼接，加上淡入淡出转场，配欢快的音乐",
-    "保留0-15秒，调成电影色调",
-    "把5-10秒和15-25秒拼接，加溶解转场",
-  ];
+  const examplePrompts = [t("example1"), t("example2"), t("example3")];
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -32,7 +30,7 @@ export function VideoEditTab() {
 
   const handleFile = (file: File) => {
     if (!file.type.startsWith("video/")) {
-      setError("请选择视频文件");
+      setError(t("fileRequired"));
       return;
     }
     setVideoFile(file);
@@ -52,14 +50,14 @@ export function VideoEditTab() {
 
   const handleEdit = async () => {
     if (!videoFile || !prompt) {
-      setError("请选择视频文件并输入剪辑描述");
+      setError(t("inputRequired"));
       return;
     }
 
     setIsLoading(true);
     setError("");
     setResult(null);
-    setProgress("正在上传视频...");
+    setProgress(t("uploading"));
 
     try {
       const formData = new FormData();
@@ -74,11 +72,11 @@ export function VideoEditTab() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "剪辑失败");
+        throw new Error(data.error || t("editFailed"));
       }
 
       setResult(data);
-      setProgress("剪辑完成！");
+      setProgress(t("done"));
     } catch (err: any) {
       setError(err.message);
       setProgress("");
@@ -90,8 +88,8 @@ export function VideoEditTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-medium text-[#141413]" style={{ fontFamily: 'var(--font-display)' }}>AI 视频剪辑</h2>
-        <p className="text-[#6B6860] mt-1">输入一句描述，AI 自动帮你剪辑视频</p>
+        <h2 className="text-2xl font-medium text-[#141413]" style={{ fontFamily: 'var(--font-display)' }}>{t("title")}</h2>
+        <p className="text-[#6B6860] mt-1">{t("subtitle")}</p>
       </div>
 
       {/* 示例提示词 */}
@@ -141,10 +139,10 @@ export function VideoEditTab() {
                   </svg>
                 </div>
                 <p className="text-[#141413] font-medium">
-                  点击或拖拽上传视频
+                  {t("dropHere")}
                 </p>
                 <p className="text-sm text-[#6B6860] mt-1">
-                  支持 MP4, MOV, AVI 等格式
+                  {t("dropHint")}
                 </p>
               </div>
             )}
@@ -160,11 +158,11 @@ export function VideoEditTab() {
           {/* 剪辑描述 */}
           <div>
             <label className="text-sm font-medium text-[#141413] block mb-2">
-              剪辑描述
+              {t("editDesc")}
             </label>
             <Textarea
               className="bg-white border-[#C8C4BC] focus:border-[#D97757] min-h-[100px]"
-              placeholder="描述你的剪辑需求，如：把前5秒和10-20秒拼接，加上淡入淡出转场，配欢快的音乐"
+              placeholder={t("editPlaceholder")}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
             />
@@ -191,7 +189,7 @@ export function VideoEditTab() {
             disabled={isLoading || !videoFile || !prompt}
             className="w-full bg-[#D97757] hover:bg-[#C96848] shadow-sm hover:shadow-md transition-all"
           >
-            {isLoading ? "处理中..." : "开始剪辑"}
+            {isLoading ? t("processing") : t("start")}
           </Button>
         </CardContent>
       </Card>
@@ -200,7 +198,7 @@ export function VideoEditTab() {
       {result && result.outputUrl && (
         <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
           <CardHeader>
-            <CardTitle style={{ fontFamily: 'var(--font-display)' }}>剪辑结果</CardTitle>
+            <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("result")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* 视频预览 */}
@@ -214,7 +212,7 @@ export function VideoEditTab() {
             <div className="flex gap-3">
               <a href={result.outputUrl} download className="flex-1">
                 <Button className="w-full bg-[#D97757] hover:bg-[#C96848]">
-                  下载视频
+                  {t("download")}
                 </Button>
               </a>
             </div>
@@ -222,7 +220,7 @@ export function VideoEditTab() {
             {/* AI 解析的指令 */}
             {result.instruction && (
               <div className="p-4 rounded-xl bg-[#ECE9E0]">
-                <h4 className="font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>AI 解析的剪辑指令：</h4>
+                <h4 className="font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{t("instruction")}</h4>
                 <pre className="text-xs text-[#6B6860] overflow-auto font-mono">
                   {JSON.stringify(result.instruction, null, 2)}
                 </pre>
@@ -235,25 +233,25 @@ export function VideoEditTab() {
       {/* 功能说明 */}
       <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
         <CardHeader>
-          <CardTitle className="text-lg" style={{ fontFamily: 'var(--font-display)' }}>支持的功能</CardTitle>
+          <CardTitle className="text-lg" style={{ fontFamily: 'var(--font-display)' }}>{t("features")}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
             <div>
-              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>片段拼接</h4>
-              <p className="text-[#6B6860]">指定要保留的视频时间段，自动拼接</p>
+              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>{t("feat1Title")}</h4>
+              <p className="text-[#6B6860]">{t("feat1Desc")}</p>
             </div>
             <div>
-              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>转场效果</h4>
-              <p className="text-[#6B6860]">淡入淡出、溶解、擦除等多种效果</p>
+              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>{t("feat2Title")}</h4>
+              <p className="text-[#6B6860]">{t("feat2Desc")}</p>
             </div>
             <div>
-              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>智能配乐</h4>
-              <p className="text-[#6B6860]">自动匹配背景音乐，可调节音量</p>
+              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>{t("feat3Title")}</h4>
+              <p className="text-[#6B6860]">{t("feat3Desc")}</p>
             </div>
             <div>
-              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>调色预设</h4>
-              <p className="text-[#6B6860]">复古、电影感、暖色调等多种风格</p>
+              <h4 className="font-medium text-[#141413] mb-1" style={{ fontFamily: 'var(--font-heading)' }}>{t("feat4Title")}</h4>
+              <p className="text-[#6B6860]">{t("feat4Desc")}</p>
             </div>
           </div>
         </CardContent>

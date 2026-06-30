@@ -9,6 +9,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
+import { useTranslations } from "next-intl";
 
 interface TranscriptionSegment {
   start: number;
@@ -30,6 +31,7 @@ interface AudioAnalyzeTabProps {
 }
 
 export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
+  const t = useTranslations("audioAnalyze");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>("");
@@ -45,12 +47,13 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
   const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
   const [clipLoading, setClipLoading] = useState(false);
   const [clipUrl, setClipUrl] = useState<string | null>(null);
-  const [whisperModel, setWhisperModel] = useState("small");
+  const [whisperModel, setWhisperModel] = useState("assemblyai");
   const [llmProvider, setLlmProvider] = useState("deepseek");
   const [customPrompt, setCustomPrompt] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [inputMode, setInputMode] = useState<"file" | "url">("file");
   const [videoUrlInput, setVideoUrlInput] = useState("");
+  const [funasrUrl, setFunasrUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,38 +85,38 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
     if (inputMode === "file") {
       if (!selectedFile) return;
       setIsLoading(true);
-      setProgress("正在上传文件...");
+      setProgress(t("uploading"));
 
       try {
         const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
-          setProgress("Uploading file... " + Math.round(percentage) + "%");
+          setProgress(t("uploadingProgress", { percent: Math.round(percentage) }));
         });
 
         console.log("Upload response:", uploadData);
         url = uploadData.url;
         if (!url) {
           console.error("Upload returned empty URL, response:", uploadData);
-          throw new Error(`上传返回空 URL，响应: ${JSON.stringify(uploadData)}`);
+          throw new Error(t("uploadEmptyUrl", { response: JSON.stringify(uploadData) }));
         }
       } catch (error: any) {
-        alert(`上传失败: ${error.message}`);
+        alert(t("uploadFailed", { message: error.message }));
         setIsLoading(false);
         return;
       }
     } else {
       if (!videoUrlInput.trim()) {
-        alert("请输入视频 URL");
+        alert(t("urlRequired"));
         return;
       }
       setIsLoading(true);
-      setProgress("正在下载视频...");
+      setProgress(t("downloading"));
       url = videoUrlInput.trim();
     }
 
     setVideoUrl(url);
 
     try {
-      setProgress("正在提取音频并识别...");
+      setProgress(t("extracting"));
 
       let analyzeRes;
       try {
@@ -125,11 +128,12 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
             whisperModelSize: whisperModel,
             llmProvider,
             prompt: customPrompt || undefined,
+            funasrUrl: whisperModel === "funasr" ? funasrUrl : undefined,
           }),
         });
       } catch (fetchError: any) {
         console.error("Network fetch error:", fetchError);
-        throw new Error(`网络请求失败: ${fetchError.message}\n请检查：\n1. Next.js 服务器是否在运行 (pnpm dev)\n2. 网络是否正常`);
+        throw new Error(t("networkError", { message: fetchError.message }));
       }
 
       if (!analyzeRes.ok) {
@@ -223,7 +227,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
               </span>
-              音频分析
+              {t("title")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -237,7 +241,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                     : "bg-[#ECE9E0] text-[#6B6860] hover:bg-[#D8D5CC]"
                 }`}
               >
-                上传文件
+                {t("uploadFile")}
               </button>
               <button
                 onClick={() => { setInputMode("url"); resetUpload(); }}
@@ -247,7 +251,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                     : "bg-[#ECE9E0] text-[#6B6860] hover:bg-[#D8D5CC]"
                 }`}
               >
-                输入 URL
+                {t("inputUrl")}
               </button>
             </div>
 
@@ -258,10 +262,10 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                   type="url"
                   value={videoUrlInput}
                   onChange={(e) => setVideoUrlInput(e.target.value)}
-                  placeholder="输入视频 URL，如 https://example.com/video.mp4"
+                  placeholder={t("urlPlaceholder")}
                   className="bg-white border-[#C8C4BC] focus:border-[#D97757]"
                 />
-                <p className="text-xs text-[#6B6860]">支持 MP4, MOV, AVI, MKV 等格式的直链</p>
+                <p className="text-xs text-[#6B6860]">{t("urlHint")}</p>
               </div>
             )}
 
@@ -295,8 +299,8 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                     </svg>
                   </div>
-                  <p className="text-[#141413] font-medium mb-1">点击或拖拽视频文件</p>
-                  <p className="text-sm text-[#6B6860]">支持 MP4, MOV, AVI, MKV</p>
+                  <p className="text-[#141413] font-medium mb-1">{t("dropHere")}</p>
+                  <p className="text-sm text-[#6B6860]">{t("dropHint")}</p>
                 </>
               )}
               <input ref={fileInputRef} type="file" accept="video/*" onChange={handleFileSelect} className="hidden" />
@@ -315,35 +319,50 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
             {/* 设置选项 */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-[#141413] block mb-2">识别引擎</label>
+                <label className="text-sm font-medium text-[#141413] block mb-2">{t("engine")}</label>
                 <select
                   value={whisperModel}
                   onChange={(e) => setWhisperModel(e.target.value)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="assemblyai">AssemblyAI (推荐)</option>
-                  <option value="universal">Universal</option>
+                  <option value="assemblyai">{t("engineAssemblyai")}</option>
+                  <option value="funasr">{t("engineFunasr")}</option>
                 </select>
               </div>
               <div>
-                <label className="text-sm font-medium text-[#141413] block mb-2">LLM 提供商</label>
+                <label className="text-sm font-medium text-[#141413] block mb-2">{t("llmProvider")}</label>
                 <select
                   value={llmProvider}
                   onChange={(e) => setLlmProvider(e.target.value)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="deepseek">DeepSeek</option>
-                  <option value="zhipu">智谱AI</option>
+                  <option value="deepseek">{t("llmDeepseek")}</option>
+                  <option value="zhipu">{t("llmZhipu")}</option>
                 </select>
               </div>
             </div>
 
+            {/* FunASR 自托管地址 */}
+            {whisperModel === "funasr" && (
+              <div>
+                <label className="text-sm font-medium text-[#141413] block mb-2">{t("funasrUrl")}</label>
+                <Input
+                  type="url"
+                  value={funasrUrl}
+                  onChange={(e) => setFunasrUrl(e.target.value)}
+                  placeholder={t("funasrUrlPlaceholder")}
+                  className="bg-white border-[#C8C4BC] focus:border-[#D97757]"
+                />
+                <p className="text-xs text-[#9C9890] mt-1">{t("funasrUrlHint")}</p>
+              </div>
+            )}
+
             <div>
-              <label className="text-sm font-medium text-[#141413] block mb-2">自定义提示词（可选）</label>
+              <label className="text-sm font-medium text-[#141413] block mb-2">{t("customPrompt")}</label>
               <Textarea
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="例如：提取产品演示和价格介绍部分"
+                placeholder={t("customPromptPlaceholder")}
                 className="bg-white border-[#C8C4BC] focus:border-[#D97757]"
                 rows={2}
               />
@@ -351,16 +370,21 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
 
             <Button
               onClick={handleAnalyze}
-              disabled={(inputMode === "file" && !selectedFile) || (inputMode === "url" && !videoUrlInput.trim()) || isLoading}
+              disabled={
+                (inputMode === "file" && !selectedFile) ||
+                (inputMode === "url" && !videoUrlInput.trim()) ||
+                (whisperModel === "funasr" && !funasrUrl.trim()) ||
+                isLoading
+              }
               className="w-full h-11 bg-[#D97757] hover:bg-[#C96848] text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-all"
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
                   <Spinner size="sm" className="border-white" />
-                  {progress || "处理中..."}
+                  {progress || t("processing")}
                 </span>
               ) : (
-                "开始音频分析"
+                t("start")
               )}
             </Button>
           </CardContent>
@@ -375,7 +399,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </span>
-              分析结果
+              {t("result")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -383,14 +407,14 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
               <div className="space-y-4">
                 {/* 基本信息 */}
                 <div className="flex items-center gap-4 text-sm text-[#6B6860] bg-[#ECE9E0] rounded-lg px-3 py-2">
-                  <span>语言: {result.language}</span>
-                  <span>时长: {formatTime(result.duration)}</span>
-                  <span>片段: {result.segments.length} 个</span>
+                  <span>{t("language")}: {result.language}</span>
+                  <span>{t("duration")}: {formatTime(result.duration)}</span>
+                  <span>{t("segments")}: {t("segmentsCount", { count: result.segments.length })}</span>
                 </div>
 
                 {/* 片段列表 */}
                 <div className="max-h-[350px] overflow-y-auto space-y-2">
-                  <p className="text-sm font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>选择要保留的片段：</p>
+                  <p className="text-sm font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{t("selectSegments")}</p>
                   {result.segments.map((seg, i) => (
                     <div
                       key={i}
@@ -432,10 +456,10 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                     {clipLoading ? (
                       <span className="flex items-center gap-2">
                         <Spinner size="sm" className="border-white" />
-                        剪辑中...
+                        {t("clipping")}
                       </span>
                     ) : (
-                      `剪辑选中片段 (${selectedSegments.length})`
+                      t("clipSelected", { count: selectedSegments.length })
                     )}
                   </Button>
                 </div>
@@ -443,7 +467,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                 {/* 剪辑结果 */}
                 {clipUrl && (
                   <div className="mt-4 p-4 bg-[#D97757]/10 rounded-xl">
-                    <p className="text-sm font-medium text-[#D97757] mb-2">剪辑完成！</p>
+                    <p className="text-sm font-medium text-[#D97757] mb-2">{t("clipDone")}</p>
                     <video src={clipUrl} className="w-full rounded-lg" controls />
                     <a
                       href={clipUrl}
@@ -451,7 +475,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                       rel="noopener noreferrer"
                       className="block mt-2 text-sm text-[#D97757] hover:underline"
                     >
-                      点击下载视频 ↗
+                      {t("downloadVideo")}
                     </a>
                   </div>
                 )}
@@ -463,8 +487,8 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 </div>
-                <p className="text-[#6B6860]">上传视频，点击"开始音频分析"</p>
-                <p className="text-sm text-[#9C9890] mt-1">自动识别语音并智能分段</p>
+                <p className="text-[#6B6860]">{t("emptyHint")}</p>
+                <p className="text-sm text-[#9C9890] mt-1">{t("emptySubHint")}</p>
               </div>
             )}
           </CardContent>
@@ -475,7 +499,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
       {result && (
         <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
           <CardHeader>
-            <CardTitle className="text-[#141413] text-sm" style={{ fontFamily: 'var(--font-display)' }}>完整文字稿</CardTitle>
+            <CardTitle className="text-[#141413] text-sm" style={{ fontFamily: 'var(--font-display)' }}>{t("transcript")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="max-h-60 overflow-y-auto bg-[#ECE9E0] rounded-lg p-4">

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db, analysisHistory, operationLogs } from "@/lib/db";
 import { analyzeFrames, ApiProvider } from "@/lib/ai/analyzer";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
+import { defaultLocale, isLocale } from "@/i18n/config";
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,11 +35,15 @@ export async function POST(request: NextRequest) {
       frames: clientFrames,
       analyzeMode = "single",
       provider = "openrouter",
+      outputLanguage,
     } = body;
 
     if (!mediaUrl || !mediaType) {
       return NextResponse.json({ error: "Missing mediaUrl or mediaType" }, { status: 400 });
     }
+
+    // 校验 outputLanguage，未命中回落到默认
+    const resolvedLanguage = isLocale(outputLanguage) ? outputLanguage : defaultLocale;
 
     // 客户端直接传帧（浏览器提取）
     let frames: string[] = [];
@@ -68,12 +73,13 @@ export async function POST(request: NextRequest) {
 
     console.log("Calling AI analysis with", frames.length, "frames...");
 
-    // 调用 AI 分析
+    // 调用 AI 分析（按当前 locale 选择 prompt 模板）
     const result = await analyzeFrames({
       userId: session.user.id,
       provider: provider as ApiProvider,
       frames,
       mode: analyzeMode as "single" | "batch",
+      outputLanguage: resolvedLanguage,
     });
 
     if (!result.success) {
@@ -86,7 +92,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
-    // 保存到历史记录
+    // 保存到历史记录（记录语言字段，便于后续按语言过滤/展示）
     const historyRecord = await db.insert(analysisHistory).values({
       userId: session.user.id,
       mediaType,
@@ -96,6 +102,7 @@ export async function POST(request: NextRequest) {
       analyzeMode,
       prompt: result.prompt!,
       corePrompt: result.corePrompt!,
+      language: resolvedLanguage,
     }).returning();
 
     // 记录完成

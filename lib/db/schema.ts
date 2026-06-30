@@ -135,6 +135,7 @@ export const analysisHistory = pgTable(
     analyzeMode: analyzeModeEnum("analyze_mode").default("single"),
     prompt: text("prompt").notNull(), // 生成的完整提示词
     corePrompt: text("core_prompt"), // 核心提示词
+    language: text("language").default("zh").notNull(), // AI 输出语言（zh/en）
     note: text("note"),
     tags: jsonb("tags").default([]).notNull(),
     favorite: boolean("favorite").default(false).notNull(),

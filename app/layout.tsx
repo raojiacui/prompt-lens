@@ -1,19 +1,27 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-client";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getMessages, getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Prompt Lens - AI 视频提示词分析工具",
-  description: "上传视频或图片，AI 自动分析画面内容，生成精准的提示词",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("metadata");
+  return {
+    title: t("title"),
+    description: t("description"),
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const locale = await getLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="zh">
+    <html lang={locale}>
       <head>
         {/* Google Fonts - Anthropic 官方字体 */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,7 +37,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-anthropic">
-        <AuthProvider>{children}</AuthProvider>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <AuthProvider>{children}</AuthProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
