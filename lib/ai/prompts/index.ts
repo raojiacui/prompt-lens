@@ -29,6 +29,9 @@ export const ANALYSIS_PROMPTS: Record<Locale, AnalysisPrompts> = {
  * 同时兼容中文"核心提示词："和英文"Core Prompt:"两种格式。
  */
 export function extractCorePrompt(result: string): string {
+  if (!result || typeof result !== "string") {
+    return "";
+  }
   const match = result.match(/(?:核心提示词|Core Prompt)\s*[：:]\s*([^\n]+)/i);
   if (match) {
     return match[1].trim();

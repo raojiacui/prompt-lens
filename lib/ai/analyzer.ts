@@ -135,7 +135,15 @@ async function callZhipuApi(
     throw new Error("API returned empty result");
   }
 
-  return response.data.choices[0].message.content;
+  const content = response.data.choices[0].message.content;
+  if (!content) {
+    const finishReason = response.data.choices[0].finish_reason;
+    throw new Error(
+      `API returned null content (finish_reason: ${finishReason}). The model may not support image input or rejected the request.`
+    );
+  }
+
+  return content;
 }
 
 /**
