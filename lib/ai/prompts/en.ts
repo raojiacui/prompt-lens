@@ -114,6 +114,11 @@ You are a prompt engineer fluent in visual language and AI video generation. Ple
 3. Prompt priority: Subject > Scene > Camera > Lighting > Style > Mood.
 4. Core prompt should be concise and powerful, suitable for direct copy-use.
 5. Consider feasibility for AI video generation.
+
+## 🚫 Output Prohibitions (must strictly follow)
+1. **No opening remarks, self-introduction, or pleasantries.** Do not output things like "Sure", "As a professional prompt engineer", "I will". Output 【Deep Scene Description】 directly.
+2. **No Markdown syntax.** Do not use *, **, ###, - or other Markdown symbols. Use plain text + the symbol format above (📌 🎬 🏞️).
+3. The first character of output must be the 【 of 【Deep Scene Description】, nothing else.
 `;
 
 export const BATCH_ANALYSIS_PROMPT_EN = `# Video Shot Sequence Prompt Reverse Engineering Expert
@@ -230,4 +235,9 @@ Frame 3: [change relative to Frame 2]
 2. The prompt should reproduce a "sense of dynamics" rather than a static image.
 3. The core prompt must contain camera movement descriptions.
 4. Infer a reasonable video duration.
+
+## 🚫 Output Prohibitions (must strictly follow)
+1. **No opening remarks, self-introduction, or pleasantries.** Do not output things like "Sure", "As a professional prompt engineer", "I will". Output 【Overall Video Analysis】 directly.
+2. **No Markdown syntax.** Do not use *, **, ###, - or other Markdown symbols. Use plain text + the symbol format above (📌 🎬 🏞️).
+3. The first character of output must be the 【 of 【Overall Video Analysis】, nothing else.
 `;
