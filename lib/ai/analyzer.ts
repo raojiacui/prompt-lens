@@ -44,7 +44,7 @@ const API_CONFIGS = {
 
 // 环境变量中的 API Keys
 const ENV_API_KEYS = {
-  zhipu: process.env.DEEPSEEK_API_KEY || null,
+  zhipu: process.env.ZHIPU_API_KEY || null,
   openrouter: process.env.OPENROUTER_API_KEY || null,
   gemini: process.env.GEMINI_API_KEY || null,
 };
