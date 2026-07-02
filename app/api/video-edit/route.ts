@@ -4,48 +4,53 @@ import { db, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import axios from "axios";
 
-// Shotstack API 配置
-const SHOTSTACK_API_URL = "https://api.shotstack.io/v1";
-const SHOTSTACK_API_KEY_ID = process.env.SHOTSTACK_API_KEY_ID;
-const SHOTSTACK_API_SECRET = process.env.SHOTSTACK_API_SECRET;
+// 自托管 FFmpeg 服务的预期接口：
+// POST {ffmpegServiceUrl}/edit
+//   body: { videoUrl, instruction: { action, start, end, speed, segments, transition } }
+//   returns: { url } (处理后的视频 URL)
+//
+// POST {ffmpegServiceUrl}/concat
+//   body: { videoUrl, segments: [{start, end}] }
+//   returns: { url }
 
-function getShotstackHeaders() {
-  if (!SHOTSTACK_API_KEY_ID || !SHOTSTACK_API_SECRET) {
-    throw new Error("Shotstack API keys are not configured");
-  }
-  return {
-    "x-api-key": `${SHOTSTACK_API_KEY_ID}:${SHOTSTACK_API_SECRET}`,
-    "Content-Type": "application/json"
-  };
+interface EditInstruction {
+  action: "trim" | "speed" | "concat" | "none";
+  start?: number;
+  end?: number;
+  speed?: number;
+  segments?: { start: number; end: number }[];
+  transition?: string;
 }
 
-// 解析剪辑指令
+// 解析剪辑指令（用 LLM 把自然语言转成结构化指令）
 async function parseEditInstruction(
   prompt: string,
-  duration: number,
-  llmApiKey: string
-): Promise<any> {
-  const systemPrompt = `你是一个专业的视频剪辑助手。用户给出一段剪辑指令，你需要解析并返回 JSON 格式的指令。
+  duration: number
+): Promise<EditInstruction> {
+  const llmApiKey = process.env.DEEPSEEK_API_KEY;
+  if (!llmApiKey) {
+    // 没有 LLM key 时，尝试简单解析
+    return parseSimpleInstruction(prompt);
+  }
 
-当前支持的指令格式：
-- trim: 裁剪视频的一部分
-- start: 裁剪开始时间（秒）
-- end: 裁剪结束时间（秒）
-- speed: 播放速度（1 = 正常，2 = 2倍速）
+  const systemPrompt = `你是一个专业的视频剪辑助手。用户给出剪辑指令，请解析为 JSON 格式。
 
-示例输入：只保留前5秒
-示例输出：{"action": "trim", "start": 0, "end": 5}
+支持的 action 类型：
+- trim: 裁剪视频片段，需要 start 和 end（秒）
+- concat: 拼接多个片段，需要 segments 数组（每个元素含 start 和 end）
+- speed: 调整播放速度，需要 speed 数值（1=正常，2=2倍速）
+- none: 无操作
+
+可选字段：
+- transition: 转场效果，如 "fade", "dissolve", "wipe"
+
+示例输入：把前5秒和10-20秒拼接，加淡入淡出转场
+示例输出：{"action":"concat","segments":[{"start":0,"end":5},{"start":10,"end":20}],"transition":"fade"}
 
 示例输入：从第10秒到30秒
-示例输出：{"action": "trim", "start": 10, "end": 30}
+示例输出：{"action":"trim","start":10,"end":30}
 
-示例输入：加速2倍
-示例输出：{"action": "speed", "speed": 2}
-
-示例输入：裁剪中间部分，5到15秒
-示例输出：{"action": "trim", "start": 5, "end": 15}
-
-请返回 JSON 格式，不要有其他内容。`;
+只返回 JSON，不要其他内容。`;
 
   try {
     const response = await axios.post(
@@ -54,7 +59,7 @@ async function parseEditInstruction(
         model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `视频总时长 ${duration} 秒，剪辑指令：${prompt}` }
+          { role: "user", content: `视频总时长 ${duration} 秒，剪辑指令：${prompt}` },
         ],
         temperature: 0.3,
       },
@@ -75,99 +80,27 @@ async function parseEditInstruction(
     return { action: "none" };
   } catch (error) {
     console.error("LLM parsing error:", error);
-    return { action: "none" };
+    return parseSimpleInstruction(prompt);
   }
 }
 
-// 使用 Shotstack 进行视频剪辑
-async function editVideoWithShotstack(
-  videoUrl: string,
-  instruction: any
-): Promise<any> {
-  const headers = getShotstackHeaders();
-
-  // 构建剪辑命令
-  const clip: any = {
-    asset: {
-      type: "video",
-      src: videoUrl
-    },
-    start: 0,
-    length: instruction.end ? instruction.end - instruction.start : 10,
-    position: 0
-  };
-
-  // 如果有裁剪设置
-  if (instruction.action === "trim" && instruction.start !== undefined) {
-    clip.start = instruction.start;
-    if (instruction.end) {
-      clip.length = instruction.end - instruction.start;
-    }
+// 简单指令解析（无 LLM 时降级）
+function parseSimpleInstruction(prompt: string): EditInstruction {
+  // 尝试匹配 "X到Y秒" / "X-Y秒"
+  const rangeMatch = prompt.match(/(\d+)\s*[到\-~]\s*(\d+)\s*秒/);
+  if (rangeMatch) {
+    return {
+      action: "trim",
+      start: parseInt(rangeMatch[1]),
+      end: parseInt(rangeMatch[2]),
+    };
   }
-
-  // 如果有速度设置
-  if (instruction.action === "speed" && instruction.speed) {
-    clip.fit = "crop";
-    clip.speed = instruction.speed;
+  // 尝试匹配 "前X秒"
+  const frontMatch = prompt.match(/前\s*(\d+)\s*秒/);
+  if (frontMatch) {
+    return { action: "trim", start: 0, end: parseInt(frontMatch[1]) };
   }
-
-  const timeline: any = {
-    background: "#000000",
-    tracks: [
-      {
-        clips: [clip]
-      }
-    ]
-  };
-
-  const payload = {
-    timeline,
-    output: {
-      format: "mp4",
-      resolution: "1080p"
-    }
-  };
-
-  console.log("[Shotstack] Sending edit request...");
-
-  // 发送编辑任务
-  const response = await axios.post(
-    `${SHOTSTACK_API_URL}/render`,
-    payload,
-    { headers }
-  );
-
-  const renderId = response.data.response.id;
-  console.log("[Shotstack] Render started, ID:", renderId);
-
-  // 等待渲染完成
-  let resultUrl = null;
-  for (let i = 0; i < 60; i++) {
-    await new Promise(resolve => setTimeout(resolve, 5000));
-
-    const statusRes = await axios.get(
-      `${SHOTSTACK_API_URL}/render/${renderId}`,
-      { headers }
-    );
-
-    const status = statusRes.data.response.status;
-    console.log("[Shotstack] Status:", status);
-
-    if (status === "failed") {
-      throw new Error("Shotstack render failed");
-    }
-
-    if (status === "done") {
-      resultUrl = statusRes.data.response.url;
-      break;
-    }
-  }
-
-  if (!resultUrl) {
-    throw new Error("Shotstack render timeout");
-  }
-
-  return resultUrl;
+  return { action: "none" };
 }
 
 export async function POST(request: NextRequest) {
@@ -175,18 +108,15 @@ export async function POST(request: NextRequest) {
     console.log("[video-edit] Request received");
 
     const session = await auth.api.getSession({ headers: request.headers });
-
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 速率限制检查
     const { allowed, resetIn } = checkRateLimit(
       session.user.id,
       RateLimitConfigs.analyze.limit,
       RateLimitConfigs.analyze.windowMs
     );
-
     if (!allowed) {
       return NextResponse.json(
         { error: "请求过于频繁，请稍后再试", retryAfter: Math.ceil(resetIn / 1000) },
@@ -194,97 +124,89 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 检查 Shotstack 配置
-    if (!SHOTSTACK_API_KEY_ID || !SHOTSTACK_API_SECRET) {
+    const body = await request.json().catch(() => null);
+    const videoUrl = body?.mediaUrl;
+    const prompt: string = (body?.prompt || "").trim();
+    const ffmpegServiceUrl: string = (body?.ffmpegServiceUrl || "").trim();
+
+    if (!videoUrl) {
+      return NextResponse.json({ error: "Missing mediaUrl" }, { status: 400 });
+    }
+    if (!ffmpegServiceUrl) {
       return NextResponse.json(
-        { error: "Shotstack is not configured. Please add SHOTSTACK_API_KEY_ID and SHOTSTACK_API_SECRET to environment variables." },
-        { status: 500 }
+        { error: "请先在设置中配置自托管 FFmpeg 服务地址" },
+        { status: 400 }
       );
     }
 
-    // 检查 content-type
-    const contentType = request.headers.get("content-type") || "";
-    console.log("[video-edit] Content-Type:", contentType);
-
-    let videoUrl: string;
-    let prompt: string;
-
-    if (contentType.includes("multipart/form-data")) {
-      // 文件上传模式
-      const formData = await request.formData();
-      const file = formData.get("file") as File | null;
-      const urlFromForm = formData.get("mediaUrl") as string | null;
-      prompt = (formData.get("prompt") as string) || "";
-
-      if (file && !urlFromForm) {
-        // 需要先上传文件到 B2 获取 URL
-        const { uploadToR2, generateUserFilePath } = await import("@/lib/cloudflare/r2");
-        const buffer = Buffer.from(await file.arrayBuffer());
-        const key = generateUserFilePath(session.user.id, file.name, "video");
-
-        await uploadToR2(buffer, key, file.type || "video/mp4");
-        videoUrl = `${process.env.B2_PUBLIC_URL}/${key}`;
-        console.log("[video-edit] File uploaded to B2:", videoUrl);
-      } else if (urlFromForm) {
-        videoUrl = urlFromForm;
-      } else {
-        return NextResponse.json(
-          { error: "Missing file or mediaUrl" },
-          { status: 400 }
-        );
-      }
-    } else {
-      // JSON 模式
-      const body = await request.json().catch((err) => {
-        console.error("[video-edit] JSON parse error:", err);
-        throw new Error("Invalid JSON in request body");
-      });
-
-      videoUrl = body.mediaUrl;
-      prompt = body.prompt || "";
-
-      if (!videoUrl) {
-        return NextResponse.json(
-          { error: "Missing mediaUrl" },
-          { status: 400 }
-        );
-      }
-    }
-
-    console.log("[video-edit] Processing:", { videoUrl: videoUrl?.substring(0, 50), prompt });
+    console.log("[video-edit] Processing:", { videoUrl: videoUrl.substring(0, 50), prompt, ffmpegServiceUrl });
 
     // 解析剪辑指令
-    let instruction = { action: "upload" };
+    let instruction: EditInstruction = { action: "none" };
     if (prompt) {
-      const llmApiKey = process.env.DEEPSEEK_API_KEY;
-      if (llmApiKey) {
-        instruction = await parseEditInstruction(prompt, 60, llmApiKey);
-        console.log("[video-edit] Parsed instruction:", instruction);
-      }
+      instruction = await parseEditInstruction(prompt, 60);
+      console.log("[video-edit] Parsed instruction:", instruction);
     }
 
-    // 执行剪辑
-    let outputUrl: string;
-    if (instruction.action === "trim" || instruction.action === "speed" || instruction.action === "cut") {
-      outputUrl = await editVideoWithShotstack(videoUrl, instruction);
-      console.log("[video-edit] Edit complete, URL:", outputUrl);
-    } else {
-      // 没有剪辑指令，返回原视频 URL
-      outputUrl = videoUrl;
-      console.log("[video-edit] No edit needed, returning original URL");
+    // 如果没有剪辑指令，直接返回原视频
+    if (instruction.action === "none") {
+      return NextResponse.json({
+        success: true,
+        outputUrl: videoUrl,
+        instruction,
+        message: "无剪辑指令，返回原视频",
+      });
+    }
+
+    // 调用自托管 FFmpeg 服务
+    // 支持两种端点：/edit（单指令）或 /concat（多段拼接）
+    let endpoint = "/edit";
+    if (instruction.action === "concat" && instruction.segments) {
+      endpoint = "/concat";
+    }
+
+    const ffmpegResponse = await axios.post(
+      `${ffmpegServiceUrl.replace(/\/$/, "")}${endpoint}`,
+      {
+        videoUrl,
+        instruction,
+      },
+      { timeout: 300000 } // 5 分钟超时，依赖自托管服务的处理能力
+    );
+
+    const outputUrl: string = ffmpegResponse.data?.url || ffmpegResponse.data?.outputUrl;
+    if (!outputUrl) {
+      throw new Error("FFmpeg 服务未返回结果 URL");
+    }
+
+    // 记录日志
+    try {
+      await db.insert(operationLogs).values({
+        userId: session.user.id,
+        action: "video.edit",
+        resourceType: "video",
+        metadata: {
+          mediaUrl: videoUrl,
+          prompt,
+          instruction,
+          outputUrl,
+          ffmpegServiceUrl,
+        },
+      });
+    } catch (logError) {
+      console.warn("Failed to log video edit:", logError);
     }
 
     return NextResponse.json({
       success: true,
       outputUrl,
-      message: instruction.action === "none" ? "原视频" : "视频已剪辑完成"
+      instruction,
+      message: "视频已剪辑完成",
     });
   } catch (error: any) {
     console.error("[video-edit] Error:", error);
-
-    return NextResponse.json(
-      { error: error.message || "Video edit failed" },
-      { status: 500 }
-    );
+    const message = error?.response?.data?.error || error?.message || "Video edit failed";
+    const status = error?.response?.status || 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

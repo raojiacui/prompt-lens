@@ -240,8 +240,9 @@
     "fileRequired": "Please select a video file",
     "editDesc": "Edit Description",
     "editPlaceholder": "Describe your edit needs, e.g. concatenate first 5s and 10-20s with fade transitions and upbeat music",
-    "inputRequired": "Please select a video and enter an edit description",
+    "inputRequired": "Please enter an edit description",
     "uploading": "Uploading video...",
+    "uploadingProgress": "Uploading... {percent}%",
     "editFailed": "Edit failed",
     "done": "Edit complete!",
     "processing": "Processing...",
@@ -257,7 +258,16 @@
     "feat3Title": "Smart Music",
     "feat3Desc": "Auto-match background music with adjustable volume",
     "feat4Title": "Color Presets",
-    "feat4Desc": "Vintage, cinematic, warm tones and more"
+    "feat4Desc": "Vintage, cinematic, warm tones and more",
+    "uploadFile": "Upload File",
+    "inputUrl": "Enter URL",
+    "urlPlaceholder": "Enter video URL, e.g. https://example.com/video.mp4",
+    "urlHint": "Video must be accessible from your self-hosted FFmpeg service",
+    "urlRequired": "Please enter a video URL",
+    "ffmpegUrl": "FFmpeg Service URL",
+    "ffmpegUrlPlaceholder": "https://your-ffmpeg-service.example.com",
+    "ffmpegUrlHint": "Address of your self-hosted FFmpeg video processing service",
+    "ffmpegUrlRequired": "Please enter FFmpeg service URL"
   },
   "audioAnalyze": {
     "title": "Audio Analysis",

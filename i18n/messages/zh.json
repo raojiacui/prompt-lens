@@ -240,8 +240,9 @@
     "fileRequired": "请选择视频文件",
     "editDesc": "剪辑描述",
     "editPlaceholder": "描述你的剪辑需求，如：把前5秒和10-20秒拼接，加上淡入淡出转场，配欢快的音乐",
-    "inputRequired": "请选择视频文件并输入剪辑描述",
+    "inputRequired": "请输入剪辑描述",
     "uploading": "正在上传视频...",
+    "uploadingProgress": "正在上传... {percent}%",
     "editFailed": "剪辑失败",
     "done": "剪辑完成！",
     "processing": "处理中...",
@@ -257,7 +258,16 @@
     "feat3Title": "智能配乐",
     "feat3Desc": "自动匹配背景音乐，可调节音量",
     "feat4Title": "调色预设",
-    "feat4Desc": "复古、电影感、暖色调等多种风格"
+    "feat4Desc": "复古、电影感、暖色调等多种风格",
+    "uploadFile": "上传文件",
+    "inputUrl": "输入 URL",
+    "urlPlaceholder": "输入视频 URL，如 https://example.com/video.mp4",
+    "urlHint": "视频需可被自托管 FFmpeg 服务访问",
+    "urlRequired": "请输入视频 URL",
+    "ffmpegUrl": "FFmpeg 服务地址",
+    "ffmpegUrlPlaceholder": "https://your-ffmpeg-service.example.com",
+    "ffmpegUrlHint": "自托管的 FFmpeg 视频处理服务地址，部署后填写",
+    "ffmpegUrlRequired": "请填写 FFmpeg 服务地址"
   },
   "audioAnalyze": {
     "title": "音频分析",
