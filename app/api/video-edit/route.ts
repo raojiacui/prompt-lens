@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
     try {
       await db.insert(operationLogs).values({
         userId: session.user.id,
-        action: "video.edit",
+        action: "video.edit.complete",
         resourceType: "video",
         metadata: {
           mediaUrl: videoUrl,
