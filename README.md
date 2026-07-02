@@ -87,70 +87,122 @@ AI 视频提示词分析工具 - 网页版
 - **前端**: Next.js 15, React 19, TypeScript
 - **UI**: Tailwind CSS, shadcn/ui
 - **后端**: Next.js API Routes
-- **数据库**: Supabase PostgreSQL, Drizzle ORM
-- **认证**: better-auth
-- **存储**: Backblaze B2
-- **视频处理**: 调用shotstack api（没买服务器部署ffmpeg）
+- **数据库**: PostgreSQL（本地用 Docker / 云端用 Supabase，二选一）+ Drizzle ORM
+- **认证**: better-auth（支持 Google / GitHub / 邮箱验证码登录）
+- **存储**: Backblaze B2（私有 bucket + 签名 URL，免费 10GB）
+- **音频转录**: AssemblyAI（每月免费 1 小时）/ FunASR（自托管，完全免费）
+- **视频生成**: Kie.ai（Wan 2.7 文生视频）
+- **视频剪辑**: 自托管 FFmpeg 服务（用户自行部署，无需付费）
 - **测试**: Vitest, Playwright
 
 ## 快速开始
 
-### 1. 安装依赖
+> **小白用户**：可以直接访问线上版 https://prompt-lens.cc.cd ，登录就能用，零配置。
+>
+> **想本地跑/自己部署**：请阅读详细教程 **[本地部署教程](./LOCAL_SETUP.md)** ，从安装软件到启动应用，每一步都有截图级说明。
+
+简要步骤：
 
 ```bash
+# 1. 克隆代码
+git clone https://github.com/raojiacui/prompt-lens.git
+cd prompt-lens
+
+# 2. 安装依赖
 pnpm install
-```
 
-### 2. 配置环境变量
+# 3. 复制环境变量模板
+cp .env.example .env.local
+# 然后编辑 .env.local 填入配置（数据库、B2、AI key 等）
+# 详细配置说明见 LOCAL_SETUP.md
 
-复制 `.env.example` 到 `.env` 并填写配置：
+# 4. 初始化数据库
+pnpm db:push
 
-```bash
-cp .env.example .env
-```
-
-必需的环境变量：
-- `DATABASE_URL` - PostgreSQL 数据库连接
-- `BETTER_AUTH_SECRET` - better-auth 密钥
-- `NEXT_PUBLIC_GOOGLE_CLIENT_ID` - Google OAuth Client ID
-- `GOOGLE_CLIENT_SECRET` - Google OAuth Client Secret
-- `b2_*` - backblaze b2 存储配置
-
-### 3. 数据库设置
-
-```bash
-# 生成迁移文件
-pnpm db:generate
-
-# 执行迁移
-pnpm db:migrate
-```
-
-### 4. 运行开发服务器
-
-```bash
+# 5. 启动开发服务器
 pnpm dev
 ```
 
-访问 https://prompt-lens.cc.cd
+访问 http://localhost:3000 即可使用。
+
+> 完整的环境变量说明、Docker 数据库一键启动、Google 登录配置、AI key 注册流程等，**全部在 [LOCAL_SETUP.md](./LOCAL_SETUP.md) 里**。
 
 ## 使用说明
 
-### 配置 API Key
+### 配置 AI API Key
 
-1. 登录后（注意一定要先登录哦，否则在使用功能的时候会出现unauthorized）进入「设置」页面
-2. 选择 API 提供商（智谱AI/Gemini/OpenRouter）
-3. 输入您的 API Key
-4. 保存配置
-5. 其实本网站已经配置了我的api（openrouter的），是可以正常使用的，用你们自己的也当然是可以的
+1. **先登录**（不登录会一直报 Unauthorized）—— 可以用 Google 登录，或用邮箱收验证码登录
+2. 进入「设置」页面
+3. 选择 API 提供商（智谱AI / Gemini / OpenRouter / Kie.ai）
+4. 输入对应的 API Key
+5. 保存
 
-### 分析视频/图片
+> 本项目已内置作者配置的 OpenRouter key，开箱即用。但建议你用自己的 key，避免被限流。
 
-1. 在首页点击上传或拖拽文件（建议不要上传a for several minutes视频，可以将视频切分成大概6-10秒的镜头来分析，这样抽8帧进行分析的话，提示词就会非常详细，如果你直接上传a for several minutes视频，还是抽8帧进行分析，这样生成的提示词就会略过很多内容，你再拿去生成视频就不能达到原效果）
+### 分析视频/图片（提取提示词）
+
+1. 在首页点击上传或拖拽文件
+   - **建议**：把长视频切分成 6-10 秒的镜头单独分析，这样抽帧分析的提示词更详细
+   - **不建议**：直接上传几分钟的长视频，会抽不到关键帧，提示词会很笼统
 2. 点击「开始分析」
-3. 等待 AI 分析完成（大概30秒）
+3. 等待 AI 分析完成（大概 30 秒）
 4. 复制生成的提示词
-5. 稍加修改后在视频生成页面就可以生成你自己的视频了（这里有点久，大概2-3分钟）
+5. 稍加修改后在视频生成页面生成你自己的视频（生成约 2-3 分钟）
+
+### 音频分析（提取字幕 + 智能分段）
+
+1. 进入音频分析页签
+2. 上传视频或填视频 URL
+3. 选择转录引擎：
+   - **AssemblyAI**：云端服务，每月免费 1 小时，开箱即用
+   - **FunASR**：自托管，完全免费，需要自己部署服务（适合高频使用）
+4. 等待转录 + LLM 智能分段完成
+5. 可以勾选感兴趣的片段一键剪辑导出
+
+### 视频剪辑（自托管 FFmpeg 模式）
+
+视频剪辑功能需要一个自托管的 FFmpeg 服务（Vercel 跑不动 FFmpeg）。
+
+**对普通用户的建议**：如果你只是偶尔剪视频，可以用本地的视频剪辑软件（剪映、达芬奇）代替这个功能。
+
+**对开发者**：如果你要完整启用这个功能，需要自己部署一个 HTTP 包装的 FFmpeg 服务，接口约定：
+
+```http
+POST /edit
+Content-Type: application/json
+
+{
+  "videoUrl": "https://签名URL",
+  "instruction": {
+    "action": "trim" | "speed",
+    "start": 0,
+    "end": 10,
+    "speed": 2
+  }
+}
+
+# 响应
+{ "url": "https://处理后的视频URL" }
+```
+
+```http
+POST /concat
+Content-Type: application/json
+
+{
+  "videoUrl": "https://签名URL",
+  "instruction": {
+    "action": "concat",
+    "segments": [{"start":0,"end":5},{"start":10,"end":20}],
+    "transition": "fade"
+  }
+}
+
+# 响应
+{ "url": "https://处理后的视频URL" }
+```
+
+部署好后，在视频剪辑页面填入服务地址即可使用。
 
 ## 项目结构
 
