@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
     if (provider === "gemini" && !apiKey.startsWith("AIza")) {
       return NextResponse.json({ error: "Invalid Gemini API Key format" }, { status: 400 });
     }
-    if (provider === "kie" && !apiKey.startsWith("kie-")) {
-      return NextResponse.json({ error: "Invalid Kie.ai API Key format (should start with kie-)" }, { status: 400 });
+    if (provider === "kie" && apiKey.trim().length < 16) {
+      return NextResponse.json({ error: "Invalid Kie.ai API Key format" }, { status: 400 });
     }
 
     // 加密 API Key
