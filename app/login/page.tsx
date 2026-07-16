@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { Globe, WorldMapBackground } from "@/components/globe";
+import { LoginGlobeBackground } from "@/components/login-globe-background";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -141,14 +141,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-anthropic flex items-center justify-center p-4 relative">
-      {/* 3D 地球仪背景 */}
-      <Globe />
-
-      {/* 世界地图背景 */}
-      <WorldMapBackground />
-
-      {/* 遮罩层，让内容更清晰 */}
-      <div className="fixed inset-0 bg-[#F5F3EC]/60 pointer-events-none z-0"></div>
+      <LoginGlobeBackground />
 
       <div className="relative w-full max-w-md z-10">
         {/* Logo */}
