@@ -1,7 +1,7 @@
 import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
 // 时间轴片段
@@ -80,7 +80,10 @@ async function getUserApiKey(
 ): Promise<string | null> {
   // 先从数据库读取
   const result = await db.query.userApiKeys.findFirst({
-    where: eq(userApiKeys.userId, userId),
+    where: and(
+      eq(userApiKeys.userId, userId),
+      eq(userApiKeys.provider, provider)
+    ),
   });
 
   if (result && result.isActive) {

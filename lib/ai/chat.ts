@@ -58,19 +58,17 @@ interface ChatOptions {
  * 注意：deepseek 只支持环境变量，不存储在数据库
  */
 async function getApiKey(userId: string, provider: ChatProvider): Promise<string | null> {
-  // 1. 优先检查环境变量
-  const envKey = ENV_API_KEYS[provider];
-  if (envKey) {
-    console.log(`[Chat] Using env API key for ${provider}`);
-    return envKey;
-  }
-
-  // 2. deepseek 不支持数据库存储，直接返回
+  // deepseek 不支持数据库存储，直接使用环境变量
   if (provider === "deepseek") {
+    const envKey = ENV_API_KEYS[provider];
+    if (envKey) {
+      console.log(`[Chat] Using env API key for ${provider}`);
+      return envKey;
+    }
     return null;
   }
 
-  // 3. 从数据库读取用户配置的 API Key (仅支持 zhipu/gemini/openrouter)
+  // 优先从数据库读取用户配置的 API Key (仅支持 zhipu/gemini/openrouter)
   const result = await db.query.userApiKeys.findFirst({
     where: and(
       eq(userApiKeys.userId, userId),
@@ -79,6 +77,11 @@ async function getApiKey(userId: string, provider: ChatProvider): Promise<string
   });
 
   if (!result || !result.isActive) {
+    const envKey = ENV_API_KEYS[provider];
+    if (envKey) {
+      console.log(`[Chat] Using env API key for ${provider}`);
+      return envKey;
+    }
     return null;
   }
 
@@ -89,6 +92,11 @@ async function getApiKey(userId: string, provider: ChatProvider): Promise<string
     return result.apiKey;
   } catch (error) {
     console.error(`[Chat] Failed to decrypt API key for ${provider}:`, error);
+    const envKey = ENV_API_KEYS[provider];
+    if (envKey) {
+      console.log(`[Chat] Using env API key for ${provider}`);
+      return envKey;
+    }
     return null;
   }
 }
