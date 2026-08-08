@@ -1,55 +1,96 @@
 import {
-  S3Client,
-  PutObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
-  CreateMultipartUploadCommand,
-  UploadPartCommand,
-  CompleteMultipartUploadCommand,
-  AbortMultipartUploadCommand,
+  PutObjectCommand,
+  S3Client,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { readFile, unlink } from "fs/promises";
-import path from "path";
 import { randomUUID } from "crypto";
+import { readFile, unlink } from "fs/promises";
 
-// Backblaze B2 配置
-const b2Region = process.env.B2_REGION || "us-west-000";
-console.log("B2 env check:", {
-  region: b2Region,
-  bucket: process.env.B2_BUCKET_NAME,
-  hasAccessKey: !!process.env.B2_ACCESS_KEY_ID,
-  hasSecretKey: !!process.env.B2_SECRET_ACCESS_KEY,
-  publicUrl: process.env.B2_PUBLIC_URL,
-  accessKey: process.env.B2_ACCESS_KEY_ID,
+const accountId = process.env.R2_ACCOUNT_ID;
+const endpoint = process.env.R2_ENDPOINT || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : undefined);
+const accessKeyId = process.env.R2_ACCESS_KEY_ID || process.env.B2_ACCESS_KEY_ID;
+const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || process.env.B2_SECRET_ACCESS_KEY;
+const bucketName = process.env.R2_BUCKET_NAME || process.env.B2_BUCKET_NAME;
+const publicUrl = (process.env.R2_PUBLIC_URL || process.env.B2_PUBLIC_URL || "").replace(/\/$/, "");
+
+function requireR2Config() {
+  const missing = [
+    ["R2_ENDPOINT or R2_ACCOUNT_ID", endpoint],
+    ["R2_ACCESS_KEY_ID", accessKeyId],
+    ["R2_SECRET_ACCESS_KEY", secretAccessKey],
+    ["R2_BUCKET_NAME", bucketName],
+  ].filter(([, value]) => !value);
+
+  if (missing.length > 0) {
+    throw new Error(`R2 storage is not configured. Missing: ${missing.map(([name]) => name).join(", ")}`);
+  }
+}
+
+function requirePublicUrl() {
+  if (!publicUrl) {
+    throw new Error("R2_PUBLIC_URL is not configured");
+  }
+}
+
+const s3Client = new S3Client({
+  region: "auto",
+  endpoint,
+  credentials: accessKeyId && secretAccessKey
+    ? {
+        accessKeyId,
+        secretAccessKey,
+      }
+    : undefined,
+  forcePathStyle: true,
 });
 
-const b2Config = {
-  region: "us-east-1", // B2 S3 API 固定用 AWS 标准 region
-  endpoint: `https://s3.${b2Region}.backblazeb2.com`,
-  credentials: {
-    accessKeyId: process.env.B2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.B2_SECRET_ACCESS_KEY!,
-  },
-  forcePathStyle: true,
-};
+export function getR2PublicUrl(key: string): string {
+  requirePublicUrl();
+  return `${publicUrl}/${key.replace(/^\/+/, "")}`;
+}
 
-const bucketName = process.env.B2_BUCKET_NAME!;
-const publicUrl = process.env.B2_PUBLIC_URL!;
+export function extractR2Key(url: string): string | null {
+  try {
+    const parsed = new URL(url);
 
-// 创建 S3 客户端
-const s3Client = new S3Client(b2Config);
+    if (endpoint && parsed.origin === new URL(endpoint).origin) {
+      const pathname = parsed.pathname.replace(/^\/+/, "");
+      const prefix = bucketName ? `${bucketName}/` : "";
+      return prefix && pathname.startsWith(prefix) ? pathname.slice(prefix.length) : pathname;
+    }
 
-/**
- * 上传文件到 B2
- */
-export async function uploadToB2(
-  file: Buffer | string,
+    if (parsed.hostname.endsWith(".r2.cloudflarestorage.com")) {
+      const pathname = parsed.pathname.replace(/^\/+/, "");
+      const prefix = bucketName ? `${bucketName}/` : "";
+      return prefix && pathname.startsWith(prefix) ? pathname.slice(prefix.length) : pathname;
+    }
+
+    if (publicUrl && parsed.href.startsWith(`${publicUrl}/`)) {
+      return parsed.href.slice(publicUrl.length + 1);
+    }
+
+    // Backward compatibility for records created before the R2 migration.
+    const b2S3Match = url.match(/s3\.[a-z0-9-]+\.backblazeb2\.com\/[^/]+\/(.+)$/);
+    if (b2S3Match) return b2S3Match[1];
+
+    const b2FileMatch = url.match(/backblazeb2\.com\/file\/[^/]+\/(.+)$/);
+    if (b2FileMatch) return b2FileMatch[1];
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+export async function uploadToR2(
+  file: Buffer | Uint8Array | string,
   key: string,
   contentType: string
 ): Promise<string> {
   try {
-    // 直接使用 PutObjectCommand（与测试接口一致）
+    requireR2Config();
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: key,
@@ -58,19 +99,17 @@ export async function uploadToB2(
     });
 
     await s3Client.send(command);
-    return `${publicUrl}/${key}`;
+    return getR2PublicUrl(key);
   } catch (error: any) {
-    console.error("B2 upload error:", error);
+    console.error("R2 upload error:", error);
     const errorMessage = error?.message || error?.Code || JSON.stringify(error);
-    throw new Error(`B2 upload failed: ${errorMessage}`);
+    throw new Error(`R2 upload failed: ${errorMessage}`);
   }
 }
 
-/**
- * 从 B2 删除文件
- */
-export async function deleteFromB2(key: string): Promise<void> {
+export async function deleteFromR2(key: string): Promise<void> {
   try {
+    requireR2Config();
     await s3Client.send(
       new DeleteObjectCommand({
         Bucket: bucketName,
@@ -78,16 +117,14 @@ export async function deleteFromB2(key: string): Promise<void> {
       })
     );
   } catch (error) {
-    console.error("B2 delete error:", error);
+    console.error("R2 delete error:", error);
     throw new Error("Failed to delete file");
   }
 }
 
-/**
- * 从 B2 获取文件
- */
-export async function getFromB2(key: string): Promise<Buffer> {
+export async function getFromR2(key: string): Promise<Buffer> {
   try {
+    requireR2Config();
     const response = await s3Client.send(
       new GetObjectCommand({
         Bucket: bucketName,
@@ -95,77 +132,53 @@ export async function getFromB2(key: string): Promise<Buffer> {
       })
     );
 
-    // 将流转换为 Buffer
     const stream = response.Body as any;
     const chunks: Buffer[] = [];
 
     for await (const chunk of stream) {
-      chunks.push(chunk);
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
     }
 
     return Buffer.concat(chunks);
   } catch (error) {
-    console.error("B2 get error:", error);
+    console.error("R2 get error:", error);
     throw new Error("Failed to get file");
   }
 }
 
-// 兼容旧函数名
-export const uploadToR2 = uploadToB2;
-export const deleteFromR2 = deleteFromB2;
-export const getFromR2 = getFromB2;
-
-/**
- * 生成签名 URL（私有 Bucket 访问方式）
- * @param key B2 中的文件 key
- * @param expiresIn 过期时间（秒），默认 3600（1小时）
- * @returns 带签名的可访问 URL
- */
-export async function getSignedUrlFromB2(key: string, expiresIn: number = 3600): Promise<string> {
+export async function getSignedUrlFromR2(key: string, expiresIn: number = 3600): Promise<string> {
   try {
+    requireR2Config();
     const command = new GetObjectCommand({
       Bucket: bucketName,
       Key: key,
     });
-    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
-    return signedUrl;
+    return await getSignedUrl(s3Client, command, { expiresIn });
   } catch (error) {
-    console.error("B2 signed URL error:", error);
+    console.error("R2 signed URL error:", error);
     throw new Error("Failed to generate signed URL");
   }
 }
 
-export const getSignedUrlFromR2 = getSignedUrlFromB2;
-
-/**
- * 生成预签名上传 URL（用于大文件直传）
- * @param key B2 中的文件 key
- * @param contentType 文件的 MIME 类型
- * @param expiresIn 过期时间（秒），默认 3600（1小时）
- * @returns 预签名上传 URL
- */
 export async function getPresignedUploadUrl(
   key: string,
   contentType: string,
   expiresIn: number = 3600
 ): Promise<string> {
   try {
+    requireR2Config();
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: key,
       ContentType: contentType,
     });
-    const signedUrl = await getSignedUrl(s3Client, command, { expiresIn });
-    return signedUrl;
+    return await getSignedUrl(s3Client, command, { expiresIn });
   } catch (error) {
-    console.error("B2 presigned upload URL error:", error);
+    console.error("R2 presigned upload URL error:", error);
     throw new Error("Failed to generate presigned upload URL");
   }
 }
 
-/**
- * 生成用户文件路径
- */
 export function generateUserFilePath(
   userId: string,
   filename: string,
@@ -176,9 +189,6 @@ export function generateUserFilePath(
   return `users/${userId}/${type}/${uniqueName}`;
 }
 
-/**
- * 临时文件上传（用于视频处理）
- */
 export async function uploadTempFile(
   filePath: string,
   filename: string
@@ -187,9 +197,8 @@ export async function uploadTempFile(
   const contentType = getContentType(filename);
   const key = `temp/${randomUUID()}-${filename}`;
 
-  const url = await uploadToB2(fileBuffer, key, contentType);
+  const url = await uploadToR2(fileBuffer, key, contentType);
 
-  // 删除本地临时文件
   try {
     await unlink(filePath);
   } catch (error) {
@@ -199,9 +208,6 @@ export async function uploadTempFile(
   return url;
 }
 
-/**
- * 根据文件扩展名获取 Content-Type
- */
 function getContentType(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase();
   const mimeTypes: Record<string, string> = {
@@ -219,9 +225,6 @@ function getContentType(filename: string): string {
   return mimeTypes[ext || ""] || "application/octet-stream";
 }
 
-/**
- * 检查文件类型是否允许
- */
 export function isAllowedFileType(
   filename: string,
   allowedTypes: ("video" | "image")[]
@@ -237,10 +240,13 @@ export function isAllowedFileType(
   );
 }
 
-/**
- * 检查文件大小是否超过限制
- */
 export function isFileSizeValid(size: number, maxSizeMB: number = 100): boolean {
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   return size <= maxSizeBytes;
 }
+
+// Backward-compatible names for older routes/imports during migration.
+export const uploadToB2 = uploadToR2;
+export const deleteFromB2 = deleteFromR2;
+export const getFromB2 = getFromR2;
+export const getSignedUrlFromB2 = getSignedUrlFromR2;

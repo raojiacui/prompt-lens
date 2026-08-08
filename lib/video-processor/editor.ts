@@ -5,7 +5,7 @@ import fsSync from "fs";
 import { randomUUID } from "crypto";
 import { Readable } from "stream";
 import { pipeline } from "stream/promises";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { uploadToR2 } from "@/lib/cloudflare/r2";
 
 // 设置 FFmpeg 路径
 const ffmpegPath = path.join(
@@ -20,29 +20,14 @@ const ffmpegPath = path.join(
 );
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-// B2 配置（可选）
-const b2Config = {
-  region: process.env.B2_REGION || "us-west-000",
-  accessKeyId: process.env.B2_ACCESS_KEY_ID,
-  secretAccessKey: process.env.B2_SECRET_ACCESS_KEY,
-  bucketName: process.env.B2_BUCKET_NAME || "prompt-analyzer",
-  publicUrl: process.env.B2_PUBLIC_URL || "https://cdn.example.com",
-};
-
-// 仅在配置了 B2 时初始化 S3Client
-const hasB2Config = b2Config.accessKeyId && b2Config.secretAccessKey;
-
-let s3Client: S3Client | null = null;
-if (hasB2Config) {
-  s3Client = new S3Client({
-    region: b2Config.region,
-    endpoint: `https://s3.${b2Config.region}.backblazeb2.com`,
-    credentials: {
-      accessKeyId: b2Config.accessKeyId!,
-      secretAccessKey: b2Config.secretAccessKey!,
-    },
-  });
-}
+// R2 配置（可选）
+const hasR2Config = Boolean(
+  (process.env.R2_ENDPOINT || process.env.R2_ACCOUNT_ID) &&
+  (process.env.R2_ACCESS_KEY_ID || process.env.B2_ACCESS_KEY_ID) &&
+  (process.env.R2_SECRET_ACCESS_KEY || process.env.B2_SECRET_ACCESS_KEY) &&
+  (process.env.R2_BUCKET_NAME || process.env.B2_BUCKET_NAME) &&
+  (process.env.R2_PUBLIC_URL || process.env.B2_PUBLIC_URL)
+);
 
 // 预设音乐 URL（免费版权音乐）
 const MUSIC_PRESETS: Record<string, string> = {
@@ -314,20 +299,9 @@ export async function editVideo(
     const videoBuffer = await fs.readFile(finalFile);
     let outputUrl: string;
 
-    if (hasB2Config && s3Client) {
-      // 上传到 R2
+    if (hasR2Config) {
       const outputKey = `users/${userId}/videos/${randomUUID()}_edited.mp4`;
-
-      await s3Client.send(
-        new PutObjectCommand({
-          Bucket: b2Config.bucketName,
-          Key: outputKey,
-          Body: videoBuffer,
-          ContentType: "video/mp4",
-        })
-      );
-
-      outputUrl = `${b2Config.publicUrl}/${outputKey}`;
+      outputUrl = await uploadToR2(videoBuffer, outputKey, "video/mp4");
     } else {
       // 没有配置 R2，保存到 public 目录
       const outputDir = path.join(process.cwd(), "public", "edited");

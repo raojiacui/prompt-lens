@@ -3,31 +3,14 @@ import { auth } from "@/lib/auth";
 import { db, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import axios from "axios";
-import { getSignedUrlFromB2 } from "@/lib/cloudflare/r2";
+import { extractR2Key, getSignedUrlFromR2 } from "@/lib/cloudflare/r2";
 
-// 从各类 B2 URL 中提取 object key
-function extractB2Key(url: string): string | null {
-  const s3Match = url.match(/s3\.[a-z0-9-]+\.backblazeb2\.com\/[^/]+\/(.+)$/);
-  if (s3Match) return s3Match[1];
-
-  const fileMatch = url.match(/backblazeb2\.com\/file\/[^/]+\/(.+)$/);
-  if (fileMatch) return fileMatch[1];
-
-  const b2PublicUrl = process.env.B2_PUBLIC_URL || "";
-  if (b2PublicUrl && url.includes(b2PublicUrl)) {
-    const escaped = b2PublicUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const publicUrlMatch = url.match(`${escaped}/(.+)$`);
-    if (publicUrlMatch) return publicUrlMatch[1];
-  }
-  return null;
-}
-
-// 把 B2 公开 URL 转成签名 URL，让自托管 FFmpeg 服务能下载
+// 把 R2 公开 URL 转成签名 URL，让自托管 FFmpeg 服务能下载
 async function ensureAccessibleUrl(url: string): Promise<string> {
-  const b2Key = extractB2Key(url);
-  if (b2Key) {
+  const r2Key = extractR2Key(url);
+  if (r2Key) {
     try {
-      return await getSignedUrlFromB2(b2Key, 7200); // 2 小时有效期
+      return await getSignedUrlFromR2(r2Key, 7200); // 2 小时有效期
     } catch (err) {
       console.warn("Failed to generate signed URL:", err);
     }
@@ -172,7 +155,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[video-edit] Processing:", { videoUrl: videoUrl.substring(0, 50), prompt, ffmpegServiceUrl });
 
-    // 把 B2 公开 URL 转成签名 URL，确保自托管 FFmpeg 服务能下载
+    // 把 R2 公开 URL 转成签名 URL，确保自托管 FFmpeg 服务能下载
     const accessibleVideoUrl = await ensureAccessibleUrl(videoUrl);
 
     // 解析剪辑指令

@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
-import { getPresignedUploadUrl } from "@/lib/cloudflare/r2";
+import { getPresignedUploadUrl, getR2PublicUrl } from "@/lib/cloudflare/r2";
 
 const ALLOWED_VIDEO_TYPES = ["mp4", "mov", "avi", "mkv", "webm"];
 const ALLOWED_IMAGE_TYPES = ["jpg", "jpeg", "png", "webp"];
-const MAX_VIDEO_SIZE_MB = 500; // B2 单文件上限 5GB，这里保守设 500MB
+const MAX_VIDEO_SIZE_MB = 500;
 const MAX_IMAGE_SIZE_MB = 20;
 
 type RequestBody = {
@@ -80,10 +80,9 @@ export async function POST(request: NextRequest) {
     }
 
     const key = `uploads/${body.mediaType}/${crypto.randomUUID()}-${safeFilename(body.filename)}`;
-    const publicUrl = `${process.env.B2_PUBLIC_URL}/${key}`;
-    const presignedUrl = await getPresignedUploadUrl(key, body.contentType, 600); // 10 分钟有效期
+    const publicUrl = getR2PublicUrl(key);
+    const presignedUrl = await getPresignedUploadUrl(key, body.contentType, 600);
 
-    // 记录日志
     await db.insert(operationLogs).values({
       userId: session.user.id,
       action: "file.upload",
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
         filename: body.filename,
         size: body.size,
         url: publicUrl,
-        storage: "b2",
+        storage: "r2",
       },
     });
 
@@ -101,9 +100,10 @@ export async function POST(request: NextRequest) {
       publicUrl,
       key,
       mediaType: body.mediaType,
+      storage: "r2",
     });
   } catch (error) {
-    console.error("B2 upload route error:", error);
+    console.error("R2 upload route error:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

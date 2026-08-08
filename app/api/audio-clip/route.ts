@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, videoClip, operationLogs } from "@/lib/db";
-import { getFromR2, uploadToR2 } from "@/lib/cloudflare/r2";
+import { extractR2Key, getFromR2, uploadToR2 } from "@/lib/cloudflare/r2";
 import { cleanupTempFiles } from "@/lib/video-processor";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import ffmpeg from "fluent-ffmpeg";
@@ -55,26 +55,10 @@ export async function POST(request: NextRequest) {
     const videoPath = path.join(tempDir, "source.mp4");
     let videoBuffer: Buffer;
 
-    // 判断 URL 类型 - 支持 B2 签名 URL 或带 B2_PUBLIC_URL 的 URL
-    const extractB2Key = (url: string): string | null => {
-      // 匹配格式: https://s3.{region}.backblazeb2.com/{bucket}/{key}
-      const s3Match = url.match(/s3\.[a-z0-9-]+\.backblazeb2\.com\/[^/]+\/(.+)$/);
-      if (s3Match) return s3Match[1];
-
-      // 匹配格式: {B2_PUBLIC_URL}/{key}
-      const b2PublicUrl = process.env.B2_PUBLIC_URL || "";
-      if (b2PublicUrl && url.includes(b2PublicUrl)) {
-        const publicUrlMatch = url.match(`${b2PublicUrl}/(.+)$`);
-        if (publicUrlMatch) return publicUrlMatch[1];
-      }
-
-      return null;
-    };
-
-    const b2Key = extractB2Key(mediaUrl);
-    if (b2Key) {
-      console.log("Reading from B2, key:", b2Key);
-      videoBuffer = await getFromR2(b2Key);
+    const r2Key = extractR2Key(mediaUrl);
+    if (r2Key) {
+      console.log("Reading from R2, key:", r2Key);
+      videoBuffer = await getFromR2(r2Key);
     } else {
       // 直接从 URL 下载
       console.log("Downloading video from URL:", mediaUrl);

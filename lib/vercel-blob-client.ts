@@ -23,8 +23,8 @@ function getMediaType(file: File): "video" | "image" {
 }
 
 /**
- * 通过 B2 presigned URL 直传文件，不经过 Vercel 服务器。
- * 文件大小上限 5GB（B2 PUT 单次上限）。
+ * 通过 R2 presigned URL 直传文件，不经过 Vercel 服务器。
+ * 视频文件大小上限由后端配置控制。
  */
 export async function uploadMediaToBlob(
   file: File,
@@ -52,7 +52,7 @@ export async function uploadMediaToBlob(
 
   const { presignedUrl, publicUrl, key } = await tokenRes.json();
 
-  // 2. 用 XMLHttpRequest 直传 B2，支持进度回调
+  // 2. 用 XMLHttpRequest 直传 R2，支持进度回调
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", presignedUrl, true);
@@ -70,12 +70,12 @@ export async function uploadMediaToBlob(
       if (xhr.status >= 200 && xhr.status < 300) {
         resolve();
       } else {
-        reject(new Error(`B2 upload failed: ${xhr.status} ${xhr.statusText}`));
+        reject(new Error(`R2 upload failed: ${xhr.status} ${xhr.statusText}`));
       }
     };
 
-    xhr.onerror = () => reject(new Error("B2 upload network error"));
-    xhr.onabort = () => reject(new Error("B2 upload aborted"));
+    xhr.onerror = () => reject(new Error("R2 upload network error"));
+    xhr.onabort = () => reject(new Error("R2 upload aborted"));
 
     xhr.send(file);
   });

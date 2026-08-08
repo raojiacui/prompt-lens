@@ -4,36 +4,15 @@ import { db, audioAnalysis, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { AssemblyAI } from "assemblyai";
 import axios from "axios";
-import { getSignedUrlFromB2 } from "@/lib/cloudflare/r2";
+import { extractR2Key, getSignedUrlFromR2 } from "@/lib/cloudflare/r2";
 
-// 从各类 B2 URL 中提取 object key
-function extractB2Key(url: string): string | null {
-  // https://s3.{region}.backblazeb2.com/{bucket}/{key}
-  const s3Match = url.match(/s3\.[a-z0-9-]+\.backblazeb2\.com\/[^/]+\/(.+)$/);
-  if (s3Match) return s3Match[1];
-
-  // https://f{id}.backblazeb2.com/file/{bucket}/{key}
-  const fileMatch = url.match(/backblazeb2\.com\/file\/[^/]+\/(.+)$/);
-  if (fileMatch) return fileMatch[1];
-
-  // {B2_PUBLIC_URL}/{key}
-  const b2PublicUrl = process.env.B2_PUBLIC_URL || "";
-  if (b2PublicUrl && url.includes(b2PublicUrl)) {
-    const escaped = b2PublicUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const publicUrlMatch = url.match(`${escaped}/(.+)$`);
-    if (publicUrlMatch) return publicUrlMatch[1];
-  }
-
-  return null;
-}
-
-// 将公开 URL 转为签名 URL（若是 B2 URL），否则原样返回
+// 将公开 R2 URL 转为签名 URL，否则原样返回
 async function ensureAccessibleUrl(url: string): Promise<string> {
-  const b2Key = extractB2Key(url);
-  if (b2Key) {
+  const r2Key = extractR2Key(url);
+  if (r2Key) {
     try {
       // 1 小时有效期，足够 AssemblyAI 下载
-      return await getSignedUrlFromB2(b2Key, 3600);
+      return await getSignedUrlFromR2(r2Key, 3600);
     } catch (err) {
       console.warn("Failed to generate signed URL, falling back to original:", err);
       return url;
