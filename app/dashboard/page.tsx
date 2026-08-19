@@ -1,49 +1,82 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, type ElementType } from "react";
 import { useSession, signOut } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { HistoryList } from "@/components/history-list";
 import { ApiKeySettings } from "@/components/api-key-settings";
 import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
 import { VideoEditTab } from "@/components/video-edit-tab";
-import { VideoGenerateTab } from "@/components/video-generate-tab";
+import { ReferenceVideoComposer } from "@/components/reference-video/ReferenceVideoComposer";
 import { FloatingChat } from "@/components/floating-chat";
+import { CreateWithAgent } from "@/components/agent/create-with-agent";
 import { extractVideoFrames, getImageBase64 } from "@/lib/utils/frame-extractor";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import type { Locale } from "@/i18n/config";
+import { ChevronLeft, ChevronRight, Clock, Home, LogOut, Mic2, Scissors, Settings, Sparkles, Video, X } from "lucide-react";
 
-type Tab = "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
+type Tab = "home" | "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
+type FeatureTab = "analyze" | "audio" | "edit" | "video-gen";
 
 export default function DashboardPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session } = useSession();
   const t = useTranslations();
   const locale = useLocale() as Locale;
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>("analyze");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const validTabs: Tab[] = ["home", "analyze", "audio", "edit", "video-gen", "history", "settings"];
 
-  // 未登录时刷新 /dashboard 自动跳回首页
-  useEffect(() => {
-    if (!isPending && !session?.user) {
-      router.replace("/");
+  const rawTab = searchParams.get("tab") as Tab | null;
+  const activeTab = rawTab && validTabs.includes(rawTab) ? rawTab : "home";
+
+  const selectTab = (tab: Tab, extraParams?: Record<string, string>) => {
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (tab === "home") {
+      nextParams.delete("tab");
+      nextParams.delete("videoGenPrompt");
+    } else {
+      nextParams.set("tab", tab);
+      if (tab !== "video-gen") {
+        nextParams.delete("videoGenPrompt");
+      }
     }
-  }, [isPending, session, router]);
+    if (extraParams) {
+      Object.entries(extraParams).forEach(([key, value]) => {
+        if (value) nextParams.set(key, value);
+        else nextParams.delete(key);
+      });
+    }
+    const nextUrl = nextParams.toString() ? `${pathname}?${nextParams.toString()}` : pathname;
+    router.replace(nextUrl, { scroll: false });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const videoGenPrompt = activeTab === "video-gen" ? searchParams.get("videoGenPrompt") : null;
+
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [analysisPrompt, setAnalysisPrompt] = useState("");
   const [frameCount, setFrameCount] = useState(8);
   const [analyzeMode, setAnalyzeMode] = useState<"single" | "batch">("single");
+  const [analysisDepth, setAnalysisDepth] = useState("balanced");
+  const [analysisOutputFormat, setAnalysisOutputFormat] = useState("prompt");
   const [provider, setProvider] = useState<"zhipu" | "gemini" | "openrouter">("openrouter");
   const [progress, setProgress] = useState("");
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +98,12 @@ export default function DashboardPage() {
     }
   };
 
+  const handleAnalysisPromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setAnalysisPrompt(e.target.value);
+    e.currentTarget.style.height = "auto";
+    e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 260)}px`;
+  };
+
   const handleAnalyze = async () => {
     if (!selectedFile) return;
     setIsLoading(true);
@@ -75,13 +114,11 @@ export default function DashboardPage() {
       let mediaType: string;
 
       if (selectedFile.type.startsWith("video/")) {
-        // 视频：在客户端提取帧
         frames = await extractVideoFrames(selectedFile, frameCount, (current, total) => {
           setProgress(t("analyze.extractingFrameProgress", { current, total }));
         });
         mediaType = "video";
       } else {
-        // 图片：直接转 base64
         const base64 = await getImageBase64(selectedFile);
         frames = [base64];
         mediaType = "image";
@@ -89,24 +126,25 @@ export default function DashboardPage() {
 
       setProgress(t("analyze.uploadingFile"));
 
-      // 上传到 Vercel Blob（原生支持大文件）
       const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
         setProgress(t("analyze.uploadingProgress", { percent: Math.round(percentage) }));
       });
 
       setProgress(t("analyze.aiAnalyzing"));
 
-      // 发送帧给后端分析（透传当前 locale 给 AI 输出语言）
       const analyzeRes = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mediaUrl: uploadData.url,
           mediaType,
-          frames, // 直接发送客户端提取的帧
+          frames,
           analyzeMode,
           provider,
           outputLanguage: locale,
+          prompt: analysisPrompt,
+          analysisDepth,
+          outputFormat: analysisOutputFormat,
         }),
       });
 
@@ -131,274 +169,566 @@ export default function DashboardPage() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleNavigateVideoGen = (prompt: string) => {
+    selectTab("video-gen", { videoGenPrompt: prompt });
+  };
+
+  const featureCards: Array<{
+    key: FeatureTab;
+    title: string;
+    description: string;
+    icon: ElementType;
+    image: string;
+    badge?: string;
+  }> = [
+    {
+      key: "analyze",
+      title: "视频分析",
+      description: "上传视频或图片，提取镜头信息并生成可复用提示词",
+      icon: Sparkles,
+      image: "/feature-video-analysis.png",
+      badge: "LAST USED",
+    },
+    {
+      key: "video-gen",
+      title: "视频生成",
+      description: "输入创意提示词，配置比例、时长和参考图生成视频",
+      icon: Video,
+      image: "/feature-video-generation.png",
+    },
+    {
+      key: "audio",
+      title: "音频分析",
+      description: "识别视频语音，整理片段摘要并辅助选择剪辑段落",
+      icon: Mic2,
+      image: "/feature-audio-recognition.png",
+    },
+    {
+      key: "edit",
+      title: "视频剪辑",
+      description: "用自然语言描述剪辑目标，调用 FFmpeg 服务输出成片",
+      icon: Scissors,
+      image: "/feature-video-edit.png",
+    },
+  ];
+
+  const activeFeature = featureCards.find((feature) => feature.key === activeTab);
+
+  const createTools = [
+    { key: "analyze" as Tab, label: t("dashboard.tabs.analyze"), icon: Sparkles },
+    { key: "video-gen" as Tab, label: t("dashboard.tabs.videoGen"), icon: Video },
+    { key: "audio" as Tab, label: t("dashboard.tabs.audio"), icon: Mic2 },
+    { key: "edit" as Tab, label: t("dashboard.tabs.edit"), icon: Scissors },
+  ];
+
+  const systemTools = [
+    { key: "history" as Tab, label: t("dashboard.tabs.history"), icon: Clock },
+    { key: "settings" as Tab, label: t("dashboard.tabs.settings"), icon: Settings },
+  ];
+
   return (
-    <div className="min-h-screen bg-anthropic">
-      {/* 顶部导航 */}
-      <header className="bg-[#F5F3EC]/90 backdrop-blur-md border-b border-[#D8D5CC] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 md:gap-3">
-            <div className="w-8 md:w-9 h-8 md:h-9 rounded-lg bg-[#D97757] flex items-center justify-center shadow-sm">
-              <svg className="w-4 md:w-5 h-4 md:h-5 text-white" viewBox="0 0 32 32">
-                <path d="M16 2C10 4 6 9 5 14C4 18 5 22 7 25C9 28 13 30 16 30C19 30 23 28 25 25C27 22 28 18 27 14C26 9 22 4 16 2Z" fill="currentColor" opacity="0.9"/>
-                <path d="M16 6C12 8 9 12 8 16C7 20 9 24 11 26C13 28 16 29 16 29C16 29 19 28 21 26C23 24 25 20 24 16C23 12 20 8 16 6Z" fill="#E5685C"/>
-                <path d="M16 12C14 14 12 17 12 20C12 23 14 25 16 26C18 25 20 23 20 20C20 17 18 14 16 12Z" fill="#F0887A"/>
-                <ellipse cx="16" cy="18" rx="3" ry="2" fill="#FFCC00"/>
-              </svg>
-            </div>
-            <span className="text-base md:text-lg font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("dashboard.appName")}</span>
-          </div>
-
-          <div className="flex items-center gap-2 md:gap-4">
-            {session?.user && (
-              <>
-                <div className="flex items-center gap-2">
-                  {session.user.image && (
-                    <img src={session.user.image} alt="" className="w-7 md:w-8 h-7 md:h-8 rounded-full ring-2 ring-[#D97757]/20" />
-                  )}
-                  <span className="text-sm text-[#6B6860] hidden sm:inline">{session.user.email}</span>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => signOut()} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg text-xs md:text-sm">
-                  {t("auth.logout")}
-                </Button>
-              </>
+    <div className="flex h-screen bg-[var(--color-bg-base)]">
+      {/* 左侧边栏：仅在非首页的功能页显示，且可折叠 */}
+      {activeTab !== "home" && (
+        <aside
+          className={cn(
+            "hidden lg:flex flex-col border-r border-[var(--color-border-default)] bg-[var(--color-bg-raised)] transition-all duration-300",
+            isSidebarCollapsed ? "w-[72px] items-center" : "w-[240px]"
+          )}
+        >
+          <div className={cn("flex items-center", isSidebarCollapsed ? "justify-center p-4" : "justify-between p-5")}>
+            {!isSidebarCollapsed && (
+              <Link href="/" className="flex items-center gap-2">
+                <Image
+                  src="/prompt-lens-icon.png"
+                  alt="Prompt Lens"
+                  width={541}
+                  height={563}
+                  className="h-9 w-auto object-contain"
+                />
+                <span className="text-lg font-bold text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-display)" }}>
+                  {t("dashboard.appName")}
+                </span>
+              </Link>
             )}
+            <button
+              type="button"
+              onClick={() => setIsSidebarCollapsed((prev) => !prev)}
+              className={cn(
+                "flex h-8 w-8 items-center justify-center rounded-lg text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-base)] hover:text-[var(--color-text-primary)]",
+                isSidebarCollapsed && "mt-1"
+              )}
+              aria-label={isSidebarCollapsed ? t("dashboard.sidebar.expand") : t("dashboard.sidebar.collapse")}
+            >
+              {isSidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </button>
           </div>
-        </div>
-      </header>
 
-      {/* 标签栏 - 移动端可横向滚动 */}
-      <div className="bg-[#F5F3EC]/50 border-b border-[#D8D5CC] sticky top-[52px] md:top-[65px] z-40">
-        <div className="max-w-7xl mx-0 md:mx-auto px-2 md:px-6">
-          <nav className="flex gap-1 overflow-x-auto pb-px md:pb-0 -mx-2 px-2 md:mx-0 md:px-0">
-            {[
-              { key: "analyze", label: t("dashboard.tabs.analyze") },
-              { key: "audio", label: t("dashboard.tabs.audio") },
-              { key: "edit", label: t("dashboard.tabs.edit") },
-              { key: "video-gen", label: t("dashboard.tabs.videoGen") },
-              { key: "history", label: t("dashboard.tabs.history") },
-              { key: "settings", label: t("dashboard.tabs.settings") }
-            ].map((tab) => (
+          <nav className={cn("flex-1 overflow-y-auto py-2 space-y-6", isSidebarCollapsed ? "px-2 w-full" : "px-3")}>
+            {!isSidebarCollapsed && (
+              <div>
+                <SidebarItem
+                  item={{ key: "home", label: t("nav.home"), icon: Home }}
+                  activeTab={activeTab}
+                  onClick={() => selectTab("home")}
+                  collapsed={isSidebarCollapsed}
+                />
+              </div>
+            )}
+
+            <div>
+              {!isSidebarCollapsed && (
+                <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                  {t("dashboard.sidebar.create")}
+                </p>
+              )}
+              <div className="space-y-1">
+                {createTools.map((item) => (
+                  <SidebarItem
+                    key={item.key}
+                    item={item}
+                    activeTab={activeTab}
+                    onClick={() => selectTab(item.key)}
+                    collapsed={isSidebarCollapsed}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              {!isSidebarCollapsed && (
+                <p className="px-3 mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+                  {t("dashboard.sidebar.system")}
+                </p>
+              )}
+              <div className="space-y-1">
+                {systemTools.map((item) => (
+                  <SidebarItem
+                    key={item.key}
+                    item={item}
+                    activeTab={activeTab}
+                    onClick={() => selectTab(item.key)}
+                    collapsed={isSidebarCollapsed}
+                  />
+                ))}
+              </div>
+            </div>
+          </nav>
+
+          <div className={cn("border-t border-[var(--color-border-default)]", isSidebarCollapsed ? "p-2 flex justify-center" : "p-3")}>
+            {session?.user ? (
               <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key as Tab)}
+                type="button"
+                onClick={() => signOut()}
                 className={cn(
-                  "px-3 md:px-5 py-2 md:py-3 text-xs md:text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap min-h-[44px]",
-                  activeTab === tab.key
-                    ? "bg-[#F5F3EC] text-[#D97757] border-t-2 border-[#D97757]"
-                    : "text-[#6B6860] hover:text-[#141413] hover:bg-[#F5F3EC]/50"
+                  "flex items-center gap-3 rounded-xl text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-base)] hover:text-[var(--color-text-primary)]",
+                  isSidebarCollapsed ? "h-9 w-9 justify-center p-0" : "w-full px-3 py-2.5"
+                )}
+                aria-label={t("auth.logout")}
+              >
+                <LogOut className="h-4 w-4" />
+                {!isSidebarCollapsed && t("auth.logout")}
+              </button>
+            ) : null}
+          </div>
+        </aside>
+      )}
+
+      {/* 移动端顶部导航 */}
+      <div className="fixed left-0 right-0 top-0 z-50 flex h-14 items-center gap-2 border-b border-[var(--color-border-default)] bg-[var(--color-bg-raised)] px-3 lg:hidden">
+        <Link href="/" className="mr-auto flex items-center gap-2">
+          <Image
+            src="/prompt-lens-icon.png"
+            alt="Prompt Lens"
+            width={541}
+            height={563}
+            className="h-8 w-auto object-contain"
+          />
+          <span className="text-base font-bold text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-display)" }}>
+            {t("dashboard.appName")}
+          </span>
+        </Link>
+        <div className="flex items-center gap-1 overflow-x-auto">
+          {[{ key: "home" as Tab, label: t("nav.home"), icon: Home }, ...createTools, ...systemTools].map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => selectTab(item.key)}
+                className={cn(
+                  "flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+                  activeTab === item.key
+                    ? "bg-[#D97757]/10 text-[#D97757]"
+                    : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-base)]"
                 )}
               >
-                {tab.label}
+                {Icon && <Icon className="h-3.5 w-3.5" />}
+                {"label" in item ? item.label : ""}
               </button>
-            ))}
-          </nav>
+            );
+          })}
         </div>
       </div>
 
       {/* 主内容区 */}
-      <main className="max-w-7xl mx-auto px-3 md:px-6 py-6 md:py-8">
-        {/* 分析页面 */}
-        <div className={cn("grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8", activeTab === "analyze" ? "block" : "hidden")}>
-          {/* 左侧：上传区域 */}
-          <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm animate-fade-in">
-            <CardHeader className="pb-2 md:pb-0">
-              <CardTitle className="text-base md:text-lg text-[#141413] flex items-center gap-2 md:gap-3" style={{ fontFamily: 'var(--font-display)' }}>
-                <span className="w-8 md:w-10 h-8 md:h-10 rounded-lg md:rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
-                  <svg className="w-4 md:w-5 h-4 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                  </svg>
-                </span>
-                {t("analyze.upload")}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 md:space-y-5">
-              {/* 拖拽上传区域 */}
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={handleDrop}
-                className={cn(
-                  "relative border-2 border-dashed rounded-xl p-6 md:p-10 text-center cursor-pointer transition-all duration-300 min-h-[180px] md:min-h-[220px] flex flex-col items-center justify-center",
-                  isDragging ? "border-[#D97757] bg-[#D97757]/5" : "border-[#C8C4BC] hover:border-[#D97757]/50",
-                  preview && "border-transparent bg-[#ECE9E0]"
-                )}
-              >
-                {preview ? (
-                  <div className="relative">
-                    {selectedFile?.type.startsWith("video/") ? (
-                      <video src={preview} className="max-h-40 md:max-h-56 rounded-lg shadow-md" controls />
-                    ) : (
-                      <img src={preview} alt="Preview" className="max-h-40 md:max-h-56 rounded-lg shadow-md" />
-                    )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); resetUpload(); }}
-                      className="absolute -top-2 -right-2 w-7 h-7 bg-[#D97757] text-white rounded-full flex items-center justify-center shadow-md hover:bg-[#C96848] transition-colors"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <div className="w-12 md:w-16 h-12 md:h-16 mx-auto mb-3 md:mb-4 rounded-xl md:rounded-2xl bg-[#D97757]/10 flex items-center justify-center">
-                      <svg className="w-6 md:w-8 h-6 md:h-8 text-[#D97757]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                      </svg>
-                    </div>
-                    <p className="text-[#141413] font-medium mb-1 text-sm md:text-base">{t("analyze.dropHere")}</p>
-                    <p className="text-xs md:text-sm text-[#6B6860]">{t("analyze.uploadHint")}</p>
-                  </>
-                )}
-                <input ref={fileInputRef} type="file" accept="video/*,image/*" onChange={handleFileSelect} className="hidden" />
-              </div>
-
-              {selectedFile && (
-                <div className="flex items-center justify-between bg-[#ECE9E0] rounded-lg px-4 py-2">
-                  <span className="text-sm text-[#6B6860] truncate">{selectedFile.name}</span>
-                  <span className="text-xs text-[#D97757] bg-[#D97757]/10 px-2 py-1 rounded">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</span>
-                </div>
-              )}
-
-              {/* 设置选项 */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-[#141413] block mb-2">{t("analyze.frameCount")}</label>
-                  <Input
-                    type="number"
-                    min={1}
-                    max={30}
-                    value={frameCount}
-                    onChange={(e) => setFrameCount(Number(e.target.value))}
-                    className="border-[#C8C4BC] focus:border-[#D97757] bg-white"
+      <main className="flex-1 overflow-y-auto pt-14 lg:pt-0">
+        <div className="min-h-full px-4 py-6 md:px-8 md:py-8">
+          {activeTab === "home" && (
+            <div className="min-h-[calc(100vh-7rem)] flex flex-col justify-center">
+              <div className="hidden lg:flex items-center justify-between mb-8">
+                <Link href="/" className="flex items-center gap-2">
+                  <Image
+                    src="/prompt-lens-icon.png"
+                    alt="Prompt Lens"
+                    width={541}
+                    height={563}
+                    className="h-9 w-auto object-contain"
                   />
+                  <span className="text-lg font-bold text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-display)" }}>
+                    {t("dashboard.appName")}
+                  </span>
+                </Link>
+                {session?.user ? (
+                  <button
+                    type="button"
+                    onClick={() => signOut()}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-text-primary)]"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    {t("auth.logout")}
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="text-center mb-10 md:mb-14">
+                <h1 className="text-4xl md:text-6xl font-bold tracking-normal text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-display)' }}>
+                  Create with AI
+                </h1>
+                <p className="mt-5 text-xl md:text-2xl text-[var(--color-text-secondary)]">How would you like to get started?</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-7">
+                {featureCards.map((feature) => {
+                  const Icon = feature.icon;
+                  return (
+                    <button
+                      key={feature.key}
+                      type="button"
+                      onClick={() => selectTab(feature.key)}
+                      className="group flex h-full flex-col text-left rounded-xl bg-[var(--color-bg-raised)] p-5 shadow-md ring-1 ring-[var(--color-border-default)] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-[var(--color-accent-orange)]/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-orange)] text-left"
+                    >
+                      <div className="relative mb-6 aspect-[5/3] overflow-hidden rounded-xl bg-[#F3E8DA] ring-1 ring-[var(--color-border-default)]">
+                        <img
+                          src={feature.image}
+                          alt=""
+                          className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-text-primary)]/10 via-transparent to-[var(--color-bg-raised)]/5" />
+                      </div>
+                      <h2 className="text-2xl font-bold text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{feature.title}</h2>
+                      <p className="mt-4 min-h-[56px] text-base leading-relaxed text-[var(--color-text-secondary)]">{feature.description}</p>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="pt-8 md:pt-12">
+                <CreateWithAgent onNavigateVideoGen={handleNavigateVideoGen} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === "edit" && activeFeature && (() => {
+            const FeatureIcon = activeFeature.icon;
+            return (
+              <div className="mb-8 flex items-center gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-bg-raised)] text-[#D97757] ring-1 ring-[var(--color-border-default)]">
+                  <FeatureIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-[#141413] block mb-2">{t("analyze.analyzeMode")}</label>
-                  <select
-                    value={analyzeMode}
-                    onChange={(e) => setAnalyzeMode(e.target.value as any)}
-                    className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
-                  >
-                    <option value="single">{t("analyze.singleMode")}</option>
-                    <option value="batch">{t("analyze.batchMode")}</option>
-                  </select>
+                  <h1 className="text-2xl font-bold text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-display)' }}>
+                    {activeFeature.title}
+                  </h1>
+                  <p className="text-sm text-[var(--color-text-secondary)]">{activeFeature.description}</p>
                 </div>
               </div>
+            );
+          })()}
 
-              <div>
-                <label className="text-sm font-medium text-[#141413] block mb-2">{t("analyze.provider")}</label>
-                <select
-                  value={provider}
-                  onChange={(e) => setProvider(e.target.value as any)}
-                  className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
-                >
-                  <option value="zhipu">{t("analyze.providerZhipu")}</option>
-                  <option value="gemini">{t("analyze.providerGemini")}</option>
-                  <option value="openrouter">{t("analyze.providerOpenrouter")}</option>
-                </select>
-              </div>
-
-              <Button
-                onClick={handleAnalyze}
-                disabled={!selectedFile || isLoading}
-                className="w-full h-12 md:h-12 bg-[#D97757] hover:bg-[#C96848] text-white rounded-xl font-medium text-base shadow-sm hover:shadow-md transition-all min-h-[48px]"
-              >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Spinner size="sm" className="border-white" />
-                    {progress || t("analyze.processing")}
-                  </span>
-                ) : (
-                  t("analyze.startAnalyze")
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* 右侧：结果区域 */}
-          <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm animate-fade-in">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 md:pb-0">
-              <CardTitle className="text-base md:text-lg text-[#141413] flex items-center gap-2 md:gap-3" style={{ fontFamily: 'var(--font-display)' }}>
-                <span className="w-8 md:w-10 h-8 md:h-10 rounded-lg md:rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
-                  <svg className="w-4 md:w-5 h-4 md:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
-                  </svg>
-                </span>
-                {t("analyze.result")}
-              </CardTitle>
-              {result && (
-                <Button variant="outline" size="sm" onClick={copyToClipboard} className="border-[#C8C4BC] text-[#6B6860] hover:text-[#D97757] hover:border-[#D97757] rounded-lg text-xs md:text-sm">
-                  {t("analyze.copy")}
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {result ? (
-                <div className="bg-[#ECE9E0] rounded-xl p-4 md:p-5 max-h-[300px] md:max-h-[550px] overflow-y-auto">
-                  <pre className="whitespace-pre-wrap text-xs md:text-sm text-[#141413] font-mono leading-relaxed">{result}</pre>
-                </div>
-              ) : (
-                <div className="text-center py-10 md:py-16">
-                  <div className="w-16 md:w-20 h-16 md:h-20 mx-auto mb-3 md:4 rounded-full bg-[#D8D5CC]/30 flex items-center justify-center">
-                    <svg className="w-8 md:w-10 h-8 md:h-10 text-[#9C9890]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
+          {/* 分析页面 */}
+          {activeTab === "analyze" && (
+            <div className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
+              <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">
+                      {t("dashboard.tabs.analyze") || "Video Analysis"}
+                    </h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {t("analyze.subtitle") || "Upload a video or image and generate reusable prompts."}
+                    </p>
                   </div>
-                  <p className="text-[#6B6860] text-sm md:text-base">{t("analyze.noResult")}</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+
+                <div className="grid items-stretch gap-4 xl:grid-cols-[0.74fr_1.26fr]">
+                  <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">
+                    <div className="flex h-full flex-col space-y-4">
+                      <div>
+                        <h2 className="text-xl font-semibold">
+                          {t("analyze.panelTitle") || "Analyze"}
+                        </h2>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                          {t("analyze.panelDescription") || "Upload a video or image and describe what you want to extract."}
+                        </p>
+                      </div>
+
+                      <div
+                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                        onDragLeave={() => setIsDragging(false)}
+                        onDrop={handleDrop}
+                        className={cn(
+                          "rounded-2xl border border-dashed border-border bg-muted/30 p-3 transition-colors",
+                          isDragging && "border-primary/70 bg-primary/5"
+                        )}
+                      >
+                        <input ref={fileInputRef} type="file" accept="video/*,image/*" onChange={handleFileSelect} className="sr-only" />
+
+                        {preview && selectedFile && (
+                          <div className="mb-3 flex flex-wrap gap-3">
+                            <div className="group relative h-24 w-32 overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+                              {selectedFile.type.startsWith("video/") ? (
+                                <video src={preview} className="h-full w-full object-cover" muted />
+                              ) : (
+                                <img src={preview} alt="Preview" className="h-full w-full object-cover" />
+                              )}
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); resetUpload(); }}
+                                className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
+                                aria-label="Remove uploaded media"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                            <div className="flex min-w-0 flex-col justify-center">
+                              <p className="max-w-[320px] truncate text-sm font-medium text-foreground">{selectedFile.name}</p>
+                              <p className="text-xs text-muted-foreground">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                            </div>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex min-h-20 w-full flex-col items-center justify-center gap-1.5 rounded-xl bg-background py-3 text-center transition-colors hover:bg-accent"
+                        >
+                          <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l9.193-9.193a3 3 0 114.243 4.243L8.56 18.31a1.5 1.5 0 01-2.122-2.122l8.486-8.486" />
+                          </svg>
+                          <span className="text-base font-semibold">{t("analyze.uploadTitle") || "Upload video or image"}</span>
+                          <span className="text-sm text-muted-foreground">{t("analyze.uploadHint") || "Click or drag to upload"}</span>
+                        </button>
+                      </div>
+
+                      <div className="rounded-2xl border border-border bg-background p-3">
+                        <Textarea
+                          value={analysisPrompt}
+                          onChange={handleAnalysisPromptChange}
+                          placeholder="Upload a video or image to start. Add notes here only if you want..."
+                          className="min-h-[108px] resize-none overflow-hidden border-0 bg-transparent p-0 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground focus-visible:ring-0"
+                        />
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="grid gap-2 text-sm font-medium">
+                          {t("analyze.depth") || "Depth"}
+                          <select value={analysisDepth} onChange={(e) => setAnalysisDepth(e.target.value)} className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring">
+                            <option value="quick">Quick</option>
+                            <option value="balanced">Balanced</option>
+                            <option value="detailed">Detailed</option>
+                          </select>
+                        </label>
+                        <label className="grid gap-2 text-sm font-medium">
+                          {t("analyze.frames") || "Frames"}
+                          <select value={frameCount} onChange={(e) => setFrameCount(Number(e.target.value))} className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring">
+                            <option value={4}>4</option>
+                            <option value={8}>8</option>
+                            <option value={12}>12</option>
+                            <option value={16}>16</option>
+                            <option value={24}>24</option>
+                          </select>
+                        </label>
+                        <label className="grid gap-2 text-sm font-medium">
+                          {t("analyze.output") || "Output"}
+                          <select value={analysisOutputFormat} onChange={(e) => setAnalysisOutputFormat(e.target.value)} className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring">
+                            <option value="prompt">Prompt</option>
+                            <option value="shot-list">Shot list</option>
+                            <option value="summary">Summary</option>
+                          </select>
+                        </label>
+                        <label className="grid gap-2 text-sm font-medium">
+                          {t("analyze.model") || "Model"}
+                          <select value={provider} onChange={(e) => setProvider(e.target.value as any)} className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring">
+                            <option value="openrouter">OpenRouter</option>
+                            <option value="gemini">Gemini</option>
+                            <option value="zhipu">Zhipu</option>
+                          </select>
+                        </label>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          "Optional: analyze the visual style as a reusable prompt",
+                          "Optional: extract shots, camera movement, and lighting",
+                          "Optional: summarize story flow and emotional tone",
+                          "Optional: find the best frames for editing references",
+                        ].map((example) => (
+                          <button
+                            key={example}
+                            type="button"
+                            onClick={() => setAnalysisPrompt(example)}
+                            className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted/80 hover:text-foreground"
+                          >
+                            <Sparkles className="h-4 w-4" />
+                            {example}
+                          </button>
+                        ))}
+                      </div>
+
+                      {progress && (
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <Spinner size="sm" />
+                          <span>{progress}</span>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => void handleAnalyze()}
+                        disabled={!selectedFile || isLoading}
+                        className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-foreground px-5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isLoading ? <Spinner size="sm" /> : (
+                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.769 59.769 0 0121.485 12 59.768 59.768 0 013.27 20.876L6 12zm0 0h7.5" />
+                          </svg>
+                        )}
+                        {isLoading ? t("analyze.analyzing") || "Analyzing..." : t("analyze.start") || "Analyze"}
+                      </button>
+                    </div>
+                  </section>
+
+                  <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">
+                    {!result ? (
+                      <div className="flex h-full flex-col items-center justify-center text-center">
+                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <p className="font-medium text-foreground">Analysis result will appear here</p>
+                        <p className="text-sm text-muted-foreground">Upload a file on the left and click analyze to start.</p>
+                      </div>
+                    ) : (
+                      <div className="rounded-xl border border-border bg-background p-4">
+                        <div className="flex flex-row items-center justify-between gap-4">
+                          <h3 className="text-lg font-semibold text-foreground">Analysis result</h3>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => result && handleNavigateVideoGen(result)}
+                              className="rounded-full border-border text-muted-foreground hover:border-primary hover:text-primary"
+                            >
+                              {t("analyze.createSameStyle")}
+                            </Button>
+                            <Button variant="outline" size="sm" onClick={copyToClipboard} className="rounded-full border-border text-muted-foreground hover:border-primary hover:text-primary">
+                              Copy
+                            </Button>
+                          </div>
+                        </div>
+                        <pre className="mt-3 max-h-[560px] overflow-y-auto whitespace-pre-wrap rounded-xl bg-muted/50 p-4 text-sm leading-relaxed text-foreground">
+                          {result}
+                        </pre>
+                      </div>
+                    )}
+                  </section>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 音频分析页面 */}
+          {activeTab === "audio" && <AudioAnalyzeTab activeTab={activeTab} />}
+
+          {/* 视频剪辑页面 */}
+          {activeTab === "edit" && (
+            <div className="animate-fade-in">
+              <VideoEditTab />
+            </div>
+          )}
+
+          {/* 视频生成页面 */}
+          {activeTab === "video-gen" && (
+            <div className="animate-fade-in">
+              <ReferenceVideoComposer initialPrompt={videoGenPrompt} />
+            </div>
+          )}
+
+          {/* 历史记录页面 */}
+          {activeTab === "history" && (
+            <div className="animate-fade-in space-y-6">
+              <HistoryList refreshTrigger={historyRefreshTrigger} />
+            </div>
+          )}
+
+          {/* 设置页面 */}
+          {activeTab === "settings" && (
+            <div className="animate-fade-in space-y-6">
+              <ApiKeySettings />
+            </div>
+          )}
         </div>
-
-        {/* 音频分析页面 */}
-        <AudioAnalyzeTab activeTab={activeTab} />
-
-        {/* 视频剪辑页面 */}
-        {activeTab === "edit" && (
-          <div className="animate-fade-in">
-            <VideoEditTab />
-          </div>
-        )}
-
-        {/* 视频生成页面 */}
-        {activeTab === "video-gen" && (
-          <div className="animate-fade-in">
-            <VideoGenerateTab />
-          </div>
-        )}
-
-        {/* 历史记录页面 */}
-        {activeTab === "history" && (
-          <div className="animate-fade-in">
-            <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-[#141413] flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
-                  <span className="w-10 h-10 rounded-xl bg-[#D8D5CC]/30 flex items-center justify-center text-[#6B6860]">
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </span>
-                  {t("dashboard.tabs.history")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <HistoryList refreshTrigger={historyRefreshTrigger} />
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* 设置页面 */}
-        {activeTab === "settings" && (
-          <div className="animate-fade-in">
-            <ApiKeySettings />
-          </div>
-        )}
       </main>
 
       {/* 悬浮聊天助手 */}
       <FloatingChat />
     </div>
+  );
+}
+
+function SidebarItem({
+  item,
+  activeTab,
+  onClick,
+  collapsed = false,
+}: {
+  item: { key: Tab; label: string; icon: ElementType };
+  activeTab: Tab;
+  onClick: () => void;
+  collapsed?: boolean;
+}) {
+  const Icon = item.icon;
+  const isActive = activeTab === item.key;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center rounded-xl text-sm font-semibold transition-colors",
+        collapsed
+          ? "h-9 w-9 justify-center p-0"
+          : "w-full gap-3 px-3 py-2.5",
+        isActive
+          ? "bg-[#D97757]/10 text-[#D97757]"
+          : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-base)] hover:text-[var(--color-text-primary)]"
+      )}
+      aria-label={collapsed ? item.label : undefined}
+      title={collapsed ? item.label : undefined}
+    >
+      <Icon className="h-4 w-4" />
+      {!collapsed && item.label}
+    </button>
   );
 }

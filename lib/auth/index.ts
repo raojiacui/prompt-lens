@@ -111,6 +111,9 @@ export const auth = betterAuth({
   },
   trustedOrigins: [
     "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://localhost:3003",
     "https://prompt-lens.cc.cd",
     process.env.NEXT_PUBLIC_SITE_URL || "",
     process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "",

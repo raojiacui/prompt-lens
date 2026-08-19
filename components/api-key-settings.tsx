@@ -99,7 +99,7 @@ export function ApiKeySettings() {
   return (
     <div className="space-y-6">
       {/* 添加 API Key */}
-      <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
+      <Card className="bg-[var(--color-bg-raised)] border-[var(--color-border-default)]">
         <CardHeader>
           <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("addApiKey")}</CardTitle>
           <CardDescription>
@@ -109,8 +109,8 @@ export function ApiKeySettings() {
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium text-[#141413] block mb-2">{t("provider")}</label>
-              <Select value={provider} onChange={(e) => setProvider(e.target.value)} className="bg-white">
+              <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-2">{t("provider")}</label>
+              <Select value={provider} onChange={(e) => setProvider(e.target.value)} className="bg-[var(--color-bg-raised)]">
                 <option value="zhipu">{t("providerZhipuAnalyze")}</option>
                 <option value="gemini">{t("providerGeminiAnalyze")}</option>
                 <option value="openrouter">{t("providerOpenrouterAnalyze")}</option>
@@ -118,7 +118,7 @@ export function ApiKeySettings() {
               </Select>
             </div>
             <div className="md:col-span-2">
-              <label className="text-sm font-medium text-[#141413] block mb-2">API Key</label>
+              <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-2">API Key</label>
               <div className="flex gap-2">
                 <Input
                   type="password"
@@ -131,9 +131,9 @@ export function ApiKeySettings() {
                       ? t("placeholderGemini")
                       : t("placeholderOpenrouter")
                   }
-                  className="bg-white"
+                  className="bg-[var(--color-bg-raised)]"
                 />
-                <Button onClick={saveApiKey} disabled={saving} className="bg-[#D97757] hover:bg-[#C96848]">
+                <Button onClick={saveApiKey} disabled={saving} className="bg-[var(--color-accent-orange)] hover:bg-[var(--color-accent-orange-hover)]">
                   {saving ? <Spinner size="sm" /> : t("saveApiKey")}
                 </Button>
               </div>
@@ -144,8 +144,8 @@ export function ApiKeySettings() {
             <div
               className={`p-3 rounded-lg ${
                 message.type === "success"
-                  ? "bg-[#5B8C5A]/10 text-[#5B8C5A]"
-                  : "bg-[#C0453A]/10 text-[#C0453A]"
+                  ? "bg-[var(--color-success)]/10 text-[var(--color-success)]"
+                  : "bg-[var(--color-error)]/10 text-[var(--color-error)]"
               }`}
             >
               {message.text}
@@ -155,7 +155,7 @@ export function ApiKeySettings() {
       </Card>
 
       {/* 已保存的 API Key */}
-      <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
+      <Card className="bg-[var(--color-bg-raised)] border-[var(--color-border-default)]">
         <CardHeader>
           <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("savedKeys")}</CardTitle>
           <CardDescription>{t("savedDesc")}</CardDescription>
@@ -166,7 +166,7 @@ export function ApiKeySettings() {
               <Spinner />
             </div>
           ) : apiKeys.length === 0 ? (
-            <p className="text-center text-[#9C9890] py-8">
+            <p className="text-center text-[var(--color-text-muted)] py-8">
               {t("noKeys")}
             </p>
           ) : (
@@ -174,21 +174,21 @@ export function ApiKeySettings() {
               {apiKeys.map((key) => (
                 <div
                   key={key.id}
-                  className="flex items-center justify-between p-4 border border-[#D8D5CC] rounded-xl bg-white"
+                  className="flex items-center justify-between p-4 border border-[var(--color-border-default)] rounded-xl bg-white"
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>
+                      <span className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>
                         {providerLabel(key.provider)}
                       </span>
                       {key.isActive && (
-                        <span className="text-xs bg-[#5B8C5A]/10 text-[#5B8C5A] px-2 py-0.5 rounded">
+                        <span className="text-xs bg-[var(--color-success)]/10 text-[var(--color-success)] px-2 py-0.5 rounded">
                           {t("active")}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[#6B6860] mt-1 font-mono">{key.apiKey}</p>
-                    <p className="text-xs text-[#9C9890] mt-1">
+                    <p className="text-sm text-[var(--color-text-secondary)] mt-1 font-mono">{key.apiKey}</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
                       {t("addedAt", { date: new Date(key.createdAt).toLocaleDateString("zh-CN") })}
                     </p>
                   </div>
@@ -196,7 +196,7 @@ export function ApiKeySettings() {
                     variant="outline"
                     size="sm"
                     onClick={() => deleteApiKey(key.id)}
-                    className="border-[#C8C4BC] text-[#6B6860] hover:text-[#C0453A] hover:border-[#C0453A]"
+                    className="border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-error)] hover:border-[var(--color-error)]"
                   >
                     {t("delete")}
                   </Button>
@@ -208,20 +208,20 @@ export function ApiKeySettings() {
       </Card>
 
       {/* API 提供商说明 */}
-      <Card className="bg-[#F5F3EC] border-[#D8D5CC]">
+      <Card className="bg-[var(--color-bg-raised)] border-[var(--color-border-default)]">
         <CardHeader>
           <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("providerDocs")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("zhipuRecommended")}</h4>
-            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
+            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("zhipuRecommended")}</h4>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-2 leading-relaxed">
               {t("zhipuDesc")}{" "}
               <a
                 href="https://open.bigmodel.cn/usercenter/apikeys"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#D97757] hover:underline"
+                className="text-[var(--color-accent-orange)] hover:underline"
               >
                 {t("zhipuLink")}
               </a>{" "}
@@ -229,14 +229,14 @@ export function ApiKeySettings() {
             </p>
           </div>
           <div>
-            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("geminiName")}</h4>
-            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
+            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("geminiName")}</h4>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-2 leading-relaxed">
               {t("geminiDesc")}{" "}
               <a
                 href="https://aistudio.google.com/app/apikey"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#D97757] hover:underline"
+                className="text-[var(--color-accent-orange)] hover:underline"
               >
                 {t("geminiLink")}
               </a>{" "}
@@ -244,14 +244,14 @@ export function ApiKeySettings() {
             </p>
           </div>
           <div>
-            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("openrouterName")}</h4>
-            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
+            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("openrouterName")}</h4>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-2 leading-relaxed">
               {t("openrouterDesc")}{" "}
               <a
                 href="https://openrouter.ai/keys"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#D97757] hover:underline"
+                className="text-[var(--color-accent-orange)] hover:underline"
               >
                 {t("openrouterLink")}
               </a>{" "}
@@ -259,14 +259,14 @@ export function ApiKeySettings() {
             </p>
           </div>
           <div>
-            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("kieName")}</h4>
-            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
+            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("kieName")}</h4>
+            <p className="text-sm text-[var(--color-text-secondary)] mt-2 leading-relaxed">
               {t("kieDesc")}{" "}
               <a
                 href="https://api.kie.ai"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#D97757] hover:underline"
+                className="text-[var(--color-accent-orange)] hover:underline"
               >
                 {t("kieLink")}
               </a>{" "}

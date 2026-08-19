@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { LoginGlobeBackground } from "@/components/login-globe-background";
 
 export default function LoginPage() {
+  const isLocalDevAuth = process.env.NODE_ENV === "development";
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"email" | "code">("email");
@@ -16,6 +18,43 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
 
+  useEffect(() => {
+    if (isLocalDevAuth) {
+      window.location.replace("/dashboard");
+    }
+  }, [isLocalDevAuth]);
+
+
+
+  const handleLocalDevSignIn = async () => {
+    if (!isLocalDevAuth) return;
+    setLoading(true);
+    setError("");
+
+    try {
+      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const response = await fetch(`${baseUrl}/api/dev-auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        window.location.href = "/dashboard";
+        return;
+      }
+
+      const data = await response.json().catch(() => null) as { message?: string; error?: string } | null;
+      const message = data?.message || data?.error || "本地登录失败";
+
+      setError(message);
+    } catch {
+      setError("本地登录失败，请重试");
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleOAuthSignIn = async (provider: "google" | "github") => {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
     try {
@@ -144,17 +183,15 @@ export default function LoginPage() {
       <LoginGlobeBackground />
 
       <div className="relative w-full max-w-md z-10">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 mb-8 justify-center">
-          <div className="w-12 h-12 rounded-xl bg-[#D97757] flex items-center justify-center shadow-md">
-            <svg className="w-7 h-7 text-white" viewBox="0 0 32 32">
-              <path d="M16 2C10 4 6 9 5 14C4 18 5 22 7 25C9 28 13 30 16 30C19 30 23 28 25 25C27 22 28 18 27 14C26 9 22 4 16 2Z" fill="currentColor" opacity="0.9"/>
-              <path d="M16 6C12 8 9 12 8 16C7 20 9 24 11 26C13 28 16 29 16 29C16 29 19 28 21 26C23 24 25 20 24 16C23 12 20 8 16 6Z" fill="#E5685C"/>
-              <path d="M16 12C14 14 12 17 12 20C12 23 14 25 16 26C18 25 20 23 20 20C20 17 18 14 16 12Z" fill="#F0887A"/>
-              <ellipse cx="16" cy="18" rx="3" ry="2" fill="#FFCC00"/>
-            </svg>
-          </div>
-          <span className="text-xl font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>Prompt Lens</span>
+        <Link href="/" className="flex items-center gap-4 mb-8 justify-center" aria-label="Prompt Lens">
+          <Image
+            src="/prompt-lens-icon.png"
+            alt="Prompt Lens"
+            width={541}
+            height={563}
+            className="h-16 w-auto object-contain"
+          />
+          <span className="text-3xl font-semibold text-[#141413] tracking-tight">Prompt Lens</span>
         </Link>
 
         <Card className="bg-[#F5F3EC]/90 backdrop-blur-sm border border-[#D8D5CC] shadow-xl">
@@ -168,6 +205,21 @@ export default function LoginPage() {
           </CardHeader>
 
           <CardContent className="space-y-4 pt-2">
+            {isLocalDevAuth && (
+              <div className="rounded-2xl border border-[#D8D5CC] bg-white/70 p-3 shadow-sm">
+                <Button
+                  onClick={handleLocalDevSignIn}
+                  disabled={loading}
+                  className="h-12 w-full rounded-xl bg-[#141413] text-white hover:bg-[#2B2A27]"
+                >
+                  {loading ? <Spinner className="h-5 w-5" /> : "本地开发登录"}
+                </Button>
+                <p className="mt-2 text-center text-xs text-[#6B6860]">
+                  仅 development 环境可用，会创建一个匿名测试会话
+                </p>
+                {error && <p className="mt-2 text-center text-sm text-red-500">{error}</p>}
+              </div>
+            )}
             {/* Google 登录 */}
             <Button
               onClick={() => handleOAuthSignIn("google")}
@@ -281,17 +333,6 @@ export default function LoginPage() {
                 </div>
               </div>
             )}
-
-            {/* 跳过登录 */}
-            <Link href="/dashboard">
-              <Button
-                variant="outline"
-                className="w-full h-12 border-[#C8C4BC] text-[#6B6860] hover:text-[#141413] hover:border-[#141413] hover:bg-[#F5F3EC] rounded-xl transition-all"
-              >
-                跳过登录，直接使用
-              </Button>
-            </Link>
-
             <p className="text-center text-xs text-[#9C9890] mt-4" style={{ fontFamily: 'var(--font-body)' }}>
               登录后可保存分析历史，方便后续查看
             </p>

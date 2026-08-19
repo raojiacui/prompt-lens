@@ -9,6 +9,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: t("title"),
     description: t("description"),
+    icons: {
+      icon: "/prompt-lens-icon.png",
+      apple: "/prompt-lens-icon.png",
+    },
   };
 }
 
@@ -23,16 +27,11 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <head>
-        {/* Google Fonts - Anthropic 官方字体 */}
+        {/* Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Serif+Display&family=DM+Serif+Text&family=JetBrains+Mono:wght@400;500&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Poppins:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
-        {/* 中文支持 - 霞鹜文楷 */}
-        <link
-          href="https://fonts.googleapis.com/css2?family=LXGW+WenKai:wght@300;400;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
       </head>

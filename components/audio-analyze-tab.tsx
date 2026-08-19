@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Spinner } from "@/components/ui/spinner";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { useTranslations } from "next-intl";
+import { Link, Mic2, Send, Upload, X } from "lucide-react";
 
 interface TranscriptionSegment {
   start: number;
@@ -22,6 +22,10 @@ interface VideoSegment {
   end: number;
   summary: string;
   tags: string[];
+  originalText?: string;
+  translation?: string;
+  pronunciation?: string;
+  practiceTip?: string;
 }
 
 type Tab = "analyze" | "history" | "settings" | "audio" | "edit" | "video-gen" | "stats";
@@ -48,7 +52,8 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
   const [clipLoading, setClipLoading] = useState(false);
   const [clipUrl, setClipUrl] = useState<string | null>(null);
   const [whisperModel, setWhisperModel] = useState("assemblyai");
-  const [llmProvider, setLlmProvider] = useState("deepseek");
+  const [targetLanguage, setTargetLanguage] = useState<"auto" | "ko">("auto");
+  const llmProvider = "deepseek";
   const [customPrompt, setCustomPrompt] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [inputMode, setInputMode] = useState<"file" | "url">("file");
@@ -56,9 +61,8 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
   const [funasrUrl, setFunasrUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const handleFile = (file: File) => {
+    if (!file.type.startsWith("video/") && !file.type.startsWith("audio/")) return;
     setSelectedFile(file);
     setPreview(URL.createObjectURL(file));
     setResult(null);
@@ -66,17 +70,23 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
     setSelectedSegments([]);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    handleFile(file);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith("video/")) {
-      setSelectedFile(file);
-      setPreview(URL.createObjectURL(file));
-      setResult(null);
-      setClipUrl(null);
-      setSelectedSegments([]);
-    }
+    if (file) handleFile(file);
+  };
+
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setCustomPrompt(e.target.value);
+    e.currentTarget.style.height = "auto";
+    e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 220)}px`;
   };
 
   const handleAnalyze = async () => {
@@ -92,10 +102,8 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
           setProgress(t("uploadingProgress", { percent: Math.round(percentage) }));
         });
 
-        console.log("Upload response:", uploadData);
         url = uploadData.url;
         if (!url) {
-          console.error("Upload returned empty URL, response:", uploadData);
           throw new Error(t("uploadEmptyUrl", { response: JSON.stringify(uploadData) }));
         }
       } catch (error: any) {
@@ -128,11 +136,11 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
             whisperModelSize: whisperModel,
             llmProvider,
             prompt: customPrompt || undefined,
+            targetLanguage,
             funasrUrl: whisperModel === "funasr" ? funasrUrl : undefined,
           }),
         });
       } catch (fetchError: any) {
-        console.error("Network fetch error:", fetchError);
         throw new Error(t("networkError", { message: fetchError.message }));
       }
 
@@ -141,8 +149,8 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
         try {
           const err = await analyzeRes.json();
           errMsg = err.error || errMsg;
-        } catch (e) {
-          // 响应不是 JSON
+        } catch {
+          // Ignore non-JSON error bodies.
         }
         throw new Error(errMsg);
       }
@@ -151,7 +159,6 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
       setResult(data);
       setSelectedSegments(data.segments.map((_: any, i: number) => i));
     } catch (error: any) {
-      console.error("Audio analysis error:", error);
       alert(`Error: ${error.message}`);
     } finally {
       setIsLoading(false);
@@ -202,6 +209,12 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const getLanguageDisplay = (language: string) => {
+    if (language === "ko") return t("languageKoreanShort");
+    if (language === "unknown") return t("languageUnknown");
+    return language;
+  };
+
   const resetUpload = () => {
     setSelectedFile(null);
     setPreview(null);
@@ -215,304 +228,309 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
 
   if (activeTab !== "audio") return null;
 
+  const canAnalyze =
+    !isLoading &&
+    (inputMode === "file" ? Boolean(selectedFile) : Boolean(videoUrlInput.trim())) &&
+    (whisperModel !== "funasr" || Boolean(funasrUrl.trim()));
+
   return (
-    <div className="animate-fade-in space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 左侧：上传区域 */}
-        <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-[#141413] flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
-              <span className="w-10 h-10 rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                </svg>
-              </span>
-              {t("title")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* 输入方式切换 */}
-            <div className="flex gap-2 mb-2">
-              <button
-                onClick={() => { setInputMode("file"); resetUpload(); }}
-                className={`px-4 py-2 text-sm rounded-lg transition-all ${
-                  inputMode === "file"
-                    ? "bg-[#D97757] text-white"
-                    : "bg-[#ECE9E0] text-[#6B6860] hover:bg-[#D8D5CC]"
-                }`}
-              >
-                {t("uploadFile")}
-              </button>
-              <button
-                onClick={() => { setInputMode("url"); resetUpload(); }}
-                className={`px-4 py-2 text-sm rounded-lg transition-all ${
-                  inputMode === "url"
-                    ? "bg-[#D97757] text-white"
-                    : "bg-[#ECE9E0] text-[#6B6860] hover:bg-[#D8D5CC]"
-                }`}
-              >
-                {t("inputUrl")}
-              </button>
-            </div>
+    <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
+      <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">
+              {t("title") || "Audio Analysis"}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {t("subtitle") || "Transcribe audio and extract clip-worthy segments."}
+            </p>
+          </div>
+        </div>
 
-            {/* URL 输入模式 */}
-            {inputMode === "url" && (
-              <div className="space-y-2">
-                <Input
-                  type="url"
-                  value={videoUrlInput}
-                  onChange={(e) => setVideoUrlInput(e.target.value)}
-                  placeholder={t("urlPlaceholder")}
-                  className="bg-white border-[#C8C4BC] focus:border-[#D97757]"
-                />
-                <p className="text-xs text-[#6B6860]">{t("urlHint")}</p>
+        <div className="grid items-stretch gap-4 xl:grid-cols-[0.74fr_1.26fr]">
+          <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">
+            <div className="flex h-full flex-col space-y-4">
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {t("panelTitle") || "Upload & Analyze"}
+                </h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {t("panelDescription") || "Upload an audio/video file or paste a URL to transcribe and analyze."}
+                </p>
               </div>
-            )}
 
-            {/* 拖拽上传 */}
-            {inputMode === "file" && (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleDrop}
-              className={cn(
-                "relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300",
-                isDragging ? "border-[#D97757] bg-[#D97757]/5" : "border-[#C8C4BC] hover:border-[#D97757]/50",
-                preview && "border-transparent bg-[#ECE9E0]"
-              )}
-            >
-              {preview ? (
-                <div className="relative">
-                  <video src={preview} className="max-h-48 rounded-lg shadow-md" controls />
-                  <button
-                    onClick={(e) => { e.stopPropagation(); resetUpload(); }}
-                    className="absolute -top-2 -right-2 w-7 h-7 bg-[#D97757] text-white rounded-full flex items-center justify-center shadow-md hover:bg-[#C96848]"
+              <div
+                className={cn(
+                  "rounded-2xl border border-dashed border-border bg-muted/30 p-3 transition-colors",
+                  isDragging && inputMode === "file" && "border-primary/70 bg-primary/5"
+                )}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={handleDrop}
+              >
+                <input
+                  ref={fileInputRef}
+                  className="sr-only"
+                  type="file"
+                  accept="video/*,audio/*"
+                  onChange={handleFileSelect}
+                />
+
+                {inputMode === "file" && selectedFile && preview ? (
+                  <div className="mb-3 flex flex-wrap gap-3">
+                    <div className="relative flex h-24 w-32 items-center justify-center overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+                      {selectedFile.type.startsWith("video/") ? (
+                        <video src={preview} className="h-full w-full object-cover" muted />
+                      ) : (
+                        <Mic2 className="h-9 w-9 text-primary" />
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); resetUpload(); }}
+                        className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
+                        aria-label="Remove uploaded media"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex min-w-0 flex-col justify-center">
+                      <p className="max-w-[320px] truncate text-sm font-medium text-foreground">{selectedFile.name}</p>
+                      <p className="text-xs text-muted-foreground">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {inputMode === "url" ? (
+                  <div className="mb-3">
+                    <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-foreground shadow-sm">
+                      <Link className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <Input
+                        type="url"
+                        value={videoUrlInput}
+                        onChange={(e) => setVideoUrlInput(e.target.value)}
+                        placeholder={t("urlPlaceholder")}
+                        className="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
+                      />
+                    </label>
+                    <p className="mt-2 text-xs text-muted-foreground">{t("urlHint")}</p>
+                  </div>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={() => inputMode === "file" ? fileInputRef.current?.click() : setInputMode("file")}
+                  className="flex min-h-20 w-full flex-col items-center justify-center gap-1.5 rounded-xl bg-background py-3 text-center transition-colors hover:bg-accent"
+                >
+                  <Upload className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
+                  <span className="text-base font-semibold">{t("uploadFile")}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {inputMode === "file" ? t("dropHere") : t("switchToFileUpload")}
+                  </span>
+                </button>
+              </div>
+
+              <div className="rounded-2xl border border-border bg-background p-3">
+                <Textarea
+                  value={customPrompt}
+                  onChange={handlePromptChange}
+                  placeholder={targetLanguage === "ko" ? t("customPromptKoreanPlaceholder") : t("customPromptPlaceholder")}
+                  className="min-h-[108px] resize-none overflow-hidden border-0 bg-transparent p-0 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground focus-visible:ring-0"
+                />
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <label className="grid gap-2 text-sm font-medium">
+                  {t("engine") || "Engine"}
+                  <select
+                    value={whisperModel}
+                    onChange={(e) => setWhisperModel(e.target.value)}
+                    className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
                   >
-                    ×
+                    <option value="assemblyai">{t("engineAssemblyai")}</option>
+                    <option value="funasr">{t("engineFunasr")}</option>
+                  </select>
+                </label>
+
+                <label className="grid gap-2 text-sm font-medium">
+                  {t("targetLanguage") || "Target language"}
+                  <select
+                    value={targetLanguage}
+                    onChange={(e) => setTargetLanguage(e.target.value as "auto" | "ko")}
+                    className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
+                  >
+                    <option value="auto">{t("targetLanguageAuto")}</option>
+                    <option value="ko">{t("targetLanguageKorean")}</option>
+                  </select>
+                </label>
+              </div>
+
+              {whisperModel === "funasr" && (
+                <label className="grid gap-2 text-sm font-medium">
+                  {t("funasrUrl")}
+                  <Input
+                    type="url"
+                    value={funasrUrl}
+                    onChange={(e) => setFunasrUrl(e.target.value)}
+                    placeholder={t("funasrUrlPlaceholder")}
+                    className="h-10 rounded-xl border-border bg-background focus:border-ring"
+                  />
+                  <span className="text-xs text-muted-foreground">{t("funasrUrlHint")}</span>
+                </label>
+              )}
+
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="inline-flex h-10 overflow-hidden rounded-full border border-border bg-muted p-1">
+                  <button
+                    type="button"
+                    onClick={() => { setInputMode("file"); resetUpload(); }}
+                    className={cn(
+                      "rounded-full px-4 text-sm font-semibold transition-colors",
+                      inputMode === "file" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {t("uploadFile")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setInputMode("url"); resetUpload(); }}
+                    className={cn(
+                      "rounded-full px-4 text-sm font-semibold transition-colors",
+                      inputMode === "url" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {t("inputUrl")}
                   </button>
                 </div>
-              ) : (
-                <>
-                  <div className="w-14 h-14 mx-auto mb-3 rounded-xl bg-[#D97757]/10 flex items-center justify-center">
-                    <svg className="w-7 h-7 text-[#D97757]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                    </svg>
-                  </div>
-                  <p className="text-[#141413] font-medium mb-1">{t("dropHere")}</p>
-                  <p className="text-sm text-[#6B6860]">{t("dropHint")}</p>
-                </>
-              )}
-              <input ref={fileInputRef} type="file" accept="video/*" onChange={handleFileSelect} className="hidden" />
-            </div>
-            )}
-
-            {selectedFile && (
-              <div className="flex items-center justify-between bg-[#ECE9E0] rounded-lg px-4 py-2">
-                <span className="text-sm text-[#6B6860] truncate">{selectedFile.name}</span>
-                <span className="text-xs text-[#D97757] bg-[#D97757]/10 px-2 py-1 rounded">
-                  {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                </span>
               </div>
-            )}
 
-            {/* 设置选项 */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-[#141413] block mb-2">{t("engine")}</label>
-                <select
-                  value={whisperModel}
-                  onChange={(e) => setWhisperModel(e.target.value)}
-                  className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
-                >
-                  <option value="assemblyai">{t("engineAssemblyai")}</option>
-                  <option value="funasr">{t("engineFunasr")}</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-[#141413] block mb-2">{t("llmProvider")}</label>
-                <select
-                  value={llmProvider}
-                  onChange={(e) => setLlmProvider(e.target.value)}
-                  className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
-                >
-                  <option value="deepseek">{t("llmDeepseek")}</option>
-                  <option value="zhipu">{t("llmZhipu")}</option>
-                </select>
-              </div>
-            </div>
-
-            {/* FunASR 自托管地址 */}
-            {whisperModel === "funasr" && (
-              <div>
-                <label className="text-sm font-medium text-[#141413] block mb-2">{t("funasrUrl")}</label>
-                <Input
-                  type="url"
-                  value={funasrUrl}
-                  onChange={(e) => setFunasrUrl(e.target.value)}
-                  placeholder={t("funasrUrlPlaceholder")}
-                  className="bg-white border-[#C8C4BC] focus:border-[#D97757]"
-                />
-                <p className="text-xs text-[#9C9890] mt-1">{t("funasrUrlHint")}</p>
-              </div>
-            )}
-
-            <div>
-              <label className="text-sm font-medium text-[#141413] block mb-2">{t("customPrompt")}</label>
-              <Textarea
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder={t("customPromptPlaceholder")}
-                className="bg-white border-[#C8C4BC] focus:border-[#D97757]"
-                rows={2}
-              />
-            </div>
-
-            <Button
-              onClick={handleAnalyze}
-              disabled={
-                (inputMode === "file" && !selectedFile) ||
-                (inputMode === "url" && !videoUrlInput.trim()) ||
-                (whisperModel === "funasr" && !funasrUrl.trim()) ||
-                isLoading
-              }
-              className="w-full h-11 bg-[#D97757] hover:bg-[#C96848] text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-all"
-            >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <Spinner size="sm" className="border-white" />
-                  {progress || t("processing")}
-                </span>
-              ) : (
-                t("start")
-              )}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* 右侧：结果区域 */}
-        <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-[#141413] flex items-center gap-3" style={{ fontFamily: 'var(--font-display)' }}>
-              <span className="w-10 h-10 rounded-xl bg-[#D97757]/10 flex items-center justify-center text-[#D97757]">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </span>
-              {t("result")}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {result ? (
-              <div className="space-y-4">
-                {/* 基本信息 */}
-                <div className="flex items-center gap-4 text-sm text-[#6B6860] bg-[#ECE9E0] rounded-lg px-3 py-2">
-                  <span>{t("language")}: {result.language}</span>
-                  <span>{t("duration")}: {formatTime(result.duration)}</span>
-                  <span>{t("segments")}: {t("segmentsCount", { count: result.segments.length })}</span>
+              {progress || isLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Spinner size="sm" />
+                  <span>{progress || t("processing")}</span>
                 </div>
+              ) : null}
 
-                {/* 片段列表 */}
-                <div className="max-h-[350px] overflow-y-auto space-y-2">
-                  <p className="text-sm font-medium text-[#141413] mb-2" style={{ fontFamily: 'var(--font-heading)' }}>{t("selectSegments")}</p>
-                  {result.segments.map((seg, i) => (
-                    <div
-                      key={i}
-                      onClick={() => toggleSegment(i)}
-                      className={cn(
-                        "flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all",
-                        selectedSegments.includes(i)
-                          ? "bg-[#D97757]/10 border border-[#D97757]/30"
-                          : "bg-[#ECE9E0] hover:bg-[#D8D5CC]"
-                      )}
-                    >
-                      <Checkbox
-                        checked={selectedSegments.includes(i)}
-                        onChange={() => toggleSegment(i)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <span className="text-xs font-mono text-[#D97757] bg-[#D97757]/10 px-2 py-0.5 rounded">
-                            {formatTime(seg.start)} - {formatTime(seg.end)}
-                          </span>
-                          {seg.tags.slice(0, 2).map((tag, j) => (
-                            <span key={j} className="text-xs text-[#6B6860]">#{tag}</span>
-                          ))}
-                        </div>
-                        <p className="text-sm text-[#141413] line-clamp-2">{seg.summary}</p>
-                      </div>
+              <button
+                type="button"
+                onClick={() => void handleAnalyze()}
+                disabled={!canAnalyze}
+                className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-foreground px-5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoading ? <Spinner size="sm" /> : <Send className="h-5 w-5 -rotate-45" />}
+                {isLoading ? t("processing") : t("start")}
+              </button>
+            </div>
+          </section>
+
+          <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">
+            {!result ? (
+              <div className="flex h-full flex-col items-center justify-center text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
+                  <Mic2 className="h-8 w-8" />
+                </div>
+                <p className="font-medium text-foreground">
+                  {t("emptyHint") || "Audio analysis result will appear here"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t("emptyDescription") || "Upload a file or enter a URL on the left and click analyze to start."}
+                </p>
+              </div>
+            ) : (
+              <div className="flex h-full flex-col gap-4 overflow-hidden">
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <div className="flex flex-row items-center justify-between gap-4">
+                    <h3 className="text-lg font-semibold text-foreground">{t("result")}</h3>
+                    <div className="flex flex-wrap justify-end gap-2 text-xs font-medium text-muted-foreground">
+                      <span className="rounded-full bg-muted px-3 py-1">{t("language")}: {getLanguageDisplay(result.language)}</span>
+                      <span className="rounded-full bg-muted px-3 py-1">{t("duration")}: {formatTime(result.duration)}</span>
+                      <span className="rounded-full bg-muted px-3 py-1">{t("segments")}: {result.segments.length}</span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                  <div className="mt-3 max-h-[360px] space-y-2 overflow-y-auto pr-1">
+                    {result.segments.map((seg, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => toggleSegment(i)}
+                        className={cn(
+                          "flex w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors",
+                          selectedSegments.includes(i) ? "border-primary/35 bg-primary/10" : "border-border bg-background hover:border-primary/35"
+                        )}
+                      >
+                        <Checkbox
+                          checked={selectedSegments.includes(i)}
+                          onChange={() => toggleSegment(i)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1"
+                        />
+                        <span className="min-w-0 flex-1">
+                          <span className="mb-1 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-muted px-2.5 py-1 font-mono text-xs text-primary">{formatTime(seg.start)} - {formatTime(seg.end)}</span>
+                            {seg.tags.slice(0, 3).map((tag, j) => (<span key={j} className="text-xs text-muted-foreground">#{tag}</span>))}
+                          </span>
+                          {(seg.originalText || seg.translation || seg.pronunciation) ? (
+                            <span className="mt-2 block space-y-2 text-sm leading-relaxed text-foreground">
+                              {seg.originalText && (
+                                <span className="block break-words text-base font-medium text-foreground">{seg.originalText}</span>
+                              )}
+                              {seg.translation && (
+                                <span className="block break-words text-muted-foreground"><span className="font-medium text-foreground">{t("koreanTranslation")}</span> {seg.translation}</span>
+                              )}
+                              {seg.pronunciation && (
+                                <span className="block break-words rounded-lg bg-muted/50 px-3 py-2 text-primary"><span className="font-medium text-foreground">{t("koreanPronunciation")}</span> {seg.pronunciation}</span>
+                              )}
+                              {seg.practiceTip && (
+                                <span className="block break-words text-xs text-muted-foreground"><span className="font-medium text-muted-foreground">{t("koreanPracticeTip")}</span> {seg.practiceTip}</span>
+                              )}
+                              {seg.summary && <span className="block break-words text-xs text-muted-foreground">{seg.summary}</span>}
+                            </span>
+                          ) : (
+                            <span className="block text-sm leading-relaxed text-foreground">{seg.summary}</span>
+                          )}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
 
-                {/* 剪辑按钮 */}
-                <div className="flex gap-3 pt-2">
                   <Button
                     onClick={handleClip}
                     disabled={selectedSegments.length === 0 || clipLoading}
-                    className="flex-1 h-10 bg-[#D97757] hover:bg-[#C96848] text-white rounded-xl font-medium shadow-sm hover:shadow-md transition-all"
+                    className="mt-4 w-full rounded-xl bg-primary text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
                   >
                     {clipLoading ? (
-                      <span className="flex items-center gap-2">
-                        <Spinner size="sm" className="border-white" />
-                        {t("clipping")}
-                      </span>
+                      <span className="flex items-center gap-2"><Spinner size="sm" className="border-white" />{t("clipping")}</span>
                     ) : (
                       t("clipSelected", { count: selectedSegments.length })
                     )}
                   </Button>
                 </div>
 
-                {/* 剪辑结果 */}
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <h3 className="text-lg font-semibold text-foreground">{t("transcript")}</h3>
+                  <div className="mt-3 max-h-[280px] overflow-y-auto whitespace-pre-wrap rounded-xl bg-muted/50 p-4 text-sm leading-relaxed text-foreground">
+                    {result.transcription.map((seg, i) => (
+                      <span key={i}><span className="mr-2 font-mono text-xs text-primary">[{formatTime(seg.start)}]</span>{seg.text}{" "}</span>
+                    ))}
+                  </div>
+                </div>
+
                 {clipUrl && (
-                  <div className="mt-4 p-4 bg-[#D97757]/10 rounded-xl">
-                    <p className="text-sm font-medium text-[#D97757] mb-2">{t("clipDone")}</p>
-                    <video src={clipUrl} className="w-full rounded-lg" controls />
-                    <a
-                      href={clipUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block mt-2 text-sm text-[#D97757] hover:underline"
-                    >
-                      {t("downloadVideo")}
-                    </a>
+                  <div className="rounded-xl border border-border bg-background p-4">
+                    <h3 className="text-lg font-semibold text-foreground">{t("clipDone")}</h3>
+                    <div className="mt-3 space-y-3">
+                      <video src={clipUrl} className="w-full rounded-xl" controls />
+                      <a href={clipUrl} target="_blank" rel="noopener noreferrer" className="inline-flex text-sm font-medium text-primary hover:underline">{t("downloadVideo")}</a>
+                    </div>
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-[#D8D5CC]/30 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-[#9C9890]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                  </svg>
-                </div>
-                <p className="text-[#6B6860]">{t("emptyHint")}</p>
-                <p className="text-sm text-[#9C9890] mt-1">{t("emptySubHint")}</p>
-              </div>
             )}
-          </CardContent>
-        </Card>
+          </section>
+        </div>
       </div>
-
-      {/* 文字稿区域 */}
-      {result && (
-        <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-[#141413] text-sm" style={{ fontFamily: 'var(--font-display)' }}>{t("transcript")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="max-h-60 overflow-y-auto bg-[#ECE9E0] rounded-lg p-4">
-              {result.transcription.map((seg, i) => (
-                <span key={i} className="text-sm text-[#141413]">
-                  <span className="text-xs text-[#D97757] mr-2">[{formatTime(seg.start)}]</span>
-                  {seg.text}{" "}
-                </span>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+    </main>
   );
 }

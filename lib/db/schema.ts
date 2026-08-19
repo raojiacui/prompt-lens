@@ -303,6 +303,154 @@ export const videoGeneration = pgTable(
   }
 );
 
+// ============ 新增：Agentic Workflow (Create with Agent) ============
+
+export const agentRunStatusEnum = pgEnum("agent_run_status", [
+  "queued",
+  "planning",
+  "running",
+  "waiting_for_user",
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+export const agentStepStatusEnum = pgEnum("agent_step_status", [
+  "queued",
+  "running",
+  "completed",
+  "failed",
+  "skipped",
+  "cancelled",
+]);
+
+export const agentToolCallStatusEnum = pgEnum("agent_tool_call_status", [
+  "running",
+  "completed",
+  "failed",
+]);
+
+export const agentArtifactTypeEnum = pgEnum("agent_artifact_type", [
+  "brief",
+  "research_report",
+  "video_prompt",
+  "shot_list",
+  "workflow",
+  "risk_notes",
+  "next_actions",
+  "history_lookup",
+  "summary",
+  "other",
+]);
+
+export const agentTaskKindEnum = pgEnum("agent_task_kind", [
+  "trend_research",
+  "video_analysis",
+  "video_prompt_generation",
+  "product_launch_video",
+  "competitor_breakdown",
+  "generic",
+]);
+
+export const agentRuns = pgTable(
+  "agent_runs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    goal: text("goal").notNull(),
+    status: agentRunStatusEnum("status").default("queued").notNull(),
+    provider: text("provider"),
+    locale: varchar("locale", { length: 10 }).default("en").notNull(),
+    taskKind: agentTaskKindEnum("task_kind"),
+    errorMessage: text("error_message"),
+    metadata: jsonb("metadata").default({}).notNull(),
+    attachments: jsonb("attachments").default([]).notNull(),
+    context: jsonb("context").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => ({
+    userIdIdx: index("idx_agent_runs_user_id").on(table.userId),
+    statusIdx: index("idx_agent_runs_status").on(table.status),
+    createdAtIdx: index("idx_agent_runs_created_at").on(table.createdAt),
+  })
+);
+
+export const agentSteps = pgTable(
+  "agent_steps",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => agentRuns.id, { onDelete: "cascade" }),
+    order: integer("order").notNull(),
+    title: text("title").notNull(),
+    description: text("description").notNull(),
+    status: agentStepStatusEnum("status").default("queued").notNull(),
+    toolName: text("tool_name"),
+    expectedOutput: text("expected_output"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    errorMessage: text("error_message"),
+    outputSummary: text("output_summary"),
+  },
+  (table) => ({
+    runIdIdx: index("idx_agent_steps_run_id").on(table.runId),
+    orderIdx: index("idx_agent_steps_order").on(table.order),
+  })
+);
+
+export const agentToolCalls = pgTable(
+  "agent_tool_calls",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => agentRuns.id, { onDelete: "cascade" }),
+    stepId: uuid("step_id")
+      .notNull()
+      .references(() => agentSteps.id, { onDelete: "cascade" }),
+    toolName: text("tool_name").notNull(),
+    status: agentToolCallStatusEnum("status").default("running").notNull(),
+    input: jsonb("input").default({}).notNull(),
+    output: jsonb("output"),
+    startedAt: timestamp("started_at", { withTimezone: true }).defaultNow().notNull(),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    errorMessage: text("error_message"),
+  },
+  (table) => ({
+    runIdIdx: index("idx_agent_tool_calls_run_id").on(table.runId),
+    stepIdIdx: index("idx_agent_tool_calls_step_id").on(table.stepId),
+  })
+);
+
+export const agentArtifacts = pgTable(
+  "agent_artifacts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    runId: uuid("run_id")
+      .notNull()
+      .references(() => agentRuns.id, { onDelete: "cascade" }),
+    type: agentArtifactTypeEnum("type").notNull(),
+    title: text("title").notNull(),
+    content: jsonb("content").default({}).notNull(),
+    metadata: jsonb("metadata").default({}).notNull(),
+    favorite: boolean("favorite").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    runIdIdx: index("idx_agent_artifacts_run_id").on(table.runId),
+    typeIdx: index("idx_agent_artifacts_type").on(table.type),
+    favoriteIdx: index("idx_agent_artifacts_favorite").on(table.favorite),
+  })
+);
+
 // ============ 类型导出 ============
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
@@ -318,3 +466,11 @@ export type VideoClip = typeof videoClip.$inferSelect;
 export type NewVideoClip = typeof videoClip.$inferInsert;
 export type VideoGeneration = typeof videoGeneration.$inferSelect;
 export type NewVideoGeneration = typeof videoGeneration.$inferInsert;
+export type AgentRun = typeof agentRuns.$inferSelect;
+export type NewAgentRun = typeof agentRuns.$inferInsert;
+export type AgentStep = typeof agentSteps.$inferSelect;
+export type NewAgentStep = typeof agentSteps.$inferInsert;
+export type AgentToolCall = typeof agentToolCalls.$inferSelect;
+export type NewAgentToolCall = typeof agentToolCalls.$inferInsert;
+export type AgentArtifact = typeof agentArtifacts.$inferSelect;
+export type NewAgentArtifact = typeof agentArtifacts.$inferInsert;

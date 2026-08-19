@@ -124,7 +124,7 @@ export function FloatingChat() {
       {/* 聊天对话框 */}
       {isOpen && (
         <div
-          className="fixed bottom-24 right-6 z-50 w-80 md:w-96 bg-[#F5F3EC] rounded-2xl shadow-2xl border border-[#D8D5CC] overflow-hidden"
+          className="fixed bottom-24 right-6 z-50 w-80 md:w-96 bg-[var(--color-bg-raised)] rounded-2xl shadow-2xl border border-[var(--color-border-default)] overflow-hidden"
           style={{
             boxShadow: "0 8px 40px rgba(0, 0, 0, 0.15)",
           }}
@@ -151,7 +151,7 @@ export function FloatingChat() {
           {/* 消息区域 */}
           <div className="h-80 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && (
-              <div className="text-center text-[#9C9890] text-sm py-8">
+              <div className="text-center text-[var(--color-text-muted)] text-sm py-8">
                 <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-[#D97757]/10 flex items-center justify-center overflow-hidden">
                   <PixelDeskPet size="lg" />
                 </div>
@@ -171,7 +171,7 @@ export function FloatingChat() {
                     "max-w-[80%] px-3 py-2 rounded-xl text-sm",
                     msg.role === "user"
                       ? "bg-[#D97757] text-white rounded-br-md"
-                      : "bg-[#ECE9E0] text-[#141413] rounded-bl-md"
+                      : "bg-[var(--color-bg-base)] text-[var(--color-text-primary)] rounded-bl-md"
                   )}
                 >
                   {msg.content}
@@ -180,7 +180,7 @@ export function FloatingChat() {
             ))}
             {isLoading && (
               <div className="flex justify-start">
-                <div className="bg-[#ECE9E0] px-3 py-2 rounded-xl rounded-bl-md flex items-center gap-2">
+                <div className="bg-[var(--color-bg-base)] px-3 py-2 rounded-xl rounded-bl-md flex items-center gap-2">
                   <PixelDeskPet size="sm" />
                   <Spinner size="sm" className="border-[#D97757]" />
                 </div>
@@ -190,14 +190,14 @@ export function FloatingChat() {
           </div>
 
           {/* 输入区域 */}
-          <div className="p-3 border-t border-[#D8D5CC] bg-white/50">
+          <div className="p-3 border-t border-[var(--color-border-default)] bg-white/50">
             <div className="flex gap-2">
               <Textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="输入消息..."
-                className="flex-1 min-h-[40px] max-h-[80px] resize-none border-[#D8D5CC] focus:border-[#D97757]"
+                className="flex-1 min-h-[40px] max-h-[80px] resize-none border-[var(--color-border-default)] focus:border-[#D97757]"
                 rows={1}
               />
               <Button

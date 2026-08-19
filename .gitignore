@@ -29,8 +29,18 @@ npm-debug.log*
 # Test
 coverage/
 playwright-report/
+test-results/
 
 # Temp
 temp_*/
 temp/
 nul/
+
+# Local runtime state
+.data/
+.omc/
+*.tsbuildinfo
+
+# Local visual QA captures
+dashboard-*.png
+demo.gif

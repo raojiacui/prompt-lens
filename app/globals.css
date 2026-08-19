@@ -9,28 +9,29 @@
 
   :root {
     /* 颜色系统 - Anthropic 风格 */
-    --color-bg-base: #ECE9E0;           /* 暖米色大地调 */
-    --color-bg-raised: #F5F3EC;          /* 卡片/面板 */
-    --color-bg-inverted: #141413;        /* 深色区块 */
+    --color-bg-base: #F7F2EA;           /* 暖黄色大地调 */
+    --color-bg-raised: #FDF8EF;          /* 卡片/面板 */
+    --color-bg-inverted: #2C1818;        /* 深色区块 */
 
     --color-accent-orange: #D97757;      /* 唯一强调色 */
     --color-accent-orange-hover: #C96848;
 
-    --color-text-primary: #141413;       /* 主文字 */
-    --color-text-secondary: #6B6860;      /* 次要文字 */
-    --color-text-muted: #9C9890;
+    --color-text-primary: #2C1818;       /* 主文字 - 咖啡棕 */
+    --color-text-secondary: #6B4E44;      /* 次要文字 - 暖棕 */
+    --color-text-muted: #A08E7D;
 
-    --color-border-subtle: #D8D5CC;
-    --color-border-default: #C8C4BC;
+    --color-border-subtle: #E8DDD0;
+    --color-border-default: #D4C8B8;
 
     --color-error: #C0453A;
     --color-success: #5B8C5A;
 
     /* 字体系统 */
-    --font-display: 'Lora', 'DM Serif Display', serif;
-    --font-heading: 'Poppins', 'DM Sans', sans-serif;
-    --font-body: 'Lora', 'DM Serif Text', serif;
-    --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+    --font-display: 'Outfit', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
+    --font-heading: 'Outfit', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
+    --font-body: 'Outfit', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
+    --font-mono: 'Outfit', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
+    --font-serif: 'Outfit', 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
 
     /* 间距系统 - 4px 网格 */
     --space-1: 4px;
@@ -65,7 +66,7 @@
     --duration-normal: 250ms;
     --duration-slow: 400ms;
     --ease-default: cubic-bezier(0.16, 1, 0.3, 1);
-    --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-bounce: cubic-bezier(0.16, 1, 0.3, 1);
 
     /* Z-index */
     --z-dropdown: 100;
@@ -75,24 +76,24 @@
     --z-tooltip: 500;
 
     /* 亮色模式变量 */
-    --background: 40 15% 95%;
-    --foreground: 0 0% 8%;
-    --card: 0 0% 98%;
-    --card-foreground: 0 0% 8%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 8%;
+    --background: 38 35% 94%;
+    --foreground: 0 28% 13%;
+    --card: 38 50% 97%;
+    --card-foreground: 0 28% 13%;
+    --popover: 38 50% 97%;
+    --popover-foreground: 0 28% 13%;
     --primary: 17 45% 56%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 15% 90%;
-    --secondary-foreground: 0 0% 8%;
-    --muted: 40 15% 92%;
-    --muted-foreground: 0 0% 40%;
+    --secondary: 32 30% 90%;
+    --secondary-foreground: 0 28% 13%;
+    --muted: 32 30% 90%;
+    --muted-foreground: 16 20% 40%;
     --accent: 17 45% 56%;
     --accent-foreground: 0 0% 100%;
     --destructive: 4 65% 53%;
     --destructive-foreground: 0 0% 100%;
-    --border: 40 15% 80%;
-    --input: 40 15% 80%;
+    --border: 32 30% 86%;
+    --input: 32 30% 86%;
     --ring: 17 45% 56%;
     --radius: 0.625rem;
   }
@@ -143,22 +144,27 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-body), 'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* 标题使用衬线字体 */
+  /* 标题使用 Outfit */
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display), serif;
-    font-weight: 500;
+    font-family: var(--font-display);
+    font-weight: 600;
   }
 
   /* 按钮和 UI 使用无衬线 */
   button, .btn, .ui {
-    font-family: var(--font-heading), sans-serif;
+    font-family: var(--font-heading);
+  }
+
+  /* Legacy serif utility now maps to Outfit for a unified typeface */
+  .font-serif-display {
+    font-family: var(--font-serif);
   }
 }
 
@@ -307,4 +313,45 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ============================================
+   Agent chat transition
+   ============================================ */
+@keyframes agentLaunchSheet {
+  0% {
+    clip-path: inset(46% 14% 46% 14% round 28px);
+    transform: scale(0.98);
+    opacity: 0.92;
+  }
+  52% {
+    clip-path: inset(9% 4% 9% 4% round 22px);
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    clip-path: inset(0 0 0 0 round 0);
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes agentChatEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.agent-launch-sheet {
+  animation: agentLaunchSheet 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center;
+}
+
+.agent-chat-enter {
+  animation: agentChatEnter 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }

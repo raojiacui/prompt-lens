@@ -33,13 +33,52 @@ function getAssemblyClient() {
   });
 }
 
+type TargetLanguage = "auto" | "ko";
+
+function normalizeTargetLanguage(value: unknown): TargetLanguage {
+  return value === "ko" ? "ko" : "auto";
+}
+
+function formatTranscriptForLLM(words: any[]): string {
+  return words
+    .map((word) => {
+      const start = Math.max(0, Number(word.start || 0)).toFixed(2);
+      const end = Math.max(0, Number(word.end || 0)).toFixed(2);
+      return `[${start}-${end}] ${word.text || ""}`;
+    })
+    .join("\n");
+}
+
 // LLM 分段函数
 async function segmentWithLLM(
   transcription: string,
   llmProvider: string,
-  apiKey: string
+  apiKey: string,
+  targetLanguage: TargetLanguage,
+  customPrompt?: string
 ): Promise<any[]> {
-  const systemPrompt = `你是一个视频内容分析专家。用户提供语音转文字的字幕内容，你需要：
+  const koreanMode = targetLanguage === "ko";
+  const systemPrompt = koreanMode
+    ? `你是一个韩语台词识别和跟读教程助手。用户提供从原声音频识别出的韩语台词，不是字幕。你需要：
+1. 按剧情语义和时间戳把台词切成若干短片段，适合用户逐句跟读
+2. 尽量保留韩语原文，不要改写成字幕腔
+3. 为每个片段生成：
+   - start: 起始时间（秒）
+   - end: 结束时间（秒）
+   - summary: 中文说明，概括这句/这段在表达什么
+   - originalText: 韩语原文台词
+   - translation: 自然中文翻译
+   - pronunciation: 中文谐音跟读教程，用中文汉字近似韩语发音，不要用罗马音
+   - practiceTip: 简短中文发音提醒，例如收音、连读、语气
+   - tags: 3-5个英文标签
+
+请返回JSON格式的数组，示例：
+[
+  {"start": 0, "end": 4.2, "summary": "角色在确认对方是否没事", "originalText": "괜찮아요?", "translation": "你没事吧？", "pronunciation": "宽恰那哟？", "practiceTip": "结尾的 요 轻一点，语气上扬", "tags": ["korean","drama","line"]}
+]
+
+只返回JSON，不要其他内容。`
+    : `你是一个视频内容分析专家。用户提供语音转文字的字幕内容，你需要：
 1. 将内容分成多个逻辑片段，每个片段代表一个独立的场景或话题
 2. 为每个片段生成：
    - start: 起始时间（秒）
@@ -55,7 +94,7 @@ async function segmentWithLLM(
 
 只返回JSON，不要其他内容。`;
 
-  const userPrompt = `字幕内容：\n${transcription}`;
+  const userPrompt = `${customPrompt ? `用户补充要求：${customPrompt}\n\n` : ""}带时间戳的识别文本：\n${transcription}`;
 
   try {
     // 使用 OpenRouter 或 Deepseek
@@ -73,7 +112,7 @@ async function segmentWithLLM(
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt },
           ],
-          temperature: 0.3,
+          temperature: koreanMode ? 0.2 : 0.3,
         },
         {
           headers: {
@@ -92,7 +131,7 @@ async function segmentWithLLM(
         // 确保 tags 是数组
         return parsed.map((item: any) => ({
           ...item,
-          tags: typeof item.tags === 'string' ? item.tags.split(',').map((t: string) => t.trim()) : item.tags || []
+          tags: typeof item.tags === "string" ? item.tags.split(",").map((t: string) => t.trim()) : item.tags || []
         }));
       }
     }
@@ -145,7 +184,9 @@ export async function POST(request: NextRequest) {
       llmProvider = "deepseek",
       prompt,
       funasrUrl,
+      targetLanguage: rawTargetLanguage,
     } = body;
+    const targetLanguage = normalizeTargetLanguage(rawTargetLanguage);
 
     if (!mediaUrl) {
       return NextResponse.json(
@@ -170,7 +211,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 将公开 B2 URL 转换为签名 URL，确保 AssemblyAI / FunASR 能下载
+    const llmApiKey = process.env.DEEPSEEK_API_KEY; // 需要配置 DeepSeek API Key
+    if (targetLanguage === "ko" && !llmApiKey) {
+      return NextResponse.json(
+        { error: "韩语台词学习需要配置 DEEPSEEK_API_KEY，用于生成中文翻译和谐音教程。" },
+        { status: 500 }
+      );
+    }
+    // 将公开 R2 URL 转换为签名 URL，确保 AssemblyAI / FunASR 能下载
     const accessibleUrl = await ensureAccessibleUrl(mediaUrl);
 
     console.log(`Starting ${whisperModelSize === "funasr" ? "FunASR" : "AssemblyAI"} transcription for:`, accessibleUrl);
@@ -181,7 +229,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         action: "analysis.start",
         resourceType: "audio",
-        metadata: { mediaUrl, whisperModelSize, llmProvider, funasrUrl },
+        metadata: { mediaUrl, whisperModelSize, llmProvider, funasrUrl, targetLanguage },
       });
     } catch (logError) {
       console.warn("Failed to log analysis start:", logError);
@@ -190,13 +238,14 @@ export async function POST(request: NextRequest) {
     let transcriptionSegments: any[] = [];
     let fullText = "";
     let audioDuration = 0;
+    let detectedLanguage = targetLanguage === "ko" ? "ko" : "unknown";
 
     if (whisperModelSize === "funasr") {
       // FunASR 自托管模式
       try {
         const funasrRes = await axios.post(
           `${funasrUrl}/recognition`,
-          { audio_url: accessibleUrl },
+          { audio_url: accessibleUrl, language: targetLanguage === "ko" ? "ko" : "auto" },
           { timeout: 120000 }
         );
 
@@ -211,6 +260,7 @@ export async function POST(request: NextRequest) {
         }));
         fullText = sentences.map((s: any) => s.text).join(" ");
         audioDuration = sentences.length > 0 ? sentences[sentences.length - 1].end : 0;
+        detectedLanguage = funasrData.language || detectedLanguage;
       } catch (funasrError: any) {
         console.error("FunASR error:", funasrError.message);
         throw new Error(`FunASR 调用失败: ${funasrError.message}`);
@@ -219,12 +269,19 @@ export async function POST(request: NextRequest) {
       // AssemblyAI 模式
       const client = getAssemblyClient();
 
-      const transcript = await client.transcripts.transcribe({
+      const transcriptParams: any = {
         audio: accessibleUrl,
         speaker_labels: true,
-        // @ts-ignore - API uses speech_models
-        speech_models: ["universal-2"] as any,
-      });
+        speech_models: ["universal-2"],
+      };
+
+      if (targetLanguage === "ko") {
+        transcriptParams.language_code = "ko";
+      } else {
+        transcriptParams.language_detection = true;
+      }
+
+      const transcript = await client.transcripts.transcribe(transcriptParams);
 
       console.log("AssemblyAI transcription completed, status:", transcript.status);
 
@@ -259,17 +316,23 @@ export async function POST(request: NextRequest) {
         .join(" ");
 
       audioDuration = finalTranscript.audio_duration || 0;
+      detectedLanguage = finalTranscript.language_code || detectedLanguage;
     }
 
     console.log("Transcription text length:", fullText.length);
 
     // 使用 LLM 进行智能分段
-    const llmApiKey = process.env.DEEPSEEK_API_KEY; // 需要配置 DeepSeek API Key
     let llmSegments: any[] = [];
 
     if (llmApiKey && (llmProvider === "deepseek" || llmProvider === "openrouter")) {
       try {
-        llmSegments = await segmentWithLLM(fullText, llmProvider, llmApiKey);
+        llmSegments = await segmentWithLLM(
+          formatTranscriptForLLM(transcriptionSegments),
+          llmProvider,
+          llmApiKey,
+          targetLanguage,
+          prompt
+        );
       } catch (llmError) {
         console.warn("LLM segmentation failed, using simple segmentation:", llmError);
       }
@@ -306,7 +369,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       mediaUrl,
       mediaName,
-      language: "unknown",
+      language: detectedLanguage,
       transcription: transcriptionSegments,
       segments: llmSegments,
       duration: Math.round(audioDuration || 0),
@@ -324,7 +387,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         mediaUrl,
         segmentCount: llmSegments.length,
-        language: "unknown",
+        language: detectedLanguage,
         duration: Math.round(audioDuration || 0),
       },
     });
@@ -338,7 +401,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       id: audioAnalysisRecord[0].id,
-      language: "unknown",
+      language: detectedLanguage,
       transcription: transcriptionSegments,
       segments: safeSegments,
       duration: Math.round(audioDuration || 0),
