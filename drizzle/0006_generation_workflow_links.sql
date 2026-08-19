@@ -1,4 +1,4 @@
-﻿ALTER TABLE "video_generation" ADD COLUMN "project_id" uuid;
+ALTER TABLE "video_generation" ADD COLUMN "project_id" uuid;
 ALTER TABLE "video_generation" ADD COLUMN "scene_id" uuid;
 ALTER TABLE "video_generation" ADD COLUMN "project_version_id" uuid;
 
