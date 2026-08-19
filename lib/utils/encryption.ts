@@ -7,9 +7,9 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "crypt
 
 // 获取加密密钥（从环境变量派生）
 function getEncryptionKey(): Buffer {
-  const secret = process.env.BETTER_AUTH_SECRET;
+  const secret = process.env.BYOK_ENCRYPTION_KEY || process.env.BETTER_AUTH_SECRET;
   if (!secret) {
-    throw new Error("BETTER_AUTH_SECRET is not configured");
+    throw new Error("BYOK_ENCRYPTION_KEY or BETTER_AUTH_SECRET is not configured");
   }
   // 使用 secret 的前32字节作为 AES-256 密钥
   return scryptSync(secret, "salt", 32);

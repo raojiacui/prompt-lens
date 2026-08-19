@@ -40,7 +40,6 @@ export function VideoEditTab() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState<string>("");
-  const [ffmpegServiceUrl, setFfmpegServiceUrl] = useState("");
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
@@ -364,12 +363,6 @@ export function VideoEditTab() {
       setIsLoading(true);
     }
 
-    if (!ffmpegServiceUrl.trim()) {
-      setError(t("ffmpegUrlRequired"));
-      setIsLoading(false);
-      setProgress("");
-      return;
-    }
     if (!prompt.trim()) {
       setError(t("inputRequired"));
       setIsLoading(false);
@@ -394,7 +387,6 @@ export function VideoEditTab() {
         body: JSON.stringify({
           mediaUrl: finalVideoUrl,
           prompt: `${prompt}\n\nManual timeline selection: ${timelineSummary}`,
-          ffmpegServiceUrl: ffmpegServiceUrl.trim(),
         }),
       });
 
@@ -414,7 +406,7 @@ export function VideoEditTab() {
     }
   };
 
-  const canEdit = !isLoading && prompt.trim() && ffmpegServiceUrl.trim() && (inputMode === "file" ? videoFile : videoUrlInput.trim());
+  const canEdit = !isLoading && prompt.trim() && (inputMode === "file" ? videoFile : videoUrlInput.trim());
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -495,11 +487,7 @@ export function VideoEditTab() {
                   <Paperclip className="h-7 w-7" />
                 </button>
               )}
-
-              <label className="inline-flex h-11 min-w-[260px] items-center gap-2 rounded-full border border-[#D8D5CC]/70 bg-white/72 px-4 text-base font-medium text-[#141413] shadow-sm backdrop-blur-sm">
-                FFmpeg:
-                <Input value={ffmpegServiceUrl} onChange={(e) => setFfmpegServiceUrl(e.target.value)} placeholder={t("ffmpegUrlPlaceholder")} className="h-auto border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0" />
-              </label>
+              <span className="inline-flex h-11 items-center rounded-full border border-[#D8D5CC]/70 bg-white/72 px-4 text-sm font-semibold text-[#6B6860] shadow-sm backdrop-blur-sm">FFmpeg worker: Server</span>
             </div>
 
             <Button onClick={handleEdit} disabled={!canEdit} className="h-12 w-12 rounded-xl bg-white/45 p-0 text-[#B8B8B8] hover:bg-[#D97757] hover:text-white disabled:hover:bg-white/45 disabled:hover:text-[#B8B8B8]" aria-label={t("start")}>

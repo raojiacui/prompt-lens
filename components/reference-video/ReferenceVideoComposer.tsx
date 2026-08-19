@@ -68,7 +68,7 @@ const maxKieReferenceImageAspectRatio = 2.5;
 const minKieReferenceImageDimension = 300;
 const maxKieReferenceImageDimension = 6000;
 
-const models: Array<{
+const fallbackModels: Array<{
   id: ModelId;
   label: string;
   supportedDurations: Duration[];
@@ -328,6 +328,7 @@ export function ReferenceVideoComposer({
 
   const [prompt, setPrompt] = useState(initialPrompt || "");
   const [model, setModel] = useState<ModelId>("veo3_fast");
+  const [models, setModels] = useState(fallbackModels);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [quality, setQuality] = useState<Quality>("720P");
   const [duration, setDuration] = useState<Duration>("8s");
@@ -393,6 +394,32 @@ export function ReferenceVideoComposer({
   const durationLabel = duration === "0s" ? "Original" : duration;
   const formatSummary = `${aspectRatio} | ${quality} | ${durationLabel} | ${outputCount} Variation${outputCount === "1" ? "" : "s"}`;
 
+  useEffect(() => {
+    let cancelled = false;
+    async function loadModelRegistry() {
+      try {
+        const response = await fetch("/api/models?category=video_generation");
+        const data = await response.json();
+        const registryModels = Array.isArray(data.models)
+          ? data.models
+              .filter((item: any) => item.enabled && item.kieModelId)
+              .map((item: any) => ({
+                id: item.kieModelId as ModelId,
+                label: item.displayName || item.kieModelId,
+                supportedDurations: item.maxDuration ? [`${item.maxDuration}s` as Duration] : ["5s" as Duration],
+                supportedAspectRatios: (item.aspectRatios || ["16:9"]) as Exclude<AspectRatio, "auto">[],
+              }))
+          : [];
+        if (!cancelled && registryModels.length) setModels(registryModels);
+      } catch {
+        if (!cancelled) setModels(fallbackModels);
+      }
+    }
+    void loadModelRegistry();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   useEffect(
     () => () => {
       previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -653,6 +680,13 @@ export function ReferenceVideoComposer({
       } catch {}
     }
   }, [storageKey]);
+
+  useEffect(() => {
+    if (initialPrompt && initialPrompt.trim()) {
+      setPromptText(initialPrompt.trim());
+      setVariants(initialVariants);
+    }
+  }, [initialPrompt]);
 
   useEffect(() => {
     if (aspectRatio === "auto") return;

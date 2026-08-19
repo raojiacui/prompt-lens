@@ -179,7 +179,7 @@ function buildGenerationInput(input: KieVideoGenerationRequest) {
   };
 }
 
-export async function createKieVeoGeneration(input: KieVideoGenerationRequest) {
+export async function createKieVeoGeneration(input: KieVideoGenerationRequest, apiKey?: string) {
   const generationInput = buildGenerationInput(input);
   const imageUrls = input.imageUrls?.filter(Boolean) || [];
   const usesVeo = isKIEVeoModel(generationInput.modelId);
@@ -189,7 +189,7 @@ export async function createKieVeoGeneration(input: KieVideoGenerationRequest) {
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${getApiKey()}`,
+        Authorization: `Bearer ${apiKey || getApiKey()}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(
@@ -218,6 +218,7 @@ export async function createKieVeoGeneration(input: KieVideoGenerationRequest) {
 export async function getKieVeoGenerationStatus(
   taskId: string,
   model?: string | null,
+  apiKey?: string,
 ): Promise<KieVeoStatus> {
   const usesAleph = isKIEAlephModel(model);
   const usesVeo = !usesAleph && (!model || isKIEVeoModel(model));
@@ -229,7 +230,7 @@ export async function getKieVeoGenerationStatus(
   const url = new URL(`${baseUrl}${statusEndpoint}`);
   url.searchParams.set("taskId", taskId);
   const headers = {
-    Authorization: `Bearer ${getApiKey()}`,
+    Authorization: `Bearer ${apiKey || getApiKey()}`,
     Accept: "application/json",
   };
   let response = await fetch(url, {

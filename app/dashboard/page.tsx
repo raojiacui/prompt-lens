@@ -12,6 +12,7 @@ import { VideoEditTab } from "@/components/video-edit-tab";
 import { ReferenceVideoComposer } from "@/components/reference-video/ReferenceVideoComposer";
 import { FloatingChat } from "@/components/floating-chat";
 import { CreateWithAgent } from "@/components/agent/create-with-agent";
+import { VideoWorkflowCreate } from "@/components/workflow/video-workflow-create";
 import { extractVideoFrames, getImageBase64 } from "@/lib/utils/frame-extractor";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { cn } from "@/lib/utils";
@@ -20,9 +21,9 @@ import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import type { Locale } from "@/i18n/config";
-import { ChevronLeft, ChevronRight, Clock, Home, LogOut, Mic2, Scissors, Settings, Sparkles, Video, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, FolderKanban, Home, LogOut, Mic2, PlusCircle, Scissors, Settings, Sparkles, Video, X } from "lucide-react";
 
-type Tab = "home" | "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
+type Tab = "home" | "create" | "projects" | "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
 type FeatureTab = "analyze" | "audio" | "edit" | "video-gen";
 
 export default function DashboardPage() {
@@ -32,7 +33,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const validTabs: Tab[] = ["home", "analyze", "audio", "edit", "video-gen", "history", "settings"];
+  const validTabs: Tab[] = ["home", "create", "projects", "analyze", "audio", "edit", "video-gen", "history", "settings"];
 
   const rawTab = searchParams.get("tab") as Tab | null;
   const activeTab = rawTab && validTabs.includes(rawTab) ? rawTab : "home";
@@ -42,10 +43,18 @@ export default function DashboardPage() {
     if (tab === "home") {
       nextParams.delete("tab");
       nextParams.delete("videoGenPrompt");
+      nextParams.delete("projectId");
+      nextParams.delete("sceneId");
+      nextParams.delete("versionId");
+      nextParams.delete("duration");
     } else {
       nextParams.set("tab", tab);
       if (tab !== "video-gen") {
         nextParams.delete("videoGenPrompt");
+      nextParams.delete("projectId");
+      nextParams.delete("sceneId");
+      nextParams.delete("versionId");
+      nextParams.delete("duration");
       }
     }
     if (extraParams) {
@@ -173,6 +182,16 @@ export default function DashboardPage() {
     selectTab("video-gen", { videoGenPrompt: prompt });
   };
 
+  const handleWorkflowSendToGenerate = (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number }) => {
+    selectTab("video-gen", {
+      videoGenPrompt: payload.prompt,
+      projectId: payload.projectId,
+      sceneId: payload.sceneId,
+      versionId: payload.versionId,
+      duration: payload.duration ? String(Math.round(payload.duration)) : "",
+    });
+  };
+
   const featureCards: Array<{
     key: FeatureTab;
     title: string;
@@ -215,6 +234,8 @@ export default function DashboardPage() {
   const activeFeature = featureCards.find((feature) => feature.key === activeTab);
 
   const createTools = [
+    { key: "create" as Tab, label: "Create", icon: PlusCircle },
+    { key: "projects" as Tab, label: "Projects", icon: FolderKanban },
     { key: "analyze" as Tab, label: t("dashboard.tabs.analyze"), icon: Sparkles },
     { key: "video-gen" as Tab, label: t("dashboard.tabs.videoGen"), icon: Video },
     { key: "audio" as Tab, label: t("dashboard.tabs.audio"), icon: Mic2 },
@@ -437,6 +458,10 @@ export default function DashboardPage() {
                 <CreateWithAgent onNavigateVideoGen={handleNavigateVideoGen} />
               </div>
             </div>
+          )}
+
+          {(activeTab === "create" || activeTab === "projects") && (
+            <VideoWorkflowCreate onSendToGenerate={handleWorkflowSendToGenerate} />
           )}
 
           {activeTab === "edit" && activeFeature && (() => {

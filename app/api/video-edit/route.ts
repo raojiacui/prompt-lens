@@ -141,19 +141,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const videoUrl = body?.mediaUrl;
     const prompt: string = (body?.prompt || "").trim();
-    const ffmpegServiceUrl: string = (body?.ffmpegServiceUrl || "").trim();
+    const ffmpegServiceUrl: string = (process.env.FFMPEG_WORKER_URL || "").trim();
+    const ffmpegWorkerSecret = process.env.FFMPEG_WORKER_SECRET || "";
 
     if (!videoUrl) {
       return NextResponse.json({ error: "Missing mediaUrl" }, { status: 400 });
     }
-    if (!ffmpegServiceUrl) {
-      return NextResponse.json(
-        { error: "请先在设置中配置自托管 FFmpeg 服务地址" },
-        { status: 400 }
-      );
+    if (!ffmpegServiceUrl || !ffmpegWorkerSecret) {
+      return NextResponse.json({ error: "FFmpeg worker is not configured on the server" }, { status: 500 });
     }
 
-    console.log("[video-edit] Processing:", { videoUrl: videoUrl.substring(0, 50), prompt, ffmpegServiceUrl });
+    console.log("[video-edit] Processing:", { videoUrl: videoUrl.substring(0, 50), prompt, ffmpegServiceUrl: "server-configured" });
 
     // 把 R2 公开 URL 转成签名 URL，确保自托管 FFmpeg 服务能下载
     const accessibleVideoUrl = await ensureAccessibleUrl(videoUrl);
@@ -188,7 +186,7 @@ export async function POST(request: NextRequest) {
         videoUrl: accessibleVideoUrl,
         instruction,
       },
-      { timeout: 300000 } // 5 分钟超时，依赖自托管服务的处理能力
+      { timeout: 300000, headers: { Authorization: `Bearer ${ffmpegWorkerSecret}` } }
     );
 
     const outputUrl: string = ffmpegResponse.data?.url || ffmpegResponse.data?.outputUrl;
@@ -207,7 +205,6 @@ export async function POST(request: NextRequest) {
           prompt,
           instruction,
           outputUrl,
-          ffmpegServiceUrl,
         },
       });
     } catch (logError) {

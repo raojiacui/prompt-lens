@@ -1,5 +1,6 @@
 import {
   boolean,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -451,6 +452,248 @@ export const agentArtifacts = pgTable(
   })
 );
 
+// ============ V2: Project Workflow / Video Blueprint ============
+export const projectStatusEnum = pgEnum("project_status", [
+  "draft",
+  "analyzing",
+  "ready",
+  "failed",
+  "archived",
+]);
+
+export const projectVersionKindEnum = pgEnum("project_version_kind", [
+  "original",
+  "remix",
+]);
+
+export const workflowJobStatusEnum = pgEnum("workflow_job_status", [
+  "queued",
+  "processing",
+  "completed",
+  "failed",
+  "cancelled",
+]);
+
+export const workflowJobTypeEnum = pgEnum("workflow_job_type", [
+  "ANALYZE_VIDEO",
+  "SPLIT_VIDEO",
+  "ANALYZE_SCENE",
+  "GENERATE_VIDEO",
+  "GENERATE_AUDIO",
+  "RENDER_VIDEO",
+  "REMIX_VIDEO",
+]);
+
+export const projectAssetTypeEnum = pgEnum("project_asset_type", [
+  "reference_video",
+  "scene_clip",
+  "keyframe",
+  "audio",
+  "generated_video",
+  "voice",
+  "subtitle",
+  "final_video",
+  "image",
+  "other",
+]);
+
+export const projects = pgTable(
+  "projects",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    status: projectStatusEnum("status").default("draft").notNull(),
+    activeVersionId: uuid("active_version_id"),
+    metadata: jsonb("metadata").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    userIdIdx: index("idx_projects_user_id").on(table.userId),
+    statusIdx: index("idx_projects_status").on(table.status),
+    createdAtIdx: index("idx_projects_created_at").on(table.createdAt),
+  })
+);
+
+export const projectVersions = pgTable(
+  "project_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    parentVersionId: uuid("parent_version_id"),
+    versionNumber: integer("version_number").notNull(),
+    kind: projectVersionKindEnum("kind").default("original").notNull(),
+    label: text("label").notNull(),
+    remixPrompt: text("remix_prompt"),
+    overview: jsonb("overview").default({}).notNull(),
+    metadata: jsonb("metadata").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    projectIdIdx: index("idx_project_versions_project_id").on(table.projectId),
+    kindIdx: index("idx_project_versions_kind").on(table.kind),
+  })
+);
+
+export const referenceVideos = pgTable(
+  "reference_videos",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    sourceUrl: text("source_url").notNull(),
+    storageKey: text("storage_key"),
+    fileName: text("file_name"),
+    mimeType: text("mime_type"),
+    duration: integer("duration"),
+    metadata: jsonb("metadata").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    projectIdIdx: index("idx_reference_videos_project_id").on(table.projectId),
+  })
+);
+
+export const videoScenes = pgTable(
+  "video_scenes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    referenceVideoId: uuid("reference_video_id")
+      .references(() => referenceVideos.id, { onDelete: "set null" }),
+    sceneIndex: integer("scene_index").notNull(),
+    shotGroupId: text("shot_group_id"),
+    startTime: doublePrecision("start_time").notNull(),
+    endTime: doublePrecision("end_time").notNull(),
+    duration: doublePrecision("duration").notNull(),
+    clipUrl: text("clip_url"),
+    keyframeUrls: jsonb("keyframe_urls").default([]).notNull(),
+    audioUrl: text("audio_url"),
+    transitionIn: text("transition_in"),
+    transitionOut: text("transition_out"),
+    status: workflowJobStatusEnum("status").default("queued").notNull(),
+    error: text("error"),
+    metadata: jsonb("metadata").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    projectIdIdx: index("idx_video_scenes_project_id").on(table.projectId),
+    referenceVideoIdIdx: index("idx_video_scenes_reference_video_id").on(table.referenceVideoId),
+    sceneIndexIdx: index("idx_video_scenes_scene_index").on(table.sceneIndex),
+  })
+);
+
+export const sceneVersions = pgTable(
+  "scene_versions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    projectVersionId: uuid("project_version_id")
+      .notNull()
+      .references(() => projectVersions.id, { onDelete: "cascade" }),
+    originalSceneId: uuid("original_scene_id")
+      .notNull()
+      .references(() => videoScenes.id, { onDelete: "cascade" }),
+    sceneIndex: integer("scene_index").notNull(),
+    story: jsonb("story").default({}).notNull(),
+    visual: jsonb("visual").default({}).notNull(),
+    dialogue: jsonb("dialogue").default([]).notNull(),
+    narration: jsonb("narration").default([]).notNull(),
+    subtitle: jsonb("subtitle").default([]).notNull(),
+    audio: jsonb("audio").default({}).notNull(),
+    transition: jsonb("transition").default({}).notNull(),
+    generationPrompt: text("generation_prompt").notNull(),
+    duration: doublePrecision("duration").notNull(),
+    generatedVideoUrl: text("generated_video_url"),
+    metadata: jsonb("metadata").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    projectIdIdx: index("idx_scene_versions_project_id").on(table.projectId),
+    projectVersionIdIdx: index("idx_scene_versions_project_version_id").on(table.projectVersionId),
+    originalSceneIdIdx: index("idx_scene_versions_original_scene_id").on(table.originalSceneId),
+  })
+);
+
+export const workflowJobs = pgTable(
+  "workflow_jobs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .references(() => projects.id, { onDelete: "cascade" }),
+    sceneId: uuid("scene_id").references(() => videoScenes.id, { onDelete: "set null" }),
+    type: workflowJobTypeEnum("type").notNull(),
+    status: workflowJobStatusEnum("status").default("queued").notNull(),
+    provider: text("provider"),
+    modelId: text("model_id"),
+    externalTaskId: text("external_task_id"),
+    resultUrl: text("result_url"),
+    error: text("error"),
+    input: jsonb("input").default({}).notNull(),
+    output: jsonb("output").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => ({
+    projectIdIdx: index("idx_workflow_jobs_project_id").on(table.projectId),
+    sceneIdIdx: index("idx_workflow_jobs_scene_id").on(table.sceneId),
+    statusIdx: index("idx_workflow_jobs_status").on(table.status),
+    typeIdx: index("idx_workflow_jobs_type").on(table.type),
+  })
+);
+
+export const projectAssets = pgTable(
+  "project_assets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    projectId: uuid("project_id")
+      .references(() => projects.id, { onDelete: "cascade" }),
+    sceneId: uuid("scene_id").references(() => videoScenes.id, { onDelete: "set null" }),
+    type: projectAssetTypeEnum("type").notNull(),
+    url: text("url").notNull(),
+    storageKey: text("storage_key"),
+    fileName: text("file_name"),
+    mimeType: text("mime_type"),
+    size: integer("size"),
+    metadata: jsonb("metadata").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    projectIdIdx: index("idx_project_assets_project_id").on(table.projectId),
+    sceneIdIdx: index("idx_project_assets_scene_id").on(table.sceneId),
+    typeIdx: index("idx_project_assets_type").on(table.type),
+  })
+);
 // ============ 类型导出 ============
 export type User = typeof user.$inferSelect;
 export type NewUser = typeof user.$inferInsert;
@@ -474,3 +717,17 @@ export type AgentToolCall = typeof agentToolCalls.$inferSelect;
 export type NewAgentToolCall = typeof agentToolCalls.$inferInsert;
 export type AgentArtifact = typeof agentArtifacts.$inferSelect;
 export type NewAgentArtifact = typeof agentArtifacts.$inferInsert;
+export type Project = typeof projects.$inferSelect;
+export type NewProject = typeof projects.$inferInsert;
+export type ProjectVersion = typeof projectVersions.$inferSelect;
+export type NewProjectVersion = typeof projectVersions.$inferInsert;
+export type ReferenceVideo = typeof referenceVideos.$inferSelect;
+export type NewReferenceVideo = typeof referenceVideos.$inferInsert;
+export type VideoScene = typeof videoScenes.$inferSelect;
+export type NewVideoScene = typeof videoScenes.$inferInsert;
+export type SceneVersion = typeof sceneVersions.$inferSelect;
+export type NewSceneVersion = typeof sceneVersions.$inferInsert;
+export type WorkflowJob = typeof workflowJobs.$inferSelect;
+export type NewWorkflowJob = typeof workflowJobs.$inferInsert;
+export type ProjectAsset = typeof projectAssets.$inferSelect;
+export type NewProjectAsset = typeof projectAssets.$inferInsert;

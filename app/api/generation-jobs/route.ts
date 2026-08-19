@@ -6,26 +6,23 @@ import {
   getKieVeoGenerationStatus,
 } from "@/lib/reference-video/kie-veo";
 import { db, videoGeneration } from "@/lib/db";
+import { getModelById, listModels, routeModel } from "@/lib/ai/model-registry";
+import { getUserKieApiKey } from "@/lib/byok/kie";
 
 export const runtime = "nodejs";
 
-const VIDEO_MODELS = [
-  { id: "wan/2-7-videoedit", supportedAspectRatios: ["16:9", "9:16", "4:3", "3:4", "1:1"], supportedDurations: [0] },
-  { id: "bytedance/seedance-2", supportedAspectRatios: ["16:9", "4:3", "1:1", "3:4", "9:16"], supportedDurations: [5, 10] },
-  { id: "bytedance/seedance-2-fast", supportedAspectRatios: ["16:9", "4:3", "1:1", "3:4", "9:16"], supportedDurations: [5, 10] },
-  { id: "veo3_fast", supportedAspectRatios: ["16:9", "9:16"], supportedDurations: [8] },
-  { id: "grok-imagine/text-to-video", supportedAspectRatios: ["2:3", "3:2", "1:1", "16:9", "9:16"], supportedDurations: [6, 10] },
-  { id: "bytedance/seedance-2-mini", supportedAspectRatios: ["16:9", "4:3", "1:1", "3:4", "9:16"], supportedDurations: [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] },
-  { id: "grok-imagine-video-1-5-preview", supportedAspectRatios: ["16:9", "9:16"], supportedDurations: [8] },
-  { id: "kling-2.6/text-to-video", supportedAspectRatios: ["16:9", "9:16", "1:1"], supportedDurations: [5, 10] },
-  { id: "kling-3.0/video", supportedAspectRatios: ["16:9", "9:16", "1:1"], supportedDurations: [3, 5, 10, 15] },
-];
+const VIDEO_MODELS = [...listModels("video_generation"), ...listModels("video_edit")].map((model) => ({
+  id: model.kieModelId,
+  supportedAspectRatios: model.aspectRatios || ["16:9"],
+  supportedDurations: model.maxDuration ? [model.maxDuration] : [5],
+}));
 
 function parseModel(value: unknown): string {
-  const fallback = "veo3_fast";
+  const routed = routeModel({ category: "video_generation", priority: "balanced" });
+  const fallback = routed?.kieModelId || "veo3_fast";
   const raw = typeof value === "string" && value.trim() ? value.trim() : fallback;
-  const supported = VIDEO_MODELS.some((model) => model.id === raw);
-  return supported ? raw : fallback;
+  const registryModel = getModelById(raw);
+  return registryModel?.kieModelId || fallback;
 }
 
 function parseAspectRatio(value: unknown, modelId: string): string | undefined {
@@ -81,6 +78,11 @@ export async function POST(request: Request) {
       : [];
 
     const imageUrls = replacementAssets.map((asset) => asset.url).filter(Boolean);
+
+    const apiKey = await getUserKieApiKey(auth.user.id);
+    if (!apiKey && !process.env.KIE_AI_API_KEY && !process.env.KIE_API_KEY) {
+      return NextResponse.json({ error: "Please add your KIE API Key in Settings before generating video." }, { status: 400 });
+    }
 
     const result = await createKieVeoGeneration({
       prompt: body.prompt,
@@ -162,7 +164,8 @@ export async function GET(request: Request) {
       ),
     });
 
-    const status = await getKieVeoGenerationStatus(taskId, job?.model || undefined);
+    const apiKey = await getUserKieApiKey(auth.user.id);
+    const status = await getKieVeoGenerationStatus(taskId, job?.model || undefined, apiKey || undefined);
     const normalizedStatus =
       status.state === "success"
         ? "completed"

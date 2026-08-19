@@ -29,6 +29,20 @@
       "when": 1782745359117,
       "tag": "0003_blushing_thor",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787110800000,
+      "tag": "0004_agent_runs",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787112600000,
+      "tag": "0005_v2_workflow",
+      "breakpoints": true
     }
   ]
 }
