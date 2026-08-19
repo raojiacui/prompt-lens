@@ -44,6 +44,7 @@ export default function DashboardPage() {
       nextParams.delete("sceneId");
       nextParams.delete("versionId");
       nextParams.delete("duration");
+      nextParams.delete("model");
     } else {
       nextParams.set("tab", tab);
       if (tab !== "video-gen") {
@@ -52,6 +53,7 @@ export default function DashboardPage() {
       nextParams.delete("sceneId");
       nextParams.delete("versionId");
       nextParams.delete("duration");
+      nextParams.delete("model");
       }
     }
     if (extraParams) {
@@ -72,6 +74,7 @@ export default function DashboardPage() {
   const videoGenSceneId = activeTab === "video-gen" ? searchParams.get("sceneId") : null;
   const videoGenVersionId = activeTab === "video-gen" ? searchParams.get("versionId") : null;
   const videoGenDuration = activeTab === "video-gen" ? Number(searchParams.get("duration") || 0) : null;
+  const videoGenModel = activeTab === "video-gen" ? searchParams.get("model") : null;
   const [historyRefreshTrigger] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -80,13 +83,14 @@ export default function DashboardPage() {
     selectTab("video-gen", { videoGenPrompt: prompt });
   };
 
-  const handleWorkflowSendToGenerate = (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number }) => {
+  const handleWorkflowSendToGenerate = (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string }) => {
     selectTab("video-gen", {
       videoGenPrompt: payload.prompt,
       projectId: payload.projectId,
       sceneId: payload.sceneId,
       versionId: payload.versionId,
       duration: payload.duration ? String(Math.round(payload.duration)) : "",
+      model: payload.modelId || "",
     });
   };
 
@@ -395,6 +399,7 @@ export default function DashboardPage() {
                 initialSceneId={videoGenSceneId}
                 initialProjectVersionId={videoGenVersionId}
                 initialDuration={videoGenDuration}
+                initialModel={videoGenModel}
               />
             </div>
           )}

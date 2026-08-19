@@ -20,6 +20,7 @@ export interface CreateVideoTaskInput {
   duration?: number;
   resolution?: string;
   negativePrompt?: string;
+  model?: string;
 }
 
 export interface NormalizedVideoTaskStatus {
@@ -122,8 +123,9 @@ export class KieVideoProvider implements VideoProvider {
     const prompt = input.prompt.trim();
     const negativePrompt = input.negativePrompt?.trim();
     const duration = Number.isFinite(input.duration) ? input.duration : 5;
+    const model = input.model || KIE_VIDEO_MODEL;
 
-    const modelInput = KIE_VIDEO_MODEL.startsWith("wan/")
+    const modelInput = model.startsWith("wan/")
       ? {
           prompt,
           ...(negativePrompt ? { negative_prompt: negativePrompt } : {}),
@@ -141,7 +143,7 @@ export class KieVideoProvider implements VideoProvider {
           upload_method: "s3",
         };
 
-    const payload = { model: KIE_VIDEO_MODEL, input: modelInput };
+    const payload = { model, input: modelInput };
 
     const response = await fetch(`${KIE_API_BASE_URL}/api/v1/jobs/createTask`, {
       method: "POST",

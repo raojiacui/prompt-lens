@@ -1,4 +1,4 @@
-﻿import { db, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
+import { db, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import { breakdownVideoWithWorker } from "@/lib/ffmpeg-worker/client";
 import { routeModel } from "@/lib/ai/model-registry";
@@ -8,6 +8,7 @@ import {
   buildStructuredVideoOverview,
   remixSceneBlueprint,
   rewriteSceneBlueprint,
+  type AiModelSelection,
   type SceneBlueprintDraft,
 } from "@/lib/workflow/scene-analysis";
 import { and, asc, desc, eq } from "drizzle-orm";
@@ -125,7 +126,7 @@ export async function runVideoBreakdown(params: {
   mediaUrl: string;
   mediaName?: string;
   storageKey?: string;
-}) {
+} & AiModelSelection) {
   const project = await getProjectForUser(params.projectId, params.userId);
   if (!project) throw new Error("Project not found");
 
@@ -197,7 +198,7 @@ export async function runVideoBreakdown(params: {
           sceneId: videoScene.id,
           type: "ANALYZE_SCENE",
           status: "processing",
-          input: { sceneIndex: scene.sceneIndex, keyframeUrls: scene.keyframeUrls, clipUrl: scene.clipUrl },
+          input: { sceneIndex: scene.sceneIndex, keyframeUrls: scene.keyframeUrls, clipUrl: scene.clipUrl, modelMode: params.modelMode || "auto", modelId: params.modelId, modelPriority: params.modelPriority || "balanced" },
         })
         .returning();
 
@@ -208,7 +209,7 @@ export async function runVideoBreakdown(params: {
           previousSummary: insertedBlueprints.length ? textValue(insertedBlueprints[insertedBlueprints.length - 1].story) : undefined,
           nextSummary: breakdown.scenes[scene.sceneIndex]?.shotGroupId,
         };
-        const blueprint = await analyzeSceneBlueprint({ userId: params.userId, scene, context });
+        const blueprint = await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority });
         insertedBlueprints.push(blueprint);
         await db.insert(sceneVersions).values({
           projectId: params.projectId,
@@ -262,7 +263,7 @@ export async function runVideoBreakdown(params: {
       }
     }
 
-    const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints });
+    const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority });
     await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
     await db
       .update(projects)
@@ -287,7 +288,7 @@ export async function createRemixVersion(params: {
   projectId: string;
   sourceVersionId: string;
   remixPrompt: string;
-}) {
+} & AiModelSelection) {
   const project = await getProjectForUser(params.projectId, params.userId);
   if (!project) throw new Error("Project not found");
 
@@ -327,6 +328,9 @@ export async function createRemixVersion(params: {
       remixPrompt: params.remixPrompt,
       sceneIndex: scene.sceneIndex,
       duration: scene.duration,
+      modelMode: params.modelMode,
+      modelId: params.modelId,
+      modelPriority: params.modelPriority,
     });
     remixedBlueprints.push(remixed);
     await db.insert(sceneVersions).values({
@@ -347,7 +351,7 @@ export async function createRemixVersion(params: {
     });
   }
 
-  const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: remixedBlueprints, remixPrompt: params.remixPrompt });
+  const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: remixedBlueprints, remixPrompt: params.remixPrompt, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority });
   await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
   await db.update(projects).set({ activeVersionId: version.id, updatedAt: new Date() }).where(eq(projects.id, params.projectId));
   return getProjectBundle(params.projectId, params.userId);
@@ -358,7 +362,7 @@ export async function rewriteSceneVersion(params: {
   projectId: string;
   sceneVersionId: string;
   instruction: string;
-}) {
+} & AiModelSelection) {
   const project = await getProjectForUser(params.projectId, params.userId);
   if (!project) throw new Error("Project not found");
 
@@ -373,6 +377,9 @@ export async function rewriteSceneVersion(params: {
     instruction: params.instruction,
     duration: scene.duration,
     sceneIndex: scene.sceneIndex,
+    modelMode: params.modelMode,
+    modelId: params.modelId,
+    modelPriority: params.modelPriority,
   });
 
   const [updated] = await db
@@ -399,7 +406,7 @@ export async function retrySceneAnalysis(params: {
   userId: string;
   projectId: string;
   sceneVersionId: string;
-}) {
+} & AiModelSelection) {
   const project = await getProjectForUser(params.projectId, params.userId);
   if (!project) throw new Error("Project not found");
 
@@ -418,7 +425,7 @@ export async function retrySceneAnalysis(params: {
     sceneId: videoScene.id,
     type: "ANALYZE_SCENE",
     status: "processing",
-    input: { retrySceneVersionId: params.sceneVersionId },
+    input: { retrySceneVersionId: params.sceneVersionId, modelMode: params.modelMode || "auto", modelId: params.modelId, modelPriority: params.modelPriority || "balanced" },
   }).returning();
 
   const asset = sceneAssetFromRecords(videoScene);
@@ -426,6 +433,9 @@ export async function retrySceneAnalysis(params: {
     userId: params.userId,
     scene: asset,
     context: { sceneCount: 1, projectTitle: project.title },
+    modelMode: params.modelMode,
+    modelId: params.modelId,
+    modelPriority: params.modelPriority,
   });
   const usedFallback = blueprint.metadata?.analysisProvider === "fallback";
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { createRemixVersion } from "@/lib/workflow/service";
-
+import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -15,7 +15,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   try {
     const { id } = await params;
-    const bundle = await createRemixVersion({ userId: session.user.id, projectId: id, sourceVersionId, remixPrompt });
+    const bundle = await createRemixVersion({ userId: session.user.id, projectId: id, sourceVersionId, remixPrompt, ...parseWorkflowModelSelection(body) });
     return NextResponse.json(bundle);
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Remix failed" }, { status: 500 });

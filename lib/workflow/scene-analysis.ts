@@ -1,5 +1,5 @@
-﻿import { getUserKieApiKey } from "@/lib/byok/kie";
-import { routeModel } from "@/lib/ai/model-registry";
+import { getUserKieApiKey } from "@/lib/byok/kie";
+import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 
 export interface SceneBlueprintDraft {
@@ -21,7 +21,13 @@ export interface SceneContext {
   projectTitle?: string;
 }
 
-export interface SceneRewriteInput {
+export interface AiModelSelection {
+  modelMode?: ModelSelectionMode;
+  modelId?: string;
+  modelPriority?: ModelPriority;
+}
+
+export interface SceneRewriteInput extends AiModelSelection {
   userId: string;
   scene: SceneBlueprintDraft;
   instruction: string;
@@ -29,9 +35,16 @@ export interface SceneRewriteInput {
   sceneIndex?: number;
 }
 
+type KieChatJsonResult = {
+  json: Record<string, unknown>;
+  modelId: string;
+  modelMode: ModelSelectionMode;
+  modelPriority: ModelPriority;
+};
+
 const KIE_BASE_URL = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
-const KIE_ANALYSIS_MODEL = process.env.KIE_ANALYSIS_MODEL || routeModel({ category: "analysis", requiredCapabilities: ["text", "image"], priority: "balanced" })?.kieModelId || "gpt-5-2";
-const KIE_ANALYSIS_ENDPOINT = process.env.KIE_ANALYSIS_ENDPOINT || `/${KIE_ANALYSIS_MODEL}/v1/chat/completions`;
+const DEFAULT_KIE_ANALYSIS_MODEL = process.env.KIE_ANALYSIS_MODEL;
+const KIE_ANALYSIS_ENDPOINT = process.env.KIE_ANALYSIS_ENDPOINT;
 
 function compactJson(value: unknown) {
   try {
@@ -70,27 +83,44 @@ async function getKieApiKey(userId: string) {
   return await getUserKieApiKey(userId) || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
 }
 
-function kieAnalysisUrl() {
-  if (/^https?:\/\//i.test(KIE_ANALYSIS_ENDPOINT)) return KIE_ANALYSIS_ENDPOINT;
-  return `${KIE_BASE_URL}${KIE_ANALYSIS_ENDPOINT.startsWith("/") ? KIE_ANALYSIS_ENDPOINT : `/${KIE_ANALYSIS_ENDPOINT}`}`;
+function resolveAnalysisSelection(selection?: AiModelSelection) {
+  const priority = selection?.modelPriority || "balanced";
+  if (DEFAULT_KIE_ANALYSIS_MODEL && selection?.modelMode !== "manual") {
+    return { modelId: DEFAULT_KIE_ANALYSIS_MODEL, modelMode: "auto" as const, modelPriority: priority };
+  }
+
+  const resolved = resolveModelSelection(
+    "analysis",
+    { mode: selection?.modelMode, modelId: selection?.modelId, priority },
+    { requiredCapabilities: ["text", "image"] },
+  );
+  return { modelId: resolved.model.kieModelId, modelMode: resolved.mode, modelPriority: resolved.priority };
+}
+
+function kieAnalysisUrl(modelId: string) {
+  const endpoint = KIE_ANALYSIS_ENDPOINT || `/${modelId}/v1/chat/completions`;
+  if (/^https?:\/\//i.test(endpoint)) return endpoint;
+  return `${KIE_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 }
 
 async function callKieChatJson(params: {
   userId: string;
   system: string;
   content: Array<Record<string, unknown>>;
-}) {
+  selection?: AiModelSelection;
+}): Promise<KieChatJsonResult | null> {
   const apiKey = await getKieApiKey(params.userId);
   if (!apiKey) return null;
+  const selected = resolveAnalysisSelection(params.selection);
 
-  const response = await fetch(kieAnalysisUrl(), {
+  const response = await fetch(kieAnalysisUrl(selected.modelId), {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: KIE_ANALYSIS_MODEL,
+      model: selected.modelId,
       temperature: 0.25,
       response_format: { type: "json_object" },
       messages: [
@@ -104,7 +134,7 @@ async function callKieChatJson(params: {
   if (!response.ok) throw new Error(payload?.error?.message || payload?.msg || `KIE analysis failed with ${response.status}`);
   const content = payload?.choices?.[0]?.message?.content;
   if (typeof content !== "string") throw new Error("KIE returned an empty scene analysis");
-  return parseJsonObject(content);
+  return { json: parseJsonObject(content), ...selected };
 }
 
 export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: string): SceneBlueprintDraft {
@@ -153,7 +183,7 @@ function normalizeBlueprint(raw: Record<string, unknown>, fallback: SceneBluepri
     audio: { ...fallback.audio, ...safeObject(raw.audio) },
     transition: { ...fallback.transition, ...safeObject(raw.transition) },
     generationPrompt: text(raw.generationPrompt, fallback.generationPrompt),
-    metadata: { ...safeObject(raw.metadata), analysisProvider: provider, analysisModel: KIE_ANALYSIS_MODEL, analyzedAt: new Date().toISOString() },
+    metadata: { ...safeObject(raw.metadata), analysisProvider: provider, analyzedAt: new Date().toISOString() },
   };
 }
 
@@ -161,11 +191,12 @@ export async function analyzeSceneBlueprint(params: {
   userId: string;
   scene: FfmpegSceneAsset;
   context: SceneContext;
-}) {
+} & AiModelSelection) {
   const fallback = buildFallbackSceneBlueprint(params.scene);
   try {
     const raw = await callKieChatJson({
       userId: params.userId,
+      selection: params,
       system: [
         "You are a senior AI video director. Return strict JSON only.",
         "Analyze one extracted reference-video scene and create a reusable Video Blueprint.",
@@ -188,7 +219,8 @@ export async function analyzeSceneBlueprint(params: {
       ],
     });
     if (!raw) return buildFallbackSceneBlueprint(params.scene, "KIE API key not configured");
-    return normalizeBlueprint(raw, fallback, "kie");
+    const blueprint = normalizeBlueprint(raw.json, fallback, "kie");
+    return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority } };
   } catch (error) {
     return buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "KIE scene analysis failed");
   }
@@ -199,7 +231,7 @@ export async function buildStructuredVideoOverview(params: {
   title?: string;
   sceneBlueprints: SceneBlueprintDraft[];
   remixPrompt?: string;
-}) {
+} & AiModelSelection) {
   const fallback = {
     theme: params.remixPrompt ? "Reference-driven remix" : "Reference-driven AI video workflow",
     narrative: `The video is prepared as ${params.sceneBlueprints.length} editable scene blueprint units.`,
@@ -213,6 +245,7 @@ export async function buildStructuredVideoOverview(params: {
   try {
     const raw = await callKieChatJson({
       userId: params.userId,
+      selection: params,
       system: "Return strict JSON only. Summarize the whole video blueprint for a creator dashboard.",
       content: [
         {
@@ -222,7 +255,7 @@ export async function buildStructuredVideoOverview(params: {
       ],
     });
     if (!raw) return fallback;
-    return { ...fallback, ...safeObject(raw) };
+    return { ...fallback, ...safeObject(raw.json), metadata: { analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority } };
   } catch {
     return fallback;
   }
@@ -244,6 +277,7 @@ export async function rewriteSceneBlueprint(params: SceneRewriteInput): Promise<
   try {
     const raw = await callKieChatJson({
       userId: params.userId,
+      selection: params,
       system: [
         "You are rewriting one scene blueprint for AI video generation. Return strict JSON only.",
         "Preserve the same schema: story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata.",
@@ -257,7 +291,8 @@ export async function rewriteSceneBlueprint(params: SceneRewriteInput): Promise<
       ],
     });
     if (!raw) return fallback;
-    return { ...normalizeBlueprint(raw, fallback, "kie"), metadata: { ...fallback.metadata, ...safeObject(raw.metadata), rewriteProvider: "kie", analysisModel: KIE_ANALYSIS_MODEL, rewrittenAt: new Date().toISOString() } };
+    const blueprint = normalizeBlueprint(raw.json, fallback, "kie");
+    return { ...blueprint, metadata: { ...fallback.metadata, ...(blueprint.metadata || {}), rewriteProvider: "kie", analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority, rewrittenAt: new Date().toISOString() } };
   } catch {
     return fallback;
   }
@@ -269,12 +304,15 @@ export async function remixSceneBlueprint(params: {
   remixPrompt: string;
   sceneIndex: number;
   duration: number;
-}) {
+} & AiModelSelection) {
   return rewriteSceneBlueprint({
     userId: params.userId,
     scene: params.scene,
     instruction: `Create a new remix version for this scene: ${params.remixPrompt}`,
     duration: params.duration,
     sceneIndex: params.sceneIndex,
+    modelMode: params.modelMode,
+    modelId: params.modelId,
+    modelPriority: params.modelPriority,
   });
 }

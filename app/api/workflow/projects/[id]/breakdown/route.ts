@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { runVideoBreakdown } from "@/lib/workflow/service";
-
+import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -18,6 +18,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       mediaUrl,
       mediaName: typeof body?.mediaName === "string" ? body.mediaName : undefined,
       storageKey: typeof body?.storageKey === "string" ? body.storageKey : undefined,
+      ...parseWorkflowModelSelection(body),
     });
     return NextResponse.json(bundle);
   } catch (error) {

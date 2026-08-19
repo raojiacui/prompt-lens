@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
     const normalizedDuration = Number.isFinite(duration) ? duration : undefined;
     const resolution = typeof body?.resolution === "string" ? body.resolution : undefined;
     const negativePrompt = typeof body?.negativePrompt === "string" ? body.negativePrompt : undefined;
+    const model = typeof body?.model === "string" && body.model.trim() ? body.model.trim() : KIE_VIDEO_MODEL;
 
     // 获取用户配置的 provider API Key
     const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
@@ -57,6 +58,7 @@ export async function POST(request: NextRequest) {
       duration: normalizedDuration,
       resolution,
       negativePrompt,
+      model,
     });
 
     const records = await db
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
         negativePrompt,
         duration: normalizedDuration,
         resolution,
-        model: KIE_VIDEO_MODEL,
+        model,
         provider,
         status: "pending",
         rawResponse: result.raw as any,

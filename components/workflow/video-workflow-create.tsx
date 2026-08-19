@@ -33,8 +33,12 @@ type Bundle = {
   allSceneVersions: SceneVersion[];
 };
 
+type ModelOption = { id: string; displayName: string; family: string; kieModelId: string; enabled: boolean; experimental?: boolean };
+type ModelMode = "auto" | "manual";
+type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
+
 type Props = {
-  onSendToGenerate: (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number }) => void;
+  onSendToGenerate: (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string }) => void;
   onNavigateTool?: (tab: "video-gen" | "audio" | "edit") => void;
 };
 
@@ -81,9 +85,17 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   const [sceneDrafts, setSceneDrafts] = useState<Record<string, string>>({});
   const [rewriteDrafts, setRewriteDrafts] = useState<Record<string, string>>({});
   const [compareOpen, setCompareOpen] = useState(false);
+  const [analysisModels, setAnalysisModels] = useState<ModelOption[]>([]);
+  const [generationModels, setGenerationModels] = useState<ModelOption[]>([]);
+  const [analysisModelMode, setAnalysisModelMode] = useState<ModelMode>("auto");
+  const [analysisModelId, setAnalysisModelId] = useState("");
+  const [generationModelMode, setGenerationModelMode] = useState<ModelMode>("auto");
+  const [generationModelId, setGenerationModelId] = useState("");
+  const modelPriority: ModelPriority = "balanced";
 
   useEffect(() => {
     void loadProjects();
+    void loadModels();
   }, []);
 
   useEffect(() => {
@@ -110,6 +122,32 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     const response = await fetch("/api/workflow/projects");
     const data = await response.json();
     setProjects(data.projects || []);
+  }
+
+  async function loadModels() {
+    const [analysisRes, generationRes] = await Promise.all([
+      fetch("/api/models?category=analysis"),
+      fetch("/api/models?category=video_generation"),
+    ]);
+    const [analysisData, generationData] = await Promise.all([analysisRes.json(), generationRes.json()]);
+    const nextAnalysisModels = Array.isArray(analysisData.models) ? analysisData.models.filter((model: ModelOption) => model.enabled) : [];
+    const nextGenerationModels = Array.isArray(generationData.models) ? generationData.models.filter((model: ModelOption) => model.enabled) : [];
+    setAnalysisModels(nextAnalysisModels);
+    setGenerationModels(nextGenerationModels);
+    setAnalysisModelId((current) => current || nextAnalysisModels[0]?.kieModelId || "");
+    setGenerationModelId((current) => current || nextGenerationModels[0]?.kieModelId || "");
+  }
+
+  function analysisSelectionPayload() {
+    return {
+      modelMode: analysisModelMode,
+      modelId: analysisModelMode === "manual" ? analysisModelId : undefined,
+      modelPriority,
+    };
+  }
+
+  function selectedGenerationModelId() {
+    return generationModelMode === "manual" ? generationModelId : undefined;
   }
 
   async function loadProject(projectId: string) {
@@ -154,7 +192,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       const breakdownRes = await fetch(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaUrl: upload.url, mediaName: upload.filename, storageKey: upload.key }),
+        body: JSON.stringify({ mediaUrl: upload.url, mediaName: upload.filename, storageKey: upload.key, ...analysisSelectionPayload() }),
       });
       const breakdownData = await breakdownRes.json();
       if (!breakdownRes.ok) throw new Error(breakdownData.error || "Video breakdown failed");
@@ -199,7 +237,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       const response = await fetch(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}/rewrite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instruction }),
+        body: JSON.stringify({ instruction, ...analysisSelectionPayload() }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Rewrite failed");
@@ -217,7 +255,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     setRetryingSceneId(scene.id);
     setError("");
     try {
-      const response = await fetch(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}/retry`, { method: "POST" });
+      const response = await fetch(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}/retry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(analysisSelectionPayload()),
+      });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Retry failed");
       await loadProject(bundle.project.id);
@@ -237,7 +279,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       const response = await fetch(`/api/workflow/projects/${bundle.project.id}/remix`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceVersionId: bundle.activeVersion.id, remixPrompt }),
+        body: JSON.stringify({ sourceVersionId: bundle.activeVersion.id, remixPrompt, ...analysisSelectionPayload() }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Remix failed");
@@ -280,6 +322,25 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
             Project title
             <input value={title} onChange={(event) => setTitle(event.target.value)} className="h-10 rounded-xl border border-border bg-background px-3 outline-none focus:border-ring" />
           </label>
+
+          <div className="mt-4 grid gap-3">
+            <ModelSelector
+              label="Analysis model"
+              mode={analysisModelMode}
+              modelId={analysisModelId}
+              models={analysisModels}
+              onModeChange={setAnalysisModelMode}
+              onModelChange={setAnalysisModelId}
+            />
+            <ModelSelector
+              label="Scene generation model"
+              mode={generationModelMode}
+              modelId={generationModelId}
+              models={generationModels}
+              onModeChange={setGenerationModelMode}
+              onModelChange={setGenerationModelId}
+            />
+          </div>
 
           <Button onClick={() => void startBreakdown()} disabled={!file || loading} className="mt-4 w-full rounded-xl">
             {loading ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}
@@ -329,7 +390,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                   </Button>
                   <Button onClick={() => {
                     const firstScene = bundle.sceneVersions[0];
-                    if (firstScene) onSendToGenerate({ prompt: sceneDrafts[firstScene.id] || firstScene.generationPrompt, projectId: bundle.project.id, sceneId: firstScene.originalSceneId, versionId: firstScene.projectVersionId, duration: firstScene.duration });
+                    if (firstScene) onSendToGenerate({ prompt: sceneDrafts[firstScene.id] || firstScene.generationPrompt, projectId: bundle.project.id, sceneId: firstScene.originalSceneId, versionId: firstScene.projectVersionId, duration: firstScene.duration, modelId: selectedGenerationModelId() });
                     else onNavigateTool?.("video-gen");
                   }}>
                     <Video className="mr-2 h-4 w-4" />Generate
@@ -389,7 +450,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                           <Button size="sm" variant="outline" onClick={() => void retryScene(sceneVersion)} disabled={retryingSceneId === sceneVersion.id}>
                             {retryingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}Retry
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: sceneVersion.duration })}>
+                          <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: sceneVersion.duration, modelId: selectedGenerationModelId() })}>
                             <Send className="mr-2 h-4 w-4" />Send to Generate
                           </Button>
                         </div>
@@ -450,3 +511,50 @@ function SceneMini({ scene }: { scene: SceneVersion }) {
   );
 }
 
+function ModelSelector({
+  label,
+  mode,
+  modelId,
+  models,
+  onModeChange,
+  onModelChange,
+}: {
+  label: string;
+  mode: ModelMode;
+  modelId: string;
+  models: ModelOption[];
+  onModeChange: (mode: ModelMode) => void;
+  onModelChange: (modelId: string) => void;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-background p-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-semibold">{label}</span>
+        <span className="text-xs text-muted-foreground">Auto · Balanced</span>
+      </div>
+      <div className="mt-3 grid gap-2">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input type="radio" checked={mode === "auto"} onChange={() => onModeChange("auto")} />
+          Auto · Balanced
+        </label>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input type="radio" checked={mode === "manual"} onChange={() => onModeChange("manual")} />
+          Choose manually
+        </label>
+      </div>
+      {mode === "manual" ? (
+        <select
+          value={modelId}
+          onChange={(event) => onModelChange(event.target.value)}
+          className="mt-3 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
+        >
+          {models.map((model) => (
+            <option key={model.id} value={model.kieModelId}>
+              {model.displayName}{model.experimental ? " · Experimental" : ""}
+            </option>
+          ))}
+        </select>
+      ) : null}
+    </div>
+  );
+}
