@@ -1,10 +1,7 @@
-﻿"use client";
+"use client";
 
-import { useState, useRef, type ElementType } from "react";
+import { useState, type ElementType } from "react";
 import { useSession, signOut } from "@/lib/auth/auth-client";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Spinner } from "@/components/ui/spinner";
 import { HistoryList } from "@/components/history-list";
 import { ApiKeySettings } from "@/components/api-key-settings";
 import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
@@ -13,30 +10,30 @@ import { ReferenceVideoComposer } from "@/components/reference-video/ReferenceVi
 import { FloatingChat } from "@/components/floating-chat";
 import { CreateWithAgent } from "@/components/agent/create-with-agent";
 import { VideoWorkflowCreate } from "@/components/workflow/video-workflow-create";
-import { extractVideoFrames, getImageBase64 } from "@/lib/utils/frame-extractor";
-import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
-import { useTranslations, useLocale } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import type { Locale } from "@/i18n/config";
-import { ChevronLeft, ChevronRight, Clock, FolderKanban, Home, LogOut, Mic2, PlusCircle, Scissors, Settings, Sparkles, Video, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Home, LogOut, Mic2, Scissors, Settings, Sparkles, Video } from "lucide-react";
 
-type Tab = "home" | "create" | "projects" | "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
+type Tab = "home" | "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
 type FeatureTab = "analyze" | "audio" | "edit" | "video-gen";
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const t = useTranslations();
-  const locale = useLocale() as Locale;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const validTabs: Tab[] = ["home", "create", "projects", "analyze", "audio", "edit", "video-gen", "history", "settings"];
+  const validTabs: Tab[] = ["home", "analyze", "audio", "edit", "video-gen", "history", "settings"];
 
-  const rawTab = searchParams.get("tab") as Tab | null;
-  const activeTab = rawTab && validTabs.includes(rawTab) ? rawTab : "home";
+  const rawTab = searchParams.get("tab");
+  const activeTab: Tab = rawTab === "create" || rawTab === "projects"
+    ? "analyze"
+    : rawTab && validTabs.includes(rawTab as Tab)
+      ? (rawTab as Tab)
+      : "home";
 
   const selectTab = (tab: Tab, extraParams?: Record<string, string>) => {
     const nextParams = new URLSearchParams(searchParams.toString());
@@ -75,112 +72,9 @@ export default function DashboardPage() {
   const videoGenSceneId = activeTab === "video-gen" ? searchParams.get("sceneId") : null;
   const videoGenVersionId = activeTab === "video-gen" ? searchParams.get("versionId") : null;
   const videoGenDuration = activeTab === "video-gen" ? Number(searchParams.get("duration") || 0) : null;
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [analysisPrompt, setAnalysisPrompt] = useState("");
-  const [frameCount, setFrameCount] = useState(8);
-  const [analyzeMode, setAnalyzeMode] = useState<"single" | "batch">("single");
-  const [analysisDepth, setAnalysisDepth] = useState("balanced");
-  const [analysisOutputFormat, setAnalysisOutputFormat] = useState("prompt");
-  const [provider, setProvider] = useState<"zhipu" | "gemini" | "openrouter">("openrouter");
-  const [progress, setProgress] = useState("");
-  const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  const [historyRefreshTrigger] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setSelectedFile(file);
-    setPreview(URL.createObjectURL(file));
-    setResult(null);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file && (file.type.startsWith("video/") || file.type.startsWith("image/"))) {
-      setSelectedFile(file);
-      setPreview(URL.createObjectURL(file));
-      setResult(null);
-    }
-  };
-
-  const handleAnalysisPromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setAnalysisPrompt(e.target.value);
-    e.currentTarget.style.height = "auto";
-    e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 260)}px`;
-  };
-
-  const handleAnalyze = async () => {
-    if (!selectedFile) return;
-    setIsLoading(true);
-    setProgress(t("analyze.extractingFrames"));
-
-    try {
-      let frames: string[];
-      let mediaType: string;
-
-      if (selectedFile.type.startsWith("video/")) {
-        frames = await extractVideoFrames(selectedFile, frameCount, (current, total) => {
-          setProgress(t("analyze.extractingFrameProgress", { current, total }));
-        });
-        mediaType = "video";
-      } else {
-        const base64 = await getImageBase64(selectedFile);
-        frames = [base64];
-        mediaType = "image";
-      }
-
-      setProgress(t("analyze.uploadingFile"));
-
-      const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
-        setProgress(t("analyze.uploadingProgress", { percent: Math.round(percentage) }));
-      });
-
-      setProgress(t("analyze.aiAnalyzing"));
-
-      const analyzeRes = await fetch("/api/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mediaUrl: uploadData.url,
-          mediaType,
-          frames,
-          analyzeMode,
-          provider,
-          outputLanguage: locale,
-          prompt: analysisPrompt,
-          analysisDepth,
-          outputFormat: analysisOutputFormat,
-        }),
-      });
-
-      if (!analyzeRes.ok) throw new Error(t("analyze.analysisFailed"));
-      const data = await analyzeRes.json();
-      setResult(data.prompt);
-      setHistoryRefreshTrigger((prev) => prev + 1);
-    } catch (error: any) {
-      setResult(`Error: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-      setProgress("");
-    }
-  };
-
-  const copyToClipboard = () => result && navigator.clipboard.writeText(result);
-
-  const resetUpload = () => {
-    setSelectedFile(null);
-    setPreview(null);
-    setResult(null);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
 
   const handleNavigateVideoGen = (prompt: string) => {
     selectTab("video-gen", { videoGenPrompt: prompt });
@@ -238,8 +132,6 @@ export default function DashboardPage() {
   const activeFeature = featureCards.find((feature) => feature.key === activeTab);
 
   const createTools = [
-    { key: "create" as Tab, label: "Create", icon: PlusCircle },
-    { key: "projects" as Tab, label: "Projects", icon: FolderKanban },
     { key: "analyze" as Tab, label: t("dashboard.tabs.analyze"), icon: Sparkles },
     { key: "video-gen" as Tab, label: t("dashboard.tabs.videoGen"), icon: Video },
     { key: "audio" as Tab, label: t("dashboard.tabs.audio"), icon: Mic2 },
@@ -435,7 +327,6 @@ export default function DashboardPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-7">
                 {featureCards.map((feature) => {
-                  const Icon = feature.icon;
                   return (
                     <button
                       key={feature.key}
@@ -464,10 +355,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {(activeTab === "create" || activeTab === "projects") && (
-            <VideoWorkflowCreate onSendToGenerate={handleWorkflowSendToGenerate} />
-          )}
-
           {activeTab === "edit" && activeFeature && (() => {
             const FeatureIcon = activeFeature.icon;
             return (
@@ -487,207 +374,8 @@ export default function DashboardPage() {
 
           {/* 分析页面 */}
           {activeTab === "analyze" && (
-            <div className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
-              <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                      {t("dashboard.tabs.analyze") || "Video Analysis"}
-                    </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {t("analyze.subtitle") || "Upload a video or image and generate reusable prompts."}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="grid items-stretch gap-4 xl:grid-cols-[0.74fr_1.26fr]">
-                  <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">
-                    <div className="flex h-full flex-col space-y-4">
-                      <div>
-                        <h2 className="text-xl font-semibold">
-                          {t("analyze.panelTitle") || "Analyze"}
-                        </h2>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          {t("analyze.panelDescription") || "Upload a video or image and describe what you want to extract."}
-                        </p>
-                      </div>
-
-                      <div
-                        onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                        onDragLeave={() => setIsDragging(false)}
-                        onDrop={handleDrop}
-                        className={cn(
-                          "rounded-2xl border border-dashed border-border bg-muted/30 p-3 transition-colors",
-                          isDragging && "border-primary/70 bg-primary/5"
-                        )}
-                      >
-                        <input ref={fileInputRef} type="file" accept="video/*,image/*" onChange={handleFileSelect} className="sr-only" />
-
-                        {preview && selectedFile && (
-                          <div className="mb-3 flex flex-wrap gap-3">
-                            <div className="group relative h-24 w-32 overflow-hidden rounded-xl border border-border bg-background shadow-sm">
-                              {selectedFile.type.startsWith("video/") ? (
-                                <video src={preview} className="h-full w-full object-cover" muted />
-                              ) : (
-                                <img src={preview} alt="Preview" className="h-full w-full object-cover" />
-                              )}
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); resetUpload(); }}
-                                className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow-sm transition-colors hover:bg-primary hover:text-primary-foreground"
-                                aria-label="Remove uploaded media"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                            <div className="flex min-w-0 flex-col justify-center">
-                              <p className="max-w-[320px] truncate text-sm font-medium text-foreground">{selectedFile.name}</p>
-                              <p className="text-xs text-muted-foreground">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                            </div>
-                          </div>
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="flex min-h-20 w-full flex-col items-center justify-center gap-1.5 rounded-xl bg-background py-3 text-center transition-colors hover:bg-accent"
-                        >
-                          <svg className="h-6 w-6 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l9.193-9.193a3 3 0 114.243 4.243L8.56 18.31a1.5 1.5 0 01-2.122-2.122l8.486-8.486" />
-                          </svg>
-                          <span className="text-base font-semibold">{t("analyze.uploadTitle") || "Upload video or image"}</span>
-                          <span className="text-sm text-muted-foreground">{t("analyze.uploadHint") || "Click or drag to upload"}</span>
-                        </button>
-                      </div>
-
-                      <div className="rounded-2xl border border-border bg-background p-3">
-                        <Textarea
-                          value={analysisPrompt}
-                          onChange={handleAnalysisPromptChange}
-                          placeholder="Upload a video or image to start. Add notes here only if you want..."
-                          className="min-h-[108px] resize-none overflow-hidden border-0 bg-transparent p-0 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground focus-visible:ring-0"
-                        />
-                      </div>
-
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        <label className="grid gap-2 text-sm font-medium">
-                          {t("analyze.depth") || "Depth"}
-                          <select value={analysisDepth} onChange={(e) => setAnalysisDepth(e.target.value)} className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring">
-                            <option value="quick">Quick</option>
-                            <option value="balanced">Balanced</option>
-                            <option value="detailed">Detailed</option>
-                          </select>
-                        </label>
-                        <label className="grid gap-2 text-sm font-medium">
-                          {t("analyze.frames") || "Frames"}
-                          <select value={frameCount} onChange={(e) => setFrameCount(Number(e.target.value))} className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring">
-                            <option value={4}>4</option>
-                            <option value={8}>8</option>
-                            <option value={12}>12</option>
-                            <option value={16}>16</option>
-                            <option value={24}>24</option>
-                          </select>
-                        </label>
-                        <label className="grid gap-2 text-sm font-medium">
-                          {t("analyze.output") || "Output"}
-                          <select value={analysisOutputFormat} onChange={(e) => setAnalysisOutputFormat(e.target.value)} className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring">
-                            <option value="prompt">Prompt</option>
-                            <option value="shot-list">Shot list</option>
-                            <option value="summary">Summary</option>
-                          </select>
-                        </label>
-                        <label className="grid gap-2 text-sm font-medium">
-                          {t("analyze.model") || "Model"}
-                          <select value={provider} onChange={(e) => setProvider(e.target.value as any)} className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring">
-                            <option value="openrouter">OpenRouter</option>
-                            <option value="gemini">Gemini</option>
-                            <option value="zhipu">Zhipu</option>
-                          </select>
-                        </label>
-                      </div>
-
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          "Optional: analyze the visual style as a reusable prompt",
-                          "Optional: extract shots, camera movement, and lighting",
-                          "Optional: summarize story flow and emotional tone",
-                          "Optional: find the best frames for editing references",
-                        ].map((example) => (
-                          <button
-                            key={example}
-                            type="button"
-                            onClick={() => setAnalysisPrompt(example)}
-                            className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted/80 hover:text-foreground"
-                          >
-                            <Sparkles className="h-4 w-4" />
-                            {example}
-                          </button>
-                        ))}
-                      </div>
-
-                      {progress && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Spinner size="sm" />
-                          <span>{progress}</span>
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={() => void handleAnalyze()}
-                        disabled={!selectedFile || isLoading}
-                        className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-foreground px-5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {isLoading ? <Spinner size="sm" /> : (
-                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.769 59.769 0 0121.485 12 59.768 59.768 0 013.27 20.876L6 12zm0 0h7.5" />
-                          </svg>
-                        )}
-                        {isLoading ? t("analyze.analyzing") || "Analyzing..." : t("analyze.start") || "Analyze"}
-                      </button>
-                    </div>
-                  </section>
-
-                  <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">
-                    {!result ? (
-                      <div className="flex h-full flex-col items-center justify-center text-center">
-                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-muted text-muted-foreground">
-                          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </div>
-                        <p className="font-medium text-foreground">Analysis result will appear here</p>
-                        <p className="text-sm text-muted-foreground">Upload a file on the left and click analyze to start.</p>
-                      </div>
-                    ) : (
-                      <div className="rounded-xl border border-border bg-background p-4">
-                        <div className="flex flex-row items-center justify-between gap-4">
-                          <h3 className="text-lg font-semibold text-foreground">Analysis result</h3>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => result && handleNavigateVideoGen(result)}
-                              className="rounded-full border-border text-muted-foreground hover:border-primary hover:text-primary"
-                            >
-                              {t("analyze.createSameStyle")}
-                            </Button>
-                            <Button variant="outline" size="sm" onClick={copyToClipboard} className="rounded-full border-border text-muted-foreground hover:border-primary hover:text-primary">
-                              Copy
-                            </Button>
-                          </div>
-                        </div>
-                        <pre className="mt-3 max-h-[560px] overflow-y-auto whitespace-pre-wrap rounded-xl bg-muted/50 p-4 text-sm leading-relaxed text-foreground">
-                          {result}
-                        </pre>
-                      </div>
-                    )}
-                  </section>
-                </div>
-              </div>
-            </div>
+            <VideoWorkflowCreate onSendToGenerate={handleWorkflowSendToGenerate} onNavigateTool={(tab) => selectTab(tab)} />
           )}
-
           {/* 音频分析页面 */}
           {activeTab === "audio" && <AudioAnalyzeTab activeTab={activeTab} />}
 

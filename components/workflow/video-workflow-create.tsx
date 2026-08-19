@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { GitCompare, Play, RefreshCw, RotateCcw, Save, Send, Upload, WandSparkles } from "lucide-react";
+import { GitCompare, Mic2, Play, RefreshCw, RotateCcw, Save, Scissors, Send, Upload, Video, WandSparkles } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -35,6 +35,7 @@ type Bundle = {
 
 type Props = {
   onSendToGenerate: (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number }) => void;
+  onNavigateTool?: (tab: "video-gen" | "audio" | "edit") => void;
 };
 
 function formatTime(seconds: number) {
@@ -63,7 +64,7 @@ function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
   return scene?.status || "Ready";
 }
 
-export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
+export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [bundle, setBundle] = useState<Bundle | null>(null);
@@ -257,8 +258,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Create Workflow</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Reference to Breakdown to Remix to Generate</p>
+              <h1 className="text-2xl font-semibold tracking-tight">Video Analysis</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Break a reference video into scenes, prompts, and reusable workflow steps</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => void loadProjects()}>
               <RefreshCw className="mr-2 h-4 w-4" />Refresh
@@ -270,8 +271,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
             {preview ? <video src={preview} muted playsInline controls className="mb-3 max-h-56 w-full rounded-xl bg-black object-contain" /> : null}
             <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl bg-background text-center hover:bg-accent">
               <Upload className="h-6 w-6 text-muted-foreground" />
-              <span className="font-semibold">Upload reference video</span>
-              <span className="text-sm text-muted-foreground">Single-shot or 30-60s multi-shot video</span>
+              <span className="font-semibold">Upload video for analysis</span>
+              <span className="text-sm text-muted-foreground">Scene breakdown, KIE analysis, remix, and generation handoff</span>
             </button>
           </div>
 
@@ -282,7 +283,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
           <Button onClick={() => void startBreakdown()} disabled={!file || loading} className="mt-4 w-full rounded-xl">
             {loading ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}
-            Build Video Blueprint
+            Analyze Video
           </Button>
 
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}
@@ -306,8 +307,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           {!bundle ? (
             <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
               <Play className="mb-4 h-10 w-10 text-muted-foreground" />
-              <p className="font-medium">Video Blueprint will appear here</p>
-              <p className="text-sm text-muted-foreground">Upload a reference video and build the first project version.</p>
+              <p className="font-medium">Video analysis workflow will appear here</p>
+              <p className="text-sm text-muted-foreground">Upload a video to create the first editable scene blueprint.</p>
             </div>
           ) : (
             <div className="space-y-5">
@@ -316,9 +317,24 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                   <h2 className="text-xl font-semibold">{bundle.project.title}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">Active version: {bundle.activeVersion?.label || "None"} · {bundle.scenes.length} scene{bundle.scenes.length === 1 ? "" : "s"}</p>
                 </div>
-                <Button variant="outline" onClick={() => setCompareOpen((open) => !open)} disabled={!latestRemix}>
-                  <GitCompare className="mr-2 h-4 w-4" />Compare
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" onClick={() => setCompareOpen((open) => !open)} disabled={!latestRemix}>
+                    <GitCompare className="mr-2 h-4 w-4" />Compare
+                  </Button>
+                  <Button variant="outline" onClick={() => onNavigateTool?.("audio")}>
+                    <Mic2 className="mr-2 h-4 w-4" />Audio
+                  </Button>
+                  <Button variant="outline" onClick={() => onNavigateTool?.("edit")}>
+                    <Scissors className="mr-2 h-4 w-4" />Edit
+                  </Button>
+                  <Button onClick={() => {
+                    const firstScene = bundle.sceneVersions[0];
+                    if (firstScene) onSendToGenerate({ prompt: sceneDrafts[firstScene.id] || firstScene.generationPrompt, projectId: bundle.project.id, sceneId: firstScene.originalSceneId, versionId: firstScene.projectVersionId, duration: firstScene.duration });
+                    else onNavigateTool?.("video-gen");
+                  }}>
+                    <Video className="mr-2 h-4 w-4" />Generate
+                  </Button>
+                </div>
               </div>
 
               <div className="rounded-xl border border-border bg-background p-4">
