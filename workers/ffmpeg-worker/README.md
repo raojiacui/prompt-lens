@@ -1,4 +1,4 @@
-﻿# Prompt Lens FFmpeg Worker
+# Prompt Lens FFmpeg Worker
 
 Cloud Run worker for V2 video breakdown.
 
@@ -60,3 +60,13 @@ MIN_SCENE_SECONDS=0.6
 
 The main Next app uses KIE for scene blueprint analysis. Configure KIE_AI_API_KEY or save a user KIE key in Settings. Optional app-side overrides: KIE_ANALYSIS_MODEL and KIE_ANALYSIS_ENDPOINT.
 
+
+## Local development
+
+From the project root, run:
+
+`powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-worker.ps1
+` 
+
+The script loads .env.local, maps existing B2_* variables to the worker storage variables, and serves http://localhost:8080.
