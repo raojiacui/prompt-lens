@@ -26,7 +26,7 @@ describe("V2 scene analysis", () => {
     expect(blueprint.metadata?.fallbackReason).toBe("no provider configured");
   });
 
-  it("creates a deterministic remix fallback when no OpenRouter key exists", async () => {
+  it("creates a deterministic remix fallback when no KIE key exists", async () => {
     const base = buildFallbackSceneBlueprint(scene);
     const remixed = await remixSceneBlueprint({
       userId: "00000000-0000-0000-0000-000000000001",
@@ -50,3 +50,4 @@ describe("V2 model routing", () => {
     expect(model?.capabilities).toContain("text");
   });
 });
+

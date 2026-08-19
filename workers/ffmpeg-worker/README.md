@@ -1,4 +1,4 @@
-# Prompt Lens FFmpeg Worker
+﻿# Prompt Lens FFmpeg Worker
 
 Cloud Run worker for V2 video breakdown.
 
@@ -55,3 +55,8 @@ SCENE_THRESHOLD=0.32
 MAX_SCENE_SECONDS=8
 MIN_SCENE_SECONDS=0.6
 ```
+
+## App-side KIE analysis
+
+The main Next app uses KIE for scene blueprint analysis. Configure KIE_AI_API_KEY or save a user KIE key in Settings. Optional app-side overrides: KIE_ANALYSIS_MODEL and KIE_ANALYSIS_ENDPOINT.
+
