@@ -1,4 +1,4 @@
-import {
+﻿import {
   boolean,
   doublePrecision,
   index,
@@ -275,6 +275,9 @@ export const videoGeneration = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
     taskId: text("task_id").notNull().unique(),
+    projectId: uuid("project_id"),
+    sceneId: uuid("scene_id"),
+    projectVersionId: uuid("project_version_id"),
     prompt: text("prompt").notNull(),
     negativePrompt: text("negative_prompt"),
     duration: integer("duration"),
@@ -298,6 +301,9 @@ export const videoGeneration = pgTable(
     return {
       userIdIdx: index("idx_video_generation_user_id").on(table.userId),
       taskIdIdx: index("idx_video_generation_task_id").on(table.taskId),
+      projectIdIdx: index("idx_video_generation_project_id").on(table.projectId),
+      sceneIdIdx: index("idx_video_generation_scene_id").on(table.sceneId),
+      projectVersionIdIdx: index("idx_video_generation_project_version_id").on(table.projectVersionId),
       statusIdx: index("idx_video_generation_status").on(table.status),
       createdAtIdx: index("idx_video_generation_created_at").on(table.createdAt),
     };

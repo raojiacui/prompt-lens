@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
@@ -6,11 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { GitCompare, Play, RefreshCw, Save, Send, Upload, WandSparkles } from "lucide-react";
+import { GitCompare, Play, RefreshCw, RotateCcw, Save, Send, Upload, WandSparkles } from "lucide-react";
 
-type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null };
+type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
-type Scene = { id: string; sceneIndex: number; startTime: number; endTime: number; duration: number; clipUrl?: string | null; keyframeUrls: string[] };
+type Scene = { id: string; sceneIndex: number; startTime: number; endTime: number; duration: number; clipUrl?: string | null; keyframeUrls: string[]; status: string; error?: string | null };
 type SceneVersion = {
   id: string;
   projectVersionId: string;
@@ -22,6 +22,7 @@ type SceneVersion = {
   transition: Record<string, unknown>;
   generationPrompt: string;
   duration: number;
+  metadata?: Record<string, unknown>;
 };
 type Bundle = {
   project: Project;
@@ -49,9 +50,17 @@ function textValue(value: unknown) {
   if (typeof value === "string") return value;
   if (typeof value === "object") {
     const obj = value as Record<string, unknown>;
-    return String(obj.summary || obj.role || obj.action || JSON.stringify(obj));
+    return String(obj.summary || obj.role || obj.action || obj.beat || JSON.stringify(obj));
   }
   return String(value);
+}
+
+function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
+  const provider = sceneVersion?.metadata?.analysisProvider;
+  if (scene?.status === "failed") return provider === "fallback" ? "Needs review" : "Failed";
+  if (scene?.status === "completed") return "Analyzed";
+  if (scene?.status === "processing") return "Analyzing";
+  return scene?.status || "Ready";
 }
 
 export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
@@ -65,8 +74,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [savingSceneId, setSavingSceneId] = useState("");
+  const [rewritingSceneId, setRewritingSceneId] = useState("");
+  const [retryingSceneId, setRetryingSceneId] = useState("");
   const [remixPrompt, setRemixPrompt] = useState("");
   const [sceneDrafts, setSceneDrafts] = useState<Record<string, string>>({});
+  const [rewriteDrafts, setRewriteDrafts] = useState<Record<string, string>>({});
   const [compareOpen, setCompareOpen] = useState(false);
 
   useEffect(() => {
@@ -176,6 +188,45 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     }
   }
 
+  async function rewriteScene(scene: SceneVersion) {
+    if (!bundle) return;
+    const instruction = rewriteDrafts[scene.id]?.trim();
+    if (!instruction) return;
+    setRewritingSceneId(scene.id);
+    setError("");
+    try {
+      const response = await fetch(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}/rewrite`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Rewrite failed");
+      setRewriteDrafts((drafts) => ({ ...drafts, [scene.id]: "" }));
+      await loadProject(bundle.project.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Rewrite failed");
+    } finally {
+      setRewritingSceneId("");
+    }
+  }
+
+  async function retryScene(scene: SceneVersion) {
+    if (!bundle) return;
+    setRetryingSceneId(scene.id);
+    setError("");
+    try {
+      const response = await fetch(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}/retry`, { method: "POST" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Retry failed");
+      await loadProject(bundle.project.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Retry failed");
+    } finally {
+      setRetryingSceneId("");
+    }
+  }
+
   async function createRemix() {
     if (!bundle?.activeVersion || !remixPrompt.trim()) return;
     setLoading(true);
@@ -207,7 +258,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           <div className="flex items-start justify-between gap-3">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">Create Workflow</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Reference → Breakdown → Remix → Generate</p>
+              <p className="mt-1 text-sm text-muted-foreground">Reference to Breakdown to Remix to Generate</p>
             </div>
             <Button variant="outline" size="sm" onClick={() => void loadProjects()}>
               <RefreshCw className="mr-2 h-4 w-4" />Refresh
@@ -306,16 +357,26 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
               <div className="grid gap-4">
                 {bundle.sceneVersions.map((sceneVersion) => {
                   const scene = bundle.scenes.find((item) => item.id === sceneVersion.originalSceneId);
+                  const needsReview = scene?.status === "failed" || sceneVersion.metadata?.analysisProvider === "fallback";
                   return (
                     <article key={sceneVersion.id} className="rounded-xl border border-border bg-background p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                          <h3 className="font-semibold">Scene {String(sceneVersion.sceneIndex).padStart(2, "0")}</h3>
-                          <p className="text-sm text-muted-foreground">{formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}s</p>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-semibold">Scene {String(sceneVersion.sceneIndex).padStart(2, "0")}</h3>
+                            <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", needsReview ? "bg-amber-500/15 text-amber-700" : "bg-emerald-500/15 text-emerald-700")}>{sceneStatusLabel(scene, sceneVersion)}</span>
+                          </div>
+                          <p className="mt-1 text-sm text-muted-foreground">{formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}s</p>
+                          {scene?.error ? <p className="mt-1 max-w-3xl text-xs text-amber-700">{scene.error}</p> : null}
                         </div>
-                        <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: sceneVersion.duration })}>
-                          <Send className="mr-2 h-4 w-4" />Send to Generate
-                        </Button>
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" variant="outline" onClick={() => void retryScene(sceneVersion)} disabled={retryingSceneId === sceneVersion.id}>
+                            {retryingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}Retry
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: sceneVersion.duration })}>
+                            <Send className="mr-2 h-4 w-4" />Send to Generate
+                          </Button>
+                        </div>
                       </div>
 
                       {scene?.clipUrl ? <video src={scene.clipUrl} controls className="mt-3 max-h-64 w-full rounded-xl bg-black object-contain" /> : null}
@@ -327,12 +388,19 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                         <InfoPanel title="Transition" value={sceneVersion.transition} />
                       </div>
 
-                      <div className="mt-4">
-                        <label className="text-sm font-semibold">Generation Prompt</label>
-                        <Textarea value={sceneDrafts[sceneVersion.id] ?? sceneVersion.generationPrompt} onChange={(event) => setSceneDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} className="mt-2 min-h-28 rounded-xl" />
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Button size="sm" onClick={() => void savePrompt(sceneVersion)} disabled={savingSceneId === sceneVersion.id}>
+                      <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+                        <div>
+                          <label className="text-sm font-semibold">Generation Prompt</label>
+                          <Textarea value={sceneDrafts[sceneVersion.id] ?? sceneVersion.generationPrompt} onChange={(event) => setSceneDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} className="mt-2 min-h-32 rounded-xl" />
+                          <Button size="sm" onClick={() => void savePrompt(sceneVersion)} disabled={savingSceneId === sceneVersion.id} className="mt-3">
                             {savingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}Save
+                          </Button>
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold">AI Rewrite</label>
+                          <Textarea value={rewriteDrafts[sceneVersion.id] || ""} onChange={(event) => setRewriteDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} placeholder="Make this scene warmer and more comedic, but keep the same timing and camera move." className="mt-2 min-h-32 rounded-xl" />
+                          <Button size="sm" variant="outline" onClick={() => void rewriteScene(sceneVersion)} disabled={!rewriteDrafts[sceneVersion.id]?.trim() || rewritingSceneId === sceneVersion.id} className="mt-3">
+                            {rewritingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}Rewrite Scene
                           </Button>
                         </div>
                       </div>
@@ -365,3 +433,4 @@ function SceneMini({ scene }: { scene: SceneVersion }) {
     </div>
   );
 }
+

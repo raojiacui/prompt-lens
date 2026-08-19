@@ -1,0 +1,12 @@
+﻿{
+  "name": "prompt-lens-ffmpeg-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.540.0"
+  }
+}

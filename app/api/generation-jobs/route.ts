@@ -1,11 +1,8 @@
-import { NextResponse } from "next/server";
-import { eq, and } from "drizzle-orm";
+﻿import { NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
 import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
-import {
-  createKieVeoGeneration,
-  getKieVeoGenerationStatus,
-} from "@/lib/reference-video/kie-veo";
-import { db, videoGeneration } from "@/lib/db";
+import { createKieVeoGeneration, getKieVeoGenerationStatus } from "@/lib/reference-video/kie-veo";
+import { db, sceneVersions, videoGeneration, workflowJobs } from "@/lib/db";
 import { getModelById, listModels, routeModel } from "@/lib/ai/model-registry";
 import { getUserKieApiKey } from "@/lib/byok/kie";
 
@@ -43,13 +40,11 @@ function parseDuration(value: unknown, modelId: string): number {
     if (Number.isFinite(n)) parsed = n;
   }
   const requested = Math.round(parsed ?? supported[0] ?? 5);
-  return supported.reduce(
-    (closest, candidate) =>
-      Math.abs(candidate - requested) < Math.abs(closest - requested)
-        ? candidate
-        : closest,
-    supported[0] ?? 5,
-  );
+  return supported.reduce((closest, candidate) => Math.abs(candidate - requested) < Math.abs(closest - requested) ? candidate : closest, supported[0] ?? 5);
+}
+
+function optionalUuid(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
 export async function POST(request: Request) {
@@ -57,26 +52,20 @@ export async function POST(request: Request) {
   if (auth.response) return auth.response;
 
   const body = await request.json().catch(() => null);
-  if (!body?.prompt) {
-    return NextResponse.json(
-      { error: "Missing generation prompt" },
-      { status: 400 },
-    );
-  }
+  if (!body?.prompt) return NextResponse.json({ error: "Missing generation prompt" }, { status: 400 });
 
   try {
     const model = parseModel(body.model);
     const aspectRatio = parseAspectRatio(body.aspectRatio, model);
     const duration = parseDuration(body.duration, model);
     const resolution = typeof body.quality === "string" ? body.quality.toLowerCase() : undefined;
+    const projectId = optionalUuid(body.projectId);
+    const sceneId = optionalUuid(body.sceneId);
+    const projectVersionId = optionalUuid(body.projectVersionId || body.versionId);
 
     const replacementAssets = Array.isArray(body.replacementAssets)
-      ? body.replacementAssets.filter(
-          (item: unknown) =>
-            typeof item === "object" && item !== null && typeof (item as { id?: unknown }).id === "string" && typeof (item as { url?: unknown }).url === "string",
-        ) as { id: string; url: string; type?: string; name?: string }[]
+      ? body.replacementAssets.filter((item: unknown) => typeof item === "object" && item !== null && typeof (item as { id?: unknown }).id === "string" && typeof (item as { url?: unknown }).url === "string") as { id: string; url: string; type?: string; name?: string }[]
       : [];
-
     const imageUrls = replacementAssets.map((asset) => asset.url).filter(Boolean);
 
     const apiKey = await getUserKieApiKey(auth.user.id);
@@ -92,39 +81,40 @@ export async function POST(request: Request) {
       duration,
       resolution,
       generationType: imageUrls.length ? "REFERENCE_2_VIDEO" : "TEXT_2_VIDEO",
-    });
+    }, apiKey || undefined);
 
-    const [record] = await db
-      .insert(videoGeneration)
-      .values({
-        userId: auth.user.id,
-        taskId: result.taskId,
-        prompt: body.prompt,
-        model,
+    const [record] = await db.insert(videoGeneration).values({
+      userId: auth.user.id,
+      taskId: result.taskId,
+      projectId,
+      sceneId,
+      projectVersionId,
+      prompt: body.prompt,
+      model,
+      provider: "kie",
+      status: "pending",
+      duration,
+      resolution,
+      rawResponse: result.raw as Record<string, unknown>,
+    }).returning();
+
+    if (projectId) {
+      await db.insert(workflowJobs).values({
+        projectId,
+        sceneId,
+        type: "GENERATE_VIDEO",
+        status: "processing",
         provider: "kie",
-        status: "pending",
-        duration,
-        resolution,
-        rawResponse: result.raw as Record<string, unknown>,
-      })
-      .returning();
+        modelId: model,
+        externalTaskId: result.taskId,
+        input: { generationId: record.id, projectVersionId, duration, aspectRatio, resolution, replacementAssetCount: imageUrls.length },
+      });
+    }
 
-    return NextResponse.json({
-      success: true,
-      id: record.id,
-      providerTaskId: result.taskId,
-      status: "generating",
-      provider: "kie.ai",
-    });
+    return NextResponse.json({ success: true, id: record.id, providerTaskId: result.taskId, status: "generating", provider: "kie.ai" });
   } catch (error) {
     console.error("Generation job creation error:", error);
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Generation request failed",
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Generation request failed" }, { status: 500 });
   }
 }
 
@@ -138,68 +128,41 @@ export async function GET(request: Request) {
 
   try {
     if (jobId) {
-      const job = await db.query.videoGeneration.findFirst({
-        where: and(
-          eq(videoGeneration.id, jobId),
-          eq(videoGeneration.userId, auth.user.id),
-        ),
-      });
-      if (!job) {
-        return NextResponse.json(
-          { error: "Generation job not found" },
-          { status: 404 },
-        );
-      }
+      const job = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.id, jobId), eq(videoGeneration.userId, auth.user.id)) });
+      if (!job) return NextResponse.json({ error: "Generation job not found" }, { status: 404 });
       return NextResponse.json({ job });
     }
 
-    if (!taskId) {
-      return NextResponse.json({ error: "Missing taskId" }, { status: 400 });
-    }
+    if (!taskId) return NextResponse.json({ error: "Missing taskId" }, { status: 400 });
 
-    const job = await db.query.videoGeneration.findFirst({
-      where: and(
-        eq(videoGeneration.taskId, taskId),
-        eq(videoGeneration.userId, auth.user.id),
-      ),
-    });
-
+    const job = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.taskId, taskId), eq(videoGeneration.userId, auth.user.id)) });
     const apiKey = await getUserKieApiKey(auth.user.id);
     const status = await getKieVeoGenerationStatus(taskId, job?.model || undefined, apiKey || undefined);
-    const normalizedStatus =
-      status.state === "success"
-        ? "completed"
-        : status.state === "fail"
-          ? "failed"
-          : "processing";
+    const normalizedStatus = status.state === "success" ? "completed" : status.state === "fail" ? "failed" : "processing";
 
     if (job) {
-      await db
-        .update(videoGeneration)
-        .set({
-          status: normalizedStatus,
-          videoUrl: status.videoUrl,
+      await db.update(videoGeneration).set({ status: normalizedStatus, videoUrl: status.videoUrl, error: status.error, rawResponse: status.raw as Record<string, unknown>, updatedAt: new Date() }).where(eq(videoGeneration.id, job.id));
+
+      const generationJob = await db.query.workflowJobs.findFirst({ where: eq(workflowJobs.externalTaskId, taskId) });
+      if (generationJob) {
+        await db.update(workflowJobs).set({
+          status: normalizedStatus === "completed" ? "completed" : normalizedStatus === "failed" ? "failed" : "processing",
+          resultUrl: status.videoUrl,
           error: status.error,
-          rawResponse: status.raw as Record<string, unknown>,
-        })
-        .where(eq(videoGeneration.id, job.id));
+          output: { providerTaskId: status.taskId, videoUrl: status.videoUrl, raw: status.raw as Record<string, unknown> },
+          completedAt: normalizedStatus === "completed" || normalizedStatus === "failed" ? new Date() : undefined,
+          updatedAt: new Date(),
+        }).where(eq(workflowJobs.id, generationJob.id));
+      }
+
+      if (normalizedStatus === "completed" && status.videoUrl && job.sceneId && job.projectVersionId) {
+        await db.update(sceneVersions).set({ generatedVideoUrl: status.videoUrl, updatedAt: new Date() }).where(and(eq(sceneVersions.originalSceneId, job.sceneId), eq(sceneVersions.projectVersionId, job.projectVersionId)));
+      }
     }
 
-    return NextResponse.json({
-      provider: "kie.ai",
-      providerTaskId: status.taskId,
-      status: status.state,
-      videoUrl: status.videoUrl,
-      error: status.error,
-      raw: status.raw,
-    });
+    return NextResponse.json({ provider: "kie.ai", providerTaskId: status.taskId, status: status.state, videoUrl: status.videoUrl, error: status.error, raw: status.raw });
   } catch (error) {
     console.error("Generation job status error:", error);
-    return NextResponse.json(
-      {
-        error: error instanceof Error ? error.message : "Status request failed",
-      },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Status request failed" }, { status: 500 });
   }
 }

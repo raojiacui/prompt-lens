@@ -1,4 +1,4 @@
-{
+﻿{
   "version": "7",
   "dialect": "postgresql",
   "entries": [
@@ -42,6 +42,13 @@
       "version": "7",
       "when": 1787112600000,
       "tag": "0005_v2_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787114400000,
+      "tag": "0006_generation_workflow_links",
       "breakpoints": true
     }
   ]

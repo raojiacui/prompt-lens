@@ -1,26 +1,36 @@
-# V2 Tomorrow Development Checklist - 2026-08-20
+﻿# V2 Next Development Checklist - 2026-08-20
 
-## Worker Boundaries
+## Worker / Module Boundaries
 
-| Worker / Module | Scope | Acceptance Criteria | Validation |
+| Worker / Module | Scope | Acceptance Criteria | Recommended Validation |
 | --- | --- | --- | --- |
-| FFmpeg Worker | Implement real Cloud Run `/breakdown` service | Accepts signed video URL, validates bearer secret, runs ffprobe, detects shot boundaries, splits scenes, extracts keyframes/audio, returns scene assets | Worker unit test with 6s and 30-60s videos; API smoke test through `/api/workflow/projects/:id/breakdown` |
-| Scene Analysis | Replace placeholder blueprint text with structured AI scene analysis | Each scene includes story, visual, camera, action, dialogue/audio placeholders, transition, and editable generationPrompt | Add service tests for JSON parsing and failed-scene retry behavior |
-| Model Registry | Expand Registry-backed UI controls | Generate model selector uses `/api/models`; Auto Balanced visible as default, manual model mode available | TypeScript + UI smoke test |
-| Project UI | Improve V2 workflow ergonomics | Scene cards use compact tabs/accordions for Overview, Visual, Audio, Prompt; partial scene failure shows Retry | Playwright screenshot check after local run |
-| Remix | Add structured per-scene remix logic | Remix V1 modifies scene story/prompt without changing Original; single-scene AI edit can update only that scene | Unit tests for version creation and non-overwrite behavior |
-| Generate Handoff | Persist workflow metadata in generation records | `projectId`, `sceneId`, and `versionId` survive Generate submission and status lookup | DB schema/API test or route-level smoke test |
+| Cloud Run Worker QA | Deploy and smoke-test `workers/ffmpeg-worker` | `/healthz` returns ok; `/breakdown` handles 6s and 30-60s videos; R2 URLs are public and playable | Worker curl smoke test; app breakdown through `/api/workflow/projects/:id/breakdown` |
+| Scene Analysis QA | Validate real OpenRouter output on varied reference videos | JSON fields are concise, useful, and mapped to story/visual/audio/transition/prompt without fallback | Upload 3 sample videos; inspect scene cards; retry one failed scene |
+| Generate QA | Validate linked generation status writeback | Scene sent to Generate stores project/scene/version; status polling writes `generated_video_url` to the matching scene version | Generate one scene; poll status; inspect DB row and UI |
+| UI Polish | Improve dense scene-card ergonomics after real samples | Long story/visual text remains readable; buttons do not overflow; mobile layout stays usable | Local browser smoke test and screenshots after user starts server |
+| Worker Observability | Add deploy/runbook notes and log fields | Worker logs include project key, scene count, ffmpeg failure reason, upload failure reason | Cloud Run logs during smoke test |
+| Lint Debt | Clean existing warnings in focused passes | Warning count drops without broad refactors or behavior changes | `pnpm lint` warning count comparison |
 
 ## Constraints
 
-- Do not rewrite existing Analyze, Generate, Audio, or Edit tools; keep them independently usable
-- Keep AI calls server-side only; never expose full BYOK values to the browser
-- Keep Cloud Run URL and secret server-side only
-- Do not hardcode model selection in page components as the source of truth; use Model Registry
-- Preserve Original versions; Remix must create new versions
-- Scene failures must not invalidate the whole project
+- Do not push until explicitly requested
+- Do not start local dev server unless the user asks; user will start it locally
+- Keep Original versions immutable; Remix and scene rewrite must update only the selected version/scene version
+- Keep BYOK, KIE, OpenRouter, and FFmpeg worker secrets server-side only
+- Keep FFmpeg Worker as a separate deployable app under `workers/ffmpeg-worker`
+- Scene analysis failures must stay isolated to the scene and remain retryable
 
-## Recommended Validation Commands
+## Acceptance Checklist
+
+- [ ] Apply DB migrations including `0005_v2_workflow.sql` and `0006_generation_workflow_links.sql`
+- [ ] Configure app env: `FFMPEG_WORKER_URL`, `FFMPEG_WORKER_SECRET`, `BYOK_ENCRYPTION_KEY`, and KIE/OpenRouter keys as needed
+- [ ] Deploy worker with `WORKER_SECRET` matching app `FFMPEG_WORKER_SECRET`
+- [ ] Upload a short reference video and verify multiple scenes/keyframes/audio where applicable
+- [ ] Create a remix and verify Original is unchanged
+- [ ] Retry one fallback scene after configuring OpenRouter
+- [ ] Send a scene to Generate and verify generated URL writes back to the linked scene version
+
+## Recommended Commands
 
 ```bash
 pnpm exec tsc --noEmit
@@ -29,10 +39,12 @@ pnpm lint
 pnpm build
 ```
 
-## Suggested Next Order
+Worker local smoke test after installing Docker or running the container:
 
-1. Implement the real FFmpeg Worker `/breakdown` contract
-2. Add route/service tests for project breakdown and scene prompt update
-3. Replace placeholder scene blueprint generation with structured AI analysis
-4. Add Retry UI/API for failed scene analysis
-5. Persist project/scene/version metadata through video generation jobs
+```bash
+curl http://localhost:8080/healthz
+curl -X POST http://localhost:8080/breakdown \
+  -H "Authorization: Bearer $WORKER_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"videoUrl":"https://signed-video-url"}'
+```

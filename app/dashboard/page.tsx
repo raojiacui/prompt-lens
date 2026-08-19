@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, type ElementType } from "react";
 import { useSession, signOut } from "@/lib/auth/auth-client";
@@ -71,6 +71,10 @@ export default function DashboardPage() {
   };
 
   const videoGenPrompt = activeTab === "video-gen" ? searchParams.get("videoGenPrompt") : null;
+  const videoGenProjectId = activeTab === "video-gen" ? searchParams.get("projectId") : null;
+  const videoGenSceneId = activeTab === "video-gen" ? searchParams.get("sceneId") : null;
+  const videoGenVersionId = activeTab === "video-gen" ? searchParams.get("versionId") : null;
+  const videoGenDuration = activeTab === "video-gen" ? Number(searchParams.get("duration") || 0) : null;
 
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -697,7 +701,13 @@ export default function DashboardPage() {
           {/* 视频生成页面 */}
           {activeTab === "video-gen" && (
             <div className="animate-fade-in">
-              <ReferenceVideoComposer initialPrompt={videoGenPrompt} />
+              <ReferenceVideoComposer
+                initialPrompt={videoGenPrompt}
+                initialProjectId={videoGenProjectId}
+                initialSceneId={videoGenSceneId}
+                initialProjectVersionId={videoGenVersionId}
+                initialDuration={videoGenDuration}
+              />
             </div>
           )}
 
@@ -757,3 +767,4 @@ function SidebarItem({
     </button>
   );
 }
+

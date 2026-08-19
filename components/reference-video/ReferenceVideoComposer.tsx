@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { authClient } from "@/lib/auth/auth-client";
 import type { GenerationVariant } from "@/lib/reference-video/types";
@@ -314,8 +314,16 @@ function AssetPreview({ asset }: { asset: UploadedAsset }) {
 
 export function ReferenceVideoComposer({
   initialPrompt = "",
+  initialProjectId,
+  initialSceneId,
+  initialProjectVersionId,
+  initialDuration,
 }: {
   initialPrompt?: string | null;
+  initialProjectId?: string | null;
+  initialSceneId?: string | null;
+  initialProjectVersionId?: string | null;
+  initialDuration?: number | null;
 }) {
   const t = useTranslations("videoGenerate");
   const { data: session } = authClient.useSession();
@@ -365,6 +373,11 @@ export function ReferenceVideoComposer({
       Boolean(variant.providerTaskId || variant.videoUrl || variant.error),
   );
   const storageKey = "prompt-lens-video-gen";
+  const workflowContext = {
+    projectId: initialProjectId || undefined,
+    sceneId: initialSceneId || undefined,
+    projectVersionId: initialProjectVersionId || undefined,
+  };
   const readyReplacementAssets = assets.filter(
     (asset) => asset.status === "ready" && asset.type.startsWith("image/"),
   );
@@ -689,6 +702,12 @@ export function ReferenceVideoComposer({
   }, [initialPrompt]);
 
   useEffect(() => {
+    if (initialDuration && Number.isFinite(initialDuration) && initialDuration > 0) {
+      setDuration(`${Math.round(initialDuration)}s` as Duration);
+    }
+  }, [initialDuration]);
+
+  useEffect(() => {
     if (aspectRatio === "auto") return;
     if (selectedModelConfig.supportedAspectRatios.includes(aspectRatio)) return;
     setAspectRatio(selectedModelConfig.supportedAspectRatios[0] ?? "16:9");
@@ -954,6 +973,9 @@ export function ReferenceVideoComposer({
             model,
             duration,
             quality,
+            projectId: workflowContext.projectId,
+            sceneId: workflowContext.sceneId,
+            projectVersionId: workflowContext.projectVersionId,
             editState: {
               userPrompt: prompt,
               settings: { model, aspectRatio, quality, duration, outputCount },
@@ -1545,3 +1567,5 @@ export function ReferenceVideoComposer({
     </main>
   );
 }
+
+
