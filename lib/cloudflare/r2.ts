@@ -10,10 +10,10 @@ import { readFile, unlink } from "fs/promises";
 
 const accountId = process.env.R2_ACCOUNT_ID;
 const endpoint = process.env.R2_ENDPOINT || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : undefined);
-const accessKeyId = process.env.R2_ACCESS_KEY_ID || process.env.B2_ACCESS_KEY_ID;
-const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || process.env.B2_SECRET_ACCESS_KEY;
-const bucketName = process.env.R2_BUCKET_NAME || process.env.B2_BUCKET_NAME;
-const publicUrl = (process.env.R2_PUBLIC_URL || process.env.B2_PUBLIC_URL || "").replace(/\/$/, "");
+const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+const bucketName = process.env.R2_BUCKET_NAME;
+const publicUrl = (process.env.R2_PUBLIC_URL || "").replace(/\/$/, "");
 
 function requireR2Config() {
   const missing = [

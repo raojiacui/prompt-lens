@@ -23,10 +23,10 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 // R2 配置（可选）
 const hasR2Config = Boolean(
   (process.env.R2_ENDPOINT || process.env.R2_ACCOUNT_ID) &&
-  (process.env.R2_ACCESS_KEY_ID || process.env.B2_ACCESS_KEY_ID) &&
-  (process.env.R2_SECRET_ACCESS_KEY || process.env.B2_SECRET_ACCESS_KEY) &&
-  (process.env.R2_BUCKET_NAME || process.env.B2_BUCKET_NAME) &&
-  (process.env.R2_PUBLIC_URL || process.env.B2_PUBLIC_URL)
+  process.env.R2_ACCESS_KEY_ID &&
+  process.env.R2_SECRET_ACCESS_KEY &&
+  process.env.R2_BUCKET_NAME &&
+  process.env.R2_PUBLIC_URL
 );
 
 // 预设音乐 URL（免费版权音乐）

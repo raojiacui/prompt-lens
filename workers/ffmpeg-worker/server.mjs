@@ -10,12 +10,12 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const PORT = Number(process.env.PORT || 8080);
 const WORKER_SECRET = process.env.WORKER_SECRET || process.env.FFMPEG_WORKER_SECRET || "";
-const B2_REGION = process.env.B2_REGION;
-const R2_ENDPOINT = process.env.R2_ENDPOINT || process.env.B2_ENDPOINT || (B2_REGION ? `https://s3.${B2_REGION}.backblazeb2.com` : undefined);
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID || process.env.B2_ACCESS_KEY_ID;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY || process.env.B2_SECRET_ACCESS_KEY;
-const R2_BUCKET = process.env.R2_BUCKET || process.env.R2_BUCKET_NAME || process.env.B2_BUCKET_NAME;
-const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL || process.env.B2_PUBLIC_URL || "").replace(/\/$/, "");
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ENDPOINT = process.env.R2_ENDPOINT || (R2_ACCOUNT_ID ? `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : undefined);
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_BUCKET = process.env.R2_BUCKET_NAME || process.env.R2_BUCKET;
+const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL || "").replace(/\/$/, "");
 const SCENE_THRESHOLD = process.env.SCENE_THRESHOLD || "0.32";
 const MAX_SCENE_SECONDS = Number(process.env.MAX_SCENE_SECONDS || 8);
 const MIN_SCENE_SECONDS = Number(process.env.MIN_SCENE_SECONDS || 0.6);
@@ -25,11 +25,11 @@ const FFPROBE_PATH = process.env.FFPROBE_PATH || "ffprobe";
 function requireEnv() {
   const missing = [
     ["WORKER_SECRET", WORKER_SECRET],
-    ["R2_ENDPOINT or B2_REGION", R2_ENDPOINT],
-    ["R2_ACCESS_KEY_ID or B2_ACCESS_KEY_ID", R2_ACCESS_KEY_ID],
-    ["R2_SECRET_ACCESS_KEY or B2_SECRET_ACCESS_KEY", R2_SECRET_ACCESS_KEY],
-    ["R2_BUCKET/R2_BUCKET_NAME or B2_BUCKET_NAME", R2_BUCKET],
-    ["R2_PUBLIC_URL or B2_PUBLIC_URL", R2_PUBLIC_URL],
+    ["R2_ENDPOINT or R2_ACCOUNT_ID", R2_ENDPOINT],
+    ["R2_ACCESS_KEY_ID", R2_ACCESS_KEY_ID],
+    ["R2_SECRET_ACCESS_KEY", R2_SECRET_ACCESS_KEY],
+    ["R2_BUCKET_NAME", R2_BUCKET],
+    ["R2_PUBLIC_URL", R2_PUBLIC_URL],
   ].filter(([, value]) => !value);
   if (missing.length) throw new Error(`Missing env: ${missing.map(([name]) => name).join(", ")}`);
 }

@@ -26,20 +26,8 @@ if (-not $env:WORKER_SECRET -and $env:FFMPEG_WORKER_SECRET) {
 if (-not $env:PORT) {
   $env:PORT = [string]$Port
 }
-if (-not $env:R2_ENDPOINT -and -not $env:B2_ENDPOINT -and $env:B2_REGION) {
-  $env:R2_ENDPOINT = "https://s3.$($env:B2_REGION).backblazeb2.com"
-}
-if (-not $env:R2_ACCESS_KEY_ID -and $env:B2_ACCESS_KEY_ID) {
-  $env:R2_ACCESS_KEY_ID = $env:B2_ACCESS_KEY_ID
-}
-if (-not $env:R2_SECRET_ACCESS_KEY -and $env:B2_SECRET_ACCESS_KEY) {
-  $env:R2_SECRET_ACCESS_KEY = $env:B2_SECRET_ACCESS_KEY
-}
-if (-not $env:R2_BUCKET -and -not $env:R2_BUCKET_NAME -and $env:B2_BUCKET_NAME) {
-  $env:R2_BUCKET = $env:B2_BUCKET_NAME
-}
-if (-not $env:R2_PUBLIC_URL -and $env:B2_PUBLIC_URL) {
-  $env:R2_PUBLIC_URL = $env:B2_PUBLIC_URL
+if (-not $env:R2_ENDPOINT -and $env:R2_ACCOUNT_ID) {
+  $env:R2_ENDPOINT = "https://$($env:R2_ACCOUNT_ID).r2.cloudflarestorage.com"
 }
 
 node (Join-Path $root "workers\ffmpeg-worker\server.mjs")

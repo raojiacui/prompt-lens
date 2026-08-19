@@ -46,7 +46,7 @@ Response:
 
 ```text
 WORKER_SECRET=
-R2_ENDPOINT=
+R2_ACCOUNT_ID=
 R2_ACCESS_KEY_ID=
 R2_SECRET_ACCESS_KEY=
 R2_BUCKET=
@@ -69,4 +69,4 @@ From the project root, run:
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-worker.ps1
 ` 
 
-The script loads .env.local, maps existing B2_* variables to the worker storage variables, and serves http://localhost:8080.
+The script loads .env.local, derives R2_ENDPOINT from R2_ACCOUNT_ID when needed, and serves http://localhost:8080.
