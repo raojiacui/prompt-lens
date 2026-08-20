@@ -39,7 +39,7 @@ type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
 
 type Props = {
   onSendToGenerate: (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string }) => void;
-  onNavigateTool?: (tab: "video-gen" | "audio" | "edit") => void;
+  onNavigateTool?: (tab: "video-gen" | "audio" | "edit", payload?: Record<string, string>) => void;
 };
 
 function formatTime(seconds: number) {
@@ -382,10 +382,10 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                   <Button variant="outline" onClick={() => setCompareOpen((open) => !open)} disabled={!latestRemix}>
                     <GitCompare className="mr-2 h-4 w-4" />Compare
                   </Button>
-                  <Button variant="outline" onClick={() => onNavigateTool?.("audio")}>
+                  <Button variant="outline" onClick={() => onNavigateTool?.("audio", { projectId: bundle.project.id, versionId: bundle.activeVersion?.id || "" })}>
                     <Mic2 className="mr-2 h-4 w-4" />Audio
                   </Button>
-                  <Button variant="outline" onClick={() => onNavigateTool?.("edit")}>
+                  <Button variant="outline" onClick={() => onNavigateTool?.("edit", { projectId: bundle.project.id, versionId: bundle.activeVersion?.id || "" })}>
                     <Scissors className="mr-2 h-4 w-4" />Edit
                   </Button>
                   <Button onClick={() => {

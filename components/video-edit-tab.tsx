@@ -25,6 +25,14 @@ interface TimelineMarker {
   time: number;
 }
 
+type EditModelOption = { id: string; displayName: string; kieModelId: string; enabled: boolean; experimental?: boolean };
+
+type VideoEditTabProps = {
+  initialProjectId?: string | null;
+  initialVersionId?: string | null;
+  initialSceneId?: string | null;
+};
+
 type DragState =
   | { mode: "playhead" }
   | { mode: "clip"; clipId: string; offset: number; length: number }
@@ -35,7 +43,7 @@ type DragState =
 const MIN_CLIP_SECONDS = 0.3;
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
-export function VideoEditTab() {
+export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneId }: VideoEditTabProps) {
   const t = useTranslations("videoEdit");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
@@ -48,6 +56,9 @@ export function VideoEditTab() {
   const [isDraggingUpload, setIsDraggingUpload] = useState(false);
   const [inputMode, setInputMode] = useState<"file" | "url">("file");
   const [videoUrlInput, setVideoUrlInput] = useState("");
+  const [editMode, setEditMode] = useState<"auto" | "standard" | "generative">("auto");
+  const [editModels, setEditModels] = useState<EditModelOption[]>([]);
+  const [editModel, setEditModel] = useState("__auto__");
   const [duration, setDuration] = useState(60);
   const [playhead, setPlayhead] = useState(0);
   const [zoom, setZoom] = useState(1);
@@ -61,6 +72,19 @@ export function VideoEditTab() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadEditModels() {
+      const response = await fetch("/api/models?category=video_edit");
+      const data = await response.json().catch(() => ({}));
+      if (!cancelled && Array.isArray(data.models)) setEditModels(data.models.filter((model: EditModelOption) => model.enabled));
+    }
+    void loadEditModels();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const examplePrompts = [t("example1"), t("example2"), t("example3")];
   const activeClip = clips.find((clip) => clip.id === activeClipId) || null;
@@ -334,46 +358,49 @@ export function VideoEditTab() {
     setError("");
     setResult(null);
 
-    let finalVideoUrl = "";
-
-    if (inputMode === "file") {
-      if (!videoFile) {
-        setError(t("fileRequired"));
-        return;
-      }
-      setIsLoading(true);
-      setProgress(t("uploading"));
-      try {
-        const uploadData = await uploadMediaToBlob(videoFile, (percentage) => {
-          setProgress(t("uploadingProgress", { percent: Math.round(percentage) }));
-        });
-        finalVideoUrl = uploadData.url;
-      } catch (err: any) {
-        setError(err.message);
-        setIsLoading(false);
-        setProgress("");
-        return;
-      }
-    } else {
-      if (!videoUrlInput.trim()) {
-        setError(t("urlRequired"));
-        return;
-      }
-      finalVideoUrl = videoUrlInput.trim();
-      setIsLoading(true);
-    }
-
     if (!prompt.trim()) {
       setError(t("inputRequired"));
-      setIsLoading(false);
       setProgress("");
       return;
     }
     if (clips.length === 0) {
       setError("Timeline is empty. Add or keep at least one clip before editing.");
-      setIsLoading(false);
       setProgress("");
       return;
+    }
+
+    let finalVideoUrl = "";
+    setIsLoading(true);
+
+    if (!initialProjectId) {
+      if (inputMode === "file") {
+        if (!videoFile) {
+          setError(t("fileRequired"));
+          setIsLoading(false);
+          return;
+        }
+        setProgress(t("uploading"));
+        try {
+          const uploadData = await uploadMediaToBlob(videoFile, (percentage) => {
+            setProgress(t("uploadingProgress", { percent: Math.round(percentage) }));
+          });
+          finalVideoUrl = uploadData.url;
+        } catch (err) {
+          setError(err instanceof Error ? err.message : "Upload failed");
+          setIsLoading(false);
+          setProgress("");
+          return;
+        }
+      } else {
+        if (!videoUrlInput.trim()) {
+          setError(t("urlRequired"));
+          setIsLoading(false);
+          return;
+        }
+        finalVideoUrl = videoUrlInput.trim();
+      }
+    } else if (videoUrlInput.trim()) {
+      finalVideoUrl = videoUrlInput.trim();
     }
 
     setVideoUrl(finalVideoUrl);
@@ -381,10 +408,19 @@ export function VideoEditTab() {
     try {
       setProgress(t("processing"));
 
-      const response = await fetch("/api/video-edit", {
+      const response = await fetch(initialProjectId ? `/api/workflow/projects/${initialProjectId}/edit` : "/api/video-edit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+        body: JSON.stringify(initialProjectId ? {
+          prompt: `${prompt}\n\nManual timeline selection: ${timelineSummary}`,
+          sourceVideoUrl: finalVideoUrl || undefined,
+          versionId: initialVersionId || undefined,
+          sceneId: initialSceneId || undefined,
+          mode: editMode,
+          modelMode: editModel === "__auto__" ? "auto" : "manual",
+          modelId: editModel === "__auto__" ? undefined : editModel,
+          modelPriority: "balanced",
+        } : {
           mediaUrl: finalVideoUrl,
           prompt: `${prompt}\n\nManual timeline selection: ${timelineSummary}`,
         }),
@@ -398,15 +434,15 @@ export function VideoEditTab() {
 
       setResult(data);
       setProgress(t("done"));
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("editFailed"));
       setProgress("");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const canEdit = !isLoading && prompt.trim() && (inputMode === "file" ? videoFile : videoUrlInput.trim());
+  const canEdit = !isLoading && Boolean(prompt.trim()) && (Boolean(initialProjectId) || (inputMode === "file" ? Boolean(videoFile) : Boolean(videoUrlInput.trim())));
 
   return (
     <div className="animate-fade-in space-y-6">
@@ -487,7 +523,20 @@ export function VideoEditTab() {
                   <Paperclip className="h-7 w-7" />
                 </button>
               )}
-              <span className="inline-flex h-11 items-center rounded-full border border-[#D8D5CC]/70 bg-white/72 px-4 text-sm font-semibold text-[#6B6860] shadow-sm backdrop-blur-sm">FFmpeg worker: Server</span>
+              <span className="inline-flex h-11 items-center rounded-full border border-[#D8D5CC]/70 bg-white/72 px-4 text-sm font-semibold text-[#6B6860] shadow-sm backdrop-blur-sm">{editMode === "generative" ? "KIE video edit" : "FFmpeg worker"}</span>
+
+              <select value={editMode} onChange={(event) => setEditMode(event.target.value as "auto" | "standard" | "generative")} className="h-11 rounded-full border border-[#D8D5CC]/70 bg-white/72 px-4 text-sm font-semibold text-[#6B6860] outline-none">
+                <option value="auto">Auto edit mode</option>
+                <option value="standard">Standard Edit</option>
+                <option value="generative">Generative Edit</option>
+              </select>
+
+              <select value={editModel} onChange={(event) => setEditModel(event.target.value)} className="h-11 rounded-full border border-[#D8D5CC]/70 bg-white/72 px-4 text-sm font-semibold text-[#6B6860] outline-none">
+                <option value="__auto__">Auto · Balanced</option>
+                {editModels.map((model) => (
+                  <option key={model.id} value={model.kieModelId}>{model.displayName}{model.experimental ? " · Experimental" : ""}</option>
+                ))}
+              </select>
             </div>
 
             <Button onClick={handleEdit} disabled={!canEdit} className="h-12 w-12 rounded-xl bg-white/45 p-0 text-[#B8B8B8] hover:bg-[#D97757] hover:text-white disabled:hover:bg-white/45 disabled:hover:text-[#B8B8B8]" aria-label={t("start")}>
@@ -602,7 +651,7 @@ export function VideoEditTab() {
       {error && <div className="rounded-xl bg-[#C0453A]/10 px-4 py-3 text-sm text-[#C0453A]">{error}</div>}
       {progress && <div className="flex items-center justify-center gap-2 text-sm text-[#6B6860]"><Spinner size="sm" />{progress}</div>}
 
-      {result && result.outputUrl && (
+      {result && (result.outputUrl || result.providerTaskId || result.plan) && (
         <Card className="border-[#D8D5CC] bg-white/75 shadow-sm backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-[#141413]" style={{ fontFamily: "var(--font-display)" }}>{t("result")}</CardTitle>

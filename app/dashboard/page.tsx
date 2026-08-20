@@ -47,13 +47,13 @@ export default function DashboardPage() {
       nextParams.delete("model");
     } else {
       nextParams.set("tab", tab);
-      if (tab !== "video-gen") {
+      if (tab !== "video-gen" && tab !== "audio" && tab !== "edit") {
         nextParams.delete("videoGenPrompt");
-      nextParams.delete("projectId");
-      nextParams.delete("sceneId");
-      nextParams.delete("versionId");
-      nextParams.delete("duration");
-      nextParams.delete("model");
+        nextParams.delete("projectId");
+        nextParams.delete("sceneId");
+        nextParams.delete("versionId");
+        nextParams.delete("duration");
+        nextParams.delete("model");
       }
     }
     if (extraParams) {
@@ -75,6 +75,9 @@ export default function DashboardPage() {
   const videoGenVersionId = activeTab === "video-gen" ? searchParams.get("versionId") : null;
   const videoGenDuration = activeTab === "video-gen" ? Number(searchParams.get("duration") || 0) : null;
   const videoGenModel = activeTab === "video-gen" ? searchParams.get("model") : null;
+  const workflowProjectId = activeTab === "audio" || activeTab === "edit" ? searchParams.get("projectId") : null;
+  const workflowVersionId = activeTab === "audio" || activeTab === "edit" ? searchParams.get("versionId") : null;
+  const workflowSceneId = activeTab === "audio" || activeTab === "edit" ? searchParams.get("sceneId") : null;
   const [historyRefreshTrigger] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -378,15 +381,15 @@ export default function DashboardPage() {
 
           {/* 分析页面 */}
           {activeTab === "analyze" && (
-            <VideoWorkflowCreate onSendToGenerate={handleWorkflowSendToGenerate} onNavigateTool={(tab) => selectTab(tab)} />
+            <VideoWorkflowCreate onSendToGenerate={handleWorkflowSendToGenerate} onNavigateTool={(tab, payload) => selectTab(tab, payload)} />
           )}
           {/* 音频分析页面 */}
-          {activeTab === "audio" && <AudioAnalyzeTab activeTab={activeTab} />}
+          {activeTab === "audio" && <AudioAnalyzeTab activeTab={activeTab} initialProjectId={workflowProjectId} initialVersionId={workflowVersionId} />}
 
           {/* 视频剪辑页面 */}
           {activeTab === "edit" && (
             <div className="animate-fade-in">
-              <VideoEditTab />
+              <VideoEditTab initialProjectId={workflowProjectId} initialVersionId={workflowVersionId} initialSceneId={workflowSceneId} />
             </div>
           )}
 

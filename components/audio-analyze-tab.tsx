@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -32,9 +32,24 @@ type Tab = "analyze" | "history" | "settings" | "audio" | "edit" | "video-gen" |
 
 interface AudioAnalyzeTabProps {
   activeTab: Tab;
+  initialProjectId?: string | null;
+  initialVersionId?: string | null;
 }
 
-export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
+type AudioModelOption = { id: string; displayName: string; kieModelId: string; enabled: boolean; experimental?: boolean };
+type WorkflowAudioResult = {
+  plan: {
+    modelId: string;
+    cues: Array<{ id: string; text: string; speaker: string; start: number; end: number }>;
+    subtitles: Array<{ text: string; start: number; end: number }>;
+    bgm: { prompt: string; level: number };
+    sfx: Array<{ prompt: string; at: number }>;
+    srt: string;
+  };
+  subtitleAsset?: { url: string };
+};
+
+export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId }: AudioAnalyzeTabProps) {
   const t = useTranslations("audioAnalyze");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -59,8 +74,52 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
   const [inputMode, setInputMode] = useState<"file" | "url">("file");
   const [videoUrlInput, setVideoUrlInput] = useState("");
   const [funasrUrl, setFunasrUrl] = useState("");
+  const [audioModels, setAudioModels] = useState<AudioModelOption[]>([]);
+  const [workflowModel, setWorkflowModel] = useState("__auto__");
+  const [workflowLoading, setWorkflowLoading] = useState(false);
+  const [workflowError, setWorkflowError] = useState("");
+  const [workflowResult, setWorkflowResult] = useState<WorkflowAudioResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    if (!initialProjectId) return;
+    let cancelled = false;
+    async function loadAudioModels() {
+      const response = await fetch("/api/models?category=audio");
+      const data = await response.json().catch(() => ({}));
+      if (!cancelled && Array.isArray(data.models)) setAudioModels(data.models.filter((model: AudioModelOption) => model.enabled));
+    }
+    void loadAudioModels();
+    return () => {
+      cancelled = true;
+    };
+  }, [initialProjectId]);
+
+  const handleWorkflowAudio = async () => {
+    if (!initialProjectId) return;
+    setWorkflowLoading(true);
+    setWorkflowError("");
+    setWorkflowResult(null);
+    try {
+      const response = await fetch(`/api/workflow/projects/${initialProjectId}/audio`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          versionId: initialVersionId || undefined,
+          modelMode: workflowModel === "__auto__" ? "auto" : "manual",
+          modelId: workflowModel === "__auto__" ? undefined : workflowModel,
+          modelPriority: "balanced",
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Audio production failed");
+      setWorkflowResult(data);
+    } catch (err) {
+      setWorkflowError(err instanceof Error ? err.message : "Audio production failed");
+    } finally {
+      setWorkflowLoading(false);
+    }
+  };
   const handleFile = (file: File) => {
     if (!file.type.startsWith("video/") && !file.type.startsWith("audio/")) return;
     setSelectedFile(file);
@@ -239,13 +298,59 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              {t("title") || "Audio Analysis"}
+              {initialProjectId ? "Audio Production" : (t("title") || "Audio Analysis")}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {t("subtitle") || "Transcribe audio and extract clip-worthy segments."}
+              {initialProjectId ? "Generate dialogue, narration, subtitles, BGM notes, and SFX cues from the current video blueprint." : (t("subtitle") || "Transcribe audio and extract clip-worthy segments.")}
             </p>
           </div>
         </div>
+
+        {initialProjectId ? (
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold">Workflow audio package</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Uses the active project version and writes subtitles/audio cues back to the workflow.</p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+                <label className="grid gap-2 text-sm font-medium">
+                  Model
+                  <select value={workflowModel} onChange={(event) => setWorkflowModel(event.target.value)} className="h-10 min-w-56 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring">
+                    <option value="__auto__">Auto · Balanced</option>
+                    {audioModels.map((model) => (
+                      <option key={model.id} value={model.kieModelId}>{model.displayName}{model.experimental ? " · Experimental" : ""}</option>
+                    ))}
+                  </select>
+                </label>
+                <Button onClick={() => void handleWorkflowAudio()} disabled={workflowLoading} className="h-10 rounded-xl">
+                  {workflowLoading ? <Spinner size="sm" className="mr-2" /> : <Mic2 className="mr-2 h-4 w-4" />}
+                  Build Audio
+                </Button>
+              </div>
+            </div>
+            {workflowError ? <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{workflowError}</p> : null}
+            {workflowResult ? (
+              <div className="mt-4 grid gap-3 lg:grid-cols-3">
+                <div className="rounded-xl border border-border bg-background p-3">
+                  <p className="text-sm font-semibold">Voice cues</p>
+                  <p className="mt-1 text-2xl font-semibold">{workflowResult.plan.cues.length}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Model: {workflowResult.plan.modelId}</p>
+                </div>
+                <div className="rounded-xl border border-border bg-background p-3">
+                  <p className="text-sm font-semibold">Subtitles</p>
+                  <p className="mt-1 text-2xl font-semibold">{workflowResult.plan.subtitles.length}</p>
+                  {workflowResult.subtitleAsset?.url ? <a href={workflowResult.subtitleAsset.url} target="_blank" className="mt-1 block text-xs text-primary hover:underline">Open SRT</a> : null}
+                </div>
+                <div className="rounded-xl border border-border bg-background p-3">
+                  <p className="text-sm font-semibold">BGM / SFX</p>
+                  <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{workflowResult.plan.bgm.prompt}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{workflowResult.plan.sfx.length} SFX cue{workflowResult.plan.sfx.length === 1 ? "" : "s"}</p>
+                </div>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
 
         <div className="grid items-stretch gap-4 xl:grid-cols-[0.74fr_1.26fr]">
           <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">

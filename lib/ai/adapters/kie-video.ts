@@ -20,6 +20,8 @@ export type VideoGenerationInput = {
   seed?: number;
   cameraFixed?: boolean;
   image?: string;
+  referenceVideoUrl?: string;
+  referenceImageUrl?: string;
   webhookUrl?: string;
 };
 
@@ -162,6 +164,14 @@ export function buildKIEJobPayload(
   if (input.seed !== undefined) inputPayload.seed = input.seed;
   if (input.cameraFixed !== undefined)
     inputPayload.camera_fixed = input.cameraFixed;
+
+  if (input.referenceVideoUrl) {
+    inputPayload.video_url = input.referenceVideoUrl;
+    inputPayload.reference_video_url = input.referenceVideoUrl;
+  }
+  if (input.referenceImageUrl) {
+    inputPayload.reference_image_url = input.referenceImageUrl;
+  }
 
   if (imageUrls.length) {
     if (isKIESeedance2Model(input.modelId)) {

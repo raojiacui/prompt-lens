@@ -345,11 +345,11 @@ export const modelRegistry: ModelRegistryEntry[] = [
   },
   {
     id: "elevenlabs-tts",
-    displayName: "ElevenLabs Voice",
+    displayName: "ElevenLabs Dialogue",
     family: "ElevenLabs",
     category: "audio",
     provider: "kie",
-    kieModelId: "elevenlabs/tts",
+    kieModelId: "elevenlabs/text-to-dialogue-v3",
     enabled: true,
     capabilities: ["text", "audio", "tts"],
     speedLevel: 4,

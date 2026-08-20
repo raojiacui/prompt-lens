@@ -1,6 +1,9 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildFallbackSceneBlueprint, remixSceneBlueprint } from "@/lib/workflow/scene-analysis";
 import { routeModel } from "@/lib/ai/model-registry";
+import { buildAudioProductionPlan } from "@/lib/workflow/audio-production";
+import { buildEditPlan } from "@/lib/workflow/video-editing";
+import { createKieDialogueTask } from "@/lib/workflow/kie-audio";
 
 const scene = {
   sceneIndex: 2,
@@ -51,3 +54,68 @@ describe("V2 model routing", () => {
   });
 });
 
+describe("V2 audio production", () => {
+  it("builds TTS cues and SRT subtitles from scene blueprint dialogue", () => {
+    const blueprint = buildFallbackSceneBlueprint(scene);
+    blueprint.dialogue = [{ start: 0.4, end: 2.1, text: "We are late.", speaker: "Lead" }];
+    blueprint.subtitle = [{ start: 0.4, end: 2.1, text: "We are late." }];
+    blueprint.audio = { music: "light campus comedy rhythm", sfx: [{ at: 1.2, type: "alarm beep" }] };
+
+    const plan = buildAudioProductionPlan([{ id: "scene-02", sceneIndex: 2, duration: 5.5, blueprint }]);
+
+    expect(plan.modelId).toBeTruthy();
+    expect(plan.cues[0].speaker).toBe("Lead");
+    expect(plan.srt).toContain("00:00:00,400 --> 00:00:02,100");
+    expect(plan.bgm.prompt).toContain("campus comedy");
+    expect(plan.sfx[0].prompt).toContain("alarm");
+  });
+
+  it("submits a KIE dialogue task with text and voice payload", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ code: 200, data: { taskId: "task-audio", recordId: "record-audio" } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await createKieDialogueTask({
+      apiKey: "test-key",
+      modelId: "elevenlabs/text-to-dialogue-v3",
+      cues: [{ id: "cue-1", sceneId: "scene-1", sceneIndex: 1, kind: "dialogue", start: 0, end: 2, text: "Hello", speaker: "Lead" }],
+    });
+
+    expect(result.taskId).toBe("task-audio");
+    expect(fetchMock).toHaveBeenCalledWith("https://api.kie.ai/api/v1/jobs/createTask", expect.objectContaining({
+      method: "POST",
+      headers: expect.objectContaining({ Authorization: "Bearer test-key" }),
+      body: expect.stringContaining("elevenlabs/text-to-dialogue-v3"),
+    }));
+    vi.unstubAllGlobals();
+  });
+});
+
+describe("V2 AI video editor", () => {
+  it("creates a standard edit plan for timeline operations", () => {
+    const plan = buildEditPlan({
+      prompt: "删除 Scene 04，BGM 小一点，字幕大一点",
+      mode: "standard",
+      sceneIdsByIndex: { 4: "scene-04" },
+    });
+
+    expect(plan.mode).toBe("standard");
+    expect(plan.operations).toContainEqual({ type: "delete", sceneIndex: 4, sceneId: "scene-04" });
+    expect(plan.operations).toContainEqual({ type: "volume", track: "bgm", value: 0.45 });
+    expect(plan.operations).toContainEqual({ type: "subtitle_style", size: "large", position: "bottom" });
+  });
+
+  it("routes generative video edits through the video edit registry", () => {
+    const plan = buildEditPlan({
+      prompt: "把背景换成夜晚，但保留原来的动作",
+      mode: "auto",
+      sourceVideoUrl: "https://example.com/generated.mp4",
+    });
+
+    expect(plan.mode).toBe("generative");
+    expect(plan.modelId).toBeTruthy();
+    expect(plan.notes[0]).toContain("KIE video edit");
+  });
+});
