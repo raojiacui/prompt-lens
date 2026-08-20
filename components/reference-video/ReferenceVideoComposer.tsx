@@ -1320,15 +1320,15 @@ export function ReferenceVideoComposer({
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <label className="grid gap-2 text-sm font-medium">
+              <div className="grid gap-4 sm:grid-cols-2 lg:gap-5">
+                <label className="grid min-w-0 gap-2 text-sm font-medium">
                   {t("controls.model") || "Model"}
                   <select
                     value={model}
                     onChange={(event) =>
                       setModel(event.target.value as ModelId)
                     }
-                    className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
+                    className="h-10 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
                   >
                     <option value={autoBalancedModelId}>Auto · Balanced</option>
                     {models.map((item) => (
