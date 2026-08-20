@@ -183,7 +183,7 @@ export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: st
         keyframes: "Describe visible zoom, pan, scale, opacity, or position keyframes if present.",
       },
     },
-    generationPrompt: `${label}: recreate the shot from ${timeRange} as a text-to-video prompt. Preserve duration (${scene.duration.toFixed(1)}s), exact subject identity, environment, action sequence, shot size, camera angle, camera movement, composition, lighting direction, color palette, style, pacing, and transition rhythm. Describe the visible frame in concrete nouns and motion verbs so another AI video model can reproduce the reference shot without seeing the source video.`,
+    generationPrompt: `${label}: visual-first text-to-video recreation prompt for ${timeRange}. Prioritize the exact visible image over music or editing guesses. Preserve duration (${scene.duration.toFixed(1)}s), subject identity, character appearance, wardrobe, expression, pose, environment, props, background layers, action sequence, shot size, camera angle, camera movement, composition, lighting direction, color palette, texture, realism level, and motion continuity. Mention audio or editing only as secondary constraints when they are evident. Describe the frame in concrete nouns and motion verbs so another AI video model can reproduce the reference shot without seeing the source video.`,
     metadata: { analysisProvider: "fallback", fallbackReason: reason || "KIE analysis unavailable", transcriptionProvider: audioContext?.audio.transcriptionProvider, transcriptionModel: audioContext?.audio.transcriptionModel, transcriptionTaskId: audioContext?.audio.transcriptionTaskId },
   };
 }
@@ -215,10 +215,12 @@ export async function analyzeSceneBlueprint(params: {
       system: [
         "You are a senior AI video director and script breakdown specialist. Return strict JSON only.",
         "Analyze one extracted reference-video scene as a babysitter-level video script breakdown for near 1:1 text-to-video recreation.",
-        "Be concrete and exhaustive: describe visible objects, characters, wardrobe, expressions, props, background layers, action order, camera language, lighting, composition, audio cues, and editing techniques.",
+        "Primary goal: produce a visual-first recreation prompt. The prompt should let a text-to-video model reproduce the scene mostly from text alone. Audio and editing are secondary notes, not the center of the output.",
+        "Be concrete and exhaustive about the visible image: objects, characters, wardrobe, expressions, pose, props, background layers, action order, camera language, lighting, color, composition, style, texture, and motion continuity.",
+        "For music and editing, only describe observable or inferable style, rhythm, or basic techniques. Do not claim exact BGM title, software operations, masks, keyframes, or effects unless there is clear visual/audio evidence.",
         "Do not invent brand names or dialogue unless visible/audible evidence supports it. If something is uncertain, say unknown rather than hallucinating.",
         "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. transition must include editing.pacing and editing.techniques.",
-        "generationPrompt must be a long, directly usable text-to-video prompt that can recreate the original shot from text alone with high fidelity.",
+        "generationPrompt must be a long, directly usable text-to-video prompt. Put visual reconstruction first; put dialogue/audio/editing constraints after the visual description and mark uncertain items as possible/unknown.",
       ].join(" "),
       content: [
         {
@@ -230,7 +232,7 @@ export async function analyzeSceneBlueprint(params: {
             `Previous summary: ${params.context.previousSummary || "none"}`,
             `Next summary: ${params.context.nextSummary || "none"}`,
             `Transcript/dialogue context from KIE speech-to-text: ${compactJson(params.context.audio || {})}`,
-            "Output a detailed shot script. Include: 1) sceneDescription: exhaustive visual reconstruction; 2) subject and characters: appearance, wardrobe, expressions, pose; 3) environment and props; 4) action sequence with temporal order; 5) camera: shot size, angle, lens feel, camera movement, focus, speed; 6) composition: foreground/midground/background, subject placement, depth; 7) lighting and color grading; 8) audio: dialogue, SFX, ambience, music/BPM if inferable; 9) editing: transition, fast cuts, split screen, speed ramp, mask/overlay, keyframe zoom/pan/scale/opacity if present; 10) generationPrompt: one self-contained text-to-video prompt detailed enough to recreate roughly 90% of the scene without source media. Preserve transcript timing when present.",
+            "Output a detailed shot script with visual reconstruction as the highest priority. Include: 1) sceneDescription: exhaustive visible-frame reconstruction; 2) subject and characters: identity, appearance, wardrobe, expression, pose; 3) environment, props, background layers; 4) action sequence with temporal order; 5) camera: shot size, angle, lens feel, movement, focus, speed; 6) composition: foreground/midground/background, subject placement, depth; 7) lighting, color grading, texture, realism; 8) generationPrompt: a self-contained visual-first text-to-video prompt detailed enough to recreate roughly 90% of the scene without source media; 9) audio: transcript/dialogue and broad sound style only; 10) editing: basic transition/rhythm notes with confidence, avoid overclaiming. Preserve transcript timing when present.",
           ].join("\n"),
         },
         ...params.scene.keyframeUrls.slice(0, 3).map((url) => ({ type: "image_url", image_url: { url } })),

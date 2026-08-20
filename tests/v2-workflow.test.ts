@@ -30,7 +30,8 @@ describe("V2 scene analysis", () => {
     expect(blueprint.visual.sceneDescription).toContain("text-to-video recreation");
     expect(blueprint.visual.composition).toContain("foreground");
     expect((blueprint.transition.editing as Record<string, unknown>).techniques).toContain("hard_cut");
-    expect(blueprint.generationPrompt).toContain("text-to-video prompt");
+    expect(blueprint.generationPrompt).toContain("visual-first text-to-video recreation prompt");
+    expect(blueprint.generationPrompt).toContain("Mention audio or editing only as secondary constraints");
     expect(blueprint.metadata?.analysisProvider).toBe("fallback");
     expect(blueprint.metadata?.fallbackReason).toBe("no provider configured");
   });

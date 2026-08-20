@@ -460,6 +460,23 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
 
                       {scene?.clipUrl ? <video src={scene.clipUrl} controls className="mt-3 max-h-64 w-full rounded-xl bg-black object-contain" /> : null}
 
+                      <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
+                        <div>
+                          <label className="text-sm font-semibold">复刻 Prompt</label>
+                          <Textarea value={sceneDrafts[sceneVersion.id] ?? sceneVersion.generationPrompt} onChange={(event) => setSceneDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} className="mt-2 min-h-40 rounded-xl" />
+                          <Button size="sm" onClick={() => void savePrompt(sceneVersion)} disabled={savingSceneId === sceneVersion.id} className="mt-3">
+                            {savingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}Save
+                          </Button>
+                        </div>
+                        <div>
+                          <label className="text-sm font-semibold">AI 修改脚本</label>
+                          <Textarea value={rewriteDrafts[sceneVersion.id] || ""} onChange={(event) => setRewriteDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} placeholder="Make this scene warmer and more comedic, but keep the same timing and camera move." className="mt-2 min-h-40 rounded-xl" />
+                          <Button size="sm" variant="outline" onClick={() => void rewriteScene(sceneVersion)} disabled={!rewriteDrafts[sceneVersion.id]?.trim() || rewritingSceneId === sceneVersion.id} className="mt-3">
+                            {rewritingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}Rewrite Scene
+                          </Button>
+                        </div>
+                      </div>
+
                       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         <InfoPanel title="画面复刻" value={pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])} />
                         <InfoPanel title="角色/动作" value={`${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()} />
@@ -467,25 +484,8 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                         <InfoPanel title="光线/色彩/风格" value={`${pickField(sceneVersion.visual, ["lighting"])}\n${pickField(sceneVersion.visual, ["color"])}\n${pickField(sceneVersion.visual, ["style"])}`.trim()} />
                         <InfoPanel title="台词/字幕" value={sceneVersion.dialogue.length ? sceneVersion.dialogue : sceneVersion.subtitle} />
                         <InfoPanel title="音频" value={sceneVersion.audio} />
-                        <InfoPanel title="剪辑手法" value={sceneVersion.transition} />
+                        <InfoPanel title="剪辑提示" value={sceneVersion.transition} />
                         <InfoPanel title="剧情作用" value={sceneVersion.story} />
-                      </div>
-
-                      <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
-                        <div>
-                          <label className="text-sm font-semibold">复刻 Prompt</label>
-                          <Textarea value={sceneDrafts[sceneVersion.id] ?? sceneVersion.generationPrompt} onChange={(event) => setSceneDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} className="mt-2 min-h-32 rounded-xl" />
-                          <Button size="sm" onClick={() => void savePrompt(sceneVersion)} disabled={savingSceneId === sceneVersion.id} className="mt-3">
-                            {savingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}Save
-                          </Button>
-                        </div>
-                        <div>
-                          <label className="text-sm font-semibold">AI 修改脚本</label>
-                          <Textarea value={rewriteDrafts[sceneVersion.id] || ""} onChange={(event) => setRewriteDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} placeholder="Make this scene warmer and more comedic, but keep the same timing and camera move." className="mt-2 min-h-32 rounded-xl" />
-                          <Button size="sm" variant="outline" onClick={() => void rewriteScene(sceneVersion)} disabled={!rewriteDrafts[sceneVersion.id]?.trim() || rewritingSceneId === sceneVersion.id} className="mt-3">
-                            {rewritingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}Rewrite Scene
-                          </Button>
-                        </div>
                       </div>
                     </article>
                   );
