@@ -110,8 +110,11 @@ export default function DashboardPage() {
         }),
       });
 
-      if (!analyzeRes.ok) throw new Error(t("analyze.analysisFailed"));
-      const data = await analyzeRes.json();
+      const data = await analyzeRes.json().catch(() => null);
+      if (!analyzeRes.ok) {
+        throw new Error(data?.error || t("analyze.analysisFailed"));
+      }
+      if (!data) throw new Error(t("analyze.analysisFailed"));
       setResult(data.prompt);
       setHistoryRefreshTrigger((prev) => prev + 1);
     } catch (error: any) {
