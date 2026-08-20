@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -26,6 +25,7 @@ interface TimelineMarker {
 }
 
 type EditModelOption = { id: string; displayName: string; kieModelId: string; enabled: boolean; experimental?: boolean };
+type EditResult = { outputUrl?: string; providerTaskId?: string; plan?: unknown; instruction?: unknown };
 
 type VideoEditTabProps = {
   initialProjectId?: string | null;
@@ -47,10 +47,9 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
   const t = useTranslations("videoEdit");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string>("");
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<EditResult | null>(null);
   const [error, setError] = useState("");
   const [progress, setProgress] = useState("");
   const [isDraggingUpload, setIsDraggingUpload] = useState(false);
@@ -88,7 +87,7 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
 
   const examplePrompts = [t("example1"), t("example2"), t("example3")];
   const activeClip = clips.find((clip) => clip.id === activeClipId) || null;
-    const previewSourceTime = getSourceTimeAtTimeline(playhead, clips);
+  const previewSourceTime = getSourceTimeAtTimeline(playhead, clips);
   const timelineWidth = `${zoom * 100}%`;
 
   const timelineSummary = useMemo(() => {
@@ -234,12 +233,11 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
   const resetUpload = () => {
     setVideoFile(null);
     setVideoPreview(null);
-    setVideoUrl("");
     setVideoUrlInput("");
     setTimelineFrames([]);
     setMarkers([]);
     setResult(null);
-        setClips([{ id: "clip-1", label: "Clip 1", timelineStart: 0, timelineEnd: 18, sourceStart: 0, sourceEnd: 18 }]);
+    setClips([{ id: "clip-1", label: "Clip 1", timelineStart: 0, timelineEnd: 18, sourceStart: 0, sourceEnd: 18 }]);
     setActiveClipId("clip-1");
     setPlayhead(0);
     setError("");
@@ -340,16 +338,6 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
     setActiveClipId(nextId);
   };
 
-  const moveClip = (direction: -1 | 1) => {
-    if (!activeClip) return;
-    const index = clips.findIndex((clip) => clip.id === activeClip.id);
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= clips.length) return;
-    const nextClips = [...clips];
-    [nextClips[index], nextClips[nextIndex]] = [nextClips[nextIndex], nextClips[index]];
-    setClips(nextClips);
-  };
-
   const addMarker = () => {
     setMarkers((current) => [...current, { id: `marker-${Date.now()}`, time: playhead }]);
   };
@@ -403,7 +391,6 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
       finalVideoUrl = videoUrlInput.trim();
     }
 
-    setVideoUrl(finalVideoUrl);
 
     try {
       setProgress(t("processing"));
@@ -455,95 +442,132 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
           isDraggingUpload && inputMode === "file" && "border-[#D97757]/70 bg-[#FFF8EE]/80"
         )}
       >
-        <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(320px,0.72fr)]">
-          <div className="min-w-0 space-y-4">
-            <div className="relative">
+        <div className="grid grid-cols-1 gap-5 p-5 lg:grid-cols-[minmax(0,0.72fr)_minmax(360px,1fr)]">
+          <section className="flex min-w-0 flex-col gap-4 rounded-2xl border border-[#D8D5CC]/80 bg-white/72 p-4 shadow-sm">
+            <div>
+              <h2 className="text-xl font-semibold text-[#141413]">Edit setup</h2>
+              <p className="mt-1 text-sm text-[#6B6860]">Upload a source video, describe the edit, then refine clips on the timeline.</p>
+            </div>
+
+            <label className="grid gap-2 text-sm font-semibold text-[#141413]">
+              Edit instruction
               <Textarea
                 value={prompt}
                 onChange={handlePromptChange}
                 placeholder={t("editPlaceholder")}
-                className="min-h-[118px] resize-none overflow-hidden border-0 bg-transparent px-1 py-1 pb-12 text-xl text-[#141413] shadow-none outline-none placeholder:text-[#AAA9A6] focus-visible:ring-0"
+                className="min-h-[118px] resize-none overflow-hidden rounded-xl border border-[#D8D5CC]/80 bg-white px-3 py-3 text-base text-[#141413] shadow-sm outline-none placeholder:text-[#AAA9A6] focus-visible:ring-2 focus-visible:ring-[#D97757]/30"
               />
-              <span className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 rounded-full bg-[#D97757]" />
+            </label>
+
+            <div className="inline-flex h-11 w-fit overflow-hidden rounded-full border border-[#D8D5CC]/70 bg-[#F5F3EC] p-1 shadow-sm">
+              <button type="button" onClick={() => { setInputMode("file"); resetUpload(); }} className={cn("rounded-full px-4 text-sm font-semibold transition-colors", inputMode === "file" ? "bg-[#D97757] text-white shadow-sm" : "text-[#6B6860] hover:text-[#141413]")}>{t("uploadFile")}</button>
+              <button type="button" onClick={() => { setInputMode("url"); resetUpload(); }} className={cn("rounded-full px-4 text-sm font-semibold transition-colors", inputMode === "url" ? "bg-[#D97757] text-white shadow-sm" : "text-[#6B6860] hover:text-[#141413]")}>{t("inputUrl")}</button>
             </div>
 
-            {inputMode === "url" && (
-              <label className="flex items-center gap-2 rounded-xl border border-[#D8D5CC]/80 bg-white/72 px-4 py-3 text-[#141413] shadow-sm">
+            {inputMode === "file" ? (
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-28 w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#D8D5CC] bg-[#F5F3EC]/70 px-4 py-4 text-center transition-colors hover:border-[#D97757]/50 hover:bg-white">
+                <Paperclip className="h-7 w-7 text-[#D97757]" />
+                <span className="font-semibold text-[#141413]">{videoFile ? videoFile.name : t("uploadFile")}</span>
+                <span className="text-sm text-[#6B6860]">{videoFile ? `${(videoFile.size / 1024 / 1024).toFixed(2)} MB` : "Drop a video here or click to upload"}</span>
+              </button>
+            ) : (
+              <label className="flex items-center gap-2 rounded-xl border border-[#D8D5CC]/80 bg-white px-4 py-3 text-[#141413] shadow-sm">
                 <Link className="h-4 w-4 shrink-0 text-[#9C9890]" />
                 <Input type="url" value={videoUrlInput} onChange={(e) => setVideoUrlInput(e.target.value)} placeholder={t("urlPlaceholder")} className="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0" />
               </label>
             )}
-          </div>
 
-          {videoPreview ? (
-            <div className="relative min-h-[220px] overflow-hidden rounded-xl border border-[#D8D5CC] bg-[#141413] shadow-sm">
-              <div className="absolute left-3 top-3 z-10 rounded-full bg-black/55 px-3 py-1 font-mono text-xs text-white">
-                {formatTime(playhead)}
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="grid min-w-0 gap-2 text-sm font-semibold text-[#141413]">
+                Edit mode
+                <select value={editMode} onChange={(event) => setEditMode(event.target.value as "auto" | "standard" | "generative")} className="h-11 w-full min-w-0 rounded-xl border border-[#D8D5CC]/80 bg-white px-3 text-sm font-semibold text-[#6B6860] outline-none focus:border-[#D97757]">
+                  <option value="auto">Auto edit mode</option>
+                  <option value="standard">Standard Edit</option>
+                  <option value="generative">Generative Edit</option>
+                </select>
+              </label>
+
+              <label className="grid min-w-0 gap-2 text-sm font-semibold text-[#141413]">
+                Model
+                <select value={editModel} onChange={(event) => setEditModel(event.target.value)} className="h-11 w-full min-w-0 rounded-xl border border-[#D8D5CC]/80 bg-white px-3 text-sm font-semibold text-[#6B6860] outline-none focus:border-[#D97757]">
+                  <option value="__auto__">Auto · Balanced</option>
+                  {editModels.map((model) => (
+                    <option key={model.id} value={model.kieModelId}>{model.displayName}{model.experimental ? " · Experimental" : ""}</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-[#D8D5CC]/80 bg-[#F8F8F7] px-3 py-2 text-sm font-semibold text-[#6B6860]">
+              <span>{editMode === "generative" ? "KIE video edit" : "Local / worker FFmpeg"}</span>
+              <span>{clips.length} clip{clips.length === 1 ? "" : "s"}</span>
+            </div>
+
+            <Button onClick={handleEdit} disabled={!canEdit} className="mt-auto h-11 w-full rounded-xl bg-[#D97757] text-white hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-60" aria-label={t("start")}>
+              {isLoading ? <Spinner size="sm" className="mr-2" /> : <Send className="mr-2 h-5 w-5 -rotate-45" />}
+              {isLoading ? t("processing") : t("start")}
+            </Button>
+          </section>
+
+          <section className="flex min-w-0 flex-col rounded-2xl border border-[#D8D5CC]/80 bg-white/72 p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-semibold text-[#141413]">Preview</h2>
+                <p className="text-sm text-[#6B6860]">Review source or edited output.</p>
               </div>
-              <video
-                ref={previewVideoRef}
-                src={videoPreview}
-                muted
-                playsInline
-                onLoadedMetadata={handleLoadedMetadata}
-                className={cn("h-full max-h-[280px] w-full object-contain", previewSourceTime === null && "opacity-25")}
-              />
-                            {previewSourceTime === null && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-sm font-semibold text-white">
-                  No clip at playhead
+              {videoPreview ? (
+                <button type="button" onClick={resetUpload} className="flex h-8 w-8 items-center justify-center rounded-full bg-[#F5F3EC] text-[#141413] shadow-sm transition-colors hover:bg-[#D97757] hover:text-white" aria-label="Remove uploaded video">
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
+
+            {result?.outputUrl ? (
+              <div className="space-y-3">
+                <video src={result.outputUrl} controls className="max-h-[360px] w-full rounded-xl bg-[#141413] object-contain" />
+                <a href={result.outputUrl} download className="block">
+                  <Button className="w-full rounded-xl bg-[#D97757] hover:bg-[#C96848]">{t("download")}</Button>
+                </a>
+              </div>
+            ) : result?.providerTaskId ? (
+              <div className="flex min-h-[300px] flex-col justify-center rounded-xl border border-[#D8D5CC] bg-[#F5F3EC]/70 p-6">
+                <p className="text-sm font-semibold text-[#141413]">Generative edit submitted</p>
+                <p className="mt-2 text-sm text-[#6B6860]">The provider task is running. The output will appear when the task finishes.</p>
+                <p className="mt-4 break-all rounded-lg bg-white px-3 py-2 font-mono text-xs text-[#6B6860]">{result.providerTaskId}</p>
+              </div>
+            ) : videoPreview ? (
+              <div className="relative min-h-[300px] overflow-hidden rounded-xl border border-[#D8D5CC] bg-[#141413] shadow-sm">
+                <div className="absolute left-3 top-3 z-10 rounded-full bg-black/55 px-3 py-1 font-mono text-xs text-white">
+                  {formatTime(playhead)}
                 </div>
-              )}
-              <button type="button" onClick={resetUpload} className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#141413] shadow-sm transition-colors hover:bg-[#D97757] hover:text-white" aria-label="Remove uploaded video">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="relative flex min-h-[220px] flex-col items-center justify-center overflow-hidden rounded-xl border border-dashed border-[#D8D5CC] bg-[#F5F3EC]/70 p-6 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ECE9E0] text-[#9C9890]">
-                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
+                <video
+                  ref={previewVideoRef}
+                  src={videoPreview}
+                  muted
+                  playsInline
+                  controls
+                  onLoadedMetadata={handleLoadedMetadata}
+                  className={cn("h-full max-h-[360px] w-full object-contain", previewSourceTime === null && "opacity-25")}
+                />
+                {previewSourceTime === null && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/45 text-sm font-semibold text-white">
+                    No clip at playhead
+                  </div>
+                )}
               </div>
-              <p className="mb-1 font-medium text-[#141413]">Video preview will appear here</p>
-              <p className="text-sm text-[#6B6860]">Upload a video or enter a URL to start editing.</p>
-            </div>
-          )}
+            ) : (
+              <div className="flex min-h-[300px] flex-col items-center justify-center rounded-xl border border-dashed border-[#D8D5CC] bg-[#F5F3EC]/70 p-6 text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#ECE9E0] text-[#9C9890]">
+                  <Paperclip className="h-8 w-8" />
+                </div>
+                <p className="mb-1 font-medium text-[#141413]">Video preview will appear here</p>
+                <p className="text-sm text-[#6B6860]">Upload a video or enter a URL to start editing.</p>
+              </div>
+            )}
+          </section>
         </div>
 
         <div className="border-t border-[#E4E2DD]/70 px-5 py-4">
-          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="inline-flex h-11 overflow-hidden rounded-full border border-[#D8D5CC]/70 bg-white/72 p-1 shadow-sm backdrop-blur-sm">
-                <button type="button" onClick={() => { setInputMode("file"); resetUpload(); }} className={cn("rounded-full px-4 text-sm font-semibold transition-colors", inputMode === "file" ? "bg-[#D97757] text-white shadow-sm" : "text-[#6B6860] hover:text-[#141413]")}>{t("uploadFile")}</button>
-                <button type="button" onClick={() => { setInputMode("url"); resetUpload(); }} className={cn("rounded-full px-4 text-sm font-semibold transition-colors", inputMode === "url" ? "bg-[#D97757] text-white shadow-sm" : "text-[#6B6860] hover:text-[#141413]")}>{t("inputUrl")}</button>
-              </div>
-
-              {inputMode === "file" && (
-                <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex h-11 w-11 items-center justify-center rounded-full text-[#9C9890] transition-colors hover:bg-[#F5F3EC] hover:text-[#D97757]" aria-label={t("uploadFile")}>
-                  <Paperclip className="h-7 w-7" />
-                </button>
-              )}
-              <span className="inline-flex h-11 items-center rounded-full border border-[#D8D5CC]/70 bg-white/72 px-4 text-sm font-semibold text-[#6B6860] shadow-sm backdrop-blur-sm">{editMode === "generative" ? "KIE video edit" : "FFmpeg worker"}</span>
-
-              <select value={editMode} onChange={(event) => setEditMode(event.target.value as "auto" | "standard" | "generative")} className="h-11 rounded-full border border-[#D8D5CC]/70 bg-white/72 px-4 text-sm font-semibold text-[#6B6860] outline-none">
-                <option value="auto">Auto edit mode</option>
-                <option value="standard">Standard Edit</option>
-                <option value="generative">Generative Edit</option>
-              </select>
-
-              <select value={editModel} onChange={(event) => setEditModel(event.target.value)} className="h-11 rounded-full border border-[#D8D5CC]/70 bg-white/72 px-4 text-sm font-semibold text-[#6B6860] outline-none">
-                <option value="__auto__">Auto · Balanced</option>
-                {editModels.map((model) => (
-                  <option key={model.id} value={model.kieModelId}>{model.displayName}{model.experimental ? " · Experimental" : ""}</option>
-                ))}
-              </select>
-            </div>
-
-            <Button onClick={handleEdit} disabled={!canEdit} className="h-12 w-12 rounded-xl bg-white/45 p-0 text-[#B8B8B8] hover:bg-[#D97757] hover:text-white disabled:hover:bg-white/45 disabled:hover:text-[#B8B8B8]" aria-label={t("start")}>
-              {isLoading ? <Spinner size="sm" /> : <Send className="h-6 w-6 -rotate-45" />}
-            </Button>
-          </div>
-
           <div className="rounded-xl border border-[#D8D5CC]/80 bg-[#1E1E1D] p-3 shadow-sm">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-1.5">
@@ -651,24 +675,6 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
       {error && <div className="rounded-xl bg-[#C0453A]/10 px-4 py-3 text-sm text-[#C0453A]">{error}</div>}
       {progress && <div className="flex items-center justify-center gap-2 text-sm text-[#6B6860]"><Spinner size="sm" />{progress}</div>}
 
-      {result && (result.outputUrl || result.providerTaskId || result.plan) && (
-        <Card className="border-[#D8D5CC] bg-white/75 shadow-sm backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-[#141413]" style={{ fontFamily: "var(--font-display)" }}>{t("result")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <video src={result.outputUrl} controls className="w-full rounded-xl" />
-            <a href={result.outputUrl} download className="block">
-              <Button className="w-full rounded-xl bg-[#D97757] hover:bg-[#C96848]">{t("download")}</Button>
-            </a>
-            {result.instruction && (
-              <pre className="max-h-[320px] overflow-auto rounded-xl bg-[#F8F8F7]/80 p-5 text-xs leading-relaxed text-[#141413]">
-                {JSON.stringify(result.instruction, null, 2)}
-              </pre>
-            )}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

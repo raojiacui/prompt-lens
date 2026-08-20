@@ -1506,7 +1506,7 @@ export function ReferenceVideoComposer({
                 type="button"
                 onClick={() => void createVideo()}
                 disabled={isRunning}
-                className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-foreground px-5 text-sm font-semibold text-background transition-colors hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <WandSparkles className="h-5 w-5" />
                 {isRunning
