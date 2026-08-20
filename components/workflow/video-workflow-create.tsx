@@ -18,6 +18,8 @@ type SceneVersion = {
   sceneIndex: number;
   story: Record<string, unknown>;
   visual: Record<string, unknown>;
+  dialogue: unknown[];
+  subtitle: unknown[];
   audio: Record<string, unknown>;
   transition: Record<string, unknown>;
   generationPrompt: string;
@@ -53,9 +55,22 @@ function formatTime(seconds: number) {
 function textValue(value: unknown) {
   if (!value) return "";
   if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (typeof item !== "object" || item === null) return String(item);
+        const record = item as Record<string, unknown>;
+        const time = typeof record.start === "number" || typeof record.end === "number" ? `[${formatTime(Number(record.start || 0))}-${formatTime(Number(record.end || 0))}] ` : "";
+        const speaker = record.speaker ? `${record.speaker}: ` : "";
+        return `${time}${speaker}${record.text || record.summary || record.role || ""}`.trim();
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
   if (typeof value === "object") {
     const obj = value as Record<string, unknown>;
-    return String(obj.summary || obj.role || obj.action || obj.beat || JSON.stringify(obj));
+    return String(obj.summary || obj.transcriptSummary || obj.ambience || obj.music || obj.role || obj.action || obj.beat || JSON.stringify(obj));
   }
   return String(value);
 }
@@ -435,9 +450,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
 
                       {scene?.clipUrl ? <video src={scene.clipUrl} controls className="mt-3 max-h-64 w-full rounded-xl bg-black object-contain" /> : null}
 
-                      <div className="mt-4 grid gap-3 md:grid-cols-4">
+                      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                         <InfoPanel title="Story" value={sceneVersion.story} />
                         <InfoPanel title="Visual" value={sceneVersion.visual} />
+                        <InfoPanel title="Dialogue" value={sceneVersion.dialogue} />
+                        <InfoPanel title="Subtitle" value={sceneVersion.subtitle} />
                         <InfoPanel title="Audio" value={sceneVersion.audio} />
                         <InfoPanel title="Transition" value={sceneVersion.transition} />
                       </div>
@@ -470,11 +487,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   );
 }
 
-function InfoPanel({ title, value }: { title: string; value: Record<string, unknown> }) {
+function InfoPanel({ title, value }: { title: string; value: unknown }) {
   return (
     <div className="rounded-xl border border-border bg-muted/30 p-3">
       <p className="text-sm font-semibold">{title}</p>
-      <p className="mt-2 line-clamp-5 text-xs leading-relaxed text-muted-foreground">{textValue(value)}</p>
+      <p className="mt-2 whitespace-pre-line line-clamp-6 text-xs leading-relaxed text-muted-foreground">{textValue(value) || "No detected data yet."}</p>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { getUserKieApiKey } from "@/lib/byok/kie";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
+import type { SceneAudioContext } from "@/lib/workflow/transcription";
 
 export interface SceneBlueprintDraft {
   story: Record<string, unknown>;
@@ -19,6 +20,7 @@ export interface SceneContext {
   previousSummary?: string;
   nextSummary?: string;
   projectTitle?: string;
+  audio?: SceneAudioContext;
 }
 
 export interface AiModelSelection {
@@ -137,7 +139,7 @@ async function callKieChatJson(params: {
   return { json: parseJsonObject(content), ...selected };
 }
 
-export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: string): SceneBlueprintDraft {
+export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: string, audioContext?: SceneAudioContext): SceneBlueprintDraft {
   const label = `Scene ${String(scene.sceneIndex).padStart(2, "0")}`;
   const timeRange = `${scene.startTime.toFixed(1)}s-${scene.endTime.toFixed(1)}s`;
   return {
@@ -155,13 +157,14 @@ export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: st
       color: "Match the dominant reference palette",
       style: "Reference-video style, realistic motion, coherent continuity",
     },
-    dialogue: [],
+    dialogue: audioContext?.dialogue || [],
     narration: [],
-    subtitle: [],
+    subtitle: audioContext?.subtitle || [],
     audio: {
       ambience: scene.audioUrl ? "Use extracted audio as timing reference." : "No scene audio extracted.",
       music: "Preserve the original rhythm unless the remix changes it.",
       sfx: [],
+      ...(audioContext?.audio || {}),
     },
     transition: {
       in: scene.transitionIn || (scene.sceneIndex === 1 ? "start" : "hard_cut"),
@@ -169,7 +172,7 @@ export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: st
       rhythm: "Preserve original edit timing and scene duration.",
     },
     generationPrompt: `${label}: recreate the shot from ${timeRange}. Preserve scene duration (${scene.duration.toFixed(1)}s), subject motion, camera framing, lighting, color, pacing, and transition rhythm. Use the extracted keyframe and clip as references, then apply any user edits precisely.`,
-    metadata: { analysisProvider: "fallback", fallbackReason: reason || "KIE analysis unavailable" },
+    metadata: { analysisProvider: "fallback", fallbackReason: reason || "KIE analysis unavailable", transcriptionProvider: audioContext?.audio.transcriptionProvider, transcriptionModel: audioContext?.audio.transcriptionModel, transcriptionTaskId: audioContext?.audio.transcriptionTaskId },
   };
 }
 
@@ -177,9 +180,9 @@ function normalizeBlueprint(raw: Record<string, unknown>, fallback: SceneBluepri
   return {
     story: { ...fallback.story, ...safeObject(raw.story) },
     visual: { ...fallback.visual, ...safeObject(raw.visual) },
-    dialogue: safeArray(raw.dialogue),
-    narration: safeArray(raw.narration),
-    subtitle: safeArray(raw.subtitle),
+    dialogue: safeArray(raw.dialogue).length ? safeArray(raw.dialogue) : fallback.dialogue,
+    narration: safeArray(raw.narration).length ? safeArray(raw.narration) : fallback.narration,
+    subtitle: safeArray(raw.subtitle).length ? safeArray(raw.subtitle) : fallback.subtitle,
     audio: { ...fallback.audio, ...safeObject(raw.audio) },
     transition: { ...fallback.transition, ...safeObject(raw.transition) },
     generationPrompt: text(raw.generationPrompt, fallback.generationPrompt),
@@ -192,7 +195,7 @@ export async function analyzeSceneBlueprint(params: {
   scene: FfmpegSceneAsset;
   context: SceneContext;
 } & AiModelSelection) {
-  const fallback = buildFallbackSceneBlueprint(params.scene);
+  const fallback = buildFallbackSceneBlueprint(params.scene, undefined, params.context.audio);
   try {
     const raw = await callKieChatJson({
       userId: params.userId,
@@ -212,17 +215,18 @@ export async function analyzeSceneBlueprint(params: {
             `Transition in/out: ${params.scene.transitionIn || "unknown"} / ${params.scene.transitionOut || "unknown"}`,
             `Previous summary: ${params.context.previousSummary || "none"}`,
             `Next summary: ${params.context.nextSummary || "none"}`,
-            "Return concise but production-useful fields for story, visual, audio, and generationPrompt.",
+            `Transcript/dialogue context from KIE speech-to-text: ${compactJson(params.context.audio || {})}`,
+            "Analyze story, visual, characters, action, dialogue, narration, subtitle, ambience, SFX, music, rhythm, transition, and generationPrompt. Preserve transcript timing when present.",
           ].join("\n"),
         },
         ...params.scene.keyframeUrls.slice(0, 3).map((url) => ({ type: "image_url", image_url: { url } })),
       ],
     });
-    if (!raw) return buildFallbackSceneBlueprint(params.scene, "KIE API key not configured");
+    if (!raw) return buildFallbackSceneBlueprint(params.scene, "KIE API key not configured", params.context.audio);
     const blueprint = normalizeBlueprint(raw.json, fallback, "kie");
     return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority } };
   } catch (error) {
-    return buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "KIE scene analysis failed");
+    return buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "KIE scene analysis failed", params.context.audio);
   }
 }
 

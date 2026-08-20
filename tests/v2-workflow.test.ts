@@ -5,6 +5,7 @@ import { buildAudioProductionPlan } from "@/lib/workflow/audio-production";
 import { buildEditPlan } from "@/lib/workflow/video-editing";
 import { createKieDialogueTask } from "@/lib/workflow/kie-audio";
 import { buildLocalEditInstruction } from "@/lib/workflow/local-standard-edit";
+import { buildSceneAudioContexts } from "@/lib/workflow/transcription";
 
 const scene = {
   sceneIndex: 2,
@@ -28,6 +29,32 @@ describe("V2 scene analysis", () => {
     expect(blueprint.transition.in).toBe("hard_cut");
     expect(blueprint.metadata?.analysisProvider).toBe("fallback");
     expect(blueprint.metadata?.fallbackReason).toBe("no provider configured");
+  });
+
+
+  it("aligns KIE speech-to-text transcript segments to detected scene timestamps", () => {
+    const scenes = [
+      { ...scene, sceneIndex: 1, startTime: 0, endTime: 3.5, duration: 3.5, shotGroupId: "shot-001" },
+      { ...scene, sceneIndex: 2, startTime: 3.5, endTime: 8, duration: 4.5, shotGroupId: "shot-002" },
+    ];
+
+    const contexts = buildSceneAudioContexts({
+      scenes,
+      transcription: {
+        provider: "kie",
+        modelId: "elevenlabs/speech-to-text",
+        taskId: "task-stt",
+        status: "completed",
+        segments: [
+          { start: 0.4, end: 1.2, text: "Wake up!", speaker: "A" },
+          { start: 4.1, end: 5.3, text: "We are late.", speaker: "B" },
+        ],
+      },
+    });
+
+    expect(contexts.get(1)?.dialogue).toEqual([{ start: 0.4, end: 1.2, text: "Wake up!", speaker: "A" }]);
+    expect(contexts.get(2)?.dialogue[0]).toMatchObject({ start: 0.6, end: 1.8, text: "We are late.", speaker: "B" });
+    expect(contexts.get(2)?.audio.transcriptionProvider).toBe("kie");
   });
 
   it("creates a deterministic remix fallback when no KIE key exists", async () => {

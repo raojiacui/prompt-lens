@@ -66,14 +66,12 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
   const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
   const [clipLoading, setClipLoading] = useState(false);
   const [clipUrl, setClipUrl] = useState<string | null>(null);
-  const [whisperModel, setWhisperModel] = useState("assemblyai");
+  const [whisperModel] = useState("kie");
   const [targetLanguage, setTargetLanguage] = useState<"auto" | "ko">("auto");
-  const llmProvider = "deepseek";
   const [customPrompt, setCustomPrompt] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [inputMode, setInputMode] = useState<"file" | "url">("file");
   const [videoUrlInput, setVideoUrlInput] = useState("");
-  const [funasrUrl, setFunasrUrl] = useState("");
   const [audioModels, setAudioModels] = useState<AudioModelOption[]>([]);
   const [workflowModel, setWorkflowModel] = useState("__auto__");
   const [workflowLoading, setWorkflowLoading] = useState(false);
@@ -193,10 +191,8 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
           body: JSON.stringify({
             mediaUrl: url,
             whisperModelSize: whisperModel,
-            llmProvider,
             prompt: customPrompt || undefined,
             targetLanguage,
-            funasrUrl: whisperModel === "funasr" ? funasrUrl : undefined,
           }),
         });
       } catch (fetchError: any) {
@@ -290,7 +286,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
   const canAnalyze =
     !isLoading &&
     (inputMode === "file" ? Boolean(selectedFile) : Boolean(videoUrlInput.trim())) &&
-    (whisperModel !== "funasr" || Boolean(funasrUrl.trim()));
+    true;
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
@@ -447,17 +443,12 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <label className="grid gap-2 text-sm font-medium">
+                <div className="grid gap-2 text-sm font-medium">
                   {t("engine") || "Engine"}
-                  <select
-                    value={whisperModel}
-                    onChange={(e) => setWhisperModel(e.target.value)}
-                    className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
-                  >
-                    <option value="assemblyai">{t("engineAssemblyai")}</option>
-                    <option value="funasr">{t("engineFunasr")}</option>
-                  </select>
-                </label>
+                  <div className="flex h-10 items-center rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground">
+                    KIE Speech-to-Text
+                  </div>
+                </div>
 
                 <label className="grid gap-2 text-sm font-medium">
                   {t("targetLanguage") || "Target language"}
@@ -471,20 +462,6 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                   </select>
                 </label>
               </div>
-
-              {whisperModel === "funasr" && (
-                <label className="grid gap-2 text-sm font-medium">
-                  {t("funasrUrl")}
-                  <Input
-                    type="url"
-                    value={funasrUrl}
-                    onChange={(e) => setFunasrUrl(e.target.value)}
-                    placeholder={t("funasrUrlPlaceholder")}
-                    className="h-10 rounded-xl border-border bg-background focus:border-ring"
-                  />
-                  <span className="text-xs text-muted-foreground">{t("funasrUrlHint")}</span>
-                </label>
-              )}
 
               <div className="flex flex-wrap items-center gap-3">
                 <div className="inline-flex h-10 overflow-hidden rounded-full border border-border bg-muted p-1">

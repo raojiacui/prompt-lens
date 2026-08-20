@@ -2,6 +2,8 @@ import { db, projectVersions, projects, referenceVideos, sceneVersions, videoSce
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import { breakdownVideoWithWorker } from "@/lib/ffmpeg-worker/client";
 import { routeModel } from "@/lib/ai/model-registry";
+import { getUserKieApiKey } from "@/lib/byok/kie";
+import { buildSceneAudioContexts, transcribeMediaWithKie } from "@/lib/workflow/transcription";
 import {
   analyzeSceneBlueprint,
   buildFallbackSceneBlueprint,
@@ -64,7 +66,7 @@ export function buildVideoOverview(sceneCount: number) {
     narrative: `The uploaded reference has ${sceneCount} detected scene${sceneCount === 1 ? "" : "s"} prepared as editable blueprint units.`,
     hook: "Use the first scene as the hook unless edited by the user.",
     editingRhythm: "Follow detected scene boundaries and preserve timing during remix.",
-    audioStyle: "Dialogue, ambience, SFX, and music are reserved for the audio analysis pass.",
+    audioStyle: "Dialogue and subtitles are extracted through KIE speech-to-text, then aligned to each detected scene for remix, audio, and edit steps.",
     whyThisWorks: "Scene-level structure lets users remix and generate without copy/paste between tools.",
   };
 }
@@ -145,6 +147,22 @@ export async function runVideoBreakdown(params: {
     const breakdown = await breakdownVideoWithWorker(params.mediaUrl);
     if (!breakdown.scenes.length) throw new Error("No scenes detected in the uploaded video");
 
+    let transcriptionReason: string | undefined;
+    let transcription = null;
+    try {
+      const kieApiKey = await getUserKieApiKey(params.userId) || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
+      transcription = await transcribeMediaWithKie({
+        userId: params.userId,
+        apiKey: kieApiKey,
+        mediaUrl: params.mediaUrl,
+        modelPriority: params.modelPriority || "balanced",
+      });
+      if (!transcription) transcriptionReason = "KIE API key is not configured";
+    } catch (error) {
+      transcriptionReason = error instanceof Error ? error.message : "KIE transcription failed";
+    }
+    const sceneAudioContexts = buildSceneAudioContexts({ scenes: breakdown.scenes, transcription, unavailableReason: transcriptionReason });
+
     const [reference] = await db
       .insert(referenceVideos)
       .values({
@@ -153,7 +171,7 @@ export async function runVideoBreakdown(params: {
         storageKey: params.storageKey,
         fileName: params.mediaName,
         duration: breakdown.metadata.duration,
-        metadata: breakdown.metadata,
+        metadata: { ...breakdown.metadata, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } },
       })
       .returning();
 
@@ -208,6 +226,7 @@ export async function runVideoBreakdown(params: {
           projectTitle: project.title,
           previousSummary: insertedBlueprints.length ? textValue(insertedBlueprints[insertedBlueprints.length - 1].story) : undefined,
           nextSummary: breakdown.scenes[scene.sceneIndex]?.shotGroupId,
+          audio: sceneAudioContexts.get(scene.sceneIndex),
         };
         const blueprint = await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority });
         insertedBlueprints.push(blueprint);
@@ -239,7 +258,7 @@ export async function runVideoBreakdown(params: {
         if (usedFallback) failedScenes.push({ sceneIndex: scene.sceneIndex, error: String(blueprint.metadata?.fallbackReason || "AI analysis fallback used") });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Scene analysis failed";
-        const fallback = buildFallbackSceneBlueprint(scene, message);
+        const fallback = buildFallbackSceneBlueprint(scene, message, sceneAudioContexts.get(scene.sceneIndex));
         insertedBlueprints.push(fallback);
         failedScenes.push({ sceneIndex: scene.sceneIndex, error: message });
         await db.insert(sceneVersions).values({
@@ -267,11 +286,11 @@ export async function runVideoBreakdown(params: {
     await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
     await db
       .update(projects)
-      .set({ status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { failedSceneCount: failedScenes.length, failedScenes } })
+      .set({ status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { failedSceneCount: failedScenes.length, failedScenes, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } } })
       .where(eq(projects.id, params.projectId));
     await db
       .update(workflowJobs)
-      .set({ status: "completed", output: { sceneCount: insertedBlueprints.length, failedSceneCount: failedScenes.length }, completedAt: new Date(), updatedAt: new Date() })
+      .set({ status: "completed", output: { sceneCount: insertedBlueprints.length, failedSceneCount: failedScenes.length, transcriptionSegmentCount: transcription?.segments.length || 0, transcriptionReason }, completedAt: new Date(), updatedAt: new Date() })
       .where(eq(workflowJobs.id, job.id));
 
     return getProjectBundle(params.projectId, params.userId);
