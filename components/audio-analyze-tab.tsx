@@ -323,7 +323,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                     ))}
                   </select>
                 </label>
-                <Button onClick={() => void handleWorkflowAudio()} disabled={workflowLoading} className="h-10 rounded-xl bg-[#D97757] text-white hover:bg-[#C96848]">
+                <Button onClick={() => void handleWorkflowAudio()} disabled={workflowLoading} className="h-10 rounded-xl bg-[#D97757] text-white hover:bg-[#C96848] disabled:!opacity-100 disabled:bg-[#DCA28E] disabled:text-white">
                   {workflowLoading ? <Spinner size="sm" className="mr-2" /> : <Mic2 className="mr-2 h-4 w-4" />}
                   Build Audio
                 </Button>
@@ -522,7 +522,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                 type="button"
                 onClick={() => void handleAnalyze()}
                 disabled={!canAnalyze}
-                className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:!opacity-100 disabled:bg-[#DCA28E]"
               >
                 {isLoading ? <Spinner size="sm" /> : <Send className="h-5 w-5 -rotate-45" />}
                 {isLoading ? t("processing") : t("start")}

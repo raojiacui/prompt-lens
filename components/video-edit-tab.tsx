@@ -503,7 +503,7 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
               <span>{clips.length} clip{clips.length === 1 ? "" : "s"}</span>
             </div>
 
-            <Button onClick={handleEdit} disabled={!canEdit} className="mt-auto h-11 w-full rounded-xl bg-[#D97757] text-white hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-60" aria-label={t("start")}>
+            <Button onClick={handleEdit} disabled={!canEdit} className="mt-auto h-11 w-full rounded-xl bg-[#D97757] text-white hover:bg-[#C96848] disabled:!opacity-100 disabled:bg-[#DCA28E] disabled:text-white disabled:cursor-not-allowed" aria-label={t("start")}>
               {isLoading ? <Spinner size="sm" className="mr-2" /> : <Send className="mr-2 h-5 w-5 -rotate-45" />}
               {isLoading ? t("processing") : t("start")}
             </Button>

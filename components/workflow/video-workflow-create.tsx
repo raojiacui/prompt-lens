@@ -329,7 +329,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
               Create New Script
             </Button>
           ) : null}
-          <Button onClick={() => void startBreakdown()} disabled={!file || loading} className="mt-4 w-full rounded-xl bg-[#D97757] text-white hover:bg-[#C96848]">
+          <Button onClick={() => void startBreakdown()} disabled={!file || loading} className="mt-4 w-full rounded-xl bg-[#D97757] text-white hover:bg-[#C96848] disabled:!opacity-100 disabled:bg-[#DCA28E] disabled:text-white">
             {loading ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}
             Analyze Video
           </Button>
