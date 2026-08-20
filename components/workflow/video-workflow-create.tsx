@@ -313,6 +313,22 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
             />
           </div>
 
+
+          <label className="mt-4 grid gap-2 text-sm font-medium">
+            Rewrite instruction
+            <Textarea
+              value={remixPrompt}
+              onChange={(event) => setRemixPrompt(event.target.value)}
+              placeholder="把橘猫换成狸花猫，保留原来的镜头结构、节奏和笑点，重新创造一版完整脚本"
+              className="min-h-28 rounded-xl"
+            />
+          </label>
+          {bundle?.activeVersion ? (
+            <Button onClick={() => void createRemix()} disabled={!remixPrompt.trim() || loading} variant="outline" className="mt-3 w-full rounded-xl">
+              {loading ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}
+              Create New Script
+            </Button>
+          ) : null}
           <Button onClick={() => void startBreakdown()} disabled={!file || loading} className="mt-4 w-full rounded-xl">
             {loading ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}
             Analyze Video
@@ -376,17 +392,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                     <p key={key}><span className="font-medium text-foreground">{key}: </span>{textValue(value)}</p>
                   ))}
                 </div>
-              </div>
-
-              <div className="rounded-xl border border-border bg-background p-4">
-                <h3 className="font-semibold">AI rewrite the full script</h3>
-                <Textarea value={remixPrompt} onChange={(event) => setRemixPrompt(event.target.value)} placeholder="把橘猫换成狸花猫，保留原来的镜头结构、节奏和笑点，重新创造一版完整脚本" className="mt-3 min-h-24 rounded-xl" />
-                <Button onClick={() => void createRemix()} disabled={!remixPrompt.trim() || loading || !bundle.activeVersion} className="mt-3 rounded-xl">
-                  <WandSparkles className="mr-2 h-4 w-4" />Create New Script
-                </Button>
-              </div>
-
-              {compareOpen && latestRemix ? (
+              </div>\n{compareOpen && latestRemix ? (
                 <div className="rounded-xl border border-border bg-background p-4">
                   <h3 className="font-semibold">Original vs {latestRemix.label}</h3>
                   <div className="mt-3 grid gap-3 md:grid-cols-2">
