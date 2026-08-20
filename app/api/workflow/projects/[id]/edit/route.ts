@@ -7,6 +7,7 @@ import { getUserKieApiKey } from "@/lib/byok/kie";
 import { createKieVeoGeneration } from "@/lib/reference-video/kie-veo";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 import { buildEditPlan, type EditMode } from "@/lib/workflow/video-editing";
+import { runLocalStandardEdit, type SceneTiming } from "@/lib/workflow/local-standard-edit";
 import { getProjectBundle } from "@/lib/workflow/service";
 
 function recordFromBody(body: unknown) {
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!bundle?.activeVersion) return NextResponse.json({ error: "Project not found or has no active version" }, { status: 404 });
 
   const sceneIdsByIndex = Object.fromEntries(bundle.sceneVersions.map((scene) => [scene.sceneIndex, scene.originalSceneId]));
+  const sceneTimings: SceneTiming[] = bundle.scenes.map((scene) => ({ id: scene.id, sceneIndex: scene.sceneIndex, startTime: scene.startTime, endTime: scene.endTime }));
   const sourceVideoUrl = bodyString(body, "sourceVideoUrl") || bundle.sceneVersions.find((scene) => scene.generatedVideoUrl)?.generatedVideoUrl || bundle.referenceVideos[0]?.sourceUrl || "";
   if (!sourceVideoUrl) return NextResponse.json({ error: "No source video is available for editing" }, { status: 400 });
 
@@ -80,37 +82,37 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const ffmpegServiceUrl = (process.env.FFMPEG_WORKER_URL || "").trim();
   const ffmpegWorkerSecret = process.env.FFMPEG_WORKER_SECRET || "";
-  if (!ffmpegServiceUrl || !ffmpegWorkerSecret) {
-    const [job] = await db.insert(workflowJobs).values({
-      projectId: id,
-      type: "RENDER_VIDEO",
-      status: "failed",
-      provider: "ffmpeg",
-      error: "FFmpeg worker is not configured on the server",
-      input: { sourceVideoUrl, plan },
-    }).returning();
-    return NextResponse.json({ error: "FFmpeg worker is not configured on the server", plan, job }, { status: 500 });
-  }
-
   const accessibleVideoUrl = await ensureAccessibleUrl(sourceVideoUrl);
-  const ffmpegResponse = await axios.post(
-    `${ffmpegServiceUrl.replace(/\/$/, "")}/edit`,
-    { videoUrl: accessibleVideoUrl, instruction: plan },
-    { timeout: 300000, headers: { Authorization: `Bearer ${ffmpegWorkerSecret}` } },
-  );
-  const outputUrl = typeof ffmpegResponse.data?.url === "string" ? ffmpegResponse.data.url : ffmpegResponse.data?.outputUrl;
-  if (!outputUrl) throw new Error("FFmpeg worker did not return an output URL");
+  let outputUrl = "";
+  let provider = "local-ffmpeg";
+  let workerPayload: unknown;
+
+  if (ffmpegServiceUrl && ffmpegWorkerSecret) {
+    const ffmpegResponse = await axios.post(
+      `${ffmpegServiceUrl.replace(/\/$/, "")}/edit`,
+      { videoUrl: accessibleVideoUrl, instruction: plan },
+      { timeout: 300000, headers: { Authorization: `Bearer ${ffmpegWorkerSecret}` } },
+    );
+    outputUrl = typeof ffmpegResponse.data?.url === "string" ? ffmpegResponse.data.url : ffmpegResponse.data?.outputUrl;
+    workerPayload = ffmpegResponse.data;
+    provider = "ffmpeg";
+    if (!outputUrl) throw new Error("FFmpeg worker did not return an output URL");
+  } else {
+    const localResult = await runLocalStandardEdit({ sourceVideoUrl, accessibleVideoUrl, plan, userId: session.user.id, scenes: sceneTimings });
+    outputUrl = localResult.outputUrl;
+    workerPayload = { instruction: localResult.instruction, fallback: "local-ffmpeg" };
+  }
 
   const [job] = await db.insert(workflowJobs).values({
     projectId: id,
     type: "RENDER_VIDEO",
     status: "completed",
-    provider: "ffmpeg",
+    provider,
     resultUrl: outputUrl,
     input: { sourceVideoUrl, plan },
-    output: { outputUrl },
+    output: { outputUrl, workerPayload },
     completedAt: new Date(),
   }).returning();
 
-  return NextResponse.json({ success: true, plan, outputUrl, job });
+  return NextResponse.json({ success: true, plan, outputUrl, job, provider });
 }

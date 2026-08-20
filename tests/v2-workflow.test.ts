@@ -4,6 +4,7 @@ import { routeModel } from "@/lib/ai/model-registry";
 import { buildAudioProductionPlan } from "@/lib/workflow/audio-production";
 import { buildEditPlan } from "@/lib/workflow/video-editing";
 import { createKieDialogueTask } from "@/lib/workflow/kie-audio";
+import { buildLocalEditInstruction } from "@/lib/workflow/local-standard-edit";
 
 const scene = {
   sceneIndex: 2,
@@ -105,6 +106,22 @@ describe("V2 AI video editor", () => {
     expect(plan.operations).toContainEqual({ type: "delete", sceneIndex: 4, sceneId: "scene-04" });
     expect(plan.operations).toContainEqual({ type: "volume", track: "bgm", value: 0.45 });
     expect(plan.operations).toContainEqual({ type: "subtitle_style", size: "large", position: "bottom" });
+  });
+
+  it("converts a scene delete plan to local FFmpeg keep segments", () => {
+    const plan = buildEditPlan({
+      prompt: "删除 Scene 02",
+      mode: "standard",
+      sceneIdsByIndex: { 2: "scene-original-02" },
+    });
+
+    const instruction = buildLocalEditInstruction(plan, [
+      { id: "scene-original-01", sceneIndex: 1, startTime: 0, endTime: 4 },
+      { id: "scene-original-02", sceneIndex: 2, startTime: 4, endTime: 7 },
+      { id: "scene-original-03", sceneIndex: 3, startTime: 7, endTime: 10 },
+    ], 10);
+
+    expect(instruction.segments).toEqual([{ startTime: 0, endTime: 4 }, { startTime: 7, endTime: 10 }]);
   });
 
   it("routes generative video edits through the video edit registry", () => {
