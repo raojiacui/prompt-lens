@@ -27,6 +27,10 @@ describe("V2 scene analysis", () => {
     expect(blueprint.story.summary).toContain("Scene 02");
     expect(blueprint.generationPrompt).toContain("4.0s-9.5s");
     expect(blueprint.transition.in).toBe("hard_cut");
+    expect(blueprint.visual.sceneDescription).toContain("text-to-video recreation");
+    expect(blueprint.visual.composition).toContain("foreground");
+    expect((blueprint.transition.editing as Record<string, unknown>).techniques).toContain("hard_cut");
+    expect(blueprint.generationPrompt).toContain("text-to-video prompt");
     expect(blueprint.metadata?.analysisProvider).toBe("fallback");
     expect(blueprint.metadata?.fallbackReason).toBe("no provider configured");
   });

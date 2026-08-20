@@ -149,13 +149,17 @@ export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: st
       beat: "Preserve the original timing and scene intent.",
     },
     visual: {
+      sceneDescription: "Describe every visible element in the frame precisely enough for text-to-video recreation.",
       subject: "Primary visible subject from the reference scene",
-      environment: "Environment inferred from the extracted keyframe",
-      action: "Main motion or action visible in this segment",
-      camera: "Match framing, lens feel, movement, and composition from the reference clip",
-      lighting: "Match the reference lighting direction, contrast, and exposure",
-      color: "Match the dominant reference palette",
-      style: "Reference-video style, realistic motion, coherent continuity",
+      characters: "Characters, appearance, wardrobe, expression, pose, and relationship to each other",
+      environment: "Location, background layers, props, time of day, weather, and set details inferred from the keyframe",
+      action: "Main action, gesture sequence, object interaction, and motion direction visible in this segment",
+      camera: "Shot size, lens feel, angle, height, movement path, motion speed, focus behavior, and framing",
+      composition: "Subject placement, foreground/midground/background, negative space, symmetry, depth, and occlusion",
+      lighting: "Light source, direction, softness, contrast, exposure, shadow shape, highlights, and time feeling",
+      color: "Dominant palette, saturation, contrast, color temperature, skin/object tones, and grading style",
+      style: "Reference-video style, realism level, texture, format, platform aesthetic, and production quality",
+      motion: "Subject motion, camera motion, background motion, speed changes, and continuity constraints",
     },
     dialogue: audioContext?.dialogue || [],
     narration: [],
@@ -170,8 +174,16 @@ export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: st
       in: scene.transitionIn || (scene.sceneIndex === 1 ? "start" : "hard_cut"),
       out: scene.transitionOut || "hard_cut",
       rhythm: "Preserve original edit timing and scene duration.",
+      editing: {
+        pacing: "Describe cut speed, beat placement, and whether this is a fast cut, normal cut, or held shot.",
+        techniques: ["hard_cut"],
+        speedRamp: "unknown",
+        splitScreen: "none",
+        maskOrOverlay: "none",
+        keyframes: "Describe visible zoom, pan, scale, opacity, or position keyframes if present.",
+      },
     },
-    generationPrompt: `${label}: recreate the shot from ${timeRange}. Preserve scene duration (${scene.duration.toFixed(1)}s), subject motion, camera framing, lighting, color, pacing, and transition rhythm. Use the extracted keyframe and clip as references, then apply any user edits precisely.`,
+    generationPrompt: `${label}: recreate the shot from ${timeRange} as a text-to-video prompt. Preserve duration (${scene.duration.toFixed(1)}s), exact subject identity, environment, action sequence, shot size, camera angle, camera movement, composition, lighting direction, color palette, style, pacing, and transition rhythm. Describe the visible frame in concrete nouns and motion verbs so another AI video model can reproduce the reference shot without seeing the source video.`,
     metadata: { analysisProvider: "fallback", fallbackReason: reason || "KIE analysis unavailable", transcriptionProvider: audioContext?.audio.transcriptionProvider, transcriptionModel: audioContext?.audio.transcriptionModel, transcriptionTaskId: audioContext?.audio.transcriptionTaskId },
   };
 }
@@ -201,10 +213,12 @@ export async function analyzeSceneBlueprint(params: {
       userId: params.userId,
       selection: params,
       system: [
-        "You are a senior AI video director. Return strict JSON only.",
-        "Analyze one extracted reference-video scene and create a reusable Video Blueprint.",
-        "Do not invent brand names or dialogue unless visible/audible evidence supports it.",
-        "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata.",
+        "You are a senior AI video director and script breakdown specialist. Return strict JSON only.",
+        "Analyze one extracted reference-video scene as a babysitter-level video script breakdown for near 1:1 text-to-video recreation.",
+        "Be concrete and exhaustive: describe visible objects, characters, wardrobe, expressions, props, background layers, action order, camera language, lighting, composition, audio cues, and editing techniques.",
+        "Do not invent brand names or dialogue unless visible/audible evidence supports it. If something is uncertain, say unknown rather than hallucinating.",
+        "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. transition must include editing.pacing and editing.techniques.",
+        "generationPrompt must be a long, directly usable text-to-video prompt that can recreate the original shot from text alone with high fidelity.",
       ].join(" "),
       content: [
         {
@@ -216,7 +230,7 @@ export async function analyzeSceneBlueprint(params: {
             `Previous summary: ${params.context.previousSummary || "none"}`,
             `Next summary: ${params.context.nextSummary || "none"}`,
             `Transcript/dialogue context from KIE speech-to-text: ${compactJson(params.context.audio || {})}`,
-            "Analyze story, visual, characters, action, dialogue, narration, subtitle, ambience, SFX, music, rhythm, transition, and generationPrompt. Preserve transcript timing when present.",
+            "Output a detailed shot script. Include: 1) sceneDescription: exhaustive visual reconstruction; 2) subject and characters: appearance, wardrobe, expressions, pose; 3) environment and props; 4) action sequence with temporal order; 5) camera: shot size, angle, lens feel, camera movement, focus, speed; 6) composition: foreground/midground/background, subject placement, depth; 7) lighting and color grading; 8) audio: dialogue, SFX, ambience, music/BPM if inferable; 9) editing: transition, fast cuts, split screen, speed ramp, mask/overlay, keyframe zoom/pan/scale/opacity if present; 10) generationPrompt: one self-contained text-to-video prompt detailed enough to recreate roughly 90% of the scene without source media. Preserve transcript timing when present.",
           ].join("\n"),
         },
         ...params.scene.keyframeUrls.slice(0, 3).map((url) => ({ type: "image_url", image_url: { url } })),
@@ -254,7 +268,7 @@ export async function buildStructuredVideoOverview(params: {
       content: [
         {
           type: "text",
-          text: compactJson({ title: params.title, remixPrompt: params.remixPrompt, scenes: params.sceneBlueprints.map((scene) => ({ story: scene.story, visual: scene.visual, prompt: scene.generationPrompt })) }),
+          text: compactJson({ title: params.title, remixPrompt: params.remixPrompt, scenes: params.sceneBlueprints.map((scene) => ({ story: scene.story, visual: scene.visual, audio: scene.audio, transition: scene.transition, dialogue: scene.dialogue, subtitle: scene.subtitle, prompt: scene.generationPrompt })) }),
         },
       ],
     });

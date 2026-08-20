@@ -75,6 +75,16 @@ function textValue(value: unknown) {
   return String(value);
 }
 
+function pickField(value: unknown, keys: string[]) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
+  const record = value as Record<string, unknown>;
+  for (const key of keys) {
+    const next = textValue(record[key]);
+    if (next) return next;
+  }
+  return "";
+}
+
 function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
   const provider = sceneVersion?.metadata?.analysisProvider;
   if (scene?.status === "failed") return provider === "fallback" ? "Needs review" : "Failed";
@@ -451,24 +461,26 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                       {scene?.clipUrl ? <video src={scene.clipUrl} controls className="mt-3 max-h-64 w-full rounded-xl bg-black object-contain" /> : null}
 
                       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        <InfoPanel title="Story" value={sceneVersion.story} />
-                        <InfoPanel title="Visual" value={sceneVersion.visual} />
-                        <InfoPanel title="Dialogue" value={sceneVersion.dialogue} />
-                        <InfoPanel title="Subtitle" value={sceneVersion.subtitle} />
-                        <InfoPanel title="Audio" value={sceneVersion.audio} />
-                        <InfoPanel title="Transition" value={sceneVersion.transition} />
+                        <InfoPanel title="画面复刻" value={pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])} />
+                        <InfoPanel title="角色/动作" value={`${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()} />
+                        <InfoPanel title="镜头语言" value={`${pickField(sceneVersion.visual, ["camera"])}\n${pickField(sceneVersion.visual, ["composition"])}`.trim()} />
+                        <InfoPanel title="光线/色彩/风格" value={`${pickField(sceneVersion.visual, ["lighting"])}\n${pickField(sceneVersion.visual, ["color"])}\n${pickField(sceneVersion.visual, ["style"])}`.trim()} />
+                        <InfoPanel title="台词/字幕" value={sceneVersion.dialogue.length ? sceneVersion.dialogue : sceneVersion.subtitle} />
+                        <InfoPanel title="音频" value={sceneVersion.audio} />
+                        <InfoPanel title="剪辑手法" value={sceneVersion.transition} />
+                        <InfoPanel title="剧情作用" value={sceneVersion.story} />
                       </div>
 
                       <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
                         <div>
-                          <label className="text-sm font-semibold">Generation Prompt</label>
+                          <label className="text-sm font-semibold">复刻 Prompt</label>
                           <Textarea value={sceneDrafts[sceneVersion.id] ?? sceneVersion.generationPrompt} onChange={(event) => setSceneDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} className="mt-2 min-h-32 rounded-xl" />
                           <Button size="sm" onClick={() => void savePrompt(sceneVersion)} disabled={savingSceneId === sceneVersion.id} className="mt-3">
                             {savingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}Save
                           </Button>
                         </div>
                         <div>
-                          <label className="text-sm font-semibold">AI Rewrite</label>
+                          <label className="text-sm font-semibold">AI 修改脚本</label>
                           <Textarea value={rewriteDrafts[sceneVersion.id] || ""} onChange={(event) => setRewriteDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} placeholder="Make this scene warmer and more comedic, but keep the same timing and camera move." className="mt-2 min-h-32 rounded-xl" />
                           <Button size="sm" variant="outline" onClick={() => void rewriteScene(sceneVersion)} disabled={!rewriteDrafts[sceneVersion.id]?.trim() || rewritingSceneId === sceneVersion.id} className="mt-3">
                             {rewritingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}Rewrite Scene
