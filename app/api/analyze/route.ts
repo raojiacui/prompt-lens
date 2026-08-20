@@ -4,6 +4,7 @@ import { db, analysisHistory, operationLogs } from "@/lib/db";
 import { analyzeFrames, ApiProvider } from "@/lib/ai/analyzer";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { defaultLocale, isLocale } from "@/i18n/config";
+import { assertTrialQuota, trialQuotaResponse } from "@/lib/usage/trial-quota";
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,6 +62,14 @@ export async function POST(request: NextRequest) {
 
     if (frames.length === 0) {
       return NextResponse.json({ error: "No frames available" }, { status: 400 });
+    }
+
+    try {
+      await assertTrialQuota(session.user.id);
+    } catch (error) {
+      const quotaError = trialQuotaResponse(error);
+      if (quotaError) return NextResponse.json(quotaError, { status: 402 });
+      throw error;
     }
 
     // 记录分析开始
