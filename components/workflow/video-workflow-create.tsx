@@ -282,19 +282,19 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
 
   return (
     <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-4xl font-semibold tracking-tight">视频分析</h1>
+          <p className="mt-2 text-lg text-muted-foreground">拆解参考视频，生成场景脚本、提示词和后续工作流。</p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => void loadProjects()}>
+          <RefreshCw className="mr-2 h-4 w-4" />Refresh
+        </Button>
+      </div>
+
       <div className="grid gap-4 xl:grid-cols-[0.68fr_1.32fr]">
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Video Analysis</h1>
-              <p className="mt-1 text-sm text-muted-foreground">Break a reference video into scenes, prompts, and reusable workflow steps</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={() => void loadProjects()}>
-              <RefreshCw className="mr-2 h-4 w-4" />Refresh
-            </Button>
-          </div>
-
-          <div className="mt-5 rounded-2xl border border-dashed border-border bg-muted/30 p-3">
+          <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-3">
             <input ref={fileInputRef} type="file" accept="video/*" className="sr-only" onChange={(event) => event.target.files?.[0] && handleFile(event.target.files[0])} />
             {preview ? <video src={preview} muted playsInline controls className="mb-3 max-h-56 w-full rounded-xl bg-black object-contain" /> : null}
             <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl bg-background text-center hover:bg-accent">
