@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { GitCompare, Mic2, Play, RefreshCw, RotateCcw, Save, Scissors, Send, Upload, Video, WandSparkles } from "lucide-react";
+import { GitCompare, Mic2, Play, RefreshCw, RotateCcw, Save, Scissors, Upload, Video, WandSparkles } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -86,11 +86,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   const [rewriteDrafts, setRewriteDrafts] = useState<Record<string, string>>({});
   const [compareOpen, setCompareOpen] = useState(false);
   const [analysisModels, setAnalysisModels] = useState<ModelOption[]>([]);
-  const [generationModels, setGenerationModels] = useState<ModelOption[]>([]);
-  const [analysisModelMode, setAnalysisModelMode] = useState<ModelMode>("auto");
-  const [analysisModelId, setAnalysisModelId] = useState("");
-  const [generationModelMode, setGenerationModelMode] = useState<ModelMode>("auto");
-  const [generationModelId, setGenerationModelId] = useState("");
+  const [analysisModelValue, setAnalysisModelValue] = useState("auto");
   const modelPriority: ModelPriority = "balanced";
 
   useEffect(() => {
@@ -125,29 +121,19 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   }
 
   async function loadModels() {
-    const [analysisRes, generationRes] = await Promise.all([
-      fetch("/api/models?category=analysis"),
-      fetch("/api/models?category=video_generation"),
-    ]);
-    const [analysisData, generationData] = await Promise.all([analysisRes.json(), generationRes.json()]);
-    const nextAnalysisModels = Array.isArray(analysisData.models) ? analysisData.models.filter((model: ModelOption) => model.enabled) : [];
-    const nextGenerationModels = Array.isArray(generationData.models) ? generationData.models.filter((model: ModelOption) => model.enabled) : [];
+    const response = await fetch("/api/models?category=analysis");
+    const data = await response.json();
+    const nextAnalysisModels = Array.isArray(data.models) ? data.models.filter((model: ModelOption) => model.enabled) : [];
     setAnalysisModels(nextAnalysisModels);
-    setGenerationModels(nextGenerationModels);
-    setAnalysisModelId((current) => current || nextAnalysisModels[0]?.kieModelId || "");
-    setGenerationModelId((current) => current || nextGenerationModels[0]?.kieModelId || "");
   }
 
   function analysisSelectionPayload() {
+    const manualModelId = analysisModelValue === "auto" ? "" : analysisModelValue;
     return {
-      modelMode: analysisModelMode,
-      modelId: analysisModelMode === "manual" ? analysisModelId : undefined,
+      modelMode: manualModelId ? "manual" as ModelMode : "auto" as ModelMode,
+      modelId: manualModelId || undefined,
       modelPriority,
     };
-  }
-
-  function selectedGenerationModelId() {
-    return generationModelMode === "manual" ? generationModelId : undefined;
   }
 
   async function loadProject(projectId: string) {
@@ -168,7 +154,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     }
     setFile(nextFile);
     setPreview(URL.createObjectURL(nextFile));
-    setTitle(nextFile.name.replace(/\.[^.]+$/, "") || "Untitled video project");
+    setTitle(nextFile.name.replace(/\.[^.]+$/, "") || "Video analysis");
     setError("");
   }
 
@@ -318,27 +304,12 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
             </button>
           </div>
 
-          <label className="mt-4 grid gap-2 text-sm font-medium">
-            Project title
-            <input value={title} onChange={(event) => setTitle(event.target.value)} className="h-10 rounded-xl border border-border bg-background px-3 outline-none focus:border-ring" />
-          </label>
-
-          <div className="mt-4 grid gap-3">
+          <div className="mt-4">
             <ModelSelector
               label="Analysis model"
-              mode={analysisModelMode}
-              modelId={analysisModelId}
+              value={analysisModelValue}
               models={analysisModels}
-              onModeChange={setAnalysisModelMode}
-              onModelChange={setAnalysisModelId}
-            />
-            <ModelSelector
-              label="Scene generation model"
-              mode={generationModelMode}
-              modelId={generationModelId}
-              models={generationModels}
-              onModeChange={setGenerationModelMode}
-              onModelChange={setGenerationModelId}
+              onChange={setAnalysisModelValue}
             />
           </div>
 
@@ -390,10 +361,10 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                   </Button>
                   <Button onClick={() => {
                     const firstScene = bundle.sceneVersions[0];
-                    if (firstScene) onSendToGenerate({ prompt: sceneDrafts[firstScene.id] || firstScene.generationPrompt, projectId: bundle.project.id, sceneId: firstScene.originalSceneId, versionId: firstScene.projectVersionId, duration: firstScene.duration, modelId: selectedGenerationModelId() });
+                    if (firstScene) onSendToGenerate({ prompt: sceneDrafts[firstScene.id] || firstScene.generationPrompt, projectId: bundle.project.id, sceneId: firstScene.originalSceneId, versionId: firstScene.projectVersionId, duration: firstScene.duration, modelId: undefined });
                     else onNavigateTool?.("video-gen");
                   }}>
-                    <Video className="mr-2 h-4 w-4" />Generate
+                    <Video className="mr-2 h-4 w-4" />Open Generate
                   </Button>
                 </div>
               </div>
@@ -408,10 +379,10 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
               </div>
 
               <div className="rounded-xl border border-border bg-background p-4">
-                <h3 className="font-semibold">Create a new version</h3>
-                <Textarea value={remixPrompt} onChange={(event) => setRemixPrompt(event.target.value)} placeholder="Replace the hero with a tabby cat in university life, but preserve shot structure, pacing, and humor." className="mt-3 min-h-24 rounded-xl" />
+                <h3 className="font-semibold">AI rewrite the full script</h3>
+                <Textarea value={remixPrompt} onChange={(event) => setRemixPrompt(event.target.value)} placeholder="把橘猫换成狸花猫，保留原来的镜头结构、节奏和笑点，重新创造一版完整脚本" className="mt-3 min-h-24 rounded-xl" />
                 <Button onClick={() => void createRemix()} disabled={!remixPrompt.trim() || loading || !bundle.activeVersion} className="mt-3 rounded-xl">
-                  <WandSparkles className="mr-2 h-4 w-4" />Create Remix
+                  <WandSparkles className="mr-2 h-4 w-4" />Create New Script
                 </Button>
               </div>
 
@@ -450,8 +421,8 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                           <Button size="sm" variant="outline" onClick={() => void retryScene(sceneVersion)} disabled={retryingSceneId === sceneVersion.id}>
                             {retryingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}Retry
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: sceneVersion.duration, modelId: selectedGenerationModelId() })}>
-                            <Send className="mr-2 h-4 w-4" />Send to Generate
+                          <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: sceneVersion.duration, modelId: undefined })}>
+                            <Video className="mr-2 h-4 w-4" />Open in Generate
                           </Button>
                         </div>
                       </div>
@@ -513,48 +484,30 @@ function SceneMini({ scene }: { scene: SceneVersion }) {
 
 function ModelSelector({
   label,
-  mode,
-  modelId,
+  value,
   models,
-  onModeChange,
-  onModelChange,
+  onChange,
 }: {
   label: string;
-  mode: ModelMode;
-  modelId: string;
+  value: string;
   models: ModelOption[];
-  onModeChange: (mode: ModelMode) => void;
-  onModelChange: (modelId: string) => void;
+  onChange: (modelId: string) => void;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-background p-3">
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-sm font-semibold">{label}</span>
-        <span className="text-xs text-muted-foreground">Auto · Balanced</span>
-      </div>
-      <div className="mt-3 grid gap-2">
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input type="radio" checked={mode === "auto"} onChange={() => onModeChange("auto")} />
-          Auto · Balanced
-        </label>
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input type="radio" checked={mode === "manual"} onChange={() => onModeChange("manual")} />
-          Choose manually
-        </label>
-      </div>
-      {mode === "manual" ? (
-        <select
-          value={modelId}
-          onChange={(event) => onModelChange(event.target.value)}
-          className="mt-3 h-10 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
-        >
-          {models.map((model) => (
-            <option key={model.id} value={model.kieModelId}>
-              {model.displayName}{model.experimental ? " · Experimental" : ""}
-            </option>
-          ))}
-        </select>
-      ) : null}
-    </div>
+    <label className="grid gap-2 text-sm font-medium">
+      {label}
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
+      >
+        <option value="auto">Auto · Balanced</option>
+        {models.map((model) => (
+          <option key={model.id} value={model.kieModelId}>
+            {model.displayName}{model.experimental ? " · Experimental" : ""}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
