@@ -68,20 +68,12 @@ export interface AnalyzeResult {
 }
 
 /**
- * 获取 API Key - 优先使用环境变量，其次使用用户配置
+ * 获取 API Key - 优先使用用户配置，其次使用平台环境变量
  */
 async function getUserApiKey(
   userId: string,
   provider: ApiProvider
 ): Promise<string | null> {
-  // 1. 优先检查环境变量
-  const envKey = ENV_API_KEYS[provider];
-  if (envKey) {
-    console.log(`[Analyzer] Using env API key for ${provider}`);
-    return envKey;
-  }
-
-  // 2. 环境变量没有，则从数据库读取用户配置的 API Key
   const result = await db.query.userApiKeys.findFirst({
     where: and(
       eq(userApiKeys.userId, userId),
@@ -89,21 +81,26 @@ async function getUserApiKey(
     ),
   });
 
-  if (!result || !result.isActive) {
-    return null;
+  if (result?.isActive && result.apiKey) {
+    try {
+      if (isValidEncryptedKey(result.apiKey)) {
+        console.log(`[Analyzer] Using user API key for ${provider}`);
+        return decryptApiKey(result.apiKey);
+      }
+      console.log(`[Analyzer] Using legacy user API key for ${provider}`);
+      return result.apiKey;
+    } catch (error) {
+      console.error(`[Analyzer] Failed to decrypt API key for ${provider}:`, error);
+    }
   }
 
-  // 解密 API Key（支持加密和未加密的旧数据）
-  try {
-    if (isValidEncryptedKey(result.apiKey)) {
-      return decryptApiKey(result.apiKey);
-    }
-    // 兼容旧数据：未加密的明文
-    return result.apiKey;
-  } catch (error) {
-    console.error(`[Analyzer] Failed to decrypt API key for ${provider}:`, error);
-    return null;
+  const envKey = ENV_API_KEYS[provider];
+  if (envKey) {
+    console.log(`[Analyzer] Using env API key for ${provider}`);
+    return envKey;
   }
+
+  return null;
 }
 
 /**
