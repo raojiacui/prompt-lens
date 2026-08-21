@@ -11,6 +11,11 @@ import { db, videoGeneration } from "@/lib/db";
 import { and, desc, eq } from "drizzle-orm";
 
 const VIDEO_GENERATE_LIMIT = { limit: 3, windowMs: 60000 };
+function maskApiKeyForLog(apiKey: string) {
+  const trimmed = apiKey.trim();
+  if (trimmed.length <= 8) return `${trimmed.length}:****`;
+  return `${trimmed.length}:${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,10 +51,19 @@ export async function POST(request: NextRequest) {
 
     // 获取用户配置的 provider API Key
     const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
-    const effectiveApiKey = userApiKey || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
+    const envApiKey = process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
+    const effectiveApiKey = userApiKey || envApiKey;
+    const apiKeySource = userApiKey ? "user" : envApiKey ? "environment" : "missing";
     if (!effectiveApiKey) {
       return NextResponse.json({ error: "未配置 API Key，请先在设置中添加" }, { status: 400 });
     }
+
+    console.info("[video-generate] Using API key", {
+      userId: session.user.id,
+      provider,
+      source: apiKeySource,
+      key: maskApiKeyForLog(effectiveApiKey),
+    });
 
     const videoProvider = createVideoProvider(provider as any, effectiveApiKey);
     const result = await videoProvider.createTask({
