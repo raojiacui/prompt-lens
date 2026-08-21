@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
 
     const provider = record.provider || "kie";
     const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
-    const effectiveApiKey = userApiKey || process.env.KIE_API_KEY;
+    const effectiveApiKey = userApiKey || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
     if (!effectiveApiKey) {
       return NextResponse.json({ error: "未配置 API Key" }, { status: 400 });
     }
