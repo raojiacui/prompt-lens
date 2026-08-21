@@ -58,6 +58,63 @@ function textValue(value: unknown) {
   return String(value);
 }
 
+function parseJsonObject(value: unknown): Record<string, unknown> | null {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
+  if (typeof value !== "string") return null;
+  try {
+    const parsed = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
+
+function cleanProjectTitle(value: unknown) {
+  if (typeof value !== "string") return "";
+  const title = value
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/^['"“”‘’]+|['"“”‘’.,;:，。；：]+$/g, "")
+    .trim();
+
+  if (!title) return "";
+  if (/^(reference[- ]driven|video analysis|image analysis|untitled|uploaded reference)/i.test(title)) return "";
+  if (/^(single static image|the uploaded reference|use the first scene)/i.test(title)) return "";
+  return title.length > 64 ? `${title.slice(0, 61).trim()}...` : title;
+}
+
+function firstProjectTitleCandidate(...values: unknown[]) {
+  for (const value of values) {
+    const title = cleanProjectTitle(value);
+    if (title) return title;
+  }
+  return "";
+}
+
+function deriveProjectTitle(overview: Record<string, unknown>, sceneBlueprints: SceneBlueprintDraft[], fallbackTitle: string) {
+  const videoSummary = parseJsonObject(overview.video_summary || overview.videoSummary || overview.summary);
+  const firstScene = sceneBlueprints[0];
+  const firstVisual = firstScene?.visual || {};
+  const firstStory = firstScene?.story || {};
+
+  const directTitle = firstProjectTitleCandidate(
+    videoSummary?.title,
+    videoSummary?.concept,
+    overview.title,
+    overview.name,
+    firstStory.title,
+    firstStory.summary,
+    firstVisual.title,
+    firstVisual.sceneTitle,
+    firstVisual.subject,
+  );
+  if (directTitle) return directTitle;
+
+  const prompt = cleanProjectTitle(firstScene?.generationPrompt);
+  if (prompt) return prompt;
+
+  return cleanProjectTitle(fallbackTitle) || "Untitled video project";
+}
 export function buildSceneBlueprint(scene: FfmpegSceneAsset): SceneBlueprintDraft {
   return buildFallbackSceneBlueprint(scene);
 }
@@ -319,10 +376,11 @@ export async function runVideoBreakdown(params: {
     }
 
     const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority });
+    const derivedTitle = deriveProjectTitle(overview, insertedBlueprints, project.title);
     await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
     await db
       .update(projects)
-      .set({ status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { mediaType: params.mediaType || "video", failedSceneCount: failedScenes.length, failedScenes, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } } })
+      .set({ title: derivedTitle, status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { mediaType: params.mediaType || "video", autoTitle: derivedTitle, originalTitle: project.title, failedSceneCount: failedScenes.length, failedScenes, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } } })
       .where(eq(projects.id, params.projectId));
     await db
       .update(workflowJobs)
