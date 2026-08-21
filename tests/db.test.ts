@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { extractCorePrompt } from "@/lib/ai/prompts";
+import { formatDate, formatFileSize, truncate } from "@/lib/utils";
 
 describe("AI Analyzer", () => {
   it("should extract core prompt from result", () => {
@@ -32,21 +33,32 @@ describe("AI Analyzer", () => {
 
 describe("Utils", () => {
   it("should format date correctly", () => {
-    const { formatDate } = require("@/lib/utils");
     const date = new Date("2024-01-01T12:00:00Z");
     const formatted = formatDate(date);
     expect(formatted).toContain("2024");
   });
 
   it("should format file size correctly", () => {
-    const { formatFileSize } = require("@/lib/utils");
     expect(formatFileSize(1024)).toContain("KB");
     expect(formatFileSize(1024 * 1024)).toContain("MB");
   });
 
   it("should truncate string correctly", () => {
-    const { truncate } = require("@/lib/utils");
     expect(truncate("hello world", 5)).toBe("hello...");
     expect(truncate("hi", 10)).toBe("hi");
+  });
+});
+
+describe("Video BYOK helpers", () => {
+  it("uses plaintext legacy API keys when present", async () => {
+    const { decodeStoredApiKey } = await import("@/lib/ai/video-provider");
+
+    expect(decodeStoredApiKey("  kie-legacy-key  ")).toBe("kie-legacy-key");
+  });
+
+  it("skips undecryptable encrypted-looking API key records", async () => {
+    const { decodeStoredApiKey } = await import("@/lib/ai/video-provider");
+
+    expect(decodeStoredApiKey("00000000000000000000000000000000:00000000000000000000000000000000:deadbeef")).toBeUndefined();
   });
 });

@@ -78,16 +78,15 @@ export async function POST(request: NextRequest) {
     // 加密 API Key
     const encryptedApiKey = encryptApiKey(apiKey);
 
-    // 检查是否已存在该提供商的 API Key
-    const existing = await db.query.userApiKeys.findFirst({
+    const existing = await db.query.userApiKeys.findMany({
       where: and(
         eq(userApiKeys.userId, session.user.id),
         eq(userApiKeys.provider, provider as any)
       ),
     });
 
-    if (existing) {
-      // 更新现有（使用加密的 Key）
+    if (existing.length > 0) {
+      // 更新同一用户同一 provider 的所有旧记录，避免读取时命中陈旧 key。
       await db
         .update(userApiKeys)
         .set({
@@ -95,7 +94,10 @@ export async function POST(request: NextRequest) {
           isActive: true,
           updatedAt: new Date(),
         })
-        .where(eq(userApiKeys.id, existing.id));
+        .where(and(
+          eq(userApiKeys.userId, session.user.id),
+          eq(userApiKeys.provider, provider as any)
+        ));
     } else {
       // 创建新的（使用加密的 Key）
       await db.insert(userApiKeys).values({
