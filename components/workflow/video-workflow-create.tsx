@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, Copy, Mic2, Play, RefreshCw, RotateCcw, Save, Scissors, Upload, Video, WandSparkles } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Mic2, Play, RefreshCw, RotateCcw, Scissors, Upload, Video, WandSparkles } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -96,6 +96,7 @@ function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
 
 export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const promptSaveTimersRef = useRef<Record<string, number>>({});
   const [projects, setProjects] = useState<Project[]>([]);
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -106,7 +107,6 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDraggingUpload, setIsDraggingUpload] = useState(false);
-  const [savingSceneId, setSavingSceneId] = useState("");
   const [rewritingSceneId, setRewritingSceneId] = useState("");
   const [retryingSceneId, setRetryingSceneId] = useState("");
   const [sceneDrafts, setSceneDrafts] = useState<Record<string, string>>({});
@@ -120,6 +120,10 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   useEffect(() => {
     void loadProjects();
     void loadModels();
+
+    return () => {
+      Object.values(promptSaveTimersRef.current).forEach(window.clearTimeout);
+    };
   }, []);
 
   useEffect(() => {
@@ -220,23 +224,34 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     }
   }
 
-  async function savePrompt(scene: SceneVersion) {
+  function updateSceneDraft(scene: SceneVersion, prompt: string) {
+    setSceneDrafts((drafts) => ({ ...drafts, [scene.id]: prompt }));
+    schedulePromptAutosave(scene, prompt);
+  }
+
+  function schedulePromptAutosave(scene: SceneVersion, prompt: string) {
+    const existingTimer = promptSaveTimersRef.current[scene.id];
+    if (existingTimer) window.clearTimeout(existingTimer);
+
+    promptSaveTimersRef.current[scene.id] = window.setTimeout(() => {
+      delete promptSaveTimersRef.current[scene.id];
+      void savePrompt(scene, prompt);
+    }, 800);
+  }
+
+  async function savePrompt(scene: SceneVersion, prompt: string) {
     if (!bundle) return;
-    setSavingSceneId(scene.id);
     setError("");
     try {
       const response = await fetch(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ generationPrompt: sceneDrafts[scene.id] || scene.generationPrompt }),
+        body: JSON.stringify({ generationPrompt: prompt || scene.generationPrompt }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Save failed");
-      await loadProject(bundle.project.id);
+      if (!response.ok) throw new Error(data.error || "Auto save failed");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
-    } finally {
-      setSavingSceneId("");
+      setError(err instanceof Error ? err.message : "Auto save failed");
     }
   }
 
@@ -457,10 +472,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                       <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
                         <div>
                           <label className="text-sm font-semibold">复刻 Prompt</label>
-                          <Textarea value={sceneDrafts[sceneVersion.id] ?? sceneVersion.generationPrompt} onChange={(event) => setSceneDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} className="mt-2 min-h-40 rounded-xl" />
-                          <Button size="sm" onClick={() => void savePrompt(sceneVersion)} disabled={savingSceneId === sceneVersion.id} className="mt-3">
-                            {savingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}Save
-                          </Button>
+                          <Textarea
+                            value={sceneDrafts[sceneVersion.id] ?? sceneVersion.generationPrompt}
+                            onChange={(event) => updateSceneDraft(sceneVersion, event.target.value)}
+                            className="mt-2 min-h-40 rounded-xl"
+                          />
                         </div>
                         <div>
                           <label className="text-sm font-semibold">AI 修改脚本</label>
