@@ -48,7 +48,7 @@ export const callExistingVideoGenerateApiTool: ToolDefinition = {
       ]);
       const providerName = parsed.data.provider || providerMod.DEFAULT_VIDEO_PROVIDER;
       const userKey = await keyMod.getUserProviderApiKey(ctx.userId, providerName);
-      const effectiveKey = userKey || process.env.KIE_API_KEY;
+      const effectiveKey = userKey || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
 
       if (!effectiveKey) {
         const nextAction = {

@@ -6,6 +6,7 @@ import { buildEditPlan } from "@/lib/workflow/video-editing";
 import { createKieDialogueTask } from "@/lib/workflow/kie-audio";
 import { buildLocalEditInstruction } from "@/lib/workflow/local-standard-edit";
 import { buildSceneAudioContexts } from "@/lib/workflow/transcription";
+import { createKieVeoGeneration } from "@/lib/reference-video/kie-veo";
 
 const scene = {
   sceneIndex: 2,
@@ -121,6 +122,30 @@ describe("V2 audio production", () => {
       method: "POST",
       headers: expect.objectContaining({ Authorization: "Bearer test-key" }),
       body: expect.stringContaining("elevenlabs/text-to-dialogue-v3"),
+    }));
+    vi.unstubAllGlobals();
+  });
+});
+
+
+describe("KIE BYOK video generation", () => {
+  it("submits generation tasks with the caller supplied KIE API key", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ code: 200, data: { taskId: "task-video" } }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await createKieVeoGeneration({
+      prompt: "Create a short product video",
+      model: "wan/2-7-text-to-video",
+      duration: 5,
+    }, "user-kie-key");
+
+    expect(result.taskId).toBe("task-video");
+    expect(fetchMock).toHaveBeenCalledWith("https://api.kie.ai/api/v1/jobs/createTask", expect.objectContaining({
+      method: "POST",
+      headers: expect.objectContaining({ Authorization: "Bearer user-kie-key" }),
     }));
     vi.unstubAllGlobals();
   });
