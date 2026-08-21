@@ -5,7 +5,7 @@
 
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 import { db, userApiKeys } from "@/lib/db";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 // ============ 类型定义 ============
 
@@ -47,22 +47,36 @@ export type VideoProviderName = "kie" | "runway" | "pika" | "luma";
 
 // ============ 帮助函数 ============
 
+export function decodeStoredApiKey(storedApiKey: string): string | undefined {
+  const trimmed = storedApiKey.trim();
+  if (!trimmed) return undefined;
+  if (!isValidEncryptedKey(trimmed)) return trimmed;
+
+  try {
+    const decrypted = decryptApiKey(trimmed).trim();
+    return decrypted || undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getUserProviderApiKey(
   userId: string,
   provider: VideoProviderName
 ): Promise<string | undefined> {
   try {
-    const record = await db.query.userApiKeys.findFirst({
+    const records = await db.query.userApiKeys.findMany({
       where: and(
         eq(userApiKeys.userId, userId),
-        eq(userApiKeys.provider, provider as any)
+        eq(userApiKeys.provider, provider as any),
+        eq(userApiKeys.isActive, true)
       ),
+      orderBy: [desc(userApiKeys.updatedAt), desc(userApiKeys.createdAt)],
     });
-    if (record?.apiKey && record.isActive) {
-      if (isValidEncryptedKey(record.apiKey)) {
-        return decryptApiKey(record.apiKey).trim();
-      }
-      return record.apiKey.trim();
+
+    for (const record of records) {
+      const apiKey = decodeStoredApiKey(record.apiKey);
+      if (apiKey) return apiKey;
     }
   } catch (e) {
     console.error(`[video-provider] Failed to get ${provider} API key for user:`, e);
