@@ -403,14 +403,14 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                     if (firstScene) onSendToGenerate({ prompt: sceneDrafts[firstScene.id] || firstScene.generationPrompt, projectId: bundle.project.id, sceneId: firstScene.originalSceneId, versionId: firstScene.projectVersionId, duration: projectMediaType === "image" ? undefined : firstScene.duration, modelId: undefined });
                     else onNavigateTool?.("video-gen");
                   }}>
-                    <Video className="mr-2 h-4 w-4" />Open Generate
+                    <Video className="mr-2 h-4 w-4" />做同款
                   </Button>
                 </div>
               </div>
 
               <div className="rounded-xl border border-border bg-background p-4">
                 <h3 className="font-semibold">Whole Video Overview</h3>
-                <div className="mt-3 grid gap-2 text-sm text-muted-foreground md:grid-cols-2">
+                <div className="mt-3 grid max-h-64 gap-2 overflow-y-auto pr-2 text-sm text-muted-foreground md:grid-cols-2">
                   {Object.entries(bundle.activeVersion?.overview || {}).map(([key, value]) => (
                     <p key={key}><span className="font-medium text-foreground">{key}: </span>{textValue(value)}</p>
                   ))}
@@ -443,7 +443,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                             {retryingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}Retry
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: projectMediaType === "image" ? undefined : sceneVersion.duration, modelId: undefined })}>
-                            <Video className="mr-2 h-4 w-4" />Open in Generate
+                            <Video className="mr-2 h-4 w-4" />做同款
                           </Button>
                         </div>
                       </div>
