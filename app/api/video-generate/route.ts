@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     // 获取用户配置的 provider API Key
     const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
-    const effectiveApiKey = userApiKey || process.env.KIE_API_KEY;
+    const effectiveApiKey = userApiKey || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
     if (!effectiveApiKey) {
       return NextResponse.json({ error: "未配置 API Key，请先在设置中添加" }, { status: 400 });
     }

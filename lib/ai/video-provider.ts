@@ -3,7 +3,7 @@
  * 支持多 provider 扩展：Kie.ai, Runway, Pika, Luma 等
  */
 
-import { decryptApiKey } from "@/lib/utils/encryption";
+import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 import { db, userApiKeys } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
 
@@ -58,8 +58,11 @@ export async function getUserProviderApiKey(
         eq(userApiKeys.provider, provider as any)
       ),
     });
-    if (record?.apiKey) {
-      return decryptApiKey(record.apiKey);
+    if (record?.apiKey && record.isActive) {
+      if (isValidEncryptedKey(record.apiKey)) {
+        return decryptApiKey(record.apiKey).trim();
+      }
+      return record.apiKey.trim();
     }
   } catch (e) {
     console.error(`[video-provider] Failed to get ${provider} API key for user:`, e);
