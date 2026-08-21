@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { GitCompare, Mic2, Play, RefreshCw, RotateCcw, Save, Scissors, Upload, Video, WandSparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Mic2, Play, RefreshCw, RotateCcw, Save, Scissors, Upload, Video, WandSparkles } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -25,6 +25,7 @@ type SceneVersion = {
   generationPrompt: string;
   duration: number;
   metadata?: Record<string, unknown>;
+  createdAt?: string;
 };
 type Bundle = {
   project: Project;
@@ -99,17 +100,18 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
+  const [mediaType, setMediaType] = useState<"video" | "image" | null>(null);
   const [title, setTitle] = useState("Untitled video project");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isDraggingUpload, setIsDraggingUpload] = useState(false);
   const [savingSceneId, setSavingSceneId] = useState("");
   const [rewritingSceneId, setRewritingSceneId] = useState("");
   const [retryingSceneId, setRetryingSceneId] = useState("");
-  const [remixPrompt, setRemixPrompt] = useState("");
   const [sceneDrafts, setSceneDrafts] = useState<Record<string, string>>({});
   const [rewriteDrafts, setRewriteDrafts] = useState<Record<string, string>>({});
-  const [compareOpen, setCompareOpen] = useState(false);
+  const [selectedSceneVersionIds, setSelectedSceneVersionIds] = useState<Record<string, string>>({});
   const [analysisModels, setAnalysisModels] = useState<ModelOption[]>([]);
   const [analysisModelValue, setAnalysisModelValue] = useState("auto");
   const modelPriority: ModelPriority = "balanced";
@@ -121,23 +123,12 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
 
   useEffect(() => {
     const drafts: Record<string, string> = {};
-    bundle?.sceneVersions.forEach((scene) => {
+    bundle?.allSceneVersions.forEach((scene) => {
       drafts[scene.id] = scene.generationPrompt;
     });
     setSceneDrafts(drafts);
-  }, [bundle?.activeVersion?.id]);
-
-  const originalVersion = bundle?.versions.find((version) => version.kind === "original") || null;
-  const remixVersions = bundle?.versions.filter((version) => version.kind === "remix") || [];
-  const latestRemix = remixVersions[remixVersions.length - 1] || null;
-  const originalScenes = useMemo(
-    () => bundle?.allSceneVersions.filter((scene) => scene.projectVersionId === originalVersion?.id).sort((a, b) => a.sceneIndex - b.sceneIndex) || [],
-    [bundle?.allSceneVersions, originalVersion?.id],
-  );
-  const remixScenes = useMemo(
-    () => bundle?.allSceneVersions.filter((scene) => scene.projectVersionId === latestRemix?.id).sort((a, b) => a.sceneIndex - b.sceneIndex) || [],
-    [bundle?.allSceneVersions, latestRemix?.id],
-  );
+  }, [bundle?.activeVersion?.id, bundle?.allSceneVersions]);
+  const projectMediaType = bundle?.project.metadata?.mediaType === "image" ? "image" : "video";
 
   async function loadProjects() {
     const response = await fetch("/api/workflow/projects");
@@ -173,21 +164,31 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   }
 
   function handleFile(nextFile: File) {
-    if (!nextFile.type.startsWith("video/")) {
-      setError("Please upload a video file.");
+    const type = nextFile.type.startsWith("video/") ? "video" : nextFile.type.startsWith("image/") ? "image" : null;
+    if (!type) {
+      setError("Please upload a video or image file.");
       return;
     }
+    if (preview) URL.revokeObjectURL(preview);
     setFile(nextFile);
+    setMediaType(type);
     setPreview(URL.createObjectURL(nextFile));
-    setTitle(nextFile.name.replace(/\.[^.]+$/, "") || "Video analysis");
+    setTitle(nextFile.name.replace(/\.[^.]+$/, "") || (type === "image" ? "Image analysis" : "Video analysis"));
     setError("");
   }
 
+  function handleDrop(event: React.DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    setIsDraggingUpload(false);
+    const droppedFile = event.dataTransfer.files?.[0];
+    if (droppedFile) handleFile(droppedFile);
+  }
+
   async function startBreakdown() {
-    if (!file) return;
+    if (!file || !mediaType) return;
     setLoading(true);
     setError("");
-    setProgress("Uploading reference video to R2");
+    setProgress(`Uploading reference ${mediaType} to R2`);
     try {
       const upload = await uploadMediaToBlob(file, (percentage) => setProgress(`Uploading ${Math.round(percentage)}%`));
       setProgress("Creating project");
@@ -199,17 +200,17 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       const projectData = await projectRes.json();
       if (!projectRes.ok) throw new Error(projectData.error || "Project creation failed");
 
-      setProgress("Detecting scenes and building Video Blueprint");
+      setProgress(mediaType === "image" ? "Analyzing image blueprint" : "Detecting scenes and building Video Blueprint");
       const breakdownRes = await fetch(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaUrl: upload.url, mediaName: upload.filename, storageKey: upload.key, ...analysisSelectionPayload() }),
+        body: JSON.stringify({ mediaUrl: upload.url, mediaName: upload.filename, storageKey: upload.key, mediaType: upload.mediaType, ...analysisSelectionPayload() }),
       });
       const breakdownData = await breakdownRes.json();
-      if (!breakdownRes.ok) throw new Error(breakdownData.error || "Video breakdown failed");
+      if (!breakdownRes.ok) throw new Error(breakdownData.error || "Breakdown failed");
       setBundle(breakdownData);
       await loadProjects();
-      setProgress("Video Blueprint ready");
+      setProgress(mediaType === "image" ? "Image Blueprint ready" : "Video Blueprint ready");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Workflow failed");
       setProgress("");
@@ -252,6 +253,9 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Rewrite failed");
+      if (data.scene?.id && data.scene?.originalSceneId) {
+        setSelectedSceneVersionIds((versions) => ({ ...versions, [data.scene.originalSceneId]: data.scene.id }));
+      }
       setRewriteDrafts((drafts) => ({ ...drafts, [scene.id]: "" }));
       await loadProject(bundle.project.id);
     } catch (err) {
@@ -281,30 +285,6 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     }
   }
 
-  async function createRemix() {
-    if (!bundle?.activeVersion || !remixPrompt.trim()) return;
-    setLoading(true);
-    setProgress("Creating remix version");
-    setError("");
-    try {
-      const response = await fetch(`/api/workflow/projects/${bundle.project.id}/remix`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sourceVersionId: bundle.activeVersion.id, remixPrompt, ...analysisSelectionPayload() }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Remix failed");
-      setBundle(data);
-      setRemixPrompt("");
-      setCompareOpen(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Remix failed");
-    } finally {
-      setLoading(false);
-      setProgress("");
-    }
-  }
-
   return (
     <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -319,13 +299,34 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
 
       <div className="grid gap-4 xl:grid-cols-[0.68fr_1.32fr]">
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-          <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-3">
-            <input ref={fileInputRef} type="file" accept="video/*" className="sr-only" onChange={(event) => event.target.files?.[0] && handleFile(event.target.files[0])} />
-            {preview ? <video src={preview} muted playsInline controls className="mb-3 max-h-56 w-full rounded-xl bg-black object-contain" /> : null}
+          <div
+            className={cn(
+              "rounded-2xl border border-dashed border-border bg-muted/30 p-3 transition-colors",
+              isDraggingUpload && "border-primary/70 bg-primary/5",
+            )}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDraggingUpload(true);
+            }}
+            onDragEnter={(event) => {
+              event.preventDefault();
+              setIsDraggingUpload(true);
+            }}
+            onDragLeave={() => setIsDraggingUpload(false)}
+            onDrop={handleDrop}
+          >
+            <input ref={fileInputRef} type="file" accept="video/*,image/*" className="sr-only" onChange={(event) => event.target.files?.[0] && handleFile(event.target.files[0])} />
+            {preview ? (
+              mediaType === "image" ? (
+                <img src={preview} alt="Preview" className="mb-3 max-h-56 w-full rounded-xl object-contain" />
+              ) : (
+                <video src={preview} muted playsInline controls className="mb-3 max-h-56 w-full rounded-xl bg-black object-contain" />
+              )
+            ) : null}
             <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl bg-background text-center hover:bg-accent">
               <Upload className="h-6 w-6 text-muted-foreground" />
-              <span className="font-semibold">Upload video for analysis</span>
-              <span className="text-sm text-muted-foreground">Scene breakdown, KIE analysis, remix, and generation handoff</span>
+              <span className="font-semibold">{preview ? "Change file" : "Upload video or image for analysis"}</span>
+              <span className="text-sm text-muted-foreground">Click or drag a video or image here for scene breakdown and generation handoff</span>
             </button>
           </div>
 
@@ -338,26 +339,15 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
             />
           </div>
 
-
-          <label className="mt-4 grid gap-2 text-sm font-medium">
-            Rewrite instruction
-            <Textarea
-              value={remixPrompt}
-              onChange={(event) => setRemixPrompt(event.target.value)}
-              placeholder="把橘猫换成狸花猫，保留原来的镜头结构、节奏和笑点，重新创造一版完整脚本"
-              className="min-h-28 rounded-xl"
-            />
-          </label>
-          {bundle?.activeVersion ? (
-            <Button onClick={() => void createRemix()} disabled={!remixPrompt.trim() || loading} variant="outline" className="mt-3 w-full rounded-xl">
-              {loading ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}
-              Create New Script
-            </Button>
-          ) : null}
-          <Button onClick={() => void startBreakdown()} disabled={!file || loading} className="mt-4 w-full rounded-xl bg-[#D97757] text-white hover:bg-[#C96848] disabled:!opacity-100 disabled:bg-[#DCA28E] disabled:text-white">
-            {loading ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}
-            Analyze Video
-          </Button>
+          <button
+            type="button"
+            onClick={() => void startBreakdown()}
+            disabled={!file || loading}
+            className="mt-4 flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5" />}
+            {loading ? "Analyzing..." : mediaType === "image" ? "Analyze Image" : "Analyze Video"}
+          </button>
 
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}
           {error ? <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
@@ -380,8 +370,8 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
           {!bundle ? (
             <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
               <Play className="mb-4 h-10 w-10 text-muted-foreground" />
-              <p className="font-medium">Video analysis workflow will appear here</p>
-              <p className="text-sm text-muted-foreground">Upload a video to create the first editable scene blueprint.</p>
+              <p className="font-medium">Video or image analysis workflow will appear here</p>
+              <p className="text-sm text-muted-foreground">Upload a video or image to create the first editable scene blueprint.</p>
             </div>
           ) : (
             <div className="space-y-5">
@@ -391,18 +381,19 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                   <p className="mt-1 text-sm text-muted-foreground">Active version: {bundle.activeVersion?.label || "None"} · {bundle.scenes.length} scene{bundle.scenes.length === 1 ? "" : "s"}</p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => setCompareOpen((open) => !open)} disabled={!latestRemix}>
-                    <GitCompare className="mr-2 h-4 w-4" />Compare
-                  </Button>
-                  <Button variant="outline" onClick={() => onNavigateTool?.("audio", { projectId: bundle.project.id, versionId: bundle.activeVersion?.id || "" })}>
-                    <Mic2 className="mr-2 h-4 w-4" />Audio
-                  </Button>
-                  <Button variant="outline" onClick={() => onNavigateTool?.("edit", { projectId: bundle.project.id, versionId: bundle.activeVersion?.id || "" })}>
-                    <Scissors className="mr-2 h-4 w-4" />Edit
-                  </Button>
+                  {projectMediaType === "video" ? (
+                    <>
+                      <Button variant="outline" onClick={() => onNavigateTool?.("audio", { projectId: bundle.project.id, versionId: bundle.activeVersion?.id || "" })}>
+                        <Mic2 className="mr-2 h-4 w-4" />Audio
+                      </Button>
+                      <Button variant="outline" onClick={() => onNavigateTool?.("edit", { projectId: bundle.project.id, versionId: bundle.activeVersion?.id || "" })}>
+                        <Scissors className="mr-2 h-4 w-4" />Edit
+                      </Button>
+                    </>
+                  ) : null}
                   <Button onClick={() => {
                     const firstScene = bundle.sceneVersions[0];
-                    if (firstScene) onSendToGenerate({ prompt: sceneDrafts[firstScene.id] || firstScene.generationPrompt, projectId: bundle.project.id, sceneId: firstScene.originalSceneId, versionId: firstScene.projectVersionId, duration: firstScene.duration, modelId: undefined });
+                    if (firstScene) onSendToGenerate({ prompt: sceneDrafts[firstScene.id] || firstScene.generationPrompt, projectId: bundle.project.id, sceneId: firstScene.originalSceneId, versionId: firstScene.projectVersionId, duration: projectMediaType === "image" ? undefined : firstScene.duration, modelId: undefined });
                     else onNavigateTool?.("video-gen");
                   }}>
                     <Video className="mr-2 h-4 w-4" />Open Generate
@@ -417,48 +408,44 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                     <p key={key}><span className="font-medium text-foreground">{key}: </span>{textValue(value)}</p>
                   ))}
                 </div>
-              </div>\n{compareOpen && latestRemix ? (
-                <div className="rounded-xl border border-border bg-background p-4">
-                  <h3 className="font-semibold">Original vs {latestRemix.label}</h3>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">Original</p>
-                      {originalScenes.map((scene) => <SceneMini key={scene.id} scene={scene} />)}
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium">{latestRemix.label}</p>
-                      {remixScenes.map((scene) => <SceneMini key={scene.id} scene={scene} />)}
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+              </div>
 
               <div className="grid gap-4">
-                {bundle.sceneVersions.map((sceneVersion) => {
+                {bundle.sceneVersions.map((latestSceneVersion) => {
+                  const sceneVersions = getSceneVersionHistory(bundle, latestSceneVersion);
+                  const selectedSceneVersion = sceneVersions.find((version) => version.id === selectedSceneVersionIds[latestSceneVersion.originalSceneId]) || latestSceneVersion;
+                  const sceneVersionIndex = Math.max(0, sceneVersions.findIndex((version) => version.id === selectedSceneVersion.id));
+                  const sceneVersion = selectedSceneVersion;
                   const scene = bundle.scenes.find((item) => item.id === sceneVersion.originalSceneId);
                   const needsReview = scene?.status === "failed" || sceneVersion.metadata?.analysisProvider === "fallback";
                   return (
-                    <article key={sceneVersion.id} className="rounded-xl border border-border bg-background p-4">
+                    <article key={latestSceneVersion.originalSceneId} className="rounded-xl border border-border bg-background p-4">
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-semibold">Scene {String(sceneVersion.sceneIndex).padStart(2, "0")}</h3>
                             <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", needsReview ? "bg-amber-500/15 text-amber-700" : "bg-emerald-500/15 text-emerald-700")}>{sceneStatusLabel(scene, sceneVersion)}</span>
                           </div>
-                          <p className="mt-1 text-sm text-muted-foreground">{formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}s</p>
+                          {projectMediaType === "video" ? (
+                            <p className="mt-1 text-sm text-muted-foreground">{formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}s</p>
+                          ) : null}
                           {scene?.error ? <p className="mt-1 max-w-3xl text-xs text-amber-700">{scene.error}</p> : null}
                         </div>
                         <div className="flex flex-wrap gap-2">
                           <Button size="sm" variant="outline" onClick={() => void retryScene(sceneVersion)} disabled={retryingSceneId === sceneVersion.id}>
                             {retryingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}Retry
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: sceneVersion.duration, modelId: undefined })}>
+                          <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: projectMediaType === "image" ? undefined : sceneVersion.duration, modelId: undefined })}>
                             <Video className="mr-2 h-4 w-4" />Open in Generate
                           </Button>
                         </div>
                       </div>
 
-                      {scene?.clipUrl ? <video src={scene.clipUrl} controls className="mt-3 max-h-64 w-full rounded-xl bg-black object-contain" /> : null}
+                      {projectMediaType === "image" && scene?.keyframeUrls?.[0] ? (
+                        <img src={scene.keyframeUrls[0]} alt="Analyzed" className="mt-3 max-h-64 w-full rounded-xl object-contain" />
+                      ) : scene?.clipUrl ? (
+                        <video src={scene.clipUrl} controls className="mt-3 max-h-64 w-full rounded-xl bg-black object-contain" />
+                      ) : null}
 
                       <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
                         <div>
@@ -477,15 +464,36 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                         </div>
                       </div>
 
-                      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                        <InfoPanel title="画面复刻" value={pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])} />
-                        <InfoPanel title="角色/动作" value={`${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()} />
-                        <InfoPanel title="镜头语言" value={`${pickField(sceneVersion.visual, ["camera"])}\n${pickField(sceneVersion.visual, ["composition"])}`.trim()} />
-                        <InfoPanel title="光线/色彩/风格" value={`${pickField(sceneVersion.visual, ["lighting"])}\n${pickField(sceneVersion.visual, ["color"])}\n${pickField(sceneVersion.visual, ["style"])}`.trim()} />
-                        <InfoPanel title="台词/字幕" value={sceneVersion.dialogue.length ? sceneVersion.dialogue : sceneVersion.subtitle} />
-                        <InfoPanel title="音频" value={sceneVersion.audio} />
-                        <InfoPanel title="剪辑提示" value={sceneVersion.transition} />
-                        <InfoPanel title="剧情作用" value={sceneVersion.story} />
+                      <div className="mt-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <label className="text-sm font-semibold">分析拆解</label>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <button
+                              type="button"
+                              aria-label="上一版脚本"
+                              disabled={sceneVersionIndex <= 0}
+                              onClick={() => setSelectedSceneVersionIds((versions) => ({ ...versions, [latestSceneVersion.originalSceneId]: sceneVersions[sceneVersionIndex - 1].id }))}
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </button>
+                            <span className="min-w-14 text-center">{sceneVersionIndex + 1}/{sceneVersions.length}</span>
+                            <button
+                              type="button"
+                              aria-label="下一版脚本"
+                              disabled={sceneVersionIndex >= sceneVersions.length - 1}
+                              onClick={() => setSelectedSceneVersionIds((versions) => ({ ...versions, [latestSceneVersion.originalSceneId]: sceneVersions[sceneVersionIndex + 1].id }))}
+                              className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        </div>
+                        <Textarea
+                          readOnly
+                          value={formatSceneAnalysis(sceneVersion, projectMediaType)}
+                          className="mt-2 max-h-[420px] min-h-[300px] resize-y rounded-xl font-sans text-sm leading-7 text-muted-foreground"
+                        />
                       </div>
                     </article>
                   );
@@ -499,22 +507,35 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   );
 }
 
-function InfoPanel({ title, value }: { title: string; value: unknown }) {
-  return (
-    <div className="rounded-xl border border-border bg-muted/30 p-3">
-      <p className="text-sm font-semibold">{title}</p>
-      <p className="mt-2 whitespace-pre-line line-clamp-6 text-xs leading-relaxed text-muted-foreground">{textValue(value) || "No detected data yet."}</p>
-    </div>
-  );
+function getSceneVersionHistory(bundle: Bundle, sceneVersion: SceneVersion) {
+  return bundle.allSceneVersions
+    .filter((version) => version.originalSceneId === sceneVersion.originalSceneId && version.projectVersionId === sceneVersion.projectVersionId)
+    .sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeA - timeB || a.id.localeCompare(b.id);
+    });
 }
+function formatSceneAnalysis(sceneVersion: SceneVersion, mediaType: "video" | "image") {
+  const sections: Array<[string, unknown]> = [
+    ["画面复刻", pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])],
+    ["角色/动作", `${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()],
+    ["镜头语言", `${pickField(sceneVersion.visual, ["camera"])}\n${pickField(sceneVersion.visual, ["composition"])}`.trim()],
+    ["光线/色彩/风格", `${pickField(sceneVersion.visual, ["lighting"])}\n${pickField(sceneVersion.visual, ["color"])}\n${pickField(sceneVersion.visual, ["style"])}`.trim()],
+    ["剧情作用", sceneVersion.story],
+  ];
 
-function SceneMini({ scene }: { scene: SceneVersion }) {
-  return (
-    <div className="rounded-xl border border-border bg-muted/30 p-3 text-sm">
-      <p className="font-medium">Scene {String(scene.sceneIndex).padStart(2, "0")}</p>
-      <p className="mt-1 line-clamp-3 text-muted-foreground">{scene.generationPrompt}</p>
-    </div>
-  );
+  if (mediaType === "video") {
+    sections.push(
+      ["台词/字幕", sceneVersion.dialogue.length ? sceneVersion.dialogue : sceneVersion.subtitle],
+      ["音频", sceneVersion.audio],
+      ["剪辑提示", sceneVersion.transition],
+    );
+  }
+
+  return sections
+    .map(([title, value]) => `${title}\n${textValue(value) || "No detected data yet."}`)
+    .join("\n\n");
 }
 
 function ModelSelector({

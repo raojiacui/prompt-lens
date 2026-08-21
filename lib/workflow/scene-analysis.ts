@@ -35,6 +35,7 @@ export interface SceneRewriteInput extends AiModelSelection {
   instruction: string;
   duration?: number;
   sceneIndex?: number;
+  allowPlatformKeyForRewrite?: boolean;
 }
 
 type KieChatJsonResult = {
@@ -80,9 +81,12 @@ function parseJsonObject(raw: string) {
   }
 }
 
-async function getKieApiKey(userId: string) {
+async function getKieApiKey(userId: string, options?: { allowPlatformKey?: boolean }) {
+  const userApiKey = await getUserKieApiKey(userId);
+  if (userApiKey) return userApiKey;
+  if (options?.allowPlatformKey === false) return null;
   if (process.env.NODE_ENV === "test" && !process.env.KIE_AI_API_KEY && !process.env.KIE_API_KEY) return null;
-  return await getUserKieApiKey(userId) || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
+  return process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
 }
 
 function resolveAnalysisSelection(selection?: AiModelSelection) {
@@ -110,8 +114,9 @@ async function callKieChatJson(params: {
   system: string;
   content: Array<Record<string, unknown>>;
   selection?: AiModelSelection;
+  allowPlatformKey?: boolean;
 }): Promise<KieChatJsonResult | null> {
-  const apiKey = await getKieApiKey(params.userId);
+  const apiKey = await getKieApiKey(params.userId, { allowPlatformKey: params.allowPlatformKey });
   if (!apiKey) return null;
   const selected = resolveAnalysisSelection(params.selection);
 
@@ -246,6 +251,92 @@ export async function analyzeSceneBlueprint(params: {
   }
 }
 
+export function buildFallbackImageBlueprint(scene: FfmpegSceneAsset, reason?: string): SceneBlueprintDraft {
+  return {
+    story: {
+      summary: "Single static image. Describe the visible frame as a self-contained visual scene.",
+      role: "standalone visual reference",
+      beat: "Recreate the exact visible composition, subject, and mood.",
+    },
+    visual: {
+      sceneDescription: "Describe every visible element in the frame precisely enough for text-to-image/video recreation.",
+      subject: "Primary visible subject from the reference image",
+      characters: "Characters, appearance, wardrobe, expression, pose, and relationship to each other",
+      environment: "Location, background layers, props, time of day, weather, and set details",
+      action: "Static pose or implied motion visible in this still frame",
+      camera: "Shot size, lens feel, angle, height, focus behavior, and framing",
+      composition: "Subject placement, foreground/midground/background, negative space, symmetry, depth, and occlusion",
+      lighting: "Light source, direction, softness, contrast, exposure, shadow shape, highlights, and time feeling",
+      color: "Dominant palette, saturation, contrast, color temperature, skin/object tones, and grading style",
+      style: "Reference-image style, realism level, texture, format, platform aesthetic, and production quality",
+      motion: "Static image. Any motion should be inferred only if strongly implied by pose, blur, or composition.",
+    },
+    dialogue: [],
+    narration: [],
+    subtitle: [],
+    audio: {
+      ambience: "No audio available for a static image.",
+      music: "No audio available for a static image.",
+      sfx: [],
+    },
+    transition: {
+      in: "start",
+      out: "hard_cut",
+      rhythm: "Static image. No editing rhythm to preserve.",
+      editing: {
+        pacing: "None",
+        techniques: [],
+        speedRamp: "none",
+        splitScreen: "none",
+        maskOrOverlay: "none",
+        keyframes: "None",
+      },
+    },
+    generationPrompt: "A single-frame text-to-image/video recreation prompt. Prioritize the exact visible image: subject identity, character appearance, wardrobe, expression, pose, environment, props, background layers, shot size, camera angle, composition, lighting direction, color palette, texture, realism level, and style. This is a static image, so describe motion only if strongly implied. No audio, dialogue, or editing details.",
+    metadata: { analysisProvider: "fallback", fallbackReason: reason || "KIE analysis unavailable", mediaType: "image" },
+  };
+}
+
+export async function analyzeImageBlueprint(params: {
+  userId: string;
+  scene: FfmpegSceneAsset;
+  context: SceneContext;
+} & AiModelSelection) {
+  const fallback = buildFallbackImageBlueprint(params.scene);
+  try {
+    const raw = await callKieChatJson({
+      userId: params.userId,
+      selection: params,
+      system: [
+        "You are a senior AI visual director. Return strict JSON only.",
+        "Analyze a single static reference image as a babysitter-level visual breakdown for near 1:1 text-to-image/video recreation.",
+        "Primary goal: produce a visual-first recreation prompt. The prompt should let a generative model reproduce the image mostly from text alone.",
+        "Be concrete and exhaustive about the visible image: objects, characters, wardrobe, expressions, pose, props, background layers, camera language, lighting, color, composition, style, texture, and any motion implied by the still frame.",
+        "Do not invent brand names, dialogue, audio, music, or editing techniques. There is no audio, dialogue, or video editing in a static image.",
+        "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. dialogue, narration, and subtitle must be empty arrays. audio must only note that no audio is available. transition.editing.pacing must be 'None' and transition.editing.techniques must be an empty array.",
+        "generationPrompt must be a long, directly usable text-to-image/video prompt focused entirely on visual reconstruction. Mark uncertain visual details as possible/unknown.",
+      ].join(" "),
+      content: [
+        {
+          type: "text",
+          text: [
+            "Reference type: static image",
+            `Scene index: ${params.scene.sceneIndex} of ${params.context.sceneCount}`,
+            "This is a single still image. There is no audio, dialogue, subtitle, or video editing to analyze.",
+            "Output a detailed visual shot script: 1) sceneDescription: exhaustive visible-frame reconstruction; 2) subject and characters: identity, appearance, wardrobe, expression, pose; 3) environment, props, background layers; 4) implied action or static pose; 5) camera: shot size, angle, lens feel, focus, framing; 6) composition: foreground/midground/background, subject placement, depth; 7) lighting, color grading, texture, realism; 8) generationPrompt: a self-contained visual-first recreation prompt detailed enough to recreate the image without source media. Leave dialogue/narration/subtitle empty, audio empty/placeholder, and transition/editing minimal/empty.",
+          ].join("\n"),
+        },
+        ...params.scene.keyframeUrls.slice(0, 3).map((url) => ({ type: "image_url", image_url: { url } })),
+      ],
+    });
+    if (!raw) return buildFallbackImageBlueprint(params.scene, "KIE API key not configured");
+    const blueprint = normalizeBlueprint(raw.json, fallback, "kie");
+    return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority, mediaType: "image" } };
+  } catch (error) {
+    return buildFallbackImageBlueprint(params.scene, error instanceof Error ? error.message : "KIE image analysis failed");
+  }
+}
+
 export async function buildStructuredVideoOverview(params: {
   userId: string;
   title?: string;
@@ -298,6 +389,7 @@ export async function rewriteSceneBlueprint(params: SceneRewriteInput): Promise<
     const raw = await callKieChatJson({
       userId: params.userId,
       selection: params,
+      allowPlatformKey: params.allowPlatformKeyForRewrite === true,
       system: [
         "You are rewriting one scene blueprint for AI video generation. Return strict JSON only.",
         "Preserve the same schema: story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata.",

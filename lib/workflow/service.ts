@@ -3,9 +3,11 @@ import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import { breakdownVideoWithWorker } from "@/lib/ffmpeg-worker/client";
 import { routeModel } from "@/lib/ai/model-registry";
 import { getUserKieApiKey } from "@/lib/byok/kie";
-import { buildSceneAudioContexts, transcribeMediaWithKie } from "@/lib/workflow/transcription";
+import { buildSceneAudioContexts, transcribeMediaWithKie, type SceneAudioContext } from "@/lib/workflow/transcription";
 import {
+  analyzeImageBlueprint,
   analyzeSceneBlueprint,
+  buildFallbackImageBlueprint,
   buildFallbackSceneBlueprint,
   buildStructuredVideoOverview,
   remixSceneBlueprint,
@@ -91,12 +93,19 @@ export async function getProjectBundle(projectId: string, userId: string) {
     where: eq(videoScenes.projectId, projectId),
     orderBy: [asc(videoScenes.sceneIndex)],
   });
-  const activeSceneVersions = activeVersion
+  const activeSceneVersionRows = activeVersion
     ? await db.query.sceneVersions.findMany({
         where: eq(sceneVersions.projectVersionId, activeVersion.id),
-        orderBy: [asc(sceneVersions.sceneIndex)],
+        orderBy: [asc(sceneVersions.sceneIndex), desc(sceneVersions.createdAt)],
       })
     : [];
+  const latestSceneVersionByOriginalScene = new Map<string, typeof sceneVersions.$inferSelect>();
+  for (const sceneVersion of activeSceneVersionRows) {
+    if (!latestSceneVersionByOriginalScene.has(sceneVersion.originalSceneId)) {
+      latestSceneVersionByOriginalScene.set(sceneVersion.originalSceneId, sceneVersion);
+    }
+  }
+  const activeSceneVersions = Array.from(latestSceneVersionByOriginalScene.values()).sort((a, b) => a.sceneIndex - b.sceneIndex);
   const allSceneVersions = await db.query.sceneVersions.findMany({
     where: eq(sceneVersions.projectId, projectId),
     orderBy: [asc(sceneVersions.sceneIndex)],
@@ -128,9 +137,11 @@ export async function runVideoBreakdown(params: {
   mediaUrl: string;
   mediaName?: string;
   storageKey?: string;
+  mediaType?: "video" | "image";
 } & AiModelSelection) {
   const project = await getProjectForUser(params.projectId, params.userId);
   if (!project) throw new Error("Project not found");
+  const isImage = params.mediaType === "image";
 
   const [job] = await db
     .insert(workflowJobs)
@@ -138,31 +149,51 @@ export async function runVideoBreakdown(params: {
       projectId: params.projectId,
       type: "ANALYZE_VIDEO",
       status: "processing",
-      input: { mediaUrl: params.mediaUrl, mediaName: params.mediaName },
+      input: { mediaUrl: params.mediaUrl, mediaName: params.mediaName, mediaType: params.mediaType },
     })
     .returning();
 
   try {
     await db.update(projects).set({ status: "analyzing", updatedAt: new Date() }).where(eq(projects.id, params.projectId));
-    const breakdown = await breakdownVideoWithWorker(params.mediaUrl);
-    if (!breakdown.scenes.length) throw new Error("No scenes detected in the uploaded video");
+    const breakdown = isImage
+      ? {
+          scenes: [{
+            sceneIndex: 1,
+            startTime: 0,
+            endTime: 0,
+            duration: 0,
+            keyframeUrls: [params.mediaUrl],
+            clipUrl: undefined,
+            audioUrl: undefined,
+            transitionIn: "start",
+            transitionOut: "hard_cut",
+          } as FfmpegSceneAsset],
+          metadata: { duration: 0, source: "image", mediaType: "image" },
+        }
+      : await breakdownVideoWithWorker(params.mediaUrl);
+    if (!breakdown.scenes.length) throw new Error(isImage ? "Failed to prepare image for analysis" : "No scenes detected in the uploaded video");
 
     let transcriptionReason: string | undefined;
     let transcription = null;
-    try {
-      const kieApiKey = await getUserKieApiKey(params.userId) || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
-      transcription = await transcribeMediaWithKie({
-        userId: params.userId,
-        apiKey: kieApiKey,
-        mediaUrl: params.mediaUrl,
-        modelPriority: params.modelPriority || "balanced",
-      });
-      if (!transcription) transcriptionReason = "KIE API key is not configured";
-    } catch (error) {
-      transcriptionReason = error instanceof Error ? error.message : "KIE transcription failed";
+    if (!isImage) {
+      try {
+        const kieApiKey = await getUserKieApiKey(params.userId) || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
+        transcription = await transcribeMediaWithKie({
+          userId: params.userId,
+          apiKey: kieApiKey,
+          mediaUrl: params.mediaUrl,
+          modelPriority: params.modelPriority || "balanced",
+        });
+        if (!transcription) transcriptionReason = "KIE API key is not configured";
+      } catch (error) {
+        transcriptionReason = error instanceof Error ? error.message : "KIE transcription failed";
+      }
     }
-    const sceneAudioContexts = buildSceneAudioContexts({ scenes: breakdown.scenes, transcription, unavailableReason: transcriptionReason });
+    const sceneAudioContexts = isImage ? new Map<number, SceneAudioContext>() : buildSceneAudioContexts({ scenes: breakdown.scenes, transcription, unavailableReason: transcriptionReason });
 
+    const imageMimeType = isImage
+      ? (params.mediaName?.match(/\.webp$/i) ? "image/webp" : params.mediaName?.match(/\.png$/i) ? "image/png" : "image/jpeg")
+      : undefined;
     const [reference] = await db
       .insert(referenceVideos)
       .values({
@@ -170,7 +201,8 @@ export async function runVideoBreakdown(params: {
         sourceUrl: params.mediaUrl,
         storageKey: params.storageKey,
         fileName: params.mediaName,
-        duration: breakdown.metadata.duration,
+        mimeType: imageMimeType,
+        duration: isImage ? 0 : breakdown.metadata.duration,
         metadata: { ...breakdown.metadata, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } },
       })
       .returning();
@@ -182,7 +214,7 @@ export async function runVideoBreakdown(params: {
         versionNumber: 0,
         kind: "original",
         label: "Original",
-        overview: buildVideoOverview(breakdown.scenes.length),
+        overview: isImage ? { ...buildVideoOverview(1), mediaType: "image" } : buildVideoOverview(breakdown.scenes.length),
       })
       .returning();
 
@@ -228,7 +260,9 @@ export async function runVideoBreakdown(params: {
           nextSummary: breakdown.scenes[scene.sceneIndex]?.shotGroupId,
           audio: sceneAudioContexts.get(scene.sceneIndex),
         };
-        const blueprint = await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority });
+        const blueprint = isImage
+          ? await analyzeImageBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority })
+          : await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority });
         insertedBlueprints.push(blueprint);
         await db.insert(sceneVersions).values({
           projectId: params.projectId,
@@ -258,7 +292,9 @@ export async function runVideoBreakdown(params: {
         if (usedFallback) failedScenes.push({ sceneIndex: scene.sceneIndex, error: String(blueprint.metadata?.fallbackReason || "AI analysis fallback used") });
       } catch (error) {
         const message = error instanceof Error ? error.message : "Scene analysis failed";
-        const fallback = buildFallbackSceneBlueprint(scene, message, sceneAudioContexts.get(scene.sceneIndex));
+        const fallback = isImage
+          ? buildFallbackImageBlueprint(scene, message)
+          : buildFallbackSceneBlueprint(scene, message, sceneAudioContexts.get(scene.sceneIndex));
         insertedBlueprints.push(fallback);
         failedScenes.push({ sceneIndex: scene.sceneIndex, error: message });
         await db.insert(sceneVersions).values({
@@ -286,7 +322,7 @@ export async function runVideoBreakdown(params: {
     await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
     await db
       .update(projects)
-      .set({ status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { failedSceneCount: failedScenes.length, failedScenes, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } } })
+      .set({ status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { mediaType: params.mediaType || "video", failedSceneCount: failedScenes.length, failedScenes, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } } })
       .where(eq(projects.id, params.projectId));
     await db
       .update(workflowJobs)
@@ -381,6 +417,7 @@ export async function rewriteSceneVersion(params: {
   projectId: string;
   sceneVersionId: string;
   instruction: string;
+  allowPlatformKeyForRewrite?: boolean;
 } & AiModelSelection) {
   const project = await getProjectForUser(params.projectId, params.userId);
   if (!project) throw new Error("Project not found");
@@ -399,11 +436,16 @@ export async function rewriteSceneVersion(params: {
     modelMode: params.modelMode,
     modelId: params.modelId,
     modelPriority: params.modelPriority,
+    allowPlatformKeyForRewrite: params.allowPlatformKeyForRewrite,
   });
 
-  const [updated] = await db
-    .update(sceneVersions)
-    .set({
+  const [created] = await db
+    .insert(sceneVersions)
+    .values({
+      projectId: scene.projectId,
+      projectVersionId: scene.projectVersionId,
+      originalSceneId: scene.originalSceneId,
+      sceneIndex: scene.sceneIndex,
       story: rewritten.story,
       visual: rewritten.visual,
       dialogue: rewritten.dialogue,
@@ -412,13 +454,20 @@ export async function rewriteSceneVersion(params: {
       audio: rewritten.audio,
       transition: rewritten.transition,
       generationPrompt: rewritten.generationPrompt,
-      metadata: { ...(rewritten.metadata || {}), rewriteInstruction: params.instruction, previousSceneVersionId: scene.id },
-      updatedAt: new Date(),
+      duration: scene.duration,
+      generatedVideoUrl: scene.generatedVideoUrl,
+      metadata: {
+        ...(rewritten.metadata || {}),
+        rewriteInstruction: params.instruction,
+        previousSceneVersionId: scene.id,
+        versionKind: "rewrite",
+      },
     })
-    .where(eq(sceneVersions.id, scene.id))
     .returning();
 
-  return updated;
+  await db.update(projects).set({ updatedAt: new Date() }).where(eq(projects.id, params.projectId));
+
+  return created;
 }
 
 export async function retrySceneAnalysis(params: {
