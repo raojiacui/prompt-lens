@@ -480,10 +480,23 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                         </div>
                         <div>
                           <label className="text-sm font-semibold">AI 修改脚本</label>
-                          <Textarea value={rewriteDrafts[sceneVersion.id] || ""} onChange={(event) => setRewriteDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))} placeholder="Make this scene warmer and more comedic, but keep the same timing and camera move." className="mt-2 min-h-40 rounded-xl" />
-                          <Button size="sm" variant="outline" onClick={() => void rewriteScene(sceneVersion)} disabled={!rewriteDrafts[sceneVersion.id]?.trim() || rewritingSceneId === sceneVersion.id} className="mt-3">
-                            {rewritingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <WandSparkles className="mr-2 h-4 w-4" />}Rewrite Scene
-                          </Button>
+                          <div className="relative mt-2">
+                            <Textarea
+                              value={rewriteDrafts[sceneVersion.id] || ""}
+                              onChange={(event) => setRewriteDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))}
+                              placeholder="Make this scene warmer and more comedic, but keep the same timing and camera move."
+                              className="min-h-40 rounded-xl pb-14 pr-14"
+                            />
+                            <button
+                              type="button"
+                              aria-label="重写脚本"
+                              onClick={() => void rewriteScene(sceneVersion)}
+                              disabled={!rewriteDrafts[sceneVersion.id]?.trim() || rewritingSceneId === sceneVersion.id}
+                              className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#D97757] text-white shadow-sm transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {rewritingSceneId === sceneVersion.id ? <Spinner size="sm" /> : <WandSparkles className="h-4 w-4" />}
+                            </button>
+                          </div>
                         </div>
                       </div>
 
