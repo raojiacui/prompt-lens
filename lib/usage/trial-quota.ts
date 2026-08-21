@@ -1,8 +1,9 @@
-import { and, count, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import { analysisHistory, db, operationLogs, user, userApiKeys } from "@/lib/db";
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
 type AnalyzeProvider = "zhipu" | "gemini" | "openrouter";
+const ANALYZE_PROVIDERS: AnalyzeProvider[] = ["openrouter", "zhipu", "gemini"];
 export type AnalyzeApiKeySource = "user" | "platform";
 
 const DEFAULT_TRIAL_LIMIT = 2;
@@ -26,24 +27,45 @@ function getTrialLimit() {
   return Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : DEFAULT_TRIAL_LIMIT;
 }
 
+export function decodeAnalyzeApiKey(storedApiKey: string): string | null {
+  const trimmed = storedApiKey.trim();
+  if (!trimmed) return null;
+  if (!isValidEncryptedKey(trimmed)) return trimmed;
+
+  try {
+    return decryptApiKey(trimmed).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 async function hasUsableUserAnalyzeApiKey(userId: string, provider: AnalyzeProvider) {
-  const record = await db.query.userApiKeys.findFirst({
+  const records = await db.query.userApiKeys.findMany({
     where: and(
       eq(userApiKeys.userId, userId),
       eq(userApiKeys.provider, provider),
       eq(userApiKeys.isActive, true),
     ),
+    orderBy: [desc(userApiKeys.updatedAt), desc(userApiKeys.createdAt)],
   });
 
-  if (!record?.apiKey) return false;
+  return records.some((record) => Boolean(decodeAnalyzeApiKey(record.apiKey)));
+}
 
-  if (!isValidEncryptedKey(record.apiKey)) return true;
+export async function getUsableUserAnalyzeApiKeyProvider(
+  userId: string,
+  preferredProvider?: AnalyzeProvider,
+): Promise<AnalyzeProvider | null> {
+  const providers = [
+    ...(preferredProvider ? [preferredProvider] : []),
+    ...ANALYZE_PROVIDERS.filter((provider) => provider !== preferredProvider),
+  ];
 
-  try {
-    return Boolean(decryptApiKey(record.apiKey));
-  } catch {
-    return false;
+  for (const provider of providers) {
+    if (await hasUsableUserAnalyzeApiKey(userId, provider)) return provider;
   }
+
+  return null;
 }
 
 async function getPlatformAnalyzeUsage(userId: string) {
@@ -81,7 +103,7 @@ export async function getUserTrialUsage(userId: string, provider?: AnalyzeProvid
     };
   }
 
-  const hasOwnApiKey = provider ? await hasUsableUserAnalyzeApiKey(userId, provider) : false;
+  const hasOwnApiKey = Boolean(await getUsableUserAnalyzeApiKeyProvider(userId, provider));
   if (hasOwnApiKey) {
     return {
       limit,

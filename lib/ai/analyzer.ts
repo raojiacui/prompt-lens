@@ -1,8 +1,8 @@
 import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
+import { eq, and, desc } from "drizzle-orm";
+import { decodeAnalyzeApiKey } from "@/lib/usage/trial-quota";
 import { ANALYSIS_PROMPTS, extractCorePrompt } from "@/lib/ai/prompts";
 import type { Locale } from "@/i18n/config";
 import { defaultLocale } from "@/i18n/config";
@@ -74,23 +74,20 @@ async function getUserApiKey(
   userId: string,
   provider: ApiProvider
 ): Promise<string | null> {
-  const result = await db.query.userApiKeys.findFirst({
+  const records = await db.query.userApiKeys.findMany({
     where: and(
       eq(userApiKeys.userId, userId),
-      eq(userApiKeys.provider, provider)
+      eq(userApiKeys.provider, provider),
+      eq(userApiKeys.isActive, true)
     ),
+    orderBy: [desc(userApiKeys.updatedAt), desc(userApiKeys.createdAt)],
   });
 
-  if (result?.isActive && result.apiKey) {
-    try {
-      if (isValidEncryptedKey(result.apiKey)) {
-        console.log(`[Analyzer] Using user API key for ${provider}`);
-        return decryptApiKey(result.apiKey);
-      }
-      console.log(`[Analyzer] Using legacy user API key for ${provider}`);
-      return result.apiKey;
-    } catch (error) {
-      console.error(`[Analyzer] Failed to decrypt API key for ${provider}:`, error);
+  for (const record of records) {
+    const apiKey = decodeAnalyzeApiKey(record.apiKey);
+    if (apiKey) {
+      console.log(`[Analyzer] Using user API key for ${provider}`);
+      return apiKey;
     }
   }
 
