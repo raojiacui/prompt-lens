@@ -86,6 +86,23 @@ function pickField(value: unknown, keys: string[]) {
   return "";
 }
 
+function getVideoDuration(file: File) {
+  return new Promise<number>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      const duration = video.duration;
+      URL.revokeObjectURL(url);
+      resolve(duration);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("无法读取视频时长，请换一个视频文件。"));
+    };
+    video.src = url;
+  });
+}
 function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
   const provider = sceneVersion?.metadata?.analysisProvider;
   if (scene?.status === "failed") return provider === "fallback" ? "Needs review" : "Failed";
@@ -168,12 +185,26 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     setBundle(data);
   }
 
-  function handleFile(nextFile: File) {
+  async function handleFile(nextFile: File) {
     const type = nextFile.type.startsWith("video/") ? "video" : nextFile.type.startsWith("image/") ? "image" : null;
     if (!type) {
-      setError("Please upload a video or image file.");
+      setError("请上传 10 秒以内的视频或图片进行分析。");
       return;
     }
+
+    if (type === "video") {
+      try {
+        const duration = await getVideoDuration(nextFile);
+        if (duration > 10) {
+          setError("目前视频分析仅支持 10 秒以内的视频镜头，请截取后再上传。图片不受此限制。");
+          return;
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "无法读取视频时长，请换一个视频文件。");
+        return;
+      }
+    }
+
     if (preview) URL.revokeObjectURL(preview);
     setFile(nextFile);
     setMediaType(type);
@@ -181,12 +212,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     setTitle(nextFile.name.replace(/\.[^.]+$/, "") || (type === "image" ? "Image analysis" : "Video analysis"));
     setError("");
   }
-
   function handleDrop(event: React.DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setIsDraggingUpload(false);
     const droppedFile = event.dataTransfer.files?.[0];
-    if (droppedFile) handleFile(droppedFile);
+    if (droppedFile) void handleFile(droppedFile);
   }
 
   async function startBreakdown() {
@@ -312,7 +342,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-4xl font-semibold tracking-tight">视频分析</h1>
-          <p className="mt-2 text-lg text-muted-foreground">拆解参考视频，生成场景脚本、提示词和后续工作流。</p>
+          <p className="mt-2 max-w-5xl text-lg leading-relaxed text-muted-foreground">全新升级保姆级视频脚本拆解，从全方位多维度（可复用提示词，画面，角色，动作，光线、色彩、风格、镜头）对视频或者图片进行分析。</p>
         </div>
         <Button variant="outline" size="sm" onClick={() => void loadProjects()}>
           <RefreshCw className="mr-2 h-4 w-4" />Refresh
@@ -337,7 +367,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
             onDragLeave={() => setIsDraggingUpload(false)}
             onDrop={handleDrop}
           >
-            <input ref={fileInputRef} type="file" accept="video/*,image/*" className="sr-only" onChange={(event) => event.target.files?.[0] && handleFile(event.target.files[0])} />
+            <input ref={fileInputRef} type="file" accept="video/*,image/*" className="sr-only" onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])} />
             {preview ? (
               mediaType === "image" ? (
                 <img src={preview} alt="Preview" className="mb-3 max-h-56 w-full rounded-xl object-contain" />
@@ -347,8 +377,8 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
             ) : null}
             <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl bg-background text-center hover:bg-accent">
               <Upload className="h-6 w-6 text-muted-foreground" />
-              <span className="font-semibold">{preview ? "Change file" : "Upload video or image for analysis"}</span>
-              <span className="text-sm text-muted-foreground">Click or drag a video or image here for scene breakdown and generation handoff</span>
+              <span className="font-semibold">{preview ? "更换文件" : "上传 10 秒以内的视频或图片进行分析"}</span>
+              <span className="text-sm text-muted-foreground">支持 10 秒以内的视频镜头，或直接上传图片进行保姆级脚本拆解</span>
             </button>
           </div>
 
