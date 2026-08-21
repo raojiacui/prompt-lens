@@ -40,6 +40,10 @@ const API_CONFIGS = {
     url: "https://openrouter.ai/api/v1/chat/completions",
     model: "google/gemini-2.5-pro",
   },
+  kie: {
+    url: process.env.KIE_GEMINI_ANALYSIS_URL || "https://api.kie.ai/gemini-2.5-flash/v1/chat/completions",
+    model: process.env.KIE_GEMINI_ANALYSIS_MODEL || "gemini-2.5-flash",
+  },
 };
 
 // 环境变量中的 API Keys
@@ -47,9 +51,10 @@ const ENV_API_KEYS = {
   zhipu: process.env.ZHIPU_API_KEY || null,
   openrouter: process.env.OPENROUTER_API_KEY || null,
   gemini: process.env.GEMINI_API_KEY || null,
+  kie: process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null,
 };
 
-export type ApiProvider = "zhipu" | "gemini" | "openrouter";
+export type ApiProvider = "zhipu" | "gemini" | "openrouter" | "kie";
 
 export interface AnalyzeOptions {
   userId: string;
@@ -178,6 +183,38 @@ async function callGeminiApi(
   return response.data.candidates[0].content.parts[0].text;
 }
 
+
+/**
+ * 调用 KiE Gemini Chat Completions API
+ */
+async function callKieGeminiApi(
+  apiKey: string,
+  messages: any[]
+): Promise<string> {
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    "Content-Type": "application/json",
+  };
+
+  const payload = {
+    model: API_CONFIGS.kie.model,
+    messages,
+    max_tokens: 4096,
+  };
+
+  const response = await axios.post(API_CONFIGS.kie.url, payload, {
+    headers,
+    timeout: 180000,
+    ...(axiosProxy ? { proxy: axiosProxy } : {}),
+  });
+
+  const content = response.data?.choices?.[0]?.message?.content;
+  if (!content) {
+    throw new Error("KIE Gemini API returned empty result");
+  }
+
+  return content;
+}
 /**
  * 调用 OpenRouter API
  */
@@ -258,7 +295,6 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
       // Gemini
       result = await callGeminiApi(apiKey, frames, prompt);
     } else {
-      // OpenRouter (使用类似智谱的格式)
       const messages = [
         {
           role: "user",
@@ -271,7 +307,13 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
           ],
         },
       ];
-      result = await callOpenRouterApi(apiKey, messages);
+
+      if (provider === "kie") {
+        result = await callKieGeminiApi(apiKey, messages);
+      } else {
+        // OpenRouter (使用类似智谱的格式)
+        result = await callOpenRouterApi(apiKey, messages);
+      }
     }
 
     // 提取核心提示词（兼容中英文格式）

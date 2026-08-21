@@ -2,8 +2,8 @@ import { and, count, desc, eq, sql } from "drizzle-orm";
 import { analysisHistory, db, operationLogs, user, userApiKeys } from "@/lib/db";
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
-type AnalyzeProvider = "zhipu" | "gemini" | "openrouter";
-const ANALYZE_PROVIDERS: AnalyzeProvider[] = ["openrouter", "zhipu", "gemini"];
+type AnalyzeProvider = "zhipu" | "gemini" | "openrouter" | "kie";
+const ANALYZE_PROVIDERS: AnalyzeProvider[] = ["openrouter", "zhipu", "gemini", "kie"];
 export type AnalyzeApiKeySource = "user" | "platform";
 
 const DEFAULT_TRIAL_LIMIT = 2;

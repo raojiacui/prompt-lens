@@ -63,6 +63,11 @@ describe("Video BYOK helpers", () => {
   });
 });
 describe("Analyze quota helpers", () => {
+  it("accepts KiE as an analyze provider key", async () => {
+    const { decodeAnalyzeApiKey } = await import("@/lib/usage/trial-quota");
+
+    expect(decodeAnalyzeApiKey("  kie-analysis-key  ")).toBe("kie-analysis-key");
+  });
   it("uses plaintext legacy analyze API keys when present", async () => {
     const { decodeAnalyzeApiKey } = await import("@/lib/usage/trial-quota");
 
