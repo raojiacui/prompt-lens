@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { ChevronLeft, ChevronRight, Mic2, Play, RefreshCw, RotateCcw, Save, Scissors, Upload, Video, WandSparkles } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Mic2, Play, RefreshCw, RotateCcw, Save, Scissors, Upload, Video, WandSparkles } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -112,6 +112,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   const [sceneDrafts, setSceneDrafts] = useState<Record<string, string>>({});
   const [rewriteDrafts, setRewriteDrafts] = useState<Record<string, string>>({});
   const [selectedSceneVersionIds, setSelectedSceneVersionIds] = useState<Record<string, string>>({});
+  const [copiedSceneVersionId, setCopiedSceneVersionId] = useState("");
   const [analysisModels, setAnalysisModels] = useState<ModelOption[]>([]);
   const [analysisModelValue, setAnalysisModelValue] = useState("auto");
   const modelPriority: ModelPriority = "balanced";
@@ -265,6 +266,12 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     }
   }
 
+  async function copySceneAnalysis(scene: SceneVersion) {
+    const text = formatSceneAnalysis(scene, projectMediaType);
+    await navigator.clipboard.writeText(text);
+    setCopiedSceneVersionId(scene.id);
+    window.setTimeout(() => setCopiedSceneVersionId((current) => (current === scene.id ? "" : current)), 1600);
+  }
   async function retryScene(scene: SceneVersion) {
     if (!bundle) return;
     setRetryingSceneId(scene.id);
@@ -468,6 +475,15 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                         <div className="flex items-center justify-between gap-3">
                           <label className="text-sm font-semibold">分析拆解</label>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <button
+                              type="button"
+                              aria-label="复制分析拆解"
+                              onClick={() => void copySceneAnalysis(sceneVersion)}
+                              className="flex h-8 items-center gap-1 rounded-full border border-border bg-background px-3 transition-colors hover:bg-accent"
+                            >
+                              {copiedSceneVersionId === sceneVersion.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                              <span>{copiedSceneVersionId === sceneVersion.id ? "Copied" : "Copy"}</span>
+                            </button>
                             <button
                               type="button"
                               aria-label="上一版脚本"
