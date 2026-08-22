@@ -24,7 +24,6 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       mediaType: body?.mediaType === "image" ? "image" : "video",
       mediaDuration: typeof body?.mediaDuration === "number" && Number.isFinite(body.mediaDuration) ? body.mediaDuration : undefined,
       singleShot: body?.singleShot === true,
-      resolveLinkedMedia: body?.resolveLinkedMedia === true,
       ...parseWorkflowModelSelection(body),
     });
     return NextResponse.json(bundle);
