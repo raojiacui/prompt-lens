@@ -101,7 +101,7 @@ function detectPlatform(url) {
   return "unsupported";
 }
 
-function assertSupportedMediaUrl(url) {
+function parseSupportedMediaUrl(url) {
   let parsed;
   try {
     parsed = new URL(url);
@@ -121,9 +121,17 @@ function assertSupportedMediaUrl(url) {
     error.statusCode = 400;
     throw error;
   }
-  return platform;
+  return { parsed, platform };
 }
 
+function normalizeMediaUrlForDownload(url) {
+  const { parsed, platform } = parseSupportedMediaUrl(url);
+  if (platform === "douyin") {
+    const modalId = parsed.searchParams.get("modal_id");
+    if (modalId && /^\d+$/.test(modalId)) return { platform, downloadUrl: `https://www.douyin.com/video/${modalId}` };
+  }
+  return { platform, downloadUrl: url };
+}
 async function downloadSocialVideo(url, targetPath) {
   await run(YTDLP_PATH, [
     "--no-playlist",
@@ -136,9 +144,9 @@ async function downloadSocialVideo(url, targetPath) {
 }
 
 async function resolveMediaToLocalFile(url, workDir) {
-  const platform = assertSupportedMediaUrl(url);
+  const { platform, downloadUrl } = normalizeMediaUrlForDownload(url);
   const inputPath = path.join(workDir, "resolved-video.mp4");
-  await downloadSocialVideo(url, inputPath);
+  await downloadSocialVideo(downloadUrl, inputPath);
   const metadata = await probeVideo(inputPath);
   if (!metadata.duration || metadata.duration <= 0) throw new Error("Unable to determine resolved video duration");
   if (metadata.duration > MAX_RESOLVE_SECONDS) {
