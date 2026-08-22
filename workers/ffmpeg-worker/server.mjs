@@ -22,6 +22,9 @@ const MIN_SCENE_SECONDS = Number(process.env.MIN_SCENE_SECONDS || 0.6);
 const FFMPEG_PATH = process.env.FFMPEG_PATH || "ffmpeg";
 const FFPROBE_PATH = process.env.FFPROBE_PATH || "ffprobe";
 const YTDLP_PATH = process.env.YTDLP_PATH || "yt-dlp";
+const YTDLP_COOKIES_FILE = process.env.YTDLP_COOKIES_FILE || "";
+const YTDLP_COOKIES_FROM_BROWSER = process.env.YTDLP_COOKIES_FROM_BROWSER || "";
+const YTDLP_JS_RUNTIME = process.env.YTDLP_JS_RUNTIME || "node";
 const MAX_RESOLVE_SECONDS = Number(process.env.MAX_RESOLVE_SECONDS || 600);
 
 function requireEnv() {
@@ -132,15 +135,23 @@ function normalizeMediaUrlForDownload(url) {
   }
   return { platform, downloadUrl: url };
 }
-async function downloadSocialVideo(url, targetPath) {
-  await run(YTDLP_PATH, [
+function buildYtDlpArgs(url, targetPath) {
+  const args = [
     "--no-playlist",
     "--no-progress",
     "--merge-output-format", "mp4",
     "-f", "bv*+ba/best[ext=mp4]/best",
     "-o", targetPath,
-    url,
-  ], { timeout: 1000 * 60 * 10 });
+  ];
+  if (YTDLP_JS_RUNTIME) args.push("--js-runtimes", YTDLP_JS_RUNTIME);
+  if (YTDLP_COOKIES_FILE) args.push("--cookies", YTDLP_COOKIES_FILE);
+  else if (YTDLP_COOKIES_FROM_BROWSER) args.push("--cookies-from-browser", YTDLP_COOKIES_FROM_BROWSER);
+  args.push(url);
+  return args;
+}
+
+async function downloadSocialVideo(url, targetPath) {
+  await run(YTDLP_PATH, buildYtDlpArgs(url, targetPath), { timeout: 1000 * 60 * 10 });
 }
 
 async function resolveMediaToLocalFile(url, workDir) {

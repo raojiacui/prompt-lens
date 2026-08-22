@@ -83,6 +83,9 @@ SCENE_THRESHOLD=0.32
 MAX_SCENE_SECONDS=8
 MIN_SCENE_SECONDS=0.6
 YTDLP_PATH=yt-dlp
+YTDLP_JS_RUNTIME=node
+YTDLP_COOKIES_FILE=
+YTDLP_COOKIES_FROM_BROWSER=
 MAX_RESOLVE_SECONDS=600
 ```
 
@@ -102,3 +105,19 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-w
 The script loads .env.local, derives R2_ENDPOINT from R2_ACCOUNT_ID when needed, and serves http://localhost:8080.
 
 The Dockerfile installs `yt-dlp` for `/resolve-media`. TikTok and Douyin availability can vary by region, anti-bot checks, or expired share links; if production links fail, deploy the worker in a reachable region and consider adding cookie/proxy handling later.
+
+## YouTube bot checks
+
+Some YouTube links require login cookies. Export cookies to a local file and set:
+
+```text
+YTDLP_COOKIES_FILE=C:\path\to\youtube-cookies.txt
+```
+
+For local testing only, you can also try browser cookies:
+
+```text
+YTDLP_COOKIES_FROM_BROWSER=chrome
+```
+
+`YTDLP_JS_RUNTIME=node` is enabled by default to satisfy recent YouTube extraction requirements. Do not commit cookie files or put raw cookie contents in `.env.local`.
