@@ -21,7 +21,7 @@ export function ApiKeySettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [provider, setProvider] = useState("openrouter");
+  const [provider, setProvider] = useState("kie");
   const [apiKey, setApiKey] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -90,10 +90,9 @@ export function ApiKeySettings() {
   };
 
   const providerLabel = (p: string) => {
-    if (p === "zhipu") return t("zhipuName");
-    if (p === "gemini") return t("geminiName");
     if (p === "kie") return t("kieName");
-    return t("openrouterName");
+    if (p === "openrouter") return t("openrouterName");
+    return p;
   };
 
   return (
@@ -111,10 +110,8 @@ export function ApiKeySettings() {
             <div>
               <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-2">{t("provider")}</label>
               <Select value={provider} onChange={(e) => setProvider(e.target.value)} className="bg-[var(--color-bg-raised)]">
-                <option value="zhipu">{t("providerZhipuAnalyze")}</option>
-                <option value="gemini">{t("providerGeminiAnalyze")}</option>
-                <option value="openrouter">{t("providerOpenrouterAnalyze")}</option>
                 <option value="kie">{t("providerKie")}</option>
+                <option value="openrouter">{t("providerOpenrouterAnalyze")}</option>
               </Select>
             </div>
             <div className="md:col-span-2">
@@ -124,13 +121,7 @@ export function ApiKeySettings() {
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={
-                    provider === "zhipu"
-                      ? t("placeholderZhipu")
-                      : provider === "gemini"
-                      ? t("placeholderGemini")
-                      : t("placeholderOpenrouter")
-                  }
+                  placeholder={provider === "kie" ? t("placeholderKie") : t("placeholderOpenrouter")}
                   className="bg-[var(--color-bg-raised)]"
                 />
                 <Button onClick={saveApiKey} disabled={saving} className="bg-[var(--color-accent-orange)] hover:bg-[var(--color-accent-orange-hover)]">
@@ -212,66 +203,34 @@ export function ApiKeySettings() {
         <CardHeader>
           <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("providerDocs")}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-5 text-sm leading-relaxed text-[var(--color-text-secondary)]">
           <div>
-            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("zhipuRecommended")}</h4>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-2 leading-relaxed">
-              {t("zhipuDesc")}{" "}
-              <a
-                href="https://open.bigmodel.cn/usercenter/apikeys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--color-accent-orange)] hover:underline"
-              >
-                {t("zhipuLink")}
-              </a>{" "}
-              {t("zhipuGetKey")}
-            </p>
+            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("trialTitle")}</h4>
+            <p className="mt-2">{t("trialDesc")}</p>
           </div>
           <div>
-            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("geminiName")}</h4>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-2 leading-relaxed">
-              {t("geminiDesc")}{" "}
-              <a
-                href="https://aistudio.google.com/app/apikey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--color-accent-orange)] hover:underline"
-              >
-                {t("geminiLink")}
+            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("kieName")}</h4>
+            <p className="mt-2">
+              {t("kieDesc")}{" "}
+              <a href="https://api.kie.ai" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-orange)] hover:underline">
+                {t("kieLink")}
               </a>{" "}
-              {t("geminiGetKey")}
+              {t("kieGetKey")}
             </p>
           </div>
           <div>
             <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("openrouterName")}</h4>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-2 leading-relaxed">
+            <p className="mt-2">
               {t("openrouterDesc")}{" "}
-              <a
-                href="https://openrouter.ai/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--color-accent-orange)] hover:underline"
-              >
+              <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-orange)] hover:underline">
                 {t("openrouterLink")}
               </a>{" "}
               {t("openrouterGetKey")}
             </p>
           </div>
-          <div>
-            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("kieName")}</h4>
-            <p className="text-sm text-[var(--color-text-secondary)] mt-2 leading-relaxed">
-              {t("kieDesc")}{" "}
-              <a
-                href="https://api.kie.ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--color-accent-orange)] hover:underline"
-              >
-                {t("kieLink")}
-              </a>{" "}
-              {t("kieGetKey")}
-            </p>
+          <div className="rounded-xl border border-[var(--color-border-default)] bg-white p-4">
+            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("storageTitle")}</h4>
+            <p className="mt-2">{t("storageDesc")}</p>
           </div>
         </CardContent>
       </Card>

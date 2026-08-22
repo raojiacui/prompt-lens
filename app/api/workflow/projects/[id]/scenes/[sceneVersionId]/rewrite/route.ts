@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { getModelById } from "@/lib/ai/model-registry";
+import { getUserApiKeyForProvider } from "@/lib/byok/kie";
 import { isAdmin } from "@/lib/auth";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
@@ -17,19 +18,23 @@ export async function POST(
   const instruction = typeof body?.instruction === "string" ? body.instruction.trim() : "";
   if (!instruction) return NextResponse.json({ error: "Missing rewrite instruction" }, { status: 400 });
 
-  const [userKieApiKey, adminUser] = await Promise.all([getUserKieApiKey(session.user.id), isAdmin(session.user.id)]);
-  if (!userKieApiKey && !adminUser) {
+  const modelSelection = parseWorkflowModelSelection(body);
+  const selectedModel = modelSelection.modelMode === "manual" && modelSelection.modelId ? getModelById(modelSelection.modelId) : null;
+  const provider = selectedModel?.provider || "kie";
+
+  const [userApiKey, adminUser] = await Promise.all([getUserApiKeyForProvider(session.user.id, provider), isAdmin(session.user.id)]);
+  if (!userApiKey && !adminUser) {
     return NextResponse.json(
       {
-        error: "重写脚本需要先在设置里配置你自己的 KiE API Key。这个功能不消耗免费视频分析额度，普通用户不会使用平台 Key。",
-        code: "USER_KIE_KEY_REQUIRED",
+        error: `重写脚本需要先在设置里配置你自己的 ${provider} API Key。这个功能不消耗免费视频分析额度，普通用户不会使用平台 Key。`,
+        code: "USER_PROVIDER_KEY_REQUIRED",
       },
       { status: 400 },
     );
   }
 
   try {
-    const scene = await rewriteSceneVersion({ userId: session.user.id, projectId: id, sceneVersionId, instruction, allowPlatformKeyForRewrite: adminUser, ...parseWorkflowModelSelection(body) });
+    const scene = await rewriteSceneVersion({ userId: session.user.id, projectId: id, sceneVersionId, instruction, allowPlatformKeyForRewrite: adminUser, ...modelSelection });
     return NextResponse.json({ scene });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Scene rewrite failed" }, { status: 500 });

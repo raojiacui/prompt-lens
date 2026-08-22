@@ -63,21 +63,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }).where(and(eq(sceneVersions.id, scene.id), eq(sceneVersions.projectId, id)));
   }
 
-  const apiKey = await getUserKieApiKey(session.user.id) || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
+  const apiKey = await getUserKieApiKey(session.user.id);
   const callbackUrl = typeof body.callbackUrl === "string" ? body.callbackUrl.trim() : undefined;
-  let audioTask: Awaited<ReturnType<typeof createKieDialogueTask>> | null = null;
-  if (apiKey) {
-    audioTask = await createKieDialogueTask({ apiKey, modelId: plan.modelId, cues: plan.cues, callBackUrl: callbackUrl });
-  }
+  if (!apiKey) return NextResponse.json({ error: "Please add your own KIE API Key in Settings before audio generation." }, { status: 400 });
+  const audioTask = await createKieDialogueTask({ apiKey, modelId: plan.modelId, cues: plan.cues, callBackUrl: callbackUrl });
 
   const [job] = await db.insert(workflowJobs).values({
     projectId: id,
     type: "GENERATE_AUDIO",
-    status: audioTask ? "processing" : "completed",
+    status: "processing",
     provider: "kie",
     modelId: plan.modelId,
     externalTaskId: audioTask?.taskId,
-    resultUrl: audioTask ? null : srtUrl,
+    resultUrl: null,
     input: { versionId: bundle.activeVersion.id, modelMode: plan.modelMode, modelPriority: plan.modelPriority, callbackUrl },
     output: {
       subtitleAssetId: asset.id,
@@ -88,10 +86,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       sfx: plan.sfx,
       providerTaskId: audioTask?.taskId,
       providerRecordId: audioTask?.recordId,
-      ttsStatus: audioTask ? "submitted" : "not_submitted",
-      ttsReason: audioTask ? undefined : "KIE API key is not configured; generated subtitle package only.",
+      ttsStatus: "submitted",
+      ttsReason: undefined,
     },
-    completedAt: audioTask ? null : new Date(),
+    completedAt: null,
   }).returning();
 
   return NextResponse.json({ success: true, plan, subtitleAsset: asset, job, providerTaskId: audioTask?.taskId, providerRecordId: audioTask?.recordId });

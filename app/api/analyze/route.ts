@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, analysisHistory, operationLogs } from "@/lib/db";
 import { analyzeFrames, ApiProvider } from "@/lib/ai/analyzer";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { defaultLocale, isLocale } from "@/i18n/config";
+import { assertTrialQuota, trialQuotaResponse } from "@/lib/usage/trial-quota";
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,6 +64,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No frames available" }, { status: 400 });
     }
 
+    await assertTrialQuota(session.user.id);
+
     // 记录分析开始
     await db.insert(operationLogs).values({
       userId: session.user.id,
@@ -121,6 +124,8 @@ export async function POST(request: NextRequest) {
       historyId: historyRecord[0].id,
     });
   } catch (error: any) {
+    const quotaError = trialQuotaResponse(error);
+    if (quotaError) return NextResponse.json(quotaError, { status: 402 });
     console.error("Analyze error:", error);
     return NextResponse.json({ error: error.message || "Analysis failed" }, { status: 500 });
   }

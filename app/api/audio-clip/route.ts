@@ -47,6 +47,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+  try {
+  } catch (error) {
+    throw error;
+  }
+
     // 创建临时目录
     tempDir = path.join(process.cwd(), "temp_video_clip", randomUUID());
     await fs.mkdir(tempDir, { recursive: true });

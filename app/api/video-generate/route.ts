@@ -9,8 +9,37 @@ import {
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { db, videoGeneration } from "@/lib/db";
 import { and, desc, eq } from "drizzle-orm";
+import { getModelById, routeModel, type ModelRegistryEntry } from "@/lib/ai/model-registry";
 
 const VIDEO_GENERATE_LIMIT = { limit: 3, windowMs: 60000 };
+const MIN_VIDEO_DURATION = 4;
+
+function selectedGenerationModel(value: unknown) {
+  if (typeof value === "string" && value.trim()) {
+    const model = getModelById(value.trim());
+    if (model?.category === "video_generation") return model;
+  }
+  return routeModel({ category: "video_generation", priority: "balanced", requiredCapabilities: ["text"] });
+}
+
+function parseAspectRatio(value: unknown, model: ModelRegistryEntry | null | undefined) {
+  const supported = model?.aspectRatios?.length ? model.aspectRatios : ["16:9"];
+  if (value === "auto") return undefined;
+  if (typeof value === "string" && supported.includes(value)) return value;
+  return supported[0];
+}
+
+function parseDuration(value: unknown, model: ModelRegistryEntry | null | undefined) {
+  const max = Math.max(1, Math.round(model?.maxDuration || 10));
+  const min = Math.min(MIN_VIDEO_DURATION, max);
+  const parsed = typeof value === "number"
+    ? value
+    : typeof value === "string"
+      ? Number.parseInt(value, 10)
+      : Number.NaN;
+  const requested = Number.isFinite(parsed) ? Math.round(parsed) : Math.min(10, max);
+  return Math.min(max, Math.max(min, requested));
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,17 +68,18 @@ export async function POST(request: NextRequest) {
     }
 
     const provider = (body?.provider as string) || DEFAULT_VIDEO_PROVIDER;
-    const duration = Number(body?.duration);
-    const normalizedDuration = Number.isFinite(duration) ? duration : undefined;
+    const selectedModel = selectedGenerationModel(body?.model || body?.modelId);
+    const normalizedDuration = parseDuration(body?.duration, selectedModel);
+    const aspectRatio = parseAspectRatio(body?.aspectRatio, selectedModel);
     const resolution = typeof body?.resolution === "string" ? body.resolution : undefined;
     const negativePrompt = typeof body?.negativePrompt === "string" ? body.negativePrompt : undefined;
-    const model = typeof body?.model === "string" && body.model.trim() ? body.model.trim() : KIE_VIDEO_MODEL;
+    const model = selectedModel?.kieModelId || KIE_VIDEO_MODEL;
 
     // 获取用户配置的 provider API Key
     const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
-    const effectiveApiKey = userApiKey || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
+    const effectiveApiKey = userApiKey;
     if (!effectiveApiKey) {
-      return NextResponse.json({ error: "未配置 API Key，请先在设置中添加" }, { status: 400 });
+      return NextResponse.json({ error: "请先在设置中添加你自己的 KIE API Key" }, { status: 400 });
     }
 
     const videoProvider = createVideoProvider(provider as any, effectiveApiKey);
@@ -59,6 +89,7 @@ export async function POST(request: NextRequest) {
       resolution,
       negativePrompt,
       model,
+      aspectRatio,
     });
 
     const records = await db

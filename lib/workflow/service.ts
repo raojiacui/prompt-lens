@@ -1,6 +1,6 @@
 import { db, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
-import { breakdownVideoWithWorker } from "@/lib/ffmpeg-worker/client";
+import { breakdownVideoWithWorker, resolveLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
 import { routeModel } from "@/lib/ai/model-registry";
 import { getUserKieApiKey } from "@/lib/byok/kie";
 import { buildSceneAudioContexts, transcribeMediaWithKie, type SceneAudioContext } from "@/lib/workflow/transcription";
@@ -115,6 +115,24 @@ function deriveProjectTitle(overview: Record<string, unknown>, sceneBlueprints: 
 
   return cleanProjectTitle(fallbackTitle) || "Untitled video project";
 }
+function buildSingleShotBreakdown(mediaUrl: string, duration?: number): { scenes: FfmpegSceneAsset[]; metadata: { duration: number; source: string; mediaType: "video"; singleShot: boolean } } {
+  const safeDuration = Number.isFinite(duration) && duration && duration > 0 ? Math.round(duration * 1000) / 1000 : 10;
+  return {
+    scenes: [{
+      sceneIndex: 1,
+      startTime: 0,
+      endTime: safeDuration,
+      duration: safeDuration,
+      shotGroupId: "single-shot",
+      clipUrl: mediaUrl,
+      keyframeUrls: [],
+      audioUrl: undefined,
+      transitionIn: "start",
+      transitionOut: "end",
+    }],
+    metadata: { duration: safeDuration, source: "single-shot-upload", mediaType: "video", singleShot: true },
+  };
+}
 export function buildSceneBlueprint(scene: FfmpegSceneAsset): SceneBlueprintDraft {
   return buildFallbackSceneBlueprint(scene);
 }
@@ -195,10 +213,18 @@ export async function runVideoBreakdown(params: {
   mediaName?: string;
   storageKey?: string;
   mediaType?: "video" | "image";
+  mediaDuration?: number;
+  singleShot?: boolean;
+  resolveLinkedMedia?: boolean;
 } & AiModelSelection) {
   const project = await getProjectForUser(params.projectId, params.userId);
   if (!project) throw new Error("Project not found");
   const isImage = params.mediaType === "image";
+  let effectiveMediaUrl = params.mediaUrl;
+  let effectiveMediaName = params.mediaName;
+  let effectiveStorageKey = params.storageKey;
+  let effectiveMediaDuration = params.mediaDuration;
+  let linkedMediaMetadata: Record<string, unknown> | undefined;
 
   const [job] = await db
     .insert(workflowJobs)
@@ -206,12 +232,20 @@ export async function runVideoBreakdown(params: {
       projectId: params.projectId,
       type: "ANALYZE_VIDEO",
       status: "processing",
-      input: { mediaUrl: params.mediaUrl, mediaName: params.mediaName, mediaType: params.mediaType },
+      input: { mediaUrl: params.mediaUrl, mediaName: params.mediaName, mediaType: params.mediaType, mediaDuration: params.mediaDuration, singleShot: params.singleShot, resolveLinkedMedia: params.resolveLinkedMedia },
     })
     .returning();
 
   try {
     await db.update(projects).set({ status: "analyzing", updatedAt: new Date() }).where(eq(projects.id, params.projectId));
+    if (!isImage && params.resolveLinkedMedia) {
+      const resolved = await resolveLinkedMediaWithWorker(params.mediaUrl);
+      effectiveMediaUrl = resolved.mediaUrl;
+      effectiveMediaName = resolved.filename || params.mediaName;
+      effectiveStorageKey = resolved.storageKey || params.storageKey;
+      effectiveMediaDuration = typeof resolved.metadata.duration === "number" ? resolved.metadata.duration : params.mediaDuration;
+      linkedMediaMetadata = { platform: resolved.platform, originalUrl: params.mediaUrl, resolvedStorageKey: resolved.storageKey };
+    }
     const breakdown = isImage
       ? {
           scenes: [{
@@ -219,7 +253,7 @@ export async function runVideoBreakdown(params: {
             startTime: 0,
             endTime: 0,
             duration: 0,
-            keyframeUrls: [params.mediaUrl],
+            keyframeUrls: [effectiveMediaUrl],
             clipUrl: undefined,
             audioUrl: undefined,
             transitionIn: "start",
@@ -227,7 +261,9 @@ export async function runVideoBreakdown(params: {
           } as FfmpegSceneAsset],
           metadata: { duration: 0, source: "image", mediaType: "image" },
         }
-      : await breakdownVideoWithWorker(params.mediaUrl);
+      : effectiveMediaDuration && effectiveMediaDuration <= 10.75
+        ? buildSingleShotBreakdown(effectiveMediaUrl, effectiveMediaDuration)
+        : await breakdownVideoWithWorker(effectiveMediaUrl);
     if (!breakdown.scenes.length) throw new Error(isImage ? "Failed to prepare image for analysis" : "No scenes detected in the uploaded video");
 
     let transcriptionReason: string | undefined;
@@ -238,7 +274,7 @@ export async function runVideoBreakdown(params: {
         transcription = await transcribeMediaWithKie({
           userId: params.userId,
           apiKey: kieApiKey,
-          mediaUrl: params.mediaUrl,
+          mediaUrl: effectiveMediaUrl,
           modelPriority: params.modelPriority || "balanced",
         });
         if (!transcription) transcriptionReason = "KIE API key is not configured";
@@ -255,12 +291,12 @@ export async function runVideoBreakdown(params: {
       .insert(referenceVideos)
       .values({
         projectId: params.projectId,
-        sourceUrl: params.mediaUrl,
-        storageKey: params.storageKey,
-        fileName: params.mediaName,
+        sourceUrl: effectiveMediaUrl,
+        storageKey: effectiveStorageKey,
+        fileName: effectiveMediaName,
         mimeType: imageMimeType,
         duration: isImage ? 0 : breakdown.metadata.duration,
-        metadata: { ...breakdown.metadata, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } },
+        metadata: { ...breakdown.metadata, linkedMedia: linkedMediaMetadata, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } },
       })
       .returning();
 
@@ -380,7 +416,7 @@ export async function runVideoBreakdown(params: {
     await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
     await db
       .update(projects)
-      .set({ title: derivedTitle, status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { mediaType: params.mediaType || "video", autoTitle: derivedTitle, originalTitle: project.title, failedSceneCount: failedScenes.length, failedScenes, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } } })
+      .set({ title: derivedTitle, status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { mediaType: params.mediaType || "video", linkedMedia: linkedMediaMetadata, autoTitle: derivedTitle, originalTitle: project.title, failedSceneCount: failedScenes.length, failedScenes, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } } })
       .where(eq(projects.id, params.projectId));
     await db
       .update(workflowJobs)

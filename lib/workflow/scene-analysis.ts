@@ -1,4 +1,7 @@
 import { getUserKieApiKey } from "@/lib/byok/kie";
+import { db, userApiKeys } from "@/lib/db";
+import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
+import { and, eq } from "drizzle-orm";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
@@ -38,8 +41,11 @@ export interface SceneRewriteInput extends AiModelSelection {
   allowPlatformKeyForRewrite?: boolean;
 }
 
-type KieChatJsonResult = {
+type AnalysisProvider = "kie" | "openrouter";
+
+type AnalysisChatJsonResult = {
   json: Record<string, unknown>;
+  provider: AnalysisProvider;
   modelId: string;
   modelMode: ModelSelectionMode;
   modelPriority: ModelPriority;
@@ -48,6 +54,8 @@ type KieChatJsonResult = {
 const KIE_BASE_URL = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
 const DEFAULT_KIE_ANALYSIS_MODEL = process.env.KIE_ANALYSIS_MODEL;
 const KIE_ANALYSIS_ENDPOINT = process.env.KIE_ANALYSIS_ENDPOINT;
+const OPENROUTER_ANALYSIS_URL = process.env.OPENROUTER_API_BASE_URL || "https://openrouter.ai/api/v1/chat/completions";
+const DEFAULT_OPENROUTER_ANALYSIS_MODEL = process.env.OPENROUTER_ANALYSIS_MODEL || "google/gemini-2.5-flash";
 
 function compactJson(value: unknown) {
   try {
@@ -77,7 +85,7 @@ function parseJsonObject(raw: string) {
     const start = trimmed.indexOf("{");
     const end = trimmed.lastIndexOf("}");
     if (start >= 0 && end > start) return JSON.parse(trimmed.slice(start, end + 1)) as Record<string, unknown>;
-    throw new Error("KIE returned non-JSON scene analysis");
+    throw new Error("AI provider returned non-JSON scene analysis");
   }
 }
 
@@ -89,10 +97,21 @@ async function getKieApiKey(userId: string, options?: { allowPlatformKey?: boole
   return process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
 }
 
+async function getOpenRouterApiKey(userId: string, options?: { allowPlatformKey?: boolean }) {
+  if (options?.allowPlatformKey !== false && process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY;
+
+  const record = await db.query.userApiKeys.findFirst({
+    where: and(eq(userApiKeys.userId, userId), eq(userApiKeys.provider, "openrouter")),
+  });
+  if (!record || !record.isActive) return null;
+  if (isValidEncryptedKey(record.apiKey)) return decryptApiKey(record.apiKey);
+  return record.apiKey;
+}
+
 function resolveAnalysisSelection(selection?: AiModelSelection) {
   const priority = selection?.modelPriority || "balanced";
   if (DEFAULT_KIE_ANALYSIS_MODEL && selection?.modelMode !== "manual") {
-    return { modelId: DEFAULT_KIE_ANALYSIS_MODEL, modelMode: "auto" as const, modelPriority: priority };
+    return { provider: "kie" as const, modelId: DEFAULT_KIE_ANALYSIS_MODEL, modelMode: "auto" as const, modelPriority: priority };
   }
 
   const resolved = resolveModelSelection(
@@ -100,7 +119,7 @@ function resolveAnalysisSelection(selection?: AiModelSelection) {
     { mode: selection?.modelMode, modelId: selection?.modelId, priority },
     { requiredCapabilities: ["text", "image"] },
   );
-  return { modelId: resolved.model.kieModelId, modelMode: resolved.mode, modelPriority: resolved.priority };
+  return { provider: resolved.model.provider, modelId: resolved.model.kieModelId, modelMode: resolved.mode, modelPriority: resolved.priority };
 }
 
 function kieAnalysisUrl(modelId: string) {
@@ -109,38 +128,57 @@ function kieAnalysisUrl(modelId: string) {
   return `${KIE_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 }
 
-async function callKieChatJson(params: {
+async function callAnalysisChatJson(params: {
   userId: string;
   system: string;
   content: Array<Record<string, unknown>>;
   selection?: AiModelSelection;
   allowPlatformKey?: boolean;
-}): Promise<KieChatJsonResult | null> {
-  const apiKey = await getKieApiKey(params.userId, { allowPlatformKey: params.allowPlatformKey });
-  if (!apiKey) return null;
+}): Promise<AnalysisChatJsonResult | null> {
   const selected = resolveAnalysisSelection(params.selection);
+  const apiKey = selected.provider === "openrouter"
+    ? await getOpenRouterApiKey(params.userId, { allowPlatformKey: params.allowPlatformKey })
+    : await getKieApiKey(params.userId, { allowPlatformKey: params.allowPlatformKey });
+  if (!apiKey) return null;
 
-  const response = await fetch(kieAnalysisUrl(selected.modelId), {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: selected.modelId,
-      temperature: 0.25,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: params.system },
-        { role: "user", content: params.content },
-      ],
-    }),
-  });
+  const messages = [
+    { role: "system", content: params.system },
+    { role: "user", content: params.content },
+  ];
+
+  const response = selected.provider === "openrouter"
+    ? await fetch(OPENROUTER_ANALYSIS_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": process.env.NEXT_PUBLIC_SITE_URL || "https://prompt-analyzer.com",
+          "X-Title": "Prompt Lens",
+        },
+        body: JSON.stringify({
+          model: selected.modelId || DEFAULT_OPENROUTER_ANALYSIS_MODEL,
+          temperature: 0.25,
+          messages,
+        }),
+      })
+    : await fetch(kieAnalysisUrl(selected.modelId), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: selected.modelId,
+          temperature: 0.25,
+          response_format: { type: "json_object" },
+          messages,
+        }),
+      });
 
   const payload = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(payload?.error?.message || payload?.msg || `KIE analysis failed with ${response.status}`);
+  if (!response.ok) throw new Error(payload?.error?.message || payload?.msg || `${selected.provider} analysis failed with ${response.status}`);
   const content = payload?.choices?.[0]?.message?.content;
-  if (typeof content !== "string") throw new Error("KIE returned an empty scene analysis");
+  if (typeof content !== "string") throw new Error(`${selected.provider} returned an empty scene analysis`);
   return { json: parseJsonObject(content), ...selected };
 }
 
@@ -214,7 +252,7 @@ export async function analyzeSceneBlueprint(params: {
 } & AiModelSelection) {
   const fallback = buildFallbackSceneBlueprint(params.scene, undefined, params.context.audio);
   try {
-    const raw = await callKieChatJson({
+    const raw = await callAnalysisChatJson({
       userId: params.userId,
       selection: params,
       system: [
@@ -241,13 +279,14 @@ export async function analyzeSceneBlueprint(params: {
           ].join("\n"),
         },
         ...params.scene.keyframeUrls.slice(0, 3).map((url) => ({ type: "image_url", image_url: { url } })),
+        ...(!params.scene.keyframeUrls.length && params.scene.clipUrl ? [{ type: "video_url", video_url: { url: params.scene.clipUrl } }] : []),
       ],
     });
-    if (!raw) return buildFallbackSceneBlueprint(params.scene, "KIE API key not configured", params.context.audio);
-    const blueprint = normalizeBlueprint(raw.json, fallback, "kie");
+    if (!raw) return buildFallbackSceneBlueprint(params.scene, "Selected analysis provider API key not configured", params.context.audio);
+    const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider);
     return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority } };
   } catch (error) {
-    return buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "KIE scene analysis failed", params.context.audio);
+    return buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "Scene analysis failed", params.context.audio);
   }
 }
 
@@ -304,7 +343,7 @@ export async function analyzeImageBlueprint(params: {
 } & AiModelSelection) {
   const fallback = buildFallbackImageBlueprint(params.scene);
   try {
-    const raw = await callKieChatJson({
+    const raw = await callAnalysisChatJson({
       userId: params.userId,
       selection: params,
       system: [
@@ -327,13 +366,14 @@ export async function analyzeImageBlueprint(params: {
           ].join("\n"),
         },
         ...params.scene.keyframeUrls.slice(0, 3).map((url) => ({ type: "image_url", image_url: { url } })),
+        ...(!params.scene.keyframeUrls.length && params.scene.clipUrl ? [{ type: "video_url", video_url: { url: params.scene.clipUrl } }] : []),
       ],
     });
-    if (!raw) return buildFallbackImageBlueprint(params.scene, "KIE API key not configured");
-    const blueprint = normalizeBlueprint(raw.json, fallback, "kie");
+    if (!raw) return buildFallbackImageBlueprint(params.scene, "Selected analysis provider API key not configured");
+    const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider);
     return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority, mediaType: "image" } };
   } catch (error) {
-    return buildFallbackImageBlueprint(params.scene, error instanceof Error ? error.message : "KIE image analysis failed");
+    return buildFallbackImageBlueprint(params.scene, error instanceof Error ? error.message : "Image analysis failed");
   }
 }
 
@@ -354,7 +394,7 @@ export async function buildStructuredVideoOverview(params: {
   };
 
   try {
-    const raw = await callKieChatJson({
+    const raw = await callAnalysisChatJson({
       userId: params.userId,
       selection: params,
       system: "Return strict JSON only. Summarize the whole video blueprint for a creator dashboard.",
@@ -386,7 +426,7 @@ export async function rewriteSceneBlueprint(params: SceneRewriteInput): Promise<
   };
 
   try {
-    const raw = await callKieChatJson({
+    const raw = await callAnalysisChatJson({
       userId: params.userId,
       selection: params,
       allowPlatformKey: params.allowPlatformKeyForRewrite === true,
@@ -403,8 +443,8 @@ export async function rewriteSceneBlueprint(params: SceneRewriteInput): Promise<
       ],
     });
     if (!raw) return fallback;
-    const blueprint = normalizeBlueprint(raw.json, fallback, "kie");
-    return { ...blueprint, metadata: { ...fallback.metadata, ...(blueprint.metadata || {}), rewriteProvider: "kie", analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority, rewrittenAt: new Date().toISOString() } };
+    const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider);
+    return { ...blueprint, metadata: { ...fallback.metadata, ...(blueprint.metadata || {}), rewriteProvider: raw.provider, analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority, rewrittenAt: new Date().toISOString() } };
   } catch {
     return fallback;
   }
@@ -426,5 +466,6 @@ export async function remixSceneBlueprint(params: {
     modelMode: params.modelMode,
     modelId: params.modelId,
     modelPriority: params.modelPriority,
+    allowPlatformKeyForRewrite: false,
   });
 }

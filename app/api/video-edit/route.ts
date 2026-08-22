@@ -147,6 +147,7 @@ export async function POST(request: NextRequest) {
     if (!videoUrl) {
       return NextResponse.json({ error: "Missing mediaUrl" }, { status: 400 });
     }
+
     if (!ffmpegServiceUrl || !ffmpegWorkerSecret) {
       return NextResponse.json({ error: "FFmpeg worker is not configured on the server" }, { status: 500 });
     }

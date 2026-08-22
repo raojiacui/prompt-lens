@@ -1,23 +1,23 @@
 "use client";
 
-import { useState, type ElementType } from "react";
+import { useEffect, useState, type ElementType } from "react";
 import { useSession, signOut } from "@/lib/auth/auth-client";
 import { HistoryList } from "@/components/history-list";
 import { ApiKeySettings } from "@/components/api-key-settings";
 import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
 import { VideoEditTab } from "@/components/video-edit-tab";
 import { ReferenceVideoComposer } from "@/components/reference-video/ReferenceVideoComposer";
-import { FloatingChat } from "@/components/floating-chat";
 import { CreateWithAgent } from "@/components/agent/create-with-agent";
 import { VideoWorkflowCreate } from "@/components/workflow/video-workflow-create";
+import { AdminOverviewPanel } from "@/components/admin-overview-panel";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, Clock, Home, LogOut, Mic2, Scissors, Settings, Sparkles, Video } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Home, LogOut, Mic2, Scissors, Settings, Shield, Sparkles, Video } from "lucide-react";
 
-type Tab = "home" | "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
+type Tab = "home" | "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings" | "admin";
 type FeatureTab = "analyze" | "audio" | "edit" | "video-gen";
 
 export default function DashboardPage() {
@@ -26,7 +26,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const validTabs: Tab[] = ["home", "analyze", "audio", "edit", "video-gen", "history", "settings"];
+  const validTabs: Tab[] = ["home", "analyze", "audio", "edit", "video-gen", "history", "settings", "admin"];
 
   const rawTab = searchParams.get("tab");
   const activeTab: Tab = rawTab === "create" || rawTab === "projects"
@@ -80,6 +80,34 @@ export default function DashboardPage() {
   const workflowSceneId = activeTab === "audio" || activeTab === "edit" ? searchParams.get("sceneId") : null;
   const [historyRefreshTrigger] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const sessionIsAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
+  const [canAccessAdmin, setCanAccessAdmin] = useState(sessionIsAdmin);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!session?.user) {
+      setCanAccessAdmin(false);
+      return;
+    }
+
+    if (sessionIsAdmin) {
+      setCanAccessAdmin(true);
+      return;
+    }
+
+    fetch("/api/admin/overview?probe=1")
+      .then((response) => {
+        if (!cancelled) setCanAccessAdmin(response.ok);
+      })
+      .catch(() => {
+        if (!cancelled) setCanAccessAdmin(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user, sessionIsAdmin]);
 
 
   const handleNavigateVideoGen = (prompt: string) => {
@@ -148,6 +176,7 @@ export default function DashboardPage() {
   const systemTools = [
     { key: "history" as Tab, label: t("dashboard.tabs.history"), icon: Clock },
     { key: "settings" as Tab, label: t("dashboard.tabs.settings"), icon: Settings },
+    ...(canAccessAdmin ? [{ key: "admin" as Tab, label: "后台", icon: Shield }] : []),
   ];
 
   return (
@@ -420,11 +449,17 @@ export default function DashboardPage() {
               <ApiKeySettings />
             </div>
           )}
+
+          {/* 管理后台 */}
+          {activeTab === "admin" && (
+            <div className="animate-fade-in">
+              <AdminOverviewPanel />
+            </div>
+          )}
         </div>
       </main>
 
       {/* 悬浮聊天助手 */}
-      <FloatingChat />
     </div>
   );
 }
@@ -463,4 +498,3 @@ function SidebarItem({
     </button>
   );
 }
-

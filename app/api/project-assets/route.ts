@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
+import { db, operationLogs } from "@/lib/db";
 import { uploadToR2 } from "@/lib/cloudflare/r2";
 import { randomUUID } from "crypto";
 
@@ -13,6 +14,9 @@ function getContentType(filename: string): string {
     png: "image/png",
     gif: "image/gif",
     webp: "image/webp",
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    webm: "video/webm",
   };
   return mimeTypes[ext || ""] || "application/octet-stream";
 }
@@ -38,6 +42,21 @@ export async function POST(request: Request) {
     const ext = file.name.split(".").pop()?.toLowerCase() || "png";
     const key = `users/${auth.user.id}/assets/${randomUUID()}.${ext}`;
     const url = await uploadToR2(buffer, key, getContentType(file.name));
+
+    await db.insert(operationLogs).values({
+      userId: auth.user.id,
+      action: "file.upload",
+      resourceType: "project_asset",
+      metadata: {
+        phase: "completed",
+        filename: file.name,
+        size: file.size,
+        url,
+        storageKey: key,
+        storage: "r2",
+        assetType: typeof assetType === "string" ? assetType : "product",
+      },
+    });
 
     return NextResponse.json({
       id: randomUUID(),

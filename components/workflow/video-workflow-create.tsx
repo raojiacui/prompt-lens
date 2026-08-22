@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, Copy, Mic2, Play, RefreshCw, RotateCcw, Scissors, Upload, Video, WandSparkles } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Link, Mic2, Play, RefreshCw, RotateCcw, Scissors, Upload, Video, WandSparkles } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -36,9 +36,12 @@ type Bundle = {
   allSceneVersions: SceneVersion[];
 };
 
-type ModelOption = { id: string; displayName: string; family: string; kieModelId: string; enabled: boolean; experimental?: boolean };
+type ModelOption = { id: string; displayName: string; family: string; provider: string; kieModelId: string; enabled: boolean; experimental?: boolean };
 type ModelMode = "auto" | "manual";
 type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
+
+const MAX_ANALYSIS_VIDEO_SECONDS = 10;
+const VIDEO_DURATION_TOLERANCE_SECONDS = 0.75;
 
 type Props = {
   onSendToGenerate: (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string }) => void;
@@ -103,6 +106,14 @@ function getVideoDuration(file: File) {
     video.src = url;
   });
 }
+function isSupportedSharedVideoUrl(value: string) {
+  try {
+    const host = new URL(value).hostname.toLowerCase();
+    return host.includes("youtube.com") || host.includes("youtu.be") || host.includes("tiktok.com") || host.includes("douyin.com") || host.includes("iesdouyin.com") || host.includes("amemv.com");
+  } catch {
+    return false;
+  }
+}
 function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
   const provider = sceneVersion?.metadata?.analysisProvider;
   if (scene?.status === "failed") return provider === "fallback" ? "Needs review" : "Failed";
@@ -119,6 +130,9 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [mediaType, setMediaType] = useState<"video" | "image" | null>(null);
+  const [mediaDuration, setMediaDuration] = useState<number | null>(null);
+  const [inputMode, setInputMode] = useState<"file" | "url">("file");
+  const [mediaUrlInput, setMediaUrlInput] = useState("");
   const [title, setTitle] = useState("Untitled video project");
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
@@ -174,6 +188,13 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     };
   }
 
+  async function readJsonResponse(response: Response, fallback: string) {
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(data?.error || `${fallback} (${response.status})`);
+    }
+    return data;
+  }
   async function loadProject(projectId: string) {
     setError("");
     const response = await fetch(`/api/workflow/projects/${projectId}`);
@@ -188,15 +209,15 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   async function handleFile(nextFile: File) {
     const type = nextFile.type.startsWith("video/") ? "video" : nextFile.type.startsWith("image/") ? "image" : null;
     if (!type) {
-      setError("请上传 10 秒以内的视频或图片进行分析。");
+      setError("请上传 10 秒以内的视频（也就是一个完整的镜头片段）或图片进行分析。");
       return;
     }
 
     if (type === "video") {
       try {
         const duration = await getVideoDuration(nextFile);
-        if (duration > 10) {
-          setError("目前视频分析仅支持 10 秒以内的视频镜头，请截取后再上传。图片不受此限制。");
+        if (duration > MAX_ANALYSIS_VIDEO_SECONDS + VIDEO_DURATION_TOLERANCE_SECONDS) {
+          setError(`目前视频分析仅支持 ${MAX_ANALYSIS_VIDEO_SECONDS} 秒以内的视频（也就是一个完整的镜头片段）。当前文件读取到约 ${duration.toFixed(1)} 秒，请截取后再上传。图片不受此限制。`);
           return;
         }
       } catch (err) {
@@ -220,34 +241,42 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   }
 
   async function startBreakdown() {
-    if (!file || !mediaType) return;
+    const urlMode = inputMode === "url";
+    const directUrl = mediaUrlInput.trim();
+    if (urlMode && !directUrl) return;
+    if (urlMode && !isSupportedSharedVideoUrl(directUrl)) {
+      setError("目前粘贴链接只支持 YouTube、TikTok、抖音的视频分享链接。");
+      return;
+    }
+    if (!urlMode && (!file || !mediaType)) return;
     setLoading(true);
     setError("");
-    setProgress(`Uploading reference ${mediaType} to R2`);
+    setProgress(urlMode ? "解析 YouTube / TikTok / 抖音链接" : `Uploading reference ${mediaType} to R2`);
     try {
-      const upload = await uploadMediaToBlob(file, (percentage) => setProgress(`Uploading ${Math.round(percentage)}%`));
+      const upload = urlMode
+        ? { url: directUrl, filename: directUrl.split("/").pop() || "linked-video", key: undefined, mediaType: "video" as const }
+        : await uploadMediaToBlob(file!, (percentage) => setProgress(`Uploading ${Math.round(percentage)}%`));
       setProgress("Creating project");
       const projectRes = await fetch("/api/workflow/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title }),
       });
-      const projectData = await projectRes.json();
-      if (!projectRes.ok) throw new Error(projectData.error || "Project creation failed");
+      const projectData = await readJsonResponse(projectRes, "Project creation failed");
 
-      setProgress(mediaType === "image" ? "Analyzing image blueprint" : "Detecting scenes and building Video Blueprint");
+      setProgress(upload.mediaType === "image" ? "Analyzing image blueprint" : urlMode ? "解析视频并开始分析" : "Analyzing video blueprint");
       const breakdownRes = await fetch(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaUrl: upload.url, mediaName: upload.filename, storageKey: upload.key, mediaType: upload.mediaType, ...analysisSelectionPayload() }),
+        body: JSON.stringify({ mediaUrl: upload.url, mediaName: upload.filename, storageKey: upload.key, mediaType: upload.mediaType, mediaDuration: urlMode ? undefined : mediaDuration, singleShot: !urlMode && Boolean(mediaDuration && mediaDuration <= MAX_ANALYSIS_VIDEO_SECONDS + VIDEO_DURATION_TOLERANCE_SECONDS), resolveLinkedMedia: urlMode, ...analysisSelectionPayload() }),
       });
-      const breakdownData = await breakdownRes.json();
-      if (!breakdownRes.ok) throw new Error(breakdownData.error || "Breakdown failed");
+      const breakdownData = await readJsonResponse(breakdownRes, "Breakdown failed");
       setBundle(breakdownData);
       await loadProjects();
-      setProgress(mediaType === "image" ? "Image Blueprint ready" : "Video Blueprint ready");
+      setProgress(upload.mediaType === "image" ? "Image Blueprint ready" : "Video Blueprint ready");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Workflow failed");
+      const message = err instanceof Error ? err.message : "Workflow failed";
+      setError(message === "Failed to fetch" ? "网络请求失败：请检查上传服务、视频拆解服务或本地开发服务是否正常运行。" : message);
       setProgress("");
     } finally {
       setLoading(false);
@@ -377,10 +406,35 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
             ) : null}
             <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl bg-background text-center hover:bg-accent">
               <Upload className="h-6 w-6 text-muted-foreground" />
-              <span className="font-semibold">{preview ? "更换文件" : "上传 10 秒以内的视频或图片进行分析"}</span>
-              <span className="text-sm text-muted-foreground">支持 10 秒以内的视频镜头，或直接上传图片进行保姆级脚本拆解</span>
+              <span className="font-semibold">{preview ? "更换文件" : "上传 10 秒以内的视频（也就是一个完整的镜头片段）或图片进行分析"}</span>
             </button>
           </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button type="button" onClick={() => setInputMode("file")} className={cn("rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors", inputMode === "file" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:text-foreground")}>上传文件</button>
+            <button type="button" onClick={() => setInputMode("url")} className={cn("rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors", inputMode === "url" ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:text-foreground")}>粘贴链接</button>
+          </div>
+
+          {inputMode === "url" ? (
+            <label className="mt-3 flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 text-sm">
+              <Link className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <input
+                type="url"
+                value={mediaUrlInput}
+                onChange={(event) => {
+                  setMediaUrlInput(event.target.value);
+                  setFile(null);
+                  setPreview("");
+                  setMediaType("video");
+                  setMediaDuration(null);
+                }}
+                placeholder="粘贴 YouTube / TikTok / 抖音视频分享链接"
+                className="h-8 min-w-0 flex-1 bg-transparent outline-none"
+              />
+            </label>
+          ) : null}
+
+          {inputMode === "url" ? <p className="mt-2 text-xs text-muted-foreground">支持 YouTube、TikTok、抖音链接；链接会交给视频拆解 worker 解析，短视频直接分析，长视频进入分场景流程。</p> : null}
 
           <div className="mt-4">
             <ModelSelector
@@ -394,7 +448,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
           <button
             type="button"
             onClick={() => void startBreakdown()}
-            disabled={!file || loading}
+            disabled={(inputMode === "file" ? !file : !mediaUrlInput.trim()) || loading}
             className="mt-4 flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5" />}
@@ -634,8 +688,8 @@ function ModelSelector({
       >
         <option value="auto">Auto · Balanced</option>
         {models.map((model) => (
-          <option key={model.id} value={model.kieModelId}>
-            {model.displayName}{model.experimental ? " · Experimental" : ""}
+          <option key={model.id} value={model.id}>
+            {model.displayName}{model.provider === "openrouter" ? " · OpenRouter" : ""}{model.experimental ? " · Experimental" : ""}
           </option>
         ))}
       </select>

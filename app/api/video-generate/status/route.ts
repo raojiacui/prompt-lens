@@ -29,13 +29,13 @@ export async function GET(request: NextRequest) {
 
     const provider = record.provider || "kie";
     const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
-    const effectiveApiKey = userApiKey || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
+    const effectiveApiKey = userApiKey;
     if (!effectiveApiKey) {
-      return NextResponse.json({ error: "未配置 API Key" }, { status: 400 });
+      return NextResponse.json({ error: "请先在设置中添加你自己的 KIE API Key" }, { status: 400 });
     }
 
     const videoProvider = createVideoProvider(provider as any, effectiveApiKey);
-    const status = await videoProvider.getStatus(taskId);
+    const status = await videoProvider.getStatus(taskId, record.model);
     const progress = status.progress === undefined ? undefined : String(status.progress);
 
     const records = await db

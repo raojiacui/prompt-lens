@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
-
-  useEffect(() => {
-    if (isLocalDevAuth) {
-      window.location.replace("/dashboard");
-    }
-  }, [isLocalDevAuth]);
-
 
 
   const handleLocalDevSignIn = async () => {

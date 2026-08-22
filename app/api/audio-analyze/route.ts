@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, audioAnalysis, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
     const mediaUrl = typeof body?.mediaUrl === "string" ? body.mediaUrl.trim() : "";
     if (!mediaUrl) return NextResponse.json({ error: "Missing mediaUrl" }, { status: 400 });
 
-    const apiKey = await getUserKieApiKey(session.user.id) || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
-    if (!apiKey) return NextResponse.json({ error: "Please add your KIE API Key in Settings before audio analysis." }, { status: 400 });
+    const apiKey = await getUserKieApiKey(session.user.id);
+    if (!apiKey) return NextResponse.json({ error: "Please add your own KIE API Key in Settings before audio analysis." }, { status: 400 });
 
     await db.insert(operationLogs).values({
       userId: session.user.id,

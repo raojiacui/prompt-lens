@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { useTranslations } from "next-intl";
-import { Copy, Flag, Link, Paperclip, Scissors, Send, Trash2, Wand2, X, ZoomIn, ZoomOut } from "lucide-react";
+import { Copy, Flag, Link, Paperclip, Scissors, Trash2, Wand2, X, ZoomIn, ZoomOut } from "lucide-react";
 
 interface TimelineClip {
   id: string;
@@ -503,10 +503,16 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
               <span>{clips.length} clip{clips.length === 1 ? "" : "s"}</span>
             </div>
 
-            <Button onClick={handleEdit} disabled={!canEdit} className="mt-auto h-11 w-full rounded-xl bg-[#D97757] text-white hover:bg-[#C96848] disabled:!opacity-100 disabled:bg-[#DCA28E] disabled:text-white disabled:cursor-not-allowed" aria-label={t("start")}>
-              {isLoading ? <Spinner size="sm" className="mr-2" /> : <Send className="mr-2 h-5 w-5 -rotate-45" />}
+            <button
+              type="button"
+              onClick={handleEdit}
+              disabled={!canEdit}
+              className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
+              aria-label={t("start")}
+            >
+              {isLoading ? <Spinner size="sm" /> : <Scissors className="h-5 w-5" />}
               {isLoading ? t("processing") : t("start")}
-            </Button>
+            </button>
           </section>
 
           <section className="flex min-w-0 flex-col rounded-2xl border border-[#D8D5CC]/80 bg-white/72 p-4 shadow-sm">

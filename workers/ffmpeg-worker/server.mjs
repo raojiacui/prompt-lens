@@ -21,6 +21,8 @@ const MAX_SCENE_SECONDS = Number(process.env.MAX_SCENE_SECONDS || 8);
 const MIN_SCENE_SECONDS = Number(process.env.MIN_SCENE_SECONDS || 0.6);
 const FFMPEG_PATH = process.env.FFMPEG_PATH || "ffmpeg";
 const FFPROBE_PATH = process.env.FFPROBE_PATH || "ffprobe";
+const YTDLP_PATH = process.env.YTDLP_PATH || "yt-dlp";
+const MAX_RESOLVE_SECONDS = Number(process.env.MAX_RESOLVE_SECONDS || 600);
 
 function requireEnv() {
   const missing = [
@@ -90,6 +92,61 @@ async function download(url, target) {
   const response = await fetch(url);
   if (!response.ok || !response.body) throw new Error(`Download failed: ${response.status}`);
   await pipeline(response.body, createWriteStream(target));
+}
+function detectPlatform(url) {
+  const host = new URL(url).hostname.toLowerCase();
+  if (host.includes("youtube.com") || host.includes("youtu.be")) return "youtube";
+  if (host.includes("tiktok.com")) return "tiktok";
+  if (host.includes("douyin.com") || host.includes("iesdouyin.com") || host.includes("amemv.com")) return "douyin";
+  return "unsupported";
+}
+
+function assertSupportedMediaUrl(url) {
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    const error = new Error("Invalid media URL");
+    error.statusCode = 400;
+    throw error;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+    const error = new Error("Only http/https URLs are supported");
+    error.statusCode = 400;
+    throw error;
+  }
+  const platform = detectPlatform(url);
+  if (!["youtube", "tiktok", "douyin"].includes(platform)) {
+    const error = new Error("Only YouTube, TikTok, or Douyin links are supported");
+    error.statusCode = 400;
+    throw error;
+  }
+  return platform;
+}
+
+async function downloadSocialVideo(url, targetPath) {
+  await run(YTDLP_PATH, [
+    "--no-playlist",
+    "--no-progress",
+    "--merge-output-format", "mp4",
+    "-f", "bv*+ba/best[ext=mp4]/best",
+    "-o", targetPath,
+    url,
+  ], { timeout: 1000 * 60 * 10 });
+}
+
+async function resolveMediaToLocalFile(url, workDir) {
+  const platform = assertSupportedMediaUrl(url);
+  const inputPath = path.join(workDir, "resolved-video.mp4");
+  await downloadSocialVideo(url, inputPath);
+  const metadata = await probeVideo(inputPath);
+  if (!metadata.duration || metadata.duration <= 0) throw new Error("Unable to determine resolved video duration");
+  if (metadata.duration > MAX_RESOLVE_SECONDS) {
+    const error = new Error(`Resolved video is too long (${metadata.duration.toFixed(1)}s). Max: ${MAX_RESOLVE_SECONDS}s`);
+    error.statusCode = 400;
+    throw error;
+  }
+  return { inputPath, platform, metadata };
 }
 
 async function probeVideo(inputPath) {
@@ -247,6 +304,32 @@ async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, me
   return scenes;
 }
 
+async function handleResolveMedia(req, res) {
+  assertAuth(req);
+  requireEnv();
+  const body = await readJson(req);
+  if (!body.url || typeof body.url !== "string") {
+    return json(res, 400, { error: "Missing url" });
+  }
+
+  const workDir = await mkdtemp(path.join(tmpdir(), "prompt-lens-resolve-"));
+  try {
+    await mkdir(workDir, { recursive: true });
+    const { inputPath, platform, metadata } = await resolveMediaToLocalFile(body.url, workDir);
+    const key = `linked-media/${platform}/${randomUUID()}.mp4`;
+    const mediaUrl = await uploadFile(inputPath, key, "video/mp4");
+    return json(res, 200, {
+      mediaUrl,
+      storageKey: key,
+      mediaType: "video",
+      platform,
+      metadata,
+      filename: `${platform}-linked-video.mp4`,
+    });
+  } finally {
+    await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+  }
+}
 async function handleBreakdown(req, res) {
   assertAuth(req);
   requireEnv();
@@ -275,6 +358,7 @@ async function handleBreakdown(req, res) {
 const server = createServer(async (req, res) => {
   try {
     if (req.method === "GET" && req.url === "/healthz") return json(res, 200, { ok: true });
+    if (req.method === "POST" && req.url === "/resolve-media") return await handleResolveMedia(req, res);
     if (req.method === "POST" && req.url === "/breakdown") return await handleBreakdown(req, res);
     return json(res, 404, { error: "Not found" });
   } catch (error) {

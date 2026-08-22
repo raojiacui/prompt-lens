@@ -55,8 +55,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   if (plan.mode === "generative") {
     const apiKey = await getUserKieApiKey(session.user.id);
-    if (!apiKey && !process.env.KIE_AI_API_KEY && !process.env.KIE_API_KEY) {
-      return NextResponse.json({ error: "Please add your KIE API Key in Settings before generative video edit." }, { status: 400 });
+    if (!apiKey) {
+      return NextResponse.json({ error: "Please add your own KIE API Key in Settings before generative video edit." }, { status: 400 });
     }
 
     const result = await createKieVeoGeneration({
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       model: plan.modelId,
       referenceVideoUrl: sourceVideoUrl,
       generationType: "REFERENCE_2_VIDEO",
-    }, apiKey || undefined);
+    }, apiKey);
 
     const [job] = await db.insert(workflowJobs).values({
       projectId: id,

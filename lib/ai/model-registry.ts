@@ -1,5 +1,5 @@
 export type ModelCategory = "analysis" | "video_generation" | "audio" | "video_edit";
-export type ModelProvider = "kie";
+export type ModelProvider = "kie" | "openrouter";
 export type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
 
 export type ModelCapability =
@@ -81,31 +81,19 @@ export const modelRegistry: ModelRegistryEntry[] = [
     costLevel: 4,
   },
   {
-    id: "analysis-gpt-video",
-    displayName: "GPT Video Understanding",
-    family: "OpenAI",
+    id: "analysis-openrouter-gemini-2-5-flash",
+    displayName: "Gemini 2.5 Flash",
+    family: "Gemini",
     category: "analysis",
-    provider: "kie",
-    kieModelId: "openai/video-understanding",
+    provider: "openrouter",
+    kieModelId: "google/gemini-2.5-flash",
     enabled: true,
     capabilities: ["text", "image", "video"],
-    speedLevel: 3,
-    qualityLevel: 5,
-    costLevel: 4,
-  },
-  {
-    id: "analysis-claude-remix",
-    displayName: "Claude Structured Remix",
-    family: "Claude",
-    category: "analysis",
-    provider: "kie",
-    kieModelId: "claude/structured-remix",
-    enabled: true,
-    capabilities: ["text", "image"],
-    speedLevel: 3,
+    speedLevel: 5,
     qualityLevel: 4,
-    costLevel: 3,
+    costLevel: 1,
   },
+
   {
     id: "sora-2-text-video",
     displayName: "Sora 2 Text to Video",

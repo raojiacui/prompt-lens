@@ -22,6 +22,8 @@ type RegistryVideoModel = {
   displayName?: string;
   maxDuration?: number;
   aspectRatios?: string[];
+  category?: string;
+  capabilities?: string[];
 };
 type AspectRatio =
   | "auto"
@@ -70,11 +72,19 @@ const aspectRatioOptions: Array<{
 const qualityOptions: Quality[] = ["480P", "720P", "1080P", "4K"];
 const outputCountOptions: OutputCount[] = ["1", "2", "3", "4"];
 const autoBalancedModelId = "__auto_balanced";
+const minGeneratedVideoDuration = 4;
 const maxUploadedReferenceImages = 9;
+const maxUploadedReferenceVideos = 1;
 const minKieReferenceImageAspectRatio = 0.4;
 const maxKieReferenceImageAspectRatio = 2.5;
 const minKieReferenceImageDimension = 300;
 const maxKieReferenceImageDimension = 6000;
+
+function durationRange(minSeconds: number, maxSeconds: number) {
+  const min = Math.max(1, Math.round(minSeconds));
+  const max = Math.max(min, Math.round(maxSeconds));
+  return Array.from({ length: max - min + 1 }, (_, index) => `${min + index}s` as Duration);
+}
 
 const fallbackModels: Array<{
   id: ModelId;
@@ -91,62 +101,49 @@ const fallbackModels: Array<{
   {
     id: "bytedance/seedance-2",
     label: "Seedance 2.0",
-    supportedDurations: ["5s", "10s"],
+    supportedDurations: durationRange(minGeneratedVideoDuration, 10),
     supportedAspectRatios: ["16:9", "4:3", "1:1", "3:4", "9:16"],
   },
   {
     id: "bytedance/seedance-2-fast",
     label: "Seedance 2.0 Fast",
-    supportedDurations: ["5s", "10s"],
+    supportedDurations: durationRange(minGeneratedVideoDuration, 10),
     supportedAspectRatios: ["16:9", "4:3", "1:1", "3:4", "9:16"],
   },
   {
     id: "veo3_fast",
     label: "Veo 3.1 Fast",
-    supportedDurations: ["8s"],
+    supportedDurations: durationRange(minGeneratedVideoDuration, 8),
     supportedAspectRatios: ["16:9", "9:16"],
   },
   {
     id: "grok-imagine/text-to-video",
     label: "Grok Imagine",
-    supportedDurations: ["6s", "10s"],
+    supportedDurations: durationRange(minGeneratedVideoDuration, 10),
     supportedAspectRatios: ["2:3", "3:2", "1:1", "16:9", "9:16"],
   },
   {
     id: "bytedance/seedance-2-mini",
     label: "Seedance 2.0 Mini",
-    supportedDurations: [
-      "4s",
-      "5s",
-      "6s",
-      "7s",
-      "8s",
-      "9s",
-      "10s",
-      "11s",
-      "12s",
-      "13s",
-      "14s",
-      "15s",
-    ],
+    supportedDurations: durationRange(minGeneratedVideoDuration, 15),
     supportedAspectRatios: ["16:9", "4:3", "1:1", "3:4", "9:16"],
   },
   {
     id: "grok-imagine-video-1-5-preview",
     label: "Grok Imagine 1.5 Preview",
-    supportedDurations: ["8s"],
+    supportedDurations: durationRange(minGeneratedVideoDuration, 8),
     supportedAspectRatios: ["16:9", "9:16"],
   },
   {
     id: "kling-2.6/text-to-video",
     label: "Kling 2.6",
-    supportedDurations: ["5s", "10s"],
+    supportedDurations: durationRange(minGeneratedVideoDuration, 10),
     supportedAspectRatios: ["16:9", "9:16", "1:1"],
   },
   {
     id: "kling-3.0/video",
     label: "Kling 3.0",
-    supportedDurations: ["3s", "5s", "10s", "15s"],
+    supportedDurations: durationRange(minGeneratedVideoDuration, 15),
     supportedAspectRatios: ["16:9", "9:16", "1:1"],
   },
 ];
@@ -313,6 +310,18 @@ function AssetPreview({ asset }: { asset: UploadedAsset }) {
       {source && asset.type.startsWith("image/") ? (
         <img src={source} alt="" className="h-full w-full object-cover" />
       ) : null}
+      {source && asset.type.startsWith("video/") ? (
+        <video
+          src={source}
+          className="h-full w-full object-cover"
+          muted
+          playsInline
+          preload="metadata"
+        />
+      ) : null}
+      {!source && asset.type.startsWith("video/") ? (
+        <Play className="h-5 w-5" aria-hidden="true" />
+      ) : null}
       {!source && !asset.type.startsWith("video/") ? (
         <ImageIcon className="h-5 w-5" aria-hidden="true" />
       ) : null}
@@ -350,6 +359,7 @@ export function ReferenceVideoComposer({
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [quality, setQuality] = useState<Quality>("720P");
   const [duration, setDuration] = useState<Duration>("8s");
+  const [durationDraft, setDurationDraft] = useState("8");
   const [outputCount, setOutputCount] = useState<OutputCount>("1");
   const [isFormatOpen, setIsFormatOpen] = useState(false);
   const [isReferenceMenuOpen, setIsReferenceMenuOpen] = useState(false);
@@ -393,22 +403,34 @@ export function ReferenceVideoComposer({
   const readyReplacementAssets = assets.filter(
     (asset) => asset.status === "ready" && asset.type.startsWith("image/"),
   );
+  const readyReferenceVideoAsset = assets.find(
+    (asset) => asset.status === "ready" && asset.type.startsWith("video/") && asset.url,
+  );
   const uploadedReferenceImageCount = assets.filter(
     (asset) => asset.type.startsWith("image/") && asset.status !== "failed",
   ).length;
-  const hasUploadingReplacementAssets = assets.some(
-    (asset) => asset.status === "uploading" && asset.type.startsWith("image/"),
-  );
+  const uploadedReferenceVideoCount = assets.filter(
+    (asset) => asset.type.startsWith("video/") && asset.status !== "failed",
+  ).length;
+  const hasUploadingAssets = assets.some((asset) => asset.status === "uploading");
   const mentionableAssets = readyReplacementAssets;
-  const generationMode = readyReplacementAssets.length
+  const generationMode = readyReferenceVideoAsset
     ? {
-        label: "Image to video",
-        description: "Animate uploaded image references with the prompt.",
+        label: "Reference video to video",
+        description:
+          model === "wan/2-7-videoedit"
+            ? "Edit the uploaded video directly with replacement images and your instruction."
+            : "Use the uploaded video as motion, pacing, and camera reference for a new video.",
       }
-    : {
-        label: "Text to video",
-        description: "No upload needed. Generate directly from the prompt.",
-      };
+    : readyReplacementAssets.length
+      ? {
+          label: "Image to video",
+          description: "Animate uploaded image references with the prompt.",
+        }
+      : {
+          label: "Text to video",
+          description: "No upload needed. Generate directly from the prompt.",
+        };
   const activeGenerationTaskIdsKey = variants
     .filter(
       (variant) => variant.status === "generating" && variant.providerTaskId,
@@ -420,18 +442,31 @@ export function ReferenceVideoComposer({
   const formatSummary = `${aspectRatio} | ${quality} | ${durationLabel} | ${outputCount} Variation${outputCount === "1" ? "" : "s"}`;
 
   useEffect(() => {
+    setDurationDraft(String(durationSeconds || ""));
+  }, [durationSeconds]);
+
+  useEffect(() => {
     let cancelled = false;
     async function loadModelRegistry() {
       try {
-        const response = await fetch("/api/models?category=video_generation");
+        const response = await fetch("/api/models");
         const data = await response.json();
         const registryModels = Array.isArray(data.models)
           ? data.models
-              .filter((item: RegistryVideoModel) => item.enabled && item.kieModelId)
+              .filter(
+                (item: RegistryVideoModel) =>
+                  item.enabled &&
+                  item.kieModelId &&
+                  (item.category === "video_generation" || item.category === "video_edit"),
+              )
               .map((item: RegistryVideoModel) => ({
                 id: item.kieModelId as ModelId,
                 label: item.displayName || item.kieModelId,
-                supportedDurations: item.maxDuration ? [`${item.maxDuration}s` as Duration] : ["5s" as Duration],
+                supportedDurations: item.maxDuration
+                    ? durationRange(minGeneratedVideoDuration, item.maxDuration)
+                    : item.category === "video_edit"
+                      ? ["0s" as Duration]
+                      : durationRange(minGeneratedVideoDuration, 10),
                 supportedAspectRatios: (item.aspectRatios || ["16:9"]) as Exclude<AspectRatio, "auto">[],
               }))
           : [];
@@ -612,6 +647,16 @@ export function ReferenceVideoComposer({
         )
       : nearestSupportedDuration(rounded, supportedDurationSeconds);
     setDuration(`${nextSeconds}s` as Duration);
+    setDurationDraft(String(nextSeconds));
+  }
+
+  function commitDurationDraft() {
+    const parsed = Number.parseInt(durationDraft, 10);
+    if (Number.isFinite(parsed)) {
+      setDurationSeconds(parsed);
+      return;
+    }
+    setDurationDraft(String(durationSeconds || minSelectableDuration));
   }
 
   function clearPrompt() {
@@ -836,35 +881,60 @@ export function ReferenceVideoComposer({
       0,
       maxUploadedReferenceImages - uploadedReferenceImageCount,
     );
+    let remainingVideoSlots = Math.max(
+      0,
+      maxUploadedReferenceVideos - uploadedReferenceVideoCount,
+    );
     const incoming = Array.from(files).filter((file) => {
-      if (!file.type.startsWith("image/")) return false;
-      if (remainingImageSlots <= 0) return false;
-      remainingImageSlots -= 1;
-      return true;
+      if (file.type.startsWith("image/")) {
+        if (remainingImageSlots <= 0) return false;
+        remainingImageSlots -= 1;
+        return true;
+      }
+      if (file.type.startsWith("video/")) {
+        if (remainingVideoSlots <= 0) return false;
+        remainingVideoSlots -= 1;
+        return true;
+      }
+      return false;
     });
 
+    const hasIncomingVideo = incoming.some((file) => file.type.startsWith("video/"));
     const nextAssets: UploadedAsset[] = incoming.map((file) => ({
       id: `${file.name}-${file.lastModified}`,
       name: file.name,
       type: file.type,
-      previewUrl: URL.createObjectURL(file),
+      previewUrl:
+        file.type.startsWith("image/") || file.type.startsWith("video/")
+          ? URL.createObjectURL(file)
+          : undefined,
       status: "uploading",
     }));
     nextAssets.forEach((asset) => {
       if (asset.previewUrl?.startsWith("blob:"))
         previewUrlsRef.current.add(asset.previewUrl);
     });
-    setAssets((current) => [...current, ...nextAssets]);
+    setAssets((current) => {
+      const kept = hasIncomingVideo
+        ? current.filter((asset) => !asset.type.startsWith("video/"))
+        : current;
+      return [...kept, ...nextAssets];
+    });
 
     await Promise.all(
       nextAssets.map(async (asset, index) => {
         const file = incoming[index];
-        if (!file?.type.startsWith("image/")) return;
+        if (!file) return;
         try {
-          const preparedFile = await prepareKieReferenceImageFile(file);
+          const uploadFile = file.type.startsWith("image/")
+            ? await prepareKieReferenceImageFile(file)
+            : file;
           const formData = new FormData();
-          formData.append("file", preparedFile);
-          formData.append("assetType", "product");
+          formData.append("file", uploadFile);
+          formData.append(
+            "assetType",
+            file.type.startsWith("video/") ? "referenceVideo" : "product",
+          );
           const response = await fetch("/api/project-assets", {
             method: "POST",
             body: formData,
@@ -915,9 +985,9 @@ export function ReferenceVideoComposer({
   }
 
   async function submitGenerationJob() {
-    if (hasUploadingReplacementAssets)
+    if (hasUploadingAssets)
       return setError(t("errors.assetUploading") || "Asset uploading");
-    if (!prompt.trim())
+    if (!readyReferenceVideoAsset && !prompt.trim())
       return setError(t("errors.missingPrompt") || "Missing prompt");
     if (!session?.user) return setError(t("errors.loginRequired") || "Please login");
 
@@ -989,6 +1059,15 @@ export function ReferenceVideoComposer({
               .filter(Boolean)
               .join("\n"),
             replacementAssets,
+            referenceVideoUrl: readyReferenceVideoAsset?.url,
+            referenceVideo: readyReferenceVideoAsset
+              ? {
+                  id: readyReferenceVideoAsset.id,
+                  name: readyReferenceVideoAsset.name,
+                  type: readyReferenceVideoAsset.type,
+                  url: readyReferenceVideoAsset.url,
+                }
+              : undefined,
             aspectRatio,
             model: model === autoBalancedModelId ? undefined : model,
             duration,
@@ -999,7 +1078,7 @@ export function ReferenceVideoComposer({
             editState: {
               userPrompt: prompt,
               settings: { model, aspectRatio, quality, duration, outputCount },
-              assets: persistableAssets(selectedReplacementAssets),
+              assets: persistableAssets(assets),
             },
           }),
         });
@@ -1093,10 +1172,10 @@ export function ReferenceVideoComposer({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              {t("title") || "Video Generation"}
+              视频生成：文生视频、图生视频、参考视频生成与视频编辑
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("subtitle") || "Generate AI videos from prompts and reference images."}
+            <p className="mt-1 max-w-5xl text-sm leading-6 text-muted-foreground">
+              支持三条链路：直接输入提示词生成视频；上传参考图生成图生视频；上传一条参考视频和参考图，生成类似风格、运镜和节奏的新视频。选择 Wan 系列视频编辑模型时，也可以对视频做生成式编辑，比如 AI 换脸，或把视频中的橘猫换成狸花猫。
             </p>
           </div>
         </div>
@@ -1106,10 +1185,10 @@ export function ReferenceVideoComposer({
             <div className="flex h-full flex-col space-y-2">
               <div>
                 <h2 className="text-xl font-semibold">
-                  {t("panel.title") || "Create"}
+                  创建视频
                 </h2>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {t("panel.description") || "Upload reference images and describe the video you want."}
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                  只写提示词就是文生视频；上传图片后就是图生视频；上传参考视频后会作为风格、镜头和节奏参考。若选择 Wan 视频编辑模型，上传的视频会作为被编辑素材。
                 </p>
               </div>
 
@@ -1126,7 +1205,7 @@ export function ReferenceVideoComposer({
                   className="sr-only"
                   type="file"
                   multiple
-                  accept="image/jpeg,image/png,image/webp"
+                  accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp"
                   onChange={(event) =>
                     event.target.files
                       ? void uploadFiles(event.target.files)
@@ -1145,14 +1224,14 @@ export function ReferenceVideoComposer({
                     aria-hidden="true"
                   />
                   <span className="text-base font-semibold">
-                    {t("upload.title") || "Upload reference images"}
+                    {t("upload.title") || "Upload reference images or video"}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     {t("upload.click") || "Click or drag to upload"}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {uploadedReferenceImageCount}/{maxUploadedReferenceImages}{" "}
-                    images
+                    images · {uploadedReferenceVideoCount}/{maxUploadedReferenceVideos} video
                   </span>
                 </button>
 
@@ -1411,22 +1490,23 @@ export function ReferenceVideoComposer({
                                   {minSelectableDuration}-
                                   {maxSelectableDuration}s
                                 </span>
-                                <label className="flex h-10 w-24 items-center overflow-hidden rounded-xl border border-border bg-background text-sm font-semibold focus-within:ring-2 focus-within:ring-ring">
+                                <label className="flex h-10 w-24 items-center rounded-xl border border-border bg-background px-2 text-sm font-semibold shadow-none">
                                   <input
-                                    type="number"
-                                    min={minSelectableDuration}
-                                    max={maxSelectableDuration}
-                                    step={1}
-                                    value={durationSeconds}
-                                    onChange={(event) =>
-                                      setDurationSeconds(
-                                        Number(event.currentTarget.value),
-                                      )
-                                    }
-                                    className="h-full min-w-0 flex-1 bg-transparent px-2 text-right outline-none"
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    value={durationDraft}
+                                    onChange={(event) => setDurationDraft(event.currentTarget.value.replace(/\D/g, ""))}
+                                    onBlur={commitDurationDraft}
+                                    onKeyDown={(event) => {
+                                      if (event.key === "Enter") {
+                                        event.currentTarget.blur();
+                                      }
+                                    }}
+                                    className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-right caret-foreground outline-none ring-0 focus:outline-none focus:ring-0"
                                     aria-label="Video length in seconds"
                                   />
-                                  <span className="pr-2 text-muted-foreground">
+                                  <span className="ml-1 text-muted-foreground">
                                     s
                                   </span>
                                 </label>
@@ -1506,7 +1586,7 @@ export function ReferenceVideoComposer({
                 type="button"
                 onClick={() => void createVideo()}
                 disabled={isRunning}
-                className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:!opacity-100 disabled:bg-[#DCA28E]"
+                className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <WandSparkles className="h-5 w-5" />
                 {isRunning
@@ -1567,14 +1647,6 @@ export function ReferenceVideoComposer({
                           <span className="text-xs text-muted-foreground">
                             {variant.label}
                           </span>
-                          <a
-                            className="text-xs font-semibold text-primary underline-offset-4 hover:underline"
-                            href={variant.videoUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Open video
-                          </a>
                         </div>
                       </div>
                     ) : null}

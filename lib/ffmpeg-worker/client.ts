@@ -13,6 +13,15 @@ export interface FfmpegSceneAsset {
   transitionOut?: string;
 }
 
+
+export interface LinkedMediaResolveResult {
+  mediaUrl: string;
+  storageKey?: string;
+  mediaType: "video";
+  platform: "youtube" | "tiktok" | "douyin";
+  filename?: string;
+  metadata: FfmpegBreakdownResult["metadata"];
+}
 export interface FfmpegBreakdownResult {
   metadata: {
     duration?: number;
@@ -56,18 +65,53 @@ function developmentFallback(mediaUrl: string): FfmpegBreakdownResult {
   };
 }
 
+
+export async function resolveLinkedMediaWithWorker(url: string): Promise<LinkedMediaResolveResult> {
+  if (!workerUrl) throw new Error("链接解析服务未配置：请设置 FFMPEG_WORKER_URL。");
+  if (!workerSecret) throw new Error("链接解析服务未配置：请设置 FFMPEG_WORKER_SECRET。");
+
+  let response: Response;
+  try {
+    response = await fetch(`${workerUrl}/resolve-media`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${workerSecret}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ url }),
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "network request failed";
+    throw new Error(`链接解析服务连接失败：${reason}。请检查 FFMPEG_WORKER_URL/FFMPEG_WORKER_SECRET 配置，以及 worker 容器是否已部署 yt-dlp。`);
+  }
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(payload?.error || `Link resolver failed with ${response.status}`);
+  }
+  if (!payload?.mediaUrl || !payload?.metadata) {
+    throw new Error("链接解析服务返回了无效结果");
+  }
+  return payload as LinkedMediaResolveResult;
+}
 export async function breakdownVideoWithWorker(mediaUrl: string): Promise<FfmpegBreakdownResult> {
   if (!workerUrl) return developmentFallback(mediaUrl);
   if (!workerSecret) throw new Error("FFMPEG_WORKER_SECRET is not configured");
 
-  const response = await fetch(`${workerUrl}/breakdown`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${workerSecret}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ videoUrl: await getWorkerDownloadUrl(mediaUrl) }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${workerUrl}/breakdown`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${workerSecret}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ videoUrl: await getWorkerDownloadUrl(mediaUrl) }),
+    });
+  } catch (error) {
+    const reason = error instanceof Error ? error.message : "network request failed";
+    throw new Error(`视频拆解服务连接失败：${reason}。请检查 FFMPEG_WORKER_URL/FFMPEG_WORKER_SECRET 配置，以及该服务是否能访问上传后的视频 URL。`);
+  }
 
   const payload = await response.json().catch(() => null);
   if (!response.ok) {

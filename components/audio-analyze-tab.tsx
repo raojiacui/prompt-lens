@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { useTranslations } from "next-intl";
-import { Link, Mic2, Send, Upload, X } from "lucide-react";
+import { Link, Mic2, Upload, X } from "lucide-react";
 
 interface TranscriptionSegment {
   start: number;
@@ -36,7 +36,7 @@ interface AudioAnalyzeTabProps {
   initialVersionId?: string | null;
 }
 
-type AudioModelOption = { id: string; displayName: string; kieModelId: string; enabled: boolean; experimental?: boolean };
+type AudioModelOption = { id: string; displayName: string; kieModelId: string; enabled: boolean; experimental?: boolean; capabilities?: string[] };
 type WorkflowAudioResult = {
   plan: {
     modelId: string;
@@ -67,12 +67,12 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
   const [clipLoading, setClipLoading] = useState(false);
   const [clipUrl, setClipUrl] = useState<string | null>(null);
   const [whisperModel] = useState("kie");
-  const [targetLanguage, setTargetLanguage] = useState<"auto" | "ko">("auto");
   const [customPrompt, setCustomPrompt] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [inputMode, setInputMode] = useState<"file" | "url">("file");
   const [videoUrlInput, setVideoUrlInput] = useState("");
   const [audioModels, setAudioModels] = useState<AudioModelOption[]>([]);
+  const [transcriptionModel, setTranscriptionModel] = useState("elevenlabs-speech-to-text");
   const [workflowModel, setWorkflowModel] = useState("__auto__");
   const [workflowLoading, setWorkflowLoading] = useState(false);
   const [workflowError, setWorkflowError] = useState("");
@@ -80,7 +80,6 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!initialProjectId) return;
     let cancelled = false;
     async function loadAudioModels() {
       const response = await fetch("/api/models?category=audio");
@@ -91,7 +90,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
     return () => {
       cancelled = true;
     };
-  }, [initialProjectId]);
+  }, []);
 
   const handleWorkflowAudio = async () => {
     if (!initialProjectId) return;
@@ -191,8 +190,10 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
           body: JSON.stringify({
             mediaUrl: url,
             whisperModelSize: whisperModel,
+            modelMode: "manual",
+            modelId: transcriptionModel,
+            modelPriority: "balanced",
             prompt: customPrompt || undefined,
-            targetLanguage,
           }),
         });
       } catch (fetchError: any) {
@@ -283,6 +284,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
 
   if (activeTab !== "audio") return null;
 
+  const transcriptionModels = audioModels.filter((model) => model.capabilities?.includes("transcription"));
   const canAnalyze =
     !isLoading &&
     (inputMode === "file" ? Boolean(selectedFile) : Boolean(videoUrlInput.trim())) &&
@@ -437,30 +439,27 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                 <Textarea
                   value={customPrompt}
                   onChange={handlePromptChange}
-                  placeholder={targetLanguage === "ko" ? t("customPromptKoreanPlaceholder") : t("customPromptPlaceholder")}
+                  placeholder={t("customPromptPlaceholder")}
                   className="min-h-[108px] resize-none overflow-hidden border-0 bg-transparent p-0 text-sm text-foreground shadow-none outline-none placeholder:text-muted-foreground focus-visible:ring-0"
                 />
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="grid gap-2 text-sm font-medium">
-                  {t("engine") || "Engine"}
-                  <div className="flex h-10 items-center rounded-xl border border-border bg-background px-3 text-sm font-semibold text-foreground">
-                    KIE Speech-to-Text
-                  </div>
-                </div>
-
+              <div className="grid gap-4 sm:grid-cols-2">
                 <label className="grid gap-2 text-sm font-medium">
-                  {t("targetLanguage") || "Target language"}
+                  分析模型
                   <select
-                    value={targetLanguage}
-                    onChange={(e) => setTargetLanguage(e.target.value as "auto" | "ko")}
+                    value={transcriptionModel}
+                    onChange={(event) => setTranscriptionModel(event.target.value)}
                     className="h-10 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
                   >
-                    <option value="auto">{t("targetLanguageAuto")}</option>
-                    <option value="ko">{t("targetLanguageKorean")}</option>
+                    {transcriptionModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.displayName}{model.experimental ? " · Experimental" : ""}
+                      </option>
+                    ))}
                   </select>
                 </label>
+
               </div>
 
               <div className="flex flex-wrap items-center gap-3">
@@ -499,9 +498,9 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                 type="button"
                 onClick={() => void handleAnalyze()}
                 disabled={!canAnalyze}
-                className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:!opacity-100 disabled:bg-[#DCA28E]"
+                className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                {isLoading ? <Spinner size="sm" /> : <Send className="h-5 w-5 -rotate-45" />}
+                {isLoading ? <Spinner size="sm" /> : <Mic2 className="h-5 w-5" />}
                 {isLoading ? t("processing") : t("start")}
               </button>
             </div>
@@ -580,7 +579,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                   <Button
                     onClick={handleClip}
                     disabled={selectedSegments.length === 0 || clipLoading}
-                    className="mt-4 w-full rounded-xl bg-primary text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md"
+                    className="mt-4 w-full rounded-xl bg-[#D97757] text-white shadow-sm transition-all hover:bg-[#C96848] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {clipLoading ? (
                       <span className="flex items-center gap-2"><Spinner size="sm" className="border-white" />{t("clipping")}</span>

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { getModelById } from "@/lib/ai/model-registry";
+import { getUserApiKeyForProvider } from "@/lib/byok/kie";
 import { createRemixVersion } from "@/lib/workflow/service";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -14,6 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   try {
+
     const { id } = await params;
     const bundle = await createRemixVersion({ userId: session.user.id, projectId: id, sourceVersionId, remixPrompt, ...parseWorkflowModelSelection(body) });
     return NextResponse.json(bundle);

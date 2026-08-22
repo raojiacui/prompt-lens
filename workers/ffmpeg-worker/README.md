@@ -6,6 +6,7 @@ Cloud Run worker for V2 video breakdown.
 
 - `GET /healthz`
 - `POST /breakdown`
+- `POST /resolve-media`
 
 `/breakdown` requires:
 
@@ -42,6 +43,33 @@ Response:
 }
 ```
 
+
+`/resolve-media` resolves a supported social video link, downloads it in the worker, uploads the resulting MP4 to R2, and returns the stored media URL for the main app analysis flow.
+
+Supported pasted-link platforms:
+
+- YouTube: `youtube.com`, `youtu.be`
+- TikTok: `tiktok.com`
+- Douyin: `douyin.com`, `iesdouyin.com`, `amemv.com`
+
+Request:
+
+```json
+{ "url": "https://www.youtube.com/watch?v=..." }
+```
+
+Response:
+
+```json
+{
+  "mediaUrl": "https://.../linked-media/youtube/<id>.mp4",
+  "storageKey": "linked-media/youtube/<id>.mp4",
+  "mediaType": "video",
+  "platform": "youtube",
+  "metadata": { "duration": 9.2, "width": 1080, "height": 1920, "fps": 30, "hasAudio": true },
+  "filename": "youtube-linked-video.mp4"
+}
+```
 ## Environment
 
 ```text
@@ -54,6 +82,8 @@ R2_PUBLIC_URL=
 SCENE_THRESHOLD=0.32
 MAX_SCENE_SECONDS=8
 MIN_SCENE_SECONDS=0.6
+YTDLP_PATH=yt-dlp
+MAX_RESOLVE_SECONDS=600
 ```
 
 ## App-side KIE analysis
@@ -70,3 +100,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-w
 ` 
 
 The script loads .env.local, derives R2_ENDPOINT from R2_ACCOUNT_ID when needed, and serves http://localhost:8080.
+
+The Dockerfile installs `yt-dlp` for `/resolve-media`. TikTok and Douyin availability can vary by region, anti-bot checks, or expired share links; if production links fail, deploy the worker in a reachable region and consider adding cookie/proxy handling later.

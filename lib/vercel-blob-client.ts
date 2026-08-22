@@ -52,7 +52,46 @@ export async function uploadMediaToBlob(
 
   const { presignedUrl, publicUrl, key } = await tokenRes.json();
 
-  // 2. 用 XMLHttpRequest 直传 R2，支持进度回调
+  // 2. 用 XMLHttpRequest 直传 R2，支持进度回调。浏览器 CORS/network 失败时走服务端兜底上传。
+  try {
+    await uploadWithPresignedUrl(file, presignedUrl, contentType, onProgress);
+  } catch (error) {
+    if (!isDirectUploadNetworkError(error)) {
+      throw error;
+    }
+
+    console.warn("Direct R2 upload failed, falling back to server upload:", error);
+    return uploadViaServer(file, mediaType, contentType, onProgress);
+  }
+
+  await fetch("/api/upload/complete", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      key,
+      url: publicUrl,
+      filename: file.name,
+      mediaType,
+      size: file.size,
+    }),
+  }).catch((error) => {
+    console.warn("Failed to record upload completion:", error);
+  });
+  return {
+    url: publicUrl,
+    filename: file.name,
+    mediaType,
+    size: file.size,
+    key,
+  };
+}
+
+async function uploadWithPresignedUrl(
+  file: File,
+  presignedUrl: string,
+  contentType: string,
+  onProgress?: (percentage: number) => void
+) {
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", presignedUrl, true);
@@ -79,12 +118,58 @@ export async function uploadMediaToBlob(
 
     xhr.send(file);
   });
+}
+
+function isDirectUploadNetworkError(error: unknown) {
+  return error instanceof Error && error.message === "R2 upload network error";
+}
+
+async function uploadViaServer(
+  file: File,
+  mediaType: "video" | "image",
+  contentType: string,
+  onProgress?: (percentage: number) => void
+): Promise<UploadedMedia> {
+  onProgress?.(1);
+
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("filename", file.name);
+  formData.append("contentType", contentType);
+  formData.append("mediaType", mediaType);
+
+  const uploadRes = await fetch("/api/upload-b2", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!uploadRes.ok) {
+    const message = await readUploadError(uploadRes, "Failed to upload via server");
+    throw new Error(message);
+  }
+
+  const data = await uploadRes.json();
+  onProgress?.(100);
 
   return {
-    url: publicUrl,
+    url: data.publicUrl,
     filename: file.name,
     mediaType,
     size: file.size,
-    key,
+    key: data.key,
   };
+}
+async function readUploadError(response: Response, fallback: string) {
+  const status = `${response.status} ${response.statusText}`.trim();
+  const contentType = response.headers.get("content-type") || "";
+
+  if (contentType.includes("application/json")) {
+    const err = await response.json().catch(() => null);
+    const message = typeof err?.error === "string" ? err.error : fallback;
+    return `${message} (${status})`;
+  }
+
+  const text = await response.text().catch(() => "");
+  const detail = text.replace(/\s+/g, " ").trim().slice(0, 300);
+  return detail ? `${fallback}: ${detail} (${status})` : `${fallback} (${status})`;
 }

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,35 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { useTranslations } from "next-intl";
+
+type VideoModelOption = {
+  id: string;
+  displayName: string;
+  family: string;
+  kieModelId: string;
+  enabled: boolean;
+  experimental?: boolean;
+  maxDuration?: number;
+  aspectRatios?: string[];
+  resolutionOptions?: string[];
+};
+
+const MIN_VIDEO_DURATION = 4;
+const DEFAULT_ASPECT_RATIOS = ["16:9", "9:16"];
+const DEFAULT_RESOLUTIONS = ["720p", "1080p"];
+
+function getDurationBounds(model?: VideoModelOption) {
+  const max = Math.max(1, Math.round(model?.maxDuration || 10));
+  const min = Math.min(MIN_VIDEO_DURATION, max);
+  return { min, max };
+}
+
+function clampDuration(value: string | number, model?: VideoModelOption) {
+  const { min, max } = getDurationBounds(model);
+  const parsed = typeof value === "number" ? value : Number.parseInt(value, 10);
+  const safe = Number.isFinite(parsed) ? Math.round(parsed) : Math.min(10, max);
+  return String(Math.min(max, Math.max(min, safe)));
+}
 
 export function VideoGenerateTab({ initialPrompt }: { initialPrompt?: string | null } = {}) {
   const t = useTranslations("videoGenerate");
@@ -19,6 +48,8 @@ export function VideoGenerateTab({ initialPrompt }: { initialPrompt?: string | n
   const [resolution, setResolution] = useState("720p");
   const [negativePrompt, setNegativePrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState("16:9");
+  const [videoModels, setVideoModels] = useState<VideoModelOption[]>([]);
+  const [selectedModelId, setSelectedModelId] = useState("");
   const [referenceImages, setReferenceImages] = useState<File[]>([]);
   const [referenceImagePreviews, setReferenceImagePreviews] = useState<string[]>([]);
   const [records, setRecords] = useState<any[]>([]);
@@ -26,6 +57,10 @@ export function VideoGenerateTab({ initialPrompt }: { initialPrompt?: string | n
   const [isDragging, setIsDragging] = useState(false);
 
   const MAX_REF_IMAGES = 6;
+  const selectedModel = videoModels.find((model) => model.id === selectedModelId) || videoModels[0];
+  const supportedAspectRatios = selectedModel?.aspectRatios?.length ? selectedModel.aspectRatios : DEFAULT_ASPECT_RATIOS;
+  const supportedResolutions = selectedModel?.resolutionOptions?.length ? selectedModel.resolutionOptions : DEFAULT_RESOLUTIONS;
+  const durationBounds = getDurationBounds(selectedModel);
 
   useEffect(() => {
     if (initialPrompt && initialPrompt.trim()) {
@@ -53,6 +88,34 @@ export function VideoGenerateTab({ initialPrompt }: { initialPrompt?: string | n
   useEffect(() => {
     loadRecords();
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadVideoModels() {
+      try {
+        const res = await fetch("/api/models?category=video_generation");
+        if (!res.ok) return;
+        const data = await res.json();
+        const models = Array.isArray(data.models) ? data.models.filter((model: VideoModelOption) => model.enabled) : [];
+        if (cancelled) return;
+        setVideoModels(models);
+        setSelectedModelId((current) => current || models[0]?.id || "");
+      } catch {
+        // 模型列表加载失败时保留默认表单值，后端仍会做兜底校验。
+      }
+    }
+    void loadVideoModels();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!selectedModel) return;
+    setDuration((current) => clampDuration(current, selectedModel));
+    setAspectRatio((current) => supportedAspectRatios.includes(current) ? current : supportedAspectRatios[0] || "16:9");
+    setResolution((current) => supportedResolutions.includes(current) ? current : supportedResolutions[0] || "720p");
+  }, [selectedModel?.id, supportedAspectRatios, supportedResolutions]);
 
   const pollStatus = async (taskId: string) => {
     const checkStatus = async () => {
@@ -177,6 +240,7 @@ export function VideoGenerateTab({ initialPrompt }: { initialPrompt?: string | n
           resolution,
           negativePrompt,
           aspectRatio,
+          model: selectedModel?.id,
           referenceImageUrls,
         }),
       });
@@ -246,35 +310,48 @@ export function VideoGenerateTab({ initialPrompt }: { initialPrompt?: string | n
                   </svg>
                 </button>
                 <label className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--color-border-default)]/70 bg-[var(--color-bg-raised)]/72 px-4 text-base font-medium text-[var(--color-text-primary)] shadow-sm backdrop-blur-sm">
-                  <svg className="h-5 w-5 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 6.75L12 3l6 3.75M6 6.75l6 3.75 6-3.75M6 6.75v6.75l6 3.75m6-10.5v6.75l-6 3.75m0-6.75v6.75" />
-                  </svg>
-                  Duration:
+                  Model:
                   <select
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    className="bg-transparent text-[var(--color-text-primary)] outline-none"
+                    value={selectedModel?.id || ""}
+                    onChange={(e) => setSelectedModelId(e.target.value)}
+                    className="max-w-[220px] bg-transparent text-[var(--color-text-primary)] outline-none"
                   >
-                    <option value="5">5s</option>
-                    <option value="10">10s</option>
-                    <option value="15">15s</option>
+                    {videoModels.map((model) => (
+                      <option key={model.id} value={model.id}>
+                        {model.displayName}{model.experimental ? " · Experimental" : ""}
+                      </option>
+                    ))}
                   </select>
                 </label>
+                <label className="grid min-w-[220px] gap-1 rounded-2xl border border-[var(--color-border-default)]/70 bg-[var(--color-bg-raised)]/72 px-4 py-2 text-sm font-medium text-[var(--color-text-primary)] shadow-sm backdrop-blur-sm">
+                  <span className="flex items-center justify-between gap-3">
+                    <span>Duration</span>
+                    <span className="font-mono text-[var(--color-accent-orange)]">{duration}s</span>
+                  </span>
+                  <input
+                    type="range"
+                    min={durationBounds.min}
+                    max={durationBounds.max}
+                    step={1}
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    className="h-2 w-full accent-[var(--color-accent-orange)]"
+                  />
+                  <span className="flex justify-between font-mono text-[11px] text-[var(--color-text-muted)]">
+                    <span>{durationBounds.min}s</span>
+                    <span>{durationBounds.max}s</span>
+                  </span>
+                </label>
                 <label className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--color-border-default)]/70 bg-[var(--color-bg-raised)]/72 px-4 text-base font-medium text-[var(--color-text-primary)] shadow-sm backdrop-blur-sm">
-                  <svg className="h-5 w-5 text-[var(--color-text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.7}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 7h16M4 17h16M7 4v16M17 4v16" />
-                  </svg>
                   Ratio:
                   <select
                     value={aspectRatio}
                     onChange={(e) => setAspectRatio(e.target.value)}
                     className="bg-transparent text-[var(--color-text-primary)] outline-none"
                   >
-                    <option value="16:9">16:9</option>
-                    <option value="9:16">9:16</option>
-                    <option value="1:1">1:1</option>
-                    <option value="3:4">3:4</option>
-                    <option value="4:3">4:3</option>
+                    {supportedAspectRatios.map((ratio) => (
+                      <option key={ratio} value={ratio}>{ratio}</option>
+                    ))}
                   </select>
                 </label>
                 <label className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--color-border-default)]/70 bg-[var(--color-bg-raised)]/72 px-4 text-base font-medium text-[var(--color-text-primary)] shadow-sm backdrop-blur-sm">
@@ -284,8 +361,9 @@ export function VideoGenerateTab({ initialPrompt }: { initialPrompt?: string | n
                     onChange={(e) => setResolution(e.target.value)}
                     className="bg-transparent text-[var(--color-text-primary)] outline-none"
                   >
-                    <option value="720p">720p</option>
-                    <option value="1080p">1080p</option>
+                    {supportedResolutions.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
                   </select>
                 </label>
               </div>
