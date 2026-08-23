@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useLocale } from "next-intl";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, Copy, Mic2, Play, RefreshCw, RotateCcw, Scissors, Upload, Video, WandSparkles } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Coins, Copy, Mic2, Play, RefreshCw, RotateCcw, Scissors, Trash2, Upload, Video, WandSparkles } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -39,6 +40,22 @@ type Bundle = {
 type ModelOption = { id: string; displayName: string; family: string; provider: string; kieModelId: string; enabled: boolean; experimental?: boolean };
 type ModelMode = "auto" | "manual";
 type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
+type CreditStatus = {
+  balance: number;
+  mode: "admin" | "credits";
+  hasPaidVideoAnalysis?: boolean;
+  trial: { limit: number; used: number; remaining: number; isAdmin: boolean };
+  capabilities?: {
+    videoAnalysis?: {
+      shortVideoMaxSeconds: number;
+      durationToleranceSeconds: number;
+      canUseLongVideo: boolean;
+      longVideoRequiresPayment: boolean;
+      longVideoBaseCredits: number;
+      perSceneCredits: number;
+    };
+  };
+};
 
 const MAX_ANALYSIS_VIDEO_SECONDS = 10;
 const VIDEO_DURATION_TOLERANCE_SECONDS = 0.75;
@@ -106,6 +123,15 @@ function getVideoDuration(file: File) {
     video.src = url;
   });
 }
+function canUseLongVideo(status: CreditStatus | null) {
+  return status?.mode === "admin" || status?.trial.isAdmin || status?.capabilities?.videoAnalysis?.canUseLongVideo === true;
+}
+
+function shortVideoLimitSeconds(status: CreditStatus | null) {
+  const caps = status?.capabilities?.videoAnalysis;
+  return (caps?.shortVideoMaxSeconds ?? MAX_ANALYSIS_VIDEO_SECONDS) + (caps?.durationToleranceSeconds ?? VIDEO_DURATION_TOLERANCE_SECONDS);
+}
+
 function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
   const provider = sceneVersion?.metadata?.analysisProvider;
   if (scene?.status === "failed") return provider === "fallback" ? "Needs review" : "Failed";
@@ -115,6 +141,7 @@ function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
 }
 
 export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props) {
+  const locale = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const promptSaveTimersRef = useRef<Record<string, number>>({});
   const [projects, setProjects] = useState<Project[]>([]);
@@ -136,11 +163,14 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   const [copiedSceneVersionId, setCopiedSceneVersionId] = useState("");
   const [analysisModels, setAnalysisModels] = useState<ModelOption[]>([]);
   const [analysisModelValue, setAnalysisModelValue] = useState("auto");
+  const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
   const modelPriority: ModelPriority = "balanced";
+  const canUploadLongVideo = canUseLongVideo(creditStatus);
 
   useEffect(() => {
     void loadProjects();
     void loadModels();
+    void loadCreditStatus();
 
     return () => {
       Object.values(promptSaveTimersRef.current).forEach(window.clearTimeout);
@@ -162,6 +192,15 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     setProjects(data.projects || []);
   }
 
+  async function loadCreditStatus() {
+    const response = await fetch("/api/credits/me", { cache: "no-store" });
+    if (!response.ok) return null;
+    const data = await response.json().catch(() => null);
+    if (!data) return null;
+    const status = data as CreditStatus;
+    setCreditStatus(status);
+    return status;
+  }
   async function loadModels() {
     const response = await fetch("/api/models?category=analysis");
     const data = await response.json();
@@ -175,6 +214,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       modelMode: manualModelId ? "manual" as ModelMode : "auto" as ModelMode,
       modelId: manualModelId || undefined,
       modelPriority,
+      outputLanguage: locale === "en" ? "en" : "zh",
     };
   }
 
@@ -196,25 +236,38 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     setBundle(data);
   }
 
+  async function handleDeleteProject(projectId: string) {
+    const response = await fetch(`/api/workflow/projects/${projectId}`, { method: "DELETE" });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) throw new Error(data?.error || "Failed to delete project");
+  }
+
   async function handleFile(nextFile: File) {
     const type = nextFile.type.startsWith("video/") ? "video" : nextFile.type.startsWith("image/") ? "image" : null;
     if (!type) {
-      setError("请上传 10 秒以内的视频（也就是一个完整的镜头片段）或图片进行分析。");
+      setError("请上传视频或图片进行分析。免费体验和未付费账号仅支持 10 秒以内完整镜头片段。");
       return;
     }
 
+    let duration: number | null = null;
     if (type === "video") {
       try {
-        const duration = await getVideoDuration(nextFile);
-        if (duration > MAX_ANALYSIS_VIDEO_SECONDS + VIDEO_DURATION_TOLERANCE_SECONDS) {
-          setError(`目前视频分析仅支持 ${MAX_ANALYSIS_VIDEO_SECONDS} 秒以内的视频（也就是一个完整的镜头片段）。当前文件读取到约 ${duration.toFixed(1)} 秒，请截取后再上传。图片不受此限制。`);
-          return;
+        duration = await getVideoDuration(nextFile);
+        const shortLimit = shortVideoLimitSeconds(creditStatus);
+        if (duration > shortLimit) {
+          const latestStatus = await loadCreditStatus() || creditStatus;
+          if (!canUseLongVideo(latestStatus)) {
+            setError(`免费体验和未付费账号仅支持 ${MAX_ANALYSIS_VIDEO_SECONDS} 秒以内的视频（也就是一个完整的镜头片段）。当前文件读取到约 ${duration.toFixed(1)} 秒；购买积分包后可上传长视频自动拆镜分析。管理员账号不受此限制。`);
+            return;
+          }
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "无法读取视频时长，请换一个视频文件。");
         return;
       }
     }
+
+    setMediaDuration(duration);
 
     if (preview) URL.revokeObjectURL(preview);
     setFile(nextFile);
@@ -253,6 +306,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       });
       const breakdownData = await readJsonResponse(breakdownRes, "Breakdown failed");
       setBundle(breakdownData);
+      await loadCreditStatus();
       await loadProjects();
       setProgress(upload.mediaType === "image" ? "Image Blueprint ready" : "Video Blueprint ready");
     } catch (err) {
@@ -313,6 +367,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
         setSelectedSceneVersionIds((versions) => ({ ...versions, [data.scene.originalSceneId]: data.scene.id }));
       }
       setRewriteDrafts((drafts) => ({ ...drafts, [scene.id]: "" }));
+      await loadCreditStatus();
       await loadProject(bundle.project.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Rewrite failed");
@@ -339,6 +394,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Retry failed");
+      await loadCreditStatus();
       await loadProject(bundle.project.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Retry failed");
@@ -387,8 +443,9 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
             ) : null}
             <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl bg-background text-center hover:bg-accent">
               <Upload className="h-6 w-6 text-muted-foreground" />
-              <span className="font-semibold">{preview ? "更换文件" : "上传 10 秒以内的视频（也就是一个完整的镜头片段）或图片进行分析"}</span>
+              <span className="font-semibold">{preview ? "更换文件" : canUploadLongVideo ? "上传视频或图片进行分析" : "上传 10 秒以内的视频（也就是一个完整的镜头片段）或图片进行分析"}</span>
             </button>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{canUploadLongVideo ? "已解锁长视频自动拆镜分析；管理员账号不受时长和积分限制。" : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段；购买积分包后可上传几分钟长视频并自动拆镜分析。"}</p>
           </div>
 
           <div className="mt-4">
@@ -417,17 +474,42 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
             <h2 className="font-semibold">Projects</h2>
             <div className="mt-3 grid gap-2">
               {projects.map((project) => (
-                <button key={project.id} type="button" onClick={() => void loadProject(project.id)} className={cn("rounded-xl border px-3 py-2 text-left text-sm hover:border-primary/50", bundle?.project.id === project.id ? "border-primary bg-primary/10" : "border-border bg-background")}>
-                  <span className="block font-medium">{project.title}</span>
-                  <span className="text-xs text-muted-foreground">{project.status}</span>
-                </button>
+                <div key={project.id} className={cn("group flex items-center justify-between rounded-xl border px-3 py-2 text-sm hover:border-primary/50", bundle?.project.id === project.id ? "border-primary bg-primary/10" : "border-border bg-background")}>
+                  <button type="button" onClick={() => void loadProject(project.id)} className="min-w-0 flex-1 text-left">
+                    <span className="block truncate font-medium">{project.title}</span>
+                    <span className="text-xs text-muted-foreground">{project.status}</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="删除项目"
+                    onClick={() => {
+                      if (!confirm("确定要删除这个项目吗？此操作无法撤销。")) return;
+                      void (async () => {
+                        try {
+                          await handleDeleteProject(project.id);
+                          if (bundle?.project.id === project.id) setBundle(null);
+                          await loadProjects();
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "Failed to delete project");
+                        }
+                      })();
+                    }}
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               ))}
               {!projects.length ? <p className="text-sm text-muted-foreground">No projects yet.</p> : null}
             </div>
           </div>
         </section>
 
-        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="relative">
+          <div className="absolute right-0 top-0 z-10 -translate-y-full pb-3">
+            <CreditBadge status={creditStatus} />
+          </div>
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
           {!bundle ? (
             <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
               <Play className="mb-4 h-10 w-10 text-muted-foreground" />
@@ -585,12 +667,26 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
               </div>
             </div>
           )}
-        </section>
+          </section>
+        </div>
       </div>
     </div>
   );
 }
 
+
+function CreditBadge({ status, className }: { status: CreditStatus | null; className?: string }) {
+  const balance = status?.balance ?? 0;
+  const subtitle = status?.mode === "admin" ? "管理员不限额" : canUseLongVideo(status) ? "长视频已解锁" : "10 秒以内单镜头";
+
+  return (
+    <div className={cn("flex items-center gap-2 whitespace-nowrap rounded-full border border-[#D97757]/25 bg-background/95 px-3 py-1.5 text-xs font-semibold text-[#D97757] shadow-sm backdrop-blur", className)}>
+      <Coins className="h-3.5 w-3.5" />
+      <span>积分 {balance}</span>
+      <span className="hidden text-[var(--color-text-muted)] sm:inline">{subtitle}</span>
+    </div>
+  );
+}
 function getSceneVersionHistory(bundle: Bundle, sceneVersion: SceneVersion) {
   return bundle.allSceneVersions
     .filter((version) => version.originalSceneId === sceneVersion.originalSceneId && version.projectVersionId === sceneVersion.projectVersionId)

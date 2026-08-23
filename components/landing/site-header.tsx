@@ -8,7 +8,7 @@ import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
 import { LOCALE_COOKIE, type Locale } from "@/i18n/config";
 import { cn } from "@/lib/utils";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, LayoutDashboard } from "lucide-react";
 
 const LOCALE_DISPLAY: Record<Locale, { label: string }> = {
   zh: { label: "中文" },
@@ -90,9 +90,10 @@ function LanguageDropdown() {
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ user }: { user: { name?: string | null; image?: string | null; email?: string | null } | null }) {
   const t = useTranslations("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isAuthenticated = !!user;
 
   const navItems = [
     { href: "#features", label: t("navFeatures") },
@@ -130,11 +131,22 @@ export function SiteHeader() {
           </nav>
 
           <div className="hidden md:flex items-center gap-4 ml-auto">
-            <Link href="/login">
-              <Button className="text-sm bg-white text-slate-900 hover:bg-white/90 rounded-full px-5">
-                {t("signIn")}
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link href="/dashboard">
+                  <Button className="text-sm bg-white text-slate-900 hover:bg-white/90 rounded-full px-5">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    {t("dashboard") || "Dashboard"}
+                  </Button>
+                </Link>
+              </>
+            ) : (
+              <Link href="/login">
+                <Button className="text-sm bg-white text-slate-900 hover:bg-white/90 rounded-full px-5">
+                  {t("signIn")}
+                </Button>
+              </Link>
+            )}
           </div>
 
           <div className="md:hidden flex items-center gap-2 ml-auto">
@@ -165,11 +177,20 @@ export function SiteHeader() {
             <LanguageDropdown />
           </div>
           <div className="pt-3 border-t border-white/10">
-            <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
-              <Button className="w-full bg-white text-slate-900 hover:bg-white/90 rounded-full">
-                {t("signIn")}
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link href="/dashboard" className="block" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full bg-white text-slate-900 hover:bg-white/90 rounded-full">
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  {t("dashboard") || "Dashboard"}
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
+                <Button className="w-full bg-white text-slate-900 hover:bg-white/90 rounded-full">
+                  {t("signIn")}
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       )}

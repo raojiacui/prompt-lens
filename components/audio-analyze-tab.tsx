@@ -3,18 +3,28 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { useTranslations } from "next-intl";
-import { Link, Mic2, Upload, X } from "lucide-react";
+import { Copy, Download, Mic2, Upload, X } from "lucide-react";
 
 interface TranscriptionSegment {
   start: number;
   end: number;
   text: string;
+  speaker?: string;
+  confidence?: number;
+}
+
+interface SubtitleCue {
+  index: number;
+  start: number;
+  end: number;
+  text: string;
+  speaker?: string;
 }
 
 interface VideoSegment {
@@ -61,6 +71,9 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
     language: string;
     transcription: TranscriptionSegment[];
     segments: VideoSegment[];
+    subtitles: SubtitleCue[];
+    srt: string;
+    vtt: string;
     duration: number;
   } | null>(null);
   const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
@@ -69,8 +82,6 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
   const [whisperModel] = useState("kie");
   const [customPrompt, setCustomPrompt] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [inputMode, setInputMode] = useState<"file" | "url">("file");
-  const [videoUrlInput, setVideoUrlInput] = useState("");
   const [audioModels, setAudioModels] = useState<AudioModelOption[]>([]);
   const [transcriptionModel, setTranscriptionModel] = useState("elevenlabs-speech-to-text");
   const [workflowModel, setWorkflowModel] = useState("__auto__");
@@ -118,7 +129,10 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
     }
   };
   const handleFile = (file: File) => {
-    if (!file.type.startsWith("video/") && !file.type.startsWith("audio/")) return;
+    if (!file.type.startsWith("video/")) {
+      alert(t("videoFileRequired"));
+      return;
+    }
     setSelectedFile(file);
     setPreview(URL.createObjectURL(file));
     setResult(null);
@@ -146,40 +160,23 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
   };
 
   const handleAnalyze = async () => {
-    let url = "";
+    if (!selectedFile) return;
 
-    if (inputMode === "file") {
-      if (!selectedFile) return;
-      setIsLoading(true);
-      setProgress(t("uploading"));
-
-      try {
-        const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
-          setProgress(t("uploadingProgress", { percent: Math.round(percentage) }));
-        });
-
-        url = uploadData.url;
-        if (!url) {
-          throw new Error(t("uploadEmptyUrl", { response: JSON.stringify(uploadData) }));
-        }
-      } catch (error: any) {
-        alert(t("uploadFailed", { message: error.message }));
-        setIsLoading(false);
-        return;
-      }
-    } else {
-      if (!videoUrlInput.trim()) {
-        alert(t("urlRequired"));
-        return;
-      }
-      setIsLoading(true);
-      setProgress(t("downloading"));
-      url = videoUrlInput.trim();
-    }
-
-    setVideoUrl(url);
+    setIsLoading(true);
+    setProgress(t("uploading"));
+    setResult(null);
+    setClipUrl(null);
 
     try {
+      const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
+        setProgress(t("uploadingProgress", { percent: Math.round(percentage) }));
+      });
+
+      const url = uploadData.url;
+      if (!url) {
+        throw new Error(t("uploadEmptyUrl", { response: JSON.stringify(uploadData) }));
+      }
+      setVideoUrl(url);
       setProgress(t("extracting"));
 
       let analyzeRes;
@@ -212,8 +209,14 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
       }
 
       const data = await analyzeRes.json();
-      setResult(data);
-      setSelectedSegments(data.segments.map((_: any, i: number) => i));
+      const nextResult = {
+        ...data,
+        subtitles: Array.isArray(data.subtitles) ? data.subtitles : [],
+        srt: typeof data.srt === "string" ? data.srt : "",
+        vtt: typeof data.vtt === "string" ? data.vtt : "",
+      };
+      setResult(nextResult);
+      setSelectedSegments(Array.isArray(data.segments) ? data.segments.map((_: any, i: number) => i) : []);
     } catch (error: any) {
       alert(`Error: ${error.message}`);
     } finally {
@@ -221,7 +224,6 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
       setProgress("");
     }
   };
-
   const handleClip = async () => {
     if (!result || selectedSegments.length === 0) return;
     setClipLoading(true);
@@ -271,11 +273,37 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
     return language;
   };
 
+  const getSubtitleFileName = (extension: "srt" | "vtt") => {
+    const baseName = selectedFile?.name.replace(/\.[^.]+$/, "") || "video-subtitles";
+    return `${baseName}.${extension}`;
+  };
+
+  const downloadTextFile = (content: string, fileName: string, mimeType: string) => {
+    if (!content) return;
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = fileName;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(url);
+  };
+
+  const copyText = async (content: string) => {
+    if (!content) return;
+    try {
+      await navigator.clipboard.writeText(content);
+    } catch {
+      alert(t("copyFailed"));
+    }
+  };
+
   const resetUpload = () => {
     setSelectedFile(null);
     setPreview(null);
     setVideoUrl("");
-    setVideoUrlInput("");
     setResult(null);
     setClipUrl(null);
     setSelectedSegments([]);
@@ -285,10 +313,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
   if (activeTab !== "audio") return null;
 
   const transcriptionModels = audioModels.filter((model) => model.capabilities?.includes("transcription"));
-  const canAnalyze =
-    !isLoading &&
-    (inputMode === "file" ? Boolean(selectedFile) : Boolean(videoUrlInput.trim())) &&
-    true;
+  const canAnalyze = !isLoading && Boolean(selectedFile);
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
@@ -365,7 +390,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
               <div
                 className={cn(
                   "rounded-2xl border border-dashed border-border bg-muted/30 p-3 transition-colors",
-                  isDragging && inputMode === "file" && "border-primary/70 bg-primary/5"
+                  isDragging && "border-primary/70 bg-primary/5"
                 )}
                 onDragOver={(e) => {
                   e.preventDefault();
@@ -378,11 +403,11 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                   ref={fileInputRef}
                   className="sr-only"
                   type="file"
-                  accept="video/*,audio/*"
+                  accept="video/*"
                   onChange={handleFileSelect}
                 />
 
-                {inputMode === "file" && selectedFile && preview ? (
+                {selectedFile && preview ? (
                   <div className="mb-3 flex flex-wrap gap-3">
                     <div className="relative flex h-24 w-32 items-center justify-center overflow-hidden rounded-xl border border-border bg-background shadow-sm">
                       {selectedFile.type.startsWith("video/") ? (
@@ -406,31 +431,15 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                   </div>
                 ) : null}
 
-                {inputMode === "url" ? (
-                  <div className="mb-3">
-                    <label className="flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-3 text-foreground shadow-sm">
-                      <Link className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <Input
-                        type="url"
-                        value={videoUrlInput}
-                        onChange={(e) => setVideoUrlInput(e.target.value)}
-                        placeholder={t("urlPlaceholder")}
-                        className="h-auto border-0 bg-transparent p-0 shadow-none focus-visible:ring-0"
-                      />
-                    </label>
-                    <p className="mt-2 text-xs text-muted-foreground">{t("urlHint")}</p>
-                  </div>
-                ) : null}
-
                 <button
                   type="button"
-                  onClick={() => inputMode === "file" ? fileInputRef.current?.click() : setInputMode("file")}
+                  onClick={() => fileInputRef.current?.click()}
                   className="flex min-h-20 w-full flex-col items-center justify-center gap-1.5 rounded-xl bg-background py-3 text-center transition-colors hover:bg-accent"
                 >
                   <Upload className="h-6 w-6 text-muted-foreground" aria-hidden="true" />
                   <span className="text-base font-semibold">{t("uploadFile")}</span>
                   <span className="text-sm text-muted-foreground">
-                    {inputMode === "file" ? t("dropHere") : t("switchToFileUpload")}
+                    {t("dropHere")}
                   </span>
                 </button>
               </div>
@@ -460,31 +469,6 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                   </select>
                 </label>
 
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="inline-flex h-10 overflow-hidden rounded-full border border-border bg-muted p-1">
-                  <button
-                    type="button"
-                    onClick={() => { setInputMode("file"); resetUpload(); }}
-                    className={cn(
-                      "rounded-full px-4 text-sm font-semibold transition-colors",
-                      inputMode === "file" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {t("uploadFile")}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setInputMode("url"); resetUpload(); }}
-                    className={cn(
-                      "rounded-full px-4 text-sm font-semibold transition-colors",
-                      inputMode === "url" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {t("inputUrl")}
-                  </button>
-                </div>
               </div>
 
               {progress || isLoading ? (
@@ -528,6 +512,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                       <span className="rounded-full bg-muted px-3 py-1">{t("language")}: {getLanguageDisplay(result.language)}</span>
                       <span className="rounded-full bg-muted px-3 py-1">{t("duration")}: {formatTime(result.duration)}</span>
                       <span className="rounded-full bg-muted px-3 py-1">{t("segments")}: {result.segments.length}</span>
+                      <span className="rounded-full bg-muted px-3 py-1">{t("subtitles")}: {result.subtitles.length}</span>
                     </div>
                   </div>
                   <div className="mt-3 max-h-[360px] space-y-2 overflow-y-auto pr-1">
@@ -593,8 +578,34 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                   <h3 className="text-lg font-semibold text-foreground">{t("transcript")}</h3>
                   <div className="mt-3 max-h-[280px] overflow-y-auto whitespace-pre-wrap rounded-xl bg-muted/50 p-4 text-sm leading-relaxed text-foreground">
                     {result.transcription.map((seg, i) => (
-                      <span key={i}><span className="mr-2 font-mono text-xs text-primary">[{formatTime(seg.start)}]</span>{seg.text}{" "}</span>
+                      <span key={i}><span className="mr-2 font-mono text-xs text-primary">[{formatTime(seg.start)}]</span>{seg.speaker ? `${seg.speaker}: ` : ""}{seg.text}{" "}</span>
                     ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-border bg-background p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-foreground">{t("subtitleFile")}</h3>
+                      <p className="mt-1 text-xs text-muted-foreground">{t("subtitleCount", { count: result.subtitles.length })}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button type="button" variant="outline" size="sm" disabled={!result.srt} onClick={() => void copyText(result.srt)}>
+                        <Copy className="mr-2 h-3.5 w-3.5" />
+                        {t("copySrt")}
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" disabled={!result.srt} onClick={() => downloadTextFile(result.srt, getSubtitleFileName("srt"), "application/x-subrip;charset=utf-8")}>
+                        <Download className="mr-2 h-3.5 w-3.5" />
+                        {t("downloadSrt")}
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" disabled={!result.vtt} onClick={() => downloadTextFile(result.vtt, getSubtitleFileName("vtt"), "text/vtt;charset=utf-8")}>
+                        <Download className="mr-2 h-3.5 w-3.5" />
+                        {t("downloadVtt")}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="mt-3 max-h-[280px] overflow-y-auto whitespace-pre-wrap rounded-xl bg-muted/50 p-4 font-mono text-xs leading-relaxed text-foreground">
+                    {result.srt || t("noSubtitles")}
                   </div>
                 </div>
 

@@ -30,6 +30,7 @@ export interface AiModelSelection {
   modelMode?: ModelSelectionMode;
   modelId?: string;
   modelPriority?: ModelPriority;
+  outputLanguage?: "zh" | "en";
 }
 
 export interface SceneRewriteInput extends AiModelSelection {
@@ -75,6 +76,16 @@ function safeArray(value: unknown): unknown[] {
 
 function text(value: unknown, fallback = "") {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function outputLanguage(value: unknown): "zh" | "en" {
+  return value === "en" ? "en" : "zh";
+}
+
+function outputLanguageInstruction(value: unknown) {
+  return outputLanguage(value) === "zh"
+    ? "Output language: Simplified Chinese. Keep JSON keys in English, but write all human-readable values, explanations, prompts, dialogue notes, audio notes, and metadata text in Simplified Chinese."
+    : "Output language: English. Keep JSON keys in English and write all human-readable values in English.";
 }
 
 function parseJsonObject(raw: string) {
@@ -264,6 +275,7 @@ export async function analyzeSceneBlueprint(params: {
         "Do not invent brand names or dialogue unless visible/audible evidence supports it. If something is uncertain, say unknown rather than hallucinating.",
         "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. transition must include editing.pacing and editing.techniques.",
         "generationPrompt must be a long, directly usable text-to-video prompt. Put visual reconstruction first; put dialogue/audio/editing constraints after the visual description and mark uncertain items as possible/unknown.",
+        outputLanguageInstruction(params.outputLanguage),
       ].join(" "),
       content: [
         {
@@ -275,6 +287,7 @@ export async function analyzeSceneBlueprint(params: {
             `Previous summary: ${params.context.previousSummary || "none"}`,
             `Next summary: ${params.context.nextSummary || "none"}`,
             `Transcript/dialogue context from KIE speech-to-text: ${compactJson(params.context.audio || {})}`,
+            outputLanguageInstruction(params.outputLanguage),
             "Output a detailed shot script with visual reconstruction as the highest priority. Include: 1) sceneDescription: exhaustive visible-frame reconstruction; 2) subject and characters: identity, appearance, wardrobe, expression, pose; 3) environment, props, background layers; 4) action sequence with temporal order; 5) camera: shot size, angle, lens feel, movement, focus, speed; 6) composition: foreground/midground/background, subject placement, depth; 7) lighting, color grading, texture, realism; 8) generationPrompt: a self-contained visual-first text-to-video prompt detailed enough to recreate roughly 90% of the scene without source media; 9) audio: transcript/dialogue and broad sound style only; 10) editing: basic transition/rhythm notes with confidence, avoid overclaiming. Preserve transcript timing when present.",
           ].join("\n"),
         },
@@ -354,6 +367,7 @@ export async function analyzeImageBlueprint(params: {
         "Do not invent brand names, dialogue, audio, music, or editing techniques. There is no audio, dialogue, or video editing in a static image.",
         "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. dialogue, narration, and subtitle must be empty arrays. audio must only note that no audio is available. transition.editing.pacing must be 'None' and transition.editing.techniques must be an empty array.",
         "generationPrompt must be a long, directly usable text-to-image/video prompt focused entirely on visual reconstruction. Mark uncertain visual details as possible/unknown.",
+        outputLanguageInstruction(params.outputLanguage),
       ].join(" "),
       content: [
         {
@@ -361,6 +375,7 @@ export async function analyzeImageBlueprint(params: {
           text: [
             "Reference type: static image",
             `Scene index: ${params.scene.sceneIndex} of ${params.context.sceneCount}`,
+            outputLanguageInstruction(params.outputLanguage),
             "This is a single still image. There is no audio, dialogue, subtitle, or video editing to analyze.",
             "Output a detailed visual shot script: 1) sceneDescription: exhaustive visible-frame reconstruction; 2) subject and characters: identity, appearance, wardrobe, expression, pose; 3) environment, props, background layers; 4) implied action or static pose; 5) camera: shot size, angle, lens feel, focus, framing; 6) composition: foreground/midground/background, subject placement, depth; 7) lighting, color grading, texture, realism; 8) generationPrompt: a self-contained visual-first recreation prompt detailed enough to recreate the image without source media. Leave dialogue/narration/subtitle empty, audio empty/placeholder, and transition/editing minimal/empty.",
           ].join("\n"),
@@ -397,7 +412,7 @@ export async function buildStructuredVideoOverview(params: {
     const raw = await callAnalysisChatJson({
       userId: params.userId,
       selection: params,
-      system: "Return strict JSON only. Summarize the whole video blueprint for a creator dashboard.",
+      system: `Return strict JSON only. Summarize the whole video blueprint for a creator dashboard. ${outputLanguageInstruction(params.outputLanguage)}`,
       content: [
         {
           type: "text",
@@ -434,6 +449,7 @@ export async function rewriteSceneBlueprint(params: SceneRewriteInput): Promise<
         "You are rewriting one scene blueprint for AI video generation. Return strict JSON only.",
         "Preserve the same schema: story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata.",
         "Apply the user's instruction while keeping duration, pacing, and shot continuity coherent.",
+        outputLanguageInstruction(params.outputLanguage),
       ].join(" "),
       content: [
         {

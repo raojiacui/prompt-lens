@@ -1,13 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-export function HeroSection() {
+export function HeroSection({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const t = useTranslations("home");
+  const appHref = isAuthenticated ? "/dashboard" : "/login";
 
   return (
     <section className="relative overflow-hidden">
@@ -30,7 +30,7 @@ export function HeroSection() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in" style={{ animationDelay: "240ms" }}>
-          <Link href="/login">
+          <Link href={appHref}>
             <Button className="bg-white text-slate-900 hover:bg-white/90 rounded-full px-8 h-12 text-base font-medium group shadow-lg shadow-black/20">
               {t("heroCtaPrimary")}
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />

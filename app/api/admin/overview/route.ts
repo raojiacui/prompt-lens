@@ -1,9 +1,12 @@
-﻿import { NextRequest, NextResponse } from "next/server";
-import { desc, eq, gte, count } from "drizzle-orm";
+import { NextRequest, NextResponse } from "next/server";
+import { desc, eq, gte, count, countDistinct, isNotNull } from "drizzle-orm";
 import { auth } from "@/lib/auth";
+import { getCreditBalancesForUsers } from "@/lib/billing/credits";
 import {
   analysisHistory,
   audioAnalysis,
+  creditLedger,
+  dailyVisits,
   db,
   operationLogs,
   projectAssets,
@@ -81,11 +84,6 @@ function touchUser(map: Map<string, UserUsage>, userId: string, createdAt: Date)
   return existing;
 }
 
-function markActive(activeUsersByDay: Map<string, Set<string>>, date: string, userId: string) {
-  if (!activeUsersByDay.has(date)) activeUsersByDay.set(date, new Set());
-  activeUsersByDay.get(date)?.add(userId);
-}
-
 async function requireAdmin(headers: Headers) {
   const session = await auth.api.getSession({ headers });
   if (!session?.user) return null;
@@ -94,13 +92,14 @@ async function requireAdmin(headers: Headers) {
 }
 
 export async function GET(request: NextRequest) {
-  const adminUser = await requireAdmin(request.headers);
-  if (!adminUser) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
-  if (request.nextUrl.searchParams.get("probe") === "1") {
-    return NextResponse.json({ ok: true });
-  }
+  try {
+    const adminUser = await requireAdmin(request.headers);
+    if (!adminUser) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+    if (request.nextUrl.searchParams.get("probe") === "1") {
+      return NextResponse.json({ ok: true });
+    }
 
-  const daysParam = Number(request.nextUrl.searchParams.get("days") || 14);
+    const daysParam = Number(request.nextUrl.searchParams.get("days") || 14);
   const days = Number.isFinite(daysParam) ? Math.max(7, Math.min(60, Math.round(daysParam))) : 14;
   const since = new Date(Date.now() - days * DAY_MS);
   const since30 = new Date(Date.now() - 30 * DAY_MS);
@@ -113,6 +112,7 @@ export async function GET(request: NextRequest) {
     totalProjectsRow,
     totalGenerationsRow,
     totalWorkflowJobsRow,
+    purchasedUsersRow,
     recentLogs,
     recentProjects,
     recentGenerations,
@@ -123,12 +123,14 @@ export async function GET(request: NextRequest) {
     recentUsers,
     allUsers,
     projectOwners,
+    recentDailyVisits,
   ] = await Promise.all([
     db.select({ count: count() }).from(user),
     db.select({ count: count() }).from(user).where(gte(user.createdAt, since30)),
     db.select({ count: count() }).from(projects),
     db.select({ count: count() }).from(videoGeneration),
     db.select({ count: count() }).from(workflowJobs),
+    db.select({ count: countDistinct(creditLedger.userId) }).from(creditLedger).where(isNotNull(creditLedger.packageId)),
     db.query.operationLogs.findMany({ where: gte(operationLogs.createdAt, since), orderBy: [desc(operationLogs.createdAt)], limit: 50000 }),
     db.query.projects.findMany({ where: gte(projects.createdAt, since), orderBy: [desc(projects.createdAt)], limit: 20000 }),
     db.query.videoGeneration.findMany({ where: gte(videoGeneration.createdAt, since), orderBy: [desc(videoGeneration.createdAt)], limit: 20000 }),
@@ -139,11 +141,12 @@ export async function GET(request: NextRequest) {
     db.query.user.findMany({ orderBy: [desc(user.createdAt)], limit: 8 }),
     db.query.user.findMany({ limit: 10000 }),
     db.query.projects.findMany({ limit: 50000 }),
+    db.query.dailyVisits.findMany({ where: gte(dailyVisits.date, dayKey(since)), orderBy: [desc(dailyVisits.createdAt)], limit: 100000 }),
   ]);
 
   const daily = makeDailyWindow(days);
   const dailyMap = new Map(daily.map((item) => [item.date, item]));
-  const activeUsersByDay = new Map<string, Set<string>>();
+  const dailyVisitors = new Map<string, { users: Set<string>; sessions: Set<string> }>();
   const active7d = new Set<string>();
   const active30d = new Set<string>();
   const usageByUser = new Map<string, UserUsage>();
@@ -157,9 +160,6 @@ export async function GET(request: NextRequest) {
     const date = dayKey(createdAt);
     const day = dailyMap.get(date);
     const stats = touchUser(usageByUser, userId, createdAt);
-    markActive(activeUsersByDay, date, userId);
-    if (createdAt >= since7) active7d.add(userId);
-    if (createdAt >= since30) active30d.add(userId);
 
     if (kind === "action") stats.actions += 1;
     if (kind === "upload") {
@@ -204,9 +204,29 @@ export async function GET(request: NextRequest) {
     registerActivity(ownerId, asset.createdAt, "upload", asset.size || 0);
   }
 
-  for (const [date, users] of activeUsersByDay) {
+  for (const visit of recentDailyVisits) {
+    const date = visit.date;
+    if (!dailyMap.has(date)) continue;
+
+    if (!dailyVisitors.has(date)) {
+      dailyVisitors.set(date, { users: new Set(), sessions: new Set() });
+    }
+    const visitors = dailyVisitors.get(date)!;
+
+    if (visit.userId) {
+      visitors.users.add(visit.userId);
+      if (visit.createdAt >= since7) active7d.add(`user:${visit.userId}`);
+      if (visit.createdAt >= since30) active30d.add(`user:${visit.userId}`);
+    } else {
+      visitors.sessions.add(visit.sessionId);
+      if (visit.createdAt >= since7) active7d.add(`session:${visit.sessionId}`);
+      if (visit.createdAt >= since30) active30d.add(`session:${visit.sessionId}`);
+    }
+  }
+
+  for (const [date, { users, sessions }] of dailyVisitors) {
     const day = dailyMap.get(date);
-    if (day) day.activeUsers = users.size;
+    if (day) day.activeUsers = users.size + sessions.size;
   }
 
   const todayMetrics = dailyMap.get(dayKey(today)) || daily[daily.length - 1];
@@ -215,15 +235,22 @@ export async function GET(request: NextRequest) {
   const analysisCount = daily.reduce((sum, item) => sum + item.analyses, 0);
   const generationCount = daily.reduce((sum, item) => sum + item.generations, 0);
   const usersById = new Map(allUsers.map((item) => [item.id, item]));
+  const creditBalances = await getCreditBalancesForUsers(Array.from(usageByUser.keys()));
+
+  const totalUsers = totalUsersRow[0]?.count || 0;
+  const purchasedUsers = purchasedUsersRow[0]?.count || 0;
+  const nonPurchasedUsers = Math.max(0, totalUsers - purchasedUsers);
 
   return NextResponse.json({
     period: { days, since: since.toISOString() },
     overview: {
-      totalUsers: totalUsersRow[0]?.count || 0,
+      totalUsers,
       newUsers30d: newUsersRow[0]?.count || 0,
       activeToday: todayMetrics.activeUsers,
       active7d: active7d.size,
       active30d: active30d.size,
+      purchasedUsers,
+      nonPurchasedUsers,
       totalProjects: totalProjectsRow[0]?.count || 0,
       totalGenerations: totalGenerationsRow[0]?.count || 0,
       totalWorkflowJobs: totalWorkflowJobsRow[0]?.count || 0,
@@ -246,8 +273,13 @@ export async function GET(request: NextRequest) {
           email: profile?.email || null,
           role: profile?.role || null,
           banned: profile?.banned || false,
+          creditBalance: creditBalances.get(stats.userId) || 0,
         };
       }),
     recentUsers: recentUsers.map((item) => ({ id: item.id, name: item.name, email: item.email, role: item.role, createdAt: item.createdAt })),
   });
+  } catch (error) {
+    console.error("Admin overview error:", error);
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to load admin overview" }, { status: 500 });
+  }
 }

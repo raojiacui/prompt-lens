@@ -1,55 +1,69 @@
 {
-  "version": "7",
-  "dialect": "postgresql",
-  "entries": [
-    {
-      "idx": 0,
-      "version": "7",
-      "when": 1773156146501,
-      "tag": "0000_dear_prism",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1773323880032,
-      "tag": "0001_elite_aaron_stack",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780913220000,
-      "tag": "0002_video_generation",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1782745359117,
-      "tag": "0003_blushing_thor",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1787110800000,
-      "tag": "0004_agent_runs",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1787112600000,
-      "tag": "0005_v2_workflow",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1787114400000,
-      "tag": "0006_generation_workflow_links",
-      "breakpoints": true
-    }
-  ]
+    "version":  "7",
+    "dialect":  "postgresql",
+    "entries":  [
+                    {
+                        "idx":  0,
+                        "version":  "7",
+                        "when":  1773156146501,
+                        "tag":  "0000_dear_prism",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  1,
+                        "version":  "7",
+                        "when":  1773323880032,
+                        "tag":  "0001_elite_aaron_stack",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  2,
+                        "version":  "7",
+                        "when":  1780913220000,
+                        "tag":  "0002_video_generation",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  3,
+                        "version":  "7",
+                        "when":  1782745359117,
+                        "tag":  "0003_blushing_thor",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  4,
+                        "version":  "7",
+                        "when":  1787110800000,
+                        "tag":  "0004_agent_runs",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  5,
+                        "version":  "7",
+                        "when":  1787112600000,
+                        "tag":  "0005_v2_workflow",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  6,
+                        "version":  "7",
+                        "when":  1787114400000,
+                        "tag":  "0006_generation_workflow_links",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  7,
+                        "version":  "7",
+                        "when":  1787417291701,
+                        "tag":  "0007_foamy_lily_hollister",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  8,
+                        "version":  "7",
+                        "when":  1787450000000,
+                        "tag":  "0008_payment_orders",
+                        "breakpoints":  true
+                    }
+                ]
 }

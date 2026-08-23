@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-export function CTASection() {
+export function CTASection({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const t = useTranslations("home");
+  const appHref = isAuthenticated ? "/dashboard" : "/login";
 
   return (
     <section className="relative min-h-[360px] md:min-h-[420px] flex items-center justify-center overflow-hidden">
@@ -29,7 +30,7 @@ export function CTASection() {
           {t("ctaSubtitle")}
         </p>
         <div className="flex items-center justify-center">
-          <Link href="/login">
+          <Link href={appHref}>
             <Button className="bg-white text-slate-900 hover:bg-white/90 rounded-full px-8 h-12 text-base font-medium group">
               {t("ctaPrimary")}
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />

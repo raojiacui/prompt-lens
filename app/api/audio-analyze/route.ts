@@ -3,30 +3,61 @@ import { auth } from "@/lib/auth";
 import { db, audioAnalysis, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { getUserKieApiKey } from "@/lib/byok/kie";
+import { buildSrt, formatSrtTimestamp, type SubtitleCue } from "@/lib/workflow/audio-production";
 import { transcribeMediaWithKie, type TranscriptSegment } from "@/lib/workflow/transcription";
 
 function buildSegments(transcription: TranscriptSegment[], duration: number) {
   if (!transcription.length) return [];
   const segmentDuration = 30;
   const maxDuration = duration || transcription[transcription.length - 1]?.end || 0;
-  const segments: Array<{ start: number; end: number; summary: string; tags: string[] }> = [];
+  const segments: Array<{ start: number; end: number; summary: string; tags: string[]; originalText: string }> = [];
   let currentStart = 0;
   while (currentStart < maxDuration) {
     const currentEnd = Math.min(currentStart + segmentDuration, maxDuration);
     const words = transcription.filter((item) => item.end > currentStart && item.start < currentEnd);
     if (words.length) {
+      const text = words.map((item) => item.text).join(" ").trim();
       segments.push({
         start: currentStart,
         end: currentEnd,
-        summary: words.map((item) => item.text).join(" ").slice(0, 180),
-        tags: ["kie", "transcript"],
+        summary: text.slice(0, 180),
+        tags: ["kie", "transcript", "subtitle"],
+        originalText: text,
       });
     }
     currentStart = currentEnd;
   }
   return segments;
 }
+type ExtractedSubtitle = SubtitleCue & { speaker?: string };
 
+function roundTime(value: number) {
+  return Math.round(Math.max(0, value || 0) * 1000) / 1000;
+}
+
+function buildSubtitles(transcription: TranscriptSegment[]): ExtractedSubtitle[] {
+  return transcription.map((item, index) => {
+    const speaker = item.speaker?.trim();
+    return {
+      index: index + 1,
+      sceneId: "audio-analysis",
+      sceneIndex: 1,
+      start: roundTime(item.start),
+      end: roundTime(Math.max(item.start + 0.2, item.end)),
+      speaker: speaker || undefined,
+      text: speaker ? `${speaker}: ${item.text}` : item.text,
+    };
+  });
+}
+
+function buildVtt(subtitles: ExtractedSubtitle[]) {
+  const cues = subtitles.map((cue, index) => {
+    const start = formatSrtTimestamp(cue.start).replace(",", ".");
+    const end = formatSrtTimestamp(cue.end).replace(",", ".");
+    return [String(index + 1), `${start} --> ${end}`, cue.text].join("\n");
+  });
+  return ["WEBVTT", "", ...cues].join("\n\n");
+}
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: request.headers });
@@ -67,6 +98,9 @@ export async function POST(request: NextRequest) {
 
     const duration = Math.round(result.segments.reduce((max, item) => Math.max(max, item.end), 0));
     const segments = buildSegments(result.segments, duration);
+    const subtitles = buildSubtitles(result.segments);
+    const srt = buildSrt(subtitles);
+    const vtt = buildVtt(subtitles);
     const mediaName = mediaUrl.split("/").pop() || "unknown";
     const [record] = await db.insert(audioAnalysis).values({
       userId: session.user.id,
@@ -98,6 +132,9 @@ export async function POST(request: NextRequest) {
       language: "auto",
       transcription: result.segments,
       segments,
+      subtitles,
+      srt,
+      vtt,
       duration,
     });
   } catch (error) {

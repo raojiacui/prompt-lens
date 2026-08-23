@@ -1,8 +1,9 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { retrySceneAnalysis } from "@/lib/workflow/service";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
-import { assertTrialQuota, trialQuotaResponse } from "@/lib/usage/trial-quota";
+import { defaultLocale, isLocale } from "@/i18n/config";
+import { assertCanStartVideoAnalysis, settleVideoAnalysisCredits, videoAnalysisBillingErrorResponse } from "@/lib/billing/video-analysis";
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; sceneVersionId: string }> },
@@ -14,17 +15,19 @@ export async function POST(
   const body = await request.json().catch(() => null);
 
   try {
-    await assertTrialQuota(session.user.id);
+    const entitlement = await assertCanStartVideoAnalysis(session.user.id, 1);
+    const scene = await retrySceneAnalysis({ userId: session.user.id, projectId: id, sceneVersionId, outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale, ...parseWorkflowModelSelection(body) });
+    const credits = await settleVideoAnalysisCredits({
+      userId: session.user.id,
+      entitlement,
+      units: 1,
+      note: "重新分析 1 个镜头",
+      metadata: { projectId: id, sceneVersionId, feature: "scene_retry" },
+    });
+    return NextResponse.json({ scene, billing: { mode: entitlement.mode, chargedCredits: entitlement.mode === "credits" ? 1 : 0, balance: credits.balance } });
   } catch (error) {
-    const quotaError = trialQuotaResponse(error);
-    if (quotaError) return NextResponse.json(quotaError, { status: 402 });
-    throw error;
-  }
-
-  try {
-    const scene = await retrySceneAnalysis({ userId: session.user.id, projectId: id, sceneVersionId, ...parseWorkflowModelSelection(body) });
-    return NextResponse.json({ scene });
-  } catch (error) {
+    const billingError = videoAnalysisBillingErrorResponse(error);
+    if (billingError) return NextResponse.json(billingError, { status: 402 });
     return NextResponse.json({ error: error instanceof Error ? error.message : "Scene retry failed" }, { status: 500 });
   }
 }

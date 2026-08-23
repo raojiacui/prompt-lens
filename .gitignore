@@ -44,3 +44,4 @@ nul/
 # Local visual QA captures
 dashboard-*.png
 demo.gif
+tmp/

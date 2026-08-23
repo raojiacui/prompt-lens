@@ -1,4 +1,4 @@
-﻿import {
+import {
   boolean,
   doublePrecision,
   index,
@@ -8,6 +8,7 @@
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -172,6 +173,7 @@ export const logActionEnum = pgEnum("log_action", [
   "settings.update",
   "admin.user_ban",
   "admin.user_unban",
+  "admin.credit_grant",
   "video.edit.start",
   "video.edit.complete",
   "video.edit.error",
@@ -197,6 +199,30 @@ export const operationLogs = pgTable(
       userIdIdx: index("idx_operation_logs_user_id").on(table.userId),
       actionIdx: index("idx_operation_logs_action").on(table.action),
       createdAtIdx: index("idx_operation_logs_created_at").on(table.createdAt),
+    };
+  }
+);
+
+// ============ 新增：每日访问记录（用于 DAU 统计，包含匿名访客） ============
+export const dailyVisits = pgTable(
+  "daily_visits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    date: varchar("date", { length: 10 }).notNull(), // YYYY-MM-DD
+    sessionId: varchar("session_id", { length: 64 }).notNull(),
+    userId: uuid("user_id").references(() => user.id, { onDelete: "cascade" }),
+    ipAddress: varchar("ip_address", { length: 45 }),
+    userAgent: text("user_agent"),
+    path: varchar("path", { length: 512 }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => {
+    return {
+      dateSessionIdx: uniqueIndex("idx_daily_visits_date_session").on(table.date, table.sessionId),
+      dateIdx: index("idx_daily_visits_date").on(table.date),
+      userIdIdx: index("idx_daily_visits_user_id").on(table.userId),
     };
   }
 );
@@ -310,6 +336,106 @@ export const videoGeneration = pgTable(
   }
 );
 
+
+// ============ 新增：积分余额与流水 ============
+export const creditLedgerTypeEnum = pgEnum("credit_ledger_type", [
+  "manual_grant",
+  "payment_grant",
+  "feature_usage",
+  "refund_revoke",
+  "admin_adjustment",
+]);
+
+export const userCredits = pgTable(
+  "user_credits",
+  {
+    userId: uuid("user_id")
+      .primaryKey()
+      .references(() => user.id, { onDelete: "cascade" }),
+    balance: integer("balance").default(0).notNull(),
+    lifetimeGranted: integer("lifetime_granted").default(0).notNull(),
+    lifetimeUsed: integer("lifetime_used").default(0).notNull(),
+    metadata: jsonb("metadata").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    balanceIdx: index("idx_user_credits_balance").on(table.balance),
+  })
+);
+
+export const creditLedger = pgTable(
+  "credit_ledger",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    actorUserId: uuid("actor_user_id").references(() => user.id, { onDelete: "set null" }),
+    amount: integer("amount").notNull(),
+    balanceAfter: integer("balance_after").notNull(),
+    type: creditLedgerTypeEnum("type").notNull(),
+    packageId: varchar("package_id", { length: 80 }),
+    paymentProvider: varchar("payment_provider", { length: 40 }),
+    paymentReference: varchar("payment_reference", { length: 160 }),
+    note: text("note"),
+    metadata: jsonb("metadata").default({}).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("idx_credit_ledger_user_id").on(table.userId),
+    actorUserIdIdx: index("idx_credit_ledger_actor_user_id").on(table.actorUserId),
+    typeIdx: index("idx_credit_ledger_type").on(table.type),
+    createdAtIdx: index("idx_credit_ledger_created_at").on(table.createdAt),
+    paymentReferenceIdx: index("idx_credit_ledger_payment_reference").on(table.paymentReference),
+  })
+);
+
+// ============ 支付订单：积分包自动到账 ============
+export const paymentProviderEnum = pgEnum("payment_provider", ["creem", "xunhupay", "manual_qr"]);
+export const paymentOrderStatusEnum = pgEnum("payment_order_status", ["pending", "paid", "failed", "refunded", "cancelled"]);
+
+export const paymentOrders = pgTable(
+  "payment_orders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    provider: paymentProviderEnum("provider").notNull(),
+    providerOrderId: varchar("provider_order_id", { length: 160 }).notNull(),
+    checkoutId: varchar("checkout_id", { length: 160 }),
+    packageId: varchar("package_id", { length: 80 }).notNull(),
+    packageName: text("package_name").notNull(),
+    credits: integer("credits").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    currency: varchar("currency", { length: 10 }).notNull(),
+    status: paymentOrderStatusEnum("status").default("pending").notNull(),
+    checkoutUrl: text("checkout_url"),
+    rawPayload: jsonb("raw_payload").default({}).notNull(),
+    metadata: jsonb("metadata").default({}).notNull(),
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => ({
+    userIdIdx: index("idx_payment_orders_user_id").on(table.userId),
+    providerIdx: index("idx_payment_orders_provider").on(table.provider),
+    statusIdx: index("idx_payment_orders_status").on(table.status),
+    packageIdIdx: index("idx_payment_orders_package_id").on(table.packageId),
+    providerOrderUnique: uniqueIndex("idx_payment_orders_provider_order_unique").on(table.provider, table.providerOrderId),
+  })
+);
 // ============ 新增：Agentic Workflow (Create with Agent) ============
 
 export const agentRunStatusEnum = pgEnum("agent_run_status", [
@@ -709,12 +835,20 @@ export type AnalysisHistory = typeof analysisHistory.$inferSelect;
 export type NewAnalysisHistory = typeof analysisHistory.$inferInsert;
 export type OperationLog = typeof operationLogs.$inferSelect;
 export type NewOperationLog = typeof operationLogs.$inferInsert;
+export type DailyVisit = typeof dailyVisits.$inferSelect;
+export type NewDailyVisit = typeof dailyVisits.$inferInsert;
 export type AudioAnalysis = typeof audioAnalysis.$inferSelect;
 export type NewAudioAnalysis = typeof audioAnalysis.$inferInsert;
 export type VideoClip = typeof videoClip.$inferSelect;
 export type NewVideoClip = typeof videoClip.$inferInsert;
 export type VideoGeneration = typeof videoGeneration.$inferSelect;
 export type NewVideoGeneration = typeof videoGeneration.$inferInsert;
+export type UserCredits = typeof userCredits.$inferSelect;
+export type NewUserCredits = typeof userCredits.$inferInsert;
+export type CreditLedger = typeof creditLedger.$inferSelect;
+export type NewCreditLedger = typeof creditLedger.$inferInsert;
+export type PaymentOrder = typeof paymentOrders.$inferSelect;
+export type NewPaymentOrder = typeof paymentOrders.$inferInsert;
 export type AgentRun = typeof agentRuns.$inferSelect;
 export type NewAgentRun = typeof agentRuns.$inferInsert;
 export type AgentStep = typeof agentSteps.$inferSelect;

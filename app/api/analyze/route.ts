@@ -1,10 +1,10 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, analysisHistory, operationLogs } from "@/lib/db";
 import { analyzeFrames, ApiProvider } from "@/lib/ai/analyzer";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { defaultLocale, isLocale } from "@/i18n/config";
-import { assertTrialQuota, trialQuotaResponse } from "@/lib/usage/trial-quota";
+import { assertCanStartVideoAnalysis, settleVideoAnalysisCredits, videoAnalysisBillingErrorResponse } from "@/lib/billing/video-analysis";
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No frames available" }, { status: 400 });
     }
 
-    await assertTrialQuota(session.user.id);
+    const entitlement = await assertCanStartVideoAnalysis(session.user.id, 1);
 
     // 记录分析开始
     await db.insert(operationLogs).values({
@@ -108,6 +108,14 @@ export async function POST(request: NextRequest) {
       language: resolvedLanguage,
     }).returning();
 
+    const credits = await settleVideoAnalysisCredits({
+      userId: session.user.id,
+      entitlement,
+      units: 1,
+      note: "视频分析 1 个镜头",
+      metadata: { historyId: historyRecord[0].id, mediaType, analyzeMode, provider },
+    });
+
     // 记录完成
     await db.insert(operationLogs).values({
       userId: session.user.id,
@@ -122,11 +130,12 @@ export async function POST(request: NextRequest) {
       prompt: result.prompt,
       corePrompt: result.corePrompt,
       historyId: historyRecord[0].id,
+      billing: { mode: entitlement.mode, chargedCredits: entitlement.mode === "credits" ? 1 : 0, balance: credits.balance },
     });
-  } catch (error: any) {
-    const quotaError = trialQuotaResponse(error);
-    if (quotaError) return NextResponse.json(quotaError, { status: 402 });
+  } catch (error: unknown) {
+    const billingError = videoAnalysisBillingErrorResponse(error);
+    if (billingError) return NextResponse.json(billingError, { status: 402 });
     console.error("Analyze error:", error);
-    return NextResponse.json({ error: error.message || "Analysis failed" }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Analysis failed" }, { status: 500 });
   }
 }

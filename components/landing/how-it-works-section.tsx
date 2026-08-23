@@ -8,8 +8,9 @@ import { Upload, Sparkles, Sliders, Download, ArrowRight } from "lucide-react";
 const stepIcons = [Upload, Sparkles, Sliders, Download];
 const stepKeys = ["howItWorksStep1", "howItWorksStep2", "howItWorksStep3", "howItWorksStep4"] as const;
 
-export function HowItWorksSection() {
+export function HowItWorksSection({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const t = useTranslations("home");
+  const appHref = isAuthenticated ? "/dashboard" : "/login";
 
   return (
     <section id="how-it-works" className="py-16 md:py-24 lg:py-32 bg-[var(--color-bg-base)]">
@@ -25,7 +26,7 @@ export function HowItWorksSection() {
             <p className="text-lg text-[var(--color-text-secondary)] max-w-md mb-8">
               {t("howItWorksSubtitle")}
             </p>
-            <Link href="/login">
+            <Link href={appHref}>
               <Button className="bg-[var(--color-bg-inverted)] text-[var(--color-bg-raised)] hover:bg-[#4A2C2C] rounded-full">
                 {t("startForFree")}
                 <ArrowRight className="w-4 h-4 ml-2" />

@@ -91,8 +91,10 @@ function collectSegments(value: unknown): TranscriptSegment[] {
   if (!value) return [];
   if (Array.isArray(value)) return value.map(normalizeSegment).filter((item): item is TranscriptSegment => Boolean(item));
   if (typeof value !== "object") return [];
+  const single = normalizeSegment(value);
+  if (single) return [single];
   const record = value as Record<string, unknown>;
-  const candidates = [record.segments, record.words, record.sentences, record.transcription, record.transcript, record.results];
+  const candidates = [record.data, record.result, record.output, record.payload, record.segments, record.words, record.sentences, record.transcription, record.transcript, record.results];
   for (const candidate of candidates) {
     const segments = collectSegments(candidate);
     if (segments.length) return segments;

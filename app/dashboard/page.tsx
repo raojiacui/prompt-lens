@@ -11,6 +11,7 @@ import { CreateWithAgent } from "@/components/agent/create-with-agent";
 import { VideoWorkflowCreate } from "@/components/workflow/video-workflow-create";
 import { AdminOverviewPanel } from "@/components/admin-overview-panel";
 import { cn } from "@/lib/utils";
+import { Spinner } from "@/components/ui/spinner";
 import Image from "next/image";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
@@ -21,11 +22,13 @@ type Tab = "home" | "analyze" | "audio" | "edit" | "video-gen" | "history" | "se
 type FeatureTab = "analyze" | "audio" | "edit" | "video-gen";
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const searchString = searchParams.toString();
+  const currentDashboardPath = searchString ? `${pathname}?${searchString}` : pathname;
   const validTabs: Tab[] = ["home", "analyze", "audio", "edit", "video-gen", "history", "settings", "admin"];
 
   const rawTab = searchParams.get("tab");
@@ -69,6 +72,11 @@ export default function DashboardPage() {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    router.replace("/");
+    router.refresh();
+  };
   const videoGenPrompt = activeTab === "video-gen" ? searchParams.get("videoGenPrompt") : null;
   const videoGenProjectId = activeTab === "video-gen" ? searchParams.get("projectId") : null;
   const videoGenSceneId = activeTab === "video-gen" ? searchParams.get("sceneId") : null;
@@ -84,9 +92,14 @@ export default function DashboardPage() {
   const [canAccessAdmin, setCanAccessAdmin] = useState(sessionIsAdmin);
 
   useEffect(() => {
+    if (!isPending && !session?.user) {
+      router.replace(`/login?next=${encodeURIComponent(currentDashboardPath)}`);
+    }
+  }, [currentDashboardPath, isPending, router, session?.user]);
+  useEffect(() => {
     let cancelled = false;
 
-    if (!session?.user) {
+    if (isPending || !session?.user) {
       setCanAccessAdmin(false);
       return;
     }
@@ -107,7 +120,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [session?.user, sessionIsAdmin]);
+  }, [isPending, session?.user, sessionIsAdmin]);
 
 
   const handleNavigateVideoGen = (prompt: string) => {
@@ -179,6 +192,16 @@ export default function DashboardPage() {
     ...(canAccessAdmin ? [{ key: "admin" as Tab, label: "后台", icon: Shield }] : []),
   ];
 
+  if (isPending || !session?.user) {
+    return (
+      <div className="grid h-screen place-items-center bg-[var(--color-bg-base)]">
+        <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] px-4 py-3 text-sm text-[var(--color-text-secondary)] shadow-sm">
+          <Spinner size="sm" />
+          正在恢复登录状态...
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex h-screen bg-[var(--color-bg-base)]">
       {/* 左侧边栏：仅在非首页的功能页显示，且可折叠 */}
@@ -272,7 +295,7 @@ export default function DashboardPage() {
             {session?.user ? (
               <button
                 type="button"
-                onClick={() => signOut()}
+                onClick={() => void handleSignOut()}
                 className={cn(
                   "flex items-center gap-3 rounded-xl text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-base)] hover:text-[var(--color-text-primary)]",
                   isSidebarCollapsed ? "h-9 w-9 justify-center p-0" : "w-full px-3 py-2.5"
@@ -345,7 +368,7 @@ export default function DashboardPage() {
                 {session?.user ? (
                   <button
                     type="button"
-                    onClick={() => signOut()}
+                    onClick={() => void handleSignOut()}
                     className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-text-primary)]"
                   >
                     <LogOut className="h-4 w-4" />

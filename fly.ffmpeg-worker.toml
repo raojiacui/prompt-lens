@@ -1,0 +1,44 @@
+# Fly.io config for the Prompt Lens FFmpeg worker.
+# Deploy from the repo root:
+#   fly launch --no-deploy --copy-config --config fly.ffmpeg-worker.toml
+#   fly secrets set WORKER_SECRET=... R2_ACCOUNT_ID=... R2_ACCESS_KEY_ID=... R2_SECRET_ACCESS_KEY=... R2_BUCKET=... R2_PUBLIC_URL=...
+#   fly deploy --config fly.ffmpeg-worker.toml
+#
+# After deploy, set the main app env vars:
+#   FFMPEG_WORKER_URL=https://<your-fly-app>.fly.dev
+#   FFMPEG_WORKER_SECRET=<same WORKER_SECRET>
+
+app = "prompt-lens-ffmpeg-worker"
+primary_region = "sin"
+kill_signal = "SIGINT"
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "workers/ffmpeg-worker/Dockerfile"
+
+[env]
+  PORT = "8080"
+  SCENE_THRESHOLD = "0.32"
+  MAX_SCENE_SECONDS = "8"
+  MIN_SCENE_SECONDS = "0.6"
+  YTDLP_PATH = "yt-dlp"
+  YTDLP_JS_RUNTIME = "node"
+  MAX_RESOLVE_SECONDS = "600"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 1
+    hard_limit = 1
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 2
+  memory_mb = 2048

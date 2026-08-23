@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth/auth-client";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
+import { VisitTracker } from "@/components/visit-tracker";
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("metadata");
@@ -37,7 +38,10 @@ export default async function RootLayout({
       </head>
       <body className="min-h-screen bg-anthropic">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            <VisitTracker />
+            {children}
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

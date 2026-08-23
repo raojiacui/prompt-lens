@@ -5,6 +5,7 @@ import { getUserApiKeyForProvider } from "@/lib/byok/kie";
 import { isAdmin } from "@/lib/auth";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
+import { defaultLocale, isLocale } from "@/i18n/config";
 
 export async function POST(
   request: NextRequest,
@@ -34,7 +35,7 @@ export async function POST(
   }
 
   try {
-    const scene = await rewriteSceneVersion({ userId: session.user.id, projectId: id, sceneVersionId, instruction, allowPlatformKeyForRewrite: adminUser, ...modelSelection });
+    const scene = await rewriteSceneVersion({ userId: session.user.id, projectId: id, sceneVersionId, instruction, outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale, allowPlatformKeyForRewrite: adminUser, ...modelSelection });
     return NextResponse.json({ scene });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Scene rewrite failed" }, { status: 500 });

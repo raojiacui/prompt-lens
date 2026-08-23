@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { account, session, user, verification } from "@/lib/db/schema";
+import { account, creditLedger, session, user, userCredits, verification } from "@/lib/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -12,14 +12,15 @@ const isLocalDev = process.env.NODE_ENV === "development";
 const proxyUrl = isLocalDev ? (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897") : undefined;
 
 if (proxyUrl) {
-  try {
-    const { setGlobalDispatcher, ProxyAgent } = require("undici");
-    const agent = new ProxyAgent(proxyUrl);
-    setGlobalDispatcher(agent);
-    console.log("[Auth] Proxy enabled (local dev only):", proxyUrl);
-  } catch (error) {
-    console.warn("[Auth] Failed to set up proxy:", error);
-  }
+  void import("undici")
+    .then(({ setGlobalDispatcher, ProxyAgent }) => {
+      const agent = new ProxyAgent(proxyUrl);
+      setGlobalDispatcher(agent);
+      console.log("[Auth] Proxy enabled (local dev only):", proxyUrl);
+    })
+    .catch((error) => {
+      console.warn("[Auth] Failed to set up proxy:", error);
+    });
 }
 
 // Get base URL - support dynamic port for development
@@ -39,7 +40,7 @@ export const auth = betterAuth({
   baseURL: getBaseURL(),
   secret: process.env.BETTER_AUTH_SECRET,
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    expiresIn: 60 * 60 * 24 * 30, // 30 days
     updateAge: 60 * 60 * 24, // Update session every 24 hours
     freshAge: 60 * 5, // Consider session fresh for 5 minutes
     cookieCache: {
@@ -54,6 +55,12 @@ export const auth = betterAuth({
     cookies: {
       sessionToken: {
         name: "better-auth.session_token",
+        attributes: {
+          path: "/",
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          maxAge: 60 * 60 * 24 * 30,
+        },
       },
     },
   },
@@ -98,6 +105,25 @@ export const auth = betterAuth({
           const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
           const userEmail = createdUser.email?.toLowerCase();
 
+
+          await db
+            .insert(userCredits)
+            .values({
+              userId: createdUser.id,
+              balance: 2,
+              lifetimeGranted: 2,
+              metadata: { source: "signup_bonus" },
+            })
+            .onConflictDoNothing({ target: userCredits.userId });
+
+          await db.insert(creditLedger).values({
+            userId: createdUser.id,
+            amount: 2,
+            balanceAfter: 2,
+            type: "manual_grant",
+            note: "注册赠送 2 积分",
+            metadata: { source: "signup_bonus" },
+          });
           if (userEmail && adminEmails.includes(userEmail)) {
             await db
               .update(user)
@@ -123,8 +149,8 @@ export const auth = betterAuth({
     admin(),
     nextCookies(),
     emailOTP({
-      sendVerificationOTP: async ({ email, otp, type }) => {
-        const nodemailer = require("nodemailer");
+      sendVerificationOTP: async ({ email, otp }) => {
+        const nodemailer = await import("nodemailer");
 
         const transporter = nodemailer.createTransport({
           host: process.env.SMTP_HOST,
