@@ -38,6 +38,17 @@ interface VideoSegment {
   practiceTip?: string;
 }
 
+interface AudioAnalyzeResult {
+  id: string;
+  language: string;
+  transcription: TranscriptionSegment[];
+  segments: VideoSegment[];
+  subtitles: SubtitleCue[];
+  srt: string;
+  vtt: string;
+  duration: number;
+}
+
 type Tab = "analyze" | "history" | "settings" | "audio" | "edit" | "video-gen" | "stats";
 
 interface AudioAnalyzeTabProps {
@@ -66,16 +77,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
   const [videoUrl, setVideoUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState("");
-  const [result, setResult] = useState<{
-    id: string;
-    language: string;
-    transcription: TranscriptionSegment[];
-    segments: VideoSegment[];
-    subtitles: SubtitleCue[];
-    srt: string;
-    vtt: string;
-    duration: number;
-  } | null>(null);
+  const [result, setResult] = useState<AudioAnalyzeResult | null>(null);
   const [selectedSegments, setSelectedSegments] = useState<number[]>([]);
   const [clipLoading, setClipLoading] = useState(false);
   const [clipUrl, setClipUrl] = useState<string | null>(null);
@@ -159,6 +161,8 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
     e.currentTarget.style.height = `${Math.min(e.currentTarget.scrollHeight, 220)}px`;
   };
 
+  const getErrorMessage = (error: unknown) => error instanceof Error ? error.message : String(error || "Unknown error");
+
   const handleAnalyze = async () => {
     if (!selectedFile) return;
 
@@ -193,8 +197,8 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
             prompt: customPrompt || undefined,
           }),
         });
-      } catch (fetchError: any) {
-        throw new Error(t("networkError", { message: fetchError.message }));
+      } catch (fetchError: unknown) {
+        throw new Error(t("networkError", { message: getErrorMessage(fetchError) }));
       }
 
       if (!analyzeRes.ok) {
@@ -208,17 +212,22 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
         throw new Error(errMsg);
       }
 
-      const data = await analyzeRes.json();
-      const nextResult = {
-        ...data,
+      const data = await analyzeRes.json() as Partial<AudioAnalyzeResult>;
+      const nextSegments = Array.isArray(data.segments) ? data.segments : [];
+      const nextResult: AudioAnalyzeResult = {
+        id: data.id || "",
+        language: data.language || "unknown",
+        transcription: Array.isArray(data.transcription) ? data.transcription : [],
+        segments: nextSegments,
         subtitles: Array.isArray(data.subtitles) ? data.subtitles : [],
         srt: typeof data.srt === "string" ? data.srt : "",
         vtt: typeof data.vtt === "string" ? data.vtt : "",
+        duration: typeof data.duration === "number" ? data.duration : 0,
       };
       setResult(nextResult);
-      setSelectedSegments(Array.isArray(data.segments) ? data.segments.map((_: any, i: number) => i) : []);
-    } catch (error: any) {
-      alert(`Error: ${error.message}`);
+      setSelectedSegments(nextSegments.map((_, i) => i));
+    } catch (error: unknown) {
+      alert(`Error: ${getErrorMessage(error)}`);
     } finally {
       setIsLoading(false);
       setProgress("");
@@ -248,8 +257,8 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
 
       const data = await clipRes.json();
       setClipUrl(data.clipUrl);
-    } catch (error: any) {
-      alert(`Error: ${error.message}`);
+    } catch (error: unknown) {
+      alert(`Error: ${getErrorMessage(error)}`);
     } finally {
       setClipLoading(false);
     }
@@ -383,7 +392,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                   {t("panelTitle") || "Upload & Analyze"}
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  {t("panelDescription") || "Upload an audio/video file or paste a URL to transcribe and analyze."}
+                  {t("panelDescription") || "Upload a video to extract dialogue and subtitles."}
                 </p>
               </div>
 
@@ -500,7 +509,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                   {t("emptyHint") || "Audio analysis result will appear here"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  {t("emptyDescription") || "Upload a file or enter a URL on the left and click analyze to start."}
+                  {t("emptyDescription") || "Upload a video on the left and click start recognition."}
                 </p>
               </div>
             ) : (
