@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, Coins, Copy, Mic2, Play, RefreshCw, RotateCcw, Scissors, Trash2, Upload, Video, WandSparkles } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Coins, Copy, Mic2, Play, RefreshCw, RotateCcw, Scissors, Trash2, Upload, Video, WandSparkles, X } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -276,6 +276,17 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
     setTitle(nextFile.name.replace(/\.[^.]+$/, "") || (type === "image" ? "Image analysis" : "Video analysis"));
     setError("");
   }
+
+  function clearSelectedMedia() {
+    if (preview) URL.revokeObjectURL(preview);
+    setFile(null);
+    setMediaType(null);
+    setMediaDuration(null);
+    setPreview("");
+    setProgress("");
+    setError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
   function handleDrop(event: React.DragEvent<HTMLDivElement>) {
     event.preventDefault();
     setIsDraggingUpload(false);
@@ -435,11 +446,22 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
           >
             <input ref={fileInputRef} type="file" accept="video/*,image/*" className="sr-only" onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])} />
             {preview ? (
-              mediaType === "image" ? (
-                <img src={preview} alt="Preview" className="mb-3 max-h-56 w-full rounded-xl object-contain" />
-              ) : (
-                <video src={preview} muted playsInline controls className="mb-3 max-h-56 w-full rounded-xl bg-black object-contain" />
-              )
+              <div className="relative mb-3">
+                {mediaType === "image" ? (
+                  <img src={preview} alt="Preview" className="max-h-56 w-full rounded-xl object-contain" />
+                ) : (
+                  <video src={preview} muted playsInline controls className="max-h-56 w-full rounded-xl bg-black object-contain" />
+                )}
+                <button
+                  type="button"
+                  aria-label="删除已上传素材"
+                  onClick={clearSelectedMedia}
+                  disabled={loading}
+                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/95 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             ) : null}
             <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl bg-background text-center hover:bg-accent">
               <Upload className="h-6 w-6 text-muted-foreground" />
