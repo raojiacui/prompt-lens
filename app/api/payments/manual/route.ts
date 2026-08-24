@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   if (!packageId) return NextResponse.json({ error: "Missing packageId" }, { status: 400 });
   if (!method) return NextResponse.json({ error: "Missing payment method" }, { status: 400 });
   if (!paymentReference && !contact) {
-    return NextResponse.json({ error: "请填写付款备注、流水号或联系方式，方便管理员核对到账" }, { status: 400 });
+    return NextResponse.json({ error: "请填写付款备注、流水号或联系方式，方便平台核对到账" }, { status: 400 });
   }
 
   try {

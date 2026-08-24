@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { createVideoProvider, getUserProviderApiKey } from "@/lib/ai/video-generator";
+import { createVideoProvider } from "@/lib/ai/video-generator";
+import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 import { db, videoGeneration } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
 
@@ -28,13 +29,16 @@ export async function GET(request: NextRequest) {
     }
 
     const provider = record.provider || "kie";
-    const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
-    const effectiveApiKey = userApiKey;
-    if (!effectiveApiKey) {
-      return NextResponse.json({ error: "请先在设置中添加你自己的 KIE API Key" }, { status: 400 });
+    if (provider !== "kie") {
+      return NextResponse.json({ status: "failed", error: "当前视频生成仅支持 KIE 模型" }, { status: 400 });
     }
 
-    const videoProvider = createVideoProvider(provider as any, effectiveApiKey);
+    const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_generation" });
+    if (!keyAccess.apiKey) {
+      return NextResponse.json(kieAccessError("视频生成状态查询"), { status: 402 });
+    }
+
+    const videoProvider = createVideoProvider(provider, keyAccess.apiKey);
     const status = await videoProvider.getStatus(taskId, record.model);
     const progress = status.progress === undefined ? undefined : String(status.progress);
 
@@ -45,7 +49,7 @@ export async function GET(request: NextRequest) {
         progress,
         videoUrl: status.videoUrl,
         error: status.error,
-        rawResponse: status.raw as any,
+        rawResponse: status.raw as Record<string, unknown>,
         updatedAt: new Date(),
       })
       .where(and(
@@ -58,12 +62,14 @@ export async function GET(request: NextRequest) {
       ...status,
       record: records[0],
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[video-generate/status] Error:", error);
-    const status = error?.message?.includes("KIE_API_KEY") ? 500 : 502;
+    const message = error instanceof Error ? error.message : "Video generation status query failed";
+    const status = message.includes("KIE_API_KEY") ? 500 : 502;
     return NextResponse.json(
-      { status: "failed", error: error?.message || "Video generation status query failed" },
+      { status: "failed", error: message },
       { status }
     );
   }
 }
+

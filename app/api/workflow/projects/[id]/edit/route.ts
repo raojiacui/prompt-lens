@@ -3,7 +3,7 @@ import axios from "axios";
 import { auth } from "@/lib/auth";
 import { db, workflowJobs } from "@/lib/db";
 import { extractR2Key, getSignedUrlFromR2 } from "@/lib/cloudflare/r2";
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 import { createKieVeoGeneration } from "@/lib/reference-video/kie-veo";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 import { buildEditPlan, type EditMode } from "@/lib/workflow/video-editing";
@@ -54,11 +54,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
 
   if (plan.mode === "generative") {
-    const apiKey = await getUserKieApiKey(session.user.id);
+    const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_edit", allowPaidPlatformKey: false });
+    const apiKey = keyAccess.apiKey;
     if (!apiKey) {
-      return NextResponse.json({ error: "Please add your own KIE API Key in Settings before generative video edit." }, { status: 400 });
+      return NextResponse.json(kieAccessError("生成式视频编辑"), { status: 400 });
     }
-
     const result = await createKieVeoGeneration({
       prompt: plan.prompt,
       model: plan.modelId,
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       modelId: plan.modelId,
       externalTaskId: result.taskId,
       input: { sourceVideoUrl, plan },
-      output: { providerTaskId: result.taskId },
+      output: { providerTaskId: result.taskId, keySource: keyAccess.source },
     }).returning();
 
     return NextResponse.json({ success: true, plan, job, providerTaskId: result.taskId });
@@ -116,3 +116,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   return NextResponse.json({ success: true, plan, outputUrl, job, provider });
 }
+
+

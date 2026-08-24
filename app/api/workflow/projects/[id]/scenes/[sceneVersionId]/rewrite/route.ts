@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getModelById } from "@/lib/ai/model-registry";
-import { getUserApiKeyForProvider } from "@/lib/byok/kie";
-import { isAdmin } from "@/lib/auth";
+import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 import { defaultLocale, isLocale } from "@/i18n/config";
@@ -21,23 +20,28 @@ export async function POST(
 
   const modelSelection = parseWorkflowModelSelection(body);
   const selectedModel = modelSelection.modelMode === "manual" && modelSelection.modelId ? getModelById(modelSelection.modelId) : null;
-  const provider = selectedModel?.provider || "kie";
+  if (selectedModel && selectedModel.provider !== "kie") {
+    return NextResponse.json({ error: "AI 重写脚本只支持 KIE 模型。免费 OpenRouter Gemini 仅用于两次视频分析试用。", code: "KIE_MODEL_REQUIRED" }, { status: 400 });
+  }
 
-  const [userApiKey, adminUser] = await Promise.all([getUserApiKeyForProvider(session.user.id, provider), isAdmin(session.user.id)]);
-  if (!userApiKey && !adminUser) {
-    return NextResponse.json(
-      {
-        error: `重写脚本需要先在设置里配置你自己的 ${provider} API Key。这个功能不消耗免费视频分析额度，普通用户不会使用平台 Key。`,
-        code: "USER_PROVIDER_KEY_REQUIRED",
-      },
-      { status: 400 },
-    );
+  const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_analysis" });
+  if (!keyAccess.apiKey) {
+    return NextResponse.json(kieAccessError("AI 重写脚本"), { status: 400 });
   }
 
   try {
-    const scene = await rewriteSceneVersion({ userId: session.user.id, projectId: id, sceneVersionId, instruction, outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale, allowPlatformKeyForRewrite: adminUser, ...modelSelection });
-    return NextResponse.json({ scene });
+    const scene = await rewriteSceneVersion({
+      userId: session.user.id,
+      projectId: id,
+      sceneVersionId,
+      instruction,
+      outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale,
+      allowPlatformKeyForRewrite: keyAccess.source === "platform_admin" || keyAccess.source === "platform_paid",
+      ...modelSelection,
+    });
+    return NextResponse.json({ scene, keySource: keyAccess.source });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Scene rewrite failed" }, { status: 500 });
   }
 }
+

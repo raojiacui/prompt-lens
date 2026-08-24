@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import {
   createVideoProvider,
-  getUserProviderApiKey,
   KIE_VIDEO_MODEL,
   DEFAULT_VIDEO_PROVIDER,
 } from "@/lib/ai/video-generator";
@@ -10,6 +9,13 @@ import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { db, videoGeneration } from "@/lib/db";
 import { and, desc, eq } from "drizzle-orm";
 import { getModelById, routeModel, type ModelRegistryEntry } from "@/lib/ai/model-registry";
+import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import {
+  assertCanUseVideoGenerationCredits,
+  getVideoGenerationChargeUnits,
+  settleVideoGenerationCredits,
+  videoGenerationBillingErrorResponse,
+} from "@/lib/billing/video-generation";
 
 const VIDEO_GENERATE_LIMIT = { limit: 3, windowMs: 60000 };
 const MIN_VIDEO_DURATION = 4;
@@ -68,6 +74,10 @@ export async function POST(request: NextRequest) {
     }
 
     const provider = (body?.provider as string) || DEFAULT_VIDEO_PROVIDER;
+    if (provider !== "kie") {
+      return NextResponse.json({ error: "当前视频生成仅支持 KIE 模型" }, { status: 400 });
+    }
+
     const selectedModel = selectedGenerationModel(body?.model || body?.modelId);
     const normalizedDuration = parseDuration(body?.duration, selectedModel);
     const aspectRatio = parseAspectRatio(body?.aspectRatio, selectedModel);
@@ -75,14 +85,21 @@ export async function POST(request: NextRequest) {
     const negativePrompt = typeof body?.negativePrompt === "string" ? body.negativePrompt : undefined;
     const model = selectedModel?.kieModelId || KIE_VIDEO_MODEL;
 
-    // 获取用户配置的 provider API Key
-    const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
-    const effectiveApiKey = userApiKey;
-    if (!effectiveApiKey) {
-      return NextResponse.json({ error: "请先在设置中添加你自己的 KIE API Key" }, { status: 400 });
+    const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_generation" });
+    if (!keyAccess.apiKey) {
+      return NextResponse.json(kieAccessError("视频生成"), { status: 402 });
     }
 
-    const videoProvider = createVideoProvider(provider as any, effectiveApiKey);
+    const chargedCredits = getVideoGenerationChargeUnits({ modelId: model, duration: normalizedDuration });
+    try {
+      await assertCanUseVideoGenerationCredits({ userId: session.user.id, keyAccess, units: chargedCredits });
+    } catch (error) {
+      const billingError = videoGenerationBillingErrorResponse(error);
+      if (billingError) return NextResponse.json(billingError, { status: 402 });
+      throw error;
+    }
+
+    const videoProvider = createVideoProvider(provider, keyAccess.apiKey);
     const result = await videoProvider.createTask({
       prompt,
       duration: normalizedDuration,
@@ -104,21 +121,31 @@ export async function POST(request: NextRequest) {
         model,
         provider,
         status: "pending",
-        rawResponse: result.raw as any,
+        rawResponse: { ...(result.raw as Record<string, unknown>), billing: { keySource: keyAccess.source, chargedCredits } },
       })
       .returning();
+
+    const credits = await settleVideoGenerationCredits({
+      userId: session.user.id,
+      keyAccess,
+      units: chargedCredits,
+      note: `视频生成扣除 ${chargedCredits} 积分`,
+      metadata: { generationId: records[0]?.id, providerTaskId: result.taskId, model, duration: normalizedDuration, aspectRatio, resolution },
+    });
 
     return NextResponse.json({
       success: true,
       taskId: result.taskId,
       record: records[0],
       provider,
+      billing: { keySource: keyAccess.source, chargedCredits: keyAccess.source === "platform_paid" ? chargedCredits : 0, balance: credits.balance },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[video-generate] Error:", error);
-    const status = error?.message?.includes("KIE_API_KEY") ? 500 : 502;
+    const message = error instanceof Error ? error.message : "Video generation task creation failed";
+    const status = message.includes("KIE_API_KEY") ? 500 : 502;
     return NextResponse.json(
-      { error: error?.message || "Video generation task creation failed" },
+      { error: message },
       { status }
     );
   }
@@ -159,3 +186,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

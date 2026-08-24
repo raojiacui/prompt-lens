@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, audioAnalysis, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 import { buildSrt, formatSrtTimestamp, type SubtitleCue } from "@/lib/workflow/audio-production";
 import { transcribeMediaWithKie, type TranscriptSegment } from "@/lib/workflow/transcription";
 
@@ -76,14 +76,14 @@ export async function POST(request: NextRequest) {
     const mediaUrl = typeof body?.mediaUrl === "string" ? body.mediaUrl.trim() : "";
     if (!mediaUrl) return NextResponse.json({ error: "Missing mediaUrl" }, { status: 400 });
 
-    const apiKey = await getUserKieApiKey(session.user.id);
-    if (!apiKey) return NextResponse.json({ error: "Please add your own KIE API Key in Settings before audio analysis." }, { status: 400 });
-
+    const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "audio_generation", allowPaidPlatformKey: false });
+    const apiKey = keyAccess.apiKey;
+    if (!apiKey) return NextResponse.json(kieAccessError("音频分析"), { status: 400 });
     await db.insert(operationLogs).values({
       userId: session.user.id,
       action: "analysis.start",
       resourceType: "audio",
-      metadata: { mediaUrl, provider: "kie" },
+      metadata: { mediaUrl, provider: "kie", keySource: keyAccess.source },
     }).catch(() => undefined);
 
     const result = await transcribeMediaWithKie({
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       action: "analysis.complete",
       resourceType: "audio",
       resourceId: record.id,
-      metadata: { mediaUrl, provider: "kie", modelId: result.modelId, taskId: result.taskId, segmentCount: segments.length, duration },
+      metadata: { mediaUrl, provider: "kie", keySource: keyAccess.source, modelId: result.modelId, taskId: result.taskId, segmentCount: segments.length, duration },
     }).catch(() => undefined);
 
     return NextResponse.json({
@@ -165,3 +165,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+
+

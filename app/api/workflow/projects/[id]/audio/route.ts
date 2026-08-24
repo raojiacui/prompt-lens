@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db, projectAssets, sceneVersions, workflowJobs } from "@/lib/db";
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 import { uploadToR2 } from "@/lib/cloudflare/r2";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 import { buildAudioProductionPlan, type AudioProductionScene } from "@/lib/workflow/audio-production";
@@ -63,9 +63,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }).where(and(eq(sceneVersions.id, scene.id), eq(sceneVersions.projectId, id)));
   }
 
-  const apiKey = await getUserKieApiKey(session.user.id);
+  const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "audio_generation", allowPaidPlatformKey: false });
+  const apiKey = keyAccess.apiKey;
   const callbackUrl = typeof body.callbackUrl === "string" ? body.callbackUrl.trim() : undefined;
-  if (!apiKey) return NextResponse.json({ error: "Please add your own KIE API Key in Settings before audio generation." }, { status: 400 });
+  if (!apiKey) return NextResponse.json(kieAccessError("音频生成"), { status: 400 });
   const audioTask = await createKieDialogueTask({ apiKey, modelId: plan.modelId, cues: plan.cues, callBackUrl: callbackUrl });
 
   const [job] = await db.insert(workflowJobs).values({
@@ -86,11 +87,15 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       sfx: plan.sfx,
       providerTaskId: audioTask?.taskId,
       providerRecordId: audioTask?.recordId,
+      keySource: keyAccess.source,
       ttsStatus: "submitted",
       ttsReason: undefined,
     },
     completedAt: null,
   }).returning();
 
-  return NextResponse.json({ success: true, plan, subtitleAsset: asset, job, providerTaskId: audioTask?.taskId, providerRecordId: audioTask?.recordId });
+  return NextResponse.json({ success: true, plan, subtitleAsset: asset, job, providerTaskId: audioTask?.taskId, providerRecordId: audioTask?.recordId, keySource: keyAccess.source });
 }
+
+
+

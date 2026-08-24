@@ -3,7 +3,7 @@ import { InsufficientCreditsError } from "@/lib/billing/credits";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import { breakdownVideoWithWorker, resolveLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
 import { routeModel } from "@/lib/ai/model-registry";
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 import { buildSceneAudioContexts, transcribeMediaWithKie, type SceneAudioContext } from "@/lib/workflow/transcription";
 import {
   analyzeImageBlueprint,
@@ -287,7 +287,8 @@ export async function runVideoBreakdown(params: {
     let transcription = null;
     if (!isImage) {
       try {
-        const kieApiKey = await getUserKieApiKey(params.userId) || process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
+        const keyAccess = await resolveKieApiKeyForFeature(params.userId, { allowPaidPlatformKey: params.allowPlatformKeyForAnalysis === true, requiredPackageScope: "video_analysis" });
+        const kieApiKey = keyAccess.apiKey;
         transcription = await transcribeMediaWithKie({
           userId: params.userId,
           apiKey: kieApiKey,
@@ -371,8 +372,8 @@ export async function runVideoBreakdown(params: {
           audio: sceneAudioContexts.get(scene.sceneIndex),
         };
         const blueprint = isImage
-          ? await analyzeImageBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage })
-          : await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage });
+          ? await analyzeImageBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter })
+          : await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
         insertedBlueprints.push(blueprint);
         await db.insert(sceneVersions).values({
           projectId: params.projectId,
@@ -428,7 +429,7 @@ export async function runVideoBreakdown(params: {
       }
     }
 
-    const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage });
+    const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
     const derivedTitle = deriveProjectTitle(overview, insertedBlueprints, project.title);
     await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
     await db
@@ -518,7 +519,7 @@ export async function createRemixVersion(params: {
     });
   }
 
-  const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: remixedBlueprints, remixPrompt: params.remixPrompt, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage });
+  const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: remixedBlueprints, remixPrompt: params.remixPrompt, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
   await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
   await db.update(projects).set({ activeVersionId: version.id, updatedAt: new Date() }).where(eq(projects.id, params.projectId));
   return getProjectBundle(params.projectId, params.userId);
@@ -618,6 +619,8 @@ export async function retrySceneAnalysis(params: {
     modelId: params.modelId,
     modelPriority: params.modelPriority,
     outputLanguage: params.outputLanguage,
+    allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis,
+    forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter,
   });
   const usedFallback = blueprint.metadata?.analysisProvider === "fallback";
 
@@ -653,3 +656,7 @@ export async function getGenerationModelForScene(duration?: number, aspectRatio?
     priority: "balanced",
   });
 }
+
+
+
+

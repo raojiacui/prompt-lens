@@ -9,11 +9,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 
-const pricingKeys = ["pricingFree", "pricingByok", "pricingLong", "pricingStandard", "pricingPro"] as const;
+const pricingKeys = ["pricingByok", "pricingLong", "pricingStandard", "pricingPro", "pricingCreation"] as const;
 const packageByPricingKey: Partial<Record<(typeof pricingKeys)[number], string>> = {
   pricingLong: "starter_10",
   pricingStandard: "studio_80",
   pricingPro: "pro_220",
+  pricingCreation: "creation_360",
 };
 
 const paymentMethods = [
@@ -33,6 +34,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
   const locale = useLocale();
   const isZh = locale === "zh";
   const appHref = isAuthenticated ? "/dashboard" : "/login";
+  const settingsHref = isAuthenticated ? "/dashboard?tab=settings" : `/login?next=${encodeURIComponent("/dashboard?tab=settings")}`;
   const [checkoutKey, setCheckoutKey] = useState<string>("");
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutNotice, setCheckoutNotice] = useState("");
@@ -86,8 +88,8 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
       if (!response.ok) throw new Error(data?.error || (isZh ? "提交付款信息失败" : "Failed to submit payment info"));
       setCheckoutNotice(
         isZh
-          ? `付款信息已提交，管理员确认到账后会自动发放积分。订单号：${data?.order?.orderId || "-"}`
-          : `Payment info submitted. Credits will be issued after admin confirmation. Order: ${data?.order?.orderId || "-"}`
+          ? `付款信息已提交，平台确认到账后会自动发放积分。订单号：${data?.order?.orderId || "-"}`
+          : `Payment info submitted. Credits will be issued after platform confirmation. Order: ${data?.order?.orderId || "-"}`
       );
       setManualPayment(null);
     } catch (error) {
@@ -116,12 +118,12 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {pricingKeys.map((key) => {
-            const highlighted = key === "pricingStandard";
+            const highlighted = key === "pricingCreation";
             const packageId = packageByPricingKey[key];
             return (
               <article
                 key={key}
-                className={`flex min-h-[360px] flex-col rounded-2xl border bg-[var(--color-bg-base)] p-5 shadow-sm ${
+                className={`flex min-h-[390px] flex-col rounded-2xl border bg-[var(--color-bg-base)] p-5 shadow-sm ${
                   highlighted ? "border-[#D97757] ring-2 ring-[#D97757]/20" : "border-[var(--color-border-subtle)]"
                 }`}
               >
@@ -161,7 +163,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
                     {isZh ? "从这里开始" : "Start here"}
                   </Button>
                 ) : (
-                  <Link href={appHref} className="mt-auto">
+                  <Link href={key === "pricingByok" ? settingsHref : appHref} className="mt-auto">
                     <Button className={`w-full rounded-full ${highlighted ? "bg-[#D97757] text-white hover:bg-[#C96848]" : "bg-[#241915] text-white hover:bg-[#3A2A24]"}`}>
                       {t(`${key}Cta`)}
                     </Button>
@@ -249,7 +251,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
                   <Input id="manual-note" value={manualNote} onChange={(event) => setManualNote(event.target.value)} placeholder={isZh ? "可选" : "Optional"} />
                 </div>
                 <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
-                  {isZh ? "至少填写付款备注/流水号或联系方式其中一项。管理员确认到账后，积分会自动发放到当前登录账号" : "Enter at least a payment note or contact. Credits are issued to this logged-in account after admin confirmation"}
+                  {isZh ? "至少填写付款备注/流水号或联系方式其中一项。平台确认到账后，积分会自动发放到当前登录账号" : "Enter at least a payment note or contact. Credits are issued to this logged-in account after platform confirmation"}
                 </p>
                 <Button type="submit" disabled={submittingManual} className="mt-1 bg-[#D97757] text-white hover:bg-[#C96848]">
                   {submittingManual ? <Spinner size="sm" className="mr-2" /> : null}
@@ -263,3 +265,5 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
     </section>
   );
 }
+
+

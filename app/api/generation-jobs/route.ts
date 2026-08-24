@@ -4,7 +4,13 @@ import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
 import { createKieVeoGeneration, getKieVeoGenerationStatus } from "@/lib/reference-video/kie-veo";
 import { db, sceneVersions, videoGeneration, workflowJobs } from "@/lib/db";
 import { getModelById, listModels, routeModel } from "@/lib/ai/model-registry";
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import {
+  assertCanUseVideoGenerationCredits,
+  getVideoGenerationChargeUnits,
+  settleVideoGenerationCredits,
+  videoGenerationBillingErrorResponse,
+} from "@/lib/billing/video-generation";
 
 export const runtime = "nodejs";
 
@@ -127,7 +133,6 @@ export async function POST(request: Request) {
   if (!userPrompt && !referenceVideoUrl) return NextResponse.json({ error: "Missing generation prompt" }, { status: 400 });
 
   try {
-
     const replacementAssets = Array.isArray(body?.replacementAssets)
       ? body.replacementAssets.filter((item: unknown) => typeof item === "object" && item !== null && typeof (item as { id?: unknown }).id === "string" && typeof (item as { url?: unknown }).url === "string") as { id: string; url: string; type?: string; name?: string }[]
       : [];
@@ -148,17 +153,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Wan 2.7 Video Edit requires a reference video." }, { status: 400 });
     }
 
+    const keyAccess = await resolveKieApiKeyForFeature(auth.user.id, { requiredPackageScope: "video_generation" });
+    if (!keyAccess.apiKey) {
+      return NextResponse.json(kieAccessError("视频生成"), { status: 402 });
+    }
+
+    const chargedCredits = getVideoGenerationChargeUnits({ modelId: model, duration });
+    try {
+      await assertCanUseVideoGenerationCredits({ userId: auth.user.id, keyAccess, units: chargedCredits });
+    } catch (error) {
+      const billingError = videoGenerationBillingErrorResponse(error);
+      if (billingError) return NextResponse.json(billingError, { status: 402 });
+      throw error;
+    }
+
     const prompt = buildReferenceVideoPrompt({
       prompt: userPrompt || "Follow the uploaded reference video.",
       hasReferenceVideo,
       hasImages,
       useNativeVideoEdit,
     });
-
-    const apiKey = await getUserKieApiKey(auth.user.id);
-    if (!apiKey) {
-      return NextResponse.json({ error: "Please add your own KIE API Key in Settings before generating video." }, { status: 400 });
-    }
 
     const result = await createKieVeoGeneration({
       prompt,
@@ -170,7 +184,7 @@ export async function POST(request: Request) {
       duration,
       resolution,
       generationType: imageUrls.length ? "REFERENCE_2_VIDEO" : "TEXT_2_VIDEO",
-    }, apiKey);
+    }, keyAccess.apiKey);
 
     const [record] = await db.insert(videoGeneration).values({
       userId: auth.user.id,
@@ -184,8 +198,16 @@ export async function POST(request: Request) {
       status: "pending",
       duration,
       resolution,
-      rawResponse: result.raw as Record<string, unknown>,
+      rawResponse: { ...(result.raw as Record<string, unknown>), billing: { keySource: keyAccess.source, chargedCredits } },
     }).returning();
+
+    const credits = await settleVideoGenerationCredits({
+      userId: auth.user.id,
+      keyAccess,
+      units: chargedCredits,
+      note: `视频生成扣除 ${chargedCredits} 积分`,
+      metadata: { generationId: record.id, providerTaskId: result.taskId, model, duration, aspectRatio, resolution },
+    });
 
     if (projectId) {
       await db.insert(workflowJobs).values({
@@ -200,7 +222,14 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({ success: true, id: record.id, providerTaskId: result.taskId, status: "generating", provider: "kie.ai" });
+    return NextResponse.json({
+      success: true,
+      id: record.id,
+      providerTaskId: result.taskId,
+      status: "generating",
+      provider: "kie.ai",
+      billing: { keySource: keyAccess.source, chargedCredits: keyAccess.source === "platform_paid" ? chargedCredits : 0, balance: credits.balance },
+    });
   } catch (error) {
     console.error("Generation job creation error:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Generation request failed" }, { status: 500 });
@@ -225,9 +254,9 @@ export async function GET(request: Request) {
     if (!taskId) return NextResponse.json({ error: "Missing taskId" }, { status: 400 });
 
     const job = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.taskId, taskId), eq(videoGeneration.userId, auth.user.id)) });
-    const apiKey = await getUserKieApiKey(auth.user.id);
-    if (!apiKey) return NextResponse.json({ error: "Please add your own KIE API Key in Settings before checking generation status." }, { status: 400 });
-    const status = await getKieVeoGenerationStatus(taskId, job?.model || undefined, apiKey);
+    const keyAccess = await resolveKieApiKeyForFeature(auth.user.id, { requiredPackageScope: "video_generation" });
+    if (!keyAccess.apiKey) return NextResponse.json(kieAccessError("视频生成状态查询"), { status: 402 });
+    const status = await getKieVeoGenerationStatus(taskId, job?.model || undefined, keyAccess.apiKey);
     const normalizedStatus = status.state === "success" ? "completed" : status.state === "fail" ? "failed" : "processing";
 
     if (job) {
