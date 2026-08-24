@@ -42,7 +42,7 @@ type ModelMode = "auto" | "manual";
 type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
 type CreditStatus = {
   balance: number;
-  mode: "admin" | "credits";
+  mode: "admin" | "byok" | "platform_credits" | "trial";
   hasPaidVideoAnalysis?: boolean;
   trial: { limit: number; used: number; remaining: number; isAdmin: boolean };
   capabilities?: {
@@ -257,7 +257,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
         if (duration > shortLimit) {
           const latestStatus = await loadCreditStatus() || creditStatus;
           if (!canUseLongVideo(latestStatus)) {
-            setError(`免费体验和未付费账号仅支持 ${MAX_ANALYSIS_VIDEO_SECONDS} 秒以内的视频（也就是一个完整的镜头片段）。当前文件读取到约 ${duration.toFixed(1)} 秒；购买积分包后可上传长视频自动拆镜分析。管理员账号不受此限制。`);
+            setError(`免费体验和未付费账号仅支持 ${MAX_ANALYSIS_VIDEO_SECONDS} 秒以内的视频（也就是一个完整的镜头片段）。当前文件读取到约 ${duration.toFixed(1)} 秒；升级后可上传长视频自动拆镜分析。`);
             return;
           }
         }
@@ -467,7 +467,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
               <Upload className="h-6 w-6 text-muted-foreground" />
               <span className="font-semibold">{preview ? "更换文件" : canUploadLongVideo ? "上传视频或图片进行分析" : "上传 10 秒以内的视频（也就是一个完整的镜头片段）或图片进行分析"}</span>
             </button>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{canUploadLongVideo ? "已解锁长视频自动拆镜分析；管理员账号不受时长和积分限制。" : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段；购买积分包后可上传几分钟长视频并自动拆镜分析。"}</p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{canUploadLongVideo ? "已解锁长视频自动拆镜分析。" : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段；购买积分包后可上传几分钟长视频并自动拆镜分析。"}</p>
           </div>
 
           <div className="mt-4">
@@ -699,13 +699,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
 
 function CreditBadge({ status, className }: { status: CreditStatus | null; className?: string }) {
   const balance = status?.balance ?? 0;
-  const subtitle = status?.mode === "admin" ? "管理员不限额" : canUseLongVideo(status) ? "长视频已解锁" : "10 秒以内单镜头";
 
   return (
     <div className={cn("flex items-center gap-2 whitespace-nowrap rounded-full border border-[#D97757]/25 bg-background/95 px-3 py-1.5 text-xs font-semibold text-[#D97757] shadow-sm backdrop-blur", className)}>
       <Coins className="h-3.5 w-3.5" />
       <span>积分 {balance}</span>
-      <span className="hidden text-[var(--color-text-muted)] sm:inline">{subtitle}</span>
     </div>
   );
 }

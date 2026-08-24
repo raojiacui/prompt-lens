@@ -47,6 +47,10 @@ type UploadedAsset = {
   error?: string;
 };
 
+type CreditStatus = {
+  balance: number;
+};
+
 type GenerationStatusPayload = {
   status?: string;
   providerTaskId?: string;
@@ -367,6 +371,7 @@ export function ReferenceVideoComposer({
   const [assets, setAssets] = useState<UploadedAsset[]>([]);
   const [error, setError] = useState("");
   const [variants, setVariants] = useState<GenerationVariant[]>(initialVariants);
+  const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
 
   const selectedModelConfig =
     model === autoBalancedModelId
@@ -444,6 +449,24 @@ export function ReferenceVideoComposer({
   useEffect(() => {
     setDurationDraft(String(durationSeconds || ""));
   }, [durationSeconds]);
+
+  async function loadCreditStatus() {
+    try {
+      const response = await fetch("/api/credits/me", { cache: "no-store" });
+      if (!response.ok) return;
+      const payload = await response.json().catch(() => null);
+      if (payload && typeof payload.balance === "number") {
+        setCreditStatus({ balance: payload.balance });
+      }
+    } catch {
+      // 积分余额加载失败不影响创作表单。
+    }
+  }
+
+  useEffect(() => {
+    if (!session?.user) return;
+    void loadCreditStatus();
+  }, [session?.user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1085,6 +1108,11 @@ export function ReferenceVideoComposer({
         const payload = await response.json().catch(() => ({}));
         if (!response.ok)
           throw new Error(payload.error || "Failed to create generation job");
+        if (typeof payload.billing?.balance === "number") {
+          setCreditStatus({ balance: payload.billing.balance });
+        } else {
+          void loadCreditStatus();
+        }
         const taskId = payload.providerTaskId as string;
         const submittedVariant: GenerationVariant = {
           ...queuedVariants[index],
@@ -1596,7 +1624,13 @@ export function ReferenceVideoComposer({
             </div>
           </section>
 
-          <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">
+          <div className="relative h-full">
+            <div className="absolute right-0 top-0 z-10 -translate-y-full pb-3">
+              <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-[#D97757]/25 bg-background/95 px-3 py-1.5 text-xs font-semibold text-[#D97757] shadow-sm backdrop-blur">
+                <span>积分 {creditStatus?.balance ?? 0}</span>
+              </div>
+            </div>
+            <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">
             {!hasStartedGeneration ? (
               <div className="flex h-full flex-col items-center justify-center text-center">
                 <div className="w-16 h-16 rounded-2xl bg-muted text-muted-foreground flex items-center justify-center mb-4">
@@ -1654,7 +1688,8 @@ export function ReferenceVideoComposer({
                 ))}
               </div>
             )}
-          </section>
+            </section>
+          </div>
         </div>
       </div>
     </main>
