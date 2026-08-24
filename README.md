@@ -1,249 +1,315 @@
-# PromptLens
+# PromptLens V2
 
-*你是否还在烦恼视频没有创意*
-*你是否还在为写脚本苦恼*
-*你是否找不到创作方向*
+PromptLens V2 是一个 AI 视频创作工作流工具。核心目标不是简单“分析一个视频”，而是把参考视频或图片拆成可编辑、可复刻、可生成的创作蓝图。
 
-## PromptLens - 激发你的灵感创意
+用户上传参考素材后，系统会完成上传、拆镜、关键帧提取、音频/字幕上下文整理、AI 分析、提示词生成和二次改写，最终帮助用户快速做同款、改同款、生成新视频。
 
-在这个 AI 视频和 AI 短剧崛起的时代，如果你也想要创作 AI 视频，可以直接分析他人的视频，一键学习复刻他人视频创意和创作脚本，从而创作出你的爆款 AI 视频——**下一个爆款视频就是你**。
+## 当前产品形态
 
----
+PromptLens V2 当前主流程是“上传参考素材”，不再做短视频平台链接解析。
 
-AI 视频提示词分析工具 - 网页版
+- 上传视频或图片进行分析
+- 10 秒以内视频按单镜头分析
+- 已解锁长视频权限的账号可上传长视频自动拆镜
+- 本地 FFmpeg worker 负责长视频切镜、切 clip、抽关键帧、抽音频
+- AI 分析每个镜头的画面、角色、动作、镜头语言、光线、色彩、风格、剧情作用和复刻提示词
+- 支持对单个镜头提示词进行 AI 改写和重试分析
+- 支持把镜头提示词发送到视频生成流程做同款
+- 支持图片作为单场景参考图进行分析
+- 支持管理员、平台积分、免费体验和 BYOK 等不同权限模式
 
-## 功能预览
+## 创作闭环
 
-### 视频演示
-![演示](./demo_small.gif)
-
-### 画面分析
-![画面分析](./public/feature-video-analysis.png)
-
-### 音频识别
-![音频识别](./public/feature-audio-recognition.png)
-
-### 视频剪辑
-![视频剪辑](./public/feature-video-edit.png)
-
-## 创作闭环流程
-
-```
-用户刷到喜欢的AI视频
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Step 1: 发现灵感                                            │
-│  ─────────────────────────────────────────────────────────  │
-│  刷短视频，看到喜欢的 AI 视频/动画                             │
-└─────────────────────────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Step 2: 反推提示词                                          │
-│  ─────────────────────────────────────────────────────────  │
-│  上传视频 → AI 分析画面/场景/动作 → 提取出原视频的提示词       │
-│                    ↓                                        │
-│            Prompt Lens 分析                                 │
-└─────────────────────────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Step 3: 二次创作                                           │
-│  ─────────────────────────────────────────────────────────  │
-│  修改提示词：调整场景/风格/角色/动作                           │
-│  添加个性化元素                                              │
-└─────────────────────────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Step 4: 生成视频                                           │
-│  ─────────────────────────────────────────────────────────  │
-│  用优化后的提示词 → 调用 AI 视频生成 API → 生成新视频         │
-└─────────────────────────────────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Step 5: 发布作品                                           │
-│  ─────────────────────────────────────────────────────────  │
-│  导出视频 → 发布到抖音/B站/其他平台 → 获得反馈                │
-│                    ↓                                        │
-│              回到 Step 1 (新循环)                           │
-└─────────────────────────────────────────────────────────────┘
+```text
+上传参考视频/图片
+        ↓
+创建项目并上传到 R2
+        ↓
+短视频：单镜头分析
+长视频：本地 FFmpeg worker 自动拆镜
+        ↓
+抽取 clip / keyframe / audio
+        ↓
+AI 分析每个镜头，生成结构化蓝图和复刻 Prompt
+        ↓
+用户复制、改写、重试或发送到视频生成
+        ↓
+生成自己的视频版本
 ```
 
-## 功能特性
+## 长视频切镜说明
 
-- 📹 **视频分析**: 上传视频，AI 自动提取关键帧并分析
-- 🖼️ **图片分析**: 支持单图或多图批量分析
-- 🤖 **多 API 支持**: 智谱AI、Google Gemini、OpenRouter
-- 📝 **历史记录**: 保存和分析您的提示词历史
-- 🔐 **用户系统**: Google 登录，数据隔离
-- 👨‍💼 **智能对话助手**：可聊天
-- 📊 **日志系统**: 完整操作记录追踪
+长视频切镜依赖本地 FFmpeg worker。Vercel Serverless 不适合直接跑 FFmpeg，所以本地开发或自托管部署时需要单独启动 worker。
+
+worker 当前接口：
+
+```http
+GET /healthz
+POST /breakdown
+```
+
+`/breakdown` 输入：
+
+```json
+{
+  "videoUrl": "https://your-r2-public-url/video.mp4"
+}
+```
+
+`/breakdown` 会执行：
+
+- 下载上传后的视频文件
+- 用 `ffprobe` 读取时长、分辨率、fps、音轨信息
+- 用 `ffmpeg` scene detection 检测画面切点
+- 对过长连续片段按 `MAX_SCENE_SECONDS` 继续分段，默认 8 秒
+- 为每个片段生成 clip、关键帧和音频
+- 上传生成资源到 Cloudflare R2
+- 返回 scenes 列表给 Next.js 后端继续做 AI 分析
+
+如果视频画面变化明显，会更接近真实镜头切分。如果视频几乎没有转场或视觉变化，系统会更像按长片段分段。
+
+## 权限和计费逻辑
+
+前端和 API 会区分短视频与长视频：
+
+- 免费体验/未付费账号：默认只支持 10 秒以内完整镜头片段
+- 管理员账号：不受时长和积分限制
+- 已购买/解锁长视频分析能力的账号：可上传长视频自动拆镜
+- 长视频分析会按基础消耗加镜头数消耗积分
+
+实际限制以 `lib/billing/video-analysis.ts` 和 `/api/credits/me` 返回能力为准。
 
 ## 技术栈
 
-- **前端**: Next.js 15, React 19, TypeScript
-- **UI**: Tailwind CSS, shadcn/ui
-- **后端**: Next.js API Routes
-- **数据库**: PostgreSQL（本地用 Docker / 云端用 Supabase，二选一）+ Drizzle ORM
-- **认证**: better-auth（支持 Google / GitHub / 邮箱验证码登录）
-- **存储**: Backblaze B2（私有 bucket + 签名 URL，免费 10GB）
-- **音频转录**: AssemblyAI（每月免费 1 小时）/ FunASR（自托管，完全免费）
-- **视频生成**: Kie.ai（Wan 2.7 文生视频）
-- **视频剪辑**: 自托管 FFmpeg 服务（用户自行部署，无需付费）
-- **测试**: Vitest, Playwright
+- 前端：Next.js 15, React 19, TypeScript
+- UI：Tailwind CSS, shadcn/ui, lucide-react
+- 后端：Next.js API Routes
+- 数据库：PostgreSQL + Drizzle ORM
+- 认证：better-auth
+- 存储：Cloudflare R2
+- 视频处理：本地/self-hosted FFmpeg worker
+- AI 分析：Kie.ai / OpenRouter / 其他模型路由
+- 视频生成：Kie.ai 系列接口
+- 支付：Creem、XunhuPay / 虎皮椒
+- 测试：Vitest, Playwright
 
-## 快速开始
+## 本地启动
 
-> **小白用户**：可以直接访问线上版 https://prompt-lens.cc.cd ，登录就能用，零配置。
->
-> **想本地跑/自己部署**：请阅读详细教程 **[本地部署教程](./LOCAL_SETUP.md)** ，从安装软件到启动应用，每一步都有截图级说明。
+### 1. 安装依赖
 
-简要步骤：
-
-```bash
-# 1. 克隆代码
-git clone https://github.com/raojiacui/prompt-lens.git
-cd prompt-lens
-
-# 2. 安装依赖
+```powershell
+cd C:\Users\雨下雨停\prompt-lens-tmp
 pnpm install
+```
 
-# 3. 复制环境变量模板
-cp .env.example .env.local
-# 然后编辑 .env.local 填入配置（数据库、B2、AI key 等）
-# 详细配置说明见 LOCAL_SETUP.md
+### 2. 配置环境变量
 
-# 4. 初始化数据库
+复制环境变量模板：
+
+```powershell
+Copy-Item .env.example .env.local
+```
+
+至少需要配置：
+
+```env
+DATABASE_URL=postgres://postgres:password@localhost:5432/prompt_analyzer
+BETTER_AUTH_SECRET=your-secret
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+TRUSTED_ORIGINS=http://localhost:3000
+
+R2_ACCOUNT_ID=your-cloudflare-account-id
+R2_ACCESS_KEY_ID=your-r2-access-key-id
+R2_SECRET_ACCESS_KEY=your-r2-secret-access-key
+R2_BUCKET_NAME=your-r2-bucket-name
+R2_PUBLIC_URL=https://your-r2-public-domain
+
+FFMPEG_WORKER_URL=http://localhost:8080
+FFMPEG_WORKER_SECRET=your-worker-secret
+BYOK_ENCRYPTION_KEY=your-32-byte-compatible-secret
+
+KIE_API_KEY=your-kie-api-key
+OPENROUTER_API_KEY=your-openrouter-api-key
+OPENROUTER_ANALYSIS_MODEL=google/gemini-2.5-flash
+```
+
+本地 worker 脚本会自动把 `FFMPEG_WORKER_SECRET` 映射成 worker 内部使用的 `WORKER_SECRET`。
+
+### 3. 初始化数据库
+
+```powershell
 pnpm db:push
+```
 
-# 5. 启动开发服务器
+### 4. 启动 Next.js
+
+```powershell
 pnpm dev
 ```
 
-访问 http://localhost:3000 即可使用。
+访问：
 
-> 完整的环境变量说明、Docker 数据库一键启动、Google 登录配置、AI key 注册流程等，**全部在 [LOCAL_SETUP.md](./LOCAL_SETUP.md) 里**。
+```text
+http://localhost:3000
+```
+
+### 5. 启动本地 FFmpeg worker
+
+另开一个 PowerShell：
+
+```powershell
+cd C:\Users\雨下雨停\prompt-lens-tmp
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-worker.ps1
+```
+
+成功输出：
+
+```text
+Starting Prompt Lens FFmpeg worker on port 8080
+Prompt Lens FFmpeg worker listening on 8080
+```
+
+健康检查：
+
+```powershell
+Invoke-WebRequest -UseBasicParsing http://localhost:8080/healthz
+```
+
+期望返回：
+
+```json
+{"ok":true}
+```
+
+## FFmpeg 要求
+
+长视频拆镜需要本机可执行：
+
+```powershell
+ffmpeg -version
+ffprobe -version
+```
+
+如果命令不可用，请安装 FFmpeg，并确认 `ffmpeg.exe` 和 `ffprobe.exe` 在 PATH 中。Windows 推荐使用 winget 安装的 Gyan FFmpeg full build。
+
+当前启动脚本会检查：
+
+- Node.js 是否存在且版本为 20+
+- `node_modules` 是否存在
+- `.env.local` 是否存在
+- `FFMPEG_WORKER_SECRET` / `WORKER_SECRET` 映射
+- R2 endpoint 自动补齐
+- 8080 端口是否被占用
+- `ffmpeg` / `ffprobe` 是否可执行
 
 ## 使用说明
 
-### 配置 AI API Key
+### 视频/图片分析
 
-1. **先登录**（不登录会一直报 Unauthorized）—— 可以用 Google 登录，或用邮箱收验证码登录
-2. 进入「设置」页面
-3. 选择 API 提供商（智谱AI / Gemini / OpenRouter / Kie.ai）
-4. 输入对应的 API Key
-5. 保存
+1. 登录账号
+2. 进入视频分析页
+3. 上传视频或图片
+4. 选择分析模型，默认 Auto Balanced
+5. 点击 Analyze Video / Analyze Image
+6. 等待上传、拆镜和 AI 分析完成
+7. 查看每个镜头的复刻 Prompt、画面拆解、镜头语言和音频上下文
+8. 可复制 Prompt、AI 改写、Retry，或点击“做同款”进入视频生成
 
-> 本项目已内置作者配置的 OpenRouter key，开箱即用。但建议你用自己的 key，避免被限流。
+### 长视频分析
 
-### 分析视频/图片（提取提示词）
+长视频需要同时满足：
 
-1. 在首页点击上传或拖拽文件
-   - **建议**：把长视频切分成 6-10 秒的镜头单独分析，这样抽帧分析的提示词更详细
-   - **不建议**：直接上传几分钟的长视频，会抽不到关键帧，提示词会很笼统
-2. 点击「开始分析」
-3. 等待 AI 分析完成（大概 30 秒）
-4. 复制生成的提示词
-5. 稍加修改后在视频生成页面生成你自己的视频（生成约 2-3 分钟）
+- 本地 FFmpeg worker 正在运行
+- `.env.local` 中 `FFMPEG_WORKER_URL=http://localhost:8080`
+- R2 配置可上传和公开访问资源
+- 当前账号具备长视频分析权限或管理员权限
+- 积分余额足够覆盖基础消耗和镜头数消耗
 
-### 音频分析（提取字幕 + 智能分段）
+### 图片分析
 
-1. 进入音频分析页签
-2. 上传视频或填视频 URL
-3. 选择转录引擎：
-   - **AssemblyAI**：云端服务，每月免费 1 小时，开箱即用
-   - **FunASR**：自托管，完全免费，需要自己部署服务（适合高频使用）
-4. 等待转录 + LLM 智能分段完成
-5. 可以勾选感兴趣的片段一键剪辑导出
+图片不会走 FFmpeg worker，会作为单场景参考素材直接进入 AI 分析流程。
 
-### 视频剪辑（自托管 FFmpeg 模式）
+### 短视频平台链接
 
-视频剪辑功能需要一个自托管的 FFmpeg 服务（Vercel 跑不动 FFmpeg）。
-
-**对普通用户的建议**：如果你只是偶尔剪视频，可以用本地的视频剪辑软件（剪映、达芬奇）代替这个功能。
-
-**对开发者**：如果你要完整启用这个功能，需要自己部署一个 HTTP 包装的 FFmpeg 服务，接口约定：
-
-```http
-POST /edit
-Content-Type: application/json
-
-{
-  "videoUrl": "https://签名URL",
-  "instruction": {
-    "action": "trim" | "speed",
-    "start": 0,
-    "end": 10,
-    "speed": 2
-  }
-}
-
-# 响应
-{ "url": "https://处理后的视频URL" }
-```
-
-```http
-POST /concat
-Content-Type: application/json
-
-{
-  "videoUrl": "https://签名URL",
-  "instruction": {
-    "action": "concat",
-    "segments": [{"start":0,"end":5},{"start":10,"end":20}],
-    "transition": "fade"
-  }
-}
-
-# 响应
-{ "url": "https://处理后的视频URL" }
-```
-
-部署好后，在视频剪辑页面填入服务地址即可使用。
+当前 V2 主产品不做 YouTube、TikTok、抖音链接粘贴解析。旧 worker 中仍有 `/resolve-media` 相关遗留代码，但主 UI 不使用它，启动和切镜也不依赖 `yt-dlp`。
 
 ## 项目结构
 
+```text
+prompt-lens/
+├── app/                         # Next.js App Router 和 API Routes
+│   ├── api/                     # 后端接口
+│   ├── dashboard/               # 主功能页面
+│   └── login/                   # 登录页面
+├── components/                  # React 组件
+│   └── workflow/                # V2 视频工作流 UI
+├── lib/                         # 核心业务逻辑
+│   ├── ai/                      # 模型路由和 AI 分析
+│   ├── auth/                    # better-auth 配置
+│   ├── billing/                 # 积分、套餐、权限
+│   ├── db/                      # Drizzle 数据库
+│   ├── ffmpeg-worker/           # Next.js 调用 worker 的客户端
+│   └── workflow/                # 项目、拆镜、分析、改写服务
+├── workers/
+│   └── ffmpeg-worker/           # 本地 FFmpeg HTTP worker
+├── scripts/
+│   └── start-local-ffmpeg-worker.ps1
+└── tests/                       # Vitest / Playwright 测试
 ```
-prompt-analyzer/
-├── app/                    # Next.js 应用
-│   ├── api/               # API 路由
-│   ├── dashboard/         # 主功能页面
-│   └── login/             # 登录页面
-├── components/            # React 组件
-├── lib/                   # 核心库
-│   ├── ai/                # AI 分析器
-│   ├── auth/              # 认证配置
-│   ├── Backblaze/         # B2 存储
-│   ├── db/                # 数据库
-│   └── middleware/        # 中间件
-└── tests/                 # 测试文件
+
+## 关键 API
+
+### Workflow
+
+- `POST /api/workflow/projects`：创建项目
+- `GET /api/workflow/projects`：项目列表
+- `GET /api/workflow/projects/:id`：项目详情
+- `DELETE /api/workflow/projects/:id`：删除项目
+- `POST /api/workflow/projects/:id/breakdown`：上传素材后的拆解和 AI 分析
+- `POST /api/workflow/projects/:id/scenes/:sceneVersionId/rewrite`：按用户指令改写镜头
+- `POST /api/workflow/projects/:id/scenes/:sceneVersionId/retry`：重试镜头分析
+
+### Worker
+
+- `GET /healthz`：worker 健康检查
+- `POST /breakdown`：长视频拆镜和资源提取
+
+## 常见问题
+
+### worker 能启动，但长视频分析失败
+
+优先检查：
+
+```powershell
+ffmpeg -version
+ffprobe -version
+Invoke-WebRequest -UseBasicParsing http://localhost:8080/healthz
 ```
 
-## API
+还要确认 R2 的 `R2_PUBLIC_URL` 可以被 worker 下载和后端/AI 服务访问。
 
-### POST /api/upload
-上传视频或图片
+### 上传 2 分钟视频可以吗
 
-### POST /api/analyze
-分析媒体并生成提示词
+技术上可以。只要账号具备长视频权限、worker 正常运行、R2 配置正确，系统会自动拆镜并逐镜头分析。但 2 分钟视频会产生更多 clips/keyframes/audio，也会消耗更多分析时间和积分。
 
-### GET /api/history
-获取历史记录（需要登录）
+### 为什么 10 秒以内视频不切镜
 
-## 部署
+10 秒以内默认视为一个完整镜头片段，会走 single-shot 分析，避免不必要的 FFmpeg 拆分和积分浪费。
 
-### Vercel 部署
+### 为什么没有短视频链接解析
 
-```bash
-# 构建
-pnpm build
+这个能力维护成本高、平台限制多、稳定性差。V2 当前明确聚焦上传素材分析和本地/自托管拆镜。
 
-# 部署
-vercel deploy
+## 部署说明
+
+Next.js 主站可以部署到 Vercel，但长视频拆镜 worker 不建议部署到 Vercel Serverless。生产环境需要把 `workers/ffmpeg-worker/server.mjs` 部署到支持长时间运行和 FFmpeg 的服务器，并设置：
+
+```env
+FFMPEG_WORKER_URL=https://your-worker-domain
+FFMPEG_WORKER_SECRET=your-worker-secret
 ```
+
+worker 服务器需要配置同一组 R2 环境变量，并安装 `ffmpeg` / `ffprobe`。
 
 ## License
 
