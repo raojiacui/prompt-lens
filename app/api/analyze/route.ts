@@ -1,10 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, analysisHistory, operationLogs } from "@/lib/db";
 import { analyzeFrames, ApiProvider } from "@/lib/ai/analyzer";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { defaultLocale, isLocale } from "@/i18n/config";
-import { assertCanStartVideoAnalysis, settleVideoAnalysisCredits, videoAnalysisBillingErrorResponse } from "@/lib/billing/video-analysis";
+import { assertCanStartVideoAnalysis, settleVideoAnalysisCredits, type VideoAnalysisEntitlement, videoAnalysisBillingErrorResponse } from "@/lib/billing/video-analysis";
+
+function shouldChargeCredits(entitlement: VideoAnalysisEntitlement) {
+  return entitlement.mode === "platform_credits" || entitlement.mode === "trial";
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +18,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 速率限制检查
     const userId = session.user.id;
     const { allowed, resetIn } = checkRateLimit(
       userId,
@@ -43,43 +46,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing mediaUrl or mediaType" }, { status: 400 });
     }
 
-    // 校验 outputLanguage，未命中回落到默认
     const resolvedLanguage = isLocale(outputLanguage) ? outputLanguage : defaultLocale;
+    const frames: string[] = Array.isArray(clientFrames) ? clientFrames : [];
 
-    // 客户端直接传帧（浏览器提取）
-    let frames: string[] = [];
-
-    if (clientFrames && clientFrames.length > 0) {
-      frames = clientFrames;
-      console.log("Using client-provided frames:", frames.length);
-    } else {
-      // 生产环境必须有客户端的帧
+    if (frames.length === 0) {
       return NextResponse.json(
         { error: "Please refresh the page and try again" },
         { status: 400 }
       );
     }
 
-    if (frames.length === 0) {
-      return NextResponse.json({ error: "No frames available" }, { status: 400 });
-    }
-
     const entitlement = await assertCanStartVideoAnalysis(session.user.id, 1);
+    const chargeCredits = shouldChargeCredits(entitlement);
+    const resolvedProvider: ApiProvider = entitlement.mode === "trial" ? "openrouter" : (provider as ApiProvider);
 
-    // 记录分析开始
     await db.insert(operationLogs).values({
       userId: session.user.id,
       action: "analysis.start",
       resourceType: mediaType,
-      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider },
+      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, billingMode: entitlement.mode },
     });
 
-    console.log("Calling AI analysis with", frames.length, "frames...");
-
-    // 调用 AI 分析（按当前 locale 选择 prompt 模板）
     const result = await analyzeFrames({
       userId: session.user.id,
-      provider: provider as ApiProvider,
+      provider: resolvedProvider,
       frames,
       mode: analyzeMode as "single" | "batch",
       outputLanguage: resolvedLanguage,
@@ -90,12 +80,11 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         action: "analysis.error",
         resourceType: mediaType,
-        metadata: { error: result.error, mediaUrl },
+        metadata: { error: result.error, mediaUrl, provider: resolvedProvider },
       });
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
 
-    // 保存到历史记录（记录语言字段，便于后续按语言过滤/展示）
     const historyRecord = await db.insert(analysisHistory).values({
       userId: session.user.id,
       mediaType,
@@ -113,16 +102,15 @@ export async function POST(request: NextRequest) {
       entitlement,
       units: 1,
       note: "视频分析 1 个镜头",
-      metadata: { historyId: historyRecord[0].id, mediaType, analyzeMode, provider },
+      metadata: { historyId: historyRecord[0].id, mediaType, analyzeMode, provider: resolvedProvider },
     });
 
-    // 记录完成
     await db.insert(operationLogs).values({
       userId: session.user.id,
       action: "analysis.complete",
       resourceType: mediaType,
       resourceId: historyRecord[0].id,
-      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider },
+      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, billingMode: entitlement.mode },
     });
 
     return NextResponse.json({
@@ -130,7 +118,7 @@ export async function POST(request: NextRequest) {
       prompt: result.prompt,
       corePrompt: result.corePrompt,
       historyId: historyRecord[0].id,
-      billing: { mode: entitlement.mode, chargedCredits: entitlement.mode === "credits" ? 1 : 0, balance: credits.balance },
+      billing: { mode: entitlement.mode, chargedCredits: chargeCredits ? 1 : 0, balance: credits.balance },
     });
   } catch (error: unknown) {
     const billingError = videoAnalysisBillingErrorResponse(error);

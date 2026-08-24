@@ -1,7 +1,5 @@
-import { getUserKieApiKey } from "@/lib/byok/kie";
-import { db, userApiKeys } from "@/lib/db";
-import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
-import { and, eq } from "drizzle-orm";
+﻿import { getUserKieApiKey } from "@/lib/byok/kie";
+import { getPlatformKieApiKey } from "@/lib/billing/platform-access";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
@@ -31,6 +29,8 @@ export interface AiModelSelection {
   modelId?: string;
   modelPriority?: ModelPriority;
   outputLanguage?: "zh" | "en";
+  allowPlatformKeyForAnalysis?: boolean;
+  forceFreeTrialOpenRouter?: boolean;
 }
 
 export interface SceneRewriteInput extends AiModelSelection {
@@ -103,24 +103,20 @@ function parseJsonObject(raw: string) {
 async function getKieApiKey(userId: string, options?: { allowPlatformKey?: boolean }) {
   const userApiKey = await getUserKieApiKey(userId);
   if (userApiKey) return userApiKey;
-  if (options?.allowPlatformKey === false) return null;
-  if (process.env.NODE_ENV === "test" && !process.env.KIE_AI_API_KEY && !process.env.KIE_API_KEY) return null;
-  return process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null;
+  if (options?.allowPlatformKey !== true) return null;
+  return getPlatformKieApiKey();
 }
 
-async function getOpenRouterApiKey(userId: string, options?: { allowPlatformKey?: boolean }) {
-  if (options?.allowPlatformKey !== false && process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY;
-
-  const record = await db.query.userApiKeys.findFirst({
-    where: and(eq(userApiKeys.userId, userId), eq(userApiKeys.provider, "openrouter")),
-  });
-  if (!record || !record.isActive) return null;
-  if (isValidEncryptedKey(record.apiKey)) return decryptApiKey(record.apiKey);
-  return record.apiKey;
+async function getOpenRouterApiKey(options?: { allowPlatformKey?: boolean }) {
+  if (options?.allowPlatformKey === true && process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY;
+  return null;
 }
 
-function resolveAnalysisSelection(selection?: AiModelSelection) {
+function resolveAnalysisSelection(selection?: AiModelSelection, options?: { forceFreeTrialOpenRouter?: boolean }) {
   const priority = selection?.modelPriority || "balanced";
+  if (options?.forceFreeTrialOpenRouter) {
+    return { provider: "openrouter" as const, modelId: DEFAULT_OPENROUTER_ANALYSIS_MODEL, modelMode: "auto" as const, modelPriority: priority };
+  }
   if (DEFAULT_KIE_ANALYSIS_MODEL && selection?.modelMode !== "manual") {
     return { provider: "kie" as const, modelId: DEFAULT_KIE_ANALYSIS_MODEL, modelMode: "auto" as const, modelPriority: priority };
   }
@@ -145,10 +141,11 @@ async function callAnalysisChatJson(params: {
   content: Array<Record<string, unknown>>;
   selection?: AiModelSelection;
   allowPlatformKey?: boolean;
+  forceFreeTrialOpenRouter?: boolean;
 }): Promise<AnalysisChatJsonResult | null> {
-  const selected = resolveAnalysisSelection(params.selection);
+  const selected = resolveAnalysisSelection(params.selection, { forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter === true });
   const apiKey = selected.provider === "openrouter"
-    ? await getOpenRouterApiKey(params.userId, { allowPlatformKey: params.allowPlatformKey })
+    ? await getOpenRouterApiKey({ allowPlatformKey: params.allowPlatformKey })
     : await getKieApiKey(params.userId, { allowPlatformKey: params.allowPlatformKey });
   if (!apiKey) return null;
 
@@ -266,6 +263,8 @@ export async function analyzeSceneBlueprint(params: {
     const raw = await callAnalysisChatJson({
       userId: params.userId,
       selection: params,
+      allowPlatformKey: params.allowPlatformKeyForAnalysis === true,
+      forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter === true,
       system: [
         "You are a senior AI video director and script breakdown specialist. Return strict JSON only.",
         "Analyze one extracted reference-video scene as a babysitter-level video script breakdown for near 1:1 text-to-video recreation.",
@@ -359,6 +358,8 @@ export async function analyzeImageBlueprint(params: {
     const raw = await callAnalysisChatJson({
       userId: params.userId,
       selection: params,
+      allowPlatformKey: params.allowPlatformKeyForAnalysis === true,
+      forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter === true,
       system: [
         "You are a senior AI visual director. Return strict JSON only.",
         "Analyze a single static reference image as a babysitter-level visual breakdown for near 1:1 text-to-image/video recreation.",
@@ -412,6 +413,8 @@ export async function buildStructuredVideoOverview(params: {
     const raw = await callAnalysisChatJson({
       userId: params.userId,
       selection: params,
+      allowPlatformKey: params.allowPlatformKeyForAnalysis === true,
+      forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter === true,
       system: `Return strict JSON only. Summarize the whole video blueprint for a creator dashboard. ${outputLanguageInstruction(params.outputLanguage)}`,
       content: [
         {
@@ -485,3 +488,6 @@ export async function remixSceneBlueprint(params: {
     allowPlatformKeyForRewrite: false,
   });
 }
+
+
+

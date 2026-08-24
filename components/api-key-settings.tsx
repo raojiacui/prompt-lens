@@ -1,10 +1,9 @@
-"use client";
+﻿"use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "next-intl";
 
@@ -21,7 +20,6 @@ export function ApiKeySettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [provider, setProvider] = useState("kie");
   const [apiKey, setApiKey] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -55,7 +53,7 @@ export function ApiKeySettings() {
       const res = await fetch("/api/settings/api-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, apiKey: apiKey.trim() }),
+        body: JSON.stringify({ provider: "kie", apiKey: apiKey.trim() }),
       });
 
       if (res.ok) {
@@ -66,7 +64,7 @@ export function ApiKeySettings() {
         const data = await res.json();
         setMessage({ type: "error", text: data.error || t("saveFailed") });
       }
-    } catch (error) {
+    } catch {
       setMessage({ type: "error", text: t("saveFailed") });
     } finally {
       setSaving(false);
@@ -77,51 +75,36 @@ export function ApiKeySettings() {
     if (!confirm(t("deleteConfirm"))) return;
 
     try {
-      const res = await fetch(`/api/settings/api-key?id=${id}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        fetchApiKeys();
-      }
+      const res = await fetch(`/api/settings/api-key?id=${id}`, { method: "DELETE" });
+      if (res.ok) fetchApiKeys();
     } catch (error) {
       console.error("Failed to delete API key:", error);
     }
   };
 
-  const providerLabel = (p: string) => {
-    if (p === "kie") return t("kieName");
-    if (p === "openrouter") return t("openrouterName");
-    return p;
-  };
-
   return (
     <div className="space-y-6">
-      {/* 添加 API Key */}
       <Card className="bg-[var(--color-bg-raised)] border-[var(--color-border-default)]">
         <CardHeader>
-          <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("addApiKey")}</CardTitle>
-          <CardDescription>
-            {t("addDesc")}
-          </CardDescription>
+          <CardTitle style={{ fontFamily: "var(--font-display)" }}>{t("addApiKey")}</CardTitle>
+          <CardDescription>{t("addDesc")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
             <div>
-              <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-2">{t("provider")}</label>
-              <Select value={provider} onChange={(e) => setProvider(e.target.value)} className="bg-[var(--color-bg-raised)]">
-                <option value="kie">{t("providerKie")}</option>
-                <option value="openrouter">{t("providerOpenrouterAnalyze")}</option>
-              </Select>
+              <label className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">{t("provider")}</label>
+              <div className="flex h-11 items-center rounded-xl border border-[var(--color-border-default)] bg-white px-3 text-sm font-semibold text-[var(--color-text-primary)]">
+                {t("providerKie")}
+              </div>
             </div>
-            <div className="md:col-span-2">
-              <label className="text-sm font-medium text-[var(--color-text-primary)] block mb-2">API Key</label>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">API Key</label>
               <div className="flex gap-2">
                 <Input
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={provider === "kie" ? t("placeholderKie") : t("placeholderOpenrouter")}
+                  placeholder={t("placeholderKie")}
                   className="bg-[var(--color-bg-raised)]"
                 />
                 <Button onClick={saveApiKey} disabled={saving} className="bg-[var(--color-accent-orange)] hover:bg-[var(--color-accent-orange-hover)]">
@@ -133,7 +116,7 @@ export function ApiKeySettings() {
 
           {message && (
             <div
-              className={`p-3 rounded-lg ${
+              className={`rounded-lg p-3 ${
                 message.type === "success"
                   ? "bg-[var(--color-success)]/10 text-[var(--color-success)]"
                   : "bg-[var(--color-error)]/10 text-[var(--color-error)]"
@@ -145,10 +128,9 @@ export function ApiKeySettings() {
         </CardContent>
       </Card>
 
-      {/* 已保存的 API Key */}
       <Card className="bg-[var(--color-bg-raised)] border-[var(--color-border-default)]">
         <CardHeader>
-          <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("savedKeys")}</CardTitle>
+          <CardTitle style={{ fontFamily: "var(--font-display)" }}>{t("savedKeys")}</CardTitle>
           <CardDescription>{t("savedDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -157,29 +139,24 @@ export function ApiKeySettings() {
               <Spinner />
             </div>
           ) : apiKeys.length === 0 ? (
-            <p className="text-center text-[var(--color-text-muted)] py-8">
-              {t("noKeys")}
-            </p>
+            <p className="py-8 text-center text-[var(--color-text-muted)]">{t("noKeys")}</p>
           ) : (
             <div className="space-y-2">
               {apiKeys.map((key) => (
-                <div
-                  key={key.id}
-                  className="flex items-center justify-between p-4 border border-[var(--color-border-default)] rounded-xl bg-white"
-                >
+                <div key={key.id} className="flex items-center justify-between rounded-xl border border-[var(--color-border-default)] bg-white p-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>
-                        {providerLabel(key.provider)}
+                      <span className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>
+                        {t("kieName")}
                       </span>
                       {key.isActive && (
-                        <span className="text-xs bg-[var(--color-success)]/10 text-[var(--color-success)] px-2 py-0.5 rounded">
+                        <span className="rounded bg-[var(--color-success)]/10 px-2 py-0.5 text-xs text-[var(--color-success)]">
                           {t("active")}
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-[var(--color-text-secondary)] mt-1 font-mono">{key.apiKey}</p>
-                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                    <p className="mt-1 font-mono text-sm text-[var(--color-text-secondary)]">{key.apiKey}</p>
+                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                       {t("addedAt", { date: new Date(key.createdAt).toLocaleDateString("zh-CN") })}
                     </p>
                   </div>
@@ -187,7 +164,7 @@ export function ApiKeySettings() {
                     variant="outline"
                     size="sm"
                     onClick={() => deleteApiKey(key.id)}
-                    className="border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:text-[var(--color-error)] hover:border-[var(--color-error)]"
+                    className="border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-error)] hover:text-[var(--color-error)]"
                   >
                     {t("delete")}
                   </Button>
@@ -198,38 +175,27 @@ export function ApiKeySettings() {
         </CardContent>
       </Card>
 
-      {/* API 提供商说明 */}
       <Card className="bg-[var(--color-bg-raised)] border-[var(--color-border-default)]">
         <CardHeader>
-          <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("providerDocs")}</CardTitle>
+          <CardTitle style={{ fontFamily: "var(--font-display)" }}>{t("providerDocs")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-5 text-sm leading-relaxed text-[var(--color-text-secondary)]">
           <div>
-            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("trialTitle")}</h4>
+            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>{t("trialTitle")}</h4>
             <p className="mt-2">{t("trialDesc")}</p>
           </div>
           <div>
-            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("kieName")}</h4>
+            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>{t("kieName")}</h4>
             <p className="mt-2">
-              {t("kieDesc")}{" "}
+              {t("kieDesc")} {" "}
               <a href="https://api.kie.ai" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-orange)] hover:underline">
                 {t("kieLink")}
               </a>{" "}
               {t("kieGetKey")}
             </p>
           </div>
-          <div>
-            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("openrouterName")}</h4>
-            <p className="mt-2">
-              {t("openrouterDesc")}{" "}
-              <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-orange)] hover:underline">
-                {t("openrouterLink")}
-              </a>{" "}
-              {t("openrouterGetKey")}
-            </p>
-          </div>
           <div className="rounded-xl border border-[var(--color-border-default)] bg-white p-4">
-            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-heading)' }}>{t("storageTitle")}</h4>
+            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>{t("storageTitle")}</h4>
             <p className="mt-2">{t("storageDesc")}</p>
           </div>
         </CardContent>

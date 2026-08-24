@@ -1,4 +1,4 @@
-export type ModelCategory = "analysis" | "video_generation" | "audio" | "video_edit";
+﻿export type ModelCategory = "analysis" | "video_generation" | "audio" | "video_edit";
 export type ModelProvider = "kie" | "openrouter";
 export type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
 
@@ -87,7 +87,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     category: "analysis",
     provider: "openrouter",
     kieModelId: "google/gemini-2.5-flash",
-    enabled: true,
+    enabled: false,
     capabilities: ["text", "image", "video"],
     speedLevel: 5,
     qualityLevel: 4,

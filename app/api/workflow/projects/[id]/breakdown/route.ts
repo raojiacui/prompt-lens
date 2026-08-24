@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { runVideoBreakdown } from "@/lib/workflow/service";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
@@ -10,8 +10,17 @@ import {
   VIDEO_ANALYSIS_DURATION_TOLERANCE_SECONDS,
   VIDEO_ANALYSIS_LONG_VIDEO_BASE_CREDITS,
   VIDEO_ANALYSIS_SHORT_MAX_SECONDS,
+  type VideoAnalysisEntitlement,
   videoAnalysisBillingErrorResponse,
 } from "@/lib/billing/video-analysis";
+
+function shouldChargeCredits(entitlement: VideoAnalysisEntitlement) {
+  return entitlement.mode === "platform_credits" || entitlement.mode === "trial";
+}
+
+function canUsePlatformAnalysisKey(entitlement: VideoAnalysisEntitlement) {
+  return entitlement.mode === "admin" || entitlement.mode === "platform_credits";
+}
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -29,6 +38,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const isLongVideo = mediaType === "video" && !isShortSingleShotVideo;
     const minimumCredits = isLongVideo ? getVideoAnalysisChargeUnits({ sceneCount: 1, longVideo: true }) : 1;
     const entitlement = await assertCanStartVideoAnalysis(session.user.id, { minimumCredits, longVideo: isLongVideo });
+    const chargeCredits = shouldChargeCredits(entitlement);
 
     const { id } = await params;
     const bundle = await runVideoBreakdown({
@@ -41,7 +51,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       mediaDuration,
       singleShot: isShortSingleShotVideo,
       outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale,
-      creditBudget: entitlement.mode === "credits" ? { balance: entitlement.balance, baseUnits: isLongVideo ? VIDEO_ANALYSIS_LONG_VIDEO_BASE_CREDITS : 0 } : undefined,
+      creditBudget: chargeCredits ? { balance: entitlement.balance, baseUnits: isLongVideo ? VIDEO_ANALYSIS_LONG_VIDEO_BASE_CREDITS : 0 } : undefined,
+      allowPlatformKeyForAnalysis: canUsePlatformAnalysisKey(entitlement),
+      forceFreeTrialOpenRouter: entitlement.mode === "trial",
       ...parseWorkflowModelSelection(body),
     });
     if (!bundle) throw new Error("Video breakdown returned no project bundle");
@@ -52,9 +64,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       entitlement,
       units,
       note: isLongVideo ? `长视频自动拆镜分析 ${sceneCount} 个镜头` : `视频分析 ${sceneCount} 个镜头`,
-      metadata: { projectId: id, mediaType, sceneCount, longVideo: isLongVideo },
+      metadata: { projectId: id, mediaType, sceneCount, longVideo: isLongVideo, analysisProvider: entitlement.mode === "trial" ? "openrouter" : "kie" },
     });
-    return NextResponse.json({ ...bundle, billing: { mode: entitlement.mode, chargedCredits: entitlement.mode === "credits" ? units : 0, balance: credits.balance, longVideo: isLongVideo } });
+    return NextResponse.json({
+      ...bundle,
+      billing: { mode: entitlement.mode, chargedCredits: chargeCredits ? units : 0, balance: credits.balance, longVideo: isLongVideo },
+    });
   } catch (error) {
     const billingError = videoAnalysisBillingErrorResponse(error);
     if (billingError) return NextResponse.json(billingError, { status: 402 });

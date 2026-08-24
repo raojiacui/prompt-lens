@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, userApiKeys } from "@/lib/db";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { encryptApiKey, decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
-// GET /api/settings/api-key - 获取用户的 API Key
+const SUPPORTED_USER_PROVIDER = "kie" as const;
+
 export async function GET(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: request.headers });
@@ -14,10 +15,9 @@ export async function GET(request: NextRequest) {
     }
 
     const apiKeys = await db.query.userApiKeys.findMany({
-      where: eq(userApiKeys.userId, session.user.id),
+      where: and(eq(userApiKeys.userId, session.user.id), eq(userApiKeys.provider, SUPPORTED_USER_PROVIDER)),
     });
 
-    // 返回时隐藏 API Key（解密后显示部分）
     const sanitizedKeys = apiKeys.map((key) => {
       let displayKey = "••••••••";
       try {
@@ -25,7 +25,6 @@ export async function GET(request: NextRequest) {
           const decrypted = decryptApiKey(key.apiKey);
           displayKey = decrypted.substring(0, 8) + "••••••••" + decrypted.substring(decrypted.length - 4);
         } else {
-          // 兼容旧数据（未加密的）
           displayKey = key.apiKey.substring(0, 8) + "••••••••" + key.apiKey.substring(key.apiKey.length - 4);
         }
       } catch (e) {
@@ -48,7 +47,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST /api/settings/api-key - 保存用户的 API Key
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: request.headers });
@@ -60,34 +58,27 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { provider, apiKey } = body;
 
-    if (!provider || !apiKey) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (!apiKey) {
+      return NextResponse.json({ error: "Missing API Key" }, { status: 400 });
     }
 
-    // 验证 API Key 格式
-    if (provider === "zhipu" && !apiKey.includes(".")) {
-      return NextResponse.json({ error: "Invalid Zhipu API Key format" }, { status: 400 });
+    if (provider && provider !== SUPPORTED_USER_PROVIDER) {
+      return NextResponse.json({ error: "当前只支持配置 KIE API Key。OpenRouter 仅由平台用于两次免费视频分析试用。" }, { status: 400 });
     }
-    if (provider === "gemini" && !apiKey.startsWith("AIza")) {
-      return NextResponse.json({ error: "Invalid Gemini API Key format" }, { status: 400 });
-    }
-    if (provider === "kie" && apiKey.trim().length < 16) {
+
+    if (apiKey.trim().length < 16) {
       return NextResponse.json({ error: "Invalid Kie.ai API Key format" }, { status: 400 });
     }
 
-    // 加密 API Key
     const encryptedApiKey = encryptApiKey(apiKey);
-
-    // 检查是否已存在该提供商的 API Key
     const existing = await db.query.userApiKeys.findFirst({
       where: and(
         eq(userApiKeys.userId, session.user.id),
-        eq(userApiKeys.provider, provider as any)
+        eq(userApiKeys.provider, SUPPORTED_USER_PROVIDER)
       ),
     });
 
     if (existing) {
-      // 更新现有（使用加密的 Key）
       await db
         .update(userApiKeys)
         .set({
@@ -97,10 +88,9 @@ export async function POST(request: NextRequest) {
         })
         .where(eq(userApiKeys.id, existing.id));
     } else {
-      // 创建新的（使用加密的 Key）
       await db.insert(userApiKeys).values({
         userId: session.user.id,
-        provider: provider as any,
+        provider: SUPPORTED_USER_PROVIDER,
         apiKey: encryptedApiKey,
         isActive: true,
       });
@@ -113,7 +103,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/settings/api-key - 删除用户的 API Key
 export async function DELETE(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: request.headers });
@@ -129,7 +118,6 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Missing id" }, { status: 400 });
     }
 
-    // 检查是否属于当前用户
     const existing = await db.query.userApiKeys.findFirst({
       where: and(
         eq(userApiKeys.id, id),

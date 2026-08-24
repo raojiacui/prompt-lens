@@ -1,4 +1,4 @@
-import axios from "axios";
+﻿import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
@@ -38,7 +38,7 @@ const API_CONFIGS = {
   },
   openrouter: {
     url: "https://openrouter.ai/api/v1/chat/completions",
-    model: "google/gemini-2.5-pro",
+    model: "google/gemini-2.5-flash",
   },
 };
 
@@ -74,14 +74,20 @@ async function getUserApiKey(
   userId: string,
   provider: ApiProvider
 ): Promise<string | null> {
-  // 1. 优先检查环境变量
+  // OpenRouter is platform-only: free trials use the platform key and users cannot BYOK OpenRouter.
+  if (provider === "openrouter") {
+    const envKey = ENV_API_KEYS.openrouter;
+    if (envKey) return envKey;
+    return null;
+  }
+
   const envKey = ENV_API_KEYS[provider];
   if (envKey) {
     console.log(`[Analyzer] Using env API key for ${provider}`);
     return envKey;
   }
 
-  // 2. 环境变量没有，则从数据库读取用户配置的 API Key
+  // Environment key is missing, fallback to legacy user keys for non-OpenRouter providers.
   const result = await db.query.userApiKeys.findFirst({
     where: and(
       eq(userApiKeys.userId, userId),
@@ -296,3 +302,4 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
     };
   }
 }
+
