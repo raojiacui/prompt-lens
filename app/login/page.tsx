@@ -1,21 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Spinner } from "@/components/ui/spinner";
 import { LoginGlobeBackground } from "@/components/login-globe-background";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [step, setStep] = useState<"email" | "code">("email");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [countdown, setCountdown] = useState(0);
-
   const handleOAuthSignIn = async (provider: "google" | "github") => {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
     try {
@@ -25,14 +15,14 @@ export default function LoginPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          provider: provider,
+          provider,
           callbackURL: "/dashboard",
         }),
       });
 
       if (response.ok) {
-        const data = await response.json();
-        if (data.url) {
+        const data = await response.json().catch(() => null);
+        if (data?.url) {
           window.location.href = data.url;
         } else {
           window.location.href = "/dashboard";
@@ -44,98 +34,6 @@ export default function LoginPage() {
     } catch (error) {
       console.error("Sign in error:", error);
       alert("登录出错，请重试");
-    }
-  };
-
-  // 发送验证码
-  const handleSendCode = async () => {
-    if (!email) {
-      setError("请输入邮箱地址");
-      return;
-    }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError("请输入有效的邮箱地址");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const response = await fetch(`${baseUrl}/api/auth/email-otp/send-verification-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-          type: "sign-in",
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setStep("code");
-        setCountdown(60); // 60秒后可以重新发送
-        const timer = setInterval(() => {
-          setCountdown((prev) => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-      } else {
-        setError(data.message || data.error || "发送验证码失败");
-      }
-    } catch (err) {
-      setError("发送验证码失败，请重试");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 使用验证码登录
-  const handleVerifyCode = async () => {
-    if (!code) {
-      setError("请输入验证码");
-      return;
-    }
-    if (code.length !== 6) {
-      setError("验证码为6位数字");
-      return;
-    }
-
-    setLoading(true);
-    setError("");
-
-    try {
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const response = await fetch(`${baseUrl}/api/auth/sign-in/email-otp`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-          otp: code,
-          callbackURL: "/dashboard",
-        }),
-      });
-
-      if (response.ok) {
-        window.location.href = "/dashboard";
-      } else {
-        const data = await response.json();
-        setError(data.message || data.error || "登录失败，请检查验证码");
-      }
-    } catch (err) {
-      setError("登录失败，请重试");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -195,105 +93,8 @@ export default function LoginPage() {
               使用 GitHub 账号登录
             </Button>
 
-            {/* 分隔线 */}
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[#D8D5CC]"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-[#F5F3EC] text-[#9C9890]">或</span>
-              </div>
-            </div>
-
-            {/* 邮箱登录表单 */}
-            {step === "email" ? (
-              <div className="space-y-4">
-                <div>
-                  <Input
-                    type="email"
-                    placeholder="请输入邮箱地址"
-                    value={email}
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      setError("");
-                    }}
-                    className="h-12 border-[#C8C4BC] text-[#6B6860] placeholder:text-[#9C9890] rounded-xl"
-                  />
-                </div>
-                {error && <p className="text-red-500 text-sm">{error}</p>}
-                <Button
-                  onClick={handleSendCode}
-                  disabled={loading}
-                  className="w-full h-12 bg-[#D97757] hover:bg-[#c46849] text-white rounded-xl flex items-center justify-center gap-2"
-                >
-                  {loading ? <Spinner className="w-5 h-5" /> : "获取验证码"}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-[#6B6860] text-center">
-                  已发送验证码至 <span className="font-medium text-[#141413]">{email}</span>
-                </p>
-                <div>
-                  <Input
-                    type="text"
-                    placeholder="请输入6位验证码"
-                    value={code}
-                    maxLength={6}
-                    onChange={(e) => {
-                      setCode(e.target.value.replace(/\D/g, "")); // 只允许数字
-                      setError("");
-                    }}
-                    className="h-12 border-[#C8C4BC] text-[#6B6860] placeholder:text-[#9C9890] rounded-xl text-center text-lg tracking-widest"
-                  />
-                </div>
-                {error && <p className="text-red-500 text-sm">{error}</p>}
-                <Button
-                  onClick={handleVerifyCode}
-                  disabled={loading || code.length !== 6}
-                  className="w-full h-12 bg-[#D97757] hover:bg-[#c46849] text-white rounded-xl flex items-center justify-center gap-2"
-                >
-                  {loading ? <Spinner className="w-5 h-5" /> : "登录"}
-                </Button>
-                <div className="text-center">
-                  <button
-                    onClick={() => {
-                      setStep("email");
-                      setCode("");
-                      setError("");
-                    }}
-                    className="text-sm text-[#6B6860] hover:text-[#D97757] underline"
-                  >
-                    更换邮箱地址
-                  </button>
-                  {countdown > 0 ? (
-                    <span className="text-sm text-[#9C9890] ml-3">
-                      {countdown}秒后可重新发送
-                    </span>
-                  ) : (
-                    <button
-                      onClick={handleSendCode}
-                      className="text-sm text-[#D97757] hover:underline ml-3"
-                    >
-                      重新发送验证码
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* 跳过登录 */}
-            <Link href="/dashboard">
-              <Button
-                variant="outline"
-                className="w-full h-12 border-[#C8C4BC] text-[#6B6860] hover:text-[#141413] hover:border-[#141413] hover:bg-[#F5F3EC] rounded-xl transition-all"
-              >
-                跳过登录，直接使用
-              </Button>
-            </Link>
-
             <p className="text-center text-xs text-[#9C9890] mt-4" style={{ fontFamily: 'var(--font-body)' }}>
-              登录后可保存分析历史，方便后续查看
+              使用 Google 或 GitHub 登录后可保存分析历史，方便后续查看
             </p>
           </CardContent>
         </Card>

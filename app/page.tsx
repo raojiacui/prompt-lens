@@ -39,7 +39,7 @@ export default function HomePage() {
                 {t("login")}
               </Button>
             </Link>
-            <Link href="/dashboard">
+            <Link href="/login">
               <Button className="bg-[#D97757] hover:bg-[#C96848] text-white rounded-lg px-5 shadow-sm hover:shadow-md transition-all">
                 {t("getStarted")}
               </Button>
@@ -73,7 +73,7 @@ export default function HomePage() {
                 {t("login")}
               </Button>
             </Link>
-            <Link href="/dashboard" className="block" onClick={() => setMobileMenuOpen(false)}>
+            <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
               <Button className="w-full bg-[#D97757] hover:bg-[#C96848] text-white">
                 {t("getStarted")}
               </Button>
@@ -160,7 +160,7 @@ export default function HomePage() {
 
           {/* CTA 按钮 - 移动端优化 */}
           <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-start">
-            <Link href="/dashboard">
+            <Link href="/login">
               <Button size="lg" className="w-full sm:w-auto bg-[#D97757] hover:bg-[#C96848] text-white text-base md:text-lg px-6 md:px-8 py-4 md:py-5 rounded-xl shadow-md hover:shadow-lg transition-all min-h-[52px] md:min-h-[60px]">
                 {t("ctaExperience")}
               </Button>

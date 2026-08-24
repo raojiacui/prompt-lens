@@ -28,10 +28,10 @@ export default function DashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("analyze");
 
-  // 未登录时刷新 /dashboard 自动跳回首页
+  // 未登录时刷新 /dashboard 自动跳回登录页
   useEffect(() => {
     if (!isPending && !session?.user) {
-      router.replace("/");
+      router.replace("/login");
     }
   }, [isPending, session, router]);
   const [isLoading, setIsLoading] = useState(false);
