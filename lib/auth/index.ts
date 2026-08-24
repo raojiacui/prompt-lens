@@ -184,12 +184,45 @@ export const auth = betterAuth({
   ],
 });
 
-// 辅助函数：检查用户是否为管理员
-export async function isAdmin(userId: string): Promise<boolean> {
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, userId),
-  });
-  return currentUser?.role === "admin";
+type CurrentUser = typeof user.$inferSelect;
+
+function envList(name: string) {
+  return (process.env[name] || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  const normalized = email?.trim().toLowerCase();
+  if (!normalized) return false;
+  return envList("ADMIN_EMAILS")
+    .map((item) => item.toLowerCase())
+    .includes(normalized);
+}
+
+export function isAdminUserId(userId: string | null | undefined): boolean {
+  const normalized = userId?.trim();
+  if (!normalized) return false;
+  return envList("ADMIN_USER_IDS").includes(normalized);
+}
+
+export function isAdminProfile(profile: Pick<CurrentUser, "id" | "email" | "role"> | null | undefined): boolean {
+  return profile?.role === "admin" || isAdminEmail(profile?.email) || isAdminUserId(profile?.id);
+}
+
+async function persistEnvAdminRole(currentUser: CurrentUser): Promise<CurrentUser> {
+  if (currentUser.role === "admin" || (!isAdminEmail(currentUser.email) && !isAdminUserId(currentUser.id))) {
+    return currentUser;
+  }
+
+  try {
+    await db.update(user).set({ role: "admin" }).where(eq(user.id, currentUser.id));
+    return { ...currentUser, role: "admin" };
+  } catch (error) {
+    console.warn("[Auth] Failed to persist admin role:", error);
+    return currentUser;
+  }
 }
 
 // 辅助函数：获取当前用户
@@ -197,4 +230,21 @@ export async function getCurrentUser(userId: string) {
   return db.query.user.findFirst({
     where: eq(user.id, userId),
   });
+}
+
+export async function getAdminUser(userId: string): Promise<CurrentUser | null> {
+  const currentUser = await getCurrentUser(userId);
+  if (!currentUser || !isAdminProfile(currentUser)) return null;
+  return persistEnvAdminRole(currentUser);
+}
+
+export async function getAdminUserFromHeaders(headers: Headers): Promise<CurrentUser | null> {
+  const session = await auth.api.getSession({ headers });
+  if (!session?.user) return null;
+  return getAdminUser(session.user.id);
+}
+
+// 辅助函数：检查用户是否为管理员
+export async function isAdmin(userId: string): Promise<boolean> {
+  return Boolean(await getAdminUser(userId));
 }

@@ -109,14 +109,14 @@ export default function DashboardPage() {
       return;
     }
 
-    fetch("/api/admin/overview?probe=1")
-      .then((response) => {
-        if (!cancelled) setCanAccessAdmin(response.ok);
+    fetch("/api/admin/me", { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => null);
+        if (!cancelled) setCanAccessAdmin(response.ok && payload?.isAdmin === true);
       })
       .catch(() => {
         if (!cancelled) setCanAccessAdmin(false);
       });
-
     return () => {
       cancelled = true;
     };
@@ -365,16 +365,28 @@ export default function DashboardPage() {
                     {t("dashboard.appName")}
                   </span>
                 </Link>
-                {session?.user ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleSignOut()}
-                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-text-primary)]"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    {t("auth.logout")}
-                  </button>
-                ) : null}
+                <div className="flex items-center gap-2">
+                  {canAccessAdmin ? (
+                    <button
+                      type="button"
+                      onClick={() => selectTab("admin")}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-[#D97757] transition-colors hover:bg-[var(--color-bg-raised)]"
+                    >
+                      <Shield className="h-4 w-4" />
+                      后台
+                    </button>
+                  ) : null}
+                  {session?.user ? (
+                    <button
+                      type="button"
+                      onClick={() => void handleSignOut()}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-text-primary)]"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      {t("auth.logout")}
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
               <div className="text-center mb-10 md:mb-14">
@@ -521,3 +533,4 @@ function SidebarItem({
     </button>
   );
 }
+

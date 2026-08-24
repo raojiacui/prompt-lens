@@ -1,5 +1,6 @@
 import { count, eq, sql } from "drizzle-orm";
 import { analysisHistory, db, projects, user } from "@/lib/db";
+import { isAdminProfile } from "@/lib/auth";
 
 const DEFAULT_TRIAL_LIMIT = 2;
 
@@ -27,7 +28,7 @@ export async function getUserTrialUsage(userId: string) {
   const limit = getTrialLimit();
   const currentUser = await db.query.user.findFirst({ where: eq(user.id, userId) });
 
-  if (currentUser?.role === "admin") {
+  if (isAdminProfile(currentUser)) {
     return { limit, used: 0, remaining: Number.POSITIVE_INFINITY, isAdmin: true };
   }
 

@@ -1,25 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAdminUserFromHeaders } from "@/lib/auth";
 import { db, user, analysisHistory, operationLogs } from "@/lib/db";
-import { eq, desc, count, sql } from "drizzle-orm";
-
-// 检查用户是否为管理员
-async function checkAdmin(session: any): Promise<boolean> {
-  if (!session?.user) return false;
-
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  });
-
-  return currentUser?.role === "admin";
-}
+import { eq, desc, count } from "drizzle-orm";
 
 // GET /api/admin/users - 获取所有用户列表
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const adminUser = await getAdminUserFromHeaders(request.headers);
 
-    if (!session?.user || !(await checkAdmin(session))) {
+    if (!adminUser) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 
@@ -68,9 +57,9 @@ export async function GET(request: NextRequest) {
 // PATCH /api/admin/users - 更新用户（禁言/解封）
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const adminUser = await getAdminUserFromHeaders(request.headers);
 
-    if (!session?.user || !(await checkAdmin(session))) {
+    if (!adminUser) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 
@@ -93,7 +82,7 @@ export async function PATCH(request: NextRequest) {
 
       // 记录操作日志
       await db.insert(operationLogs).values({
-        userId: session.user.id,
+        userId: adminUser.id,
         action: "admin.user_ban",
         resourceType: "user",
         resourceId: userId,
@@ -110,7 +99,7 @@ export async function PATCH(request: NextRequest) {
         .where(eq(user.id, userId));
 
       await db.insert(operationLogs).values({
-        userId: session.user.id,
+        userId: adminUser.id,
         action: "admin.user_unban",
         resourceType: "user",
         resourceId: userId,
@@ -137,9 +126,9 @@ export async function PATCH(request: NextRequest) {
 // DELETE /api/admin/users - 删除用户
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const adminUser = await getAdminUserFromHeaders(request.headers);
 
-    if (!session?.user || !(await checkAdmin(session))) {
+    if (!adminUser) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 
@@ -151,7 +140,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 不能删除自己
-    if (userId === session.user.id) {
+    if (userId === adminUser.id) {
       return NextResponse.json({ error: "Cannot delete yourself" }, { status: 400 });
     }
 
@@ -164,3 +153,5 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+

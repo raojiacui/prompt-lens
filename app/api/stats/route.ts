@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getAdminUserFromHeaders } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { user, analysisHistory, audioAnalysis, videoClip } from "@/lib/db/schema";
-import { eq, count, gte, desc } from "drizzle-orm";
+import { count, gte, desc } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const adminUser = await getAdminUserFromHeaders(request.headers);
 
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // 检查是否是管理员
-    if ((session.user as any).role !== "admin") {
+    if (!adminUser) {
       return NextResponse.json({ error: "Admin only" }, { status: 403 });
     }
-
     // 获取统计数据的日期范围
     const { searchParams } = new URL(request.url);
     const days = parseInt(searchParams.get("days") || "30");
@@ -113,3 +107,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

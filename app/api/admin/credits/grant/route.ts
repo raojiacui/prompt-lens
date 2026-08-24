@@ -1,26 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
-import { auth } from "@/lib/auth";
-import { db, operationLogs, user } from "@/lib/db";
+import { getAdminUserFromHeaders } from "@/lib/auth";
+import { db, operationLogs } from "@/lib/db";
 import { CREDIT_PACKAGES, getCreditPackage } from "@/lib/billing/credit-packages";
 import { findUserForCreditGrant, grantCreditsToUser, normalizeCreditAmount } from "@/lib/billing/credits";
 
-async function requireAdmin(headers: Headers) {
-  const session = await auth.api.getSession({ headers });
-  if (!session?.user) return null;
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  return currentUser?.role === "admin" ? currentUser : null;
-}
-
 export async function GET(request: NextRequest) {
-  const adminUser = await requireAdmin(request.headers);
+  const adminUser = await getAdminUserFromHeaders(request.headers);
   if (!adminUser) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   return NextResponse.json({ packages: CREDIT_PACKAGES });
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const adminUser = await requireAdmin(request.headers);
+    const adminUser = await getAdminUserFromHeaders(request.headers);
     if (!adminUser) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
 
     const body = await request.json().catch(() => ({}));

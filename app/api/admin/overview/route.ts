@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { desc, eq, gte, count, countDistinct, isNotNull } from "drizzle-orm";
-import { auth } from "@/lib/auth";
+import { desc, gte, count, countDistinct, isNotNull } from "drizzle-orm";
+import { getAdminUserFromHeaders } from "@/lib/auth";
 import { getCreditBalancesForUsers } from "@/lib/billing/credits";
 import {
   analysisHistory,
@@ -67,6 +67,21 @@ function numberFromMetadata(metadata: unknown, key: string) {
   return 0;
 }
 
+function isRecoverableAdminQueryError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code) : "";
+  return code === "42P01" || message.includes("does not exist") || message.includes("statement timeout") || message.includes("canceling statement");
+}
+
+async function safeAdminQuery<T>(label: string, promise: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await promise;
+  } catch (error) {
+    if (!isRecoverableAdminQueryError(error)) throw error;
+    console.warn(`[admin] ${label} unavailable, using fallback:`, error);
+    return fallback;
+  }
+}
 function touchUser(map: Map<string, UserUsage>, userId: string, createdAt: Date) {
   const existing = map.get(userId) || {
     userId,
@@ -84,16 +99,9 @@ function touchUser(map: Map<string, UserUsage>, userId: string, createdAt: Date)
   return existing;
 }
 
-async function requireAdmin(headers: Headers) {
-  const session = await auth.api.getSession({ headers });
-  if (!session?.user) return null;
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, session.user.id) });
-  return currentUser?.role === "admin" ? currentUser : null;
-}
-
 export async function GET(request: NextRequest) {
   try {
-    const adminUser = await requireAdmin(request.headers);
+    const adminUser = await getAdminUserFromHeaders(request.headers);
     if (!adminUser) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     if (request.nextUrl.searchParams.get("probe") === "1") {
       return NextResponse.json({ ok: true });
@@ -106,6 +114,7 @@ export async function GET(request: NextRequest) {
   const since7 = new Date(Date.now() - 7 * DAY_MS);
   const today = startOfDay(new Date());
 
+  const zeroCountRows = [{ count: 0 }];
   const [
     totalUsersRow,
     newUsersRow,
@@ -125,25 +134,24 @@ export async function GET(request: NextRequest) {
     projectOwners,
     recentDailyVisits,
   ] = await Promise.all([
-    db.select({ count: count() }).from(user),
-    db.select({ count: count() }).from(user).where(gte(user.createdAt, since30)),
-    db.select({ count: count() }).from(projects),
-    db.select({ count: count() }).from(videoGeneration),
-    db.select({ count: count() }).from(workflowJobs),
-    db.select({ count: countDistinct(creditLedger.userId) }).from(creditLedger).where(isNotNull(creditLedger.packageId)),
-    db.query.operationLogs.findMany({ where: gte(operationLogs.createdAt, since), orderBy: [desc(operationLogs.createdAt)], limit: 50000 }),
-    db.query.projects.findMany({ where: gte(projects.createdAt, since), orderBy: [desc(projects.createdAt)], limit: 20000 }),
-    db.query.videoGeneration.findMany({ where: gte(videoGeneration.createdAt, since), orderBy: [desc(videoGeneration.createdAt)], limit: 20000 }),
-    db.query.analysisHistory.findMany({ where: gte(analysisHistory.createdAt, since), orderBy: [desc(analysisHistory.createdAt)], limit: 20000 }),
-    db.query.audioAnalysis.findMany({ where: gte(audioAnalysis.createdAt, since), orderBy: [desc(audioAnalysis.createdAt)], limit: 20000 }),
-    db.query.videoClip.findMany({ where: gte(videoClip.createdAt, since), orderBy: [desc(videoClip.createdAt)], limit: 20000 }),
-    db.query.projectAssets.findMany({ where: gte(projectAssets.createdAt, since), orderBy: [desc(projectAssets.createdAt)], limit: 20000 }),
-    db.query.user.findMany({ orderBy: [desc(user.createdAt)], limit: 8 }),
-    db.query.user.findMany({ limit: 10000 }),
-    db.query.projects.findMany({ limit: 50000 }),
-    db.query.dailyVisits.findMany({ where: gte(dailyVisits.date, dayKey(since)), orderBy: [desc(dailyVisits.createdAt)], limit: 100000 }),
+    safeAdminQuery("total users", db.select({ count: count() }).from(user), zeroCountRows),
+    safeAdminQuery("new users", db.select({ count: count() }).from(user).where(gte(user.createdAt, since30)), zeroCountRows),
+    safeAdminQuery("projects count", db.select({ count: count() }).from(projects), zeroCountRows),
+    safeAdminQuery("video generations count", db.select({ count: count() }).from(videoGeneration), zeroCountRows),
+    safeAdminQuery("workflow jobs count", db.select({ count: count() }).from(workflowJobs), zeroCountRows),
+    safeAdminQuery("purchased users", db.select({ count: countDistinct(creditLedger.userId) }).from(creditLedger).where(isNotNull(creditLedger.packageId)), zeroCountRows),
+    safeAdminQuery("operation logs", db.query.operationLogs.findMany({ where: gte(operationLogs.createdAt, since), orderBy: [desc(operationLogs.createdAt)], limit: 10000 }), []),
+    safeAdminQuery("recent projects", db.query.projects.findMany({ where: gte(projects.createdAt, since), orderBy: [desc(projects.createdAt)], limit: 5000 }), []),
+    safeAdminQuery("recent generations", db.query.videoGeneration.findMany({ where: gte(videoGeneration.createdAt, since), orderBy: [desc(videoGeneration.createdAt)], limit: 5000 }), []),
+    safeAdminQuery("recent analysis history", db.query.analysisHistory.findMany({ where: gte(analysisHistory.createdAt, since), orderBy: [desc(analysisHistory.createdAt)], limit: 5000 }), []),
+    safeAdminQuery("recent audio analysis", db.query.audioAnalysis.findMany({ where: gte(audioAnalysis.createdAt, since), orderBy: [desc(audioAnalysis.createdAt)], limit: 5000 }), []),
+    safeAdminQuery("recent video clips", db.query.videoClip.findMany({ where: gte(videoClip.createdAt, since), orderBy: [desc(videoClip.createdAt)], limit: 5000 }), []),
+    safeAdminQuery("recent project assets", db.query.projectAssets.findMany({ where: gte(projectAssets.createdAt, since), orderBy: [desc(projectAssets.createdAt)], limit: 5000 }), []),
+    safeAdminQuery("recent users", db.query.user.findMany({ orderBy: [desc(user.createdAt)], limit: 8 }), []),
+    safeAdminQuery("all users", db.query.user.findMany({ limit: 10000 }), []),
+    safeAdminQuery("project owners", db.query.projects.findMany({ limit: 20000 }), []),
+    safeAdminQuery("daily visits", db.query.dailyVisits.findMany({ where: gte(dailyVisits.date, dayKey(since)), orderBy: [desc(dailyVisits.createdAt)], limit: 50000 }), []),
   ]);
-
   const daily = makeDailyWindow(days);
   const dailyMap = new Map(daily.map((item) => [item.date, item]));
   const dailyVisitors = new Map<string, { users: Set<string>; sessions: Set<string> }>();
@@ -235,7 +243,7 @@ export async function GET(request: NextRequest) {
   const analysisCount = daily.reduce((sum, item) => sum + item.analyses, 0);
   const generationCount = daily.reduce((sum, item) => sum + item.generations, 0);
   const usersById = new Map(allUsers.map((item) => [item.id, item]));
-  const creditBalances = await getCreditBalancesForUsers(Array.from(usageByUser.keys()));
+  const creditBalances = await safeAdminQuery("credit balances", getCreditBalancesForUsers(Array.from(usageByUser.keys())), new Map<string, number>());
 
   const totalUsers = totalUsersRow[0]?.count || 0;
   const purchasedUsers = purchasedUsersRow[0]?.count || 0;
@@ -283,3 +291,4 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to load admin overview" }, { status: 500 });
   }
 }
+

@@ -1,25 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { db, operationLogs, user } from "@/lib/db";
+import { getAdminUserFromHeaders } from "@/lib/auth";
+import { db, operationLogs } from "@/lib/db";
 import { eq, desc, sql, and, count } from "drizzle-orm";
 
-// 检查用户是否为管理员
-async function checkAdmin(session: any): Promise<boolean> {
-  if (!session?.user) return false;
-
-  const currentUser = await db.query.user.findFirst({
-    where: eq(user.id, session.user.id),
-  });
-
-  return currentUser?.role === "admin";
-}
+type OperationLogAction = typeof operationLogs.action["_"]["data"];
 
 // GET /api/admin/logs - 获取操作日志
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const adminUser = await getAdminUserFromHeaders(request.headers);
 
-    if (!session?.user || !(await checkAdmin(session))) {
+    if (!adminUser) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 
@@ -34,7 +25,7 @@ export async function GET(request: NextRequest) {
     const conditions = [];
 
     if (action) {
-      conditions.push(eq(operationLogs.action, action as any));
+      conditions.push(eq(operationLogs.action, action as OperationLogAction));
     }
 
     if (userId) {
@@ -79,9 +70,9 @@ export async function GET(request: NextRequest) {
 // DELETE /api/admin/logs - 清理旧日志
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
+    const adminUser = await getAdminUserFromHeaders(request.headers);
 
-    if (!session?.user || !(await checkAdmin(session))) {
+    if (!adminUser) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 
@@ -93,7 +84,7 @@ export async function DELETE(request: NextRequest) {
     cutoffDate.setDate(cutoffDate.getDate() - days);
 
     // 删除旧日志
-    const result = await db
+    await db
       .delete(operationLogs)
       .where(sql`${operationLogs.createdAt} < ${cutoffDate.toISOString()}`);
 
@@ -105,3 +96,5 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+
