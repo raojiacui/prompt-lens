@@ -79,8 +79,10 @@ AI 视频提示词分析工具 - 网页版
 - 🤖 **多 API 支持**: 智谱AI、Google Gemini、OpenRouter
 - 📝 **历史记录**: 保存和分析您的提示词历史
 - 🔐 **用户系统**: Google 登录，数据隔离
-- 👨‍💼 **智能对话助手**：可聊天
 - 📊 **日志系统**: 完整操作记录追踪
+
+- 后续V2版本想做的点：在视频分析阶段支持用户粘贴视频链接或url，无需上传视频文件即可分析（但是用yt-dlp只能解析一些公开视频链接，总是会卡在登录状态或者拿不到cookie上，很多还是解析不出来，好像只能去用第三方的解析服务了，这里不知道还有更好的方法吗）
+- 在视频分析阶段实现自动拆镜，无论是5分钟还是10分钟的视频，都可以自动切分镜头再对每一个镜头进行分析,最后输出可复用的prompt,这里依靠ffmpeg的场景检测经验阈值，超过这个阈值的便认为镜头发生了变化，再结合上PySceneDetect这个开源库，或者结合音频波形图，变化比较明显的地方一般有一个转场
 
 ## 技术栈
 
@@ -88,11 +90,11 @@ AI 视频提示词分析工具 - 网页版
 - **UI**: Tailwind CSS, shadcn/ui
 - **后端**: Next.js API Routes
 - **数据库**: PostgreSQL（本地用 Docker / 云端用 Supabase，二选一）+ Drizzle ORM
-- **认证**: better-auth（支持 Google / GitHub / 邮箱验证码登录）
-- **存储**: Backblaze B2（私有 bucket + 签名 URL，免费 10GB）
-- **音频转录**: AssemblyAI（每月免费 1 小时）/ FunASR（自托管，完全免费）
-- **视频生成**: Kie.ai（Wan 2.7 文生视频）
-- **视频剪辑**: 自托管 FFmpeg 服务（用户自行部署，无需付费）
+- **认证**: better-auth（支持 Google / GitHub 登录）
+- **存储**: Cloudflare R2
+- **音频转录**: elevenlabs speech to text/ FunASR（自托管，完全免费）
+- **视频生成**: Kie.ai
+- **视频剪辑**: 部署的 FFmpeg 服务
 - **测试**: Vitest, Playwright
 
 ## 快速开始
