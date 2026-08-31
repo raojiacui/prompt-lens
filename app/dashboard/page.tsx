@@ -30,6 +30,21 @@ export default function DashboardPage() {
   const searchString = searchParams.toString();
   const currentDashboardPath = searchString ? `${pathname}?${searchString}` : pathname;
   const validTabs: Tab[] = ["home", "analyze", "audio", "edit", "video-gen", "history", "settings", "admin"];
+  const authLoadingSteps = ["加载中", "加载中", "加载中"];
+  const [authLoadingStep, setAuthLoadingStep] = useState(0);
+
+  useEffect(() => {
+    if (!isPending) {
+      setAuthLoadingStep(0);
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      setAuthLoadingStep((step) => (step + 1) % authLoadingSteps.length);
+    }, 900);
+
+    return () => window.clearInterval(timer);
+  }, [isPending, authLoadingSteps.length]);
 
   const rawTab = searchParams.get("tab");
   const activeTab: Tab = rawTab === "create" || rawTab === "projects"
@@ -39,6 +54,9 @@ export default function DashboardPage() {
       : "home";
 
   const selectTab = (tab: Tab, extraParams?: Record<string, string>) => {
+    if (tab !== "video-gen" || !extraParams?.sceneId) {
+      setHiddenSceneReferenceImageUrl(null);
+    }
     const nextParams = new URLSearchParams(searchParams.toString());
     if (tab === "home") {
       nextParams.delete("tab");
@@ -88,6 +106,7 @@ export default function DashboardPage() {
   const workflowSceneId = activeTab === "audio" || activeTab === "edit" ? searchParams.get("sceneId") : null;
   const [historyRefreshTrigger] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [hiddenSceneReferenceImageUrl, setHiddenSceneReferenceImageUrl] = useState<string | null>(null);
   const sessionIsAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
   const [canAccessAdmin, setCanAccessAdmin] = useState(sessionIsAdmin);
 
@@ -127,7 +146,8 @@ export default function DashboardPage() {
     selectTab("video-gen", { videoGenPrompt: prompt });
   };
 
-  const handleWorkflowSendToGenerate = (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string }) => {
+  const handleWorkflowSendToGenerate = (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string; hiddenReferenceImageUrl?: string }) => {
+    setHiddenSceneReferenceImageUrl(payload.hiddenReferenceImageUrl || null);
     selectTab("video-gen", {
       videoGenPrompt: payload.prompt,
       projectId: payload.projectId,
@@ -191,17 +211,30 @@ export default function DashboardPage() {
     { key: "settings" as Tab, label: t("dashboard.tabs.settings"), icon: Settings },
     ...(canAccessAdmin ? [{ key: "admin" as Tab, label: "后台", icon: Shield }] : []),
   ];
-
   if (isPending || !session?.user) {
     return (
-      <div className="grid h-screen place-items-center bg-[var(--color-bg-base)]">
-        <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] px-4 py-3 text-sm text-[var(--color-text-secondary)] shadow-sm">
-          <Spinner size="sm" />
-          正在恢复登录状态...
+      <div className="grid h-screen place-items-center bg-[var(--color-bg-base)] px-6">
+        <div className="w-full max-w-md rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-5 text-sm text-[var(--color-text-secondary)] shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="font-semibold text-[var(--color-text-primary)]">{authLoadingSteps[authLoadingStep]}</p>
+              <p className="mt-1 text-xs text-[var(--color-text-muted)]">请稍候</p>
+            </div>
+            <Spinner size="sm" />
+          </div>
+          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[var(--color-bg-base)]">
+            <div className="h-full w-2/3 rounded-full bg-[#D97757] shadow-[0_0_18px_rgba(217,119,87,0.45)] transition-all duration-700 animate-pulse" />
+          </div>
+          <div className="mt-4 grid gap-2">
+            <div className="h-2.5 w-11/12 rounded-full bg-[var(--color-bg-base)] animate-pulse" />
+            <div className="h-2.5 w-8/12 rounded-full bg-[var(--color-bg-base)] animate-pulse" />
+            <div className="h-2.5 w-10/12 rounded-full bg-[var(--color-bg-base)] animate-pulse" />
+          </div>
         </div>
       </div>
     );
   }
+
   return (
     <div className="flex h-screen bg-[var(--color-bg-base)]">
       {/* 左侧边栏：仅在非首页的功能页显示，且可折叠 */}
@@ -445,7 +478,7 @@ export default function DashboardPage() {
 
           {/* 分析页面 */}
           {activeTab === "analyze" && (
-            <VideoWorkflowCreate onSendToGenerate={handleWorkflowSendToGenerate} onNavigateTool={(tab, payload) => selectTab(tab, payload)} />
+            <VideoWorkflowCreate onSendToGenerate={handleWorkflowSendToGenerate} />
           )}
           {/* 音频分析页面 */}
           {activeTab === "audio" && <AudioAnalyzeTab activeTab={activeTab} initialProjectId={workflowProjectId} initialVersionId={workflowVersionId} />}
@@ -467,6 +500,7 @@ export default function DashboardPage() {
                 initialProjectVersionId={videoGenVersionId}
                 initialDuration={videoGenDuration}
                 initialModel={videoGenModel}
+                hiddenReferenceImageUrl={hiddenSceneReferenceImageUrl}
               />
             </div>
           )}
@@ -533,4 +567,3 @@ function SidebarItem({
     </button>
   );
 }
-

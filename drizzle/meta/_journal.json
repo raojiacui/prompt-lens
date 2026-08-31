@@ -64,6 +64,13 @@
                         "when":  1787450000000,
                         "tag":  "0008_payment_orders",
                         "breakpoints":  true
+                    },
+                    {
+                        "idx":  9,
+                        "version":  "7",
+                        "when":  1788192000000,
+                        "tag":  "0009_projects_user_updated_at_idx",
+                        "breakpoints":  true
                     }
                 ]
 }

@@ -206,9 +206,28 @@ export async function createKieVeoGeneration(input: KieVideoGenerationRequest, a
     },
   );
 
-  const payload = await response.json().catch(() => null);
-  if (!response.ok)
-    throw new Error(`kie.ai request failed: ${response.status}`);
+  const responseText = await response.text();
+  let payload: {
+    code?: number;
+    msg?: string;
+    message?: string;
+    data?: { taskId?: string };
+    taskId?: string;
+  } | null = null;
+  if (responseText) {
+    try {
+      payload = JSON.parse(responseText);
+    } catch {
+      payload = null;
+    }
+  }
+  if (!response.ok) {
+    throw new Error(
+      `kie.ai request failed: ${response.status}${
+        responseText ? ` ${responseText.slice(0, 500)}` : ""
+      }`,
+    );
+  }
   assertKieSuccess(payload, "Video generation request failed");
   const taskId = payload?.data?.taskId || payload?.taskId;
   if (!taskId) throw new Error("KIE response did not include taskId");

@@ -47,9 +47,6 @@ type UploadedAsset = {
   error?: string;
 };
 
-type CreditStatus = {
-  balance: number;
-};
 
 type GenerationStatusPayload = {
   status?: string;
@@ -190,7 +187,7 @@ function isContinuousDurationRange(supportedSeconds: number[]) {
 }
 
 function persistableAssets(assets: UploadedAsset[]) {
-  return assets.map(({ previewUrl, ...asset }) => asset);
+  return assets.map(({ previewUrl: _previewUrl, ...asset }) => asset);
 }
 
 function revokeAssetPreview(asset: UploadedAsset) {
@@ -340,6 +337,7 @@ export function ReferenceVideoComposer({
   initialProjectVersionId,
   initialDuration,
   initialModel,
+  hiddenReferenceImageUrl,
 }: {
   initialPrompt?: string | null;
   initialProjectId?: string | null;
@@ -347,6 +345,7 @@ export function ReferenceVideoComposer({
   initialProjectVersionId?: string | null;
   initialDuration?: number | null;
   initialModel?: string | null;
+  hiddenReferenceImageUrl?: string | null;
 }) {
   const t = useTranslations("videoGenerate");
   const { data: session } = authClient.useSession();
@@ -371,7 +370,7 @@ export function ReferenceVideoComposer({
   const [assets, setAssets] = useState<UploadedAsset[]>([]);
   const [error, setError] = useState("");
   const [variants, setVariants] = useState<GenerationVariant[]>(initialVariants);
-  const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
+  const [sceneReferenceImageUrl, setSceneReferenceImageUrl] = useState(hiddenReferenceImageUrl || "");
 
   const selectedModelConfig =
     model === autoBalancedModelId
@@ -450,23 +449,6 @@ export function ReferenceVideoComposer({
     setDurationDraft(String(durationSeconds || ""));
   }, [durationSeconds]);
 
-  async function loadCreditStatus() {
-    try {
-      const response = await fetch("/api/credits/me", { cache: "no-store" });
-      if (!response.ok) return;
-      const payload = await response.json().catch(() => null);
-      if (payload && typeof payload.balance === "number") {
-        setCreditStatus({ balance: payload.balance });
-      }
-    } catch {
-      // 积分余额加载失败不影响创作表单。
-    }
-  }
-
-  useEffect(() => {
-    if (!session?.user) return;
-    void loadCreditStatus();
-  }, [session?.user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -786,6 +768,10 @@ export function ReferenceVideoComposer({
   }, [initialPrompt]);
 
   useEffect(() => {
+    setSceneReferenceImageUrl(hiddenReferenceImageUrl || "");
+  }, [hiddenReferenceImageUrl]);
+
+  useEffect(() => {
     if (initialModel) setModel(initialModel);
   }, [initialModel]);
 
@@ -1032,6 +1018,10 @@ export function ReferenceVideoComposer({
       name: asset.name,
       url: asset.url,
     }));
+    const hiddenReferenceImageUrl =
+      selectedReplacementAssets.length === 0 && sceneReferenceImageUrl
+        ? sceneReferenceImageUrl
+        : undefined;
     const requestedOutputCount = Number(outputCount);
     const variantCount = Number.isFinite(requestedOutputCount)
       ? Math.max(1, Math.min(4, requestedOutputCount))
@@ -1082,6 +1072,7 @@ export function ReferenceVideoComposer({
               .filter(Boolean)
               .join("\n"),
             replacementAssets,
+            hiddenReferenceImageUrl,
             referenceVideoUrl: readyReferenceVideoAsset?.url,
             referenceVideo: readyReferenceVideoAsset
               ? {
@@ -1108,11 +1099,6 @@ export function ReferenceVideoComposer({
         const payload = await response.json().catch(() => ({}));
         if (!response.ok)
           throw new Error(payload.error || "Failed to create generation job");
-        if (typeof payload.billing?.balance === "number") {
-          setCreditStatus({ balance: payload.billing.balance });
-        } else {
-          void loadCreditStatus();
-        }
         const taskId = payload.providerTaskId as string;
         const submittedVariant: GenerationVariant = {
           ...queuedVariants[index],
@@ -1625,11 +1611,6 @@ export function ReferenceVideoComposer({
           </section>
 
           <div className="relative h-full">
-            <div className="absolute right-0 top-0 z-10 -translate-y-full pb-3">
-              <div className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-[#D97757]/25 bg-background/95 px-3 py-1.5 text-xs font-semibold text-[#D97757] shadow-sm backdrop-blur">
-                <span>积分 {creditStatus?.balance ?? 0}</span>
-              </div>
-            </div>
             <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">
             {!hasStartedGeneration ? (
               <div className="flex h-full flex-col items-center justify-center text-center">

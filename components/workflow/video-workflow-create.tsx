@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, Coins, Copy, Mic2, Play, RefreshCw, RotateCcw, Scissors, Trash2, Upload, Video, WandSparkles, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Play, RotateCcw, Trash2, Upload, Video, WandSparkles, X } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -61,9 +61,27 @@ const MAX_ANALYSIS_VIDEO_SECONDS = 10;
 const VIDEO_DURATION_TOLERANCE_SECONDS = 0.75;
 
 type Props = {
-  onSendToGenerate: (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string }) => void;
-  onNavigateTool?: (tab: "video-gen" | "audio" | "edit", payload?: Record<string, string>) => void;
+  onSendToGenerate: (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string; hiddenReferenceImageUrl?: string }) => void;
 };
+
+const projectsCacheKey = "prompt-lens-workflow-projects";
+
+function cachedProjects() {
+  try {
+    const raw = window.localStorage.getItem(projectsCacheKey);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as Project[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function cacheProjects(projects: Project[]) {
+  try {
+    window.localStorage.setItem(projectsCacheKey, JSON.stringify(projects));
+  } catch {}
+}
 
 function formatTime(seconds: number) {
   const safe = Math.max(0, seconds || 0);
@@ -140,7 +158,7 @@ function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
   return scene?.status || "Ready";
 }
 
-export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props) {
+export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const locale = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const promptSaveTimersRef = useRef<Record<string, number>>({});
@@ -154,6 +172,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   const [progress, setProgress] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [projectsLoading, setProjectsLoading] = useState(false);
   const [isDraggingUpload, setIsDraggingUpload] = useState(false);
   const [rewritingSceneId, setRewritingSceneId] = useState("");
   const [retryingSceneId, setRetryingSceneId] = useState("");
@@ -163,11 +182,14 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   const [copiedSceneVersionId, setCopiedSceneVersionId] = useState("");
   const [analysisModels, setAnalysisModels] = useState<ModelOption[]>([]);
   const [analysisModelValue, setAnalysisModelValue] = useState("auto");
+  const [analysisOutputLanguage, setAnalysisOutputLanguage] = useState<"zh" | "en">(locale === "en" ? "en" : "zh");
   const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
   const modelPriority: ModelPriority = "balanced";
   const canUploadLongVideo = canUseLongVideo(creditStatus);
 
   useEffect(() => {
+    const cached = cachedProjects();
+    if (cached.length) setProjects(cached);
     void loadProjects();
     void loadModels();
     void loadCreditStatus();
@@ -186,10 +208,24 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
   }, [bundle?.activeVersion?.id, bundle?.allSceneVersions]);
   const projectMediaType = bundle?.project.metadata?.mediaType === "image" ? "image" : "video";
 
-  async function loadProjects() {
-    const response = await fetch("/api/workflow/projects");
-    const data = await response.json();
-    setProjects(data.projects || []);
+  async function loadProjects(options: { force?: boolean } = {}) {
+    setProjectsLoading(true);
+    try {
+      const response = await fetch("/api/workflow/projects?limit=20", {
+        cache: options.force ? "no-store" : "default",
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.error || "Failed to load projects");
+      const nextProjects = Array.isArray(data?.projects) ? data.projects : [];
+      setProjects(nextProjects);
+      cacheProjects(nextProjects);
+    } catch (err) {
+      if (!projects.length) {
+        setError(err instanceof Error ? err.message : "Failed to load projects");
+      }
+    } finally {
+      setProjectsLoading(false);
+    }
   }
 
   async function loadCreditStatus() {
@@ -214,7 +250,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       modelMode: manualModelId ? "manual" as ModelMode : "auto" as ModelMode,
       modelId: manualModelId || undefined,
       modelPriority,
-      outputLanguage: locale === "en" ? "en" : "zh",
+      outputLanguage: analysisOutputLanguage,
     };
   }
 
@@ -317,8 +353,18 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
       });
       const breakdownData = await readJsonResponse(breakdownRes, "Breakdown failed");
       setBundle(breakdownData);
-      await loadCreditStatus();
-      await loadProjects();
+      if (breakdownData.project) {
+        setProjects((current) => {
+          const nextProjects = [
+            breakdownData.project as Project,
+            ...current.filter((project) => project.id !== breakdownData.project.id),
+          ].slice(0, 20);
+          cacheProjects(nextProjects);
+          return nextProjects;
+        });
+      }
+      void loadProjects({ force: true });
+      void loadCreditStatus();
       setProgress(upload.mediaType === "image" ? "Image Blueprint ready" : "Video Blueprint ready");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Workflow failed";
@@ -421,13 +467,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
           <h1 className="text-4xl font-semibold tracking-tight">视频分析</h1>
           <p className="mt-2 max-w-5xl text-lg leading-relaxed text-muted-foreground">全新升级保姆级视频脚本拆解，从全方位多维度（可复用提示词，画面，角色，动作，光线、色彩、风格、镜头）对视频或者图片进行分析。</p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => void loadProjects()}>
-          <RefreshCw className="mr-2 h-4 w-4" />Refresh
-        </Button>
+
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[0.68fr_1.32fr]">
-        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+      <div className="grid gap-4 xl:h-[calc(100vh-8rem)] xl:min-h-[680px] xl:grid-cols-[0.68fr_1.32fr]">
+        <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:min-h-0 xl:flex-col xl:overflow-hidden">
           <div
             className={cn(
               "rounded-2xl border border-dashed border-border bg-muted/30 p-3 transition-colors",
@@ -470,12 +514,16 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
             <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{canUploadLongVideo ? "已解锁长视频自动拆镜分析。" : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段；购买积分包后可上传几分钟长视频并自动拆镜分析。"}</p>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <ModelSelector
               label="Analysis model"
               value={analysisModelValue}
               models={analysisModels}
               onChange={setAnalysisModelValue}
+            />
+            <LanguageSelector
+              value={analysisOutputLanguage}
+              onChange={setAnalysisOutputLanguage}
             />
           </div>
 
@@ -492,8 +540,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}
           {error ? <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
 
-          <div className="mt-6 border-t border-border pt-4">
-            <h2 className="font-semibold">Projects</h2>
+          <div className="mt-6 min-h-0 border-t border-border pt-4 xl:flex-1 xl:overflow-y-auto xl:pr-1">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-semibold">Projects</h2>
+              {projectsLoading ? <Spinner size="sm" /> : null}
+            </div>
             <div className="mt-3 grid gap-2">
               {projects.map((project) => (
                 <div key={project.id} className={cn("group flex items-center justify-between rounded-xl border px-3 py-2 text-sm hover:border-primary/50", bundle?.project.id === project.id ? "border-primary bg-primary/10" : "border-border bg-background")}>
@@ -510,7 +561,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                         try {
                           await handleDeleteProject(project.id);
                           if (bundle?.project.id === project.id) setBundle(null);
-                          await loadProjects();
+                          await loadProjects({ force: true });
                         } catch (err) {
                           setError(err instanceof Error ? err.message : "Failed to delete project");
                         }
@@ -527,11 +578,8 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
           </div>
         </section>
 
-        <div className="relative">
-          <div className="absolute right-0 top-0 z-10 -translate-y-full pb-3">
-            <CreditBadge status={creditStatus} />
-          </div>
-          <section className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <div className="relative min-h-0">
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
           {!bundle ? (
             <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
               <Play className="mb-4 h-10 w-10 text-muted-foreground" />
@@ -539,31 +587,13 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
               <p className="text-sm text-muted-foreground">Upload a video or image to create the first editable scene blueprint.</p>
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-2">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">{bundle.project.title}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">Active version: {bundle.activeVersion?.label || "None"} · {bundle.scenes.length} scene{bundle.scenes.length === 1 ? "" : "s"}</p>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {projectMediaType === "video" ? (
-                    <>
-                      <Button variant="outline" onClick={() => onNavigateTool?.("audio", { projectId: bundle.project.id, versionId: bundle.activeVersion?.id || "" })}>
-                        <Mic2 className="mr-2 h-4 w-4" />Audio
-                      </Button>
-                      <Button variant="outline" onClick={() => onNavigateTool?.("edit", { projectId: bundle.project.id, versionId: bundle.activeVersion?.id || "" })}>
-                        <Scissors className="mr-2 h-4 w-4" />Edit
-                      </Button>
-                    </>
-                  ) : null}
-                  <Button onClick={() => {
-                    const firstScene = bundle.sceneVersions[0];
-                    if (firstScene) onSendToGenerate({ prompt: sceneDrafts[firstScene.id] || firstScene.generationPrompt, projectId: bundle.project.id, sceneId: firstScene.originalSceneId, versionId: firstScene.projectVersionId, duration: projectMediaType === "image" ? undefined : firstScene.duration, modelId: undefined });
-                    else onNavigateTool?.("video-gen");
-                  }}>
-                    <Video className="mr-2 h-4 w-4" />做同款
-                  </Button>
-                </div>
+
               </div>
 
               <div className="rounded-xl border border-border bg-background p-4">
@@ -600,7 +630,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
                           <Button size="sm" variant="outline" onClick={() => void retryScene(sceneVersion)} disabled={retryingSceneId === sceneVersion.id}>
                             {retryingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}Retry
                           </Button>
-                          <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: projectMediaType === "image" ? undefined : sceneVersion.duration, modelId: undefined })}>
+                          <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: projectMediaType === "image" ? undefined : sceneVersion.duration, modelId: undefined, hiddenReferenceImageUrl: scene?.keyframeUrls?.[0] })}>
                             <Video className="mr-2 h-4 w-4" />做同款
                           </Button>
                         </div>
@@ -697,16 +727,6 @@ export function VideoWorkflowCreate({ onSendToGenerate, onNavigateTool }: Props)
 }
 
 
-function CreditBadge({ status, className }: { status: CreditStatus | null; className?: string }) {
-  const balance = status?.balance ?? 0;
-
-  return (
-    <div className={cn("flex items-center gap-2 whitespace-nowrap rounded-full border border-[#D97757]/25 bg-background/95 px-3 py-1.5 text-xs font-semibold text-[#D97757] shadow-sm backdrop-blur", className)}>
-      <Coins className="h-3.5 w-3.5" />
-      <span>积分 {balance}</span>
-    </div>
-  );
-}
 function getSceneVersionHistory(bundle: Bundle, sceneVersion: SceneVersion) {
   return bundle.allSceneVersions
     .filter((version) => version.originalSceneId === sceneVersion.originalSceneId && version.projectVersionId === sceneVersion.projectVersionId)
@@ -717,6 +737,11 @@ function getSceneVersionHistory(bundle: Bundle, sceneVersion: SceneVersion) {
     });
 }
 function formatSceneAnalysis(sceneVersion: SceneVersion, mediaType: "video" | "image") {
+  if (sceneVersion.metadata?.analysisProvider === "fallback") {
+    const reason = textValue(sceneVersion.metadata?.fallbackReason) || "AI 分析服务暂不可用";
+    return `AI 分析未完成\n原因：${reason}\n\n当前没有生成可用的画面拆解或复刻 Prompt。请检查 KIE API Key / BYOK_ENCRYPTION_KEY / 平台分析 Key 配置后，点击该镜头的 Retry 重新分析。`;
+  }
+
   const sections: Array<[string, unknown]> = [
     ["画面复刻", pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])],
     ["角色/动作", `${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()],
@@ -738,6 +763,27 @@ function formatSceneAnalysis(sceneVersion: SceneVersion, mediaType: "video" | "i
     .join("\n\n");
 }
 
+function LanguageSelector({
+  value,
+  onChange,
+}: {
+  value: "zh" | "en";
+  onChange: (language: "zh" | "en") => void;
+}) {
+  return (
+    <label className="grid gap-2 text-sm font-medium">
+      输出语言
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value === "en" ? "en" : "zh")}
+        className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
+      >
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+      </select>
+    </label>
+  );
+}
 function ModelSelector({
   label,
   value,
