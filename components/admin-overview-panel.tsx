@@ -145,12 +145,28 @@ export function AdminOverviewPanel() {
   const [grantLoading, setGrantLoading] = useState(false);
   const [grantMessage, setGrantMessage] = useState("");
 
+  async function fetchJsonWithTimeout(url: string, timeoutMessage: string, init: RequestInit = {}, timeoutMs = 12000) {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, { ...init, signal: controller.signal });
+      const payload = await response.json().catch(() => ({}));
+      return { response, payload };
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        throw new Error(timeoutMessage);
+      }
+      throw err;
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
+  }
   async function loadOverview() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/admin/overview?days=14", { cache: "no-store" });
-      const payload = await response.json().catch(() => ({}));
+      const { response, payload } = await fetchJsonWithTimeout("/api/admin/overview?days=14", "后台统计查询超时，请稍后重试", { cache: "no-store" });
       if (!response.ok) throw new Error(payload.error || "Failed to load admin overview");
       setData(payload as AdminOverview);
     } catch (err) {
@@ -164,8 +180,7 @@ export function AdminOverviewPanel() {
     setManualPaymentLoading(true);
     setManualPaymentMessage("");
     try {
-      const response = await fetch("/api/admin/payments/manual?status=pending", { cache: "no-store" });
-      const payload = await response.json().catch(() => ({}));
+      const { response, payload } = await fetchJsonWithTimeout("/api/admin/payments/manual?status=pending", "待确认付款加载超时", { cache: "no-store" });
       if (!response.ok) throw new Error(payload.error || "待确认付款加载失败");
       setManualPayments(Array.isArray(payload.orders) ? payload.orders as ManualPaymentOrder[] : []);
     } catch (err) {

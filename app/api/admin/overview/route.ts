@@ -72,7 +72,6 @@ function isRecoverableAdminQueryError(error: unknown) {
   const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code) : "";
   return code === "42P01" || message.includes("does not exist") || message.includes("statement timeout") || message.includes("canceling statement");
 }
-
 async function safeAdminQuery<T>(label: string, promise: Promise<T>, fallback: T): Promise<T> {
   try {
     return await promise;
@@ -82,6 +81,7 @@ async function safeAdminQuery<T>(label: string, promise: Promise<T>, fallback: T
     return fallback;
   }
 }
+
 function touchUser(map: Map<string, UserUsage>, userId: string, createdAt: Date) {
   const existing = map.get(userId) || {
     userId,
@@ -140,17 +140,17 @@ export async function GET(request: NextRequest) {
     safeAdminQuery("video generations count", db.select({ count: count() }).from(videoGeneration), zeroCountRows),
     safeAdminQuery("workflow jobs count", db.select({ count: count() }).from(workflowJobs), zeroCountRows),
     safeAdminQuery("purchased users", db.select({ count: countDistinct(creditLedger.userId) }).from(creditLedger).where(isNotNull(creditLedger.packageId)), zeroCountRows),
-    safeAdminQuery("operation logs", db.query.operationLogs.findMany({ where: gte(operationLogs.createdAt, since), orderBy: [desc(operationLogs.createdAt)], limit: 10000 }), []),
-    safeAdminQuery("recent projects", db.query.projects.findMany({ where: gte(projects.createdAt, since), orderBy: [desc(projects.createdAt)], limit: 5000 }), []),
-    safeAdminQuery("recent generations", db.query.videoGeneration.findMany({ where: gte(videoGeneration.createdAt, since), orderBy: [desc(videoGeneration.createdAt)], limit: 5000 }), []),
-    safeAdminQuery("recent analysis history", db.query.analysisHistory.findMany({ where: gte(analysisHistory.createdAt, since), orderBy: [desc(analysisHistory.createdAt)], limit: 5000 }), []),
-    safeAdminQuery("recent audio analysis", db.query.audioAnalysis.findMany({ where: gte(audioAnalysis.createdAt, since), orderBy: [desc(audioAnalysis.createdAt)], limit: 5000 }), []),
-    safeAdminQuery("recent video clips", db.query.videoClip.findMany({ where: gte(videoClip.createdAt, since), orderBy: [desc(videoClip.createdAt)], limit: 5000 }), []),
-    safeAdminQuery("recent project assets", db.query.projectAssets.findMany({ where: gte(projectAssets.createdAt, since), orderBy: [desc(projectAssets.createdAt)], limit: 5000 }), []),
+    safeAdminQuery("operation logs", db.query.operationLogs.findMany({ where: gte(operationLogs.createdAt, since), orderBy: [desc(operationLogs.createdAt)], limit: 3000 }), []),
+    safeAdminQuery("recent projects", db.query.projects.findMany({ where: gte(projects.createdAt, since), orderBy: [desc(projects.createdAt)], limit: 1000 }), []),
+    safeAdminQuery("recent generations", db.query.videoGeneration.findMany({ where: gte(videoGeneration.createdAt, since), orderBy: [desc(videoGeneration.createdAt)], limit: 1000 }), []),
+    safeAdminQuery("recent analysis history", db.query.analysisHistory.findMany({ where: gte(analysisHistory.createdAt, since), orderBy: [desc(analysisHistory.createdAt)], limit: 1000 }), []),
+    safeAdminQuery("recent audio analysis", db.query.audioAnalysis.findMany({ where: gte(audioAnalysis.createdAt, since), orderBy: [desc(audioAnalysis.createdAt)], limit: 1000 }), []),
+    safeAdminQuery("recent video clips", db.query.videoClip.findMany({ where: gte(videoClip.createdAt, since), orderBy: [desc(videoClip.createdAt)], limit: 1000 }), []),
+    safeAdminQuery("recent project assets", db.query.projectAssets.findMany({ where: gte(projectAssets.createdAt, since), orderBy: [desc(projectAssets.createdAt)], limit: 1000 }), []),
     safeAdminQuery("recent users", db.query.user.findMany({ orderBy: [desc(user.createdAt)], limit: 8 }), []),
-    safeAdminQuery("all users", db.query.user.findMany({ limit: 10000 }), []),
-    safeAdminQuery("project owners", db.query.projects.findMany({ limit: 20000 }), []),
-    safeAdminQuery("daily visits", db.query.dailyVisits.findMany({ where: gte(dailyVisits.date, dayKey(since)), orderBy: [desc(dailyVisits.createdAt)], limit: 50000 }), []),
+    safeAdminQuery("all users", db.query.user.findMany({ limit: 3000 }), []),
+    safeAdminQuery("project owners", db.query.projects.findMany({ limit: 3000 }), []),
+    safeAdminQuery("daily visits", db.query.dailyVisits.findMany({ where: gte(dailyVisits.date, dayKey(since)), orderBy: [desc(dailyVisits.createdAt)], limit: 5000 }), []),
   ]);
   const daily = makeDailyWindow(days);
   const dailyMap = new Map(daily.map((item) => [item.date, item]));
