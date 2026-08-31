@@ -21,6 +21,14 @@ const MAX_SCENE_SECONDS = Number(process.env.MAX_SCENE_SECONDS || 8);
 const MIN_SCENE_SECONDS = Number(process.env.MIN_SCENE_SECONDS || 0.6);
 const FFMPEG_PATH = process.env.FFMPEG_PATH || "ffmpeg";
 const FFPROBE_PATH = process.env.FFPROBE_PATH || "ffprobe";
+const PYTHON_PATH = process.env.PYTHON_PATH || "python3";
+const PYSCENEDETECT_ENABLED = process.env.PYSCENEDETECT_ENABLED !== "false";
+const PYSCENEDETECT_SCRIPT_PATH = process.env.PYSCENEDETECT_SCRIPT_PATH || path.join(process.cwd(), "scene-detect.py");
+const PYSCENEDETECT_DETECTOR = ["adaptive", "content"].includes(process.env.PYSCENEDETECT_DETECTOR)
+  ? process.env.PYSCENEDETECT_DETECTOR
+  : "adaptive";
+const PYSCENEDETECT_THRESHOLD = Number(process.env.PYSCENEDETECT_THRESHOLD || 27);
+const PYSCENEDETECT_ADAPTIVE_THRESHOLD = Number(process.env.PYSCENEDETECT_ADAPTIVE_THRESHOLD || 3);
 const YTDLP_PATH = process.env.YTDLP_PATH || "yt-dlp";
 const YTDLP_COOKIES_FILE = process.env.YTDLP_COOKIES_FILE || "";
 const YTDLP_COOKIES_FROM_BROWSER = process.env.YTDLP_COOKIES_FROM_BROWSER || "";
@@ -214,6 +222,51 @@ async function detectSceneCuts(inputPath) {
   }
 }
 
+function parsePySceneDetectCuts(payload, duration) {
+  const scenes = Array.isArray(payload?.scenes) ? payload.scenes : [];
+  return scenes
+    .map((scene) => Number(scene.start))
+    .filter((seconds) => Number.isFinite(seconds) && seconds > MIN_SCENE_SECONDS && seconds < duration - MIN_SCENE_SECONDS)
+    .map((seconds) => Number(seconds.toFixed(3)));
+}
+
+async function detectSceneCutsWithPySceneDetect(inputPath, metadata) {
+  if (!PYSCENEDETECT_ENABLED) return null;
+  try {
+    const { stdout } = await run(PYTHON_PATH, [
+      PYSCENEDETECT_SCRIPT_PATH,
+      "--input", inputPath,
+      "--detector", PYSCENEDETECT_DETECTOR,
+      "--threshold", String(PYSCENEDETECT_THRESHOLD),
+      "--adaptive-threshold", String(PYSCENEDETECT_ADAPTIVE_THRESHOLD),
+      "--min-scene-seconds", String(MIN_SCENE_SECONDS),
+      "--fps", String(metadata.fps || 30),
+    ]);
+    const payload = JSON.parse(stdout);
+    const cuts = parsePySceneDetectCuts(payload, metadata.duration);
+    return {
+      provider: "pyscenedetect",
+      detector: payload.detector || PYSCENEDETECT_DETECTOR,
+      cuts: [...new Set(cuts)].sort((a, b) => a - b),
+      rawSceneCount: Array.isArray(payload.scenes) ? payload.scenes.length : 0,
+    };
+  } catch (error) {
+    console.warn("PySceneDetect failed, falling back to FFmpeg scene detection:", error.message);
+    return null;
+  }
+}
+
+async function detectSceneCutsWithFallback(inputPath, metadata) {
+  const pySceneDetectResult = await detectSceneCutsWithPySceneDetect(inputPath, metadata);
+  if (pySceneDetectResult) return pySceneDetectResult;
+  return {
+    provider: "ffmpeg_scene_filter",
+    detector: "scene",
+    cuts: await detectSceneCuts(inputPath),
+    rawSceneCount: undefined,
+  };
+}
+
 function buildBoundaries(cuts, duration) {
   const raw = [0, ...cuts.filter((cut) => cut > MIN_SCENE_SECONDS && cut < duration - MIN_SCENE_SECONDS), duration];
   const normalized = [];
@@ -364,11 +417,11 @@ async function handleBreakdown(req, res) {
     await download(body.videoUrl, inputPath);
     const metadata = await probeVideo(inputPath);
     if (!metadata.duration || metadata.duration <= 0) throw new Error("Unable to determine video duration");
-    const cuts = await detectSceneCuts(inputPath);
-    const boundaries = buildBoundaries(cuts, metadata.duration);
+    const sceneDetection = await detectSceneCutsWithFallback(inputPath, metadata);
+    const boundaries = buildBoundaries(sceneDetection.cuts, metadata.duration);
     const projectKey = `workflow/${randomUUID()}`;
     const scenes = await extractSceneAssets(inputPath, workDir, projectKey, boundaries, metadata);
-    return json(res, 200, { metadata, scenes });
+    return json(res, 200, { metadata: { ...metadata, sceneDetection }, scenes });
   } finally {
     await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
   }

@@ -1,0 +1,13 @@
+.git
+.next
+node_modules
+public
+coverage
+playwright-report
+test-results
+*.log
+*.mp4
+*.gif
+*.png
+*.jpg
+*.jpeg

@@ -1,6 +1,6 @@
 # Prompt Lens FFmpeg Worker
 
-Cloud Run worker for V2 video breakdown.
+Cloud Run worker for V2 video breakdown. Scene boundary detection uses PySceneDetect first, then falls back to FFmpeg scene filtering if PySceneDetect is unavailable or fails.
 
 ## Endpoints
 
@@ -82,6 +82,12 @@ R2_PUBLIC_URL=
 SCENE_THRESHOLD=0.32
 MAX_SCENE_SECONDS=8
 MIN_SCENE_SECONDS=0.6
+PYSCENEDETECT_ENABLED=true
+PYSCENEDETECT_DETECTOR=adaptive
+PYSCENEDETECT_THRESHOLD=27
+PYSCENEDETECT_ADAPTIVE_THRESHOLD=3
+PYTHON_PATH=python3
+PYSCENEDETECT_SCRIPT_PATH=/app/scene-detect.py
 YTDLP_PATH=yt-dlp
 YTDLP_JS_RUNTIME=node
 YTDLP_COOKIES_FILE=
@@ -104,7 +110,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-w
 
 The script loads .env.local, derives R2_ENDPOINT from R2_ACCOUNT_ID when needed, and serves http://localhost:8080.
 
-The Dockerfile installs `yt-dlp` for `/resolve-media`. TikTok and Douyin availability can vary by region, anti-bot checks, or expired share links; if production links fail, deploy the worker in a reachable region and consider adding cookie/proxy handling later.
+The Dockerfile installs `yt-dlp` for `/resolve-media` and `scenedetect-headless` for `/breakdown`. TikTok and Douyin availability can vary by region, anti-bot checks, or expired share links; if production links fail, deploy the worker in a reachable region and consider adding cookie/proxy handling later.
 
 ## YouTube bot checks
 

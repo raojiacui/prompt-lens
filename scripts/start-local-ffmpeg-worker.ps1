@@ -83,6 +83,22 @@ try {
   if (-not $env:R2_ENDPOINT -and $env:R2_ACCOUNT_ID) {
     $env:R2_ENDPOINT = "https://$($env:R2_ACCOUNT_ID).r2.cloudflarestorage.com"
   }
+  if (-not $env:PYTHON_PATH) {
+    $python310 = $null
+    if (Test-Command "py") {
+      $python310 = (& py -3.10 -c "import sys; print(sys.executable)" 2>$null).Trim()
+    }
+    if ($python310 -and (Test-Path -LiteralPath $python310)) {
+      $env:PYTHON_PATH = $python310
+    } elseif (Test-Command "python3") {
+      $env:PYTHON_PATH = "python3"
+    } elseif (Test-Command "python") {
+      $env:PYTHON_PATH = "python"
+    }
+  }
+  if (-not $env:PYSCENEDETECT_SCRIPT_PATH) {
+    $env:PYSCENEDETECT_SCRIPT_PATH = Join-Path $root "workers\ffmpeg-worker\scene-detect.py"
+  }
 
   if (-not $env:FFMPEG_PATH) {
     $localFfmpeg = Get-FirstExistingPath @(
