@@ -1,4 +1,4 @@
-﻿import { getUserKieApiKey } from "@/lib/byok/kie";
+import { getUserKieApiKey } from "@/lib/byok/kie";
 import { getPlatformKieApiKey } from "@/lib/billing/platform-access";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
@@ -84,8 +84,37 @@ function outputLanguage(value: unknown): "zh" | "en" {
 
 function outputLanguageInstruction(value: unknown) {
   return outputLanguage(value) === "zh"
-    ? "Output language: Simplified Chinese. Keep JSON keys in English, but write all human-readable values, explanations, prompts, dialogue notes, audio notes, and metadata text in Simplified Chinese."
+    ? "Output language: Simplified Chinese. Keep JSON keys in English. Every human-readable string value must be Simplified Chinese, especially generationPrompt. Do not write generationPrompt in English. Translate cinematic terms into natural Chinese where possible."
     : "Output language: English. Keep JSON keys in English and write all human-readable values in English.";
+}
+
+function looksMostlyEnglish(value: string) {
+  const letters = (value.match(/[A-Za-z]/g) || []).length;
+  const chinese = (value.match(/[\u4e00-\u9fff]/g) || []).length;
+  return letters > 80 && letters > chinese * 4;
+}
+
+function composeChineseGenerationPrompt(raw: Record<string, unknown>, fallback: SceneBlueprintDraft) {
+  const visual = { ...fallback.visual, ...safeObject(raw.visual) };
+  const story = { ...fallback.story, ...safeObject(raw.story) };
+  const transition = { ...fallback.transition, ...safeObject(raw.transition) };
+  const parts = [
+    pickText(story, ["summary", "beat", "role"]),
+    pickText(visual, ["sceneDescription", "subject"]),
+    pickText(visual, ["characters"]),
+    pickText(visual, ["environment"]),
+    pickText(visual, ["action", "motion"]),
+    pickText(visual, ["camera", "composition"]),
+    pickText(visual, ["lighting", "color", "style"]),
+    pickText(transition, ["in", "out", "rhythm"]),
+  ].filter(Boolean);
+  return parts.length
+    ? `中文画面复刻 Prompt：${parts.join("。")}`
+    : fallback.generationPrompt;
+}
+
+function pickText(value: Record<string, unknown>, keys: string[]) {
+  return keys.map((key) => text(value[key])).filter(Boolean).join("；");
 }
 
 function parseJsonObject(raw: string) {
@@ -190,14 +219,15 @@ async function callAnalysisChatJson(params: {
   return { json: parseJsonObject(content), ...selected };
 }
 
-export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: string, audioContext?: SceneAudioContext): SceneBlueprintDraft {
-  const label = `Scene ${String(scene.sceneIndex).padStart(2, "0")}`;
+export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: string, audioContext?: SceneAudioContext, language?: "zh" | "en"): SceneBlueprintDraft {
+  const zh = outputLanguage(language) === "zh";
+  const label = zh ? `镜头 ${String(scene.sceneIndex).padStart(2, "0")}` : `Scene ${String(scene.sceneIndex).padStart(2, "0")}`;
   const timeRange = `${scene.startTime.toFixed(1)}s-${scene.endTime.toFixed(1)}s`;
   return {
     story: {
-      summary: `${label} covers ${timeRange} and should be reviewed against the extracted clip/keyframe before final generation.`,
-      role: scene.sceneIndex === 1 ? "opening hook" : "continuation beat",
-      beat: "Preserve the original timing and scene intent.",
+      summary: zh ? `${label} 覆盖 ${timeRange}，生成前需要结合提取的视频片段或关键帧复核。` : `${label} covers ${timeRange} and should be reviewed against the extracted clip/keyframe before final generation.`,
+      role: zh ? (scene.sceneIndex === 1 ? "开场钩子" : "承接段落") : (scene.sceneIndex === 1 ? "opening hook" : "continuation beat"),
+      beat: zh ? "保留原始时长、节奏和镜头意图。" : "Preserve the original timing and scene intent.",
     },
     visual: {
       sceneDescription: "Describe every visible element in the frame precisely enough for text-to-video recreation.",
@@ -234,12 +264,19 @@ export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: st
         keyframes: "Describe visible zoom, pan, scale, opacity, or position keyframes if present.",
       },
     },
-    generationPrompt: `${label}: visual-first text-to-video recreation prompt for ${timeRange}. Prioritize the exact visible image over music or editing guesses. Preserve duration (${scene.duration.toFixed(1)}s), subject identity, character appearance, wardrobe, expression, pose, environment, props, background layers, action sequence, shot size, camera angle, camera movement, composition, lighting direction, color palette, texture, realism level, and motion continuity. Mention audio or editing only as secondary constraints when they are evident. Describe the frame in concrete nouns and motion verbs so another AI video model can reproduce the reference shot without seeing the source video.`,
-    metadata: { analysisProvider: "fallback", fallbackReason: reason || "KIE analysis unavailable", transcriptionProvider: audioContext?.audio.transcriptionProvider, transcriptionModel: audioContext?.audio.transcriptionModel, transcriptionTaskId: audioContext?.audio.transcriptionTaskId },
+    generationPrompt: zh
+      ? `${label} AI 分析未完成，暂时没有生成可用的画面复刻 Prompt。原因：${reason || "AI 分析服务暂不可用"}。请检查 KIE API Key 或平台分析 Key 配置后点击 Retry 重新分析。`
+      : `${label} AI analysis did not complete, so no usable recreation prompt was generated. Reason: ${reason || "AI analysis service unavailable"}. Check the KIE API key or platform analysis key, then click Retry.`,
+    metadata: { analysisProvider: "fallback", fallbackReason: reason || (zh ? "AI 分析暂不可用" : "KIE analysis unavailable"), transcriptionProvider: audioContext?.audio.transcriptionProvider, transcriptionModel: audioContext?.audio.transcriptionModel, transcriptionTaskId: audioContext?.audio.transcriptionTaskId },
   };
 }
 
-function normalizeBlueprint(raw: Record<string, unknown>, fallback: SceneBlueprintDraft, provider: string): SceneBlueprintDraft {
+function normalizeBlueprint(raw: Record<string, unknown>, fallback: SceneBlueprintDraft, provider: string, language?: "zh" | "en"): SceneBlueprintDraft {
+  const rawGenerationPrompt = text(raw.generationPrompt, fallback.generationPrompt);
+  const generationPrompt = outputLanguage(language) === "zh" && looksMostlyEnglish(rawGenerationPrompt)
+    ? composeChineseGenerationPrompt(raw, fallback)
+    : rawGenerationPrompt;
+
   return {
     story: { ...fallback.story, ...safeObject(raw.story) },
     visual: { ...fallback.visual, ...safeObject(raw.visual) },
@@ -248,7 +285,7 @@ function normalizeBlueprint(raw: Record<string, unknown>, fallback: SceneBluepri
     subtitle: safeArray(raw.subtitle).length ? safeArray(raw.subtitle) : fallback.subtitle,
     audio: { ...fallback.audio, ...safeObject(raw.audio) },
     transition: { ...fallback.transition, ...safeObject(raw.transition) },
-    generationPrompt: text(raw.generationPrompt, fallback.generationPrompt),
+    generationPrompt,
     metadata: { ...safeObject(raw.metadata), analysisProvider: provider, analyzedAt: new Date().toISOString() },
   };
 }
@@ -258,7 +295,7 @@ export async function analyzeSceneBlueprint(params: {
   scene: FfmpegSceneAsset;
   context: SceneContext;
 } & AiModelSelection) {
-  const fallback = buildFallbackSceneBlueprint(params.scene, undefined, params.context.audio);
+  const fallback = buildFallbackSceneBlueprint(params.scene, undefined, params.context.audio, outputLanguage(params.outputLanguage));
   try {
     const raw = await callAnalysisChatJson({
       userId: params.userId,
@@ -273,7 +310,7 @@ export async function analyzeSceneBlueprint(params: {
         "For music and editing, only describe observable or inferable style, rhythm, or basic techniques. Do not claim exact BGM title, software operations, masks, keyframes, or effects unless there is clear visual/audio evidence.",
         "Do not invent brand names or dialogue unless visible/audible evidence supports it. If something is uncertain, say unknown rather than hallucinating.",
         "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. transition must include editing.pacing and editing.techniques.",
-        "generationPrompt must be a long, directly usable text-to-video prompt. Put visual reconstruction first; put dialogue/audio/editing constraints after the visual description and mark uncertain items as possible/unknown.",
+        "generationPrompt must be a long, directly usable text-to-video prompt. Put visual reconstruction first; put dialogue/audio/editing constraints after the visual description and mark uncertain items as possible/unknown. generationPrompt must use the selected output language, not English unless outputLanguage is English.",
         outputLanguageInstruction(params.outputLanguage),
       ].join(" "),
       content: [
@@ -287,18 +324,18 @@ export async function analyzeSceneBlueprint(params: {
             `Next summary: ${params.context.nextSummary || "none"}`,
             `Transcript/dialogue context from KIE speech-to-text: ${compactJson(params.context.audio || {})}`,
             outputLanguageInstruction(params.outputLanguage),
-            "Output a detailed shot script with visual reconstruction as the highest priority. Include: 1) sceneDescription: exhaustive visible-frame reconstruction; 2) subject and characters: identity, appearance, wardrobe, expression, pose; 3) environment, props, background layers; 4) action sequence with temporal order; 5) camera: shot size, angle, lens feel, movement, focus, speed; 6) composition: foreground/midground/background, subject placement, depth; 7) lighting, color grading, texture, realism; 8) generationPrompt: a self-contained visual-first text-to-video prompt detailed enough to recreate roughly 90% of the scene without source media; 9) audio: transcript/dialogue and broad sound style only; 10) editing: basic transition/rhythm notes with confidence, avoid overclaiming. Preserve transcript timing when present.",
+            "Output a detailed shot script with visual reconstruction as the highest priority. Include: 1) sceneDescription: exhaustive visible-frame reconstruction; 2) subject and characters: identity, appearance, wardrobe, expression, pose; 3) environment, props, background layers; 4) action sequence with temporal order; 5) camera: shot size, angle, lens feel, movement, focus, speed; 6) composition: foreground/midground/background, subject placement, depth; 7) lighting, color grading, texture, realism; 8) generationPrompt: a self-contained visual-first text-to-video prompt detailed enough to recreate roughly 90% of the scene without source media, written in the selected output language; 9) audio: transcript/dialogue and broad sound style only; 10) editing: basic transition/rhythm notes with confidence, avoid overclaiming. Preserve transcript timing when present.",
           ].join("\n"),
         },
         ...params.scene.keyframeUrls.slice(0, 3).map((url) => ({ type: "image_url", image_url: { url } })),
         ...(!params.scene.keyframeUrls.length && params.scene.clipUrl ? [{ type: "video_url", video_url: { url: params.scene.clipUrl } }] : []),
       ],
     });
-    if (!raw) return buildFallbackSceneBlueprint(params.scene, "Selected analysis provider API key not configured", params.context.audio);
-    const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider);
+    if (!raw) return buildFallbackSceneBlueprint(params.scene, "Selected analysis provider API key not configured", params.context.audio, outputLanguage(params.outputLanguage));
+    const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider, outputLanguage(params.outputLanguage));
     return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority } };
   } catch (error) {
-    return buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "Scene analysis failed", params.context.audio);
+    return buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "Scene analysis failed", params.context.audio, outputLanguage(params.outputLanguage));
   }
 }
 
@@ -367,7 +404,7 @@ export async function analyzeImageBlueprint(params: {
         "Be concrete and exhaustive about the visible image: objects, characters, wardrobe, expressions, pose, props, background layers, camera language, lighting, color, composition, style, texture, and any motion implied by the still frame.",
         "Do not invent brand names, dialogue, audio, music, or editing techniques. There is no audio, dialogue, or video editing in a static image.",
         "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. dialogue, narration, and subtitle must be empty arrays. audio must only note that no audio is available. transition.editing.pacing must be 'None' and transition.editing.techniques must be an empty array.",
-        "generationPrompt must be a long, directly usable text-to-image/video prompt focused entirely on visual reconstruction. Mark uncertain visual details as possible/unknown.",
+        "generationPrompt must be a long, directly usable text-to-image/video prompt focused entirely on visual reconstruction. Mark uncertain visual details as possible/unknown. generationPrompt must use the selected output language, not English unless outputLanguage is English.",
         outputLanguageInstruction(params.outputLanguage),
       ].join(" "),
       content: [
@@ -378,7 +415,7 @@ export async function analyzeImageBlueprint(params: {
             `Scene index: ${params.scene.sceneIndex} of ${params.context.sceneCount}`,
             outputLanguageInstruction(params.outputLanguage),
             "This is a single still image. There is no audio, dialogue, subtitle, or video editing to analyze.",
-            "Output a detailed visual shot script: 1) sceneDescription: exhaustive visible-frame reconstruction; 2) subject and characters: identity, appearance, wardrobe, expression, pose; 3) environment, props, background layers; 4) implied action or static pose; 5) camera: shot size, angle, lens feel, focus, framing; 6) composition: foreground/midground/background, subject placement, depth; 7) lighting, color grading, texture, realism; 8) generationPrompt: a self-contained visual-first recreation prompt detailed enough to recreate the image without source media. Leave dialogue/narration/subtitle empty, audio empty/placeholder, and transition/editing minimal/empty.",
+            "Output a detailed visual shot script: 1) sceneDescription: exhaustive visible-frame reconstruction; 2) subject and characters: identity, appearance, wardrobe, expression, pose; 3) environment, props, background layers; 4) implied action or static pose; 5) camera: shot size, angle, lens feel, focus, framing; 6) composition: foreground/midground/background, subject placement, depth; 7) lighting, color grading, texture, realism; 8) generationPrompt: a self-contained visual-first recreation prompt detailed enough to recreate the image without source media, written in the selected output language. Leave dialogue/narration/subtitle empty, audio empty/placeholder, and transition/editing minimal/empty.",
           ].join("\n"),
         },
         ...params.scene.keyframeUrls.slice(0, 3).map((url) => ({ type: "image_url", image_url: { url } })),
@@ -386,7 +423,7 @@ export async function analyzeImageBlueprint(params: {
       ],
     });
     if (!raw) return buildFallbackImageBlueprint(params.scene, "Selected analysis provider API key not configured");
-    const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider);
+    const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider, outputLanguage(params.outputLanguage));
     return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority, mediaType: "image" } };
   } catch (error) {
     return buildFallbackImageBlueprint(params.scene, error instanceof Error ? error.message : "Image analysis failed");
@@ -462,7 +499,7 @@ export async function rewriteSceneBlueprint(params: SceneRewriteInput): Promise<
       ],
     });
     if (!raw) return fallback;
-    const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider);
+    const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider, outputLanguage(params.outputLanguage));
     return { ...blueprint, metadata: { ...fallback.metadata, ...(blueprint.metadata || {}), rewriteProvider: raw.provider, analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority, rewrittenAt: new Date().toISOString() } };
   } catch {
     return fallback;

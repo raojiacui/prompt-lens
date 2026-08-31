@@ -1,7 +1,8 @@
-import { db, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
+import { db, projectAssets, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
 import { InsufficientCreditsError } from "@/lib/billing/credits";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import { breakdownVideoWithWorker, resolveLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
+import { deleteFromR2, extractR2Key } from "@/lib/cloudflare/r2";
 import { routeModel } from "@/lib/ai/model-registry";
 import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 import { buildSceneAudioContexts, transcribeMediaWithKie, type SceneAudioContext } from "@/lib/workflow/transcription";
@@ -207,11 +208,55 @@ export async function createProject(userId: string, title: string, description?:
   return project;
 }
 
+function addR2Key(keys: Set<string>, value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return;
+  const key = value.includes("://") ? extractR2Key(value) : value.replace(/^\/+/, "");
+  if (key) keys.add(key);
+}
+
+function addR2KeysFromJsonArray(keys: Set<string>, value: unknown) {
+  if (!Array.isArray(value)) return;
+  value.forEach((item) => addR2Key(keys, item));
+}
+
+async function collectProjectR2Keys(projectId: string) {
+  const keys = new Set<string>();
+  const [refs, scenes, sceneVersionRows, assets] = await Promise.all([
+    db.query.referenceVideos.findMany({ where: eq(referenceVideos.projectId, projectId) }),
+    db.query.videoScenes.findMany({ where: eq(videoScenes.projectId, projectId) }),
+    db.query.sceneVersions.findMany({ where: eq(sceneVersions.projectId, projectId) }),
+    db.query.projectAssets.findMany({ where: eq(projectAssets.projectId, projectId) }),
+  ]);
+
+  refs.forEach((reference) => {
+    addR2Key(keys, reference.storageKey);
+    addR2Key(keys, reference.sourceUrl);
+  });
+  scenes.forEach((scene) => {
+    addR2Key(keys, scene.clipUrl);
+    addR2KeysFromJsonArray(keys, scene.keyframeUrls);
+    addR2Key(keys, scene.audioUrl);
+  });
+  sceneVersionRows.forEach((sceneVersion) => {
+    addR2Key(keys, sceneVersion.generatedVideoUrl);
+  });
+  assets.forEach((asset) => {
+    addR2Key(keys, asset.storageKey);
+    addR2Key(keys, asset.url);
+  });
+
+  return Array.from(keys);
+}
+
 export async function deleteProjectForUser(projectId: string, userId: string) {
   const project = await getProjectForUser(projectId, userId);
   if (!project) throw new Error("Project not found");
+  const r2Keys = await collectProjectR2Keys(projectId);
+  for (const key of r2Keys) {
+    await deleteFromR2(key);
+  }
   await db.delete(projects).where(eq(projects.id, projectId));
-  return { success: true };
+  return { success: true, deletedR2Objects: r2Keys.length };
 }
 
 export async function runVideoBreakdown(params: {
@@ -313,7 +358,7 @@ export async function runVideoBreakdown(params: {
         storageKey: effectiveStorageKey,
         fileName: effectiveMediaName,
         mimeType: imageMimeType,
-        duration: isImage ? 0 : breakdown.metadata.duration,
+        duration: isImage ? 0 : Math.round(breakdown.metadata.duration || 0),
         metadata: { ...breakdown.metadata, linkedMedia: linkedMediaMetadata, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } },
       })
       .returning();
