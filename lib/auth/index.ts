@@ -54,7 +54,7 @@ export const auth = betterAuth({
     },
     cookies: {
       sessionToken: {
-        name: "better-auth.session_token",
+        name: "prompt-lens.session_token",
         attributes: {
           path: "/",
           sameSite: "lax",
@@ -248,3 +248,4 @@ export async function getAdminUserFromHeaders(headers: Headers): Promise<Current
 export async function isAdmin(userId: string): Promise<boolean> {
   return Boolean(await getAdminUser(userId));
 }
+
