@@ -14,7 +14,6 @@ import { authClient } from "@/lib/auth/auth-client";
 export function LoginClient({ defaultCallbackUrl = "/dashboard" }: { defaultCallbackUrl?: string }) {
   const router = useRouter();
   const { data: session } = authClient.useSession();
-  const isLocalDevAuth = process.env.NODE_ENV === "development";
 
   useEffect(() => {
     if (session?.user) {
@@ -29,36 +28,6 @@ export function LoginClient({ defaultCallbackUrl = "/dashboard" }: { defaultCall
   const [error, setError] = useState("");
   const [countdown, setCountdown] = useState(0);
 
-
-  const handleLocalDevSignIn = async () => {
-    if (!isLocalDevAuth) return;
-    setLoading(true);
-    setError("");
-
-    try {
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const response = await fetch(`${baseUrl}/api/dev-auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        window.location.href = defaultCallbackUrl;
-        return;
-      }
-
-      const data = await response.json().catch(() => null) as { message?: string; error?: string } | null;
-      const message = data?.message || data?.error || "本地登录失败";
-
-      setError(message);
-    } catch {
-      setError("本地登录失败，请重试");
-    } finally {
-      setLoading(false);
-    }
-  };
   const handleOAuthSignIn = async (provider: "google" | "github") => {
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
     try {
@@ -209,21 +178,6 @@ export function LoginClient({ defaultCallbackUrl = "/dashboard" }: { defaultCall
           </CardHeader>
 
           <CardContent className="space-y-4 pt-2">
-            {isLocalDevAuth && (
-              <div className="rounded-2xl border border-[#D8D5CC] bg-white/70 p-3 shadow-sm">
-                <Button
-                  onClick={handleLocalDevSignIn}
-                  disabled={loading}
-                  className="h-12 w-full rounded-xl bg-[#141413] text-white hover:bg-[#2B2A27]"
-                >
-                  {loading ? <Spinner className="h-5 w-5" /> : "本地开发登录"}
-                </Button>
-                <p className="mt-2 text-center text-xs text-[#6B6860]">
-                  仅 development 环境可用，会创建一个匿名测试会话
-                </p>
-                {error && <p className="mt-2 text-center text-sm text-red-500">{error}</p>}
-              </div>
-            )}
             {/* Google 登录 */}
             <Button
               onClick={() => handleOAuthSignIn("google")}

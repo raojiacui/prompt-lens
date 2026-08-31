@@ -3,6 +3,10 @@ import type { NextRequest } from "next/server";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "./i18n/config";
 
 export function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
   // 1. 解析 locale：cookie 优先，未命中检测 Accept-Language
   const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
   const acceptLang = request.headers.get("accept-language") ?? "";
