@@ -1,4 +1,4 @@
-﻿export type CreditPackageScope = "video_analysis" | "video_generation" | "audio_generation" | "video_edit";
+export type CreditPackageScope = "video_analysis" | "audio_generation" | "video_edit";
 
 export type CreditPackage = {
   id: string;
@@ -41,14 +41,6 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     priceCny: 105,
     description: "适合高频拆解参考视频和团队集中分析，AI 修改脚本免费",
     scopes: ["video_analysis"],
-  },
-  {
-    id: "creation_360",
-    name: "成片创作包",
-    credits: 360,
-    priceCny: 199,
-    description: "适合视频分析后直接生成同款视频，包含平台 KIE 视频分析与视频生成额度",
-    scopes: ["video_analysis", "video_generation"],
   },
 ];
 

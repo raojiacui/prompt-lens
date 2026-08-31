@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ interface ApiKey {
   isActive: boolean;
   createdAt: string;
   apiKey: string;
+  decryptError?: boolean;
 }
 
 export function ApiKeySettings() {
@@ -149,13 +150,17 @@ export function ApiKeySettings() {
                       <span className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>
                         {t("kieName")}
                       </span>
-                      {key.isActive && (
+                      {key.decryptError ? (
+                        <span className="rounded bg-[var(--color-error)]/10 px-2 py-0.5 text-xs text-[var(--color-error)]">
+                          需要重新保存
+                        </span>
+                      ) : key.isActive ? (
                         <span className="rounded bg-[var(--color-success)]/10 px-2 py-0.5 text-xs text-[var(--color-success)]">
                           {t("active")}
                         </span>
-                      )}
+                      ) : null}
                     </div>
-                    <p className="mt-1 font-mono text-sm text-[var(--color-text-secondary)]">{key.apiKey}</p>
+                    <p className={`mt-1 font-mono text-sm ${key.decryptError ? "text-[var(--color-error)]" : "text-[var(--color-text-secondary)]"}`}>{key.apiKey}</p>
                     <p className="mt-1 text-xs text-[var(--color-text-muted)]">
                       {t("addedAt", { date: new Date(key.createdAt).toLocaleDateString("zh-CN") })}
                     </p>

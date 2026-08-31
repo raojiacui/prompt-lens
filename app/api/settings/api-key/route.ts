@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, userApiKeys } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
 
     const sanitizedKeys = apiKeys.map((key) => {
       let displayKey = "••••••••";
+      let decryptError = false;
       try {
         if (isValidEncryptedKey(key.apiKey)) {
           const decrypted = decryptApiKey(key.apiKey);
@@ -28,6 +29,8 @@ export async function GET(request: NextRequest) {
           displayKey = key.apiKey.substring(0, 8) + "••••••••" + key.apiKey.substring(key.apiKey.length - 4);
         }
       } catch (e) {
+        decryptError = true;
+        displayKey = "无法解密，请删除后重新保存";
         console.error("Failed to decrypt API key:", e);
       }
 
@@ -37,6 +40,7 @@ export async function GET(request: NextRequest) {
         isActive: key.isActive,
         createdAt: key.createdAt,
         apiKey: displayKey,
+        decryptError,
       };
     });
 
