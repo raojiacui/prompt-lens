@@ -9,7 +9,7 @@ const featureIcons = [Film, Wand2, Mic2, Scissors];
 const featureKeys = ["featureAnalyze", "featureGen", "featureAudio", "featureEdit"] as const;
 const tabMap = ["analyze", "videoGen", "audio", "edit"];
 const demoVideos = [
-  "/feature-video-analysis.mp4",
+  "/remotion/landing-ad/prompt-lens-core-workflow-demo.mp4",
   "/feature-video-generation.mp4",
   "/feature-audio-recognition.mp4",
   "/feature-video-edit.mp4",

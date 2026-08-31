@@ -9,12 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 
-const pricingKeys = ["pricingByok", "pricingLong", "pricingStandard", "pricingPro", "pricingCreation"] as const;
+const pricingKeys = ["pricingByok", "pricingLong", "pricingStandard", "pricingPro"] as const;
 const packageByPricingKey: Partial<Record<(typeof pricingKeys)[number], string>> = {
   pricingLong: "starter_10",
   pricingStandard: "studio_80",
   pricingPro: "pro_220",
-  pricingCreation: "creation_360",
 };
 
 const paymentMethods = [
@@ -116,9 +115,9 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {pricingKeys.map((key) => {
-            const highlighted = key === "pricingCreation";
+            const highlighted = false;
             const packageId = packageByPricingKey[key];
             return (
               <article
