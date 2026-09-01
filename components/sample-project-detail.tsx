@@ -1,0 +1,316 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import Link from "next/link";
+import { ArrowLeft, ChevronLeft, ChevronRight, Copy, FileVideo, Image as ImageIcon } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+type Project = { id: string; title: string; status: string; updatedAt: string; metadata?: Record<string, unknown> };
+type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown> };
+type Scene = { id: string; sceneIndex: number; startTime: number; endTime: number; duration: number; clipUrl?: string | null; keyframeUrls: string[]; status: string; error?: string | null };
+type SceneVersion = {
+  id: string;
+  projectVersionId: string;
+  originalSceneId: string;
+  sceneIndex: number;
+  story: Record<string, unknown>;
+  visual: Record<string, unknown>;
+  dialogue: unknown[];
+  subtitle: unknown[];
+  audio: Record<string, unknown>;
+  transition: Record<string, unknown>;
+  generationPrompt: string;
+  duration: number;
+  metadata?: Record<string, unknown>;
+  createdAt?: string;
+};
+type Bundle = {
+  project: Project;
+  versions: Version[];
+  activeVersion: Version | null;
+  scenes: Scene[];
+  sceneVersions: SceneVersion[];
+  allSceneVersions: SceneVersion[];
+  referenceVideos: Array<{ sourceUrl: string; fileName?: string | null; duration?: number | null }>;
+};
+
+export function SampleProjectDetail({ sampleId }: { sampleId: string }) {
+  const [bundle, setBundle] = useState<Bundle | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedSceneVersionIds, setSelectedSceneVersionIds] = useState<Record<string, string>>({});
+  const [copiedSceneVersionId, setCopiedSceneVersionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadSample() {
+      setLoading(true);
+      setError("");
+      try {
+        const response = await fetch(`/api/samples/${sampleId}`, { cache: "no-store" });
+        const data = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(data?.error || "Failed to load sample");
+        if (!cancelled) setBundle(data as Bundle);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load sample");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void loadSample();
+    return () => {
+      cancelled = true;
+    };
+  }, [sampleId]);
+
+  async function copySceneAnalysis(sceneVersion: SceneVersion) {
+    const text = formatSceneAnalysis(sceneVersion, projectMediaType(bundle));
+    await navigator.clipboard.writeText(text);
+    setCopiedSceneVersionId(sceneVersion.id);
+    window.setTimeout(() => setCopiedSceneVersionId(null), 1400);
+  }
+
+  return (
+    <main className="min-h-screen bg-[var(--color-bg-base)] px-5 pb-16 pt-24 text-[var(--color-text-primary)] md:px-10 lg:px-14">
+      <div className="mx-auto max-w-[1480px]">
+        <Link href="/samples" className="inline-flex items-center gap-2 text-base font-semibold text-[#B76442] transition-colors hover:text-[#8F4630]">
+          <ArrowLeft className="h-5 w-5" />
+          返回样例
+        </Link>
+
+        {loading ? (
+          <div className="mt-16 flex justify-center">
+            <Spinner />
+          </div>
+        ) : error || !bundle ? (
+          <div className="mt-8 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error || "Sample not found"}</div>
+        ) : (
+          <ProjectBundleView
+            bundle={bundle}
+            selectedSceneVersionIds={selectedSceneVersionIds}
+            setSelectedSceneVersionIds={setSelectedSceneVersionIds}
+            copiedSceneVersionId={copiedSceneVersionId}
+            copySceneAnalysis={copySceneAnalysis}
+          />
+        )}
+      </div>
+    </main>
+  );
+}
+
+function ProjectBundleView({
+  bundle,
+  selectedSceneVersionIds,
+  setSelectedSceneVersionIds,
+  copiedSceneVersionId,
+  copySceneAnalysis,
+}: {
+  bundle: Bundle;
+  selectedSceneVersionIds: Record<string, string>;
+  setSelectedSceneVersionIds: Dispatch<SetStateAction<Record<string, string>>>;
+  copiedSceneVersionId: string | null;
+  copySceneAnalysis: (sceneVersion: SceneVersion) => void;
+}) {
+  const mediaType = projectMediaType(bundle);
+
+  return (
+    <div className="mt-6 space-y-5">
+      <section className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-semibold tracking-normal md:text-5xl">{bundle.project.title}</h1>
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+              Active version: {bundle.activeVersion?.label || "None"} · {bundle.scenes.length} scene{bundle.scenes.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          <span className="rounded-full bg-[#F1E0D4] px-3 py-1 text-sm font-semibold text-[#8F4630]">公开视频样例</span>
+        </div>
+
+        {bundle.referenceVideos[0]?.sourceUrl ? (
+          <video src={bundle.referenceVideos[0].sourceUrl} controls preload="metadata" className="mt-5 max-h-[560px] w-full rounded-lg bg-black object-contain" />
+        ) : null}
+      </section>
+
+      <section className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-5 shadow-sm">
+        <h2 className="font-semibold">Whole Video Overview</h2>
+        <div className="mt-3 grid gap-2 text-sm text-[var(--color-text-secondary)] md:grid-cols-2">
+          {Object.entries(bundle.activeVersion?.overview || {}).map(([key, value]) => (
+            <p key={key}>
+              <span className="font-medium text-[var(--color-text-primary)]">{key}: </span>
+              {textValue(value)}
+            </p>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid gap-4">
+        {bundle.sceneVersions.map((latestSceneVersion) => {
+          const sceneVersions = getSceneVersionHistory(bundle, latestSceneVersion);
+          const selectedSceneVersion = sceneVersions.find((version) => version.id === selectedSceneVersionIds[latestSceneVersion.originalSceneId]) || latestSceneVersion;
+          const sceneVersionIndex = Math.max(0, sceneVersions.findIndex((version) => version.id === selectedSceneVersion.id));
+          const sceneVersion = selectedSceneVersion;
+          const scene = bundle.scenes.find((item) => item.id === sceneVersion.originalSceneId);
+          const needsReview = scene?.status === "failed" || sceneVersion.metadata?.analysisProvider === "fallback";
+
+          return (
+            <article key={latestSceneVersion.originalSceneId} className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-5 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-semibold">Scene {String(sceneVersion.sceneIndex).padStart(2, "0")}</h3>
+                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", needsReview ? "bg-amber-500/15 text-amber-700" : "bg-emerald-500/15 text-emerald-700")}>{sceneStatusLabel(scene, sceneVersion)}</span>
+                  </div>
+                  {mediaType === "video" ? (
+                    <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                      {formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}s
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
+              {mediaType === "image" && scene?.keyframeUrls?.[0] ? (
+                <img src={scene.keyframeUrls[0]} alt="Analyzed" className="mt-3 max-h-64 w-full rounded-lg object-contain" />
+              ) : scene?.clipUrl ? (
+                <video src={scene.clipUrl} controls className="mt-3 max-h-64 w-full rounded-lg bg-black object-contain" />
+              ) : (
+                <div className="mt-3 flex h-48 items-center justify-center rounded-lg bg-[#E8DED2] text-[var(--color-text-muted)]">
+                  {mediaType === "video" ? <FileVideo className="h-10 w-10" /> : <ImageIcon className="h-10 w-10" />}
+                </div>
+              )}
+
+              <div className="mt-4">
+                <label className="text-sm font-semibold">复刻 Prompt</label>
+                <Textarea readOnly value={sceneVersion.generationPrompt} className="mt-2 min-h-40 rounded-lg" />
+              </div>
+
+              <div className="mt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <label className="text-sm font-semibold">分析拆解</label>
+                  <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
+                    <button
+                      type="button"
+                      aria-label="复制分析拆解"
+                      onClick={() => copySceneAnalysis(sceneVersion)}
+                      className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border-default)] bg-white px-3 transition-colors hover:bg-[var(--color-bg-base)]"
+                    >
+                      <Copy className="h-4 w-4" />
+                      <span>{copiedSceneVersionId === sceneVersion.id ? "Copied" : "Copy"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="上一版脚本"
+                      disabled={sceneVersionIndex <= 0}
+                      onClick={() => setSelectedSceneVersionIds((versions) => ({ ...versions, [latestSceneVersion.originalSceneId]: sceneVersions[sceneVersionIndex - 1].id }))}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-default)] bg-white transition-colors hover:bg-[var(--color-bg-base)] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <span className="min-w-14 text-center">{sceneVersionIndex + 1}/{sceneVersions.length}</span>
+                    <button
+                      type="button"
+                      aria-label="下一版脚本"
+                      disabled={sceneVersionIndex >= sceneVersions.length - 1}
+                      onClick={() => setSelectedSceneVersionIds((versions) => ({ ...versions, [latestSceneVersion.originalSceneId]: sceneVersions[sceneVersionIndex + 1].id }))}
+                      className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-default)] bg-white transition-colors hover:bg-[var(--color-bg-base)] disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+                <Textarea readOnly value={formatSceneAnalysis(sceneVersion, mediaType)} className="mt-2 max-h-[420px] min-h-[300px] resize-y rounded-lg font-sans text-sm leading-7 text-[var(--color-text-secondary)]" />
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function projectMediaType(bundle: Bundle | null): "video" | "image" {
+  return bundle?.project.metadata?.mediaType === "image" ? "image" : "video";
+}
+
+function getSceneVersionHistory(bundle: Bundle, sceneVersion: SceneVersion) {
+  return bundle.allSceneVersions
+    .filter((version) => version.originalSceneId === sceneVersion.originalSceneId && version.projectVersionId === sceneVersion.projectVersionId)
+    .sort((a, b) => {
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return timeA - timeB || a.id.localeCompare(b.id);
+    });
+}
+
+function formatSceneAnalysis(sceneVersion: SceneVersion, mediaType: "video" | "image") {
+  if (sceneVersion.metadata?.analysisProvider === "fallback") {
+    const reason = textValue(sceneVersion.metadata?.fallbackReason) || "AI 分析服务暂不可用";
+    return `AI 分析未完成\n原因：${reason}\n\n当前没有生成可用的画面拆解或复刻 Prompt。`;
+  }
+
+  const sections: Array<[string, unknown]> = [
+    ["画面复刻", pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])],
+    ["角色/动作", `${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()],
+    ["镜头语言", `${pickField(sceneVersion.visual, ["camera"])}\n${pickField(sceneVersion.visual, ["composition"])}`.trim()],
+    ["光线/色彩/风格", `${pickField(sceneVersion.visual, ["lighting"])}\n${pickField(sceneVersion.visual, ["color"])}\n${pickField(sceneVersion.visual, ["style"])}`.trim()],
+    ["剧情作用", sceneVersion.story],
+  ];
+
+  if (mediaType === "video") {
+    sections.push(["台词/字幕", sceneVersion.dialogue.length ? sceneVersion.dialogue : sceneVersion.subtitle], ["音频", sceneVersion.audio], ["剪辑提示", sceneVersion.transition]);
+  }
+
+  return sections.map(([title, value]) => `${title}\n${textValue(value) || "No detected data yet."}`).join("\n\n");
+}
+
+function formatTime(seconds: number) {
+  const safe = Math.max(0, seconds || 0);
+  const mins = Math.floor(safe / 60);
+  const secs = Math.floor(safe % 60);
+  const tenths = Math.floor((safe % 1) * 10);
+  return `${mins}:${secs.toString().padStart(2, "0")}${tenths ? `.${tenths}` : ""}`;
+}
+
+function textValue(value: unknown) {
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => {
+        if (typeof item === "string") return item;
+        if (typeof item !== "object" || item === null) return String(item);
+        const record = item as Record<string, unknown>;
+        const time = typeof record.start === "number" || typeof record.end === "number" ? `[${formatTime(Number(record.start || 0))}-${formatTime(Number(record.end || 0))}] ` : "";
+        const speaker = record.speaker ? `${record.speaker}: ` : "";
+        return `${time}${speaker}${record.text || record.summary || record.role || ""}`.trim();
+      })
+      .filter(Boolean)
+      .join("\n");
+  }
+  if (typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    return String(obj.summary || obj.transcriptSummary || obj.ambience || obj.music || obj.role || obj.action || obj.beat || JSON.stringify(obj));
+  }
+  return String(value);
+}
+
+function pickField(value: unknown, keys: string[]) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
+  const record = value as Record<string, unknown>;
+  for (const key of keys) {
+    const next = textValue(record[key]);
+    if (next) return next;
+  }
+  return "";
+}
+
+function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
+  const provider = sceneVersion?.metadata?.analysisProvider;
+  if (scene?.status === "failed") return provider === "fallback" ? "Needs review" : "Failed";
+  if (scene?.status === "completed") return "Analyzed";
+  if (scene?.status === "processing") return "Analyzing";
+  return scene?.status || "Ready";
+}

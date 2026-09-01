@@ -149,7 +149,7 @@ function SampleCard({ record }: { record: ProjectSample }) {
   const durationLabel = record.duration ? formatDuration(record.duration) : null;
 
   return (
-    <article className="group overflow-hidden rounded-lg border border-[var(--color-border-default)] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+    <Link href={`/samples/${record.id}`} className="group block overflow-hidden rounded-lg border border-[var(--color-border-default)] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757]/40">
       <div className="relative aspect-[16/9] overflow-hidden bg-[#E8DED2]">
         {record.mediaUrl ? (
           isVideo ? (
@@ -179,7 +179,7 @@ function SampleCard({ record }: { record: ProjectSample }) {
         {description ? <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">{truncate(description, 150)}</p> : null}
         {record.prompt ? <p className="mt-4 line-clamp-2 rounded-lg bg-[var(--color-bg-base)] px-3 py-2 text-xs leading-relaxed text-[var(--color-text-muted)]">{truncate(record.prompt, 120)}</p> : null}
       </div>
-    </article>
+    </Link>
   );
 }
 
