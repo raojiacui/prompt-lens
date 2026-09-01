@@ -15,12 +15,13 @@ const LOCALE_DISPLAY: Record<Locale, { label: string }> = {
   en: { label: "English" },
 };
 
-function LanguageDropdown() {
+function LanguageDropdown({ variant = "dark" }: { variant?: "dark" | "light" }) {
   const t = useTranslations("home");
   const locale = useLocale() as Locale;
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const isLight = variant === "light";
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -49,7 +50,10 @@ function LanguageDropdown() {
         aria-label="Switch language"
         aria-haspopup="menu"
         aria-expanded={open}
-        className="text-base text-white/80 hover:text-blue-300 transition-colors"
+        className={cn(
+          "text-base transition-colors",
+          isLight ? "text-[#445166] hover:text-[#1476F2]" : "text-white/80 hover:text-blue-300"
+        )}
       >
         {t("navLanguage")}
       </button>
@@ -58,7 +62,10 @@ function LanguageDropdown() {
         role="menu"
         className="absolute left-0 top-full pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50"
       >
-        <div className="w-36 rounded-lg border border-white/15 bg-slate-900/70 backdrop-blur-md shadow-lg overflow-hidden">
+        <div className={cn(
+          "w-36 overflow-hidden rounded-lg border backdrop-blur-md shadow-lg",
+          isLight ? "border-[#D9E0EA] bg-white/95" : "border-white/15 bg-slate-900/70"
+        )}>
           {(["zh", "en"] as Locale[]).map((loc) => {
             const display = LOCALE_DISPLAY[loc];
             const isActive = loc === locale;
@@ -71,8 +78,8 @@ function LanguageDropdown() {
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2 text-sm transition-colors",
                   isActive
-                    ? "bg-white/15 text-white font-medium"
-                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                    ? isLight ? "bg-[#1476F2]/10 text-[#1476F2] font-medium" : "bg-white/15 text-white font-medium"
+                    : isLight ? "text-[#445166] hover:bg-[#EEF3FA] hover:text-[#1F252E]" : "text-white/80 hover:bg-white/10 hover:text-white"
                 )}
               >
                 <span>{display.label}</span>
@@ -90,20 +97,28 @@ function LanguageDropdown() {
   );
 }
 
-export function SiteHeader({ user }: { user: { name?: string | null; image?: string | null; email?: string | null } | null }) {
+export function SiteHeader({
+  user,
+  variant = "dark",
+}: {
+  user: { name?: string | null; image?: string | null; email?: string | null } | null;
+  variant?: "dark" | "light";
+}) {
   const t = useTranslations("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isAuthenticated = !!user;
+  const isLight = variant === "light";
 
   const navItems = [
-    { href: "#features", label: t("navFeatures") },
-    { href: "#pricing", label: t("navPricing") },
-    { href: "#articles", label: t("navArticles") },
-    { href: "#blog", label: t("navBlog") },
+    { href: "/#features", label: t("navFeatures") },
+    { href: "/samples", label: t("navSamples") },
+    { href: "/#pricing", label: t("navPricing") },
+    { href: "/#articles", label: t("navArticles") },
+    { href: "/#blog", label: t("navBlog") },
   ];
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-50 bg-transparent">
+    <header className={cn("absolute top-0 left-0 right-0 z-50", isLight ? "border-b border-[#D9E0EA] bg-[#EEF3FA]/90 backdrop-blur" : "bg-transparent")}>
       <div className="w-full px-3 md:px-5 lg:px-6">
         <div className="flex items-center h-16 md:h-18">
           <Link href="/" className="flex items-center gap-3 group shrink-0" aria-label="Prompt Lens">
@@ -112,29 +127,32 @@ export function SiteHeader({ user }: { user: { name?: string | null; image?: str
               alt="Prompt Lens"
               width={541}
               height={563}
-              className="h-12 w-auto object-contain brightness-0 invert"
+              className={cn("h-12 w-auto object-contain", !isLight && "brightness-0 invert")}
             />
-            <span className="text-2xl font-semibold text-white tracking-tight">Prompt Lens</span>
+            <span className={cn("text-2xl font-semibold tracking-tight", isLight ? "text-[#1F252E]" : "text-white")}>Prompt Lens</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-10 ml-10">
             {navItems.map((item) => (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
-                className="text-base text-white/80 hover:text-blue-300 transition-colors"
+                className={cn(
+                  "text-base transition-colors",
+                  isLight ? "text-[#445166] hover:text-[#1476F2]" : "text-white/80 hover:text-blue-300"
+                )}
               >
                 {item.label}
-              </a>
+              </Link>
             ))}
-            <LanguageDropdown />
+            <LanguageDropdown variant={variant} />
           </nav>
 
           <div className="hidden md:flex items-center gap-4 ml-auto">
             {isAuthenticated ? (
               <>
                 <Link href="/dashboard">
-                  <Button className="text-sm bg-white text-slate-900 hover:bg-white/90 rounded-full px-5">
+                  <Button className={cn("rounded-full px-5 text-sm", isLight ? "bg-[#1476F2] text-white hover:bg-[#0F56B3]" : "bg-white text-slate-900 hover:bg-white/90")}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     {t("dashboard") || "Dashboard"}
                   </Button>
@@ -142,7 +160,7 @@ export function SiteHeader({ user }: { user: { name?: string | null; image?: str
               </>
             ) : (
               <Link href="/login">
-                <Button className="text-sm bg-white text-slate-900 hover:bg-white/90 rounded-full px-5">
+                <Button className={cn("rounded-full px-5 text-sm", isLight ? "bg-[#1476F2] text-white hover:bg-[#0F56B3]" : "bg-white text-slate-900 hover:bg-white/90")}>
                   {t("signIn")}
                 </Button>
               </Link>
@@ -151,7 +169,7 @@ export function SiteHeader({ user }: { user: { name?: string | null; image?: str
 
           <div className="md:hidden flex items-center gap-2 ml-auto">
             <button
-              className="p-2 text-white"
+              className={cn("p-2", isLight ? "text-[#1F252E]" : "text-white")}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
             >
@@ -162,31 +180,31 @@ export function SiteHeader({ user }: { user: { name?: string | null; image?: str
       </div>
 
       {mobileMenuOpen && (
-        <div className="md:hidden bg-slate-900/90 backdrop-blur-md border-t border-white/10 px-4 py-4 space-y-3">
+        <div className={cn("space-y-3 px-4 py-4 backdrop-blur-md md:hidden", isLight ? "border-t border-[#D9E0EA] bg-white/95" : "border-t border-white/10 bg-slate-900/90")}>
           {navItems.map((item) => (
-            <a
+            <Link
               key={item.href}
               href={item.href}
-              className="block py-2 text-white/80 hover:text-blue-300"
+              className={cn("block py-2", isLight ? "text-[#445166] hover:text-[#1476F2]" : "text-white/80 hover:text-blue-300")}
               onClick={() => setMobileMenuOpen(false)}
             >
               {item.label}
-            </a>
+            </Link>
           ))}
           <div className="py-2">
-            <LanguageDropdown />
+            <LanguageDropdown variant={variant} />
           </div>
-          <div className="pt-3 border-t border-white/10">
+          <div className={cn("border-t pt-3", isLight ? "border-[#D9E0EA]" : "border-white/10")}>
             {isAuthenticated ? (
               <Link href="/dashboard" className="block" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full bg-white text-slate-900 hover:bg-white/90 rounded-full">
+                <Button className={cn("w-full rounded-full", isLight ? "bg-[#1476F2] text-white hover:bg-[#0F56B3]" : "bg-white text-slate-900 hover:bg-white/90")}>
                   <LayoutDashboard className="mr-2 h-4 w-4" />
                   {t("dashboard") || "Dashboard"}
                 </Button>
               </Link>
             ) : (
               <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
-                <Button className="w-full bg-white text-slate-900 hover:bg-white/90 rounded-full">
+                <Button className={cn("w-full rounded-full", isLight ? "bg-[#1476F2] text-white hover:bg-[#0F56B3]" : "bg-white text-slate-900 hover:bg-white/90")}>
                   {t("signIn")}
                 </Button>
               </Link>

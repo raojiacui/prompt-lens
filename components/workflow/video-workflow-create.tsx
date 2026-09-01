@@ -40,6 +40,13 @@ type Bundle = {
 type ModelOption = { id: string; displayName: string; family: string; provider: string; kieModelId: string; enabled: boolean; experimental?: boolean };
 type ModelMode = "auto" | "manual";
 type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
+type AnalysisProgressPhase = "upload" | "project" | "analysis" | "complete";
+type AnalysisProgressState = {
+  phase: AnalysisProgressPhase;
+  percent: number;
+  label: string;
+  detail: string;
+};
 type CreditStatus = {
   balance: number;
   mode: "admin" | "byok" | "platform_credits" | "trial";
@@ -158,6 +165,71 @@ function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
   return scene?.status || "Ready";
 }
 
+const analysisProgressSteps: Array<{ phase: AnalysisProgressPhase; label: string; percent: number }> = [
+  { phase: "upload", label: "上传素材", percent: 45 },
+  { phase: "project", label: "创建项目", percent: 60 },
+  { phase: "analysis", label: "AI 拆解分析", percent: 95 },
+  { phase: "complete", label: "生成蓝图", percent: 100 },
+];
+
+function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }) {
+  const currentStepIndex = Math.max(0, analysisProgressSteps.findIndex((step) => step.phase === progress.phase));
+
+  return (
+    <div className="flex min-h-[520px] flex-col justify-center">
+      <div className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-background p-5 shadow-sm">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-[#D97757]">分析进度</p>
+            <h2 className="mt-2 text-2xl font-semibold text-foreground">{progress.label}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{progress.detail}</p>
+          </div>
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#D97757]/10 text-xl font-semibold text-[#D97757]">
+            {progress.percent}%
+          </div>
+        </div>
+
+        <div className="mt-6">
+          <div className="h-3 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-[#D97757] shadow-[0_0_18px_rgba(217,119,87,0.35)] transition-all duration-500"
+              style={{ width: `${progress.percent}%` }}
+            />
+          </div>
+          <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+            <span>0%</span>
+            <span>100%</span>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-4">
+          {analysisProgressSteps.map((step, index) => {
+            const isDone = index < currentStepIndex || progress.phase === "complete";
+            const isActive = step.phase === progress.phase && progress.phase !== "complete";
+            return (
+              <div
+                key={step.phase}
+                className={cn(
+                  "rounded-xl border px-3 py-3",
+                  isDone || isActive ? "border-[#D97757]/30 bg-[#D97757]/10" : "border-border bg-card"
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={cn("text-xs font-semibold", isDone || isActive ? "text-[#D97757]" : "text-muted-foreground")}>
+                    {step.label}
+                  </span>
+                  {isDone ? <Check className="h-4 w-4 text-[#D97757]" /> : isActive ? <Spinner size="sm" /> : null}
+                </div>
+                <p className="mt-2 font-mono text-xs text-muted-foreground">{step.percent}%</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const locale = useLocale();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -170,6 +242,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [mediaDuration, setMediaDuration] = useState<number | null>(null);
   const [title, setTitle] = useState("Untitled video project");
   const [progress, setProgress] = useState("");
+  const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgressState | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [projectsLoading, setProjectsLoading] = useState(false);
@@ -198,6 +271,23 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       Object.values(promptSaveTimersRef.current).forEach(window.clearTimeout);
     };
   }, []);
+
+  useEffect(() => {
+    if (!loading || !analysisProgress || analysisProgress.phase !== "analysis") return;
+
+    const timer = window.setInterval(() => {
+      setAnalysisProgress((current) => {
+        if (!current || current.phase !== "analysis") return current;
+        return {
+          ...current,
+          percent: Math.min(94, current.percent + 1),
+          detail: current.detail,
+        };
+      });
+    }, 900);
+
+    return () => window.clearInterval(timer);
+  }, [analysisProgress, loading]);
 
   useEffect(() => {
     const drafts: Record<string, string> = {};
@@ -310,6 +400,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     setMediaType(type);
     setPreview(URL.createObjectURL(nextFile));
     setTitle(nextFile.name.replace(/\.[^.]+$/, "") || (type === "image" ? "Image analysis" : "Video analysis"));
+    setAnalysisProgress(null);
     setError("");
   }
 
@@ -320,6 +411,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     setMediaDuration(null);
     setPreview("");
     setProgress("");
+    setAnalysisProgress(null);
     setError("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
@@ -334,10 +426,32 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     if (!file || !mediaType) return;
     setLoading(true);
     setError("");
+    const mediaLabel = mediaType === "image" ? "图片" : "视频";
     setProgress(`Uploading reference ${mediaType} to R2`);
+    setAnalysisProgress({
+      phase: "upload",
+      percent: 5,
+      label: "上传素材",
+      detail: `正在上传${mediaLabel}到存储服务`,
+    });
     try {
-      const upload = await uploadMediaToBlob(file, (percentage) => setProgress(`Uploading ${Math.round(percentage)}%`));
+      const upload = await uploadMediaToBlob(file, (percentage) => {
+        const uploadPercent = Math.round(percentage);
+        setProgress(`Uploading ${uploadPercent}%`);
+        setAnalysisProgress({
+          phase: "upload",
+          percent: Math.max(5, Math.min(45, Math.round(uploadPercent * 0.45))),
+          label: "上传素材",
+          detail: `正在上传${mediaLabel} ${uploadPercent}%`,
+        });
+      });
       setProgress("Creating project");
+      setAnalysisProgress({
+        phase: "project",
+        percent: 55,
+        label: "创建项目",
+        detail: "正在创建可编辑的视频分析项目",
+      });
       const projectRes = await fetch("/api/workflow/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -346,12 +460,24 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
 
       setProgress(upload.mediaType === "image" ? "Analyzing image blueprint" : "Analyzing video blueprint");
+      setAnalysisProgress({
+        phase: "analysis",
+        percent: 68,
+        label: upload.mediaType === "image" ? "AI 图片分析" : "AI 视频拆解分析",
+        detail: upload.mediaType === "image" ? "正在提取画面结构和复刻提示词" : "正在拆解镜头、画面、动作、光线和复刻提示词",
+      });
       const breakdownRes = await fetch(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaUrl: upload.url, mediaName: upload.filename, storageKey: upload.key, mediaType: upload.mediaType, mediaDuration, singleShot: Boolean(mediaDuration && mediaDuration <= MAX_ANALYSIS_VIDEO_SECONDS + VIDEO_DURATION_TOLERANCE_SECONDS), ...analysisSelectionPayload() }),
       });
       const breakdownData = await readJsonResponse(breakdownRes, "Breakdown failed");
+      setAnalysisProgress({
+        phase: "complete",
+        percent: 100,
+        label: "生成蓝图",
+        detail: "分析完成，正在展示结果",
+      });
       setBundle(breakdownData);
       if (breakdownData.project) {
         setProjects((current) => {
@@ -370,6 +496,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       const message = err instanceof Error ? err.message : "Workflow failed";
       setError(message === "Failed to fetch" ? "网络请求失败：请检查上传服务、视频拆解服务或本地开发服务是否正常运行。" : message);
       setProgress("");
+      setAnalysisProgress(null);
     } finally {
       setLoading(false);
     }
@@ -581,11 +708,15 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         <div className="relative min-h-0">
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
           {!bundle ? (
-            <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
-              <Play className="mb-4 h-10 w-10 text-muted-foreground" />
-              <p className="font-medium">Video or image analysis workflow will appear here</p>
-              <p className="text-sm text-muted-foreground">Upload a video or image to create the first editable scene blueprint.</p>
-            </div>
+            loading && analysisProgress ? (
+              <AnalysisProgressPanel progress={analysisProgress} />
+            ) : (
+              <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
+                <Play className="mb-4 h-10 w-10 text-muted-foreground" />
+                <p className="font-medium">Video or image analysis workflow will appear here</p>
+                <p className="text-sm text-muted-foreground">Upload a video or image to create the first editable scene blueprint.</p>
+              </div>
+            )
           ) : (
             <div className="space-y-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-2">
               <div className="flex flex-wrap items-start justify-between gap-3">
