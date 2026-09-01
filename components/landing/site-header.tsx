@@ -52,7 +52,7 @@ function LanguageDropdown({ variant = "dark" }: { variant?: "dark" | "light" }) 
         aria-expanded={open}
         className={cn(
           "text-base transition-colors",
-          isLight ? "text-[#445166] hover:text-[#1476F2]" : "text-white/80 hover:text-blue-300"
+          isLight ? "text-[var(--color-text-secondary)] hover:text-[#B76442]" : "text-white/80 hover:text-blue-300"
         )}
       >
         {t("navLanguage")}
@@ -64,7 +64,7 @@ function LanguageDropdown({ variant = "dark" }: { variant?: "dark" | "light" }) 
       >
         <div className={cn(
           "w-36 overflow-hidden rounded-lg border backdrop-blur-md shadow-lg",
-          isLight ? "border-[#D9E0EA] bg-white/95" : "border-white/15 bg-slate-900/70"
+          isLight ? "border-[var(--color-border-default)] bg-white/95" : "border-white/15 bg-slate-900/70"
         )}>
           {(["zh", "en"] as Locale[]).map((loc) => {
             const display = LOCALE_DISPLAY[loc];
@@ -78,8 +78,8 @@ function LanguageDropdown({ variant = "dark" }: { variant?: "dark" | "light" }) 
                 className={cn(
                   "w-full flex items-center justify-between px-3 py-2 text-sm transition-colors",
                   isActive
-                    ? isLight ? "bg-[#1476F2]/10 text-[#1476F2] font-medium" : "bg-white/15 text-white font-medium"
-                    : isLight ? "text-[#445166] hover:bg-[#EEF3FA] hover:text-[#1F252E]" : "text-white/80 hover:bg-white/10 hover:text-white"
+                    ? isLight ? "bg-[#F1E0D4] text-[#8F4630] font-medium" : "bg-white/15 text-white font-medium"
+                    : isLight ? "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-base)] hover:text-[var(--color-text-primary)]" : "text-white/80 hover:bg-white/10 hover:text-white"
                 )}
               >
                 <span>{display.label}</span>
@@ -118,7 +118,7 @@ export function SiteHeader({
   ];
 
   return (
-    <header className={cn("absolute top-0 left-0 right-0 z-50", isLight ? "border-b border-[#D9E0EA] bg-[#EEF3FA]/90 backdrop-blur" : "bg-transparent")}>
+    <header className={cn("absolute top-0 left-0 right-0 z-50", isLight ? "border-b border-[var(--color-border-default)] bg-[var(--color-bg-base)]/90 backdrop-blur" : "bg-transparent")}>
       <div className="w-full px-3 md:px-5 lg:px-6">
         <div className="flex items-center h-16 md:h-18">
           <Link href="/" className="flex items-center gap-3 group shrink-0" aria-label="Prompt Lens">
@@ -129,7 +129,7 @@ export function SiteHeader({
               height={563}
               className={cn("h-12 w-auto object-contain", !isLight && "brightness-0 invert")}
             />
-            <span className={cn("text-2xl font-semibold tracking-tight", isLight ? "text-[#1F252E]" : "text-white")}>Prompt Lens</span>
+            <span className={cn("text-2xl font-semibold tracking-tight", isLight ? "text-[var(--color-text-primary)]" : "text-white")}>Prompt Lens</span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-10 ml-10">
@@ -139,7 +139,7 @@ export function SiteHeader({
                 href={item.href}
                 className={cn(
                   "text-base transition-colors",
-                  isLight ? "text-[#445166] hover:text-[#1476F2]" : "text-white/80 hover:text-blue-300"
+                  isLight ? "text-[var(--color-text-secondary)] hover:text-[#B76442]" : "text-white/80 hover:text-blue-300"
                 )}
               >
                 {item.label}
@@ -152,7 +152,7 @@ export function SiteHeader({
             {isAuthenticated ? (
               <>
                 <Link href="/dashboard">
-                  <Button className={cn("rounded-full px-5 text-sm", isLight ? "bg-[#1476F2] text-white hover:bg-[#0F56B3]" : "bg-white text-slate-900 hover:bg-white/90")}>
+                  <Button className={cn("rounded-full px-5 text-sm", isLight ? "bg-[#B76442] text-white hover:bg-[#8F4630]" : "bg-white text-slate-900 hover:bg-white/90")}>
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     {t("dashboard") || "Dashboard"}
                   </Button>
@@ -160,7 +160,7 @@ export function SiteHeader({
               </>
             ) : (
               <Link href="/login">
-                <Button className={cn("rounded-full px-5 text-sm", isLight ? "bg-[#1476F2] text-white hover:bg-[#0F56B3]" : "bg-white text-slate-900 hover:bg-white/90")}>
+                <Button className={cn("rounded-full px-5 text-sm", isLight ? "bg-[#B76442] text-white hover:bg-[#8F4630]" : "bg-white text-slate-900 hover:bg-white/90")}>
                   {t("signIn")}
                 </Button>
               </Link>
@@ -169,7 +169,7 @@ export function SiteHeader({
 
           <div className="md:hidden flex items-center gap-2 ml-auto">
             <button
-              className={cn("p-2", isLight ? "text-[#1F252E]" : "text-white")}
+              className={cn("p-2", isLight ? "text-[var(--color-text-primary)]" : "text-white")}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               aria-label="Toggle menu"
             >
@@ -180,12 +180,12 @@ export function SiteHeader({
       </div>
 
       {mobileMenuOpen && (
-        <div className={cn("space-y-3 px-4 py-4 backdrop-blur-md md:hidden", isLight ? "border-t border-[#D9E0EA] bg-white/95" : "border-t border-white/10 bg-slate-900/90")}>
+        <div className={cn("space-y-3 px-4 py-4 backdrop-blur-md md:hidden", isLight ? "border-t border-[var(--color-border-default)] bg-white/95" : "border-t border-white/10 bg-slate-900/90")}>
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className={cn("block py-2", isLight ? "text-[#445166] hover:text-[#1476F2]" : "text-white/80 hover:text-blue-300")}
+              className={cn("block py-2", isLight ? "text-[var(--color-text-secondary)] hover:text-[#B76442]" : "text-white/80 hover:text-blue-300")}
               onClick={() => setMobileMenuOpen(false)}
             >
               {item.label}
@@ -194,17 +194,17 @@ export function SiteHeader({
           <div className="py-2">
             <LanguageDropdown variant={variant} />
           </div>
-          <div className={cn("border-t pt-3", isLight ? "border-[#D9E0EA]" : "border-white/10")}>
+          <div className={cn("border-t pt-3", isLight ? "border-[var(--color-border-default)]" : "border-white/10")}>
             {isAuthenticated ? (
               <Link href="/dashboard" className="block" onClick={() => setMobileMenuOpen(false)}>
-                <Button className={cn("w-full rounded-full", isLight ? "bg-[#1476F2] text-white hover:bg-[#0F56B3]" : "bg-white text-slate-900 hover:bg-white/90")}>
+                <Button className={cn("w-full rounded-full", isLight ? "bg-[#B76442] text-white hover:bg-[#8F4630]" : "bg-white text-slate-900 hover:bg-white/90")}>
                   <LayoutDashboard className="mr-2 h-4 w-4" />
                   {t("dashboard") || "Dashboard"}
                 </Button>
               </Link>
             ) : (
               <Link href="/login" className="block" onClick={() => setMobileMenuOpen(false)}>
-                <Button className={cn("w-full rounded-full", isLight ? "bg-[#1476F2] text-white hover:bg-[#0F56B3]" : "bg-white text-slate-900 hover:bg-white/90")}>
+                <Button className={cn("w-full rounded-full", isLight ? "bg-[#B76442] text-white hover:bg-[#8F4630]" : "bg-white text-slate-900 hover:bg-white/90")}>
                   {t("signIn")}
                 </Button>
               </Link>

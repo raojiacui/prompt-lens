@@ -6,7 +6,7 @@ import { SamplesGallery } from "@/components/samples-gallery";
 
 export const metadata: Metadata = {
   title: "样例 - Prompt Lens",
-  description: "查看你的视频分析历史样例。",
+  description: "查看公开视频分析项目样例。",
 };
 
 export default async function SamplesPage() {
@@ -14,7 +14,7 @@ export default async function SamplesPage() {
   const session = await auth.api.getSession({ headers: headersList }).catch(() => null);
 
   return (
-    <div className="min-h-screen bg-[#EEF3FA]">
+    <div className="min-h-screen bg-[var(--color-bg-base)]">
       <SiteHeader user={session?.user ?? null} variant="light" />
       <SamplesGallery />
     </div>
