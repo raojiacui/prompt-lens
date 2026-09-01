@@ -72,20 +72,7 @@ export function SamplesGallery() {
   return (
     <main className="min-h-screen bg-[var(--color-bg-base)] px-5 pb-16 pt-24 text-[var(--color-text-primary)] md:px-10 lg:px-14">
       <div className="mx-auto max-w-[1720px]">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-semibold tracking-normal md:text-5xl">样例</h1>
-            <p className="mt-3 max-w-2xl text-base leading-relaxed text-[var(--color-text-secondary)]">
-              这里展示视频分析 Projects 中精选的公开项目，访客可以直接浏览素材、场景结构和可复用提示词方向。
-            </p>
-          </div>
-          <Link href="/" className="inline-flex items-center gap-2 text-lg font-semibold text-[#B76442] transition-colors hover:text-[#8F4630]">
-            <ArrowLeft className="h-5 w-5" />
-            返回
-          </Link>
-        </div>
-
-        <section className="mt-7 flex flex-col gap-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)]/80 px-3 py-3 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
+        <section className="flex flex-col gap-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)]/80 px-3 py-3 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-2">
             {[
               { key: "all", label: `全部 ${records.length}` },
@@ -115,6 +102,16 @@ export function SamplesGallery() {
             />
           </label>
         </section>
+
+        <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+          <p className="max-w-2xl text-base leading-relaxed text-[var(--color-text-secondary)]">
+            这里展示视频分析 Projects 中精选的公开项目，访客可以直接浏览素材、场景结构和可复用提示词方向。
+          </p>
+          <Link href="/" className="inline-flex items-center gap-2 text-lg font-semibold text-[#B76442] transition-colors hover:text-[#8F4630]">
+            <ArrowLeft className="h-5 w-5" />
+            返回
+          </Link>
+        </div>
 
         {loading ? (
           <div className="mt-16 flex justify-center">
