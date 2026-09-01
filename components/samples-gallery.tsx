@@ -104,7 +104,7 @@ export function SamplesGallery() {
         </section>
 
         <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
-          <p className="max-w-2xl text-base leading-relaxed text-[var(--color-text-secondary)]">
+          <p className="min-w-0 flex-1 text-base leading-relaxed text-[var(--color-text-secondary)] md:whitespace-nowrap">
             这里展示视频分析 Projects 中精选的公开项目，访客可以直接浏览素材、场景结构和可复用提示词方向。
           </p>
           <Link href="/" className="inline-flex items-center gap-2 text-lg font-semibold text-[#B76442] transition-colors hover:text-[#8F4630]">
