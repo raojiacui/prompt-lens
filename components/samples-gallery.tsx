@@ -85,7 +85,7 @@ export function SamplesGallery() {
           </Link>
         </div>
 
-        <section className="mt-8 flex flex-col gap-4 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)]/80 p-4 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
+        <section className="mt-7 flex flex-col gap-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)]/80 px-3 py-3 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-2">
             {[
               { key: "all", label: `全部 ${records.length}` },
@@ -97,7 +97,7 @@ export function SamplesGallery() {
                 type="button"
                 onClick={() => setFilter(item.key as Filter)}
                 className={cn(
-                  "h-10 rounded-full px-4 text-sm font-semibold transition-colors",
+                  "h-9 rounded-full px-4 text-sm font-semibold transition-colors",
                   filter === item.key ? "bg-[#B76442] text-white shadow-sm" : "bg-white text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
                 )}
               >
@@ -105,7 +105,7 @@ export function SamplesGallery() {
               </button>
             ))}
           </div>
-          <label className="flex h-11 min-w-0 items-center gap-2 rounded-full border border-[var(--color-border-default)] bg-white px-4 text-[var(--color-text-secondary)] shadow-sm md:w-[360px]">
+          <label className="flex h-10 min-w-0 items-center gap-2 rounded-full border border-[var(--color-border-default)] bg-white px-4 text-[var(--color-text-secondary)] shadow-sm md:w-[300px]">
             <Search className="h-4 w-4 shrink-0" />
             <input
               value={search}
