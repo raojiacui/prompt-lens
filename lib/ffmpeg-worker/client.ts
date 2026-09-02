@@ -29,6 +29,8 @@ export interface FfmpegBreakdownResult {
     height?: number;
     fps?: number;
     hasAudio?: boolean;
+    audioPreviewUrl?: string;
+    audioPreviewDuration?: number;
   };
   scenes: FfmpegSceneAsset[];
 }

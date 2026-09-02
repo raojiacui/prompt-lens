@@ -116,6 +116,16 @@ function textValue(value: unknown) {
   }
   if (typeof value === "object") {
     const obj = value as Record<string, unknown>;
+    const recognizedBgm = obj.recognizedBgm && typeof obj.recognizedBgm === "object" ? obj.recognizedBgm as Record<string, unknown> : null;
+    if (recognizedBgm) {
+      const title = typeof recognizedBgm.title === "string" ? recognizedBgm.title : "";
+      const artist = typeof recognizedBgm.artist === "string" ? recognizedBgm.artist : "";
+      const status = typeof recognizedBgm.status === "string" ? recognizedBgm.status : "";
+      const song = [title, artist].filter(Boolean).join(" - ");
+      const link = typeof recognizedBgm.songLink === "string" ? recognizedBgm.songLink : typeof recognizedBgm.spotifyUrl === "string" ? recognizedBgm.spotifyUrl : typeof recognizedBgm.appleMusicUrl === "string" ? recognizedBgm.appleMusicUrl : "";
+      const summary = typeof obj.recognizedBgmSummary === "string" ? obj.recognizedBgmSummary : "";
+      return [song || summary || `BGM recognition: ${status}`, link].filter(Boolean).join("\n");
+    }
     return String(obj.summary || obj.transcriptSummary || obj.ambience || obj.music || obj.role || obj.action || obj.beat || JSON.stringify(obj));
   }
   return String(value);

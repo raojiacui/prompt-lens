@@ -34,6 +34,7 @@ const YTDLP_COOKIES_FILE = process.env.YTDLP_COOKIES_FILE || "";
 const YTDLP_COOKIES_FROM_BROWSER = process.env.YTDLP_COOKIES_FROM_BROWSER || "";
 const YTDLP_JS_RUNTIME = process.env.YTDLP_JS_RUNTIME || "node";
 const MAX_RESOLVE_SECONDS = Number(process.env.MAX_RESOLVE_SECONDS || 600);
+const MUSIC_RECOGNITION_PREVIEW_SECONDS = Number(process.env.MUSIC_RECOGNITION_PREVIEW_SECONDS || 12);
 
 function requireEnv() {
   const missing = [
@@ -376,6 +377,30 @@ async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, me
   return scenes;
 }
 
+async function extractAudioPreviewAsset(inputPath, workDir, projectKey, metadata) {
+  if (!metadata.hasAudio) return undefined;
+  const duration = Math.min(MUSIC_RECOGNITION_PREVIEW_SECONDS, Math.max(0.1, metadata.duration || MUSIC_RECOGNITION_PREVIEW_SECONDS));
+  const audioPath = path.join(workDir, "music-recognition-preview.m4a");
+  try {
+    await run(FFMPEG_PATH, [
+      "-y", "-hide_banner",
+      "-ss", "0",
+      "-i", inputPath,
+      "-t", String(duration),
+      "-vn",
+      "-c:a", "aac",
+      audioPath,
+    ]);
+    const audioStat = await stat(audioPath).catch(() => null);
+    if (!audioStat?.size) return undefined;
+    const audioUrl = await uploadFile(audioPath, `${projectKey}/audio/music-recognition-preview.m4a`, "audio/mp4");
+    return { audioUrl, duration };
+  } catch (error) {
+    console.warn("Music recognition audio preview extraction failed:", error.message);
+    return undefined;
+  }
+}
+
 async function handleResolveMedia(req, res) {
   assertAuth(req);
   requireEnv();
@@ -420,8 +445,9 @@ async function handleBreakdown(req, res) {
     const sceneDetection = await detectSceneCutsWithFallback(inputPath, metadata);
     const boundaries = buildBoundaries(sceneDetection.cuts, metadata.duration);
     const projectKey = `workflow/${randomUUID()}`;
+    const audioPreview = await extractAudioPreviewAsset(inputPath, workDir, projectKey, metadata);
     const scenes = await extractSceneAssets(inputPath, workDir, projectKey, boundaries, metadata);
-    return json(res, 200, { metadata: { ...metadata, sceneDetection }, scenes });
+    return json(res, 200, { metadata: { ...metadata, sceneDetection, audioPreviewUrl: audioPreview?.audioUrl, audioPreviewDuration: audioPreview?.duration }, scenes });
   } finally {
     await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
   }

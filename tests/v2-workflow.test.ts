@@ -7,6 +7,7 @@ import { createKieDialogueTask } from "@/lib/workflow/kie-audio";
 import { buildLocalEditInstruction } from "@/lib/workflow/local-standard-edit";
 import { buildSceneAudioContexts } from "@/lib/workflow/transcription";
 import { createKieVeoGeneration } from "@/lib/reference-video/kie-veo";
+import { recognizeBackgroundMusic } from "@/lib/workflow/music-recognition";
 
 const scene = {
   sceneIndex: 2,
@@ -23,16 +24,16 @@ const scene = {
 
 describe("V2 scene analysis", () => {
   it("builds an editable fallback blueprint with timing and metadata", () => {
-    const blueprint = buildFallbackSceneBlueprint(scene, "no provider configured");
+    const blueprint = buildFallbackSceneBlueprint(scene, "no provider configured", undefined, "en");
 
     expect(blueprint.story.summary).toContain("Scene 02");
-    expect(blueprint.generationPrompt).toContain("4.0s-9.5s");
+    expect(blueprint.story.summary).toContain("4.0s-9.5s");
     expect(blueprint.transition.in).toBe("hard_cut");
     expect(blueprint.visual.sceneDescription).toContain("text-to-video recreation");
     expect(blueprint.visual.composition).toContain("foreground");
     expect((blueprint.transition.editing as Record<string, unknown>).techniques).toContain("hard_cut");
-    expect(blueprint.generationPrompt).toContain("visual-first text-to-video recreation prompt");
-    expect(blueprint.generationPrompt).toContain("Mention audio or editing only as secondary constraints");
+    expect(blueprint.generationPrompt).toContain("AI analysis did not complete");
+    expect(blueprint.generationPrompt).toContain("no provider configured");
     expect(blueprint.metadata?.analysisProvider).toBe("fallback");
     expect(blueprint.metadata?.fallbackReason).toBe("no provider configured");
   });
@@ -127,12 +128,57 @@ describe("V2 audio production", () => {
   });
 });
 
+describe("AudD background music recognition", () => {
+  it("skips recognition when no AudD token is configured", async () => {
+    vi.stubEnv("AUDD_API_TOKEN", "");
+
+    const result = await recognizeBackgroundMusic("https://example.com/preview.m4a");
+
+    expect(result.status).toBe("disabled");
+    vi.unstubAllEnvs();
+  });
+
+  it("normalizes recognized AudD metadata", async () => {
+    vi.stubEnv("AUDD_API_TOKEN", "test-audd-token");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        status: "success",
+        result: {
+          title: "Midnight City",
+          artist: "M83",
+          album: "Hurry Up, We're Dreaming",
+          song_link: "https://song.link/example",
+          apple_music: { url: "https://music.apple.com/example" },
+          spotify: { external_urls: { spotify: "https://open.spotify.com/track/example" } },
+        },
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await recognizeBackgroundMusic("https://example.com/preview.m4a");
+
+    expect(result).toMatchObject({
+      status: "recognized",
+      title: "Midnight City",
+      artist: "M83",
+      album: "Hurry Up, We're Dreaming",
+      songLink: "https://song.link/example",
+      appleMusicUrl: "https://music.apple.com/example",
+      spotifyUrl: "https://open.spotify.com/track/example",
+    });
+    expect(fetchMock).toHaveBeenCalledWith("https://api.audd.io/", expect.objectContaining({ method: "POST" }));
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+  });
+});
+
 
 describe("KIE BYOK video generation", () => {
   it("submits generation tasks with the caller supplied KIE API key", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ code: 200, data: { taskId: "task-video" } }),
+      text: async () => JSON.stringify({ code: 200, data: { taskId: "task-video" } }),
     });
     vi.stubGlobal("fetch", fetchMock);
 

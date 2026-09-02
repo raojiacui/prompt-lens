@@ -5,6 +5,7 @@ import { breakdownVideoWithWorker, resolveLinkedMediaWithWorker } from "@/lib/ff
 import { deleteFromR2, extractR2Key } from "@/lib/cloudflare/r2";
 import { routeModel } from "@/lib/ai/model-registry";
 import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { recognizeBackgroundMusic, type BackgroundMusicRecognition } from "@/lib/workflow/music-recognition";
 import { buildSceneAudioContexts, transcribeMediaWithKie, type SceneAudioContext } from "@/lib/workflow/transcription";
 import {
   analyzeImageBlueprint,
@@ -117,7 +118,40 @@ function deriveProjectTitle(overview: Record<string, unknown>, sceneBlueprints: 
 
   return cleanProjectTitle(fallbackTitle) || "Untitled video project";
 }
-function buildSingleShotBreakdown(mediaUrl: string, duration?: number): { scenes: FfmpegSceneAsset[]; metadata: { duration: number; source: string; mediaType: "video"; singleShot: boolean } } {
+
+function backgroundMusicSummary(value?: BackgroundMusicRecognition) {
+  if (!value) return undefined;
+  if (value.status === "recognized") {
+    return [value.title, value.artist].filter(Boolean).join(" - ") || "Recognized background music";
+  }
+  if (value.status === "disabled") return "Background music recognition is not enabled.";
+  if (value.status === "not_found") return "No matching background music found in the first 12 seconds.";
+  return value.error ? `Background music recognition failed: ${value.error}` : "Background music recognition failed.";
+}
+
+function attachBackgroundMusicToBlueprint(blueprint: SceneBlueprintDraft, music?: BackgroundMusicRecognition): SceneBlueprintDraft {
+  if (!music || music.status === "disabled") return blueprint;
+  return {
+    ...blueprint,
+    audio: {
+      ...blueprint.audio,
+      recognizedBgm: music,
+      recognizedBgmSummary: backgroundMusicSummary(music),
+    },
+    metadata: {
+      ...(blueprint.metadata || {}),
+      backgroundMusicRecognition: music.status,
+    },
+  };
+}
+
+function getAudioPreviewUrl(metadata: Record<string, unknown>) {
+  return typeof metadata.audioPreviewUrl === "string" && metadata.audioPreviewUrl.trim()
+    ? metadata.audioPreviewUrl.trim()
+    : undefined;
+}
+
+function buildSingleShotBreakdown(mediaUrl: string, duration?: number): { scenes: FfmpegSceneAsset[]; metadata: { duration: number; source: string; mediaType: "video"; singleShot: boolean; audioPreviewUrl?: string; audioPreviewDuration?: number } } {
   const safeDuration = Number.isFinite(duration) && duration && duration > 0 ? Math.round(duration * 1000) / 1000 : 10;
   return {
     scenes: [{
@@ -132,7 +166,7 @@ function buildSingleShotBreakdown(mediaUrl: string, duration?: number): { scenes
       transitionIn: "start",
       transitionOut: "end",
     }],
-    metadata: { duration: safeDuration, source: "single-shot-upload", mediaType: "video", singleShot: true },
+    metadata: { duration: safeDuration, source: "single-shot-upload", mediaType: "video", singleShot: true, audioPreviewUrl: mediaUrl, audioPreviewDuration: Math.min(12, safeDuration) },
   };
 }
 export function buildSceneBlueprint(scene: FfmpegSceneAsset): SceneBlueprintDraft {
@@ -231,6 +265,8 @@ async function collectProjectR2Keys(projectId: string) {
   refs.forEach((reference) => {
     addR2Key(keys, reference.storageKey);
     addR2Key(keys, reference.sourceUrl);
+    const metadata = parseJsonObject(reference.metadata);
+    addR2Key(keys, metadata?.audioPreviewUrl);
   });
   scenes.forEach((scene) => {
     addR2Key(keys, scene.clipUrl);
@@ -346,6 +382,21 @@ export async function runVideoBreakdown(params: {
       }
     }
     const sceneAudioContexts = isImage ? new Map<number, SceneAudioContext>() : buildSceneAudioContexts({ scenes: breakdown.scenes, transcription, unavailableReason: transcriptionReason });
+    const backgroundMusic = isImage ? undefined : await recognizeBackgroundMusic(
+      getAudioPreviewUrl(breakdown.metadata) || breakdown.scenes[0]?.audioUrl || effectiveMediaUrl,
+    );
+    const backgroundMusicMetadata = backgroundMusic ? {
+      provider: backgroundMusic.provider,
+      status: backgroundMusic.status,
+      title: backgroundMusic.title,
+      artist: backgroundMusic.artist,
+      album: backgroundMusic.album,
+      songLink: backgroundMusic.songLink,
+      appleMusicUrl: backgroundMusic.appleMusicUrl,
+      spotifyUrl: backgroundMusic.spotifyUrl,
+      sourceUrl: backgroundMusic.sourceUrl,
+      error: backgroundMusic.error,
+    } : undefined;
 
     const imageMimeType = isImage
       ? (params.mediaName?.match(/\.webp$/i) ? "image/webp" : params.mediaName?.match(/\.png$/i) ? "image/png" : "image/jpeg")
@@ -359,7 +410,7 @@ export async function runVideoBreakdown(params: {
         fileName: effectiveMediaName,
         mimeType: imageMimeType,
         duration: isImage ? 0 : Math.round(breakdown.metadata.duration || 0),
-        metadata: { ...breakdown.metadata, linkedMedia: linkedMediaMetadata, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } },
+        metadata: { ...breakdown.metadata, linkedMedia: linkedMediaMetadata, backgroundMusic: backgroundMusicMetadata, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } },
       })
       .returning();
 
@@ -416,9 +467,10 @@ export async function runVideoBreakdown(params: {
           nextSummary: breakdown.scenes[scene.sceneIndex]?.shotGroupId,
           audio: sceneAudioContexts.get(scene.sceneIndex),
         };
-        const blueprint = isImage
+        const analyzedBlueprint = isImage
           ? await analyzeImageBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter })
           : await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
+        const blueprint = isImage ? analyzedBlueprint : attachBackgroundMusicToBlueprint(analyzedBlueprint, backgroundMusic);
         insertedBlueprints.push(blueprint);
         await db.insert(sceneVersions).values({
           projectId: params.projectId,
@@ -475,15 +527,22 @@ export async function runVideoBreakdown(params: {
     }
 
     const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
-    const derivedTitle = deriveProjectTitle(overview, insertedBlueprints, project.title);
-    await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
+    const overviewWithMusic = backgroundMusicMetadata
+      ? {
+          ...overview,
+          backgroundMusic: backgroundMusicSummary(backgroundMusic),
+          metadata: { ...(parseJsonObject((overview as Record<string, unknown>).metadata) || {}), backgroundMusic: backgroundMusicMetadata },
+        }
+      : overview;
+    const derivedTitle = deriveProjectTitle(overviewWithMusic, insertedBlueprints, project.title);
+    await db.update(projectVersions).set({ overview: overviewWithMusic, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
     await db
       .update(projects)
-      .set({ title: derivedTitle, status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { mediaType: params.mediaType || "video", linkedMedia: linkedMediaMetadata, autoTitle: derivedTitle, originalTitle: project.title, failedSceneCount: failedScenes.length, failedScenes, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } } })
+      .set({ title: derivedTitle, status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { mediaType: params.mediaType || "video", linkedMedia: linkedMediaMetadata, backgroundMusic: backgroundMusicMetadata, autoTitle: derivedTitle, originalTitle: project.title, failedSceneCount: failedScenes.length, failedScenes, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } } })
       .where(eq(projects.id, params.projectId));
     await db
       .update(workflowJobs)
-      .set({ status: "completed", output: { sceneCount: insertedBlueprints.length, failedSceneCount: failedScenes.length, transcriptionSegmentCount: transcription?.segments.length || 0, transcriptionReason }, completedAt: new Date(), updatedAt: new Date() })
+      .set({ status: "completed", output: { sceneCount: insertedBlueprints.length, failedSceneCount: failedScenes.length, transcriptionSegmentCount: transcription?.segments.length || 0, transcriptionReason, backgroundMusic: backgroundMusicMetadata }, completedAt: new Date(), updatedAt: new Date() })
       .where(eq(workflowJobs.id, job.id));
 
     return getProjectBundle(params.projectId, params.userId);
