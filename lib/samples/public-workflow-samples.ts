@@ -1,5 +1,4 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
-import { db, projects, projectVersions, referenceVideos, sceneVersions, user, videoScenes } from "@/lib/db";
+import snapshot from "./public-workflow-samples.snapshot.json";
 
 export const PUBLIC_WORKFLOW_SAMPLES = [
   {
@@ -12,20 +11,92 @@ export const PUBLIC_WORKFLOW_SAMPLES = [
   },
 ] as const;
 
-const publicSampleIds: string[] = PUBLIC_WORKFLOW_SAMPLES.map((sample) => sample.id);
-const publicSampleTitleById = new Map<string, string>(PUBLIC_WORKFLOW_SAMPLES.map((sample) => [sample.id, sample.title]));
-const publicSampleOrderById = new Map<string, number>(PUBLIC_WORKFLOW_SAMPLES.map((sample, index) => [sample.id, index]));
-
 type PublicProject = {
   id: string;
-  userId: string;
   title: string;
   description: string | null;
   status: string;
   activeVersionId: string | null;
-  metadata: unknown;
-  createdAt: Date;
-  updatedAt: Date;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PublicVersion = {
+  id: string;
+  projectId: string;
+  parentVersionId: string | null;
+  versionNumber: number;
+  kind: string;
+  label: string;
+  remixPrompt: string | null;
+  overview: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PublicScene = {
+  id: string;
+  projectId: string;
+  referenceVideoId: string | null;
+  sceneIndex: number;
+  shotGroupId: string | null;
+  startTime: number;
+  endTime: number;
+  duration: number;
+  clipUrl: string | null;
+  keyframeUrls: string[];
+  audioUrl: string | null;
+  transitionIn: string | null;
+  transitionOut: string | null;
+  status: string;
+  error: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PublicSceneVersion = {
+  id: string;
+  projectId: string;
+  projectVersionId: string;
+  originalSceneId: string;
+  sceneIndex: number;
+  story: Record<string, unknown>;
+  visual: Record<string, unknown>;
+  dialogue: unknown[];
+  narration: unknown[];
+  subtitle: unknown[];
+  audio: Record<string, unknown>;
+  transition: Record<string, unknown>;
+  generationPrompt: string;
+  duration: number;
+  generatedVideoUrl: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type PublicReferenceVideo = {
+  id: string;
+  projectId: string;
+  sourceUrl: string;
+  fileName: string | null;
+  mimeType: string | null;
+  duration: number | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+};
+
+export type PublicWorkflowBundle = {
+  project: PublicProject;
+  versions: PublicVersion[];
+  activeVersion: PublicVersion | null;
+  scenes: PublicScene[];
+  sceneVersions: PublicSceneVersion[];
+  allSceneVersions: PublicSceneVersion[];
+  referenceVideos: PublicReferenceVideo[];
 };
 
 export type PublicWorkflowSample = {
@@ -39,11 +110,14 @@ export type PublicWorkflowSample = {
   summary: string | null;
   sceneCount: number;
   duration: number | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 };
 
-export type PublicWorkflowBundle = Awaited<ReturnType<typeof getPublicSampleBundle>>;
+const sampleBundles = snapshot as PublicWorkflowBundle[];
+const publicSampleIds: string[] = PUBLIC_WORKFLOW_SAMPLES.map((sample) => sample.id);
+const publicSampleTitleById = new Map<string, string>(PUBLIC_WORKFLOW_SAMPLES.map((sample) => [sample.id, sample.title]));
+const publicSampleOrderById = new Map<string, number>(PUBLIC_WORKFLOW_SAMPLES.map((sample, index) => [sample.id, index]));
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
@@ -62,37 +136,19 @@ function textFromObject(value: unknown, keys: string[]): string | null {
   return null;
 }
 
-function publicTitle(project: Pick<PublicProject, "id" | "title">) {
+function titleFor(project: Pick<PublicProject, "id" | "title">) {
   return publicSampleTitleById.get(project.id) || project.title;
 }
 
-async function getPublicProjects(ids = publicSampleIds) {
-  if (!ids.length) return [];
-
-  const rows = await db
-    .select({
-      id: projects.id,
-      userId: projects.userId,
-      title: projects.title,
-      description: projects.description,
-      status: projects.status,
-      activeVersionId: projects.activeVersionId,
-      metadata: projects.metadata,
-      createdAt: projects.createdAt,
-      updatedAt: projects.updatedAt,
-    })
-    .from(projects)
-    .innerJoin(user, eq(projects.userId, user.id))
-    .where(and(eq(user.role, "admin"), eq(projects.status, "ready"), inArray(projects.id, ids)));
-
-  return rows.sort((a, b) => (publicSampleOrderById.get(a.id) ?? 999) - (publicSampleOrderById.get(b.id) ?? 999));
+function orderedBundles() {
+  return sampleBundles
+    .filter((bundle) => publicSampleIds.includes(bundle.project.id))
+    .sort((a, b) => (publicSampleOrderById.get(a.project.id) ?? 999) - (publicSampleOrderById.get(b.project.id) ?? 999));
 }
 
 export async function getPublicWorkflowSamples(limit = 60): Promise<PublicWorkflowSample[]> {
-  const projectRows = (await getPublicProjects()).slice(0, limit);
-  const bundles = await getBundles(projectRows);
-
-  return bundles
+  return orderedBundles()
+    .slice(0, limit)
     .map((bundle) => {
       const project = bundle.project;
       const metadata = asObject(project.metadata);
@@ -111,7 +167,7 @@ export async function getPublicWorkflowSamples(limit = 60): Promise<PublicWorkfl
 
       return {
         id: project.id,
-        title: publicTitle(project),
+        title: titleFor(project),
         status: project.status,
         mediaType,
         mediaUrl,
@@ -127,76 +183,17 @@ export async function getPublicWorkflowSamples(limit = 60): Promise<PublicWorkfl
     .filter((sample) => sample.mediaUrl);
 }
 
-export async function getPublicSampleBundle(id: string) {
+export async function getPublicSampleBundle(id: string): Promise<PublicWorkflowBundle | null> {
   if (!publicSampleIds.includes(id)) return null;
 
-  const [project] = await getPublicProjects([id]);
-  if (!project) return null;
-
-  const [bundle] = await getBundles([project]);
+  const bundle = sampleBundles.find((item) => item.project.id === id);
   if (!bundle) return null;
 
   return {
     ...bundle,
     project: {
       ...bundle.project,
-      title: publicTitle(bundle.project),
+      title: titleFor(bundle.project),
     },
   };
-}
-
-async function getBundles(projectRows: PublicProject[]) {
-  const ids = projectRows.map((project) => project.id);
-  if (!ids.length) return [];
-
-  const [versions, scenes, allSceneVersions, references] = await Promise.all([
-    db.query.projectVersions.findMany({
-      where: inArray(projectVersions.projectId, ids),
-      orderBy: [asc(projectVersions.versionNumber)],
-    }),
-    db.query.videoScenes.findMany({
-      where: inArray(videoScenes.projectId, ids),
-      orderBy: [asc(videoScenes.sceneIndex)],
-    }),
-    db.query.sceneVersions.findMany({
-      where: inArray(sceneVersions.projectId, ids),
-      orderBy: [asc(sceneVersions.sceneIndex), desc(sceneVersions.createdAt)],
-    }),
-    db.query.referenceVideos.findMany({
-      where: inArray(referenceVideos.projectId, ids),
-      orderBy: [desc(referenceVideos.createdAt)],
-    }),
-  ]);
-
-  return projectRows.map((project) => {
-    const projectVersionsRows = versions.filter((version) => version.projectId === project.id);
-    const activeVersion =
-      projectVersionsRows.find((version) => version.id === project.activeVersionId) ||
-      projectVersionsRows[projectVersionsRows.length - 1] ||
-      null;
-    const activeSceneVersionRows = activeVersion ? allSceneVersions.filter((scene) => scene.projectVersionId === activeVersion.id) : [];
-    const latestSceneVersionByOriginalScene = new Map<string, (typeof allSceneVersions)[number]>();
-    for (const sceneVersion of activeSceneVersionRows) {
-      if (!latestSceneVersionByOriginalScene.has(sceneVersion.originalSceneId)) {
-        latestSceneVersionByOriginalScene.set(sceneVersion.originalSceneId, sceneVersion);
-      }
-    }
-    const { userId: _userId, ...publicProject } = project;
-
-    return {
-      project: {
-        ...publicProject,
-        title: publicTitle(project),
-        metadata: asObject(project.metadata),
-      },
-      versions: projectVersionsRows,
-      activeVersion,
-      scenes: scenes.filter((scene) => scene.projectId === project.id).sort((a, b) => a.sceneIndex - b.sceneIndex),
-      sceneVersions: Array.from(latestSceneVersionByOriginalScene.values()).sort((a, b) => a.sceneIndex - b.sceneIndex),
-      allSceneVersions: allSceneVersions.filter((scene) => scene.projectId === project.id),
-      referenceVideos: references
-        .filter((reference) => reference.projectId === project.id)
-        .map(({ storageKey: _storageKey, ...reference }) => reference),
-    };
-  });
 }
