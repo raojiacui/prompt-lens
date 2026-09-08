@@ -1,5 +1,4 @@
 ﻿import type { CSSProperties, ReactNode } from "react";
-import { fontFamily as dmSans, loadFont } from "@remotion/google-fonts/DMSans";
 import {
   AbsoluteFill,
   Easing,
@@ -21,8 +20,6 @@ import {
   VideoIcon,
   WandSparkles,
 } from "lucide-react";
-
-loadFont("normal", { weights: ["400", "500", "600", "700", "800", "900"] });
 
 const ease = Easing.bezier(0.16, 1, 0.3, 1);
 const clamp = { extrapolateLeft: "clamp" as const, extrapolateRight: "clamp" as const };
@@ -232,10 +229,8 @@ function PromptScene() {
         <div style={{ marginTop: 22, fontSize: 30, lineHeight: 1.38, fontWeight: 650, color: c.ink }}>{promptText.slice(0, chars)}<span style={{ opacity: interpolate(frame % 20, [0, 10, 19], [1, 0.25, 1], clamp) }}>▌</span></div>
         <div style={{ position: "absolute", left: 30, right: 30, bottom: 28, display: "flex", gap: 12 }}>
           <button style={{ flex: 1, height: 56, borderRadius: 18, border: `1px solid ${c.line}`, background: "white", color: c.ink, fontSize: 18, fontWeight: 820, display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}><Clipboard size={20} /> Copy Prompt</button>
-          <button style={{ flex: 1, height: 56, borderRadius: 18, border: 0, background: c.orange, color: "white", fontSize: 18, fontWeight: 850, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, scale: interpolate(frame, [150, 158, 168], [1, 0.96, 1], { ...clamp, easing: ease }) }}><VideoIcon size={20} /> 做同款</button>
         </div>
       </div>
-      <Cursor start={128} from={[900, 760]} to={[976, 704]} clickAt={154} />
     </AbsoluteFill>
   );
 }
@@ -282,8 +277,7 @@ export function PromptLensCoreWorkflowDemo() {
       <Sequence from={150} durationInFrames={136}><SplittingScene /></Sequence>
       <Sequence from={286} durationInFrames={144}><AnalysisScene /></Sequence>
       <Sequence from={430} durationInFrames={174}><PromptScene /></Sequence>
-      <Sequence from={604} durationInFrames={144}><GenerateScene /></Sequence>
-      <Sequence from={748} durationInFrames={152}><CloseScene /></Sequence>
+      <Sequence from={604} durationInFrames={152}><CloseScene /></Sequence>
     </AbsoluteFill>
   );
 }
@@ -305,7 +299,7 @@ const brandStyle: CSSProperties = {
 };
 
 const base: CSSProperties = {
-  fontFamily: `${dmSans}, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif`,
+  fontFamily: `"Noto Sans SC", "PingFang SC", "Microsoft YaHei", Inter, ui-sans-serif, system-ui, sans-serif`,
   background: c.bg,
   color: c.ink,
   overflow: "hidden",

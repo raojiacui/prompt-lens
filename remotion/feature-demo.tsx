@@ -1,11 +1,6 @@
 import React from "react";
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame, useVideoConfig } from "remotion";
-import { loadFont } from "@remotion/google-fonts/Outfit";
-
-const { fontFamily } = loadFont("normal", {
-  weights: ["400", "500", "600", "700", "800"],
-  subsets: ["latin"],
-});
+const fontFamily = `"Noto Sans SC", "PingFang SC", "Microsoft YaHei", Inter, ui-sans-serif, system-ui, sans-serif`;
 
 type DemoKind = "analyze" | "generate" | "audio" | "edit";
 

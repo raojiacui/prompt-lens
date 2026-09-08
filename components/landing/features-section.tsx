@@ -9,15 +9,15 @@ const featureIcons = [Film, Wand2, Mic2, Scissors];
 const featureKeys = ["featureAnalyze", "featureGen", "featureAudio", "featureEdit"] as const;
 const tabMap = ["analyze", "videoGen", "audio", "edit"];
 const demoVideos = [
-  "/remotion/landing-ad/prompt-lens-core-workflow-demo.mp4",
-  "/feature-video-generation.mp4",
+  "/remotion/landing-ad/prompt-lens-analysis-motion-v5.mp4",
+  "/remotion/landing-ad/prompt-lens-remix-gamma-v4.mp4",
   "/feature-audio-recognition.mp4",
   "/feature-video-edit.mp4",
 ];
 
-function FeatureDemoVideo({ label, src }: { label: string; src: string }) {
+function FeatureDemoVideo({ label, src, nativeAspect = false }: { label: string; src: string; nativeAspect?: boolean }) {
   return (
-    <div className="relative w-full aspect-[4/3] rounded-2xl bg-[#EDE5D8] border border-[var(--color-border-subtle)] overflow-hidden shadow-sm">
+    <div className={`relative w-full ${nativeAspect ? "aspect-[24/19]" : "aspect-[4/3]"} rounded-2xl bg-[#EDE5D8] border border-[var(--color-border-subtle)] overflow-hidden shadow-sm`}>
       <video
         src={src}
         aria-label={label}
@@ -80,7 +80,7 @@ export function FeaturesSection() {
                   </Link>
                 </div>
                 <div className="flex-1 w-full">
-                  <FeatureDemoVideo label={title} src={demoVideos[index]} />
+                  <FeatureDemoVideo label={title} src={demoVideos[index]} nativeAspect={key === "featureAnalyze" || key === "featureGen"} />
                 </div>
               </div>
             );
