@@ -1,0 +1,26 @@
+# Server-only template. Do not paste secrets into chat or commit configured copies.
+# Existing database/auth/R2 variables are still required.
+NEXT_PUBLIC_SITE_URL=https://your-domain.example
+XUNHUPAY_ALIPAY_APP_ID=
+XUNHUPAY_ALIPAY_APP_SECRET=
+KIE_API_KEY=
+FFMPEG_WORKER_URL=
+FFMPEG_WORKER_SECRET=
+CRON_SECRET=
+
+# Also set CRON_SECRET and this HTTPS origin on the FFmpeg worker.
+COMMERCIAL_RECONCILIATION_BASE_URL=https://your-domain.example
+
+# Remain disabled until deployment and verification.
+COMMERCIAL_CONSUMPTION_ENABLED=false
+COMMERCIAL_REWRITE_ENABLED=false
+COMMERCIAL_MIGRATION_ACCEPTED=
+COMMERCIAL_SCHEDULER_ACCEPTED=false
+COMMERCIAL_PAYMENT_ACCEPTANCE=
+COMMERCIAL_MODEL_ACCEPTANCE=
+COMMERCIAL_SALES_ENABLED=false
+
+# Explicitly authorized real payment tests for named accounts only.
+# Requires infrastructure checks, does not enable public sales.
+COMMERCIAL_ACCEPTANCE_ENABLED=false
+COMMERCIAL_ACCEPTANCE_USER_IDS=
