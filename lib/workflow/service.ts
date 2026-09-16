@@ -1,5 +1,7 @@
-import { db, projectAssets, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
+import { db, commercialTasks, projectAssets, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
 import { InsufficientCreditsError } from "@/lib/billing/credits";
+import { reserveCommercialTask, settleCommercialTask, settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
+import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import { breakdownVideoWithWorker, resolveLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
 import { deleteFromR2, extractR2Key } from "@/lib/cloudflare/r2";
@@ -18,7 +20,7 @@ import {
   type AiModelSelection,
   type SceneBlueprintDraft,
 } from "@/lib/workflow/scene-analysis";
-import { and, asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 export type { SceneBlueprintDraft } from "@/lib/workflow/scene-analysis";
 
@@ -287,6 +289,22 @@ async function collectProjectR2Keys(projectId: string) {
 export async function deleteProjectForUser(projectId: string, userId: string) {
   const project = await getProjectForUser(projectId, userId);
   if (!project) throw new Error("Project not found");
+  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true") {
+    const r2Keys = await collectProjectR2Keys(projectId);
+    await db.transaction(async (tx) => {
+      const [locked] = await tx.select({ id: projects.id }).from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).for("update");
+      if (!locked) throw new Error("Project not found");
+      const [pending] = await tx.select({ id: commercialTasks.id }).from(commercialTasks).where(and(eq(commercialTasks.userId, userId), sql`${commercialTasks.input}->>'projectId' = ${projectId}`, sql`${commercialTasks.state} IN ('queued','running','review')`)).limit(1);
+      if (pending) throw new Error("A paid task is still pending. Resolve it before deleting this project.");
+      await tx.delete(projects).where(eq(projects.id, projectId));
+    });
+    let deletedR2Objects = 0;
+    for (const key of r2Keys) {
+      try { await deleteFromR2(key); deletedR2Objects++; }
+      catch { console.warn("[workflow] Deleted project has an orphaned storage object", { projectId, key }); }
+    }
+    return { success: true, deletedR2Objects };
+  }
   const r2Keys = await collectProjectR2Keys(projectId);
   for (const key of r2Keys) {
     await deleteFromR2(key);
@@ -306,6 +324,8 @@ export async function runVideoBreakdown(params: {
   singleShot?: boolean;
   resolveLinkedMedia?: boolean;
   creditBudget?: { balance: number; baseUnits: number };
+  commercialTaskId?: string;
+  preparedBreakdown?: { scenes: FfmpegSceneAsset[]; metadata: { duration?: number } };
 } & AiModelSelection) {
   const project = await getProjectForUser(params.projectId, params.userId);
   if (!project) throw new Error("Project not found");
@@ -322,7 +342,7 @@ export async function runVideoBreakdown(params: {
       projectId: params.projectId,
       type: "ANALYZE_VIDEO",
       status: "processing",
-      input: { mediaUrl: params.mediaUrl, mediaName: params.mediaName, mediaType: params.mediaType, mediaDuration: params.mediaDuration, singleShot: params.singleShot, resolveLinkedMedia: params.resolveLinkedMedia, creditBudget: params.creditBudget },
+      input: { commercialTaskId: params.commercialTaskId, mediaUrl: params.mediaUrl, mediaName: params.mediaName, mediaType: params.mediaType, mediaDuration: params.mediaDuration, singleShot: params.singleShot, resolveLinkedMedia: params.resolveLinkedMedia, creditBudget: params.creditBudget },
     })
     .returning();
 
@@ -336,7 +356,7 @@ export async function runVideoBreakdown(params: {
       effectiveMediaDuration = typeof resolved.metadata.duration === "number" ? resolved.metadata.duration : params.mediaDuration;
       linkedMediaMetadata = { platform: resolved.platform, originalUrl: params.mediaUrl, resolvedStorageKey: resolved.storageKey };
     }
-    const breakdown = isImage
+    const breakdown = params.preparedBreakdown ?? (isImage
       ? {
           scenes: [{
             sceneIndex: 1,
@@ -353,7 +373,7 @@ export async function runVideoBreakdown(params: {
         }
       : effectiveMediaDuration && effectiveMediaDuration <= 10.75
         ? buildSingleShotBreakdown(effectiveMediaUrl, effectiveMediaDuration)
-        : await breakdownVideoWithWorker(effectiveMediaUrl);
+        : await breakdownVideoWithWorker(effectiveMediaUrl));
     if (!breakdown.scenes.length) throw new Error(isImage ? "Failed to prepare image for analysis" : "No scenes detected in the uploaded video");
 
     if (params.creditBudget) {
@@ -366,7 +386,7 @@ export async function runVideoBreakdown(params: {
 
     let transcriptionReason: string | undefined;
     let transcription = null;
-    if (!isImage) {
+    if (!isImage && !params.commercialTaskId) {
       try {
         const keyAccess = await resolveKieApiKeyForFeature(params.userId, { allowPaidPlatformKey: params.allowPlatformKeyForAnalysis === true, requiredPackageScope: "video_analysis" });
         const kieApiKey = keyAccess.apiKey;
@@ -382,7 +402,7 @@ export async function runVideoBreakdown(params: {
       }
     }
     const sceneAudioContexts = isImage ? new Map<number, SceneAudioContext>() : buildSceneAudioContexts({ scenes: breakdown.scenes, transcription, unavailableReason: transcriptionReason });
-    const backgroundMusic = isImage ? undefined : await recognizeBackgroundMusic(
+    const backgroundMusic = isImage || params.commercialTaskId ? undefined : await recognizeBackgroundMusic(
       getAudioPreviewUrl(breakdown.metadata) || breakdown.scenes[0]?.audioUrl || effectiveMediaUrl,
     );
     const backgroundMusicMetadata = backgroundMusic ? {
@@ -469,7 +489,7 @@ export async function runVideoBreakdown(params: {
         };
         const analyzedBlueprint = isImage
           ? await analyzeImageBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter })
-          : await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
+          : await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, analysisApiKey: params.analysisApiKey, analysisKeySource: params.analysisKeySource, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
         const blueprint = isImage ? analyzedBlueprint : attachBackgroundMusicToBlueprint(analyzedBlueprint, backgroundMusic);
         insertedBlueprints.push(blueprint);
         await db.insert(sceneVersions).values({
@@ -526,7 +546,7 @@ export async function runVideoBreakdown(params: {
       }
     }
 
-    const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
+    const overview = params.commercialTaskId ? { theme: project.title, sceneCount: insertedBlueprints.length } : await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
     const overviewWithMusic = backgroundMusicMetadata
       ? {
           ...overview,
@@ -634,7 +654,10 @@ export async function rewriteSceneVersion(params: {
   projectId: string;
   sceneVersionId: string;
   instruction: string;
+  currentPrompt?: string;
   allowPlatformKeyForRewrite?: boolean;
+  rewriteKeySource?: "platform" | "user";
+  commercialTaskKey?: string;
 } & AiModelSelection) {
   const project = await getProjectForUser(params.projectId, params.userId);
   if (!project) throw new Error("Project not found");
@@ -644,9 +667,30 @@ export async function rewriteSceneVersion(params: {
   });
   if (!scene) throw new Error("Scene version not found");
 
-  const rewritten = await rewriteSceneBlueprint({
+  if (params.commercialTaskKey) {
+    const reserved = await reserveCommercialTask({
+      userId: params.userId, taskKey: params.commercialTaskKey, credits: 0, rewrites: 1,
+      quote: { version: PRICING_VERSION, projectId: params.projectId, sceneVersionId: scene.id,
+        instruction: params.instruction, currentPrompt: params.currentPrompt ?? scene.generationPrompt,
+        outputLanguage: params.outputLanguage ?? "zh", modelId: params.modelId },
+    });
+    if (!reserved.created) {
+      if (reserved.reservation.state === "held") throw new Error("REWRITE_IN_PROGRESS");
+      if (reserved.reservation.settledRewrites === 0) throw new Error("REWRITE_PREVIOUSLY_FAILED");
+      const result = await db.query.sceneVersions.findFirst({ where: and(
+        eq(sceneVersions.projectId, params.projectId),
+        sql`${sceneVersions.metadata}->>'commercialTaskKey' = ${params.commercialTaskKey}`,
+      ) });
+      if (!result) throw new Error("REWRITE_RESULT_UNAVAILABLE");
+      return result;
+    }
+  }
+
+  let rewritten: SceneBlueprintDraft;
+  try {
+    rewritten = await rewriteSceneBlueprint({
     userId: params.userId,
-    scene: sceneVersionToBlueprint(scene),
+    scene: { ...sceneVersionToBlueprint(scene), generationPrompt: params.currentPrompt ?? scene.generationPrompt },
     instruction: params.instruction,
     duration: scene.duration,
     sceneIndex: scene.sceneIndex,
@@ -655,9 +699,19 @@ export async function rewriteSceneVersion(params: {
     modelPriority: params.modelPriority,
     outputLanguage: params.outputLanguage,
     allowPlatformKeyForRewrite: params.allowPlatformKeyForRewrite,
+    rewriteKeySource: params.rewriteKeySource,
   });
+  } catch (error) {
+    if (params.commercialTaskKey) {
+      await settleCommercialTask({ userId: params.userId, taskKey: params.commercialTaskKey, credits: 0, rewrites: 0 });
+      throw new Error("REWRITE_PROVIDER_FAILED", { cause: error });
+    }
+    throw error;
+  }
 
-  const [created] = await db
+  // Persist the successful version and its allowance charge in the same transaction.
+  return db.transaction(async (tx) => {
+  const [created] = await tx
     .insert(sceneVersions)
     .values({
       projectId: scene.projectId,
@@ -679,13 +733,16 @@ export async function rewriteSceneVersion(params: {
         rewriteInstruction: params.instruction,
         previousSceneVersionId: scene.id,
         versionKind: "rewrite",
+        ...(params.commercialTaskKey ? { commercialTaskKey: params.commercialTaskKey } : {}),
       },
     })
     .returning();
 
-  await db.update(projects).set({ updatedAt: new Date() }).where(eq(projects.id, params.projectId));
+  await tx.update(projects).set({ updatedAt: new Date() }).where(eq(projects.id, params.projectId));
+  if (params.commercialTaskKey) await settleCommercialTaskInTransaction(tx, { userId: params.userId, taskKey: params.commercialTaskKey, credits: 0, rewrites: 1 });
 
   return created;
+  });
 }
 
 export async function retrySceneAnalysis(params: {
@@ -719,6 +776,8 @@ export async function retrySceneAnalysis(params: {
     userId: params.userId,
     scene: asset,
     context: { sceneCount: 1, projectTitle: project.title },
+    analysisKeySource: params.analysisKeySource,
+    analysisApiKey: params.analysisApiKey,
     modelMode: params.modelMode,
     modelId: params.modelId,
     modelPriority: params.modelPriority,

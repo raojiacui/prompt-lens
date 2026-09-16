@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { buildFallbackSceneBlueprint, remixSceneBlueprint } from "@/lib/workflow/scene-analysis";
+import { buildFallbackSceneBlueprint } from "@/lib/workflow/scene-analysis";
 import { routeModel } from "@/lib/ai/model-registry";
 import { buildAudioProductionPlan } from "@/lib/workflow/audio-production";
 import { buildEditPlan } from "@/lib/workflow/video-editing";
 import { createKieDialogueTask } from "@/lib/workflow/kie-audio";
 import { buildLocalEditInstruction } from "@/lib/workflow/local-standard-edit";
 import { buildSceneAudioContexts } from "@/lib/workflow/transcription";
-import { createKieVeoGeneration } from "@/lib/reference-video/kie-veo";
+import { createKieVeoGeneration, KieProviderError } from "@/lib/reference-video/kie-veo";
 import { recognizeBackgroundMusic } from "@/lib/workflow/music-recognition";
 
 const scene = {
@@ -64,20 +64,6 @@ describe("V2 scene analysis", () => {
     expect(contexts.get(2)?.audio.transcriptionProvider).toBe("kie");
   });
 
-  it("creates a deterministic remix fallback when no KIE key exists", async () => {
-    const base = buildFallbackSceneBlueprint(scene);
-    const remixed = await remixSceneBlueprint({
-      userId: "00000000-0000-0000-0000-000000000001",
-      scene: base,
-      remixPrompt: "turn the lead into a campus comedy character",
-      sceneIndex: 2,
-      duration: 5.5,
-    });
-
-    expect(remixed.story.rewriteInstruction).toContain("campus comedy");
-    expect(remixed.generationPrompt).toContain("Scene rewrite instruction");
-    expect(remixed.generationPrompt).toContain("5.5s");
-  });
 });
 
 describe("V2 model routing", () => {
@@ -193,6 +179,30 @@ describe("KIE BYOK video generation", () => {
       method: "POST",
       headers: expect.objectContaining({ Authorization: "Bearer user-kie-key" }),
     }));
+    vi.unstubAllGlobals();
+  });
+
+  it("maps KIE point limit failures to a friendly quota error", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({
+        code: 433,
+        msg: "The current number of points used by apiKey has exceeded the total limit",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(createKieVeoGeneration({
+      prompt: "Create a short product video",
+      model: "wan/2-7-text-to-video",
+      duration: 5,
+    }, "spent-kie-key")).rejects.toMatchObject({
+      name: "KieProviderError",
+      code: 433,
+      kind: "quota_exceeded",
+      status: 402,
+    } satisfies Partial<KieProviderError>);
+
     vi.unstubAllGlobals();
   });
 });

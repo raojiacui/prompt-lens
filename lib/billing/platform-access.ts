@@ -38,17 +38,6 @@ export async function resolveKieApiKeyForFeature(
   const platformKey = getPlatformKieApiKey();
   const platformKeyConfigured = Boolean(platformKey);
 
-  if (platformKey && adminUser) {
-    return {
-      apiKey: platformKey,
-      source: "platform_admin",
-      hasUserKieKey: false,
-      hasPaidPackage: true,
-      isAdmin: true,
-      platformKeyConfigured,
-    };
-  }
-
   let userKey: string | null = null;
   try {
     userKey = await getUserKieApiKey(userId);
@@ -64,6 +53,17 @@ export async function resolveKieApiKeyForFeature(
       hasUserKieKey: true,
       hasPaidPackage: false,
       isAdmin: adminUser,
+      platformKeyConfigured,
+    };
+  }
+
+  if (platformKey && adminUser) {
+    return {
+      apiKey: platformKey,
+      source: "platform_admin",
+      hasUserKieKey: false,
+      hasPaidPackage: true,
+      isAdmin: true,
       platformKeyConfigured,
     };
   }
