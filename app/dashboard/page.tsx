@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import Image from "next/image";
 import Link from "next/link";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, Clock, Home, LogOut, Mic2, Scissors, Settings, Shield, Sparkles, Video } from "lucide-react";
 
@@ -24,6 +24,7 @@ type FeatureTab = "analyze" | "audio" | "edit" | "video-gen";
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const t = useTranslations();
+  const zh = useLocale() === "zh";
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -515,6 +516,7 @@ export default function DashboardPage() {
           {/* 设置页面 */}
           {activeTab === "settings" && (
             <div className="animate-fade-in space-y-6">
+              <Link href="/billing" className="inline-flex min-h-11 items-center underline underline-offset-4">{zh ? "余额、订单与任务记录" : "Balance, orders and task history"}</Link>
               <ApiKeySettings />
             </div>
           )}
@@ -522,6 +524,7 @@ export default function DashboardPage() {
           {/* 管理后台 */}
           {activeTab === "admin" && (
             <div className="animate-fade-in">
+              <Link href="/billing/review" className="mb-5 inline-flex min-h-11 items-center underline underline-offset-4">{zh ? "支付对账与异常处理" : "Payment reconciliation and review"}</Link>
               <AdminOverviewPanel />
             </div>
           )}
