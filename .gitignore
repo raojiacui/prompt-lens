@@ -49,3 +49,17 @@ __pycache__/
 dashboard-*.png
 demo.gif
 tmp/
+
+# Local Remotion drafts and recording references
+public/remotion/landing-ad/analysis-shot-*.jpg
+public/remotion/landing-ad/prompt-lens-analysis-motion-v3.mp4
+public/remotion/landing-ad/prompt-lens-analysis-motion-v4.mp4
+public/remotion/landing-ad/prompt-lens-analysis-only-v2.mp4
+public/remotion/landing-ad/prompt-lens-remix-comparison-demo.mp4
+public/remotion/landing-ad/prompt-lens-remix-focus-v5.mp4
+public/remotion/landing-ad/prompt-lens-remix-gamma-v2.mp4
+public/remotion/landing-ad/prompt-lens-remix-gamma-v3.mp4
+public/remotion/landing-ad/prompt-lens-rewrite-v1.mp4
+public/remotion/landing-ad/prompt-lens-rewrite-v2.mp4
+public/remotion/landing-ad/prompt-lens-rewrite-v3.mp4
+public/remotion/remix-flow/screen-flow.mp4
