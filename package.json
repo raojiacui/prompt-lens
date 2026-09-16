@@ -54,6 +54,7 @@
         "zod": "^3.24.1"
     },
     "devDependencies": {
+        "@electric-sql/pglite": "^0.5.8",
         "@playwright/test": "^1.49.1",
         "@remotion/cli": "^4.0.509",
         "@remotion/google-fonts": "^4.0.509",

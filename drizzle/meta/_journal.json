@@ -71,6 +71,27 @@
                         "when":  1788192000000,
                         "tag":  "0009_projects_user_updated_at_idx",
                         "breakpoints":  true
+                    },
+                    {
+                        "idx":  10,
+                        "version":  "7",
+                        "when":  1789344000000,
+                        "tag":  "0010_commercial_wallets",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  11,
+                        "version":  "7",
+                        "when":  1789430400000,
+                        "tag":  "0011_commercial_purchase_lots",
+                        "breakpoints":  true
+                    },
+                    {
+                        "idx":  12,
+                        "version":  "7",
+                        "when":  1789430401000,
+                        "tag":  "0012_commercial_tasks",
+                        "breakpoints":  true
                     }
                 ]
 }

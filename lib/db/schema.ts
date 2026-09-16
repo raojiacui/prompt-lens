@@ -1,4 +1,5 @@
 import {
+  check,
   boolean,
   doublePrecision,
   index,
@@ -12,6 +13,94 @@ import {
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+
+// V6 wallets are separate from user_credits, preserving historical purchasing power.
+export const commercialWallets = pgTable("commercial_wallets", {
+  userId: uuid("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  credits: integer("credits").notNull().default(0),
+  rewrites: integer("rewrites").notNull().default(0),
+  heldCredits: integer("held_credits").notNull().default(0),
+  heldRewrites: integer("held_rewrites").notNull().default(0),
+  frozen: boolean("frozen").notNull().default(false),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [check("commercial_wallet_nonnegative", sql`${table.credits} >= 0 AND ${table.rewrites} >= 0 AND ${table.heldCredits} >= 0 AND ${table.heldRewrites} >= 0`)]);
+
+export const commercialReservations = pgTable("commercial_reservations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  taskKey: varchar("task_key", { length: 160 }).notNull(),
+  credits: integer("credits").notNull(),
+  rewrites: integer("rewrites").notNull(),
+  settledCredits: integer("settled_credits"),
+  settledRewrites: integer("settled_rewrites"),
+  state: varchar("state", { length: 20 }).notNull().default("held"),
+  quote: jsonb("quote").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("commercial_reservation_task_unique").on(table.userId, table.taskKey),
+  check("commercial_reservation_amounts", sql`${table.credits} >= 0 AND ${table.rewrites} >= 0 AND (${table.state} = 'held' AND ${table.settledCredits} IS NULL AND ${table.settledRewrites} IS NULL OR ${table.state} = 'settled' AND ${table.settledCredits} IS NOT NULL AND ${table.settledRewrites} IS NOT NULL AND ${table.settledCredits} BETWEEN 0 AND ${table.credits} AND ${table.settledRewrites} BETWEEN 0 AND ${table.rewrites})`),
+]);
+
+export const commercialLedger = pgTable("commercial_ledger", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  eventKey: varchar("event_key", { length: 200 }).notNull(),
+  credits: integer("credits").notNull(),
+  rewrites: integer("rewrites").notNull(),
+  metadata: jsonb("metadata").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [uniqueIndex("commercial_ledger_event_unique").on(table.eventKey), index("commercial_ledger_user_idx").on(table.userId)]);
+
+export const commercialLots = pgTable("commercial_lots", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  orderId: uuid("order_id").notNull(),
+  credits: integer("credits").notNull(),
+  rewrites: integer("rewrites").notNull(),
+  availableCredits: integer("available_credits").notNull(),
+  availableRewrites: integer("available_rewrites").notNull(),
+  heldCredits: integer("held_credits").notNull().default(0),
+  heldRewrites: integer("held_rewrites").notNull().default(0),
+  usedCredits: integer("used_credits").notNull().default(0),
+  usedRewrites: integer("used_rewrites").notNull().default(0),
+  state: varchar("state", { length: 24 }).notNull().default("active"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("commercial_lot_order_unique").on(t.orderId), index("commercial_lot_user_idx").on(t.userId)]);
+
+export const commercialAllocations = pgTable("commercial_allocations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  reservationId: uuid("reservation_id").notNull().references(() => commercialReservations.id, { onDelete: "cascade" }),
+  lotId: uuid("lot_id").notNull().references(() => commercialLots.id),
+  credits: integer("credits").notNull(),
+  rewrites: integer("rewrites").notNull(),
+}, (t) => [uniqueIndex("commercial_allocation_unique").on(t.reservationId, t.lotId)]);
+
+export const commercialRefunds = pgTable("commercial_refunds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id").notNull().references(() => paymentOrders.id),
+  userId: uuid("user_id").notNull().references(() => user.id),
+  state: varchar("state", { length: 24 }).notNull().default("requested"),
+  reason: text("reason").notNull(),
+  evidence: jsonb("evidence").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("commercial_refund_order_unique").on(t.orderId)]);
+
+export const commercialTasks = pgTable("commercial_tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => user.id),
+  kind: varchar("kind", { length: 24 }).notNull(),
+  state: varchar("state", { length: 24 }).notNull().default("quoted"),
+  input: jsonb("input").notNull(),
+  result: jsonb("result").notNull().default({}),
+  credits: integer("credits").notNull().default(0),
+  providerTaskId: text("provider_task_id"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [index("commercial_task_user_idx").on(t.userId), index("commercial_task_state_idx").on(t.state)]);
 
 // ============ 复用 nano-video 的用户和认证表 ============
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
