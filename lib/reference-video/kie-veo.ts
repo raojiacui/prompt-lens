@@ -49,6 +49,34 @@ const alephStatusEndpoint =
 const runwayStatusEndpoint =
   process.env.KIE_RUNWAY_STATUS_ENDPOINT || "/api/v1/runway/record-detail";
 
+export type KieErrorKind =
+  | "quota_exceeded"
+  | "auth"
+  | "rate_limited"
+  | "provider_error";
+
+export class KieProviderError extends Error {
+  readonly code?: number;
+  readonly kind: KieErrorKind;
+  readonly status: number;
+  readonly providerMessage?: string;
+
+  constructor(input: {
+    code?: number;
+    kind?: KieErrorKind;
+    message: string;
+    providerMessage?: string;
+    status?: number;
+  }) {
+    super(input.message);
+    this.name = "KieProviderError";
+    this.code = input.code;
+    this.kind = input.kind || classifyKieError(input.providerMessage || input.message, input.code);
+    this.status = input.status || kieHttpStatusForKind(this.kind);
+    this.providerMessage = input.providerMessage;
+  }
+}
+
 function getApiKey() {
   const apiKey = process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
   if (!apiKey)
@@ -56,13 +84,91 @@ function getApiKey() {
   return apiKey;
 }
 
+function classifyKieError(message: string, code?: number): KieErrorKind {
+  const normalized = message.toLowerCase();
+  if (
+    code === 433 ||
+    /points?.*(exceeded|exceed|limit|insufficient|not enough|used)/i.test(message) ||
+    /(quota|balance|credit).*(exceeded|exceed|insufficient|not enough|limit)/i.test(message)
+  ) {
+    return "quota_exceeded";
+  }
+  if (code === 401 || code === 403 || /api.?key|unauthori[sz]ed|forbidden|invalid key/i.test(message)) {
+    return "auth";
+  }
+  if (code === 429 || /rate limit|too many requests/i.test(normalized)) {
+    return "rate_limited";
+  }
+  return "provider_error";
+}
+
+function kieHttpStatusForKind(kind: KieErrorKind) {
+  switch (kind) {
+    case "quota_exceeded":
+      return 402;
+    case "auth":
+      return 401;
+    case "rate_limited":
+      return 429;
+    default:
+      return 502;
+  }
+}
+
+export function friendlyKieErrorMessage(kind: KieErrorKind) {
+  switch (kind) {
+    case "quota_exceeded":
+      return "当前 KIE API Key 的点数/额度已经用完，视频生成暂时无法继续。请到 Kie.ai 充值或在设置里更换一个有余额的 KIE API Key 后再试。";
+    case "auth":
+      return "KIE API Key 校验失败。请到设置里检查或重新配置你的 KIE API Key。";
+    case "rate_limited":
+      return "KIE 请求过于频繁，请稍后再试。";
+    default:
+      return "KIE 视频生成服务返回异常，请稍后再试或检查 KIE 控制台。";
+  }
+}
+
+export function kieErrorResponse(error: unknown) {
+  if (!(error instanceof KieProviderError)) return null;
+  return {
+    status: error.status,
+    body: {
+      error: error.message,
+      code: `KIE_${error.kind.toUpperCase()}`,
+      providerCode: error.code,
+      providerMessage: error.providerMessage,
+    },
+  };
+}
+
+function createKieProviderError(input: {
+  code?: number;
+  message?: string;
+  fallbackMessage: string;
+  status?: number;
+}) {
+  const providerMessage = input.message || input.fallbackMessage;
+  const kind = classifyKieError(providerMessage, input.code);
+  return new KieProviderError({
+    code: input.code,
+    kind,
+    providerMessage,
+    message: friendlyKieErrorMessage(kind),
+    status: kind === "provider_error" ? input.status : undefined,
+  });
+}
+
 function assertKieSuccess(payload: unknown, fallbackMessage: string) {
   if (typeof payload === "object" && payload !== null && "code" in payload) {
     const code = (payload as { code?: number }).code;
     if (code !== 200) {
-      throw new Error(
-        `kie.ai error ${code}: ${(payload as { msg?: string; message?: string }).msg || (payload as { message?: string }).message || fallbackMessage}`,
-      );
+      throw createKieProviderError({
+        code,
+        message:
+          (payload as { msg?: string; message?: string }).msg ||
+          (payload as { message?: string }).message,
+        fallbackMessage,
+      });
     }
   }
 }
@@ -192,6 +298,7 @@ export async function createKieVeoGeneration(input: KieVideoGenerationRequest, a
         Authorization: `Bearer ${apiKey || getApiKey()}`,
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(20000),
       body: JSON.stringify(
         usesWanVideoEdit
           ? buildKIEWanVideoEditPayload(
@@ -222,11 +329,15 @@ export async function createKieVeoGeneration(input: KieVideoGenerationRequest, a
     }
   }
   if (!response.ok) {
-    throw new Error(
-      `kie.ai request failed: ${response.status}${
-        responseText ? ` ${responseText.slice(0, 500)}` : ""
-      }`,
-    );
+    throw createKieProviderError({
+      code: payload?.code || response.status,
+      message:
+        payload?.msg ||
+        payload?.message ||
+        (responseText ? responseText.slice(0, 500) : undefined),
+      fallbackMessage: "Video generation request failed",
+      status: response.status,
+    });
   }
   assertKieSuccess(payload, "Video generation request failed");
   const taskId = payload?.data?.taskId || payload?.taskId;
@@ -255,6 +366,7 @@ export async function getKieVeoGenerationStatus(
   let response = await fetch(url, {
     method: "GET",
     headers,
+    signal: AbortSignal.timeout(20000),
   });
   if (
     usesAleph &&
@@ -282,7 +394,19 @@ export async function getKieVeoGenerationStatus(
     });
     payload = await response.json().catch(() => null);
   }
-  if (!response.ok) throw new Error(`kie.ai status failed: ${response.status}`);
+  if (!response.ok) {
+    const providerMessage = parseStatusError(payload);
+    const payloadCode =
+      typeof payload === "object" && payload !== null && "code" in payload
+        ? (payload as { code?: number }).code
+        : undefined;
+    throw createKieProviderError({
+      code: payloadCode || response.status,
+      message: providerMessage,
+      fallbackMessage: "Video status request failed",
+      status: response.status,
+    });
+  }
   assertKieSuccess(payload, "Video status request failed");
 
   const data =

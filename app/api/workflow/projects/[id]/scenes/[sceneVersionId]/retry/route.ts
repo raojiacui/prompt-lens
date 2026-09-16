@@ -15,6 +15,7 @@ export async function POST(
 ) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true") return NextResponse.json({ code: "CONFIRMED_QUOTE_REQUIRED" }, { status: 409 });
 
   const { id, sceneVersionId } = await params;
   const body = await request.json().catch(() => null);

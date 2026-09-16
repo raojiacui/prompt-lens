@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
+import { AnalysisQuoteDialog } from "@/components/payments/analysis-quote-dialog";
 import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, Copy, Play, RotateCcw, Trash2, Upload, Video, WandSparkles, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Play, Trash2, Upload, Video, WandSparkles, X } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -48,7 +49,10 @@ type AnalysisProgressState = {
   detail: string;
 };
 type CreditStatus = {
+  commercialConsumptionEnabled?: boolean;
   balance: number;
+  hasUserKieKey?: boolean;
+  commercial?: { enabled: boolean; credits?: number; rewrites?: number; heldRewrites?: number };
   mode: "admin" | "byok" | "platform_credits" | "trial";
   hasPaidVideoAnalysis?: boolean;
   trial: { limit: number; used: number; remaining: number; isAdmin: boolean };
@@ -72,6 +76,54 @@ type Props = {
 };
 
 const projectsCacheKey = "prompt-lens-workflow-projects";
+const workflowLabels = {
+  zh: {
+    copy: "复制",
+    copied: "已复制",
+    previousVersion: "上一版脚本",
+    nextVersion: "下一版脚本",
+    noDetectedData: "暂未检测到数据。",
+    fallbackTitle: "AI 分析未完成",
+    fallbackReason: "原因",
+    fallbackUnavailable: "AI 分析服务暂不可用",
+    fallbackAction: "当前没有生成可用的画面拆解或复刻 Prompt。请检查 KIE API Key / BYOK_ENCRYPTION_KEY / 平台分析 Key 配置。",
+    sections: {
+      visual: "画面复刻",
+      action: "角色/动作",
+      camera: "镜头语言",
+      style: "光线/色彩/风格",
+      story: "剧情作用",
+      dialogue: "台词/字幕",
+      audio: "音频",
+      edit: "剪辑提示",
+    },
+  },
+  en: {
+    copy: "Copy",
+    copied: "Copied",
+    previousVersion: "Previous version",
+    nextVersion: "Next version",
+    noDetectedData: "No detected data yet.",
+    fallbackTitle: "AI analysis is incomplete",
+    fallbackReason: "Reason",
+    fallbackUnavailable: "AI analysis service is temporarily unavailable",
+    fallbackAction: "No usable visual breakdown or recreatable prompt was generated. Check KIE API Key / BYOK_ENCRYPTION_KEY / platform analysis key settings.",
+    sections: {
+      visual: "Visual recreation",
+      action: "Character / Action",
+      camera: "Camera language",
+      style: "Lighting / Color / Style",
+      story: "Story purpose",
+      dialogue: "Dialogue / Subtitles",
+      audio: "Audio",
+      edit: "Editing notes",
+    },
+  },
+};
+
+function workflowCopyFor(locale: string) {
+  return locale === "en" ? workflowLabels.en : workflowLabels.zh;
+}
 
 function cachedProjects() {
   try {
@@ -88,6 +140,20 @@ function cacheProjects(projects: Project[]) {
   try {
     window.localStorage.setItem(projectsCacheKey, JSON.stringify(projects));
   } catch {}
+}
+
+function shouldAttachHiddenReferenceImage(sceneVersion: SceneVersion, promptDraft: string) {
+  const metadata = sceneVersion.metadata || {};
+  const versionKind = typeof metadata.versionKind === "string" ? metadata.versionKind : "";
+  const hasScriptRewrite =
+    versionKind === "rewrite" ||
+    typeof metadata.rewriteInstruction === "string" ||
+    typeof metadata.previousSceneVersionId === "string" ||
+    typeof metadata.remixPrompt === "string" ||
+    typeof metadata.sourceSceneVersionId === "string";
+  if (hasScriptRewrite) return false;
+
+  return promptDraft.trim() === sceneVersion.generationPrompt.trim();
 }
 
 function formatTime(seconds: number) {
@@ -242,6 +308,7 @@ function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }
 
 export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const locale = useLocale();
+  const copy = workflowCopyFor(locale);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const promptSaveTimersRef = useRef<Record<string, number>>({});
   const [projects, setProjects] = useState<Project[]>([]);
@@ -258,17 +325,20 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [projectsLoading, setProjectsLoading] = useState(false);
   const [isDraggingUpload, setIsDraggingUpload] = useState(false);
   const [rewritingSceneId, setRewritingSceneId] = useState("");
-  const [retryingSceneId, setRetryingSceneId] = useState("");
   const [sceneDrafts, setSceneDrafts] = useState<Record<string, string>>({});
   const [rewriteDrafts, setRewriteDrafts] = useState<Record<string, string>>({});
-  const [selectedSceneVersionIds, setSelectedSceneVersionIds] = useState<Record<string, string>>({});
+  const [selectedSceneVersionIndexes, setSelectedSceneVersionIndexes] = useState<Record<string, number>>({});
   const [copiedSceneVersionId, setCopiedSceneVersionId] = useState("");
   const [analysisModels, setAnalysisModels] = useState<ModelOption[]>([]);
   const [analysisModelValue, setAnalysisModelValue] = useState("auto");
   const [analysisOutputLanguage, setAnalysisOutputLanguage] = useState<"zh" | "en">(locale === "en" ? "en" : "zh");
   const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
+  const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en" } | null>(null);
+  const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
+  const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
+  const rewriteBusyRef = useRef(false);
   const modelPriority: ModelPriority = "balanced";
-  const canUploadLongVideo = canUseLongVideo(creditStatus);
+  const canUploadLongVideo = creditStatus?.commercialConsumptionEnabled || canUseLongVideo(creditStatus);
 
   useEffect(() => {
     const cached = cachedProjects();
@@ -354,6 +424,16 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     };
   }
 
+  function rewriteSelectionPayload() {
+    const manualModelId = analysisModelValue === "auto" ? "" : analysisModelValue;
+    return {
+      modelMode: manualModelId ? "manual" as ModelMode : "auto" as ModelMode,
+      modelId: manualModelId || undefined,
+      modelPriority: manualModelId ? modelPriority : "best_quality" as ModelPriority,
+      outputLanguage: analysisOutputLanguage,
+    };
+  }
+
   async function readJsonResponse(response: Response, fallback: string) {
     const data = await response.json().catch(() => null);
     if (!response.ok) {
@@ -392,7 +472,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         const shortLimit = shortVideoLimitSeconds(creditStatus);
         if (duration > shortLimit) {
           const latestStatus = await loadCreditStatus() || creditStatus;
-          if (!canUseLongVideo(latestStatus)) {
+          if (!latestStatus?.commercialConsumptionEnabled && !canUseLongVideo(latestStatus)) {
             setError(`免费体验和未付费账号仅支持 ${MAX_ANALYSIS_VIDEO_SECONDS} 秒以内的视频（也就是一个完整的镜头片段）。当前文件读取到约 ${duration.toFixed(1)} 秒；升级后可上传长视频自动拆镜分析。`);
             return;
           }
@@ -468,6 +548,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         body: JSON.stringify({ title }),
       });
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
+      if (creditStatus?.commercialConsumptionEnabled && upload.mediaType === "video") {
+        setCommercialSource({ projectId: projectData.project.id, mediaUrl: upload.url, mediaName: upload.filename, outputLanguage: analysisOutputLanguage });
+        setAnalysisProgress(null);
+        return;
+      }
 
       setProgress(upload.mediaType === "image" ? "Analyzing image blueprint" : "Analyzing video blueprint");
       setAnalysisProgress({
@@ -544,21 +629,33 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }
 
   async function rewriteScene(scene: SceneVersion) {
-    if (!bundle) return;
+    if (!bundle || rewriteBusyRef.current) return;
     const instruction = rewriteDrafts[scene.id]?.trim();
     if (!instruction) return;
+    rewriteBusyRef.current = true;
     setRewritingSceneId(scene.id);
     setError("");
     try {
+      const payload = { instruction, currentPrompt: sceneDrafts[scene.id] ?? scene.generationPrompt, ...rewriteSelectionPayload(), ...(creditStatus?.commercial?.enabled ? { payer: rewritePayer } : {}) };
+      const fingerprint = JSON.stringify(payload);
+      const pendingStorageKey = `promptlens:rewrite:${bundle.project.id}:${scene.id}`;
+      try { const saved = JSON.parse(localStorage.getItem(pendingStorageKey) || "null"); if (saved?.fingerprint === fingerprint && typeof saved.id === "string") rewriteRequestsRef.current[scene.id] = saved; } catch { /* Storage may be unavailable. */ }
+      if (rewriteRequestsRef.current[scene.id]?.fingerprint !== fingerprint) rewriteRequestsRef.current[scene.id] = { fingerprint, id: crypto.randomUUID() };
+      try { localStorage.setItem(pendingStorageKey, JSON.stringify(rewriteRequestsRef.current[scene.id])); } catch { /* Keep the in-memory request. */ }
       const response = await fetch(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}/rewrite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ instruction, ...analysisSelectionPayload() }),
+        body: JSON.stringify({ ...payload, requestId: rewriteRequestsRef.current[scene.id].id }),
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Rewrite failed");
+      if (!response.ok) {
+        if (data.final === true) { delete rewriteRequestsRef.current[scene.id]; try { localStorage.removeItem(pendingStorageKey); } catch {} }
+        throw new Error(data.error || "Rewrite failed");
+      }
+      delete rewriteRequestsRef.current[scene.id];
+      try { localStorage.removeItem(pendingStorageKey); } catch {}
       if (data.scene?.id && data.scene?.originalSceneId) {
-        setSelectedSceneVersionIds((versions) => ({ ...versions, [data.scene.originalSceneId]: data.scene.id }));
+        setSelectedSceneVersionIndexes((indexes) => ({ ...indexes, [data.scene.originalSceneId]: Number.MAX_SAFE_INTEGER }));
       }
       setRewriteDrafts((drafts) => ({ ...drafts, [scene.id]: "" }));
       await loadCreditStatus();
@@ -566,39 +663,20 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Rewrite failed");
     } finally {
+      rewriteBusyRef.current = false;
       setRewritingSceneId("");
     }
   }
 
   async function copySceneAnalysis(scene: SceneVersion) {
-    const text = formatSceneAnalysis(scene, projectMediaType);
+    const text = formatSceneAnalysis(scene, projectMediaType, copy);
     await navigator.clipboard.writeText(text);
     setCopiedSceneVersionId(scene.id);
     window.setTimeout(() => setCopiedSceneVersionId((current) => (current === scene.id ? "" : current)), 1600);
   }
-  async function retryScene(scene: SceneVersion) {
-    if (!bundle) return;
-    setRetryingSceneId(scene.id);
-    setError("");
-    try {
-      const response = await fetch(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}/retry`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(analysisSelectionPayload()),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Retry failed");
-      await loadCreditStatus();
-      await loadProject(bundle.project.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Retry failed");
-    } finally {
-      setRetryingSceneId("");
-    }
-  }
-
   return (
     <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
+      {commercialSource && <AnalysisQuoteDialog source={commercialSource} onClose={() => setCommercialSource(null)} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); void loadCreditStatus(); void loadProjects({ force: true }); }} />}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-4xl font-semibold tracking-tight">视频分析</h1>
@@ -648,7 +726,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
               <Upload className="h-6 w-6 text-muted-foreground" />
               <span className="font-semibold">{preview ? "更换文件" : canUploadLongVideo ? "上传视频或图片进行分析" : "上传 10 秒以内的视频（也就是一个完整的镜头片段）或图片进行分析"}</span>
             </button>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{canUploadLongVideo ? "已解锁长视频自动拆镜分析。" : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段；购买积分包后可上传几分钟长视频并自动拆镜分析。"}</p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{creditStatus?.commercialConsumptionEnabled ? (locale === "zh" ? "视频最多60秒、100MB、20个镜头。确认报价后开始分析。" : "Up to 60 seconds, 100MB and 20 shots. Analysis starts after quote confirmation.") : canUploadLongVideo ? "已解锁长视频自动拆镜分析。" : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段；购买积分包后可上传几分钟长视频并自动拆镜分析。"}</p>
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -749,9 +827,10 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
               <div className="grid gap-4">
                 {bundle.sceneVersions.map((latestSceneVersion) => {
                   const sceneVersions = getSceneVersionHistory(bundle, latestSceneVersion);
-                  const selectedSceneVersion = sceneVersions.find((version) => version.id === selectedSceneVersionIds[latestSceneVersion.originalSceneId]) || latestSceneVersion;
-                  const sceneVersionIndex = Math.max(0, sceneVersions.findIndex((version) => version.id === selectedSceneVersion.id));
-                  const sceneVersion = selectedSceneVersion;
+                  const latestSceneVersionIndex = Math.max(0, sceneVersions.findIndex((version) => version.id === latestSceneVersion.id));
+                  const requestedSceneVersionIndex = selectedSceneVersionIndexes[latestSceneVersion.originalSceneId] ?? latestSceneVersionIndex;
+                  const sceneVersionIndex = clampIndex(requestedSceneVersionIndex, sceneVersions.length);
+                  const sceneVersion = sceneVersions[sceneVersionIndex] || latestSceneVersion;
                   const scene = bundle.scenes.find((item) => item.id === sceneVersion.originalSceneId);
                   const needsReview = scene?.status === "failed" || sceneVersion.metadata?.analysisProvider === "fallback";
                   return (
@@ -768,10 +847,25 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                           {scene?.error ? <p className="mt-1 max-w-3xl text-xs text-amber-700">{scene.error}</p> : null}
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          <Button size="sm" variant="outline" onClick={() => void retryScene(sceneVersion)} disabled={retryingSceneId === sceneVersion.id}>
-                            {retryingSceneId === sceneVersion.id ? <Spinner size="sm" className="mr-2" /> : <RotateCcw className="mr-2 h-4 w-4" />}Retry
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => onSendToGenerate({ prompt: sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt, projectId: bundle.project.id, sceneId: sceneVersion.originalSceneId, versionId: sceneVersion.projectVersionId, duration: projectMediaType === "image" ? undefined : sceneVersion.duration, modelId: undefined, hiddenReferenceImageUrl: scene?.keyframeUrls?.[0] })}>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              const promptDraft = sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt;
+                              const hiddenReferenceImageUrl = shouldAttachHiddenReferenceImage(sceneVersion, promptDraft)
+                                ? scene?.keyframeUrls?.[0]
+                                : undefined;
+                              onSendToGenerate({
+                                prompt: promptDraft,
+                                projectId: bundle.project.id,
+                                sceneId: sceneVersion.originalSceneId,
+                                versionId: sceneVersion.projectVersionId,
+                                duration: projectMediaType === "image" ? undefined : sceneVersion.duration,
+                                modelId: undefined,
+                                hiddenReferenceImageUrl,
+                              });
+                            }}
+                          >
                             <Video className="mr-2 h-4 w-4" />做同款
                           </Button>
                         </div>
@@ -785,15 +879,37 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
                       <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
                         <div>
-                          <label className="text-sm font-semibold">复刻 Prompt</label>
+                          <div className="flex h-8 items-center">
+                            <label className="text-sm font-semibold">复刻 Prompt</label>
+                          </div>
                           <Textarea
                             value={sceneDrafts[sceneVersion.id] ?? sceneVersion.generationPrompt}
                             onChange={(event) => updateSceneDraft(sceneVersion, event.target.value)}
                             className="mt-2 min-h-40 rounded-xl"
                           />
                         </div>
-                        <div>
-                          <label className="text-sm font-semibold">AI 修改脚本</label>
+                        <div className="flex flex-col">
+                          <div className="flex h-8 items-center justify-between gap-3">
+                            <label className="text-sm font-semibold">AI 修改脚本</label>
+                            <select
+                              value={analysisOutputLanguage}
+                              onChange={(event) => setAnalysisOutputLanguage(event.target.value === "en" ? "en" : "zh")}
+                              className="h-8 rounded-lg border border-border bg-background px-2 text-xs font-medium outline-none focus:border-ring"
+                              aria-label="AI 修改脚本输出语言"
+                            >
+                              <option value="zh">中文</option>
+                              <option value="en">English</option>
+                            </select>
+                          </div>
+                          {creditStatus?.commercial?.enabled && (
+                            <div className="order-last mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                              <select aria-label={locale === "en" ? "Rewrite payment source" : "改写费用来源"} value={rewritePayer} onChange={(event) => setRewritePayer(event.target.value === "byok" ? "byok" : "included")} disabled={Boolean(rewritingSceneId)} className="h-8 max-w-full rounded-lg border border-border bg-background px-2">
+                                <option value="included">{locale === "en" ? "Included rewrites" : "套餐改写额度"} · {creditStatus.commercial.rewrites ?? 0}</option>
+                                <option value="byok" disabled={!creditStatus.hasUserKieKey}>{locale === "en" ? "Own KIE key" : "自带 KIE Key"}</option>
+                              </select>
+                              <span>{rewritePayer === "included" ? (locale === "en" ? "1 rewrite · No extra credits" : "消耗 1 次 · 不另扣积分") : (locale === "en" ? "Billed to your KIE account" : "费用由你的 KIE 账户承担")}</span>
+                            </div>
+                          )}
                           <div className="relative mt-2">
                             <Textarea
                               value={rewriteDrafts[sceneVersion.id] || ""}
@@ -805,7 +921,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                               type="button"
                               aria-label="重写脚本"
                               onClick={() => void rewriteScene(sceneVersion)}
-                              disabled={!rewriteDrafts[sceneVersion.id]?.trim() || rewritingSceneId === sceneVersion.id}
+                              disabled={!rewriteDrafts[sceneVersion.id]?.trim() || Boolean(rewritingSceneId) || Boolean(creditStatus?.commercial?.enabled && rewritePayer === "included" && !creditStatus.commercial.rewrites)}
                               className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#D97757] text-white shadow-sm transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               {rewritingSceneId === sceneVersion.id ? <Spinner size="sm" /> : <WandSparkles className="h-4 w-4" />}
@@ -820,28 +936,28 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <button
                               type="button"
-                              aria-label="复制分析拆解"
+                              aria-label={copy.copy}
                               onClick={() => void copySceneAnalysis(sceneVersion)}
                               className="flex h-8 items-center gap-1 rounded-full border border-border bg-background px-3 transition-colors hover:bg-accent"
                             >
                               {copiedSceneVersionId === sceneVersion.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                              <span>{copiedSceneVersionId === sceneVersion.id ? "Copied" : "Copy"}</span>
+                              <span>{copiedSceneVersionId === sceneVersion.id ? copy.copied : copy.copy}</span>
                             </button>
                             <button
                               type="button"
-                              aria-label="上一版脚本"
+                              aria-label={copy.previousVersion}
                               disabled={sceneVersionIndex <= 0}
-                              onClick={() => setSelectedSceneVersionIds((versions) => ({ ...versions, [latestSceneVersion.originalSceneId]: sceneVersions[sceneVersionIndex - 1].id }))}
+                              onClick={() => setSelectedSceneVersionIndexes((indexes) => ({ ...indexes, [latestSceneVersion.originalSceneId]: sceneVersionIndex - 1 }))}
                               className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               <ChevronLeft className="h-4 w-4" />
                             </button>
-                            <span className="min-w-14 text-center">{sceneVersionIndex + 1}/{sceneVersions.length}</span>
+                            <span className="min-w-14 text-center">{sceneVersionIndex + 1} / {sceneVersions.length}</span>
                             <button
                               type="button"
-                              aria-label="下一版脚本"
+                              aria-label={copy.nextVersion}
                               disabled={sceneVersionIndex >= sceneVersions.length - 1}
-                              onClick={() => setSelectedSceneVersionIds((versions) => ({ ...versions, [latestSceneVersion.originalSceneId]: sceneVersions[sceneVersionIndex + 1].id }))}
+                              onClick={() => setSelectedSceneVersionIndexes((indexes) => ({ ...indexes, [latestSceneVersion.originalSceneId]: sceneVersionIndex + 1 }))}
                               className="flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
                             >
                               <ChevronRight className="h-4 w-4" />
@@ -850,7 +966,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                         </div>
                         <Textarea
                           readOnly
-                          value={formatSceneAnalysis(sceneVersion, projectMediaType)}
+                          value={formatSceneAnalysis(sceneVersion, projectMediaType, copy)}
                           className="mt-2 max-h-[420px] min-h-[300px] resize-y rounded-xl font-sans text-sm leading-7 text-muted-foreground"
                         />
                       </div>
@@ -869,38 +985,47 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
 
 function getSceneVersionHistory(bundle: Bundle, sceneVersion: SceneVersion) {
+  const versionNumberById = new Map(bundle.versions.map((version) => [version.id, version.versionNumber]));
   return bundle.allSceneVersions
-    .filter((version) => version.originalSceneId === sceneVersion.originalSceneId && version.projectVersionId === sceneVersion.projectVersionId)
+    .filter((version) => version.originalSceneId === sceneVersion.originalSceneId)
     .sort((a, b) => {
+      const versionA = versionNumberById.get(a.projectVersionId) ?? 0;
+      const versionB = versionNumberById.get(b.projectVersionId) ?? 0;
       const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return timeA - timeB || a.id.localeCompare(b.id);
+      return versionA - versionB || timeA - timeB || a.id.localeCompare(b.id);
     });
 }
-function formatSceneAnalysis(sceneVersion: SceneVersion, mediaType: "video" | "image") {
+
+function clampIndex(index: number, length: number) {
+  if (length <= 0) return 0;
+  return Math.min(Math.max(0, index), length - 1);
+}
+
+function formatSceneAnalysis(sceneVersion: SceneVersion, mediaType: "video" | "image", copy = workflowLabels.zh) {
   if (sceneVersion.metadata?.analysisProvider === "fallback") {
-    const reason = textValue(sceneVersion.metadata?.fallbackReason) || "AI 分析服务暂不可用";
-    return `AI 分析未完成\n原因：${reason}\n\n当前没有生成可用的画面拆解或复刻 Prompt。请检查 KIE API Key / BYOK_ENCRYPTION_KEY / 平台分析 Key 配置后，点击该镜头的 Retry 重新分析。`;
+    const reason = textValue(sceneVersion.metadata?.fallbackReason) || copy.fallbackUnavailable;
+    return `${copy.fallbackTitle}\n${copy.fallbackReason}：${reason}\n\n${copy.fallbackAction}`;
   }
 
   const sections: Array<[string, unknown]> = [
-    ["画面复刻", pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])],
-    ["角色/动作", `${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()],
-    ["镜头语言", `${pickField(sceneVersion.visual, ["camera"])}\n${pickField(sceneVersion.visual, ["composition"])}`.trim()],
-    ["光线/色彩/风格", `${pickField(sceneVersion.visual, ["lighting"])}\n${pickField(sceneVersion.visual, ["color"])}\n${pickField(sceneVersion.visual, ["style"])}`.trim()],
-    ["剧情作用", sceneVersion.story],
+    [copy.sections.visual, pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])],
+    [copy.sections.action, `${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()],
+    [copy.sections.camera, `${pickField(sceneVersion.visual, ["camera"])}\n${pickField(sceneVersion.visual, ["composition"])}`.trim()],
+    [copy.sections.style, `${pickField(sceneVersion.visual, ["lighting"])}\n${pickField(sceneVersion.visual, ["color"])}\n${pickField(sceneVersion.visual, ["style"])}`.trim()],
+    [copy.sections.story, sceneVersion.story],
   ];
 
   if (mediaType === "video") {
     sections.push(
-      ["台词/字幕", sceneVersion.dialogue.length ? sceneVersion.dialogue : sceneVersion.subtitle],
-      ["音频", sceneVersion.audio],
-      ["剪辑提示", sceneVersion.transition],
+      [copy.sections.dialogue, sceneVersion.dialogue.length ? sceneVersion.dialogue : sceneVersion.subtitle],
+      [copy.sections.audio, sceneVersion.audio],
+      [copy.sections.edit, sceneVersion.transition],
     );
   }
 
   return sections
-    .map(([title, value]) => `${title}\n${textValue(value) || "No detected data yet."}`)
+    .map(([title, value]) => `${title}\n${textValue(value) || copy.noDetectedData}`)
     .join("\n\n");
 }
 

@@ -4,8 +4,9 @@ import { mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
+import { Transform } from "node:stream";
 import { spawn } from "node:child_process";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash } from "node:crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const PORT = Number(process.env.PORT || 8080);
@@ -307,7 +308,7 @@ async function uploadFile(localPath, key, contentType) {
   return `${R2_PUBLIC_URL}/${key}`;
 }
 
-async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, metadata) {
+async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, metadata, exact = false) {
   const scenes = [];
   for (let index = 0; index < boundaries.length; index += 1) {
     const item = boundaries[index];
@@ -325,7 +326,7 @@ async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, me
       "-ss", String(start),
       "-i", inputPath,
       "-t", String(duration),
-      "-c", "copy",
+      ...(exact ? ["-c:v", "libx264", "-preset", "fast", "-crf", "20", "-c:a", "aac"] : ["-c", "copy"]),
       "-avoid_negative_ts", "make_zero",
       clipPath,
     ]);
@@ -453,11 +454,65 @@ async function handleBreakdown(req, res) {
   }
 }
 
+let commercialRequests = 0;
+async function handleCommercialMedia(req, res) {
+  assertAuth(req);
+  requireEnv();
+  if (commercialRequests >= 2) return json(res, 429, { error: "Media worker busy" });
+  const body = await readJson(req);
+  const url = new URL(body.videoUrl);
+  const allowedHosts = [R2_PUBLIC_URL, R2_ENDPOINT].filter(Boolean).map((value) => new URL(value).hostname);
+  if (url.protocol !== "https:" || !allowedHosts.includes(url.hostname)) return json(res, 400, { error: "Only configured storage is supported" });
+  if (!["preview", "assets"].includes(body.mode)) return json(res, 400, { error: "Invalid media operation" });
+  commercialRequests++;
+  let workDir;
+  try {
+    workDir = await mkdtemp(path.join(tmpdir(), "prompt-lens-commercial-"));
+    const inputPath = path.join(workDir, "input.mp4");
+    const response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(60000) });
+    if (!response.ok || !response.body) throw new Error("Media download failed");
+    let bytes = 0;
+    const hash = createHash("sha256");
+    const limiter = new Transform({ transform(chunk, _encoding, callback) {
+      bytes += chunk.length;
+      if (bytes > 100 * 1024 * 1024) return callback(new Error("Media exceeds 100MB"));
+      hash.update(chunk); callback(null, chunk);
+    } });
+    await pipeline(response.body, limiter, createWriteStream(inputPath));
+    const sourceHash = hash.digest("hex");
+    const metadata = await probeVideo(inputPath);
+    const durationUs = Math.round(metadata.duration * 1000000);
+    if (!metadata.width || !Number.isSafeInteger(durationUs) || durationUs <= 0 || durationUs > 60000000) throw new Error("Video must be between 0 and 60 seconds");
+    if (body.mode === "preview") {
+      const detection = body.automaticSplit === true ? await detectSceneCutsWithFallback(inputPath, metadata) : { cuts: [] };
+      // Real detected shots, without the legacy worker's arbitrary eight-second chunks.
+      const cuts = [0, ...new Set(detection.cuts.map((n) => Math.round(n * 1000000)).filter((n) => n > 0 && n < durationUs)), durationUs].sort((a, b) => a - b);
+      if (cuts.length > 21) throw new Error("Video exceeds 20 detected shots");
+      const scenes = cuts.slice(0, -1).map((startUs, index) => ({ id: String(index + 1), startUs, endUs: cuts[index + 1] }));
+      return json(res, 200, { sourceHash, durationUs, bytes, metadata, scenes });
+    }
+    if (body.sourceHash !== sourceHash) throw new Error("Source changed after quote");
+    if (!Array.isArray(body.scenes) || !body.scenes.length || body.scenes.length > 20) throw new Error("Invalid scene selection");
+    let end = 0;
+    const boundaries = body.scenes.map((scene) => {
+      if (!Number.isSafeInteger(scene.startUs) || !Number.isSafeInteger(scene.endUs) || scene.startUs < end || scene.endUs <= scene.startUs || scene.endUs > durationUs) throw new Error("Invalid scene interval");
+      end = scene.endUs;
+      return { start: scene.startUs / 1000000, end: scene.endUs / 1000000, shotGroupId: scene.id };
+    });
+    const scenes = await extractSceneAssets(inputPath, workDir, `workflow/${randomUUID()}`, boundaries, metadata, true);
+    return json(res, 200, { metadata, scenes });
+  } finally {
+    commercialRequests--;
+    if (workDir) await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
+  }
+}
+
 const server = createServer(async (req, res) => {
   try {
     if (req.method === "GET" && req.url === "/healthz") return json(res, 200, { ok: true });
     if (req.method === "POST" && req.url === "/resolve-media") return await handleResolveMedia(req, res);
     if (req.method === "POST" && req.url === "/breakdown") return await handleBreakdown(req, res);
+    if (req.method === "POST" && req.url === "/commercial-media") return await handleCommercialMedia(req, res);
     return json(res, 404, { error: "Not found" });
   } catch (error) {
     const status = error.statusCode || 500;
@@ -469,3 +524,19 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`Prompt Lens FFmpeg worker listening on ${PORT}`);
 });
+
+// Optional single-flight scheduler. Deployment must provide a dedicated cron secret.
+const reconciliationBase = process.env.COMMERCIAL_RECONCILIATION_BASE_URL;
+const reconciliationSecret = process.env.CRON_SECRET;
+if (reconciliationBase && reconciliationSecret) {
+  const endpoint = new URL("/api/cron/commercial-reconciliation", reconciliationBase);
+  if (endpoint.protocol !== "https:") throw new Error("Commercial reconciliation requires HTTPS");
+  const tick = async () => {
+    try {
+      const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${reconciliationSecret}` }, signal: AbortSignal.timeout(290000), redirect: "error" });
+      if (!response.ok) console.warn("Commercial reconciliation unavailable:", response.status);
+    } catch { console.warn("Commercial reconciliation request unconfirmed"); }
+    setTimeout(tick, 60000).unref();
+  };
+  setTimeout(tick, 1000).unref();
+}

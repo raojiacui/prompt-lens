@@ -29,6 +29,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const body = await request.json().catch(() => null);
   const mediaUrl = typeof body?.mediaUrl === "string" ? body.mediaUrl.trim() : "";
   if (!mediaUrl) return NextResponse.json({ error: "Missing mediaUrl" }, { status: 400 });
+  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true" && body?.mediaType !== "image") return NextResponse.json({ code: "CONFIRMED_QUOTE_REQUIRED", error: "Confirm a server quote before starting analysis" }, { status: 409 });
 
   try {
     const mediaType = body?.mediaType === "image" ? "image" : "video";

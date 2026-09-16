@@ -11,7 +11,8 @@ import {
   WandSparkles,
   X,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { GenerationQuoteDialog } from "@/components/payments/generation-quote-dialog";
 import type { KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -369,6 +370,15 @@ export function ReferenceVideoComposer({
   const [mentionedAssetIds, setMentionedAssetIds] = useState<string[]>([]);
   const [assets, setAssets] = useState<UploadedAsset[]>([]);
   const [error, setError] = useState("");
+  const zh = useLocale() === "zh";
+  const [commercialEnabled, setCommercialEnabled] = useState(false);
+  const [generationPayer, setGenerationPayer] = useState("byok");
+  const [commercialRequest, setCommercialRequest] = useState<{ request: Record<string, unknown>; quantity: number } | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/credits/me", { cache: "no-store", signal: controller.signal }).then((r) => r.ok ? r.json() : null).then((data) => setCommercialEnabled(data?.commercialConsumptionEnabled === true)).catch(() => {});
+    return () => controller.abort();
+  }, []);
   const [variants, setVariants] = useState<GenerationVariant[]>(initialVariants);
   const [sceneReferenceImageUrl, setSceneReferenceImageUrl] = useState(hiddenReferenceImageUrl || "");
 
@@ -805,11 +815,15 @@ export function ReferenceVideoComposer({
         taskIds.map(async (taskId) => {
           try {
             const response = await fetch(
-              `/api/generation-jobs?taskId=${encodeURIComponent(taskId)}`,
+              taskId.startsWith("commercial:") ? `/api/commercial/tasks/${taskId.slice(11)}` : `/api/generation-jobs?taskId=${encodeURIComponent(taskId)}`,
             );
-            const payload = (await response
+            let payload = (await response
               .json()
               .catch(() => ({}))) as GenerationStatusPayload;
+            if (taskId.startsWith("commercial:")) {
+              const state = (payload as unknown as { state?: string }).state;
+              payload = { ...payload, providerTaskId: taskId, status: state === "completed" ? "success" : state === "failed" ? "fail" : "generating" } as GenerationStatusPayload;
+            }
             if (!response.ok)
               throw new Error(
                 payload.error || "Failed to check generation status",
@@ -1026,6 +1040,10 @@ export function ReferenceVideoComposer({
     const variantCount = Number.isFinite(requestedOutputCount)
       ? Math.max(1, Math.min(4, requestedOutputCount))
       : 1;
+    if (commercialEnabled && generationPayer === "platform") {
+      setCommercialRequest({ quantity: variantCount, request: { userPrompt: promptWithInlineReferences, replacementAssets, hiddenReferenceImageUrl, referenceVideoUrl: readyReferenceVideoAsset?.url, aspectRatio, model: model === autoBalancedModelId ? undefined : model, duration: durationSeconds, quality, ...workflowContext } });
+      return;
+    }
     const queuedVariants: GenerationVariant[] = Array.from(
       { length: variantCount },
       (_, index) => ({
@@ -1058,6 +1076,7 @@ export function ReferenceVideoComposer({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            ...(commercialEnabled ? { payer: "byok" } : {}),
             userPrompt: promptWithInlineReferences,
             prompt: [
               `Selected public model: ${model === autoBalancedModelId ? "Auto · Balanced" : model}.`,
@@ -1182,7 +1201,12 @@ export function ReferenceVideoComposer({
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
+      {commercialRequest && <GenerationQuoteDialog {...commercialRequest} onClose={() => setCommercialRequest(null)} onConfirmed={(ids) => {
+        const next: GenerationVariant[] = ids.map((id, i) => ({ id: `variant-${i + 1}`, label: `Variation ${i + 1}`, status: "generating", progress: 10, providerTaskId: `commercial:${id}`, notes: zh ? "已预留积分" : "Credits reserved" }));
+        setVariants(next); window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(next)); setCommercialRequest(null);
+      }} />}
       <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
+        {commercialEnabled && <label className="flex flex-wrap items-center gap-3 text-sm">{zh ? "费用来源" : "Payment source"}<select value={generationPayer} disabled={isRunning} onChange={(e) => { setGenerationPayer(e.target.value); }} className="min-h-10 rounded-lg border border-border bg-background px-3"><option value="byok">{zh ? "自己的 KIE Key" : "My KIE key"}</option><option value="platform">{zh ? "平台积分" : "Platform credits"}</option></select><a href="/billing" className="underline">{zh ? "余额与订单" : "Balance and orders"}</a></label>}
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">

@@ -10,6 +10,7 @@ import { db, videoGeneration } from "@/lib/db";
 import { and, desc, eq } from "drizzle-orm";
 import { getModelById, routeModel, type ModelRegistryEntry } from "@/lib/ai/model-registry";
 import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { kieErrorResponse } from "@/lib/reference-video/kie-veo";
 
 const VIDEO_GENERATE_LIMIT = { limit: 3, windowMs: 60000 };
 const MIN_VIDEO_DURATION = 4;
@@ -62,6 +63,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => null);
+    const commercialEnabled = process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true";
+    if (commercialEnabled && body?.payer !== "byok") {
+      return NextResponse.json({ error: "Confirm a commercial quote before generation", code: "COMMERCIAL_QUOTE_REQUIRED" }, { status: 409 });
+    }
     const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
     if (!prompt) {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
@@ -80,7 +85,7 @@ export async function POST(request: NextRequest) {
     const model = selectedModel?.kieModelId || KIE_VIDEO_MODEL;
 
     const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { allowPaidPlatformKey: false });
-    if (!keyAccess.apiKey) {
+    if (!keyAccess.apiKey || (commercialEnabled && keyAccess.source !== "user")) {
       return NextResponse.json({ error: "视频生成需要先在设置里配置你自己的 KIE API Key。平台不再提供视频生成额度。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
     }
 
@@ -121,6 +126,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("[video-generate] Error:", error);
+    const kieError = kieErrorResponse(error);
+    if (kieError) return NextResponse.json(kieError.body, { status: kieError.status });
     const message = error instanceof Error ? error.message : "Video generation task creation failed";
     const status = message.includes("KIE_API_KEY") ? 500 : 502;
     return NextResponse.json(

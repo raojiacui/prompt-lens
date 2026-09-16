@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
-import { createKieVeoGeneration, getKieVeoGenerationStatus } from "@/lib/reference-video/kie-veo";
-import { db, sceneVersions, videoGeneration, workflowJobs } from "@/lib/db";
+import { createKieVeoGeneration, getKieVeoGenerationStatus, kieErrorResponse } from "@/lib/reference-video/kie-veo";
+import { db, projects, sceneVersions, videoGeneration, workflowJobs } from "@/lib/db";
+import { generationKeyFingerprint, resolveGenerationStatusKey } from "@/lib/billing/generation-key";
 import { getModelById, listModels, routeModel } from "@/lib/ai/model-registry";
 import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 
@@ -123,6 +124,7 @@ export async function POST(request: Request) {
   if (auth.response) return auth.response;
 
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
+  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true" && body?.payer !== "byok") return NextResponse.json({ code: "CONFIRMED_QUOTE_REQUIRED" }, { status: 409 });
   const userPrompt = typeof body?.userPrompt === "string" && body.userPrompt.trim()
     ? body.userPrompt.trim()
     : typeof body?.prompt === "string"
@@ -148,6 +150,16 @@ export async function POST(request: Request) {
     const projectId = optionalUuid(body?.projectId);
     const sceneId = optionalUuid(body?.sceneId);
     const projectVersionId = optionalUuid(body?.projectVersionId || body?.versionId);
+    if ((sceneId || projectVersionId) && !projectId) return NextResponse.json({ error: "Invalid project context" }, { status: 400 });
+    if (projectId) {
+      const project = await db.query.projects.findFirst({ where: and(eq(projects.id, projectId), eq(projects.userId, auth.user.id)) });
+      if (!project) return NextResponse.json({ error: "Project not found" }, { status: 404 });
+      if (sceneId || projectVersionId) {
+        if (!sceneId || !projectVersionId) return NextResponse.json({ error: "Incomplete scene context" }, { status: 400 });
+        const scene = await db.query.sceneVersions.findFirst({ where: and(eq(sceneVersions.projectId, projectId), eq(sceneVersions.originalSceneId, sceneId), eq(sceneVersions.projectVersionId, projectVersionId)) });
+        if (!scene) return NextResponse.json({ error: "Scene not found" }, { status: 404 });
+      }
+    }
     const referenceImageUrl = useNativeVideoEdit ? imageUrls[0] : undefined;
 
     if (isWanVideoEditModel(model) && !referenceVideoUrl) {
@@ -155,7 +167,7 @@ export async function POST(request: Request) {
     }
 
     const keyAccess = await resolveKieApiKeyForFeature(auth.user.id, { allowPaidPlatformKey: false });
-    if (!keyAccess.apiKey) {
+    if (!keyAccess.apiKey || (body?.payer === "byok" && keyAccess.source !== "user")) {
       return NextResponse.json({ error: "视频生成需要先在设置里配置你自己的 KIE API Key。平台不再提供视频生成额度。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
     }
 
@@ -191,7 +203,7 @@ export async function POST(request: Request) {
       status: "pending",
       duration,
       resolution,
-      rawResponse: { ...(result.raw as Record<string, unknown>), billing: { keySource: keyAccess.source, chargedCredits: 0 } },
+      rawResponse: { ...(result.raw as Record<string, unknown>), billing: { keySource: keyAccess.source, keyFingerprint: generationKeyFingerprint(keyAccess.apiKey), chargedCredits: 0 } },
     }).returning();
 
 
@@ -218,6 +230,8 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Generation job creation error:", error);
+    const kieError = kieErrorResponse(error);
+    if (kieError) return NextResponse.json(kieError.body, { status: kieError.status });
     const message = error instanceof Error ? error.message : "Generation request failed";
     const friendlyMessage = /fetch failed|ECONN|ENOTFOUND|ETIMEDOUT|network|TLS/i.test(message)
       ? "视频生成服务连接 KIE 失败，请检查服务器网络、KIE 接口地址和你的 KIE API Key 配置。"
@@ -244,15 +258,16 @@ export async function GET(request: Request) {
     if (!taskId) return NextResponse.json({ error: "Missing taskId" }, { status: 400 });
 
     const job = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.taskId, taskId), eq(videoGeneration.userId, auth.user.id)) });
-    const keyAccess = await resolveKieApiKeyForFeature(auth.user.id, { allowPaidPlatformKey: false });
-    if (!keyAccess.apiKey) return NextResponse.json({ error: "视频生成状态查询需要先在设置里配置你自己的 KIE API Key。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
-    const status = await getKieVeoGenerationStatus(taskId, job?.model || undefined, keyAccess.apiKey);
+    if (!job) return NextResponse.json({ error: "Generation job not found" }, { status: 404 });
+    const apiKey = await resolveGenerationStatusKey(auth.user.id, job.rawResponse);
+    if (!apiKey) return NextResponse.json({ error: "The original KIE key is required to query this task", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
+    const status = await getKieVeoGenerationStatus(taskId, job.model || undefined, apiKey);
     const normalizedStatus = status.state === "success" ? "completed" : status.state === "fail" ? "failed" : "processing";
 
     if (job) {
-      await db.update(videoGeneration).set({ status: normalizedStatus, videoUrl: status.videoUrl, error: status.error, rawResponse: status.raw as Record<string, unknown>, updatedAt: new Date() }).where(eq(videoGeneration.id, job.id));
+      await db.update(videoGeneration).set({ status: normalizedStatus, videoUrl: status.videoUrl, error: status.error, rawResponse: { ...(status.raw as Record<string, unknown>), billing: (job.rawResponse as Record<string, unknown> | null)?.billing }, updatedAt: new Date() }).where(eq(videoGeneration.id, job.id));
 
-      const generationJob = await db.query.workflowJobs.findFirst({ where: eq(workflowJobs.externalTaskId, taskId) });
+      const generationJob = job.projectId ? await db.query.workflowJobs.findFirst({ where: and(eq(workflowJobs.externalTaskId, taskId), eq(workflowJobs.projectId, job.projectId)) }) : undefined;
       if (generationJob) {
         await db.update(workflowJobs).set({
           status: normalizedStatus === "completed" ? "completed" : normalizedStatus === "failed" ? "failed" : "processing",
@@ -272,6 +287,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ provider: "kie.ai", providerTaskId: status.taskId, status: status.state, videoUrl: status.videoUrl, error: status.error, raw: status.raw });
   } catch (error) {
     console.error("Generation job status error:", error);
+    const kieError = kieErrorResponse(error);
+    if (kieError) return NextResponse.json(kieError.body, { status: kieError.status });
     return NextResponse.json({ error: error instanceof Error ? error.message : "Status request failed" }, { status: 500 });
   }
 }

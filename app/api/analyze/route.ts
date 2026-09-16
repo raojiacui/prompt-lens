@@ -33,6 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
+    if (process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true" && body?.mediaType === "video") return NextResponse.json({ code: "CONFIRMED_QUOTE_REQUIRED" }, { status: 409 });
     const {
       mediaUrl,
       mediaType,
