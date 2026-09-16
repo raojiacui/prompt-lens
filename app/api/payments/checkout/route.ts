@@ -1,29 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { createCreemCreditCheckout, createXunhuPayCreditCheckout, type XunhuPayMethod } from "@/lib/payments/credit-checkout";
+import { createXunhuPayCreditCheckout } from "@/lib/payments/credit-checkout";
+import { COMMERCIAL_PACKAGES } from "@/lib/billing/pricing-v6";
+import { commercialAcceptanceAllowed, commercialSalesReady } from "@/lib/billing/commercial-sales";
+
+export async function GET(request: NextRequest) {
+  let enabled = commercialSalesReady();
+  if (!enabled && process.env.COMMERCIAL_ACCEPTANCE_ENABLED === "true") {
+    const session = await auth.api.getSession({ headers: request.headers });
+    enabled = Boolean(session?.user && commercialAcceptanceAllowed(session.user.id));
+  }
+  return NextResponse.json({ enabled, provider: "xunhupay", method: "alipay" }, { headers: { "Cache-Control": "private, no-store" } });
+}
 
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
+  if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const body = await request.json().catch(() => null);
-  const packageId = typeof body?.packageId === "string" ? body.packageId.trim() : "";
-  const provider = typeof body?.provider === "string" ? body.provider.trim() : "";
-  const method = body?.method === "wechat" || body?.method === "alipay" ? body.method as XunhuPayMethod : undefined;
-  if (!packageId) return NextResponse.json({ error: "Missing packageId" }, { status: 400 });
-
+  if (body?.provider !== "xunhupay" || body?.method !== "alipay") return NextResponse.json({ error: "Only Alipay is supported", code: "UNSUPPORTED_PAYMENT_METHOD" }, { status: 400 });
+  if (!COMMERCIAL_PACKAGES.some((pack) => pack.id === body?.packageId)) return NextResponse.json({ error: "Package unavailable" }, { status: 400 });
+  if (typeof body.requestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.requestId)) return NextResponse.json({ error: "Invalid checkout request ID" }, { status: 400 });
+  if (!commercialSalesReady() && !commercialAcceptanceAllowed(session.user.id)) return NextResponse.json({ error: "Checkout is not open yet", code: "CHECKOUT_NOT_OPEN" }, { status: 503 });
   try {
-    if (provider === "creem") {
-      const checkout = await createCreemCreditCheckout(session.user.id, packageId);
-      return NextResponse.json(checkout);
-    }
-    if (provider === "xunhupay") {
-      if (!method) return NextResponse.json({ error: "Missing xunhupay method" }, { status: 400 });
-      const checkout = await createXunhuPayCreditCheckout(session.user.id, packageId, method);
-      return NextResponse.json(checkout);
-    }
-    return NextResponse.json({ error: "Unsupported payment provider" }, { status: 400 });
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Checkout failed" }, { status: 500 });
+    return NextResponse.json(await createXunhuPayCreditCheckout(session.user.id, body.packageId, "alipay", body.requestId));
+  } catch {
+    return NextResponse.json({ error: "Unable to confirm checkout. Retry the same request.", code: "CHECKOUT_STATUS_UNKNOWN" }, { status: 502 });
   }
 }

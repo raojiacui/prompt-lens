@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getXunhuPaySecretForApp, settlePaidCreditOrder, verifyXunhuPayHash } from "@/lib/payments/credit-checkout";
+import { applyCommercialRefundNotification } from "@/lib/payments/commercial-refunds";
 
 export async function POST(request: NextRequest) {
   const form = await request.formData();
@@ -11,7 +12,11 @@ export async function POST(request: NextRequest) {
   const status = payload.status;
   const tradeOrderId = payload.trade_order_id;
   if (!tradeOrderId) return new NextResponse("missing order", { status: 400 });
-  if (status !== "OD") return new NextResponse("success");
+  if (["CD", "RD", "UD"].includes(status)) {
+    await applyCommercialRefundNotification(payload);
+    return new NextResponse("success");
+  }
+  if (status !== "OD") return new NextResponse("unsupported status", { status: 400 });
 
   await settlePaidCreditOrder({
     provider: "xunhupay",

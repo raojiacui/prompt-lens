@@ -1,266 +1,85 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { Check, Sparkles, X } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Spinner } from "@/components/ui/spinner";
-
-const pricingKeys = ["pricingByok", "pricingLong", "pricingStandard", "pricingPro"] as const;
-const packageByPricingKey: Partial<Record<(typeof pricingKeys)[number], string>> = {
-  pricingLong: "starter_10",
-  pricingStandard: "studio_80",
-  pricingPro: "pro_220",
-};
-
-const paymentMethods = [
-  { id: "alipay", label: "支付宝", image: "/images/payment-alipay.jpg" },
-  { id: "wechat", label: "微信", image: "/images/payment-wechat.jpg" },
-] as const;
-
-type ManualPaymentMethod = (typeof paymentMethods)[number]["id"];
-type ManualPaymentSelection = {
-  packageId: string;
-  packageName: string;
-  priceLabel: string;
-};
+import { useEffect, useRef, useState } from "react";
+import { useLocale } from "next-intl";
+import { Check } from "lucide-react";
+import { COMMERCIAL_PACKAGES } from "@/lib/billing/pricing-v6";
+import { AlipayCheckoutDialog } from "@/components/payments/alipay-checkout-dialog";
+import { useSession } from "@/lib/auth/auth-client";
 
 export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
-  const t = useTranslations("home");
-  const locale = useLocale();
-  const isZh = locale === "zh";
-  const appHref = isAuthenticated ? "/dashboard" : "/login";
-  const settingsHref = isAuthenticated ? "/dashboard?tab=settings" : `/login?next=${encodeURIComponent("/dashboard?tab=settings")}`;
-  const [checkoutKey, setCheckoutKey] = useState<string>("");
-  const [checkoutError, setCheckoutError] = useState("");
-  const [checkoutNotice, setCheckoutNotice] = useState("");
-  const [manualPayment, setManualPayment] = useState<ManualPaymentSelection | null>(null);
-  const [manualMethod, setManualMethod] = useState<ManualPaymentMethod>("alipay");
-  const [manualReference, setManualReference] = useState("");
-  const [manualContact, setManualContact] = useState("");
-  const [manualNote, setManualNote] = useState("");
-
-  function openManualPayment(packageId: string, pricingKey: (typeof pricingKeys)[number]) {
-    if (!isAuthenticated) {
-      window.location.href = "/login";
-      return;
-    }
-    setCheckoutError("");
-    setCheckoutNotice("");
-    setManualMethod("alipay");
-    setManualReference("");
-    setManualContact("");
-    setManualNote("");
-    setManualPayment({
-      packageId,
-      packageName: t(`${pricingKey}Name`),
-      priceLabel: t(`${pricingKey}Price`),
-    });
-  }
-
-  async function submitManualPayment(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!manualPayment) return;
-    setCheckoutError("");
-    setCheckoutNotice("");
-    setCheckoutKey(`manual_qr:${manualMethod}:${manualPayment.packageId}`);
-    try {
-      const response = await fetch("/api/payments/manual", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          packageId: manualPayment.packageId,
-          method: manualMethod,
-          paymentReference: manualReference,
-          contact: manualContact,
-          note: manualNote,
-        }),
-      });
-      const data = await response.json().catch(() => null);
-      if (response.status === 401) {
-        window.location.href = "/login";
-        return;
-      }
-      if (!response.ok) throw new Error(data?.error || (isZh ? "提交付款信息失败" : "Failed to submit payment info"));
-      setCheckoutNotice(
-        isZh
-          ? `付款信息已提交，平台确认到账后会自动发放积分。订单号：${data?.order?.orderId || "-"}`
-          : `Payment info submitted. Credits will be issued after platform confirmation. Order: ${data?.order?.orderId || "-"}`
-      );
-      setManualPayment(null);
-    } catch (error) {
-      setCheckoutError(error instanceof Error ? error.message : isZh ? "提交付款信息失败" : "Failed to submit payment info");
-    } finally {
-      setCheckoutKey("");
-    }
-  }
-
-  const submittingManual = checkoutKey.startsWith("manual_qr");
-
+  const zh = useLocale() === "zh";
+  const { data: session } = useSession();
+  const authenticated = isAuthenticated || Boolean(session?.user);
+  const [enabled, setEnabled] = useState(false);
+  const [selected, setSelected] = useState<(typeof COMMERCIAL_PACKAGES)[number] | null>(null);
+  const requestIds = useRef<Record<string, string>>({});
+  const [checkoutAttempt, setCheckoutAttempt] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/payments/checkout", { cache: "no-store", signal: controller.signal })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => setEnabled(data?.enabled === true))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
+  const settings = authenticated ? "/dashboard?tab=settings" : "/login?next=%2Fdashboard%3Ftab%3Dsettings";
   return (
-    <section id="pricing" className="bg-[#F7F1E8] py-16 md:py-24 lg:py-32">
-      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
-        <div className="mx-auto mb-12 max-w-3xl text-center md:mb-16">
-          <p className="mb-3 text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">
-            {t("pricingTag")}
-          </p>
-          <h2 className="font-serif-display text-3xl font-normal text-[var(--color-text-primary)] md:text-4xl">
-            {t("pricingTitle")}
-          </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-[var(--color-text-secondary)] md:text-lg">
-            {t("pricingSubtitle")}
-          </p>
+    <section id="pricing" className="bg-[#F7F1E8] py-16 md:py-24">
+      <div className="mx-auto max-w-6xl px-4 md:px-6">
+        <div className="mb-10 text-center">
+          <h2 className="font-serif-display text-3xl text-[var(--color-text-primary)] md:text-4xl">{zh ? "按创作需要，灵活充值" : "Credits for your next creation"}</h2>
+          <p className="mt-4 text-[var(--color-text-secondary)]">{zh ? "一次购买，按需使用。不自动续费。" : "One-time purchase. Pay as you create. No auto-renewal."}</p>
+          {!enabled && <p className="mt-3 text-sm text-[var(--color-text-secondary)]">{zh ? "套餐即将开放，当前暂不收款。" : "Plans are coming soon. Checkout is not open yet."}</p>}
         </div>
-
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {pricingKeys.map((key) => {
-            const highlighted = false;
-            const packageId = packageByPricingKey[key];
-            return (
-              <article
-                key={key}
-                className={`flex min-h-[390px] flex-col rounded-2xl border bg-[var(--color-bg-base)] p-5 shadow-sm ${
-                  highlighted ? "border-[#D97757] ring-2 ring-[#D97757]/20" : "border-[var(--color-border-subtle)]"
-                }`}
-              >
-                <div className="mb-5 flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-[var(--color-text-secondary)]">{t(`${key}Eyebrow`)}</p>
-                    <h3 className="mt-2 text-xl font-semibold text-[var(--color-text-primary)]">{t(`${key}Name`)}</h3>
-                  </div>
-                  {highlighted ? (
-                    <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#D97757] text-white">
-                      <Sparkles className="h-4 w-4" />
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="mb-5">
-                  <p className="font-serif-display text-3xl font-normal text-[var(--color-text-primary)]">{t(`${key}Price`)}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{t(`${key}Desc`)}</p>
-                </div>
-
-                <ul className="mb-6 space-y-3 text-sm text-[var(--color-text-secondary)]">
-                  {[1, 2, 3].map((index) => (
-                    <li key={index} className="flex gap-2 leading-relaxed">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-[#D97757]" />
-                      <span>{t(`${key}Bullet${index}`)}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {packageId ? (
-                  <Button
-                    type="button"
-                    disabled={Boolean(checkoutKey)}
-                    className={`mt-auto h-11 w-full rounded-full ${highlighted ? "bg-[#D97757] text-white hover:bg-[#C96848]" : "bg-[#241915] text-white hover:bg-[#3A2A24]"}`}
-                    onClick={() => openManualPayment(packageId, key)}
-                  >
-                    {isZh ? "从这里开始" : "Start here"}
-                  </Button>
-                ) : (
-                  <Link href={key === "pricingByok" ? settingsHref : appHref} className="mt-auto">
-                    <Button className={`w-full rounded-full ${highlighted ? "bg-[#D97757] text-white hover:bg-[#C96848]" : "bg-[#241915] text-white hover:bg-[#3A2A24]"}`}>
-                      {t(`${key}Cta`)}
-                    </Button>
-                  </Link>
-                )}
-              </article>
-            );
-          })}
+        <div className="grid gap-5 md:grid-cols-3">
+          {COMMERCIAL_PACKAGES.map((pack, index) => (
+            <article key={pack.id} className="flex flex-col rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-6">
+              <h3 className="text-xl font-semibold">{zh ? pack.name : ["Starter", "Creator", "Volume"][index]}</h3>
+              <p className="mt-5 text-3xl font-semibold">¥{(pack.priceCents / 100).toFixed(index === 0 ? 2 : 0)}</p>
+              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{pack.credits.toLocaleString()} {zh ? "通用积分" : "credits"}</p>
+              <ul className="my-6 space-y-3 text-sm text-[var(--color-text-secondary)]">
+                {[
+                  zh ? "自动拆镜与视频分析，按用量扣积分" : "Automatic shot splitting and video analysis, billed by usage",
+                  zh ? "已核价视频生成模型，生成前确认费用" : "Priced video models, with a quote before generation",
+                  zh ? `含 ${pack.rewrites} 次 AI 脚本改写，不另扣积分` : `${pack.rewrites} included AI rewrites, no extra credits`,
+                  zh ? "自带 Key 也可用积分购买拆镜服务" : "Use credits for shot splitting alongside your own API key",
+                ].map((line) => <li key={line} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[#4C7055]" /><span>{line}</span></li>)}
+              </ul>
+              <button type="button" disabled={!enabled} onClick={() => {
+                if (!authenticated) { window.location.href = "/login?next=%2F%23pricing"; return; }
+                const storageKey = `promptlens:checkout:${session?.user.id || "current"}:${pack.id}`;
+                try { requestIds.current[pack.id] ??= localStorage.getItem(storageKey) || crypto.randomUUID(); localStorage.setItem(storageKey, requestIds.current[pack.id]); }
+                catch { requestIds.current[pack.id] ??= crypto.randomUUID(); }
+                setSelected(pack);
+              }} className="mt-auto min-h-11 rounded-lg bg-[#241915] px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50">
+                {enabled ? (zh ? "支付宝购买" : "Buy with Alipay") : (zh ? "即将开放" : "Coming soon")}
+              </button>
+            </article>
+          ))}
         </div>
-
-        {checkoutNotice ? <p className="mt-4 rounded-xl border border-emerald-500/25 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{checkoutNotice}</p> : null}
-        {checkoutError ? <p className="mt-4 rounded-xl border border-red-500/25 bg-red-50 px-4 py-3 text-sm text-red-700">{checkoutError}</p> : null}
-
-        <div className="mt-8 rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-5 md:p-6">
-          <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-            <div>
-              <p className="text-sm font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">{t("pricingRulesTag")}</p>
-              <h3 className="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">{t("pricingRulesTitle")}</h3>
-              <p className="mt-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">{t("pricingRulesDesc")}</p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {["pricingRuleShort", "pricingRuleLong", "pricingRuleScope"].map((key) => (
-                <div key={key} className="rounded-xl bg-[#F7F1E8] p-4">
-                  <p className="text-sm font-semibold text-[var(--color-text-primary)]">{t(`${key}Title`)}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{t(`${key}Desc`)}</p>
-                </div>
-              ))}
-            </div>
+        <div className="mt-8 grid gap-5 border-t border-[var(--color-border-subtle)] pt-6 md:grid-cols-2">
+          <div>
+            <h3 className="font-semibold">{zh ? "已有 KIE API Key？" : "Already have a KIE API key?"}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{zh ? "手动上传分析和视频生成可使用自己的 Key，模型费用由你的 KIE 账户承担。自动拆镜单独消耗平台积分。" : "Use your own key for uploaded-file analysis and video generation. Model fees go to your KIE account; automatic splitting uses platform credits."}</p>
+            <Link href={settings} className="mt-3 inline-block text-sm underline underline-offset-4">{zh ? "配置自己的 Key" : "Configure your key"}</Link>
+          </div>
+          <div>
+            <h3 className="font-semibold">{zh ? "费用清楚，再开始" : "Know the cost before you start"}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{zh ? "拆镜每 6 秒 1 积分，不足 6 秒按 1 积分计；30 秒 5 积分，60 秒 10 积分。分析与生成另行报价，确认后才预留积分。" : "Shot splitting costs 1 credit per started 6 seconds: 5 credits for 30 seconds, 10 for 60. Analysis and generation are quoted separately; credits are reserved after confirmation."}</p>
           </div>
         </div>
       </div>
-
-      {manualPayment ? (
-        <div className="fixed inset-0 z-50 grid place-items-center overflow-y-auto bg-black/60 px-4 py-6">
-          <div className="relative w-full max-w-4xl rounded-2xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-5 shadow-2xl md:p-6">
-            <button
-              type="button"
-              onClick={() => setManualPayment(null)}
-              className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
-              aria-label={isZh ? "关闭" : "Close"}
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <div className="pr-10">
-              <p className="text-xs font-medium uppercase tracking-wider text-[var(--color-text-secondary)]">Manual QR payment</p>
-              <h3 className="mt-2 text-2xl font-semibold text-[var(--color-text-primary)]">{isZh ? "扫码付款后提交信息" : "Submit after QR payment"}</h3>
-              <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{manualPayment.packageName} · {manualPayment.priceLabel}</p>
-            </div>
-            <div className="mt-5 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-              <div className="grid gap-3 sm:grid-cols-2">
-                {paymentMethods.map((method) => {
-                  const selected = manualMethod === method.id;
-                  return (
-                    <button
-                      key={method.id}
-                      type="button"
-                      onClick={() => setManualMethod(method.id)}
-                      className={`rounded-2xl border bg-white p-3 text-left shadow-sm transition ${selected ? "border-[#D97757] ring-2 ring-[#D97757]/20" : "border-[var(--color-border-subtle)] hover:border-[#D97757]/50"}`}
-                    >
-                      <div className="flex items-center justify-between gap-3 pb-2">
-                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">{method.label}</p>
-                        <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${selected ? "bg-[#D97757] text-white" : "bg-[#F7F1E8] text-[var(--color-text-secondary)]"}`}>
-                          {selected ? (isZh ? "已选择" : "Selected") : (isZh ? "选择" : "Select")}
-                        </span>
-                      </div>
-                      <img src={method.image} alt={`${method.label}收款码`} className="aspect-square w-full rounded-xl border border-[var(--color-border-subtle)] bg-white object-contain" />
-                    </button>
-                  );
-                })}
-              </div>
-              <form onSubmit={submitManualPayment} className="grid content-start gap-3 rounded-2xl border border-[var(--color-border-subtle)] bg-[#F7F1E8] p-4">
-                <div className="rounded-xl bg-white px-3 py-2 text-sm text-[var(--color-text-secondary)]">
-                  {isZh ? `当前选择：${paymentMethods.find((item) => item.id === manualMethod)?.label}` : `Selected: ${paymentMethods.find((item) => item.id === manualMethod)?.label}`}
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="manual-reference">{isZh ? "付款备注/流水号" : "Payment note or transaction ID"}</Label>
-                  <Input id="manual-reference" value={manualReference} onChange={(event) => setManualReference(event.target.value)} placeholder={isZh ? "例如付款昵称、订单号、转账备注" : "Nickname, order ID, or transfer note"} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="manual-contact">{isZh ? "联系方式" : "Contact"}</Label>
-                  <Input id="manual-contact" value={manualContact} onChange={(event) => setManualContact(event.target.value)} placeholder={isZh ? "邮箱、微信号或手机号，方便核对" : "Email, WeChat ID, or phone"} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="manual-note">{isZh ? "补充说明" : "Note"}</Label>
-                  <Input id="manual-note" value={manualNote} onChange={(event) => setManualNote(event.target.value)} placeholder={isZh ? "可选" : "Optional"} />
-                </div>
-                <p className="text-xs leading-relaxed text-[var(--color-text-muted)]">
-                  {isZh ? "至少填写付款备注/流水号或联系方式其中一项。平台确认到账后，积分会自动发放到当前登录账号" : "Enter at least a payment note or contact. Credits are issued to this logged-in account after platform confirmation"}
-                </p>
-                <Button type="submit" disabled={submittingManual} className="mt-1 bg-[#D97757] text-white hover:bg-[#C96848]">
-                  {submittingManual ? <Spinner size="sm" className="mr-2" /> : null}
-                  {isZh ? "提交付款信息" : "Submit payment info"}
-                </Button>
-              </form>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <div className="mx-auto mt-6 max-w-6xl px-4 text-center"><Link href="/billing" className="text-sm underline underline-offset-4">{zh ? "余额与订单" : "Balance and orders"}</Link></div>
+      {selected && <AlipayCheckoutDialog key={`${selected.id}:${checkoutAttempt}`} pack={selected} requestId={requestIds.current[selected.id]} onClose={() => setSelected(null)} onNewOrder={() => {
+        requestIds.current[selected.id] = crypto.randomUUID();
+        try { localStorage.setItem(`promptlens:checkout:${session?.user.id || "current"}:${selected.id}`, requestIds.current[selected.id]); } catch { /* Keep the in-memory ID when storage is unavailable. */ }
+        setCheckoutAttempt((value) => value + 1);
+      }} onPaid={() => {
+        delete requestIds.current[selected.id];
+        try { localStorage.removeItem(`promptlens:checkout:${session?.user.id || "current"}:${selected.id}`); } catch { /* Storage may be unavailable in private browsing. */ }
+      }} />}
     </section>
   );
 }

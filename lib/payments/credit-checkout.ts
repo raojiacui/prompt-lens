@@ -2,6 +2,10 @@ import crypto from "crypto";
 import { and, eq, or, sql } from "drizzle-orm";
 import { creditLedger, db, paymentOrders, userCredits } from "@/lib/db";
 import { getCreditPackage, type CreditPackage } from "@/lib/billing/credit-packages";
+import { grantCommercialPurchase } from "@/lib/billing/commercial-wallet";
+import { COMMERCIAL_PACKAGES, PRICING_VERSION } from "@/lib/billing/pricing-v6";
+import { createXunhuPayHash as createHashPayload, verifyXunhuPayHash, assertXunhuPayOrderMatch } from "./xunhupay-signature";
+export { verifyXunhuPayHash } from "./xunhupay-signature";
 
 export type PaymentProvider = "creem" | "xunhupay" | "manual_qr";
 export type XunhuPayMethod = "wechat" | "alipay";
@@ -29,27 +33,6 @@ function packageAmountCents(pkg: CreditPackage) {
 
 function asObject(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
-}
-
-function createHashPayload(data: Record<string, unknown>, secret: string) {
-  const base = Object.keys(data)
-    .sort()
-    .filter((key) => key !== "hash" && data[key] !== null && data[key] !== undefined && data[key] !== "")
-    .map((key) => `${key}=${String(data[key])}`)
-    .join("&");
-  return crypto.createHash("md5").update(`${base}${secret}`, "utf8").digest("hex");
-}
-
-function timingSafeHexEqual(left: string, right: string) {
-  const a = Buffer.from(left, "hex");
-  const b = Buffer.from(right, "hex");
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
-}
-
-export function verifyXunhuPayHash(data: Record<string, unknown>, secret: string) {
-  const received = typeof data.hash === "string" ? data.hash : "";
-  if (!received) return false;
-  return timingSafeHexEqual(createHashPayload(data, secret), received);
 }
 
 function xunhuPayCredentials(method: XunhuPayMethod) {
@@ -103,13 +86,15 @@ export async function createCreemCreditCheckout(userId: string, packageId: strin
   return { url: String(payload.checkout_url), provider: "creem" as const };
 }
 
-export async function createXunhuPayCreditCheckout(userId: string, packageId: string, method: XunhuPayMethod) {
-  const pkg = getCreditPackage(packageId);
+export async function createXunhuPayCreditCheckout(userId: string, packageId: string, method: XunhuPayMethod, requestId?: string) {
+  const commercial = COMMERCIAL_PACKAGES.find((item) => item.id === packageId);
+  const pkg = commercial ? { ...commercial, priceCny: commercial.priceCents / 100 } : getCreditPackage(packageId);
   if (!pkg) throw new Error("积分包不存在");
+  if (commercial && (method !== "alipay" || !requestId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId))) throw new Error("Invalid commercial checkout request");
   const { appId, appSecret } = xunhuPayCredentials(method);
-  const tradeOrderId = randomId(method === "wechat" ? "wx" : "ali");
+  const tradeOrderId = commercial ? `ali_${crypto.createHash("sha256").update(`${userId}:${requestId}`).digest("hex").slice(0, 28)}` : randomId(method === "wechat" ? "wx" : "ali");
   const gateway = process.env.XUNHUPAY_GATEWAY || "https://api.xunhupay.com/payment/do.html";
-  const amountCents = packageAmountCents(pkg);
+  const amountCents = commercial ? commercial.priceCents : Math.round(pkg.priceCny * 100);
   const payload: Record<string, unknown> = {
     version: "1.1",
     appid: appId,
@@ -118,7 +103,7 @@ export async function createXunhuPayCreditCheckout(userId: string, packageId: st
     title: `Prompt Lens ${pkg.name}`,
     time: Math.floor(Date.now() / 1000),
     notify_url: `${siteUrl()}/api/payments/webhooks/xunhupay`,
-    return_url: `${siteUrl()}/dashboard?payment=success&provider=xunhupay&package=${encodeURIComponent(packageId)}`,
+    return_url: `${siteUrl()}/billing`,
     callback_url: `${siteUrl()}/#pricing`,
     plugins: "prompt-lens",
     attach: JSON.stringify({ userId, packageId, method }),
@@ -126,34 +111,46 @@ export async function createXunhuPayCreditCheckout(userId: string, packageId: st
   };
   payload.hash = createHashPayload(payload, appSecret);
 
+  // Persist before contacting the gateway: a fast callback must always find its order.
+  const [created] = await db.insert(paymentOrders).values({
+    userId, provider: "xunhupay", providerOrderId: tradeOrderId,
+    packageId: pkg.id, packageName: pkg.name, credits: pkg.credits,
+    amountCents, currency: "cny", status: "pending", metadata: { method, appId, ...(commercial ? { pricingVersion: PRICING_VERSION, rewrites: commercial.rewrites } : {}) },
+  }).onConflictDoNothing({ target: [paymentOrders.provider, paymentOrders.providerOrderId] }).returning();
+  if (!created) {
+    const order = await db.query.paymentOrders.findFirst({ where: and(eq(paymentOrders.provider, "xunhupay"), eq(paymentOrders.providerOrderId, tradeOrderId), eq(paymentOrders.userId, userId)) });
+    if (!order || order.packageId !== packageId) throw new Error("Checkout request replay mismatch");
+    const checkout = asObject(asObject(order.metadata).checkout);
+    return { url: order.checkoutUrl, provider: "xunhupay" as const, orderId: order.id, status: order.status,
+      qrImageUrl: typeof checkout.qrImageUrl === "string" ? checkout.qrImageUrl : null,
+      mobilePaymentUrl: typeof checkout.mobilePaymentUrl === "string" ? checkout.mobilePaymentUrl : null,
+      expiresAt: new Date(order.createdAt.getTime() + 300000).toISOString() };
+  }
+  const order = created;
+
   const response = await fetch(gateway, {
     method: "POST",
     headers: { "Content-Type": "application/json;charset=UTF-8" },
     body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(15000),
   });
   const data = await response.json().catch(() => null) as Record<string, unknown> | null;
   if (!response.ok || !data || Number(data.errcode) !== 0) {
     throw new Error(String(data?.errmsg || `虎皮椒支付创建失败 (${response.status})`));
   }
+  if (!verifyXunhuPayHash(data, appSecret)) throw new Error("Invalid payment gateway signature");
   const checkoutUrl = String(data.url_qrcode || data.url || "");
   if (!checkoutUrl) throw new Error("虎皮椒支付未返回可用的支付链接");
 
-  await db.insert(paymentOrders).values({
-    userId,
-    provider: "xunhupay",
-    providerOrderId: tradeOrderId,
-    packageId: pkg.id,
-    packageName: pkg.name,
-    credits: pkg.credits,
-    amountCents,
-    currency: "cny",
-    status: "pending",
-    checkoutUrl,
-    rawPayload: data,
-    metadata: { method, appId },
-  });
+  const checkout = { qrImageUrl: typeof data.url_qrcode === "string" ? data.url_qrcode : null, mobilePaymentUrl: typeof data.url === "string" ? data.url : null };
+  await db.update(paymentOrders).set({ checkoutUrl, metadata: sql`${paymentOrders.metadata} || ${JSON.stringify({ checkout })}::jsonb`, updatedAt: new Date() }).where(eq(paymentOrders.id, order.id));
 
-  return { url: checkoutUrl, provider: "xunhupay" as const };
+  return {
+    url: checkoutUrl, provider: "xunhupay" as const, orderId: order.id, status: order.status,
+    qrImageUrl: typeof data.url_qrcode === "string" ? data.url_qrcode : null,
+    mobilePaymentUrl: typeof data.url === "string" ? data.url : null,
+    expiresAt: new Date(order.createdAt.getTime() + 5 * 60 * 1000).toISOString(),
+  };
 }
 
 export async function createManualCreditPayment(userId: string, packageId: string, method: ManualPaymentMethod, input: { paymentReference?: string; contact?: string; note?: string } = {}) {
@@ -202,13 +199,33 @@ export async function settlePaidCreditOrder(input: {
 }) {
   const finalOrderId = input.finalOrderId || input.lookupOrderId;
   return db.transaction(async (tx) => {
-    const order = await tx.query.paymentOrders.findFirst({
-      where: or(
+    const [order] = await tx.select().from(paymentOrders).where(or(
         and(eq(paymentOrders.provider, input.provider), eq(paymentOrders.providerOrderId, input.lookupOrderId)),
         input.checkoutId ? and(eq(paymentOrders.provider, input.provider), eq(paymentOrders.checkoutId, input.checkoutId)) : undefined,
-      ),
-    });
+      )).for("update");
     if (!order) throw new Error(`Payment order not found: ${input.provider}/${input.lookupOrderId}`);
+
+    if (input.provider === "xunhupay") assertXunhuPayOrderMatch(order, input.rawPayload || {});
+    if (order.status === "paid") return { order, granted: false };
+    if (order.status !== "pending") throw new Error(`Payment order cannot be settled from ${order.status}`);
+
+    if (order.packageId.startsWith("v6_")) {
+      const snapshot = asObject(order.metadata);
+      if (snapshot.pricingVersion !== PRICING_VERSION || !Number.isSafeInteger(snapshot.rewrites) || Number(snapshot.rewrites) < 0) {
+        throw new Error("Missing commercial purchase snapshot");
+      }
+      if (input.provider !== "xunhupay" || snapshot.method !== "alipay") throw new Error("Commercial purchases require Alipay");
+      const granted = await grantCommercialPurchase(tx, {
+        userId: order.userId, orderId: order.id, packageId: order.packageId,
+        credits: order.credits, rewrites: Number(snapshot.rewrites),
+      });
+      const [updatedOrder] = await tx.update(paymentOrders).set({
+        status: "paid", paidAt: new Date(), updatedAt: new Date(),
+        rawPayload: input.rawPayload || order.rawPayload,
+        metadata: { ...snapshot, ...(input.metadata || {}), wallet: "commercial_v6" },
+      }).where(eq(paymentOrders.id, order.id)).returning();
+      return { order: updatedOrder, granted };
+    }
 
     const paymentReference = finalOrderId;
     const existingLedger = await tx.query.creditLedger.findFirst({
@@ -264,5 +281,5 @@ export function getXunhuPaySecretForApp(appId: string) {
   if (process.env.XUNHUPAY_WECHAT_APP_ID === appId && process.env.XUNHUPAY_WECHAT_APP_SECRET) return process.env.XUNHUPAY_WECHAT_APP_SECRET;
   if (process.env.XUNHUPAY_ALIPAY_APP_ID === appId && process.env.XUNHUPAY_ALIPAY_APP_SECRET) return process.env.XUNHUPAY_ALIPAY_APP_SECRET;
   if (process.env.XUNHUPAY_APP_ID === appId && process.env.XUNHUPAY_APP_SECRET) return process.env.XUNHUPAY_APP_SECRET;
-  return process.env.XUNHUPAY_APP_SECRET || "";
+  return "";
 }
