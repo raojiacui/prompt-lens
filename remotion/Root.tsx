@@ -5,10 +5,12 @@ import { PromptLensProductDemo } from "./prompt-lens-product-demo";
 import { PromptLensCoreWorkflowDemo } from "./prompt-lens-core-workflow-demo";
 import { PromptLensRemixComparisonDemo } from "./prompt-lens-remix-comparison-demo";
 import { PromptLensAnalysisMotionDemo } from "./prompt-lens-analysis-motion-demo";
+import { PromptLensRewriteDemo } from "./prompt-lens-rewrite-demo";
 
 export const RemotionRoot: React.FC = () => {
   return (
     <>
+      <Composition id="PromptLensRewriteDemo" component={PromptLensRewriteDemo} durationInFrames={1080} fps={60} width={1200} height={950} />
       <Composition
         id="PromptLensAnalysisMotionDemo"
         component={PromptLensAnalysisMotionDemo}
@@ -40,8 +42,8 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="PromptLensRemixComparisonDemo"
         component={PromptLensRemixComparisonDemo}
-        durationInFrames={390}
-        fps={30}
+        durationInFrames={840}
+        fps={60}
         width={1200}
         height={950}
       />

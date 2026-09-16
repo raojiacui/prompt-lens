@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
-import { Film, Wand2, Mic2, Scissors, ArrowRight } from "lucide-react";
+import { Film, Wand2, Mic2, Sparkles, ArrowRight } from "lucide-react";
 
-const featureIcons = [Film, Wand2, Mic2, Scissors];
-const featureKeys = ["featureAnalyze", "featureGen", "featureAudio", "featureEdit"] as const;
-const tabMap = ["analyze", "videoGen", "audio", "edit"];
+const featureIcons = [Film, Wand2, Sparkles, Mic2];
+const featureKeys = ["featureAnalyze", "featureGen", "featureRewrite", "featureAudio"] as const;
+const tabMap = ["analyze", "videoGen", "analyze", "audio"];
 const demoVideos = [
   "/remotion/landing-ad/prompt-lens-analysis-motion-v5.mp4",
-  "/remotion/landing-ad/prompt-lens-remix-gamma-v4.mp4",
+  "/remotion/landing-ad/prompt-lens-remix-smooth-v6.mp4",
+  "/remotion/landing-ad/prompt-lens-rewrite-v4.mp4",
   "/feature-audio-recognition.mp4",
-  "/feature-video-edit.mp4",
 ];
 
 function FeatureDemoVideo({ label, src, nativeAspect = false }: { label: string; src: string; nativeAspect?: boolean }) {
@@ -74,13 +74,13 @@ export function FeaturesSection() {
                   </ul>
                   <Link href={`/dashboard?tab=${tabMap[index]}`}>
                     <Button variant="outline" className="rounded-full border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[#F5EDE2]">
-                      {t("startForFree")}
+                      {t(`${key}Link`)}
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </Button>
                   </Link>
                 </div>
                 <div className="flex-1 w-full">
-                  <FeatureDemoVideo label={title} src={demoVideos[index]} nativeAspect={key === "featureAnalyze" || key === "featureGen"} />
+                  <FeatureDemoVideo label={title} src={demoVideos[index]} nativeAspect={key !== "featureAudio"} />
                 </div>
               </div>
             );

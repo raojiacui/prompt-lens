@@ -1,15 +1,43 @@
 import type { CSSProperties, ReactNode } from "react";
-import { AbsoluteFill, Easing, Img, Sequence, Video, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { AbsoluteFill, Easing, Img, Sequence, Video, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { ArrowRight, Check, ChevronDown, Copy, MousePointer2, Sparkles, VideoIcon } from "lucide-react";
 
 const clamp = { extrapolateLeft: "clamp" as const, extrapolateRight: "clamp" as const };
-const travel = Easing.bezier(0.65, 0, 0.25, 1);
+// Zero velocity and acceleration at each camera stop prevent a sharp start or brake.
+const travel = (t: number) => t * t * t * (t * (t * 6 - 15) + 10);
 const settle = Easing.bezier(0.16, 1, 0.3, 1);
 const ink = "#24262c";
 const accent = "#d97757";
 const prompt = "电影级广角镜头，低角度仰拍。一名身穿深色古装的古代剑客背对镜头，站在布满枯枝的荒凉大地上。天空中盘旋着一条巨大的、由半透明云雾构成的东方龙，龙身巨大，遮天蔽日。周围有无数细小的黑色碎片或鱼群在空中漂浮。冷色调，阴沉昏暗的氛围，史诗感，高细节，电影质感，光线晦暗，强调龙的宏大轮廓。";
 const before = staticFile("remotion/remix-flow/before.mp4");
 const after = staticFile("remotion/remix-flow/after.mp4");
+const resultPlaybackFrame = 209;
+
+// Monotone Hermite tangents carry velocity through waypoints without overshooting a target.
+function cameraValue(f: number, times: number[], values: number[]) {
+  const slopes = times.slice(1).map((time, i) => (values[i + 1] - values[i]) / (time - times[i]));
+  const tangents = values.map((_, i) => {
+    if (i === 0 || i === values.length - 1 || slopes[i - 1] * slopes[i] <= 0) return 0;
+    const left = times[i] - times[i - 1];
+    const right = times[i + 1] - times[i];
+    return 3 * (left + right) / ((2 * right + left) / slopes[i - 1] + (right + 2 * left) / slopes[i]);
+  });
+  if (f <= times[0]) return values[0];
+  if (f >= times[times.length - 1]) return values[values.length - 1];
+  const i = times.findIndex(time => time > f) - 1;
+  const span = times[i + 1] - times[i];
+  const t = (f - times[i]) / span;
+  return (2 * t ** 3 - 3 * t ** 2 + 1) * values[i] + (t ** 3 - 2 * t ** 2 + t) * span * tangents[i]
+    + (-2 * t ** 3 + 3 * t ** 2) * values[i + 1] + (t ** 3 - t ** 2) * span * tangents[i + 1];
+}
+function cameraPose(f: number, times: number[], poses: Pose[]): Pose {
+  return {
+    x: cameraValue(f, times, poses.map(p => p.x)),
+    y: cameraValue(f, times, poses.map(p => p.y)),
+    scale: Math.exp(cameraValue(f, times, poses.map(p => Math.log(p.scale)))),
+    rotate: cameraValue(f, times, poses.map(p => p.rotate)),
+  };
+}
 
 function tween(f: number, frames: number[], values: number[], easing = travel) {
   return interpolate(f, frames, values, { ...clamp, easing });
@@ -21,7 +49,7 @@ type Pose = { x: number; y: number; scale: number; rotate: number };
 function pose(f: number, frames: number[], poses: Pose[]): Pose {
   return {
     x: tween(f, frames, poses.map(p => p.x)), y: tween(f, frames, poses.map(p => p.y)),
-    scale: tween(f, frames, poses.map(p => p.scale)), rotate: tween(f, frames, poses.map(p => p.rotate)),
+    scale: Math.exp(tween(f, frames, poses.map(p => Math.log(p.scale)))), rotate: tween(f, frames, poses.map(p => p.rotate)),
   };
 }
 function Floating({ at, width, children, opacity = 1, blur = 0, z = 1 }: {
@@ -65,6 +93,8 @@ function PromptPanel({ f }: { f: number }) {
   </div>;
 }
 function VideoPanel({ src, label, generated = false, f }: { src: string; label: string; generated?: boolean; f: number }) {
+  const { fps } = useVideoConfig();
+  const playbackStart = Math.round(resultPlaybackFrame * fps / 30);
   const reveal = enter(f, 179, 195);
   return <div style={{ ...surface, overflow: "hidden" }}>
     <div style={{ padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -85,9 +115,9 @@ function VideoPanel({ src, label, generated = false, f }: { src: string; label: 
       </div>}
       <div style={{ position: "absolute", inset: 0, opacity: generated ? reveal : 1,
         transform: `scale(${generated ? tween(f, [179, 200], [1.06, 1], settle) : 1})` }}>
-        {generated ? <Sequence from={179} layout="none"><Video src={src} muted loop style={videoStyle} /></Sequence>
+        {generated ? <Sequence from={playbackStart} layout="none"><Video src={src} muted loop style={videoStyle} /></Sequence>
           : f < 179 ? <Video src={src} muted loop style={videoStyle} />
-            : <Sequence from={179} layout="none"><Video src={src} muted loop style={videoStyle} /></Sequence>}
+            : <Sequence from={playbackStart} layout="none"><Video src={src} muted loop style={videoStyle} /></Sequence>}
       </div>
     </div>
     <div style={{ height: 36, display: "flex", alignItems: "center", padding: "0 24px", fontSize: 12, color: "#9a9da5" }}>{generated ? "变体 1" : "原视频"}</div>
@@ -96,20 +126,25 @@ function VideoPanel({ src, label, generated = false, f }: { src: string; label: 
 
 // One shared camera preserves the prompt card's continuity between product states.
 export function PromptLensRemixComparisonDemo() {
-  const f = useCurrentFrame();
-  const cameraFrames = [0, 25, 45, 77, 91, 120, 145, 177, 204, 241, 329];
+  const { fps } = useVideoConfig();
+  const frame = useCurrentFrame() * 30 / fps;
+  // Give the second button approach an extra second while keeping click and card states in sync.
+  const sceneTime = (at: number) => interpolate(at, [0, 118, 178, 420], [0, 118, 148, 390], clamp);
+  const f = sceneTime(frame);
+  const cameraFrames = [0, 25, 43, 69, 87, 118, 143, 157, 204, 246, 313, 329];
   const cameraPoses: Pose[] = [
     { x: 580, y: 445, scale: .83, rotate: 0 }, { x: 600, y: 460, scale: 1, rotate: 0 },
-    { x: 600, y: 460, scale: 1, rotate: 0 }, { x: 795, y: 535, scale: 1.28, rotate: -.8 },
-    { x: 795, y: 535, scale: 1.28, rotate: -.8 }, { x: 500, y: 465, scale: .97, rotate: 0 },
-    { x: 500, y: 465, scale: .97, rotate: 0 }, { x: 765, y: 448, scale: 1.13, rotate: .6 },
-    { x: 850, y: 452, scale: 1.3, rotate: 0 }, { x: 600, y: 470, scale: .96, rotate: 0 },
-    { x: 600, y: 470, scale: 1.015, rotate: 0 },
+    { x: 600, y: 460, scale: 1, rotate: 0 }, { x: 902, y: 626, scale: 2.65, rotate: 0 },
+    { x: 902, y: 626, scale: 2.65, rotate: 0 }, { x: 550, y: 465, scale: .97, rotate: 0 },
+    { x: 584, y: 599, scale: 3.2, rotate: 2 },
+    { x: 584, y: 599, scale: 3.2, rotate: 2 }, { x: 850, y: 452, scale: 1.55, rotate: 0 },
+    { x: 600, y: 470, scale: .96, rotate: 0 },
+    { x: 600, y: 470, scale: 1.015, rotate: 0 }, { x: 600, y: 470, scale: 1.015, rotate: 0 },
   ];
-  const cam = pose(f, cameraFrames, cameraPoses);
+  const cam = cameraPose(f, cameraFrames, cameraPoses);
   const close = tween(f, [313, 342], [0, 1]);
-  const prev = pose(Math.max(0, f - 1), cameraFrames, cameraPoses);
-  const motionBlur = Math.min(1.6, Math.hypot(cam.x - prev.x, cam.y - prev.y) * .065);
+  const prev = cameraPose(sceneTime(Math.max(0, frame - 30 / fps)), cameraFrames, cameraPoses);
+  const motionBlur = Math.min(1.5, (Math.hypot(cam.x - prev.x, cam.y - prev.y) + Math.abs(Math.log(cam.scale / prev.scale)) * 400) * .045);
   const promptPose = pose(f, [0, 25, 91, 120, 180, 225], [
     { x: 665, y: 535, scale: .93, rotate: 3 }, { x: 650, y: 455, scale: 1, rotate: 0 },
     { x: 650, y: 455, scale: 1, rotate: 0 }, { x: 370, y: 465, scale: .82, rotate: -2 },
@@ -134,7 +169,7 @@ export function PromptLensRemixComparisonDemo() {
     <div style={{ position: "absolute", left: 0, top: 0, width: 1200, height: 950, transformOrigin: "0 0",
       opacity: 1 - close,
       transform: `translate(600px, ${475 - close * 35}px) scale(${cam.scale * (1 - close * .24)}) rotate(${cam.rotate}deg) translate(${-cam.x}px, ${-cam.y}px)`, filter: `blur(${motionBlur + close * 10}px)` }}>
-      <div style={{ position: "absolute", left: 260, top: 140, width: 680, textAlign: "center", opacity: 1 - enter(f, 58, 80), transform: `translateY(${tween(f, [0, 25], [24, 0], settle)}px)` }}>
+      <div style={{ position: "absolute", left: 260, top: 140, width: 680, textAlign: "center", opacity: 1 - enter(f, 39, 51), transform: `translateY(${tween(f, [0, 25], [24, 0], settle)}px)` }}>
         <div style={{ fontSize: 40, fontWeight: 700 }}>看到喜欢的，一键做同款</div>
         <div style={{ fontSize: 17, color: "#7c8491", marginTop: 14 }}>从可复刻提示词开始</div>
       </div>
