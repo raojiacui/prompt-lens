@@ -35,6 +35,10 @@ test-results/
 temp_*/
 temp/
 nul/
+tmp-*.png
+tmp-*.jpg
+__pycache__/
+*.pyc
 
 # Local runtime state
 .data/
