@@ -25,23 +25,33 @@ export async function POST(request: NextRequest) {
         maxAge: SESSION_MAX_AGE,
         sameSite: "lax",
         secure: process.env.NODE_ENV === "production",
-        httpOnly: false, // allow client-side reuse if needed
+        httpOnly: true,
       });
     }
 
     const body = await request.json().catch(() => ({ path: "/" }));
-    const path = typeof body.path === "string" ? body.path : "/";
+    const requestedPath = typeof body.path === "string" ? body.path : "/";
+    const path = requestedPath.startsWith("/") ? requestedPath.slice(0, 512) : "/";
 
-    await db.insert(dailyVisits).values({
+    const visit = {
       date: getTodayKey(),
       sessionId,
       userId: session?.user?.id || null,
       ipAddress: headersList.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown",
       userAgent: headersList.get("user-agent") || "unknown",
       path,
-    }).onConflictDoNothing({ target: [dailyVisits.date, dailyVisits.sessionId] });
+    };
+    const insert = db.insert(dailyVisits).values(visit);
+    if (visit.userId) {
+      await insert.onConflictDoUpdate({
+        target: [dailyVisits.date, dailyVisits.sessionId],
+        set: { userId: visit.userId, path: visit.path, userAgent: visit.userAgent },
+      });
+    } else {
+      await insert.onConflictDoNothing({ target: [dailyVisits.date, dailyVisits.sessionId] });
+    }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Visit tracking error:", error);
     return NextResponse.json({ ok: false }, { status: 500 });

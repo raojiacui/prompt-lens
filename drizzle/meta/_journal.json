@@ -92,6 +92,13 @@
                         "when":  1789430401000,
                         "tag":  "0012_commercial_tasks",
                         "breakpoints":  true
+                    },
+                    {
+                        "idx":  13,
+                        "version":  "7",
+                        "when":  1789516800000,
+                        "tag":  "0013_admin_daily_visits",
+                        "breakpoints":  true
                     }
                 ]
 }

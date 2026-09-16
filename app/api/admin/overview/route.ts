@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { desc, gte, count, countDistinct, isNotNull } from "drizzle-orm";
+import { desc, gte, count, countDistinct, eq, sql } from "drizzle-orm";
 import { getAdminUserFromHeaders } from "@/lib/auth";
 import { getCreditBalancesForUsers } from "@/lib/billing/credits";
 import {
   analysisHistory,
   audioAnalysis,
-  creditLedger,
   dailyVisits,
   db,
   operationLogs,
+  paymentOrders,
   projectAssets,
   projects,
   user,
@@ -22,6 +22,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 type DailyMetric = {
   date: string;
   activeUsers: number;
+  signedInUsers: number;
   uploads: number;
   uploadBytes: number;
   analyses: number;
@@ -52,7 +53,7 @@ function makeDailyWindow(days: number) {
   const today = startOfDay(new Date());
   return Array.from({ length: days }, (_, index): DailyMetric => {
     const date = new Date(today.getTime() - (days - 1 - index) * DAY_MS);
-    return { date: dayKey(date), activeUsers: 0, uploads: 0, uploadBytes: 0, analyses: 0, generations: 0 };
+    return { date: dayKey(date), activeUsers: 0, signedInUsers: 0, uploads: 0, uploadBytes: 0, analyses: 0, generations: 0 };
   });
 }
 
@@ -72,11 +73,12 @@ function isRecoverableAdminQueryError(error: unknown) {
   const code = typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code) : "";
   return code === "42P01" || message.includes("does not exist") || message.includes("statement timeout") || message.includes("canceling statement");
 }
-async function safeAdminQuery<T>(label: string, promise: Promise<T>, fallback: T): Promise<T> {
+async function safeAdminQuery<T>(label: string, promise: Promise<T>, fallback: T, unavailable: string[]): Promise<T> {
   try {
     return await promise;
   } catch (error) {
     if (!isRecoverableAdminQueryError(error)) throw error;
+    unavailable.push(label);
     console.warn(`[admin] ${label} unavailable, using fallback:`, error);
     return fallback;
   }
@@ -107,17 +109,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    const daysParam = Number(request.nextUrl.searchParams.get("days") || 14);
+  const daysParam = Number(request.nextUrl.searchParams.get("days") || 14);
   const days = Number.isFinite(daysParam) ? Math.max(7, Math.min(60, Math.round(daysParam))) : 14;
   const since = new Date(Date.now() - days * DAY_MS);
   const since30 = new Date(Date.now() - 30 * DAY_MS);
   const since7 = new Date(Date.now() - 7 * DAY_MS);
   const today = startOfDay(new Date());
+  const unavailable: string[] = [];
+  const safe = <T,>(label: string, promise: Promise<T>, fallback: T) => safeAdminQuery(label, promise, fallback, unavailable);
 
   const zeroCountRows = [{ count: 0 }];
   const [
     totalUsersRow,
-    newUsersRow,
+    newUsersTodayRow,
+    newUsers7dRow,
+    newUsers30dRow,
     totalProjectsRow,
     totalGenerationsRow,
     totalWorkflowJobsRow,
@@ -132,31 +138,49 @@ export async function GET(request: NextRequest) {
     recentUsers,
     allUsers,
     projectOwners,
-    recentDailyVisits,
+    dailyVisitMetrics,
+    activeWindowsRows,
+    recentPaidOrders,
   ] = await Promise.all([
-    safeAdminQuery("total users", db.select({ count: count() }).from(user), zeroCountRows),
-    safeAdminQuery("new users", db.select({ count: count() }).from(user).where(gte(user.createdAt, since30)), zeroCountRows),
-    safeAdminQuery("projects count", db.select({ count: count() }).from(projects), zeroCountRows),
-    safeAdminQuery("video generations count", db.select({ count: count() }).from(videoGeneration), zeroCountRows),
-    safeAdminQuery("workflow jobs count", db.select({ count: count() }).from(workflowJobs), zeroCountRows),
-    safeAdminQuery("purchased users", db.select({ count: countDistinct(creditLedger.userId) }).from(creditLedger).where(isNotNull(creditLedger.packageId)), zeroCountRows),
-    safeAdminQuery("operation logs", db.query.operationLogs.findMany({ where: gte(operationLogs.createdAt, since), orderBy: [desc(operationLogs.createdAt)], limit: 3000 }), []),
-    safeAdminQuery("recent projects", db.query.projects.findMany({ where: gte(projects.createdAt, since), orderBy: [desc(projects.createdAt)], limit: 1000 }), []),
-    safeAdminQuery("recent generations", db.query.videoGeneration.findMany({ where: gte(videoGeneration.createdAt, since), orderBy: [desc(videoGeneration.createdAt)], limit: 1000 }), []),
-    safeAdminQuery("recent analysis history", db.query.analysisHistory.findMany({ where: gte(analysisHistory.createdAt, since), orderBy: [desc(analysisHistory.createdAt)], limit: 1000 }), []),
-    safeAdminQuery("recent audio analysis", db.query.audioAnalysis.findMany({ where: gte(audioAnalysis.createdAt, since), orderBy: [desc(audioAnalysis.createdAt)], limit: 1000 }), []),
-    safeAdminQuery("recent video clips", db.query.videoClip.findMany({ where: gte(videoClip.createdAt, since), orderBy: [desc(videoClip.createdAt)], limit: 1000 }), []),
-    safeAdminQuery("recent project assets", db.query.projectAssets.findMany({ where: gte(projectAssets.createdAt, since), orderBy: [desc(projectAssets.createdAt)], limit: 1000 }), []),
-    safeAdminQuery("recent users", db.query.user.findMany({ orderBy: [desc(user.createdAt)], limit: 8 }), []),
-    safeAdminQuery("all users", db.query.user.findMany({ limit: 3000 }), []),
-    safeAdminQuery("project owners", db.query.projects.findMany({ limit: 3000 }), []),
-    safeAdminQuery("daily visits", db.query.dailyVisits.findMany({ where: gte(dailyVisits.date, dayKey(since)), orderBy: [desc(dailyVisits.createdAt)], limit: 5000 }), []),
+    safe("total users", db.select({ count: count() }).from(user), zeroCountRows),
+    safe("new users today", db.select({ count: count() }).from(user).where(gte(user.createdAt, today)), zeroCountRows),
+    safe("new users 7d", db.select({ count: count() }).from(user).where(gte(user.createdAt, since7)), zeroCountRows),
+    safe("new users 30d", db.select({ count: count() }).from(user).where(gte(user.createdAt, since30)), zeroCountRows),
+    safe("projects count", db.select({ count: count() }).from(projects), zeroCountRows),
+    safe("video generations count", db.select({ count: count() }).from(videoGeneration), zeroCountRows),
+    safe("workflow jobs count", db.select({ count: count() }).from(workflowJobs), zeroCountRows),
+    safe("purchased users", db.select({ count: countDistinct(paymentOrders.userId) }).from(paymentOrders).where(eq(paymentOrders.status, "paid")), zeroCountRows),
+    safe("operation logs", db.query.operationLogs.findMany({ where: gte(operationLogs.createdAt, since), orderBy: [desc(operationLogs.createdAt)], limit: 3000 }), []),
+    safe("recent projects", db.query.projects.findMany({ where: gte(projects.createdAt, since), orderBy: [desc(projects.createdAt)], limit: 1000 }), []),
+    safe("recent generations", db.query.videoGeneration.findMany({ where: gte(videoGeneration.createdAt, since), orderBy: [desc(videoGeneration.createdAt)], limit: 1000 }), []),
+    safe("recent analysis history", db.query.analysisHistory.findMany({ where: gte(analysisHistory.createdAt, since), orderBy: [desc(analysisHistory.createdAt)], limit: 1000 }), []),
+    safe("recent audio analysis", db.query.audioAnalysis.findMany({ where: gte(audioAnalysis.createdAt, since), orderBy: [desc(audioAnalysis.createdAt)], limit: 1000 }), []),
+    safe("recent video clips", db.query.videoClip.findMany({ where: gte(videoClip.createdAt, since), orderBy: [desc(videoClip.createdAt)], limit: 1000 }), []),
+    safe("recent project assets", db.query.projectAssets.findMany({ where: gte(projectAssets.createdAt, since), orderBy: [desc(projectAssets.createdAt)], limit: 1000 }), []),
+    safe("recent users", db.query.user.findMany({ orderBy: [desc(user.createdAt)], limit: 20 }), []),
+    safe("all users", db.query.user.findMany({ limit: 3000 }), []),
+    safe("project owners", db.query.projects.findMany({ limit: 3000 }), []),
+    safe("daily visit metrics", db.select({
+      date: dailyVisits.date,
+      visitors: sql<number>`count(distinct ${dailyVisits.sessionId})::int`,
+      signedInUsers: sql<number>`count(distinct ${dailyVisits.userId})::int`,
+    }).from(dailyVisits).where(gte(dailyVisits.date, dayKey(since))).groupBy(dailyVisits.date).orderBy(dailyVisits.date), []),
+    safe("activity windows", db.select({
+      visitorToday: sql<number>`count(distinct ${dailyVisits.sessionId}) filter (where ${dailyVisits.date} >= ${dayKey(today)})::int`,
+      visitor7d: sql<number>`count(distinct ${dailyVisits.sessionId}) filter (where ${dailyVisits.date} >= ${dayKey(since7)})::int`,
+      visitor30d: sql<number>`count(distinct ${dailyVisits.sessionId})::int`,
+      signedInToday: sql<number>`count(distinct ${dailyVisits.userId}) filter (where ${dailyVisits.date} >= ${dayKey(today)})::int`,
+      signedIn7d: sql<number>`count(distinct ${dailyVisits.userId}) filter (where ${dailyVisits.date} >= ${dayKey(since7)})::int`,
+      signedIn30d: sql<number>`count(distinct ${dailyVisits.userId})::int`,
+    }).from(dailyVisits).where(gte(dailyVisits.date, dayKey(since30))), []),
+    safe("paid orders", db.select({
+      id: paymentOrders.id, userId: paymentOrders.userId, packageId: paymentOrders.packageId, packageName: paymentOrders.packageName,
+      amountCents: paymentOrders.amountCents, paidAt: paymentOrders.paidAt, createdAt: paymentOrders.createdAt,
+      email: user.email, name: user.name,
+    }).from(paymentOrders).innerJoin(user, eq(paymentOrders.userId, user.id)).where(eq(paymentOrders.status, "paid")).orderBy(desc(paymentOrders.paidAt), desc(paymentOrders.createdAt)).limit(1000), []),
   ]);
   const daily = makeDailyWindow(days);
   const dailyMap = new Map(daily.map((item) => [item.date, item]));
-  const dailyVisitors = new Map<string, { users: Set<string>; sessions: Set<string> }>();
-  const active7d = new Set<string>();
-  const active30d = new Set<string>();
   const usageByUser = new Map<string, UserUsage>();
   const actionCounts = new Map<string, number>();
   const projectOwnerById = new Map(projectOwners.map((item) => [item.id, item.userId]));
@@ -212,29 +236,12 @@ export async function GET(request: NextRequest) {
     registerActivity(ownerId, asset.createdAt, "upload", asset.size || 0);
   }
 
-  for (const visit of recentDailyVisits) {
-    const date = visit.date;
-    if (!dailyMap.has(date)) continue;
-
-    if (!dailyVisitors.has(date)) {
-      dailyVisitors.set(date, { users: new Set(), sessions: new Set() });
+  for (const item of dailyVisitMetrics) {
+    const day = dailyMap.get(item.date);
+    if (day) {
+      day.activeUsers = Number(item.visitors) || 0;
+      day.signedInUsers = Number(item.signedInUsers) || 0;
     }
-    const visitors = dailyVisitors.get(date)!;
-
-    if (visit.userId) {
-      visitors.users.add(visit.userId);
-      if (visit.createdAt >= since7) active7d.add(`user:${visit.userId}`);
-      if (visit.createdAt >= since30) active30d.add(`user:${visit.userId}`);
-    } else {
-      visitors.sessions.add(visit.sessionId);
-      if (visit.createdAt >= since7) active7d.add(`session:${visit.sessionId}`);
-      if (visit.createdAt >= since30) active30d.add(`session:${visit.sessionId}`);
-    }
-  }
-
-  for (const [date, { users, sessions }] of dailyVisitors) {
-    const day = dailyMap.get(date);
-    if (day) day.activeUsers = users.size + sessions.size;
   }
 
   const todayMetrics = dailyMap.get(dayKey(today)) || daily[daily.length - 1];
@@ -243,20 +250,39 @@ export async function GET(request: NextRequest) {
   const analysisCount = daily.reduce((sum, item) => sum + item.analyses, 0);
   const generationCount = daily.reduce((sum, item) => sum + item.generations, 0);
   const usersById = new Map(allUsers.map((item) => [item.id, item]));
-  const creditBalances = await safeAdminQuery("credit balances", getCreditBalancesForUsers(Array.from(usageByUser.keys())), new Map<string, number>());
+  const creditBalances = await safe("credit balances", getCreditBalancesForUsers(Array.from(usageByUser.keys())), new Map<string, number>());
 
   const totalUsers = totalUsersRow[0]?.count || 0;
   const purchasedUsers = purchasedUsersRow[0]?.count || 0;
   const nonPurchasedUsers = Math.max(0, totalUsers - purchasedUsers);
+  const activity = activeWindowsRows[0] || { visitorToday: 0, visitor7d: 0, visitor30d: 0, signedInToday: 0, signedIn7d: 0, signedIn30d: 0 };
+  const paidUsers = new Map<string, { userId: string; email: string; name: string | null; orderCount: number; totalPaidCents: number; lastPaidAt: Date; latestPackageId: string; latestPackageName: string }>();
+  for (const order of recentPaidOrders) {
+    const existing = paidUsers.get(order.userId);
+    if (existing) {
+      existing.orderCount += 1;
+      existing.totalPaidCents += order.amountCents;
+    } else {
+      paidUsers.set(order.userId, { userId: order.userId, email: order.email, name: order.name, orderCount: 1, totalPaidCents: order.amountCents, lastPaidAt: order.paidAt || order.createdAt, latestPackageId: order.packageId, latestPackageName: order.packageName });
+    }
+  }
 
   return NextResponse.json({
     period: { days, since: since.toISOString() },
     overview: {
       totalUsers,
-      newUsers30d: newUsersRow[0]?.count || 0,
-      activeToday: todayMetrics.activeUsers,
-      active7d: active7d.size,
-      active30d: active30d.size,
+      newUsersToday: newUsersTodayRow[0]?.count || 0,
+      newUsers7d: newUsers7dRow[0]?.count || 0,
+      newUsers30d: newUsers30dRow[0]?.count || 0,
+      visitorToday: Number(activity.visitorToday) || 0,
+      visitor7d: Number(activity.visitor7d) || 0,
+      visitor30d: Number(activity.visitor30d) || 0,
+      signedInToday: Number(activity.signedInToday) || 0,
+      signedIn7d: Number(activity.signedIn7d) || 0,
+      signedIn30d: Number(activity.signedIn30d) || 0,
+      activeToday: Number(activity.visitorToday) || todayMetrics.activeUsers,
+      active7d: Number(activity.visitor7d) || 0,
+      active30d: Number(activity.visitor30d) || 0,
       purchasedUsers,
       nonPurchasedUsers,
       totalProjects: totalProjectsRow[0]?.count || 0,
@@ -284,7 +310,9 @@ export async function GET(request: NextRequest) {
           creditBalance: creditBalances.get(stats.userId) || 0,
         };
       }),
+    purchasedUsers: Array.from(paidUsers.values()).slice(0, 50),
     recentUsers: recentUsers.map((item) => ({ id: item.id, name: item.name, email: item.email, role: item.role, createdAt: item.createdAt })),
+    dataHealth: { degraded: unavailable.length > 0, unavailable },
   });
   } catch (error) {
     console.error("Admin overview error:", error);
