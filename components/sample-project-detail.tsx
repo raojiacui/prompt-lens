@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import Link from "next/link";
-import { ArrowLeft, ChevronLeft, ChevronRight, Copy, FileVideo, Image as ImageIcon } from "lucide-react";
+import { useLocale } from "next-intl";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Copy, FileVideo, Image as ImageIcon } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -37,11 +38,63 @@ type Bundle = {
   referenceVideos: Array<{ sourceUrl: string; fileName?: string | null; duration?: number | null }>;
 };
 
+const sampleLabels = {
+  zh: {
+    copy: "复制",
+    copied: "已复制",
+    previousVersion: "上一版脚本",
+    nextVersion: "下一版脚本",
+    noDetectedData: "暂未检测到数据。",
+    fallbackTitle: "AI 分析未完成",
+    fallbackReason: "原因",
+    fallbackUnavailable: "AI 分析服务暂不可用",
+    fallbackAction: "当前没有生成可用的画面拆解或复刻 Prompt。",
+    sections: {
+      visual: "画面复刻",
+      action: "角色/动作",
+      camera: "镜头语言",
+      style: "光线/色彩/风格",
+      story: "剧情作用",
+      dialogue: "台词/字幕",
+      audio: "音频",
+      edit: "剪辑提示",
+    },
+  },
+  en: {
+    copy: "Copy",
+    copied: "Copied",
+    previousVersion: "Previous version",
+    nextVersion: "Next version",
+    noDetectedData: "No detected data yet.",
+    fallbackTitle: "AI analysis is incomplete",
+    fallbackReason: "Reason",
+    fallbackUnavailable: "AI analysis service is temporarily unavailable",
+    fallbackAction: "No usable visual breakdown or recreatable prompt was generated.",
+    sections: {
+      visual: "Visual recreation",
+      action: "Character / Action",
+      camera: "Camera language",
+      style: "Lighting / Color / Style",
+      story: "Story purpose",
+      dialogue: "Dialogue / Subtitles",
+      audio: "Audio",
+      edit: "Editing notes",
+    },
+  },
+};
+type SampleCopy = typeof sampleLabels.zh;
+
+function sampleCopyFor(locale: string) {
+  return locale === "en" ? sampleLabels.en : sampleLabels.zh;
+}
+
 export function SampleProjectDetail({ sampleId }: { sampleId: string }) {
+  const locale = useLocale();
+  const copy = sampleCopyFor(locale);
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [selectedSceneVersionIds, setSelectedSceneVersionIds] = useState<Record<string, string>>({});
+  const [selectedSceneVersionIndexes, setSelectedSceneVersionIndexes] = useState<Record<string, number>>({});
   const [copiedSceneVersionId, setCopiedSceneVersionId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -68,7 +121,7 @@ export function SampleProjectDetail({ sampleId }: { sampleId: string }) {
   }, [sampleId]);
 
   async function copySceneAnalysis(sceneVersion: SceneVersion) {
-    const text = formatSceneAnalysis(sceneVersion, projectMediaType(bundle));
+    const text = formatSceneAnalysis(sceneVersion, projectMediaType(bundle), copy);
     await navigator.clipboard.writeText(text);
     setCopiedSceneVersionId(sceneVersion.id);
     window.setTimeout(() => setCopiedSceneVersionId(null), 1400);
@@ -91,8 +144,9 @@ export function SampleProjectDetail({ sampleId }: { sampleId: string }) {
         ) : (
           <ProjectBundleView
             bundle={bundle}
-            selectedSceneVersionIds={selectedSceneVersionIds}
-            setSelectedSceneVersionIds={setSelectedSceneVersionIds}
+            copy={copy}
+            selectedSceneVersionIndexes={selectedSceneVersionIndexes}
+            setSelectedSceneVersionIndexes={setSelectedSceneVersionIndexes}
             copiedSceneVersionId={copiedSceneVersionId}
             copySceneAnalysis={copySceneAnalysis}
           />
@@ -104,14 +158,16 @@ export function SampleProjectDetail({ sampleId }: { sampleId: string }) {
 
 function ProjectBundleView({
   bundle,
-  selectedSceneVersionIds,
-  setSelectedSceneVersionIds,
+  copy,
+  selectedSceneVersionIndexes,
+  setSelectedSceneVersionIndexes,
   copiedSceneVersionId,
   copySceneAnalysis,
 }: {
   bundle: Bundle;
-  selectedSceneVersionIds: Record<string, string>;
-  setSelectedSceneVersionIds: Dispatch<SetStateAction<Record<string, string>>>;
+  copy: SampleCopy;
+  selectedSceneVersionIndexes: Record<string, number>;
+  setSelectedSceneVersionIndexes: Dispatch<SetStateAction<Record<string, number>>>;
   copiedSceneVersionId: string | null;
   copySceneAnalysis: (sceneVersion: SceneVersion) => void;
 }) {
@@ -150,9 +206,10 @@ function ProjectBundleView({
       <div className="grid gap-4">
         {bundle.sceneVersions.map((latestSceneVersion) => {
           const sceneVersions = getSceneVersionHistory(bundle, latestSceneVersion);
-          const selectedSceneVersion = sceneVersions.find((version) => version.id === selectedSceneVersionIds[latestSceneVersion.originalSceneId]) || latestSceneVersion;
-          const sceneVersionIndex = Math.max(0, sceneVersions.findIndex((version) => version.id === selectedSceneVersion.id));
-          const sceneVersion = selectedSceneVersion;
+          const latestSceneVersionIndex = Math.max(0, sceneVersions.findIndex((version) => version.id === latestSceneVersion.id));
+          const requestedSceneVersionIndex = selectedSceneVersionIndexes[latestSceneVersion.originalSceneId] ?? latestSceneVersionIndex;
+          const sceneVersionIndex = clampIndex(requestedSceneVersionIndex, sceneVersions.length);
+          const sceneVersion = sceneVersions[sceneVersionIndex] || latestSceneVersion;
           const scene = bundle.scenes.find((item) => item.id === sceneVersion.originalSceneId);
           const needsReview = scene?.status === "failed" || sceneVersion.metadata?.analysisProvider === "fallback";
 
@@ -193,35 +250,35 @@ function ProjectBundleView({
                   <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
                     <button
                       type="button"
-                      aria-label="复制分析拆解"
+                      aria-label={copy.copy}
                       onClick={() => copySceneAnalysis(sceneVersion)}
                       className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border-default)] bg-white px-3 transition-colors hover:bg-[var(--color-bg-base)]"
                     >
-                      <Copy className="h-4 w-4" />
-                      <span>{copiedSceneVersionId === sceneVersion.id ? "Copied" : "Copy"}</span>
+                      {copiedSceneVersionId === sceneVersion.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      <span>{copiedSceneVersionId === sceneVersion.id ? copy.copied : copy.copy}</span>
                     </button>
                     <button
                       type="button"
-                      aria-label="上一版脚本"
+                      aria-label={copy.previousVersion}
                       disabled={sceneVersionIndex <= 0}
-                      onClick={() => setSelectedSceneVersionIds((versions) => ({ ...versions, [latestSceneVersion.originalSceneId]: sceneVersions[sceneVersionIndex - 1].id }))}
+                      onClick={() => setSelectedSceneVersionIndexes((indexes) => ({ ...indexes, [latestSceneVersion.originalSceneId]: sceneVersionIndex - 1 }))}
                       className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-default)] bg-white transition-colors hover:bg-[var(--color-bg-base)] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <span className="min-w-14 text-center">{sceneVersionIndex + 1}/{sceneVersions.length}</span>
+                    <span className="min-w-14 text-center">{sceneVersionIndex + 1} / {sceneVersions.length}</span>
                     <button
                       type="button"
-                      aria-label="下一版脚本"
+                      aria-label={copy.nextVersion}
                       disabled={sceneVersionIndex >= sceneVersions.length - 1}
-                      onClick={() => setSelectedSceneVersionIds((versions) => ({ ...versions, [latestSceneVersion.originalSceneId]: sceneVersions[sceneVersionIndex + 1].id }))}
+                      onClick={() => setSelectedSceneVersionIndexes((indexes) => ({ ...indexes, [latestSceneVersion.originalSceneId]: sceneVersionIndex + 1 }))}
                       className="flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-border-default)] bg-white transition-colors hover:bg-[var(--color-bg-base)] disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
-                <Textarea readOnly value={formatSceneAnalysis(sceneVersion, mediaType)} className="mt-2 max-h-[420px] min-h-[300px] resize-y rounded-lg font-sans text-sm leading-7 text-[var(--color-text-secondary)]" />
+                <Textarea readOnly value={formatSceneAnalysis(sceneVersion, mediaType, copy)} className="mt-2 max-h-[420px] min-h-[300px] resize-y rounded-lg font-sans text-sm leading-7 text-[var(--color-text-secondary)]" />
               </div>
             </article>
           );
@@ -236,34 +293,42 @@ function projectMediaType(bundle: Bundle | null): "video" | "image" {
 }
 
 function getSceneVersionHistory(bundle: Bundle, sceneVersion: SceneVersion) {
+  const versionNumberById = new Map(bundle.versions.map((version) => [version.id, version.versionNumber]));
   return bundle.allSceneVersions
-    .filter((version) => version.originalSceneId === sceneVersion.originalSceneId && version.projectVersionId === sceneVersion.projectVersionId)
+    .filter((version) => version.originalSceneId === sceneVersion.originalSceneId)
     .sort((a, b) => {
+      const versionA = versionNumberById.get(a.projectVersionId) ?? 0;
+      const versionB = versionNumberById.get(b.projectVersionId) ?? 0;
       const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
       const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return timeA - timeB || a.id.localeCompare(b.id);
+      return versionA - versionB || timeA - timeB || a.id.localeCompare(b.id);
     });
 }
 
-function formatSceneAnalysis(sceneVersion: SceneVersion, mediaType: "video" | "image") {
+function clampIndex(index: number, length: number) {
+  if (length <= 0) return 0;
+  return Math.min(Math.max(0, index), length - 1);
+}
+
+function formatSceneAnalysis(sceneVersion: SceneVersion, mediaType: "video" | "image", copy = sampleLabels.zh) {
   if (sceneVersion.metadata?.analysisProvider === "fallback") {
-    const reason = textValue(sceneVersion.metadata?.fallbackReason) || "AI 分析服务暂不可用";
-    return `AI 分析未完成\n原因：${reason}\n\n当前没有生成可用的画面拆解或复刻 Prompt。`;
+    const reason = textValue(sceneVersion.metadata?.fallbackReason) || copy.fallbackUnavailable;
+    return `${copy.fallbackTitle}\n${copy.fallbackReason}：${reason}\n\n${copy.fallbackAction}`;
   }
 
   const sections: Array<[string, unknown]> = [
-    ["画面复刻", pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])],
-    ["角色/动作", `${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()],
-    ["镜头语言", `${pickField(sceneVersion.visual, ["camera"])}\n${pickField(sceneVersion.visual, ["composition"])}`.trim()],
-    ["光线/色彩/风格", `${pickField(sceneVersion.visual, ["lighting"])}\n${pickField(sceneVersion.visual, ["color"])}\n${pickField(sceneVersion.visual, ["style"])}`.trim()],
-    ["剧情作用", sceneVersion.story],
+    [copy.sections.visual, pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])],
+    [copy.sections.action, `${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()],
+    [copy.sections.camera, `${pickField(sceneVersion.visual, ["camera"])}\n${pickField(sceneVersion.visual, ["composition"])}`.trim()],
+    [copy.sections.style, `${pickField(sceneVersion.visual, ["lighting"])}\n${pickField(sceneVersion.visual, ["color"])}\n${pickField(sceneVersion.visual, ["style"])}`.trim()],
+    [copy.sections.story, sceneVersion.story],
   ];
 
   if (mediaType === "video") {
-    sections.push(["台词/字幕", sceneVersion.dialogue.length ? sceneVersion.dialogue : sceneVersion.subtitle], ["音频", sceneVersion.audio], ["剪辑提示", sceneVersion.transition]);
+    sections.push([copy.sections.dialogue, sceneVersion.dialogue.length ? sceneVersion.dialogue : sceneVersion.subtitle], [copy.sections.audio, sceneVersion.audio], [copy.sections.edit, sceneVersion.transition]);
   }
 
-  return sections.map(([title, value]) => `${title}\n${textValue(value) || "No detected data yet."}`).join("\n\n");
+  return sections.map(([title, value]) => `${title}\n${textValue(value) || copy.noDetectedData}`).join("\n\n");
 }
 
 function formatTime(seconds: number) {
