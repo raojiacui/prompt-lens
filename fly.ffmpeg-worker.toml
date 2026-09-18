@@ -27,9 +27,8 @@ kill_timeout = "30s"
   PYSCENEDETECT_ADAPTIVE_THRESHOLD = "3"
   PYTHON_PATH = "python3"
   PYSCENEDETECT_SCRIPT_PATH = "/app/scene-detect.py"
-  YTDLP_PATH = "yt-dlp"
-  YTDLP_JS_RUNTIME = "node"
   MAX_RESOLVE_SECONDS = "600"
+  MAX_RESOLVE_BYTES = "1073741824"
 
 [http_service]
   internal_port = 8080

@@ -229,9 +229,9 @@ ffprobe -version
 
 图片不会走 FFmpeg worker，会作为单场景参考素材直接进入 AI 分析流程。
 
-### 短视频平台链接
+### 视频平台链接
 
-当前 V2 主产品不做 YouTube、TikTok、抖音链接粘贴解析。旧 worker 中仍有 `/resolve-media` 相关遗留代码，但主 UI 不使用它，启动和切镜也不依赖 `yt-dlp`。
+平台链接解析后端使用 LEAPERone，支持 YouTube、TikTok、X、抖音和 Bilibili 的公开视频。应用取得临时媒体流后会立即交给媒体 worker 下载并保存到 R2；拆镜流程不长期依赖第三方临时直链，也不再使用 `yt-dlp` 或共享登录 Cookie。主界面入口会在链接解析的计费和防滥用规则接通后启用。
 
 ## 项目结构
 

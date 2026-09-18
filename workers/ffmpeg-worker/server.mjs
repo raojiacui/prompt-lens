@@ -30,11 +30,8 @@ const PYSCENEDETECT_DETECTOR = ["adaptive", "content"].includes(process.env.PYSC
   : "adaptive";
 const PYSCENEDETECT_THRESHOLD = Number(process.env.PYSCENEDETECT_THRESHOLD || 27);
 const PYSCENEDETECT_ADAPTIVE_THRESHOLD = Number(process.env.PYSCENEDETECT_ADAPTIVE_THRESHOLD || 3);
-const YTDLP_PATH = process.env.YTDLP_PATH || "yt-dlp";
-const YTDLP_COOKIES_FILE = process.env.YTDLP_COOKIES_FILE || "";
-const YTDLP_COOKIES_FROM_BROWSER = process.env.YTDLP_COOKIES_FROM_BROWSER || "";
-const YTDLP_JS_RUNTIME = process.env.YTDLP_JS_RUNTIME || "node";
 const MAX_RESOLVE_SECONDS = Number(process.env.MAX_RESOLVE_SECONDS || 600);
+const MAX_RESOLVE_BYTES = Number(process.env.MAX_RESOLVE_BYTES || 1024 * 1024 * 1024);
 const MUSIC_RECOGNITION_PREVIEW_SECONDS = Number(process.env.MUSIC_RECOGNITION_PREVIEW_SECONDS || 12);
 
 function requireEnv() {
@@ -101,20 +98,18 @@ function run(command, args, options = {}) {
   });
 }
 
-async function download(url, target) {
-  const response = await fetch(url);
+async function download(url, target, maxBytes = Number.POSITIVE_INFINITY) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(10 * 60 * 1000) });
   if (!response.ok || !response.body) throw new Error(`Download failed: ${response.status}`);
-  await pipeline(response.body, createWriteStream(target));
+  let bytes = 0;
+  const limiter = new Transform({ transform(chunk, _encoding, callback) {
+    bytes += chunk.length;
+    if (bytes > maxBytes) return callback(new Error("Media exceeds the linked-media size limit"));
+    callback(null, chunk);
+  } });
+  await pipeline(response.body, limiter, createWriteStream(target));
 }
-function detectPlatform(url) {
-  const host = new URL(url).hostname.toLowerCase();
-  if (host.includes("youtube.com") || host.includes("youtu.be")) return "youtube";
-  if (host.includes("tiktok.com")) return "tiktok";
-  if (host.includes("douyin.com") || host.includes("iesdouyin.com") || host.includes("amemv.com")) return "douyin";
-  return "unsupported";
-}
-
-function parseSupportedMediaUrl(url) {
+function parseRemoteMediaUrl(url) {
   let parsed;
   try {
     parsed = new URL(url);
@@ -128,46 +123,36 @@ function parseSupportedMediaUrl(url) {
     error.statusCode = 400;
     throw error;
   }
-  const platform = detectPlatform(url);
-  if (!["youtube", "tiktok", "douyin"].includes(platform)) {
-    const error = new Error("Only YouTube, TikTok, or Douyin links are supported");
+  if (["localhost", "127.0.0.1", "::1", "0.0.0.0"].includes(parsed.hostname.toLowerCase())) {
+    const error = new Error("Local media URLs are not supported");
     error.statusCode = 400;
     throw error;
   }
-  return { parsed, platform };
+  return parsed;
 }
 
-function normalizeMediaUrlForDownload(url) {
-  const { parsed, platform } = parseSupportedMediaUrl(url);
-  if (platform === "douyin") {
-    const modalId = parsed.searchParams.get("modal_id");
-    if (modalId && /^\d+$/.test(modalId)) return { platform, downloadUrl: `https://www.douyin.com/video/${modalId}` };
+async function ingestMediaToLocalFile({ videoUrl, audioUrl }, workDir) {
+  parseRemoteMediaUrl(videoUrl);
+  if (audioUrl) parseRemoteMediaUrl(audioUrl);
+  const downloadedVideoPath = path.join(workDir, "source-video");
+  await download(videoUrl, downloadedVideoPath, MAX_RESOLVE_BYTES);
+  let inputPath = downloadedVideoPath;
+  if (audioUrl) {
+    const audioPath = path.join(workDir, "source-audio");
+    const muxedPath = path.join(workDir, "resolved-video.mp4");
+    await download(audioUrl, audioPath, MAX_RESOLVE_BYTES);
+    await run(FFMPEG_PATH, [
+      "-y", "-hide_banner",
+      "-i", downloadedVideoPath,
+      "-i", audioPath,
+      "-map", "0:v:0",
+      "-map", "1:a:0",
+      "-c", "copy",
+      "-shortest",
+      muxedPath,
+    ]);
+    inputPath = muxedPath;
   }
-  return { platform, downloadUrl: url };
-}
-function buildYtDlpArgs(url, targetPath) {
-  const args = [
-    "--no-playlist",
-    "--no-progress",
-    "--merge-output-format", "mp4",
-    "-f", "bv*+ba/best[ext=mp4]/best",
-    "-o", targetPath,
-  ];
-  if (YTDLP_JS_RUNTIME) args.push("--js-runtimes", YTDLP_JS_RUNTIME);
-  if (YTDLP_COOKIES_FILE) args.push("--cookies", YTDLP_COOKIES_FILE);
-  else if (YTDLP_COOKIES_FROM_BROWSER) args.push("--cookies-from-browser", YTDLP_COOKIES_FROM_BROWSER);
-  args.push(url);
-  return args;
-}
-
-async function downloadSocialVideo(url, targetPath) {
-  await run(YTDLP_PATH, buildYtDlpArgs(url, targetPath), { timeout: 1000 * 60 * 10 });
-}
-
-async function resolveMediaToLocalFile(url, workDir) {
-  const { platform, downloadUrl } = normalizeMediaUrlForDownload(url);
-  const inputPath = path.join(workDir, "resolved-video.mp4");
-  await downloadSocialVideo(downloadUrl, inputPath);
   const metadata = await probeVideo(inputPath);
   if (!metadata.duration || metadata.duration <= 0) throw new Error("Unable to determine resolved video duration");
   if (metadata.duration > MAX_RESOLVE_SECONDS) {
@@ -175,7 +160,7 @@ async function resolveMediaToLocalFile(url, workDir) {
     error.statusCode = 400;
     throw error;
   }
-  return { inputPath, platform, metadata };
+  return { inputPath, metadata };
 }
 
 async function probeVideo(inputPath) {
@@ -402,27 +387,34 @@ async function extractAudioPreviewAsset(inputPath, workDir, projectKey, metadata
   }
 }
 
-async function handleResolveMedia(req, res) {
+async function handleIngestMedia(req, res) {
   assertAuth(req);
   requireEnv();
   const body = await readJson(req);
-  if (!body.url || typeof body.url !== "string") {
-    return json(res, 400, { error: "Missing url" });
+  const supportedPlatforms = ["youtube", "tiktok", "douyin", "x", "bilibili"];
+  if (!body.videoUrl || typeof body.videoUrl !== "string") {
+    return json(res, 400, { error: "Missing videoUrl" });
+  }
+  if (!supportedPlatforms.includes(body.platform)) {
+    return json(res, 400, { error: "Unsupported platform" });
+  }
+  if (body.audioUrl !== undefined && typeof body.audioUrl !== "string") {
+    return json(res, 400, { error: "Invalid audioUrl" });
   }
 
   const workDir = await mkdtemp(path.join(tmpdir(), "prompt-lens-resolve-"));
   try {
     await mkdir(workDir, { recursive: true });
-    const { inputPath, platform, metadata } = await resolveMediaToLocalFile(body.url, workDir);
-    const key = `linked-media/${platform}/${randomUUID()}.mp4`;
+    const { inputPath, metadata } = await ingestMediaToLocalFile(body, workDir);
+    const key = `linked-media/${body.platform}/${randomUUID()}.mp4`;
     const mediaUrl = await uploadFile(inputPath, key, "video/mp4");
     return json(res, 200, {
       mediaUrl,
       storageKey: key,
       mediaType: "video",
-      platform,
+      platform: body.platform,
       metadata,
-      filename: `${platform}-linked-video.mp4`,
+      filename: typeof body.filename === "string" ? body.filename : `${body.platform}-linked-video.mp4`,
     });
   } finally {
     await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
@@ -510,7 +502,7 @@ async function handleCommercialMedia(req, res) {
 const server = createServer(async (req, res) => {
   try {
     if (req.method === "GET" && req.url === "/healthz") return json(res, 200, { ok: true });
-    if (req.method === "POST" && req.url === "/resolve-media") return await handleResolveMedia(req, res);
+    if (req.method === "POST" && req.url === "/ingest-media") return await handleIngestMedia(req, res);
     if (req.method === "POST" && req.url === "/breakdown") return await handleBreakdown(req, res);
     if (req.method === "POST" && req.url === "/commercial-media") return await handleCommercialMedia(req, res);
     return json(res, 404, { error: "Not found" });

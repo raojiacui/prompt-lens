@@ -6,7 +6,7 @@ Cloud Run worker for V2 video breakdown. Scene boundary detection uses PySceneDe
 
 - `GET /healthz`
 - `POST /breakdown`
-- `POST /resolve-media`
+- `POST /ingest-media`
 
 `/breakdown` requires:
 
@@ -44,18 +44,25 @@ Response:
 ```
 
 
-`/resolve-media` resolves a supported social video link, downloads it in the worker, uploads the resulting MP4 to R2, and returns the stored media URL for the main app analysis flow.
+`/ingest-media` receives media URLs already resolved by the app's LEAPERone provider, downloads them, optionally merges a separate audio stream, uploads the resulting MP4 to R2, and returns the stored media URL for the analysis flow.
 
 Supported pasted-link platforms:
 
-- YouTube: `youtube.com`, `youtu.be`
-- TikTok: `tiktok.com`
-- Douyin: `douyin.com`, `iesdouyin.com`, `amemv.com`
+- YouTube
+- TikTok
+- X / Twitter
+- Douyin
+- Bilibili
 
 Request:
 
 ```json
-{ "url": "https://www.youtube.com/watch?v=..." }
+{
+  "platform": "youtube",
+  "videoUrl": "https://temporary-provider-video-url",
+  "audioUrl": "https://optional-separate-audio-url",
+  "filename": "youtube-linked-video.mp4"
+}
 ```
 
 Response:
@@ -88,11 +95,8 @@ PYSCENEDETECT_THRESHOLD=27
 PYSCENEDETECT_ADAPTIVE_THRESHOLD=3
 PYTHON_PATH=python3
 PYSCENEDETECT_SCRIPT_PATH=/app/scene-detect.py
-YTDLP_PATH=yt-dlp
-YTDLP_JS_RUNTIME=node
-YTDLP_COOKIES_FILE=
-YTDLP_COOKIES_FROM_BROWSER=
 MAX_RESOLVE_SECONDS=600
+MAX_RESOLVE_BYTES=1073741824
 ```
 
 ## App-side KIE analysis
@@ -110,20 +114,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-w
 
 The script loads .env.local, derives R2_ENDPOINT from R2_ACCOUNT_ID when needed, and serves http://localhost:8080.
 
-The Dockerfile installs `yt-dlp` for `/resolve-media` and `scenedetect-headless` for `/breakdown`. TikTok and Douyin availability can vary by region, anti-bot checks, or expired share links; if production links fail, deploy the worker in a reachable region and consider adding cookie/proxy handling later.
-
-## YouTube bot checks
-
-Some YouTube links require login cookies. Export cookies to a local file and set:
-
-```text
-YTDLP_COOKIES_FILE=C:\path\to\youtube-cookies.txt
-```
-
-For local testing only, you can also try browser cookies:
-
-```text
-YTDLP_COOKIES_FROM_BROWSER=chrome
-```
-
-`YTDLP_JS_RUNTIME=node` is enabled by default to satisfy recent YouTube extraction requirements. Do not commit cookie files or put raw cookie contents in `.env.local`.
+The Dockerfile installs `scenedetect-headless` for `/breakdown`. Social-platform extraction is handled by LEAPERone in the main app; this worker never receives the LEAPERone API key.

@@ -3,7 +3,8 @@ import { InsufficientCreditsError } from "@/lib/billing/credits";
 import { reserveCommercialTask, settleCommercialTask, settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
-import { breakdownVideoWithWorker, resolveLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
+import { breakdownVideoWithWorker, ingestLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
+import { resolveLinkedMediaWithLeaperOne } from "@/lib/media-resolver/leaperone";
 import { deleteFromR2, extractR2Key } from "@/lib/cloudflare/r2";
 import { routeModel } from "@/lib/ai/model-registry";
 import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
@@ -349,7 +350,8 @@ export async function runVideoBreakdown(params: {
   try {
     await db.update(projects).set({ status: "analyzing", updatedAt: new Date() }).where(eq(projects.id, params.projectId));
     if (!isImage && params.resolveLinkedMedia) {
-      const resolved = await resolveLinkedMediaWithWorker(params.mediaUrl);
+      const source = await resolveLinkedMediaWithLeaperOne(params.mediaUrl);
+      const resolved = await ingestLinkedMediaWithWorker(source);
       effectiveMediaUrl = resolved.mediaUrl;
       effectiveMediaName = resolved.filename || params.mediaName;
       effectiveStorageKey = resolved.storageKey || params.storageKey;
