@@ -26,6 +26,8 @@ describe("LEAPERone linked media resolver", () => {
   it("pairs a Bilibili video-only stream with audio", () => {
     const result = selectLeaperMedia({
       data: {
+        title: "Bilibili demo",
+        duration: 18,
         videos: [{ url: "https://cdn.example/video.mp4", format: "mp4", codec: "avc1", width: 1280, height: 720 }],
         audios: [{ url: "https://cdn.example/audio.m4a", format: "m4a" }],
       },
@@ -33,6 +35,7 @@ describe("LEAPERone linked media resolver", () => {
 
     expect(result.videoUrl).toBe("https://cdn.example/video.mp4");
     expect(result.audioUrl).toBe("https://cdn.example/audio.m4a");
+    expect(result).toMatchObject({ title: "Bilibili demo", duration: 18 });
   });
 
   it("calls the configured API with bearer authentication", async () => {

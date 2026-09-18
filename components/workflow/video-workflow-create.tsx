@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, Copy, Play, Trash2, Upload, Video, WandSparkles, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, FileUp, Link2, Play, Trash2, Video, WandSparkles, X } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -48,6 +48,17 @@ type AnalysisProgressState = {
   label: string;
   detail: string;
 };
+type MediaInputMode = "upload" | "link";
+type LinkedMediaPlatform = "youtube" | "tiktok" | "douyin" | "x" | "bilibili";
+type PreparedMedia = {
+  url: string;
+  filename: string;
+  key?: string;
+  mediaType: "video" | "image";
+  duration: number | null;
+  title?: string;
+  platform?: LinkedMediaPlatform;
+};
 type CreditStatus = {
   commercialConsumptionEnabled?: boolean;
   balance: number;
@@ -70,6 +81,25 @@ type CreditStatus = {
 
 const MAX_ANALYSIS_VIDEO_SECONDS = 10;
 const VIDEO_DURATION_TOLERANCE_SECONDS = 0.75;
+const linkedPlatformLabels: Record<LinkedMediaPlatform, string> = {
+  youtube: "YouTube",
+  tiktok: "TikTok",
+  douyin: "抖音",
+  x: "X",
+  bilibili: "Bilibili",
+};
+
+function detectLinkedPlatform(value: string): LinkedMediaPlatform | null {
+  try {
+    const hostname = new URL(value.trim()).hostname.toLowerCase();
+    if (hostname === "youtu.be" || hostname === "youtube.com" || hostname.endsWith(".youtube.com")) return "youtube";
+    if (hostname === "tiktok.com" || hostname.endsWith(".tiktok.com")) return "tiktok";
+    if (["douyin.com", "iesdouyin.com", "amemv.com"].some((host) => hostname === host || hostname.endsWith(`.${host}`))) return "douyin";
+    if (["x.com", "twitter.com"].some((host) => hostname === host || hostname.endsWith(`.${host}`))) return "x";
+    if (["bilibili.com", "b23.tv"].some((host) => hostname === host || hostname.endsWith(`.${host}`))) return "bilibili";
+  } catch {}
+  return null;
+}
 
 type Props = {
   onSendToGenerate: (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string; hiddenReferenceImageUrl?: string }) => void;
@@ -314,6 +344,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [file, setFile] = useState<File | null>(null);
+  const [mediaInputMode, setMediaInputMode] = useState<MediaInputMode>("upload");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [preview, setPreview] = useState("");
   const [mediaType, setMediaType] = useState<"video" | "image" | null>(null);
   const [mediaDuration, setMediaDuration] = useState<number | null>(null);
@@ -339,6 +371,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const rewriteBusyRef = useRef(false);
   const modelPriority: ModelPriority = "balanced";
   const canUploadLongVideo = creditStatus?.commercialConsumptionEnabled || canUseLongVideo(creditStatus);
+  const linkedPlatform = detectLinkedPlatform(sourceUrl);
 
   useEffect(() => {
     const cached = cachedProjects();
@@ -487,6 +520,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
     if (preview) URL.revokeObjectURL(preview);
     setFile(nextFile);
+    setMediaInputMode("upload");
     setMediaType(type);
     setPreview(URL.createObjectURL(nextFile));
     setTitle(nextFile.name.replace(/\.[^.]+$/, "") || (type === "image" ? "Image analysis" : "Video analysis"));
@@ -512,29 +546,59 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     if (droppedFile) void handleFile(droppedFile);
   }
 
+  async function resolveLinkedMedia(): Promise<PreparedMedia> {
+    const response = await fetch("/api/media/resolve-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: sourceUrl.trim() }),
+    });
+    const data = await readJsonResponse(response, locale === "en" ? "Link resolution failed" : "视频链接解析失败");
+    return {
+      url: data.mediaUrl,
+      filename: data.filename || `${data.platform || "linked"}-video.mp4`,
+      key: data.storageKey,
+      mediaType: "video",
+      duration: typeof data.duration === "number" ? data.duration : null,
+      title: typeof data.title === "string" ? data.title : undefined,
+      platform: data.platform,
+    };
+  }
+
   async function startBreakdown() {
-    if (!file || !mediaType) return;
+    const isLinkedMedia = mediaInputMode === "link";
+    if ((!isLinkedMedia && (!file || !mediaType)) || (isLinkedMedia && (!sourceUrl.trim() || !linkedPlatform))) return;
     setLoading(true);
     setError("");
-    const mediaLabel = mediaType === "image" ? "图片" : "视频";
-    setProgress(`Uploading reference ${mediaType} to R2`);
+    const selectedMediaType = isLinkedMedia ? "video" : mediaType!;
+    const mediaLabel = selectedMediaType === "image" ? "图片" : "视频";
+    setProgress(isLinkedMedia ? "Resolving video link" : `Uploading reference ${selectedMediaType} to R2`);
     setAnalysisProgress({
       phase: "upload",
       percent: 5,
-      label: "上传素材",
-      detail: `正在上传${mediaLabel}到存储服务`,
+      label: isLinkedMedia ? "读取视频链接" : "上传素材",
+      detail: isLinkedMedia ? `正在读取 ${linkedPlatformLabels[linkedPlatform!]} 视频并保存素材` : `正在上传${mediaLabel}到存储服务`,
     });
     try {
-      const upload = await uploadMediaToBlob(file, (percentage) => {
-        const uploadPercent = Math.round(percentage);
-        setProgress(`Uploading ${uploadPercent}%`);
-        setAnalysisProgress({
-          phase: "upload",
-          percent: Math.max(5, Math.min(45, Math.round(uploadPercent * 0.45))),
-          label: "上传素材",
-          detail: `正在上传${mediaLabel} ${uploadPercent}%`,
-        });
-      });
+      const prepared: PreparedMedia = isLinkedMedia
+        ? await resolveLinkedMedia()
+        : await uploadMediaToBlob(file!, (percentage) => {
+            const uploadPercent = Math.round(percentage);
+            setProgress(`Uploading ${uploadPercent}%`);
+            setAnalysisProgress({
+              phase: "upload",
+              percent: Math.max(5, Math.min(45, Math.round(uploadPercent * 0.45))),
+              label: "上传素材",
+              detail: `正在上传${mediaLabel} ${uploadPercent}%`,
+            });
+          }).then((upload) => ({
+            url: upload.url,
+            filename: upload.filename,
+            key: upload.key,
+            mediaType: upload.mediaType,
+            duration: mediaDuration,
+          }));
+      const preparedTitle = prepared.title?.trim() || title;
+      if (prepared.title) setTitle(prepared.title);
       setProgress("Creating project");
       setAnalysisProgress({
         phase: "project",
@@ -545,26 +609,26 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       const projectRes = await fetch("/api/workflow/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title: preparedTitle }),
       });
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
-      if (creditStatus?.commercialConsumptionEnabled && upload.mediaType === "video") {
-        setCommercialSource({ projectId: projectData.project.id, mediaUrl: upload.url, mediaName: upload.filename, outputLanguage: analysisOutputLanguage });
+      if (creditStatus?.commercialConsumptionEnabled && prepared.mediaType === "video") {
+        setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage });
         setAnalysisProgress(null);
         return;
       }
 
-      setProgress(upload.mediaType === "image" ? "Analyzing image blueprint" : "Analyzing video blueprint");
+      setProgress(prepared.mediaType === "image" ? "Analyzing image blueprint" : "Analyzing video blueprint");
       setAnalysisProgress({
         phase: "analysis",
         percent: 68,
-        label: upload.mediaType === "image" ? "AI 图片分析" : "AI 视频拆解分析",
-        detail: upload.mediaType === "image" ? "正在提取画面结构和复刻提示词" : "正在拆解镜头、画面、动作、光线和复刻提示词",
+        label: prepared.mediaType === "image" ? "AI 图片分析" : "AI 视频拆解分析",
+        detail: prepared.mediaType === "image" ? "正在提取画面结构和复刻提示词" : "正在拆解镜头、画面、动作、光线和复刻提示词",
       });
       const breakdownRes = await fetch(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaUrl: upload.url, mediaName: upload.filename, storageKey: upload.key, mediaType: upload.mediaType, mediaDuration, singleShot: Boolean(mediaDuration && mediaDuration <= MAX_ANALYSIS_VIDEO_SECONDS + VIDEO_DURATION_TOLERANCE_SECONDS), ...analysisSelectionPayload() }),
+        body: JSON.stringify({ mediaUrl: prepared.url, mediaName: prepared.filename, storageKey: prepared.key, mediaType: prepared.mediaType, mediaDuration: prepared.duration, singleShot: Boolean(prepared.duration && prepared.duration <= MAX_ANALYSIS_VIDEO_SECONDS + VIDEO_DURATION_TOLERANCE_SECONDS), ...analysisSelectionPayload() }),
       });
       const breakdownData = await readJsonResponse(breakdownRes, "Breakdown failed");
       setAnalysisProgress({
@@ -586,7 +650,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       }
       void loadProjects({ force: true });
       void loadCreditStatus();
-      setProgress(upload.mediaType === "image" ? "Image Blueprint ready" : "Video Blueprint ready");
+      setProgress(prepared.mediaType === "image" ? "Image Blueprint ready" : "Video Blueprint ready");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Workflow failed";
       setError(message === "Failed to fetch" ? "网络请求失败：请检查上传服务、视频拆解服务或本地开发服务是否正常运行。" : message);
@@ -689,8 +753,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:min-h-0 xl:flex-col xl:overflow-hidden">
           <div
             className={cn(
-              "rounded-2xl border border-dashed border-border bg-muted/30 p-3 transition-colors",
-              isDraggingUpload && "border-primary/70 bg-primary/5",
+              "rounded-lg border border-border bg-muted/30 p-3 transition-colors",
+              mediaInputMode === "upload" && "border-dashed",
+              mediaInputMode === "upload" && isDraggingUpload && "border-primary/70 bg-primary/5",
             )}
             onDragOver={(event) => {
               event.preventDefault();
@@ -704,29 +769,88 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
             onDrop={handleDrop}
           >
             <input ref={fileInputRef} type="file" accept="video/*,image/*" className="sr-only" onChange={(event) => event.target.files?.[0] && void handleFile(event.target.files[0])} />
-            {preview ? (
-              <div className="relative mb-3">
-                {mediaType === "image" ? (
-                  <img src={preview} alt="Preview" className="max-h-56 w-full rounded-xl object-contain" />
-                ) : (
-                  <video src={preview} muted playsInline controls className="max-h-56 w-full rounded-xl bg-black object-contain" />
-                )}
-                <button
-                  type="button"
-                  aria-label="删除已上传素材"
-                  onClick={clearSelectedMedia}
-                  disabled={loading}
-                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/95 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <X className="h-4 w-4" />
+            <div className="mb-3 grid grid-cols-2 rounded-lg border border-border bg-background p-1" role="tablist" aria-label={locale === "en" ? "Media source" : "素材来源"}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mediaInputMode === "upload"}
+                onClick={() => { setMediaInputMode("upload"); setError(""); }}
+                className={cn("flex h-9 items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors", mediaInputMode === "upload" ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:text-foreground")}
+              >
+                <FileUp className="h-4 w-4" />
+                {locale === "en" ? "Upload file" : "上传文件"}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mediaInputMode === "link"}
+                onClick={() => { setMediaInputMode("link"); setError(""); }}
+                className={cn("flex h-9 items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors", mediaInputMode === "link" ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:text-foreground")}
+              >
+                <Link2 className="h-4 w-4" />
+                {locale === "en" ? "Paste link" : "粘贴链接"}
+              </button>
+            </div>
+
+            {mediaInputMode === "upload" ? (
+              <>
+                {preview ? (
+                  <div className="relative mb-3">
+                    {mediaType === "image" ? (
+                      <img src={preview} alt="Preview" className="max-h-56 w-full rounded-lg object-contain" />
+                    ) : (
+                      <video src={preview} muted playsInline controls className="max-h-56 w-full rounded-lg bg-black object-contain" />
+                    )}
+                    <button
+                      type="button"
+                      aria-label="删除已上传素材"
+                      onClick={clearSelectedMedia}
+                      disabled={loading}
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/95 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : null}
+                <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-lg bg-background text-center hover:bg-accent">
+                  <FileUp className="h-6 w-6 text-muted-foreground" />
+                  <span className="font-semibold">{preview ? (locale === "en" ? "Replace file" : "更换文件") : canUploadLongVideo ? (locale === "en" ? "Choose a video or image" : "选择视频或图片") : (locale === "en" ? "Choose a video up to 10s, or an image" : "选择 10 秒以内的视频或图片")}</span>
                 </button>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{creditStatus?.commercialConsumptionEnabled ? (locale === "zh" ? "视频最多60秒、100MB、20个镜头。确认报价后开始分析。" : "Up to 60 seconds, 100MB and 20 shots. Analysis starts after quote confirmation.") : canUploadLongVideo ? (locale === "en" ? "Long-video automatic shot splitting is available." : "已解锁长视频自动拆镜分析。") : (locale === "en" ? "Free accounts can analyze one complete shot up to 10 seconds." : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段。")}</p>
+              </>
+            ) : (
+              <div className="rounded-lg bg-background p-3">
+                <label htmlFor="workflow-video-link" className="text-sm font-semibold">{locale === "en" ? "Video link" : "视频链接"}</label>
+                <div className="relative mt-2">
+                  <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    id="workflow-video-link"
+                    type="url"
+                    value={sourceUrl}
+                    onChange={(event) => { setSourceUrl(event.target.value); setError(""); }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && linkedPlatform && !loading) void startBreakdown();
+                    }}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    disabled={loading}
+                    className="h-11 w-full rounded-lg border border-border bg-background pl-10 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring"
+                  />
+                  {sourceUrl ? (
+                    <button type="button" onClick={() => setSourceUrl("")} aria-label={locale === "en" ? "Clear link" : "清空链接"} className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground">
+                      <X className="h-4 w-4" />
+                    </button>
+                  ) : null}
+                </div>
+                <div className="mt-3 flex min-h-6 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+                  {linkedPlatform ? (
+                    <span className="inline-flex items-center gap-1.5 font-medium text-foreground"><Check className="h-3.5 w-3.5 text-emerald-600" />{linkedPlatformLabels[linkedPlatform]}</span>
+                  ) : sourceUrl.trim() ? (
+                    <span className="text-destructive">{locale === "en" ? "Paste a supported public video link." : "请粘贴受支持平台的公开视频链接。"}</span>
+                  ) : null}
+                  <span className="text-muted-foreground">YouTube · TikTok · X · 抖音 · Bilibili</span>
+                </div>
               </div>
-            ) : null}
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl bg-background text-center hover:bg-accent">
-              <Upload className="h-6 w-6 text-muted-foreground" />
-              <span className="font-semibold">{preview ? "更换文件" : canUploadLongVideo ? "上传视频或图片进行分析" : "上传 10 秒以内的视频（也就是一个完整的镜头片段）或图片进行分析"}</span>
-            </button>
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{creditStatus?.commercialConsumptionEnabled ? (locale === "zh" ? "视频最多60秒、100MB、20个镜头。确认报价后开始分析。" : "Up to 60 seconds, 100MB and 20 shots. Analysis starts after quote confirmation.") : canUploadLongVideo ? "已解锁长视频自动拆镜分析。" : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段；购买积分包后可上传几分钟长视频并自动拆镜分析。"}</p>
+            )}
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -745,11 +869,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           <button
             type="button"
             onClick={() => void startBreakdown()}
-            disabled={!file || loading}
+            disabled={loading || (mediaInputMode === "upload" ? !file : !linkedPlatform)}
             className="mt-4 flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5" />}
-            {loading ? "Analyzing..." : mediaType === "image" ? "Analyze Image" : "Analyze Video"}
+            {loading ? (locale === "en" ? "Preparing..." : "正在处理...") : mediaInputMode === "upload" && mediaType === "image" ? (locale === "en" ? "Analyze image" : "分析图片") : (locale === "en" ? "Analyze video" : "分析视频")}
           </button>
 
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}

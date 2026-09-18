@@ -5,6 +5,8 @@ export interface ResolvedLinkedMediaSource {
   videoUrl: string;
   audioUrl?: string;
   filename: string;
+  title?: string;
+  duration?: number;
 }
 
 interface LeaperMediaStream {
@@ -22,6 +24,8 @@ interface LeaperMediaStream {
 interface LeaperResponse {
   platform?: unknown;
   data?: {
+    title?: unknown;
+    duration?: unknown;
     videos?: unknown;
     audios?: unknown;
   } | null;
@@ -90,6 +94,8 @@ export function selectLeaperMedia(payload: LeaperResponse, requestedPlatform: Li
     videoUrl: streamUrl(selectedVideo)!,
     audioUrl: selectedAudio ? streamUrl(selectedAudio) : undefined,
     filename: `${requestedPlatform}-linked-video.mp4`,
+    title: typeof payload.data?.title === "string" ? payload.data.title.trim().slice(0, 160) || undefined : undefined,
+    duration: typeof payload.data?.duration === "number" && Number.isFinite(payload.data.duration) ? payload.data.duration : undefined,
   };
 }
 
