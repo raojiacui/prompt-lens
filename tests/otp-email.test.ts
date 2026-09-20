@@ -8,6 +8,7 @@ describe("OTP email", () => {
       locale: "zh",
       purpose: "sign-in",
       expiresInMinutes: 10,
+      siteUrl: "https://prompt-lens.cc.cd",
     });
 
     expect(result.subject).toBe("Prompt Lens 登录验证码");
@@ -15,6 +16,10 @@ describe("OTP email", () => {
     expect(result.html).toContain("625183");
     expect(result.html).toContain("10 分钟后失效");
     expect(result.text).toContain("请勿将验证码告诉任何人");
+    expect(result.html).toContain("https://prompt-lens.cc.cd/prompt-lens-icon.png");
+    expect(result.html).not.toContain(">P</td>");
+    expect(result.html).not.toContain("background:#1d1d1a;color:#c8c3b8");
+    expect(result.html).toContain("background:#eef3f6");
   });
 
   it("renders the English version and escapes dynamic content", () => {

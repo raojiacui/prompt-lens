@@ -7,6 +7,7 @@ type OtpEmailInput = {
   locale: EmailLocale;
   purpose: OtpPurpose;
   expiresInMinutes?: number;
+  siteUrl?: string;
 };
 
 const copy = {
@@ -41,6 +42,17 @@ function escapeHtml(value: string) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+function normalizeSiteUrl(value?: string) {
+  const fallback = "https://prompt-lens.cc.cd";
+  try {
+    const url = new URL(value || fallback);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return fallback;
+    return url.origin;
+  } catch {
+    return fallback;
+  }
 }
 
 function purposeCopy(locale: EmailLocale, purpose: OtpPurpose) {
@@ -85,11 +97,13 @@ export function renderOtpEmail({
   locale,
   purpose,
   expiresInMinutes = 10,
+  siteUrl,
 }: OtpEmailInput) {
   const content = purposeCopy(locale, purpose);
   const safeOtp = escapeHtml(otp);
   const title = escapeHtml(content.title);
   const preheader = escapeHtml(content.preheader);
+  const iconUrl = `${normalizeSiteUrl(siteUrl)}/prompt-lens-icon.png`;
 
   const html = `<!doctype html>
 <html lang="${locale}">
@@ -105,26 +119,23 @@ export function renderOtpEmail({
         <td align="center" style="padding:40px 16px;">
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:560px;background:#fffdfa;border:1px solid #ddd7cb;border-radius:8px;overflow:hidden;">
             <tr>
-              <td style="height:5px;background:#d97757;font-size:0;line-height:0;">&nbsp;</td>
-            </tr>
-            <tr>
-              <td style="padding:34px 38px 14px;">
+              <td style="padding:30px 38px 16px;">
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                   <tr>
-                    <td width="38" height="38" align="center" style="width:38px;height:38px;background:#1d1d1a;border-radius:8px;color:#fff;font-size:18px;font-weight:700;">P</td>
-                    <td style="padding-left:12px;font-size:20px;font-weight:700;color:#171714;">Prompt Lens</td>
+                    <td width="38" valign="middle" style="width:38px;"><img src="${iconUrl}" width="38" height="40" alt="" style="display:block;width:38px;height:40px;object-fit:contain;border:0;"></td>
+                    <td valign="middle" style="padding-left:11px;font-size:20px;line-height:26px;font-weight:700;color:#171714;">Prompt Lens</td>
                   </tr>
                 </table>
               </td>
             </tr>
             <tr>
               <td style="padding:20px 38px 36px;">
-                <div style="font-size:11px;line-height:16px;font-weight:700;color:#8a664f;text-transform:uppercase;">${escapeHtml(content.eyebrow)}</div>
+                <div style="font-size:11px;line-height:16px;font-weight:700;color:#567d9d;text-transform:uppercase;">${escapeHtml(content.eyebrow)}</div>
                 <h1 style="margin:10px 0 12px;font-size:27px;line-height:36px;font-weight:700;letter-spacing:0;color:#171714;">${title}</h1>
                 <p style="margin:0 0 24px;font-size:15px;line-height:24px;color:#625f58;">${escapeHtml(content.intro)}</p>
-                <div style="background:#f3eee5;border:1px solid #e0d6c8;border-radius:8px;padding:24px 12px;text-align:center;font-family:'Courier New',monospace;font-size:34px;line-height:42px;font-weight:700;letter-spacing:8px;color:#171714;">${safeOtp}</div>
+                <div style="background:#eef3f6;border:1px solid #d4e0e7;border-radius:8px;padding:24px 12px;text-align:center;font-family:'Courier New',monospace;font-size:34px;line-height:42px;font-weight:700;letter-spacing:8px;color:#171714;">${safeOtp}</div>
                 <p style="margin:18px 0 0;text-align:center;font-size:13px;line-height:20px;color:#7c776e;">${escapeHtml(content.expiry(expiresInMinutes))}</p>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin-top:28px;background:#f8f6f1;border-left:3px solid #d97757;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;margin-top:28px;background:#f5f2eb;border-left:3px solid #1d1d1a;">
                   <tr>
                     <td style="padding:14px 16px;font-size:13px;line-height:21px;color:#625f58;">${escapeHtml(content.security)}</td>
                   </tr>
@@ -132,14 +143,8 @@ export function renderOtpEmail({
                 <p style="margin:24px 0 0;font-size:13px;line-height:21px;color:#8a867d;">${escapeHtml(content.ignore)}</p>
               </td>
             </tr>
-            <tr>
-              <td style="padding:20px 38px;background:#1d1d1a;color:#c8c3b8;font-size:12px;line-height:19px;">
-                <strong style="color:#fffdfa;">Prompt Lens</strong><br>
-                ${escapeHtml(content.footer)}
-              </td>
-            </tr>
           </table>
-          <p style="margin:18px 0 0;font-size:11px;line-height:18px;color:#969188;">&copy; ${new Date().getUTCFullYear()} Prompt Lens</p>
+          <p style="margin:18px 0 0;font-size:11px;line-height:18px;color:#969188;">Prompt Lens · ${escapeHtml(content.footer)}<br>&copy; ${new Date().getUTCFullYear()} Prompt Lens</p>
         </td>
       </tr>
     </table>
