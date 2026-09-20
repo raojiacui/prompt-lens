@@ -25,7 +25,7 @@ describe("welcome email", () => {
     expect(result.html).toContain("font-weight:700;color:#1d1d1a;\">01</td>");
     expect(result.html).not.toContain("按钮无法打开");
     expect(result.html).not.toContain("复制此链接");
-    expect(result.dashboardUrl).toBe("https://prompt-lens.cc.cd/dashboard?utm_source=welcome_email&utm_medium=email&utm_campaign=welcome");
+    expect(result.ctaUrl).toBe("https://prompt-lens.cc.cd/start?utm_source=welcome_email&utm_medium=email&utm_campaign=welcome");
   });
 
   it("renders English and does not use an email address as the greeting name", () => {
@@ -38,7 +38,7 @@ describe("welcome email", () => {
     expect(result.subject).toContain("Welcome to Prompt Lens");
     expect(result.html).toContain("Understand every shot");
     expect(result.html).not.toContain("creator@example.com");
-    expect(result.dashboardUrl).toContain("https://prompt-lens.cc.cd/dashboard");
+    expect(result.ctaUrl).toContain("https://prompt-lens.cc.cd/start");
   });
 
   it("escapes the display name and rejects unsafe site protocols", () => {
@@ -50,6 +50,6 @@ describe("welcome email", () => {
 
     expect(result.html).toContain("&lt;Creator&gt;");
     expect(result.html).not.toContain("<Creator>");
-    expect(result.dashboardUrl).toContain("https://prompt-lens.cc.cd/dashboard");
+    expect(result.ctaUrl).toContain("https://prompt-lens.cc.cd/start");
   });
 });

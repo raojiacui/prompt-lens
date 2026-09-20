@@ -68,7 +68,7 @@ function normalizeSiteUrl(value?: string) {
 export function renderWelcomeEmail({ locale, name, siteUrl }: WelcomeEmailInput) {
   const content = translations[locale];
   const origin = normalizeSiteUrl(siteUrl);
-  const dashboardUrl = `${origin}/dashboard?utm_source=welcome_email&utm_medium=email&utm_campaign=welcome`;
+  const ctaUrl = `${origin}/start?utm_source=welcome_email&utm_medium=email&utm_campaign=welcome`;
   const heroUrl = `${origin}/images/hero-text-fishing.jpg`;
   const iconUrl = `${origin}/prompt-lens-icon.png`;
   const greeting = content.greeting(safeFirstName(name));
@@ -140,7 +140,7 @@ export function renderWelcomeEmail({ locale, name, siteUrl }: WelcomeEmailInput)
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
                   <tr>
                     <td align="center" bgcolor="#ffffff" style="border-radius:999px;">
-                      <a href="${dashboardUrl}" style="display:inline-block;padding:16px 32px;color:#1d1d1a;font-size:16px;line-height:22px;font-weight:700;text-decoration:none;border-radius:999px;">${escapeHtml(content.button)}&nbsp;&nbsp;<span style="display:inline-block;font-size:19px;line-height:16px;vertical-align:-1px;">✦</span><span style="display:inline-block;padding-left:1px;font-size:11px;line-height:11px;vertical-align:7px;">✦</span></a>
+                      <a href="${ctaUrl}" style="display:inline-block;padding:16px 32px;color:#1d1d1a;font-size:16px;line-height:22px;font-weight:700;text-decoration:none;border-radius:999px;">${escapeHtml(content.button)}&nbsp;&nbsp;<span style="display:inline-block;font-size:19px;line-height:16px;vertical-align:-1px;">✦</span><span style="display:inline-block;padding-left:1px;font-size:11px;line-height:11px;vertical-align:7px;">✦</span></a>
                     </td>
                   </tr>
                 </table>
@@ -164,8 +164,8 @@ export function renderWelcomeEmail({ locale, name, siteUrl }: WelcomeEmailInput)
     "",
     content.quote,
     "",
-    `${content.button}: ${dashboardUrl}`,
+    `${content.button}: ${ctaUrl}`,
   ].join("\n");
 
-  return { subject: content.subject, html, text, dashboardUrl };
+  return { subject: content.subject, html, text, ctaUrl };
 }
