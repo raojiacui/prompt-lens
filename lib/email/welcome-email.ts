@@ -79,7 +79,7 @@ export function renderWelcomeEmail({ locale, name, siteUrl }: WelcomeEmailInput)
           <td valign="top" style="padding:0 0 14px;">
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f5f1e8;border:1px solid #e2dbce;border-radius:8px;">
               <tr>
-                <td width="58" valign="top" style="width:58px;padding:18px 0 18px 18px;font-size:12px;line-height:18px;font-weight:700;color:#d97757;">${number}</td>
+                <td width="58" valign="top" style="width:58px;padding:18px 0 18px 18px;font-size:12px;line-height:18px;font-weight:700;color:#1d1d1a;">${number}</td>
                 <td valign="top" style="padding:16px 18px 16px 4px;">
                   <div style="font-size:16px;line-height:24px;font-weight:700;color:#1d1d1a;">${escapeHtml(title)}</div>
                   <div style="padding-top:4px;font-size:13px;line-height:21px;color:#69655d;">${escapeHtml(description)}</div>
