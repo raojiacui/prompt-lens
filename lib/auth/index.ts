@@ -6,6 +6,7 @@ import { nextCookies } from "better-auth/next-js";
 import { admin, anonymous } from "better-auth/plugins";
 import { emailOTP } from "better-auth/plugins/email-otp";
 import { eq } from "drizzle-orm";
+import { sendOtpEmail } from "@/lib/email/send-otp-email";
 
 // 配置代理（仅本地开发环境使用，禁止在生产环境使用）
 const isLocalDev = process.env.NODE_ENV === "development";
@@ -149,35 +150,18 @@ export const auth = betterAuth({
     admin(),
     nextCookies(),
     emailOTP({
-      sendVerificationOTP: async ({ email, otp }) => {
-        const nodemailer = await import("nodemailer");
-
-        const transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: parseInt(process.env.SMTP_PORT || "587"),
-          secure: false,
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-          },
-        });
-
-        await transporter.sendMail({
-          from: process.env.SMTP_FROM,
-          to: email,
-          subject: "Prompt Lens 登录验证码",
-          html: `
-            <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-              <h2 style="color: #D97757;">Prompt Lens 登录验证码</h2>
-              <p>您的登录验证码是：</p>
-              <div style="background: #f5f5f5; padding: 20px; font-size: 32px; letter-spacing: 8px; text-align: center; border-radius: 8px; font-family: monospace;">
-                ${otp}
-              </div>
-              <p style="color: #666; font-size: 14px; margin-top: 20px;">
-                验证码有效期为 10 分钟，请尽快完成登录。
-              </p>
-            </div>
-          `,
+      expiresIn: 10 * 60,
+      storeOTP: "encrypted",
+      rateLimit: {
+        window: 60,
+        max: 3,
+      },
+      sendVerificationOTP: async ({ email, otp, type }, ctx) => {
+        await sendOtpEmail({
+          email,
+          otp,
+          purpose: type,
+          headers: ctx?.request?.headers,
         });
       },
     }),

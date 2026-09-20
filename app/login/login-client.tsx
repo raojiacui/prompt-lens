@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { authClient } from "@/lib/auth/auth-client";
 
 export function LoginClient({ defaultCallbackUrl = "/dashboard" }: { defaultCallbackUrl?: string }) {
   const router = useRouter();
+  const locale = useLocale();
   const { data: session } = authClient.useSession();
 
   useEffect(() => {
@@ -79,6 +81,7 @@ export function LoginClient({ defaultCallbackUrl = "/dashboard" }: { defaultCall
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "X-Prompt-Lens-Locale": locale === "en" ? "en" : "zh",
         },
         body: JSON.stringify({
           email: email,
