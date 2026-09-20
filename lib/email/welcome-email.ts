@@ -107,9 +107,9 @@ export function renderWelcomeEmail({ locale, name, siteUrl }: WelcomeEmailInput)
           <table role="presentation" class="email-shell" width="620" cellspacing="0" cellpadding="0" border="0" style="width:620px;max-width:620px;background:#fffdfa;border:1px solid #d9d2c5;border-radius:8px;overflow:hidden;">
             <tr>
               <td background="${heroUrl}" width="620" height="349" valign="top" style="width:620px;height:349px;background-color:#d8d5cc;background-image:url('${heroUrl}');background-repeat:no-repeat;background-position:center;background-size:cover;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;">
+                <table role="presentation" width="100%" height="349" cellspacing="0" cellpadding="0" border="0" style="width:100%;height:349px;background:rgba(255,255,255,0.16);">
                   <tr>
-                    <td style="padding:22px 30px;">
+                    <td valign="top" style="padding:22px 30px;vertical-align:top;">
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                         <tr>
                           <td width="40" valign="middle" style="width:40px;"><img src="${iconUrl}" width="40" height="42" alt="" style="display:block;width:40px;height:42px;object-fit:contain;border:0;"></td>
@@ -140,7 +140,7 @@ export function renderWelcomeEmail({ locale, name, siteUrl }: WelcomeEmailInput)
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
                   <tr>
                     <td align="center" bgcolor="#ffffff" style="border-radius:999px;">
-                      <a href="${dashboardUrl}" style="display:inline-block;padding:16px 34px;color:#1d1d1a;font-size:16px;line-height:22px;font-weight:700;text-decoration:none;border-radius:999px;">${escapeHtml(content.button)} &nbsp;✦</a>
+                      <a href="${dashboardUrl}" style="display:inline-block;padding:16px 32px;color:#1d1d1a;font-size:16px;line-height:22px;font-weight:700;text-decoration:none;border-radius:999px;">${escapeHtml(content.button)}&nbsp;&nbsp;<span style="display:inline-block;font-size:19px;line-height:16px;vertical-align:-1px;">✦</span><span style="display:inline-block;padding-left:1px;font-size:11px;line-height:11px;vertical-align:7px;">✦</span></a>
                     </td>
                   </tr>
                 </table>

@@ -19,7 +19,9 @@ describe("welcome email", () => {
     expect(result.html).toContain("/prompt-lens-icon.png");
     expect(result.html).not.toContain(">P</td>");
     expect(result.html).toContain("border-radius:999px");
-    expect(result.html).toContain("开始创造 &nbsp;✦");
+    expect(result.html).toContain("开始创造&nbsp;&nbsp;");
+    expect(result.html.match(/✦/g)).toHaveLength(2);
+    expect(result.html).toContain("rgba(255,255,255,0.16)");
     expect(result.html).not.toContain("按钮无法打开");
     expect(result.html).not.toContain("复制此链接");
     expect(result.dashboardUrl).toBe("https://prompt-lens.cc.cd/dashboard?utm_source=welcome_email&utm_medium=email&utm_campaign=welcome");
