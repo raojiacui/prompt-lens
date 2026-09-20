@@ -16,6 +16,8 @@ describe("welcome email", () => {
     expect(result.html).toContain("改写成你的故事");
     expect(result.html).toContain("开始创造");
     expect(result.html).toContain("/images/hero-text-fishing.jpg");
+    expect(result.html).toContain("/prompt-lens-icon.png");
+    expect(result.html).not.toContain(">P</td>");
     expect(result.dashboardUrl).toBe("https://prompt-lens.cc.cd/dashboard?utm_source=welcome_email&utm_medium=email&utm_campaign=welcome");
   });
 

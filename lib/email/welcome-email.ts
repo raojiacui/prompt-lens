@@ -76,6 +76,7 @@ export function renderWelcomeEmail({ locale, name, siteUrl }: WelcomeEmailInput)
   const origin = normalizeSiteUrl(siteUrl);
   const dashboardUrl = `${origin}/dashboard?utm_source=welcome_email&utm_medium=email&utm_campaign=welcome`;
   const heroUrl = `${origin}/images/hero-text-fishing.jpg`;
+  const iconUrl = `${origin}/prompt-lens-icon.png`;
   const greeting = content.greeting(safeFirstName(name));
   const steps = content.steps
     .map(
@@ -111,18 +112,19 @@ export function renderWelcomeEmail({ locale, name, siteUrl }: WelcomeEmailInput)
         <td align="center" style="padding:32px 12px;">
           <table role="presentation" class="email-shell" width="620" cellspacing="0" cellpadding="0" border="0" style="width:620px;max-width:620px;background:#fffdfa;border:1px solid #d9d2c5;border-radius:8px;overflow:hidden;">
             <tr>
-              <td class="email-pad" style="padding:24px 34px;background:#1d1d1a;">
-                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+              <td background="${heroUrl}" width="620" height="349" valign="top" style="width:620px;height:349px;background-color:#d8d5cc;background-image:url('${heroUrl}');background-repeat:no-repeat;background-position:center;background-size:cover;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;">
                   <tr>
-                    <td width="36" height="36" align="center" style="width:36px;height:36px;background:#d97757;border-radius:7px;color:#fff;font-size:17px;font-weight:700;">P</td>
-                    <td style="padding-left:12px;color:#fffdfa;font-size:19px;font-weight:700;">Prompt Lens</td>
+                    <td style="padding:22px 30px;">
+                      <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                        <tr>
+                          <td width="40" valign="middle" style="width:40px;"><img src="${iconUrl}" width="40" height="42" alt="" style="display:block;width:40px;height:42px;object-fit:contain;border:0;"></td>
+                          <td valign="middle" style="padding-left:10px;color:#1d1d1a;font-size:20px;line-height:26px;font-weight:700;">Prompt Lens</td>
+                        </tr>
+                      </table>
+                    </td>
                   </tr>
                 </table>
-              </td>
-            </tr>
-            <tr>
-              <td style="background:#e9ddca;">
-                <img class="hero-image" src="${heroUrl}" width="620" alt="Prompt Lens" style="display:block;width:100%;height:auto;border:0;">
               </td>
             </tr>
             <tr>
