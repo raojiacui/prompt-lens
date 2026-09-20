@@ -1,4 +1,5 @@
 import { resolveEmailLocale } from "@/lib/email/otp-email";
+import { getEmailRuntimeConfig } from "@/lib/email/runtime-config";
 import { sendEmail } from "@/lib/email/smtp";
 import { renderWelcomeEmail } from "@/lib/email/welcome-email";
 
@@ -13,10 +14,13 @@ export function welcomeEmailEnabled() {
 }
 
 export async function sendWelcomeEmail({ email, name, headers }: SendWelcomeEmailInput) {
+  const emailConfig = getEmailRuntimeConfig();
   const message = renderWelcomeEmail({
     locale: resolveEmailLocale(headers),
     name,
-    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    siteUrl: emailConfig.siteUrl,
+    heroUrl: emailConfig.heroUrl,
+    iconUrl: emailConfig.iconUrl,
   });
 
   await sendEmail({

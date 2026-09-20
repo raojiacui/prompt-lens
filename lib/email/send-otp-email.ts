@@ -1,4 +1,5 @@
 import { renderOtpEmail, resolveEmailLocale } from "@/lib/email/otp-email";
+import { getEmailRuntimeConfig } from "@/lib/email/runtime-config";
 import { sendEmail } from "@/lib/email/smtp";
 
 type OtpPurpose = "sign-in" | "email-verification" | "forget-password" | "change-email";
@@ -12,12 +13,14 @@ type SendOtpEmailInput = {
 
 export async function sendOtpEmail({ email, otp, purpose, headers }: SendOtpEmailInput) {
   const locale = resolveEmailLocale(headers);
+  const emailConfig = getEmailRuntimeConfig();
   const message = renderOtpEmail({
     otp,
     locale,
     purpose,
     expiresInMinutes: 10,
-    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
+    siteUrl: emailConfig.siteUrl,
+    iconUrl: emailConfig.iconUrl,
   });
   await sendEmail({
     to: email,

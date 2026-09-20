@@ -8,6 +8,7 @@ type OtpEmailInput = {
   purpose: OtpPurpose;
   expiresInMinutes?: number;
   siteUrl?: string;
+  iconUrl?: string;
 };
 
 const copy = {
@@ -50,6 +51,16 @@ function normalizeSiteUrl(value?: string) {
     const url = new URL(value || fallback);
     if (url.protocol !== "https:" && url.protocol !== "http:") return fallback;
     return url.origin;
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeImageUrl(value: string | undefined, fallback: string) {
+  try {
+    const url = new URL(value || fallback);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return fallback;
+    return url.href;
   } catch {
     return fallback;
   }
@@ -98,12 +109,16 @@ export function renderOtpEmail({
   purpose,
   expiresInMinutes = 10,
   siteUrl,
+  iconUrl,
 }: OtpEmailInput) {
   const content = purposeCopy(locale, purpose);
   const safeOtp = escapeHtml(otp);
   const title = escapeHtml(content.title);
   const preheader = escapeHtml(content.preheader);
-  const iconUrl = `${normalizeSiteUrl(siteUrl)}/prompt-lens-icon.png`;
+  const resolvedIconUrl = normalizeImageUrl(
+    iconUrl,
+    `${normalizeSiteUrl(siteUrl)}/prompt-lens-icon.png`,
+  );
 
   const html = `<!doctype html>
 <html lang="${locale}">
@@ -122,7 +137,7 @@ export function renderOtpEmail({
               <td style="padding:30px 38px 16px;">
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                   <tr>
-                    <td width="38" valign="middle" style="width:38px;"><img src="${iconUrl}" width="38" height="40" alt="" style="display:block;width:38px;height:40px;object-fit:contain;border:0;"></td>
+                    <td width="38" valign="middle" style="width:38px;"><img src="${resolvedIconUrl}" width="38" height="40" alt="" style="display:block;width:38px;height:40px;object-fit:contain;border:0;"></td>
                     <td valign="middle" style="padding-left:11px;font-size:20px;line-height:26px;font-weight:700;color:#171714;">Prompt Lens</td>
                   </tr>
                 </table>

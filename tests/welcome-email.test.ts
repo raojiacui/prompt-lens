@@ -41,6 +41,19 @@ describe("welcome email", () => {
     expect(result.ctaUrl).toContain("https://prompt-lens.cc.cd/start");
   });
 
+  it("keeps the CTA and public image hosting independent", () => {
+    const result = renderWelcomeEmail({
+      locale: "zh",
+      siteUrl: "https://prompt-lens.cc.cd",
+      heroUrl: "https://cdn.example.com/email/hero-text-fishing.jpg",
+      iconUrl: "https://cdn.example.com/email/prompt-lens-icon.png",
+    });
+
+    expect(result.ctaUrl).toContain("https://prompt-lens.cc.cd/start");
+    expect(result.html).toContain("https://cdn.example.com/email/hero-text-fishing.jpg");
+    expect(result.html).toContain("https://cdn.example.com/email/prompt-lens-icon.png");
+  });
+
   it("escapes the display name and rejects unsafe site protocols", () => {
     const result = renderWelcomeEmail({
       locale: "zh",

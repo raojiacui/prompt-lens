@@ -35,6 +35,19 @@ describe("OTP email", () => {
     expect(result.html).not.toContain("><12345<");
   });
 
+  it("uses a separately hosted public icon", () => {
+    const result = renderOtpEmail({
+      otp: "625183",
+      locale: "zh",
+      purpose: "sign-in",
+      siteUrl: "http://localhost:3000",
+      iconUrl: "https://cdn.example.com/email/prompt-lens-icon.png",
+    });
+
+    expect(result.html).toContain("https://cdn.example.com/email/prompt-lens-icon.png");
+    expect(result.html).not.toContain("localhost:3000/prompt-lens-icon.png");
+  });
+
   it("prefers the explicit locale, then the locale cookie, then Accept-Language", () => {
     expect(resolveEmailLocale(new Headers({ "x-prompt-lens-locale": "en", cookie: "NEXT_LOCALE=zh" }))).toBe("en");
     expect(resolveEmailLocale(new Headers({ cookie: "foo=1; NEXT_LOCALE=en" }))).toBe("en");
