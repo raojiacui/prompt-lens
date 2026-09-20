@@ -21,9 +21,6 @@ const translations = {
     ],
     quote: "灵感不是终点。看懂它，然后创造下一幕。",
     button: "开始创造",
-    buttonHint: "打开 Prompt Lens 创作工作台",
-    footer: "期待看到你创造的下一支视频。",
-    linkFallback: "按钮无法打开？复制此链接到浏览器：",
   },
   en: {
     subject: "Welcome to Prompt Lens. Your next video starts here",
@@ -39,9 +36,6 @@ const translations = {
     ],
     quote: "Inspiration is not the finish line. Understand it, then create the next frame.",
     button: "Start creating",
-    buttonHint: "Open the Prompt Lens workspace",
-    footer: "We cannot wait to see what you create next.",
-    linkFallback: "Button not working? Paste this link into your browser:",
   },
 } as const;
 
@@ -141,23 +135,15 @@ export function renderWelcomeEmail({ locale, name, siteUrl }: WelcomeEmailInput)
               </td>
             </tr>
             <tr>
-              <td class="email-pad" style="padding:18px 46px 42px;text-align:center;">
-                <p style="margin:0 0 24px;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:29px;font-style:italic;color:#3d3a35;">“${escapeHtml(content.quote)}”</p>
+              <td class="email-pad" style="padding:38px 46px 42px;text-align:center;background:#567d9d;">
+                <p style="margin:0 0 26px;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:29px;font-style:italic;color:#ffffff;">“${escapeHtml(content.quote)}”</p>
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
                   <tr>
-                    <td align="center" bgcolor="#d97757" style="border-radius:7px;">
-                      <a href="${dashboardUrl}" style="display:inline-block;padding:15px 30px;color:#ffffff;font-size:15px;line-height:20px;font-weight:700;text-decoration:none;">${escapeHtml(content.button)} &nbsp;→</a>
+                    <td align="center" bgcolor="#ffffff" style="border-radius:999px;">
+                      <a href="${dashboardUrl}" style="display:inline-block;padding:16px 34px;color:#1d1d1a;font-size:16px;line-height:22px;font-weight:700;text-decoration:none;border-radius:999px;">${escapeHtml(content.button)} &nbsp;✦</a>
                     </td>
                   </tr>
                 </table>
-                <p style="margin:10px 0 0;font-size:11px;line-height:18px;color:#938e84;">${escapeHtml(content.buttonHint)}</p>
-              </td>
-            </tr>
-            <tr>
-              <td class="email-pad" style="padding:26px 46px;background:#1d1d1a;color:#c8c3b8;font-size:12px;line-height:20px;">
-                <strong style="color:#fffdfa;">Prompt Lens</strong><br>
-                ${escapeHtml(content.footer)}
-                <div style="padding-top:12px;color:#858078;word-break:break-all;">${escapeHtml(content.linkFallback)}<br><a href="${dashboardUrl}" style="color:#e5a185;text-decoration:underline;">${dashboardUrl}</a></div>
               </td>
             </tr>
           </table>
