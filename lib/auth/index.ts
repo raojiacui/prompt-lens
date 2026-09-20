@@ -7,6 +7,7 @@ import { admin, anonymous } from "better-auth/plugins";
 import { emailOTP } from "better-auth/plugins/email-otp";
 import { eq } from "drizzle-orm";
 import { sendOtpEmail } from "@/lib/email/send-otp-email";
+import { sendWelcomeEmail, welcomeEmailEnabled } from "@/lib/email/send-welcome-email";
 
 // 配置代理（仅本地开发环境使用，禁止在生产环境使用）
 const isLocalDev = process.env.NODE_ENV === "development";
@@ -101,7 +102,7 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        after: async (createdUser) => {
+        after: async (createdUser, ctx) => {
           // 检查是否为管理员邮箱
           const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
           const userEmail = createdUser.email?.toLowerCase();
@@ -131,6 +132,25 @@ export const auth = betterAuth({
               .set({ role: "admin" })
               .where(eq(user.id, createdUser.id));
             console.log(`User ${createdUser.id} promoted to admin (email: ${createdUser.email})`);
+          }
+
+          if (createdUser.email && welcomeEmailEnabled()) {
+            const welcomeEmail = sendWelcomeEmail({
+              email: createdUser.email,
+              name: createdUser.name,
+              headers: ctx?.request?.headers,
+            }).catch((error) => {
+              console.error("[Email] Failed to send welcome email", {
+                userId: createdUser.id,
+                error: error instanceof Error ? error.message : "Unknown error",
+              });
+            });
+
+            if (ctx?.context.runInBackgroundOrAwait) {
+              await ctx.context.runInBackgroundOrAwait(welcomeEmail);
+            } else {
+              await welcomeEmail;
+            }
           }
         },
       },

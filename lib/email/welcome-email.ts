@@ -1,0 +1,183 @@
+import type { EmailLocale } from "@/lib/email/otp-email";
+
+type WelcomeEmailInput = {
+  locale: EmailLocale;
+  name?: string | null;
+  siteUrl?: string;
+};
+
+const translations = {
+  zh: {
+    subject: "欢迎来到 Prompt Lens，你的下一支视频从这里开始",
+    preheader: "拆解灵感、复刻质感，再把它改写成属于你的新作品。",
+    eyebrow: "WELCOME TO PROMPT LENS",
+    greeting: (name?: string | null) => (name ? `${name}，欢迎来到 Prompt Lens` : "欢迎来到 Prompt Lens"),
+    intro: "一条打动你的视频，不该只停留在收藏夹。Prompt Lens 帮你看懂每个镜头的构图、动作与光影，再把这些灵感变成真正属于你的新作品。",
+    sectionTitle: "从看懂，到创造，只需要三步",
+    steps: [
+      ["01", "看懂每个镜头", "自动拆解视频节奏，提取构图、角色、运镜与风格提示词。"],
+      ["02", "复刻完整质感", "带着可复刻 Prompt 进入生成，让相同的电影感重新发生。"],
+      ["03", "改写成你的故事", "让 AI 修改角色、场景与叙事方向，从参考走向真正的原创。"],
+    ],
+    quote: "灵感不是终点。看懂它，然后创造下一幕。",
+    button: "开始创造",
+    buttonHint: "打开 Prompt Lens 创作工作台",
+    footer: "期待看到你创造的下一支视频。",
+    linkFallback: "按钮无法打开？复制此链接到浏览器：",
+  },
+  en: {
+    subject: "Welcome to Prompt Lens. Your next video starts here",
+    preheader: "Decode the inspiration, recreate the feeling, then make it unmistakably yours.",
+    eyebrow: "WELCOME TO PROMPT LENS",
+    greeting: (name?: string | null) => (name ? `Welcome to Prompt Lens, ${name}` : "Welcome to Prompt Lens"),
+    intro: "A video that moves you should not stay buried in your bookmarks. Prompt Lens reveals the composition, motion, lighting and rhythm behind every shot, then helps you turn that inspiration into something new.",
+    sectionTitle: "From inspiration to creation in three steps",
+    steps: [
+      ["01", "Understand every shot", "Break down pacing, composition, characters, camera movement and visual style."],
+      ["02", "Recreate the feeling", "Take a reproducible prompt into generation and bring the cinematic language back to life."],
+      ["03", "Make the story yours", "Rewrite characters, settings and direction with AI, moving from reference to original creation."],
+    ],
+    quote: "Inspiration is not the finish line. Understand it, then create the next frame.",
+    button: "Start creating",
+    buttonHint: "Open the Prompt Lens workspace",
+    footer: "We cannot wait to see what you create next.",
+    linkFallback: "Button not working? Paste this link into your browser:",
+  },
+} as const;
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function safeFirstName(name?: string | null) {
+  const candidate = name?.trim();
+  if (!candidate || candidate.includes("@") || candidate.length > 40) return null;
+  return candidate;
+}
+
+function normalizeSiteUrl(value?: string) {
+  const fallback = "https://prompt-lens.cc.cd";
+  try {
+    const url = new URL(value || fallback);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return fallback;
+    return url.origin;
+  } catch {
+    return fallback;
+  }
+}
+
+export function renderWelcomeEmail({ locale, name, siteUrl }: WelcomeEmailInput) {
+  const content = translations[locale];
+  const origin = normalizeSiteUrl(siteUrl);
+  const dashboardUrl = `${origin}/dashboard?utm_source=welcome_email&utm_medium=email&utm_campaign=welcome`;
+  const heroUrl = `${origin}/images/hero-text-fishing.jpg`;
+  const greeting = content.greeting(safeFirstName(name));
+  const steps = content.steps
+    .map(
+      ([number, title, description]) => `
+        <tr>
+          <td valign="top" style="padding:0 0 14px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#f5f1e8;border:1px solid #e2dbce;border-radius:8px;">
+              <tr>
+                <td width="58" valign="top" style="width:58px;padding:18px 0 18px 18px;font-size:12px;line-height:18px;font-weight:700;color:#d97757;">${number}</td>
+                <td valign="top" style="padding:16px 18px 16px 4px;">
+                  <div style="font-size:16px;line-height:24px;font-weight:700;color:#1d1d1a;">${escapeHtml(title)}</div>
+                  <div style="padding-top:4px;font-size:13px;line-height:21px;color:#69655d;">${escapeHtml(description)}</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`,
+    )
+    .join("");
+
+  const html = `<!doctype html>
+<html lang="${locale}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>${escapeHtml(content.subject)}</title>
+    <style>@media only screen and (max-width:620px){.email-shell{width:100%!important}.email-pad{padding-left:24px!important;padding-right:24px!important}.hero-image{height:auto!important}}</style>
+  </head>
+  <body style="margin:0;padding:0;background:#ece8df;color:#1d1d1a;font-family:Arial,'Noto Sans SC','Microsoft YaHei',sans-serif;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">${escapeHtml(content.preheader)}</div>
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;background:#ece8df;">
+      <tr>
+        <td align="center" style="padding:32px 12px;">
+          <table role="presentation" class="email-shell" width="620" cellspacing="0" cellpadding="0" border="0" style="width:620px;max-width:620px;background:#fffdfa;border:1px solid #d9d2c5;border-radius:8px;overflow:hidden;">
+            <tr>
+              <td class="email-pad" style="padding:24px 34px;background:#1d1d1a;">
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                  <tr>
+                    <td width="36" height="36" align="center" style="width:36px;height:36px;background:#d97757;border-radius:7px;color:#fff;font-size:17px;font-weight:700;">P</td>
+                    <td style="padding-left:12px;color:#fffdfa;font-size:19px;font-weight:700;">Prompt Lens</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="background:#e9ddca;">
+                <img class="hero-image" src="${heroUrl}" width="620" alt="Prompt Lens" style="display:block;width:100%;height:auto;border:0;">
+              </td>
+            </tr>
+            <tr>
+              <td class="email-pad" style="padding:42px 46px 18px;">
+                <div style="font-size:11px;line-height:16px;font-weight:700;color:#a35f42;">${content.eyebrow}</div>
+                <h1 style="margin:10px 0 16px;font-size:30px;line-height:40px;font-weight:700;letter-spacing:0;color:#1d1d1a;">${escapeHtml(greeting)}</h1>
+                <p style="margin:0;font-size:15px;line-height:25px;color:#5f5b54;">${escapeHtml(content.intro)}</p>
+              </td>
+            </tr>
+            <tr>
+              <td class="email-pad" style="padding:28px 46px 16px;">
+                <h2 style="margin:0 0 18px;font-size:21px;line-height:30px;color:#1d1d1a;">${escapeHtml(content.sectionTitle)}</h2>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;">${steps}</table>
+              </td>
+            </tr>
+            <tr>
+              <td class="email-pad" style="padding:18px 46px 42px;text-align:center;">
+                <p style="margin:0 0 24px;font-family:Georgia,'Times New Roman',serif;font-size:19px;line-height:29px;font-style:italic;color:#3d3a35;">“${escapeHtml(content.quote)}”</p>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center">
+                  <tr>
+                    <td align="center" bgcolor="#d97757" style="border-radius:7px;">
+                      <a href="${dashboardUrl}" style="display:inline-block;padding:15px 30px;color:#ffffff;font-size:15px;line-height:20px;font-weight:700;text-decoration:none;">${escapeHtml(content.button)} &nbsp;→</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:10px 0 0;font-size:11px;line-height:18px;color:#938e84;">${escapeHtml(content.buttonHint)}</p>
+              </td>
+            </tr>
+            <tr>
+              <td class="email-pad" style="padding:26px 46px;background:#1d1d1a;color:#c8c3b8;font-size:12px;line-height:20px;">
+                <strong style="color:#fffdfa;">Prompt Lens</strong><br>
+                ${escapeHtml(content.footer)}
+                <div style="padding-top:12px;color:#858078;word-break:break-all;">${escapeHtml(content.linkFallback)}<br><a href="${dashboardUrl}" style="color:#e5a185;text-decoration:underline;">${dashboardUrl}</a></div>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:18px 0 0;font-size:11px;line-height:18px;color:#8f8a81;">&copy; ${new Date().getUTCFullYear()} Prompt Lens</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+  const text = [
+    greeting,
+    "",
+    content.intro,
+    "",
+    content.sectionTitle,
+    ...content.steps.flatMap(([, title, description]) => [`- ${title}: ${description}`]),
+    "",
+    content.quote,
+    "",
+    `${content.button}: ${dashboardUrl}`,
+  ].join("\n");
+
+  return { subject: content.subject, html, text, dashboardUrl };
+}
