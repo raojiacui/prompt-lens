@@ -3,9 +3,7 @@
  * 支持多 provider 扩展：Kie.ai, Runway, Pika, Luma 等
  */
 
-import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
-import { db, userApiKeys } from "@/lib/db";
-import { and, eq } from "drizzle-orm";
+import { getUserApiKeyForProvider } from "@/lib/byok/kie";
 import { createKieVeoGeneration, getKieVeoGenerationStatus } from "@/lib/reference-video/kie-veo";
 
 // ============ 类型定义 ============
@@ -55,18 +53,7 @@ export async function getUserProviderApiKey(
   provider: VideoProviderName
 ): Promise<string | undefined> {
   try {
-    const record = await db.query.userApiKeys.findFirst({
-      where: and(
-        eq(userApiKeys.userId, userId),
-        eq(userApiKeys.provider, provider as any)
-      ),
-    });
-    if (record?.apiKey && record.isActive) {
-      if (isValidEncryptedKey(record.apiKey)) {
-        return decryptApiKey(record.apiKey).trim();
-      }
-      return record.apiKey.trim();
-    }
+    return (await getUserApiKeyForProvider(userId, provider)) || undefined;
   } catch (e) {
     console.error(`[video-provider] Failed to get ${provider} API key for user:`, e);
   }

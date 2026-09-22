@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, userApiKeys } from "@/lib/db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { encryptApiKey, decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
 const SUPPORTED_USER_PROVIDER = "kie" as const;
@@ -16,6 +16,7 @@ export async function GET(request: NextRequest) {
 
     const apiKeys = await db.query.userApiKeys.findMany({
       where: and(eq(userApiKeys.userId, session.user.id), eq(userApiKeys.provider, SUPPORTED_USER_PROVIDER)),
+      orderBy: [desc(userApiKeys.updatedAt), desc(userApiKeys.createdAt)],
     });
 
     const sanitizedKeys = apiKeys.map((key) => {
@@ -74,15 +75,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid Kie.ai API Key format" }, { status: 400 });
     }
 
-    const encryptedApiKey = encryptApiKey(apiKey);
-    const existing = await db.query.userApiKeys.findFirst({
+    const encryptedApiKey = encryptApiKey(apiKey.trim());
+    const existing = await db.query.userApiKeys.findMany({
       where: and(
         eq(userApiKeys.userId, session.user.id),
         eq(userApiKeys.provider, SUPPORTED_USER_PROVIDER)
       ),
     });
 
-    if (existing) {
+    if (existing.length > 0) {
       await db
         .update(userApiKeys)
         .set({
@@ -90,7 +91,10 @@ export async function POST(request: NextRequest) {
           isActive: true,
           updatedAt: new Date(),
         })
-        .where(eq(userApiKeys.id, existing.id));
+        .where(and(
+          eq(userApiKeys.userId, session.user.id),
+          eq(userApiKeys.provider, SUPPORTED_USER_PROVIDER)
+        ));
     } else {
       await db.insert(userApiKeys).values({
         userId: session.user.id,

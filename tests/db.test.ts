@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { extractCorePrompt } from "@/lib/ai/prompts";
 import { formatDate, formatFileSize, truncate } from "@/lib/utils";
+import { decodeStoredApiKey } from "@/lib/byok/kie";
 
 describe("AI Analyzer", () => {
   it("should extract core prompt from result", () => {
@@ -28,6 +29,16 @@ describe("AI Analyzer", () => {
 
     const corePrompt = extractCorePrompt(result);
     expect(corePrompt).toBe("第一行内容");
+  });
+});
+
+describe("BYOK API keys", () => {
+  it("normalizes a usable legacy plaintext key", () => {
+    expect(decodeStoredApiKey("  kie-test-key-123456  ")).toBe("kie-test-key-123456");
+  });
+
+  it("rejects an empty stored key", () => {
+    expect(decodeStoredApiKey("   ")).toBeNull();
   });
 });
 
