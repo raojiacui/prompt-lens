@@ -33,7 +33,7 @@
 ## 尚未完成的外部验收
 
 - 本地未检测到虎皮椒商户 App ID / Secret，也没有调度密钥。不要把密钥发到聊天里；填入部署平台或本地私有环境配置。
-- 0010/0011/0012/0013 只在隔离 PGlite 测试库应用，**尚未应用于应用数据库**。0013 会补齐管理员活跃统计依赖的 `daily_visits` 表；迁移前必须核对完整历史，不可盲目 `db:push`。
+- 0010/0011/0012/0013/0014 只在隔离 PGlite 测试库应用，**尚未应用于应用数据库**。0013 会补齐管理员活跃统计依赖的 `daily_visits` 表，0014 会兼容补齐视频生成记录的 Provider 字段；迁移前必须核对完整历史，不可盲目 `db:push`。
 - 未部署新版 FFmpeg Worker，未验证公网回调和后台调度。Web 请求需支持最长 300 秒；Worker 应配置资源上限并验证真实媒体探测/提取耗时。
 - 未做真实支付宝付款、漏回调补单、退款，未做实际 KIE 账单和模型输出验收。
 - 虎皮椒查询返回的嵌套签名和金额字段需要真实通道确认。当前只接受可验签且带准确应用/订单/金额的返回；不满足则保留待确认，绝不使用本地金额伪造验证。查询 `CD` 是取消，通知 `CD` 是退款，不能混用。
@@ -42,7 +42,7 @@
 
 ## 部署顺序
 
-1. 确认数据库是测试还是生产，备份并保存旧钱包/订单校验统计。审查全部历史迁移，按项目迁移流程执行到 0013。0011 对既有非空新钱包采取冻结保护，不能凭空构造消费批次，需人工对账。验证旧钱包不变且 `daily_visits` 可正常写入后设置 `COMMERCIAL_MIGRATION_ACCEPTED=0013`。
+1. 确认数据库是测试还是生产，备份并保存旧钱包/订单校验统计。审查全部历史迁移，按项目迁移流程执行到 0014。0011 对既有非空新钱包采取冻结保护，不能凭空构造消费批次，需人工对账。验证旧钱包不变、`daily_visits` 可正常写入且 `video_generation.provider` 已存在后设置 `COMMERCIAL_MIGRATION_ACCEPTED=0014`。
 2. 部署新版 Web 和 FFmpeg Worker，配置公网 HTTPS 站点、R2、KIE、Worker 共享密钥和虎皮椒支付宝专用凭据。通知地址 `/api/payments/webhooks/xunhupay`，返回页 `/billing`。不要混用微信应用凭据。
 3. 配置 `CRON_SECRET`。Worker 额外设置相同密钥及 `COMMERCIAL_RECONCILIATION_BASE_URL` 指向 Web 的 HTTPS 根地址；它每轮结束后 60 秒再请求对账接口。也可由可信外部调度器调用 `GET /api/cron/commercial-reconciliation` 并带 Bearer 密钥，不要重复部署两个调度器。确认任务在关闭浏览器后仍可继续，再设置 `COMMERCIAL_SCHEDULER_ACCEPTED=true`。
 4. 开启消费与改写开关。先用受控账号验证；确认新表存在、费用展示和 BYOK 来源正确。保持 `COMMERCIAL_SALES_ENABLED=false`。

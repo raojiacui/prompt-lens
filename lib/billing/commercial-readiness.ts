@@ -12,7 +12,7 @@ export function commercialReadiness() {
     publicHttps,
     consumption: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true",
     rewrites: process.env.COMMERCIAL_REWRITE_ENABLED === "true",
-    migrationAccepted: process.env.COMMERCIAL_MIGRATION_ACCEPTED === "0013",
+    migrationAccepted: process.env.COMMERCIAL_MIGRATION_ACCEPTED === "0014",
     livePaymentAccepted: process.env.COMMERCIAL_PAYMENT_ACCEPTANCE === PRICING_VERSION,
     liveModelAccepted: process.env.COMMERCIAL_MODEL_ACCEPTANCE === PRICING_VERSION,
     salesRequested: process.env.COMMERCIAL_SALES_ENABLED === "true",
