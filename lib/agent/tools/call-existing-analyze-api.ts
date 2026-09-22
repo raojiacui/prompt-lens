@@ -3,7 +3,7 @@ import type { ToolDefinition } from "../types";
 import { logTool, ok, fail } from "./shared";
 
 const inputSchema = z.object({
-  provider: z.enum(["zhipu", "gemini", "openrouter"]).optional(),
+  provider: z.enum(["zhipu", "gemini", "openrouter", "kie"]).optional(),
 });
 
 /**

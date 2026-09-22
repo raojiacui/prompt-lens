@@ -1,10 +1,11 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, analysisHistory, operationLogs } from "@/lib/db";
-import { analyzeFrames, ApiProvider } from "@/lib/ai/analyzer";
+import { analyzeFrames, resolveAnalysisProviderForBillingMode } from "@/lib/ai/analyzer";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { defaultLocale, isLocale } from "@/i18n/config";
 import { assertCanStartVideoAnalysis, settleVideoAnalysisCredits, type VideoAnalysisEntitlement, videoAnalysisBillingErrorResponse } from "@/lib/billing/video-analysis";
+import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 
 function shouldChargeCredits(entitlement: VideoAnalysisEntitlement) {
   return entitlement.mode === "platform_credits" || entitlement.mode === "trial";
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
       mediaType,
       frames: clientFrames,
       analyzeMode = "single",
-      provider = "openrouter",
+      provider: requestedProvider = "openrouter",
       outputLanguage,
     } = body;
 
@@ -59,13 +60,19 @@ export async function POST(request: NextRequest) {
 
     const entitlement = await assertCanStartVideoAnalysis(session.user.id, 1);
     const chargeCredits = shouldChargeCredits(entitlement);
-    const resolvedProvider: ApiProvider = entitlement.mode === "trial" ? "openrouter" : (provider as ApiProvider);
+    const resolvedProvider = resolveAnalysisProviderForBillingMode(entitlement.mode);
+    const keyAccess = resolvedProvider === "kie"
+      ? await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_analysis" })
+      : null;
+    if (resolvedProvider === "kie" && !keyAccess?.apiKey) {
+      return NextResponse.json(kieAccessError("视频分析"), { status: 402 });
+    }
 
     await db.insert(operationLogs).values({
       userId: session.user.id,
       action: "analysis.start",
       resourceType: mediaType,
-      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, billingMode: entitlement.mode },
+      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, requestedProvider, billingMode: entitlement.mode, keySource: keyAccess?.source || "platform_trial" },
     });
 
     const result = await analyzeFrames({
@@ -74,6 +81,7 @@ export async function POST(request: NextRequest) {
       frames,
       mode: analyzeMode as "single" | "batch",
       outputLanguage: resolvedLanguage,
+      apiKeyOverride: keyAccess?.apiKey || undefined,
     });
 
     if (!result.success) {
@@ -81,7 +89,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         action: "analysis.error",
         resourceType: mediaType,
-        metadata: { error: result.error, mediaUrl, provider: resolvedProvider },
+        metadata: { error: result.error, mediaUrl, provider: resolvedProvider, requestedProvider },
       });
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
@@ -111,7 +119,7 @@ export async function POST(request: NextRequest) {
       action: "analysis.complete",
       resourceType: mediaType,
       resourceId: historyRecord[0].id,
-      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, billingMode: entitlement.mode },
+      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, requestedProvider, billingMode: entitlement.mode, keySource: keyAccess?.source || "platform_trial" },
     });
 
     return NextResponse.json({

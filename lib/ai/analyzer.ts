@@ -1,8 +1,5 @@
 ﻿import axios from "axios";
-import { db } from "@/lib/db";
-import { userApiKeys } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
-import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
+import { getUserApiKeyForProvider } from "@/lib/byok/kie";
 import { ANALYSIS_PROMPTS, extractCorePrompt } from "@/lib/ai/prompts";
 import type { Locale } from "@/i18n/config";
 import { defaultLocale } from "@/i18n/config";
@@ -26,6 +23,13 @@ if (proxyUrl) {
   }
 }
 
+const KIE_BASE_URL = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
+const KIE_ANALYSIS_MODEL = process.env.KIE_ANALYSIS_MODEL || process.env.KIE_GEMINI_ANALYSIS_MODEL || "gemini-2.5-flash";
+const KIE_ANALYSIS_ENDPOINT = process.env.KIE_ANALYSIS_ENDPOINT || process.env.KIE_GEMINI_ANALYSIS_URL;
+const KIE_ANALYSIS_URL = KIE_ANALYSIS_ENDPOINT
+  ? (/^https?:\/\//i.test(KIE_ANALYSIS_ENDPOINT) ? KIE_ANALYSIS_ENDPOINT : `${KIE_BASE_URL}/${KIE_ANALYSIS_ENDPOINT.replace(/^\//, "")}`)
+  : `${KIE_BASE_URL}/${KIE_ANALYSIS_MODEL}/v1/chat/completions`;
+
 // API 配置
 const API_CONFIGS = {
   zhipu: {
@@ -40,6 +44,10 @@ const API_CONFIGS = {
     url: "https://openrouter.ai/api/v1/chat/completions",
     model: "google/gemini-2.5-flash",
   },
+  kie: {
+    url: KIE_ANALYSIS_URL,
+    model: KIE_ANALYSIS_MODEL,
+  },
 };
 
 // 环境变量中的 API Keys
@@ -47,9 +55,14 @@ const ENV_API_KEYS = {
   zhipu: process.env.ZHIPU_API_KEY || null,
   openrouter: process.env.OPENROUTER_API_KEY || null,
   gemini: process.env.GEMINI_API_KEY || null,
+  kie: process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null,
 };
 
-export type ApiProvider = "zhipu" | "gemini" | "openrouter";
+export type ApiProvider = "zhipu" | "gemini" | "openrouter" | "kie";
+
+export function resolveAnalysisProviderForBillingMode(mode: string): ApiProvider {
+  return mode === "trial" ? "openrouter" : "kie";
+}
 
 export interface AnalyzeOptions {
   userId: string;
@@ -58,6 +71,8 @@ export interface AnalyzeOptions {
   mode: "single" | "batch";
   /** AI 输出语言（默认 zh，影响生成结果的文本语言） */
   outputLanguage?: Locale;
+  /** Resolved by the server billing layer so callers cannot choose a key source. */
+  apiKeyOverride?: string;
 }
 
 export interface AnalyzeResult {
@@ -68,7 +83,7 @@ export interface AnalyzeResult {
 }
 
 /**
- * 获取 API Key - 优先使用环境变量，其次使用用户配置
+ * 获取 API Key - OpenRouter 仅使用平台 Key，其他 Provider 优先使用用户 Key。
  */
 async function getUserApiKey(
   userId: string,
@@ -81,35 +96,14 @@ async function getUserApiKey(
     return null;
   }
 
-  const envKey = ENV_API_KEYS[provider];
-  if (envKey) {
-    console.log(`[Analyzer] Using env API key for ${provider}`);
-    return envKey;
-  }
-
-  // Environment key is missing, fallback to legacy user keys for non-OpenRouter providers.
-  const result = await db.query.userApiKeys.findFirst({
-    where: and(
-      eq(userApiKeys.userId, userId),
-      eq(userApiKeys.provider, provider)
-    ),
-  });
-
-  if (!result || !result.isActive) {
-    return null;
-  }
-
-  // 解密 API Key（支持加密和未加密的旧数据）
   try {
-    if (isValidEncryptedKey(result.apiKey)) {
-      return decryptApiKey(result.apiKey);
-    }
-    // 兼容旧数据：未加密的明文
-    return result.apiKey;
+    const userKey = await getUserApiKeyForProvider(userId, provider);
+    if (userKey) return userKey;
   } catch (error) {
     console.error(`[Analyzer] Failed to decrypt API key for ${provider}:`, error);
-    return null;
   }
+
+  return ENV_API_KEYS[provider];
 }
 
 /**
@@ -190,6 +184,32 @@ async function callGeminiApi(
   return response.data.candidates[0].content.parts[0].text;
 }
 
+async function callKieGeminiApi(
+  apiKey: string,
+  messages: any[]
+): Promise<string> {
+  const response = await axios.post(
+    API_CONFIGS.kie.url,
+    {
+      model: API_CONFIGS.kie.model,
+      messages,
+      max_tokens: 4096,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      timeout: 180000,
+      ...(axiosProxy ? { proxy: axiosProxy } : {}),
+    }
+  );
+
+  const content = response.data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error("KIE Gemini API returned empty result");
+  return content;
+}
+
 /**
  * 调用 OpenRouter API
  */
@@ -231,10 +251,10 @@ async function callOpenRouterApi(
  * 分析图片/帧
  */
 export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeResult> {
-  const { userId, provider = "openrouter", frames, mode, outputLanguage = defaultLocale } = options;
+  const { userId, provider = "openrouter", frames, mode, outputLanguage = defaultLocale, apiKeyOverride } = options;
 
   // 获取用户 API Key
-  const apiKey = await getUserApiKey(userId, provider);
+  const apiKey = apiKeyOverride || await getUserApiKey(userId, provider);
 
   if (!apiKey) {
     const envKeyConfigured = ENV_API_KEYS[provider] ? " (env configured)" : "";
@@ -270,7 +290,6 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
       // Gemini
       result = await callGeminiApi(apiKey, frames, prompt);
     } else {
-      // OpenRouter (使用类似智谱的格式)
       const messages = [
         {
           role: "user",
@@ -283,7 +302,9 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
           ],
         },
       ];
-      result = await callOpenRouterApi(apiKey, messages);
+      result = provider === "kie"
+        ? await callKieGeminiApi(apiKey, messages)
+        : await callOpenRouterApi(apiKey, messages);
     }
 
     // 提取核心提示词（兼容中英文格式）
