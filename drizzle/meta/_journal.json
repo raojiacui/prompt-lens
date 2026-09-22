@@ -99,6 +99,13 @@
                         "when":  1789516800000,
                         "tag":  "0013_admin_daily_visits",
                         "breakpoints":  true
+                    },
+                    {
+                        "idx":  14,
+                        "version":  "7",
+                        "when":  1790064000000,
+                        "tag":  "0014_video_generation_provider_backfill",
+                        "breakpoints":  true
                     }
                 ]
 }
