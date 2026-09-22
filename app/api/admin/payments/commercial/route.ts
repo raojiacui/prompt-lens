@@ -5,10 +5,11 @@ import { db, paymentOrders, commercialRefunds, commercialReservations, commercia
 import { settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { commercialReadiness } from "@/lib/billing/commercial-readiness";
 import { reconcilePaymentOrder } from "@/lib/payments/xunhupay-reconciliation";
+import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 
 export async function GET(request: NextRequest) {
   if (!await getAdminUserFromHeaders(request.headers)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  const orders = await db.select({ id: paymentOrders.id, userId: paymentOrders.userId, amountCents: paymentOrders.amountCents, status: paymentOrders.status, createdAt: paymentOrders.createdAt, reconciliation: sql<string>`${paymentOrders.metadata}->>'reconciliation'` }).from(paymentOrders).where(and(eq(paymentOrders.provider, "xunhupay"), eq(paymentOrders.status, "pending"))).orderBy(asc(paymentOrders.createdAt)).limit(100);
+  const orders = await db.select({ id: paymentOrders.id, userId: paymentOrders.userId, amountCents: paymentOrders.amountCents, status: paymentOrders.status, createdAt: paymentOrders.createdAt, reconciliation: sql<string>`${paymentOrders.metadata}->>'reconciliation'` }).from(paymentOrders).where(and(sql`${paymentOrders.provider} IN ('xunhupay', 'alipay')`, eq(paymentOrders.status, "pending"))).orderBy(asc(paymentOrders.createdAt)).limit(100);
   const refunds = await db.select({ id: commercialRefunds.id, orderId: commercialRefunds.orderId, userId: commercialRefunds.userId, state: commercialRefunds.state, reason: commercialRefunds.reason, createdAt: commercialRefunds.createdAt }).from(commercialRefunds).where(inArray(commercialRefunds.state, ["requested", "processing", "review"])).orderBy(asc(commercialRefunds.createdAt)).limit(100);
   const tasks = await db.select({ id: commercialReservations.id, userId: commercialReservations.userId, taskKey: commercialReservations.taskKey, credits: commercialReservations.credits, rewrites: commercialReservations.rewrites, createdAt: commercialReservations.createdAt }).from(commercialReservations).where(and(eq(commercialReservations.state, "held"), sql`${commercialReservations.createdAt} < now() - interval '24 hours'`)).orderBy(asc(commercialReservations.createdAt)).limit(100);
   const frozen = await db.select({ userId: commercialWallets.userId }).from(commercialWallets).where(eq(commercialWallets.frozen, true)).limit(100);
@@ -37,6 +38,9 @@ export async function POST(request: NextRequest) {
     } catch { return NextResponse.json({ error: "Reservation changed; refresh before reviewing" }, { status: 409 }); }
   }
   if (body?.action !== "query" || !/^[0-9a-f-]{36}$/i.test(body?.orderId || "")) return NextResponse.json({ error: "Invalid action" }, { status: 400 });
-  await reconcilePaymentOrder(body.orderId);
+  const order = await db.query.paymentOrders.findFirst({ where: eq(paymentOrders.id, body.orderId) });
+  if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+  if (order.provider === "alipay") await reconcileAlipayOrder(order.id);
+  else await reconcilePaymentOrder(order.id);
   return NextResponse.json({ success: true });
 }

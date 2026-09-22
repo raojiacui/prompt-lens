@@ -488,7 +488,7 @@ export const creditLedger = pgTable(
 );
 
 // ============ 支付订单：积分包自动到账 ============
-export const paymentProviderEnum = pgEnum("payment_provider", ["creem", "xunhupay", "manual_qr"]);
+export const paymentProviderEnum = pgEnum("payment_provider", ["creem", "xunhupay", "alipay", "manual_qr"]);
 export const paymentOrderStatusEnum = pgEnum("payment_order_status", ["pending", "paid", "failed", "refunded", "cancelled"]);
 
 export const paymentOrders = pgTable(

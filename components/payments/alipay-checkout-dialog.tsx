@@ -5,8 +5,9 @@ import { useLocale } from "next-intl";
 import { CheckCircle2, RefreshCw, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 
-type Checkout = { orderId: string; qrImageUrl: string | null; mobilePaymentUrl: string | null; expiresAt: string; status: string };
-function httpsUrl(value: string | null) {
+type Checkout = { orderId: string; qrImageUrl: string | null; mobilePaymentUrl: string | null; paymentUrl?: string | null; expiresAt: string; status: string };
+function safePaymentUrl(value: string | null | undefined) {
+  if (value?.startsWith("/api/payments/orders/")) return value;
   try { const url = new URL(value || ""); return url.protocol === "https:" ? url.href : null; } catch { return null; }
 }
 
@@ -23,13 +24,11 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(Date.now());
-  const [mobile, setMobile] = useState(false);
   const [unpaidConfirmed, setUnpaidConfirmed] = useState(false);
   const onPaidRef = useRef(onPaid);
   onPaidRef.current = onPaid;
   useEffect(() => {
     dialog.current?.showModal();
-    setMobile(window.matchMedia("(max-width: 640px)").matches);
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
@@ -40,7 +39,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
     setError("");
     // Defer until effect setup completes so Strict Mode does not start two checkouts.
     const timer = setTimeout(() => {
-    fetch(existingOrderId ? `/api/payments/orders/${existingOrderId}` : "/api/payments/checkout", existingOrderId ? { cache: "no-store", signal: controller.signal } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ packageId: pack.id, provider: "xunhupay", method: "alipay", requestId }), signal: controller.signal })
+    fetch(existingOrderId ? `/api/payments/orders/${existingOrderId}` : "/api/payments/checkout", existingOrderId ? { cache: "no-store", signal: controller.signal } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ packageId: pack.id, provider: "alipay", method: "alipay", requestId }), signal: controller.signal })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.code === "CHECKOUT_NOT_OPEN" ? (zh ? "收款暂未开放" : "Checkout is not open yet") : (zh ? "暂时无法确认订单，请重试查询。" : "Unable to confirm the order. Retry to check."));
@@ -65,7 +64,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
         if (!controller.signal.aborted) {
           setError("");
           setCheckout((current) => current ? { ...current, status: data.status,
-            qrImageUrl: data.qrImageUrl ?? current.qrImageUrl, mobilePaymentUrl: data.mobilePaymentUrl ?? current.mobilePaymentUrl } : null);
+            qrImageUrl: data.qrImageUrl ?? current.qrImageUrl, mobilePaymentUrl: data.mobilePaymentUrl ?? current.mobilePaymentUrl, paymentUrl: data.paymentUrl ?? current.paymentUrl } : null);
         }
         if (data.status !== "pending") return;
       } catch {
@@ -84,8 +83,8 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
   const remaining = checkout ? Math.max(0, Math.ceil((Date.parse(checkout.expiresAt) - now) / 1000)) : 0;
   const paid = checkout?.status === "paid";
   const pending = checkout?.status === "pending";
-  const qr = checkout && httpsUrl(checkout.qrImageUrl);
-  const mobileUrl = checkout && httpsUrl(checkout.mobilePaymentUrl);
+  const qr = checkout && safePaymentUrl(checkout.qrImageUrl);
+  const paymentUrl = checkout && safePaymentUrl(checkout.paymentUrl || checkout.mobilePaymentUrl);
   return (
     <dialog ref={dialog} onCancel={onClose} aria-labelledby="alipay-checkout-title" className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-lg border border-border bg-background p-6 text-foreground shadow-xl backdrop:bg-black/50">
       <div className="flex items-start justify-between gap-4">
@@ -97,7 +96,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
       <div className="my-5 flex min-h-60 flex-col items-center justify-center gap-3 text-center" aria-live="polite">
         {loading && <Spinner />}
         {paid && <><CheckCircle2 className="h-12 w-12 text-green-700" /><p>{zh ? "支付成功，权益已到账" : "Payment received. Credits and rewrites added."}</p></>}
-        {pending && remaining > 0 && (mobile ? (mobileUrl ? <a href={mobileUrl} className="rounded-lg bg-[#1677ff] px-5 py-3 text-white">{zh ? "前往支付宝支付" : "Continue to Alipay"}</a> : <p>{zh ? "移动端付款链接暂不可用" : "Mobile payment link unavailable"}</p>) : qr ? <img src={qr} alt={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={224} height={224} className="h-56 w-56 max-w-full object-contain" onError={() => setError(zh ? "二维码加载失败，请稍后查询订单。" : "QR code could not load. Check the order later.")} /> : <p>{zh ? "正在确认付款链接，请勿另建订单。" : "Confirming payment link. Do not create another order."}</p>)}
+        {pending && remaining > 0 && (paymentUrl ? <a href={paymentUrl} className="rounded-lg bg-[#1677ff] px-5 py-3 text-white">{zh ? "前往支付宝支付" : "Continue to Alipay"}</a> : qr ? <img src={qr} alt={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={224} height={224} className="h-56 w-56 max-w-full object-contain" onError={() => setError(zh ? "二维码加载失败，请稍后查询订单。" : "QR code could not load. Check the order later.")} /> : <p>{zh ? "正在准备支付宝收银台，请勿另建订单。" : "Preparing Alipay checkout. Do not create another order."}</p>)}
         {pending && <p className="text-sm text-muted-foreground">{remaining ? (zh ? `付款码有效时间 ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` : `Payment code expires in ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`) : (zh ? "付款码已过期；如已付款，请等待到账确认。" : "Payment code expired. If paid, wait for confirmation.")}</p>}
         {checkout && !pending && !paid && <p>{zh ? ({ failed: "订单未完成", refunded: "订单已退款", cancelled: "订单已取消" }[checkout.status] || "订单状态待确认") : `Order ${checkout.status}`}</p>}
       </div>

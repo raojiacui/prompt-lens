@@ -3,11 +3,11 @@ import { commercialAcceptanceAllowed, commercialSalesReady } from "@/lib/billing
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
 
 const accepted = {
-  XUNHUPAY_ALIPAY_APP_ID: "test-app", XUNHUPAY_ALIPAY_APP_SECRET: "test-secret",
+  ALIPAY_APP_ID: "test-app", ALIPAY_PRIVATE_KEY: "test-private", ALIPAY_PUBLIC_KEY: "test-public",
   KIE_API_KEY: "test-only", FFMPEG_WORKER_URL: "https://worker.example.com", FFMPEG_WORKER_SECRET: "test-only",
   CRON_SECRET: "test-only", COMMERCIAL_SCHEDULER_ACCEPTED: "true", NEXT_PUBLIC_SITE_URL: "https://example.com",
   COMMERCIAL_CONSUMPTION_ENABLED: "true", COMMERCIAL_REWRITE_ENABLED: "true",
-  COMMERCIAL_MIGRATION_ACCEPTED: "0014", COMMERCIAL_PAYMENT_ACCEPTANCE: PRICING_VERSION,
+  COMMERCIAL_MIGRATION_ACCEPTED: "0015", COMMERCIAL_PAYMENT_ACCEPTANCE: PRICING_VERSION,
   COMMERCIAL_MODEL_ACCEPTANCE: PRICING_VERSION, COMMERCIAL_SALES_ENABLED: "true",
 };
 describe("Commercial launch guard", () => {

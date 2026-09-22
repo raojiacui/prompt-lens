@@ -15,7 +15,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       else if (path === "/api/payments/checkout") {
         if (route.request().method() === "POST") {
           requests++;
-          expect(route.request().postDataJSON()).toMatchObject({ packageId: "v6_trial_200", method: "alipay", provider: "xunhupay" });
+          expect(route.request().postDataJSON()).toMatchObject({ packageId: "v6_trial_200", method: "alipay", provider: "alipay" });
           body = checkout;
         } else body = { enabled: true };
       } else if (path.includes("/api/payments/orders/")) body = { ...checkout, status: paid ? "paid" : "pending" };

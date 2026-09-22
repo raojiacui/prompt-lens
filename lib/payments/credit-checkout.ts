@@ -5,9 +5,10 @@ import { getCreditPackage, type CreditPackage } from "@/lib/billing/credit-packa
 import { grantCommercialPurchase } from "@/lib/billing/commercial-wallet";
 import { COMMERCIAL_PACKAGES, PRICING_VERSION } from "@/lib/billing/pricing-v6";
 import { createXunhuPayHash as createHashPayload, verifyXunhuPayHash, assertXunhuPayOrderMatch } from "./xunhupay-signature";
+import { alipayConfig, assertAlipayOrderMatch, assertAlipayQueryMatch } from "./alipay";
 export { verifyXunhuPayHash } from "./xunhupay-signature";
 
-export type PaymentProvider = "creem" | "xunhupay" | "manual_qr";
+export type PaymentProvider = "creem" | "xunhupay" | "alipay" | "manual_qr";
 export type XunhuPayMethod = "wechat" | "alipay";
 export type ManualPaymentMethod = "wechat" | "alipay";
 
@@ -153,6 +154,38 @@ export async function createXunhuPayCreditCheckout(userId: string, packageId: st
   };
 }
 
+export async function createAlipayCreditCheckout(userId: string, packageId: string, requestId: string) {
+  const commercial = COMMERCIAL_PACKAGES.find((item) => item.id === packageId);
+  if (!commercial || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)) {
+    throw new Error("Invalid commercial checkout request");
+  }
+  const { appId } = alipayConfig();
+  const providerOrderId = `ali_${crypto.createHash("sha256").update(`${userId}:${requestId}`).digest("hex").slice(0, 28)}`;
+  const [created] = await db.insert(paymentOrders).values({
+    userId,
+    provider: "alipay",
+    providerOrderId,
+    packageId: commercial.id,
+    packageName: commercial.name,
+    credits: commercial.credits,
+    amountCents: commercial.priceCents,
+    currency: "cny",
+    status: "pending",
+    metadata: { method: "alipay", appId, pricingVersion: PRICING_VERSION, rewrites: commercial.rewrites },
+  }).onConflictDoNothing({ target: [paymentOrders.provider, paymentOrders.providerOrderId] }).returning();
+  const order = created || await db.query.paymentOrders.findFirst({
+    where: and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.providerOrderId, providerOrderId), eq(paymentOrders.userId, userId)),
+  });
+  if (!order || order.packageId !== packageId) throw new Error("Checkout request replay mismatch");
+  return {
+    provider: "alipay" as const,
+    orderId: order.id,
+    status: order.status,
+    paymentUrl: `/api/payments/orders/${order.id}/pay`,
+    expiresAt: new Date(order.createdAt.getTime() + 30 * 60 * 1000).toISOString(),
+  };
+}
+
 export async function createManualCreditPayment(userId: string, packageId: string, method: ManualPaymentMethod, input: { paymentReference?: string; contact?: string; note?: string } = {}) {
   const pkg = getCreditPackage(packageId);
   if (!pkg) throw new Error("积分包不存在");
@@ -196,6 +229,7 @@ export async function settlePaidCreditOrder(input: {
   checkoutId?: string | null;
   rawPayload?: Record<string, unknown>;
   metadata?: Record<string, unknown>;
+  verifiedAlipayQuery?: boolean;
 }) {
   const finalOrderId = input.finalOrderId || input.lookupOrderId;
   return db.transaction(async (tx) => {
@@ -206,6 +240,10 @@ export async function settlePaidCreditOrder(input: {
     if (!order) throw new Error(`Payment order not found: ${input.provider}/${input.lookupOrderId}`);
 
     if (input.provider === "xunhupay") assertXunhuPayOrderMatch(order, input.rawPayload || {});
+    if (input.provider === "alipay") {
+      if (input.verifiedAlipayQuery) assertAlipayQueryMatch(order, input.rawPayload || {});
+      else assertAlipayOrderMatch(order, input.rawPayload || {});
+    }
     if (order.status === "paid") return { order, granted: false };
     if (order.status !== "pending") throw new Error(`Payment order cannot be settled from ${order.status}`);
 
@@ -214,7 +252,7 @@ export async function settlePaidCreditOrder(input: {
       if (snapshot.pricingVersion !== PRICING_VERSION || !Number.isSafeInteger(snapshot.rewrites) || Number(snapshot.rewrites) < 0) {
         throw new Error("Missing commercial purchase snapshot");
       }
-      if (input.provider !== "xunhupay" || snapshot.method !== "alipay") throw new Error("Commercial purchases require Alipay");
+      if (!["xunhupay", "alipay"].includes(input.provider) || snapshot.method !== "alipay") throw new Error("Commercial purchases require Alipay");
       const granted = await grantCommercialPurchase(tx, {
         userId: order.userId, orderId: order.id, packageId: order.packageId,
         credits: order.credits, rewrites: Number(snapshot.rewrites),
