@@ -27,4 +27,29 @@ describe("Commercial launch guard", () => {
     expect(commercialAcceptanceAllowed("other")).toBe(false);
     vi.stubEnv("COMMERCIAL_MIGRATION_ACCEPTED", ""); expect(commercialAcceptanceAllowed("owner")).toBe(false);
   });
+  it("allows an explicitly allowlisted user to test sandbox checkout without production infrastructure", () => {
+    for (const key of ["KIE_API_KEY", "FFMPEG_WORKER_URL", "FFMPEG_WORKER_SECRET", "CRON_SECRET", "NEXT_PUBLIC_SITE_URL"]) vi.stubEnv(key, "");
+    vi.stubEnv("COMMERCIAL_SCHEDULER_ACCEPTED", "false");
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "false");
+    vi.stubEnv("COMMERCIAL_REWRITE_ENABLED", "false");
+    vi.stubEnv("COMMERCIAL_PAYMENT_ACCEPTANCE", "");
+    vi.stubEnv("COMMERCIAL_MODEL_ACCEPTANCE", "");
+    vi.stubEnv("COMMERCIAL_SALES_ENABLED", "false");
+    vi.stubEnv("COMMERCIAL_ACCEPTANCE_ENABLED", "true");
+    vi.stubEnv("COMMERCIAL_ACCEPTANCE_USER_IDS", "owner");
+    vi.stubEnv("ALIPAY_SANDBOX", "true");
+
+    expect(commercialSalesReady()).toBe(false);
+    expect(commercialAcceptanceAllowed("owner")).toBe(true);
+    expect(commercialAcceptanceAllowed("other")).toBe(false);
+    vi.stubEnv("ALIPAY_PUBLIC_KEY", "");
+    expect(commercialAcceptanceAllowed("owner")).toBe(false);
+  });
+  it("does not use the reduced sandbox readiness checks for a production gateway", () => {
+    vi.stubEnv("COMMERCIAL_ACCEPTANCE_ENABLED", "true");
+    vi.stubEnv("COMMERCIAL_ACCEPTANCE_USER_IDS", "owner");
+    vi.stubEnv("ALIPAY_SANDBOX", "false");
+    vi.stubEnv("CRON_SECRET", "");
+    expect(commercialAcceptanceAllowed("owner")).toBe(false);
+  });
 });
