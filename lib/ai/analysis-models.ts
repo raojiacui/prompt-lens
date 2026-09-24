@@ -1,8 +1,8 @@
 export const ANALYSIS_MODELS = [
   {
     id: "platform-gemini-2.5-flash",
-    provider: "openrouter",
-    providerModel: "google/gemini-2.5-flash",
+    provider: "kie",
+    providerModel: "gemini-2.5-flash",
     keySource: "platform",
   },
   {
@@ -35,4 +35,13 @@ export function resolveLegacyAnalysisProvider(provider: unknown): AnalysisModel 
     return resolveAnalysisModel(DEFAULT_ANALYSIS_MODEL_ID);
   }
   return null;
+}
+
+export function resolvePlatformAnalysisApiKey(
+  env: { KIE_AI_API_KEY?: string; KIE_API_KEY?: string } = process.env as {
+    KIE_AI_API_KEY?: string;
+    KIE_API_KEY?: string;
+  },
+): string | null {
+  return env.KIE_AI_API_KEY?.trim() || env.KIE_API_KEY?.trim() || null;
 }

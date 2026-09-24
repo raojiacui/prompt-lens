@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, analysisHistory, operationLogs } from "@/lib/db";
 import { analyzeFrames } from "@/lib/ai/analyzer";
-import { resolveAnalysisModel, resolveLegacyAnalysisProvider } from "@/lib/ai/analysis-models";
+import { resolveAnalysisModel, resolveLegacyAnalysisProvider, resolvePlatformAnalysisApiKey } from "@/lib/ai/analysis-models";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { defaultLocale, isLocale } from "@/i18n/config";
 import { assertTrialQuota, getUsableUserAnalyzeApiKeyProvider, trialQuotaResponse } from "@/lib/usage/trial-quota";
@@ -81,8 +81,9 @@ export async function POST(request: NextRequest) {
 
     const effectiveProvider = selectedModel.provider;
     let apiKeySource: "platform" | "user";
+    let apiKeyOverride: string | undefined;
 
-    if (effectiveProvider === "kie") {
+    if (selectedModel.keySource === "user") {
       const hasUserKieKey = await getUsableUserAnalyzeApiKeyProvider(session.user.id, "kie");
       if (!hasUserKieKey) {
         return NextResponse.json(
@@ -92,9 +93,17 @@ export async function POST(request: NextRequest) {
       }
       apiKeySource = "user";
     } else {
+      const platformKey = resolvePlatformAnalysisApiKey();
+      if (!platformKey) {
+        return NextResponse.json(
+          { error: "平台 KIE API Key 尚未配置", code: "PLATFORM_KIE_KEY_REQUIRED" },
+          { status: 503 },
+        );
+      }
       try {
         const quota = await assertTrialQuota(session.user.id);
         apiKeySource = quota.apiKeySource;
+        apiKeyOverride = platformKey;
       } catch (error) {
         const quotaError = trialQuotaResponse(error);
         if (quotaError) return NextResponse.json(quotaError, { status: 402 });
@@ -117,6 +126,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       provider: effectiveProvider,
       model: selectedModel.providerModel,
+      apiKeyOverride,
       frames,
       mode: analyzeMode as "single" | "batch",
       outputLanguage: resolvedLanguage,

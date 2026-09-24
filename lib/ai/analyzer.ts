@@ -66,6 +66,8 @@ export interface AnalyzeOptions {
   outputLanguage?: Locale;
   /** Provider-specific model selected by the trusted server route. */
   model?: string;
+  /** Platform key selected by the billing route; never accepted from clients. */
+  apiKeyOverride?: string;
 }
 
 export interface AnalyzeResult {
@@ -289,7 +291,7 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
   const model = options.model || (provider === "kie" ? API_CONFIGS.kie.model : API_CONFIGS.openrouter.model);
 
   // 获取用户 API Key
-  const apiKey = await getUserApiKey(userId, provider);
+  const apiKey = options.apiKeyOverride || await getUserApiKey(userId, provider);
 
   if (!apiKey) {
     const envKeyConfigured = ENV_API_KEYS[provider] ? " (env configured)" : "";

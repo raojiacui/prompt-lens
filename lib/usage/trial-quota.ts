@@ -116,7 +116,7 @@ export async function assertTrialQuota(userId: string) {
 export function trialQuotaResponse(error: unknown) {
   if (!(error instanceof TrialQuotaError)) return null;
   return {
-    error: "您的平台免费视频分析额度已经用完。每个账号最多可使用平台 OpenRouter Key 免费分析 2 次视频。配置自己的 KIE API Key 后可以继续使用。",
+    error: "您的平台免费视频分析额度已经用完。每个账号最多可使用平台 KIE Key 免费分析 2 次视频。配置自己的 KIE API Key 后可以继续使用。",
     code: "TRIAL_QUOTA_EXCEEDED",
     limit: error.limit,
     used: error.used,
