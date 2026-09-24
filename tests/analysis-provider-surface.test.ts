@@ -9,7 +9,7 @@ function read(relativePath: string) {
 describe("analysis provider surface", () => {
   it("shows the actual analysis models instead of provider names", () => {
     const dashboard = read("app/dashboard/page.tsx");
-    const modelOptions = [...dashboard.matchAll(/<option value="((?:platform|kie)-gemini-[^"]+)">/g)]
+    const modelOptions = [...dashboard.matchAll(/<option value="((?:platform|kie)-gemini-[^"]+)"[^>]*>/g)]
       .map((match) => match[1]);
 
     expect(modelOptions).toEqual([
@@ -35,5 +35,14 @@ describe("analysis provider surface", () => {
 
     expect(quota).not.toContain("analysisHistory");
     expect(quota).toContain("metadata}->>'apiKeySource' = 'platform'");
+  });
+
+  it("checks platform quota on the server even when the client requests the platform model", () => {
+    const route = read("app/api/analyze/route.ts");
+    const quota = read("lib/usage/trial-quota.ts");
+
+    expect(route).toContain("await assertTrialQuota(session.user.id)");
+    expect(route).toContain('status: 402');
+    expect(quota).toContain('code: "TRIAL_QUOTA_EXCEEDED"');
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useSession, signOut } from "@/lib/auth/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +20,14 @@ import { useRouter } from "next/navigation";
 import type { Locale } from "@/i18n/config";
 
 type Tab = "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings";
+
+type TrialAccess = {
+  limit: number;
+  used: number;
+  remaining: number | null;
+  isAdmin: boolean;
+  hasOwnApiKey: boolean;
+};
 
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
@@ -46,7 +54,29 @@ export default function DashboardPage() {
   const [progress, setProgress] = useState("");
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [trialAccess, setTrialAccess] = useState<TrialAccess | null>(null);
+  const [trialAccessLoading, setTrialAccessLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const refreshTrialAccess = useCallback(async () => {
+    if (!session?.user) return;
+    setTrialAccessLoading(true);
+    try {
+      const response = await fetch("/api/analyze/quota", { cache: "no-store" });
+      if (response.ok) setTrialAccess(await response.json());
+    } finally {
+      setTrialAccessLoading(false);
+    }
+  }, [session?.user]);
+
+  useEffect(() => {
+    if (activeTab === "analyze") void refreshTrialAccess();
+  }, [activeTab, refreshTrialAccess]);
+
+  const usesPlatformKey = analysisModel === "platform-gemini-3.5-flash";
+  const platformTrialExhausted = Boolean(
+    trialAccess && !trialAccess.isAdmin && trialAccess.remaining === 0,
+  );
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,6 +99,14 @@ export default function DashboardPage() {
 
   const handleAnalyze = async () => {
     if (!selectedFile) return;
+    if (usesPlatformKey && platformTrialExhausted) {
+      setResult(`Error: ${t(trialAccess?.hasOwnApiKey ? "analyze.trialExhaustedWithKey" : "analyze.trialExhausted")}`);
+      return;
+    }
+    if (!usesPlatformKey && trialAccess && !trialAccess.hasOwnApiKey) {
+      setResult(`Error: ${t("analyze.ownKeyRequired")}`);
+      return;
+    }
     setIsLoading(true);
     setProgress(t("analyze.extractingFrames"));
 
@@ -116,11 +154,15 @@ export default function DashboardPage() {
 
       const data = await analyzeRes.json().catch(() => null);
       if (!analyzeRes.ok) {
+        if (data?.code === "TRIAL_QUOTA_EXCEEDED") {
+          setTrialAccess((current) => current ? { ...current, used: data.used, remaining: 0 } : current);
+        }
         throw new Error(data?.error || t("analyze.analysisFailed"));
       }
       if (!data) throw new Error(t("analyze.analysisFailed"));
       setResult(data.prompt);
       setHistoryRefreshTrigger((prev) => prev + 1);
+      if (usesPlatformKey) void refreshTrialAccess();
     } catch (error: any) {
       setResult(`Error: ${error.message}`);
     } finally {
@@ -299,15 +341,31 @@ export default function DashboardPage() {
                   onChange={(e) => setAnalysisModel(e.target.value as typeof analysisModel)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="platform-gemini-3.5-flash">{t("analyze.modelPlatformFlash")}</option>
-                  <option value="kie-gemini-3.5-flash">{t("analyze.modelKieFlash")}</option>
-                  <option value="kie-gemini-2.5-pro">{t("analyze.modelKiePro")}</option>
+                  <option value="platform-gemini-3.5-flash" disabled={platformTrialExhausted}>{t("analyze.modelPlatformFlash")}</option>
+                  <option value="kie-gemini-3.5-flash" disabled={trialAccess ? !trialAccess.hasOwnApiKey : false}>{t("analyze.modelKieFlash")}</option>
+                  <option value="kie-gemini-2.5-pro" disabled={trialAccess ? !trialAccess.hasOwnApiKey : false}>{t("analyze.modelKiePro")}</option>
                 </select>
+                {!trialAccessLoading && trialAccess && (
+                  <div className={`mt-2 flex flex-wrap items-center justify-between gap-2 text-sm ${platformTrialExhausted ? "text-[#C0453A]" : "text-[#6B6860]"}`}>
+                    <span>
+                      {trialAccess.isAdmin
+                        ? t("analyze.trialUnlimited")
+                        : platformTrialExhausted
+                          ? t(trialAccess.hasOwnApiKey ? "analyze.trialExhaustedWithKey" : "analyze.trialExhausted")
+                          : t("analyze.trialRemaining", { remaining: trialAccess.remaining, limit: trialAccess.limit })}
+                    </span>
+                    {platformTrialExhausted && !trialAccess.hasOwnApiKey && (
+                      <Button type="button" variant="outline" size="sm" onClick={() => setActiveTab("settings")}>
+                        {t("analyze.configureKieKey")}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
 
               <Button
                 onClick={handleAnalyze}
-                disabled={!selectedFile || isLoading}
+                disabled={!selectedFile || isLoading || trialAccessLoading || (usesPlatformKey && platformTrialExhausted) || (!usesPlatformKey && Boolean(trialAccess && !trialAccess.hasOwnApiKey))}
                 className="w-full h-12 md:h-12 bg-[#D97757] hover:bg-[#C96848] text-white rounded-xl font-medium text-base shadow-sm hover:shadow-md transition-all min-h-[48px]"
               >
                 {isLoading ? (
