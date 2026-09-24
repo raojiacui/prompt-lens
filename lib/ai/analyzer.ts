@@ -6,6 +6,7 @@ import { decodeAnalyzeApiKey } from "@/lib/usage/trial-quota";
 import { ANALYSIS_PROMPTS, extractCorePrompt } from "@/lib/ai/prompts";
 import { describeAnalysisProviderError } from "@/lib/ai/provider-error";
 import { parseKieChatResponse, summarizeKieChatResponse } from "@/lib/ai/kie-chat-response";
+import { getKieAnalysisPath } from "@/lib/ai/analysis-models";
 import type { Locale } from "@/i18n/config";
 import { defaultLocale } from "@/i18n/config";
 
@@ -44,7 +45,7 @@ const API_CONFIGS = {
     model: "google/gemini-2.5-flash",
   },
   kie: {
-    model: process.env.KIE_GEMINI_ANALYSIS_MODEL || "gemini-2.5-flash",
+    model: "gemini-3-5-flash-thinking",
   },
 };
 
@@ -230,18 +231,14 @@ async function callKieGeminiApi(
     include_thoughts: false,
   };
 
-  const configuredModel = process.env.KIE_GEMINI_ANALYSIS_MODEL || "gemini-2.5-flash";
-  const configuredUrl = process.env.KIE_GEMINI_ANALYSIS_URL;
-  const url = configuredUrl && model === configuredModel
-    ? configuredUrl
-    : `${KIE_BASE_URL}/${model}/v1/chat/completions`;
+  const url = `${KIE_BASE_URL}${getKieAnalysisPath(model)}`;
   const response = await axios.post(url, payload, {
     headers,
     timeout: 180000,
     ...(axiosProxy ? { proxy: axiosProxy } : {}),
   });
 
-  console.log("[KIE Gemini] Response:", summarizeKieChatResponse(response.data));
+  console.log("[KIE Gemini] Response:", { model, channel: getKieAnalysisPath(model), ...summarizeKieChatResponse(response.data) });
   return parseKieChatResponse(response.data);
 }
 /**
@@ -356,7 +353,11 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
       corePrompt,
     };
   } catch (error: unknown) {
-    console.error("AI Analysis error:", error);
+    console.error("AI Analysis error:", {
+      provider,
+      model,
+      message: error instanceof Error ? error.message : "Analysis failed",
+    });
     return {
       success: false,
       error: describeAnalysisProviderError(provider, error, outputLanguage),
