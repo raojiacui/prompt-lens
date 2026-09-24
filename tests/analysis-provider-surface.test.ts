@@ -7,12 +7,16 @@ function read(relativePath: string) {
 }
 
 describe("analysis provider surface", () => {
-  it("shows only platform OpenRouter and user KIE on the analysis page", () => {
+  it("shows the actual analysis models instead of provider names", () => {
     const dashboard = read("app/dashboard/page.tsx");
-    const providerOptions = [...dashboard.matchAll(/<option value="(openrouter|kie|zhipu|gemini)">/g)]
+    const modelOptions = [...dashboard.matchAll(/<option value="((?:platform|kie)-gemini-[^"]+)">/g)]
       .map((match) => match[1]);
 
-    expect(providerOptions).toEqual(["openrouter", "kie"]);
+    expect(modelOptions).toEqual([
+      "platform-gemini-2.5-flash",
+      "kie-gemini-2.5-flash",
+      "kie-gemini-2.5-pro",
+    ]);
   });
 
   it("only lets users configure KIE in settings", () => {
@@ -20,6 +24,8 @@ describe("analysis provider surface", () => {
     const route = read("app/api/settings/api-key/route.ts");
 
     expect(settings).toContain('body: JSON.stringify({ provider: "kie"');
+    expect(settings).toContain('t("kieName")');
+    expect(settings).not.toContain('t("openrouterName")');
     expect(settings).not.toMatch(/<option value="(openrouter|zhipu|gemini)">/);
     expect(route).toContain('if (provider !== "kie")');
   });
