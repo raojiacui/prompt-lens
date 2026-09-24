@@ -41,8 +41,8 @@ export default function DashboardPage() {
   const [frameCount, setFrameCount] = useState(8);
   const [analyzeMode, setAnalyzeMode] = useState<"single" | "batch">("single");
   const [analysisModel, setAnalysisModel] = useState<
-    "platform-gemini-2.5-flash" | "kie-gemini-2.5-flash" | "kie-gemini-2.5-pro"
-  >("platform-gemini-2.5-flash");
+    "platform-gemini-3.5-flash" | "kie-gemini-3.5-flash" | "kie-gemini-2.5-pro"
+  >("platform-gemini-3.5-flash");
   const [progress, setProgress] = useState("");
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -299,8 +299,8 @@ export default function DashboardPage() {
                   onChange={(e) => setAnalysisModel(e.target.value as typeof analysisModel)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="platform-gemini-2.5-flash">{t("analyze.modelPlatformFlash")}</option>
-                  <option value="kie-gemini-2.5-flash">{t("analyze.modelKieFlash")}</option>
+                  <option value="platform-gemini-3.5-flash">{t("analyze.modelPlatformFlash")}</option>
+                  <option value="kie-gemini-3.5-flash">{t("analyze.modelKieFlash")}</option>
                   <option value="kie-gemini-2.5-pro">{t("analyze.modelKiePro")}</option>
                 </select>
               </div>
