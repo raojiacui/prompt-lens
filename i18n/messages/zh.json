@@ -78,6 +78,7 @@
     "providerZhipu": "智谱AI (glm-4v)",
     "providerGemini": "Google Gemini",
     "providerOpenrouter": "OpenRouter",
+    "providerKie": "KIE（使用已保存的 Key）",
     "startAnalyze": "开始分析",
     "analyzing": "分析中...",
     "processing": "处理中...",

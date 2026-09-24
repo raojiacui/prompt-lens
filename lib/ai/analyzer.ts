@@ -4,6 +4,7 @@ import { userApiKeys } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { decodeAnalyzeApiKey } from "@/lib/usage/trial-quota";
 import { ANALYSIS_PROMPTS, extractCorePrompt } from "@/lib/ai/prompts";
+import { describeAnalysisProviderError } from "@/lib/ai/provider-error";
 import type { Locale } from "@/i18n/config";
 import { defaultLocale } from "@/i18n/config";
 
@@ -339,11 +340,11 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
       prompt: result,
       corePrompt,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Analysis error:", error);
     return {
       success: false,
-      error: error.message || "Analysis failed",
+      error: describeAnalysisProviderError(provider, error, outputLanguage),
     };
   }
 }

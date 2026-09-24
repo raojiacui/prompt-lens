@@ -78,6 +78,7 @@
     "providerZhipu": "ZhipuAI (glm-4v)",
     "providerGemini": "Google Gemini",
     "providerOpenrouter": "OpenRouter",
+    "providerKie": "KIE (saved API key)",
     "startAnalyze": "Start Analysis",
     "analyzing": "Analyzing...",
     "processing": "Processing...",

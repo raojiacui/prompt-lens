@@ -56,9 +56,14 @@ export async function getUsableUserAnalyzeApiKeyProvider(
   userId: string,
   preferredProvider?: AnalyzeProvider,
 ): Promise<AnalyzeProvider | null> {
+  if (preferredProvider) {
+    return await hasUsableUserAnalyzeApiKey(userId, preferredProvider)
+      ? preferredProvider
+      : null;
+  }
+
   const providers = [
-    ...(preferredProvider ? [preferredProvider] : []),
-    ...ANALYZE_PROVIDERS.filter((provider) => provider !== preferredProvider),
+    ...ANALYZE_PROVIDERS,
   ];
 
   for (const provider of providers) {
