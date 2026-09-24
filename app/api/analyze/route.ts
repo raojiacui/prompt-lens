@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, analysisHistory, operationLogs } from "@/lib/db";
-import { analyzeFrames, ApiProvider } from "@/lib/ai/analyzer";
+import { analyzeFrames } from "@/lib/ai/analyzer";
+import { resolveAnalysisModel, resolveLegacyAnalysisProvider } from "@/lib/ai/analysis-models";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { defaultLocale, isLocale } from "@/i18n/config";
 import { assertTrialQuota, getUsableUserAnalyzeApiKeyProvider, trialQuotaResponse } from "@/lib/usage/trial-quota";
@@ -42,7 +43,8 @@ export async function POST(request: NextRequest) {
       frameUrls,
       frames: clientFrames,
       analyzeMode = "single",
-      provider = "openrouter",
+      analysisModel,
+      provider,
       outputLanguage,
     } = body;
 
@@ -70,17 +72,34 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
-    const requestedProvider = provider as ApiProvider;
-    const userKeyProvider = await getUsableUserAnalyzeApiKeyProvider(session.user.id, requestedProvider);
-    const effectiveProvider = userKeyProvider || requestedProvider;
+    const selectedModel = analysisModel
+      ? resolveAnalysisModel(analysisModel)
+      : resolveLegacyAnalysisProvider(provider);
+    if (!selectedModel) {
+      return NextResponse.json({ error: "不支持的视频分析模型" }, { status: 400 });
+    }
 
-    let quota: Awaited<ReturnType<typeof assertTrialQuota>>;
-    try {
-      quota = await assertTrialQuota(session.user.id, effectiveProvider);
-    } catch (error) {
-      const quotaError = trialQuotaResponse(error);
-      if (quotaError) return NextResponse.json(quotaError, { status: 402 });
-      throw error;
+    const effectiveProvider = selectedModel.provider;
+    let apiKeySource: "platform" | "user";
+
+    if (effectiveProvider === "kie") {
+      const hasUserKieKey = await getUsableUserAnalyzeApiKeyProvider(session.user.id, "kie");
+      if (!hasUserKieKey) {
+        return NextResponse.json(
+          { error: "请先在设置中保存自己的 KIE API Key", code: "KIE_KEY_REQUIRED" },
+          { status: 400 },
+        );
+      }
+      apiKeySource = "user";
+    } else {
+      try {
+        const quota = await assertTrialQuota(session.user.id);
+        apiKeySource = quota.apiKeySource;
+      } catch (error) {
+        const quotaError = trialQuotaResponse(error);
+        if (quotaError) return NextResponse.json(quotaError, { status: 402 });
+        throw error;
+      }
     }
 
     // 记录分析开始
@@ -88,7 +107,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       action: "analysis.start",
       resourceType: mediaType,
-      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: effectiveProvider, requestedProvider, apiKeySource: quota.apiKeySource },
+      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: effectiveProvider, model: selectedModel.providerModel, analysisModel: selectedModel.id, apiKeySource },
     });
 
     console.log("Calling AI analysis with", frames.length, "frames...");
@@ -97,6 +116,7 @@ export async function POST(request: NextRequest) {
     const result = await analyzeFrames({
       userId: session.user.id,
       provider: effectiveProvider,
+      model: selectedModel.providerModel,
       frames,
       mode: analyzeMode as "single" | "batch",
       outputLanguage: resolvedLanguage,
@@ -131,7 +151,7 @@ export async function POST(request: NextRequest) {
       action: "analysis.complete",
       resourceType: mediaType,
       resourceId: historyRecord[0].id,
-      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: effectiveProvider, requestedProvider, apiKeySource: quota.apiKeySource },
+      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: effectiveProvider, model: selectedModel.providerModel, analysisModel: selectedModel.id, apiKeySource },
     });
 
     return NextResponse.json({

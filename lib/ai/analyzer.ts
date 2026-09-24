@@ -4,12 +4,14 @@ import { userApiKeys } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { decodeAnalyzeApiKey } from "@/lib/usage/trial-quota";
 import { ANALYSIS_PROMPTS, extractCorePrompt } from "@/lib/ai/prompts";
+import { describeAnalysisProviderError } from "@/lib/ai/provider-error";
 import type { Locale } from "@/i18n/config";
 import { defaultLocale } from "@/i18n/config";
 
 // 代理配置（仅本地开发环境使用）
 const isLocalDev = process.env.NODE_ENV === "development";
 const proxyUrl = isLocalDev ? (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897") : undefined;
+const KIE_BASE_URL = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
 
 let axiosProxy: { host: string; port: number; protocol: string } | undefined = undefined;
 if (proxyUrl) {
@@ -38,10 +40,9 @@ const API_CONFIGS = {
   },
   openrouter: {
     url: "https://openrouter.ai/api/v1/chat/completions",
-    model: "google/gemini-2.5-pro",
+    model: "google/gemini-2.5-flash",
   },
   kie: {
-    url: process.env.KIE_GEMINI_ANALYSIS_URL || "https://api.kie.ai/gemini-2.5-flash/v1/chat/completions",
     model: process.env.KIE_GEMINI_ANALYSIS_MODEL || "gemini-2.5-flash",
   },
 };
@@ -63,6 +64,8 @@ export interface AnalyzeOptions {
   mode: "single" | "batch";
   /** AI 输出语言（默认 zh，影响生成结果的文本语言） */
   outputLanguage?: Locale;
+  /** Provider-specific model selected by the trusted server route. */
+  model?: string;
 }
 
 export interface AnalyzeResult {
@@ -79,6 +82,9 @@ async function getUserApiKey(
   userId: string,
   provider: ApiProvider
 ): Promise<string | null> {
+  // OpenRouter is the platform-funded path. Never consume a user's saved key.
+  if (provider === "openrouter") return ENV_API_KEYS.openrouter;
+
   const records = await db.query.userApiKeys.findMany({
     where: and(
       eq(userApiKeys.userId, userId),
@@ -96,7 +102,8 @@ async function getUserApiKey(
     }
   }
 
-  const envKey = ENV_API_KEYS[provider];
+  // KIE is BYOK-only for analysis. Platform KIE credentials must not be used here.
+  const envKey = provider === "kie" ? null : ENV_API_KEYS[provider];
   if (envKey) {
     console.log(`[Analyzer] Using env API key for ${provider}`);
     return envKey;
@@ -204,7 +211,8 @@ async function loadGeminiImage(image: string) {
  */
 async function callKieGeminiApi(
   apiKey: string,
-  messages: any[]
+  messages: any[],
+  model: string,
 ): Promise<string> {
   const headers = {
     Authorization: `Bearer ${apiKey}`,
@@ -212,12 +220,17 @@ async function callKieGeminiApi(
   };
 
   const payload = {
-    model: API_CONFIGS.kie.model,
+    model,
     messages,
     max_tokens: 4096,
   };
 
-  const response = await axios.post(API_CONFIGS.kie.url, payload, {
+  const configuredModel = process.env.KIE_GEMINI_ANALYSIS_MODEL || "gemini-2.5-flash";
+  const configuredUrl = process.env.KIE_GEMINI_ANALYSIS_URL;
+  const url = configuredUrl && model === configuredModel
+    ? configuredUrl
+    : `${KIE_BASE_URL}/${model}/v1/chat/completions`;
+  const response = await axios.post(url, payload, {
     headers,
     timeout: 180000,
     ...(axiosProxy ? { proxy: axiosProxy } : {}),
@@ -235,7 +248,8 @@ async function callKieGeminiApi(
  */
 async function callOpenRouterApi(
   apiKey: string,
-  messages: any[]
+  messages: any[],
+  model: string,
 ): Promise<string> {
   const headers = {
     Authorization: `Bearer ${apiKey}`,
@@ -245,12 +259,12 @@ async function callOpenRouterApi(
   };
 
   const payload = {
-    model: API_CONFIGS.openrouter.model,
+    model,
     messages: messages,
     max_tokens: 4096,
   };
 
-  console.log("[OpenRouter] Request:", { url: API_CONFIGS.openrouter.url, model: API_CONFIGS.openrouter.model, keyPrefix: apiKey.substring(0, 10) });
+  console.log("[OpenRouter] Request:", { url: API_CONFIGS.openrouter.url, model, keyPrefix: apiKey.substring(0, 10) });
 
   const response = await axios.post(API_CONFIGS.openrouter.url, payload, {
     headers,
@@ -272,6 +286,7 @@ async function callOpenRouterApi(
  */
 export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeResult> {
   const { userId, provider = "openrouter", frames, mode, outputLanguage = defaultLocale } = options;
+  const model = options.model || (provider === "kie" ? API_CONFIGS.kie.model : API_CONFIGS.openrouter.model);
 
   // 获取用户 API Key
   const apiKey = await getUserApiKey(userId, provider);
@@ -324,10 +339,10 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
       ];
 
       if (provider === "kie") {
-        result = await callKieGeminiApi(apiKey, messages);
+        result = await callKieGeminiApi(apiKey, messages, model);
       } else {
         // OpenRouter (使用类似智谱的格式)
-        result = await callOpenRouterApi(apiKey, messages);
+        result = await callOpenRouterApi(apiKey, messages, model);
       }
     }
 
@@ -339,11 +354,11 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
       prompt: result,
       corePrompt,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("AI Analysis error:", error);
     return {
       success: false,
-      error: error.message || "Analysis failed",
+      error: describeAnalysisProviderError(provider, error, outputLanguage),
     };
   }
 }

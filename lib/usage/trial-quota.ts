@@ -1,10 +1,10 @@
 import { and, count, desc, eq, sql } from "drizzle-orm";
-import { analysisHistory, db, operationLogs, user, userApiKeys } from "@/lib/db";
+import { db, operationLogs, user, userApiKeys } from "@/lib/db";
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
 type AnalyzeProvider = "zhipu" | "gemini" | "openrouter" | "kie";
-const ANALYZE_PROVIDERS: AnalyzeProvider[] = ["openrouter", "zhipu", "gemini", "kie"];
 export type AnalyzeApiKeySource = "user" | "platform";
+type UserRole = "user" | "admin";
 
 const DEFAULT_TRIAL_LIMIT = 2;
 
@@ -54,18 +54,9 @@ async function hasUsableUserAnalyzeApiKey(userId: string, provider: AnalyzeProvi
 
 export async function getUsableUserAnalyzeApiKeyProvider(
   userId: string,
-  preferredProvider?: AnalyzeProvider,
+  provider: AnalyzeProvider,
 ): Promise<AnalyzeProvider | null> {
-  const providers = [
-    ...(preferredProvider ? [preferredProvider] : []),
-    ...ANALYZE_PROVIDERS.filter((provider) => provider !== preferredProvider),
-  ];
-
-  for (const provider of providers) {
-    if (await hasUsableUserAnalyzeApiKey(userId, provider)) return provider;
-  }
-
-  return null;
+  return await hasUsableUserAnalyzeApiKey(userId, provider) ? provider : null;
 }
 
 async function getPlatformAnalyzeUsage(userId: string) {
@@ -80,19 +71,11 @@ async function getPlatformAnalyzeUsage(userId: string) {
       ),
     );
 
-  const historyRows = await db
-    .select({ count: count() })
-    .from(analysisHistory)
-    .where(eq(analysisHistory.userId, userId));
-
-  return Math.max(platformLogRows[0]?.count || 0, historyRows[0]?.count || 0);
+  return platformLogRows[0]?.count || 0;
 }
 
-export async function getUserTrialUsage(userId: string, provider?: AnalyzeProvider) {
-  const limit = getTrialLimit();
-  const currentUser = await db.query.user.findFirst({ where: eq(user.id, userId) });
-
-  if (currentUser?.role === "admin") {
+export function resolveTrialAccess(role: UserRole, used: number, limit: number) {
+  if (role === "admin") {
     return {
       limit,
       used: 0,
@@ -103,19 +86,6 @@ export async function getUserTrialUsage(userId: string, provider?: AnalyzeProvid
     };
   }
 
-  const hasOwnApiKey = Boolean(await getUsableUserAnalyzeApiKeyProvider(userId, provider));
-  if (hasOwnApiKey) {
-    return {
-      limit,
-      used: 0,
-      remaining: Number.POSITIVE_INFINITY,
-      isAdmin: false,
-      hasOwnApiKey: true,
-      apiKeySource: "user" as AnalyzeApiKeySource,
-    };
-  }
-
-  const used = await getPlatformAnalyzeUsage(userId);
   return {
     limit,
     used,
@@ -126,9 +96,18 @@ export async function getUserTrialUsage(userId: string, provider?: AnalyzeProvid
   };
 }
 
-export async function assertTrialQuota(userId: string, provider?: AnalyzeProvider) {
-  const quota = await getUserTrialUsage(userId, provider);
-  if (!quota.isAdmin && !quota.hasOwnApiKey && quota.used >= quota.limit) {
+export async function getUserTrialUsage(userId: string) {
+  const limit = getTrialLimit();
+  const currentUser = await db.query.user.findFirst({ where: eq(user.id, userId) });
+  if (currentUser?.role === "admin") return resolveTrialAccess("admin", 0, limit);
+
+  const used = await getPlatformAnalyzeUsage(userId);
+  return resolveTrialAccess("user", used, limit);
+}
+
+export async function assertTrialQuota(userId: string) {
+  const quota = await getUserTrialUsage(userId);
+  if (!quota.isAdmin && quota.used >= quota.limit) {
     throw new TrialQuotaError(quota.limit, quota.used);
   }
   return quota;
@@ -137,7 +116,7 @@ export async function assertTrialQuota(userId: string, provider?: AnalyzeProvide
 export function trialQuotaResponse(error: unknown) {
   if (!(error instanceof TrialQuotaError)) return null;
   return {
-    error: "您的平台免费视频分析额度已经用完。每个账号最多可使用平台 API Key 免费分析 2 次视频。配置自己的 API Key 后可以继续使用。",
+    error: "您的平台免费视频分析额度已经用完。每个账号最多可使用平台 OpenRouter Key 免费分析 2 次视频。配置自己的 KIE API Key 后可以继续使用。",
     code: "TRIAL_QUOTA_EXCEEDED",
     limit: error.limit,
     used: error.used,

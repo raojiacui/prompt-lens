@@ -40,7 +40,9 @@ export default function DashboardPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [frameCount, setFrameCount] = useState(8);
   const [analyzeMode, setAnalyzeMode] = useState<"single" | "batch">("single");
-  const [provider, setProvider] = useState<"zhipu" | "gemini" | "openrouter">("openrouter");
+  const [analysisModel, setAnalysisModel] = useState<
+    "platform-gemini-2.5-flash" | "kie-gemini-2.5-flash" | "kie-gemini-2.5-pro"
+  >("platform-gemini-2.5-flash");
   const [progress, setProgress] = useState("");
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -107,7 +109,7 @@ export default function DashboardPage() {
           mediaType,
           frameUrls,
           analyzeMode,
-          provider,
+          analysisModel,
           outputLanguage: locale,
         }),
       });
@@ -291,15 +293,15 @@ export default function DashboardPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-[#141413] block mb-2">{t("analyze.provider")}</label>
+                <label className="text-sm font-medium text-[#141413] block mb-2">{t("analyze.model")}</label>
                 <select
-                  value={provider}
-                  onChange={(e) => setProvider(e.target.value as any)}
+                  value={analysisModel}
+                  onChange={(e) => setAnalysisModel(e.target.value as typeof analysisModel)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="zhipu">{t("analyze.providerZhipu")}</option>
-                  <option value="gemini">{t("analyze.providerGemini")}</option>
-                  <option value="openrouter">{t("analyze.providerOpenrouter")}</option>
+                  <option value="platform-gemini-2.5-flash">{t("analyze.modelPlatformFlash")}</option>
+                  <option value="kie-gemini-2.5-flash">{t("analyze.modelKieFlash")}</option>
+                  <option value="kie-gemini-2.5-pro">{t("analyze.modelKiePro")}</option>
                 </select>
               </div>
 
