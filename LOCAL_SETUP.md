@@ -13,7 +13,7 @@
 - [三、配置数据库（二选一）](#三配置数据库二选一)
   - [方案 A：Docker 本地 PostgreSQL（推荐，最快）](#方案-adocker-本地-postgresql推荐最快)
   - [方案 B：Supabase 云数据库（免装 Docker）](#方案-bsupabase-云数据库免装-docker)
-- [四、配置 Backblaze B2 存储（免费 10GB）](#四配置-backblaze-b2-存储免费-10gb)
+- [四、配置 Cloudflare R2 存储](#四配置-cloudflare-r2-存储)
 - [五、配置 Google 登录（可跳过）](#五配置-google-登录可跳过)
 - [六、配置 AI API Key（至少选一个）](#六配置-ai-api-key至少选一个)
 - [七、填写环境变量](#七填写环境变量)
@@ -173,48 +173,37 @@ docker volume rm prompt-lens-pgdata
 
 ---
 
-## 四、配置 Backblaze B2 存储（免费 10GB）
+## 四、配置 Cloudflare R2 存储
 
-B2 用来存用户上传的视频和图片，免费 10GB 够个人用很久。
+R2 用来存储用户上传的视频、图片和分析帧。
 
-### 1. 注册 Backblaze
+### 1. 创建 Bucket
 
-打开 https://www.backblaze.com/b2/cloud-storage.html 注册账号（邮箱注册即可）。
+1. 登录 [Cloudflare Dashboard](https://dash.cloudflare.com/)
+2. 进入 **R2 Object Storage**，点击 **Create bucket**
+3. 输入 bucket 名称，例如 `prompt-lens`，其余保持默认
+4. 记下 Cloudflare **Account ID** 和 bucket 名称
 
-### 2. 创建 Bucket
+### 2. 创建 R2 API Token
 
-1. 登录后进入 **B2 Cloud Storage** → **Buckets**
-2. 点 **Create a Bucket**
-   - **Bucket Unique Name**：自己起个名，如 `prompt-analyzer-你的名字`
-   - **Files in Bucket are**: ⚠️ **一定要选 Private**（不要选 Public）
-   - 其他默认，点 **Create a Bucket**
+1. 在 R2 页面点击 **Manage R2 API Tokens**
+2. 创建具备 **Object Read & Write** 权限的 token，并限定到刚创建的 bucket
+3. 立即保存 **Access Key ID** 和 **Secret Access Key**，Secret 只显示一次
+4. S3 Endpoint 通常为 `https://<ACCOUNT_ID>.r2.cloudflarestorage.com`
 
-3. 记下两个信息：
-   - **Bucket name**
-   - **Endpoint**：形如 `s3.us-west-000.backblazeb2.com`（其中 `us-west-000` 就是区域）
+### 3. 配置公开访问地址
 
-### 3. 创建 Application Key
+AI 服务需要通过 URL 读取媒体文件。请在 bucket 的 **Settings** 中绑定自定义域名，或启用用于开发的 `r2.dev` 公共地址，然后把地址填入 `R2_PUBLIC_URL`，末尾不要加 `/`。
 
-1. 左侧菜单点 **App Keys** → **Add a New Application Key**
-2. 填写：
-   - **Name**：随便，如 `prompt-lens`
-   - **Allow access to Bucket(s)**：选你刚才创建的 bucket
-   - 其他默认
-3. 点 **Create New Key**
-4. ⚠️ **立即复制保存**：
-   - **keyID**
-   - **applicationKey**（只显示这一次！如果丢了就再创建一个新的）
+### 4. 配置浏览器直传 CORS
 
-### 4. 拼接 B2_PUBLIC_URL
+填写好 `.env.local` 后执行：
 
-格式是：
-```
-https://f{数字}.backblazeb2.com/file/{你的-bucket-name}
+```bash
+node scripts/setup-r2-cors.mjs
 ```
 
-那个 `{数字}` 在哪看？方法：
-- 进入你的 bucket → 随便上传一个文件 → 点文件详情 → 看 "Friendly URL"，形如 `https://f001.backblazeb2.com/file/your-bucket/file.mp4`
-- 前面 `https://f001.backblazeb2.com/file/your-bucket` 就是你的 `B2_PUBLIC_URL`
+脚本会允许线上域名和 `http://localhost:3000` 使用签名 URL 直传 R2。如域名不同，请先修改脚本中的 `ALLOWED_ORIGINS`。
 
 ---
 
@@ -342,12 +331,13 @@ TRUSTED_ORIGINS=http://localhost:3000
 NEXT_PUBLIC_GOOGLE_CLIENT_ID=你的-google-client-id
 GOOGLE_CLIENT_SECRET=你的-google-client-secret
 
-# ===== Backblaze B2（第四步拿到的）=====
-B2_REGION=us-west-000
-B2_ACCESS_KEY_ID=你的-keyID
-B2_SECRET_ACCESS_KEY=你的-applicationKey
-B2_BUCKET_NAME=你的-bucket-name
-B2_PUBLIC_URL=https://f001.backblazeb2.com/file/你的-bucket-name
+# ===== Cloudflare R2（第四步拿到的）=====
+R2_ACCOUNT_ID=你的-cloudflare-account-id
+R2_ENDPOINT=https://你的-account-id.r2.cloudflarestorage.com
+R2_ACCESS_KEY_ID=你的-r2-access-key-id
+R2_SECRET_ACCESS_KEY=你的-r2-secret-access-key
+R2_BUCKET_NAME=你的-r2-bucket-name
+R2_PUBLIC_URL=https://你的-r2-公开域名
 
 # ===== AI 提供商（第六步，至少配一个）=====
 ZHIPU_API_KEY=你的-智谱-key
@@ -422,9 +412,9 @@ pnpm dev
 
 ### Q3: 上传视频报 403 / 404
 
-- 检查 B2 配置：bucket 必须是 **Private**（不是 Public）
-- 检查 `B2_ACCESS_KEY_ID` / `B2_SECRET_ACCESS_KEY` 是否正确
-- 检查 `B2_PUBLIC_URL` 格式：`https://f{数字}.backblazeb2.com/file/{bucket-name}`
+- 检查 `R2_ACCOUNT_ID`、`R2_ACCESS_KEY_ID` 和 `R2_SECRET_ACCESS_KEY` 是否正确
+- 检查 `R2_PUBLIC_URL` 是否为 bucket 的自定义域名或 `r2.dev` 公共地址
+- 运行 `node scripts/setup-r2-cors.mjs`，确认当前站点域名已加入 CORS
 
 ### Q4: Google 登录跳转报错 "redirect_uri_mismatch"
 

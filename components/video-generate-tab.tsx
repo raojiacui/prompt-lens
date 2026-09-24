@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
+import { uploadMediaToR2 } from "@/lib/r2-client";
 import { useTranslations } from "next-intl";
 
 export function VideoGenerateTab() {
@@ -149,7 +149,7 @@ export function VideoGenerateTab() {
       if (referenceImages.length > 0) {
         for (let i = 0; i < referenceImages.length; i++) {
           setStatus(t("uploadingRef", { current: i + 1, total: referenceImages.length }));
-          const uploadData = await uploadMediaToBlob(referenceImages[i], (percentage) => {
+          const uploadData = await uploadMediaToR2(referenceImages[i], (percentage) => {
             setStatus(t("uploadingRefProgress", { current: i + 1, total: referenceImages.length, percent: Math.round(percentage) }));
           });
           referenceImageUrls.push(uploadData.url);

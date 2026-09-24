@@ -13,7 +13,7 @@ import { VideoEditTab } from "@/components/video-edit-tab";
 import { VideoGenerateTab } from "@/components/video-generate-tab";
 import { FloatingChat } from "@/components/floating-chat";
 import { createImageAnalysisFrame, extractVideoFrameFiles } from "@/lib/utils/frame-extractor";
-import { uploadAnalysisFrames, uploadMediaToBlob } from "@/lib/vercel-blob-client";
+import { uploadAnalysisFrames, uploadMediaToR2 } from "@/lib/r2-client";
 import { cn } from "@/lib/utils";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -87,8 +87,8 @@ export default function DashboardPage() {
 
       setProgress(t("analyze.uploadingFile"));
 
-      // 上传到 Vercel Blob（原生支持大文件）
-      const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
+      // 通过签名地址直传 R2，不经过应用服务器。
+      const uploadData = await uploadMediaToR2(selectedFile, (percentage) => {
         setProgress(t("analyze.uploadingProgress", { percent: Math.round(percentage) }));
       });
 

@@ -26,7 +26,7 @@ function getMediaType(file: File): "video" | "image" {
  * 通过 R2 presigned URL 直传文件，不经过 Vercel 服务器。
  * 视频文件大小上限由后端配置控制。
  */
-export async function uploadMediaToBlob(
+export async function uploadMediaToR2(
   file: File,
   onProgress?: (percentage: number) => void
 ): Promise<UploadedMedia> {
@@ -34,7 +34,7 @@ export async function uploadMediaToBlob(
   const contentType = file.type || (mediaType === "video" ? "video/mp4" : "image/jpeg");
 
   // 1. 从后端拿 presigned URL
-  const tokenRes = await fetch("/api/upload-b2", {
+  const tokenRes = await fetch("/api/upload-r2", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
