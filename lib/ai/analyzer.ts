@@ -156,10 +156,11 @@ async function callGeminiApi(
   const contents = [];
 
   for (const img of images) {
+    const inlineData = await loadGeminiImage(img);
     contents.push({
       role: "user",
       parts: [
-        { inline_data: { mime_type: "image/jpeg", data: img.split(",")[1] } },
+        { inline_data: inlineData },
         { text: textPrompt },
       ],
     });
@@ -181,6 +182,20 @@ async function callGeminiApi(
   }
 
   return response.data.candidates[0].content.parts[0].text;
+}
+
+async function loadGeminiImage(image: string) {
+  const dataUrl = image.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/i);
+  if (dataUrl) return { mime_type: dataUrl[1].toLowerCase(), data: dataUrl[2] };
+
+  const response = await fetch(image, { signal: AbortSignal.timeout(30_000) });
+  if (!response.ok) throw new Error(`Failed to load analysis frame (${response.status})`);
+  const buffer = Buffer.from(await response.arrayBuffer());
+  if (buffer.byteLength > 2 * 1024 * 1024) throw new Error("Analysis frame is too large");
+  return {
+    mime_type: response.headers.get("content-type")?.split(";")[0] || "image/jpeg",
+    data: buffer.toString("base64"),
+  };
 }
 
 

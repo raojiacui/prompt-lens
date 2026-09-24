@@ -10,10 +10,10 @@ import { readFile, unlink } from "fs/promises";
 
 const accountId = process.env.R2_ACCOUNT_ID;
 const endpoint = process.env.R2_ENDPOINT || (accountId ? `https://${accountId}.r2.cloudflarestorage.com` : undefined);
-const accessKeyId = process.env.R2_ACCESS_KEY_ID || process.env.B2_ACCESS_KEY_ID;
-const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY || process.env.B2_SECRET_ACCESS_KEY;
-const bucketName = process.env.R2_BUCKET_NAME || process.env.B2_BUCKET_NAME;
-const publicUrl = (process.env.R2_PUBLIC_URL || process.env.B2_PUBLIC_URL || "").replace(/\/$/, "");
+const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+const bucketName = process.env.R2_BUCKET_NAME;
+const publicUrl = (process.env.R2_PUBLIC_URL || "").replace(/\/$/, "");
 
 function requireR2Config() {
   const missing = [
@@ -70,13 +70,6 @@ export function extractR2Key(url: string): string | null {
     if (publicUrl && parsed.href.startsWith(`${publicUrl}/`)) {
       return parsed.href.slice(publicUrl.length + 1);
     }
-
-    // Backward compatibility for records created before the R2 migration.
-    const b2S3Match = url.match(/s3\.[a-z0-9-]+\.backblazeb2\.com\/[^/]+\/(.+)$/);
-    if (b2S3Match) return b2S3Match[1];
-
-    const b2FileMatch = url.match(/backblazeb2\.com\/file\/[^/]+\/(.+)$/);
-    if (b2FileMatch) return b2FileMatch[1];
   } catch {
     return null;
   }
@@ -244,9 +237,3 @@ export function isFileSizeValid(size: number, maxSizeMB: number = 100): boolean 
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   return size <= maxSizeBytes;
 }
-
-// Backward-compatible names for older routes/imports during migration.
-export const uploadToB2 = uploadToR2;
-export const deleteFromB2 = deleteFromR2;
-export const getFromB2 = getFromR2;
-export const getSignedUrlFromB2 = getSignedUrlFromR2;

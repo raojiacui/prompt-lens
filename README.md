@@ -115,7 +115,7 @@ pnpm install
 
 # 3. 复制环境变量模板
 cp .env.example .env.local
-# 然后编辑 .env.local 填入配置（数据库、B2、AI key 等）
+# 然后编辑 .env.local 填入配置（数据库、R2、AI key 等）
 # 详细配置说明见 LOCAL_SETUP.md
 
 # 4. 初始化数据库
@@ -218,7 +218,7 @@ prompt-analyzer/
 ├── lib/                   # 核心库
 │   ├── ai/                # AI 分析器
 │   ├── auth/              # 认证配置
-│   ├── Backblaze/         # B2 存储
+│   ├── cloudflare/        # R2 存储
 │   ├── db/                # 数据库
 │   └── middleware/        # 中间件
 └── tests/                 # 测试文件

@@ -83,6 +83,7 @@
     "processing": "处理中...",
     "extractingFrames": "正在提取帧...",
     "extractingFrameProgress": "正在提取帧: {current}/{total}",
+    "uploadingFrameProgress": "正在上传分析帧: {current}/{total}",
     "uploadingFile": "正在上传文件...",
     "uploadingProgress": "Uploading file... {percent}%",
     "aiAnalyzing": "AI 正在分析中...",

@@ -5,8 +5,14 @@ import { analyzeFrames, ApiProvider } from "@/lib/ai/analyzer";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { defaultLocale, isLocale } from "@/i18n/config";
 import { assertTrialQuota, getUsableUserAnalyzeApiKeyProvider, trialQuotaResponse } from "@/lib/usage/trial-quota";
+import { deleteFromR2, extractR2Key } from "@/lib/cloudflare/r2";
+import { AnalysisFrameInputError, resolveAnalysisFrames } from "@/lib/ai/analysis-frame-input";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
+  let temporaryFrameKeys: string[] = [];
   try {
     const session = await auth.api.getSession({ headers: request.headers });
 
@@ -33,6 +39,7 @@ export async function POST(request: NextRequest) {
     const {
       mediaUrl,
       mediaType,
+      frameUrls,
       frames: clientFrames,
       analyzeMode = "single",
       provider = "openrouter",
@@ -46,22 +53,21 @@ export async function POST(request: NextRequest) {
     // 校验 outputLanguage，未命中回落到默认
     const resolvedLanguage = isLocale(outputLanguage) ? outputLanguage : defaultLocale;
 
-    // 客户端直接传帧（浏览器提取）
-    let frames: string[] = [];
-
-    if (clientFrames && clientFrames.length > 0) {
-      frames = clientFrames;
-      console.log("Using client-provided frames:", frames.length);
-    } else {
-      // 生产环境必须有客户端的帧
-      return NextResponse.json(
-        { error: "Please refresh the page and try again" },
-        { status: 400 }
-      );
-    }
-
-    if (frames.length === 0) {
-      return NextResponse.json({ error: "No frames available" }, { status: 400 });
+    let frames: string[];
+    try {
+      const resolved = resolveAnalysisFrames({
+        userId: session.user.id,
+        frameUrls,
+        clientFrames,
+        extractKey: extractR2Key,
+      });
+      frames = resolved.frames;
+      temporaryFrameKeys = resolved.temporaryKeys;
+    } catch (error) {
+      if (error instanceof AnalysisFrameInputError) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
+      }
+      throw error;
     }
 
     const requestedProvider = provider as ApiProvider;
@@ -137,5 +143,11 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error("Analyze error:", error);
     return NextResponse.json({ error: error.message || "Analysis failed" }, { status: 500 });
+  } finally {
+    if (temporaryFrameKeys.length > 0) {
+      const cleanup = await Promise.allSettled(temporaryFrameKeys.map((key) => deleteFromR2(key)));
+      const failed = cleanup.filter((result) => result.status === "rejected").length;
+      if (failed > 0) console.warn(`Failed to clean up ${failed} temporary analysis frame(s)`);
+    }
   }
 }

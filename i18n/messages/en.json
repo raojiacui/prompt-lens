@@ -83,6 +83,7 @@
     "processing": "Processing...",
     "extractingFrames": "Extracting frames...",
     "extractingFrameProgress": "Extracting frames: {current}/{total}",
+    "uploadingFrameProgress": "Uploading analysis frames: {current}/{total}",
     "uploadingFile": "Uploading file...",
     "uploadingProgress": "Uploading file... {percent}%",
     "aiAnalyzing": "AI is analyzing...",

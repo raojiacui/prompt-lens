@@ -1,1 +1,1 @@
-export { POST } from "../upload-b2/route";
+export { POST } from "../upload-r2/route";

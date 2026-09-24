@@ -200,7 +200,7 @@ PromptLens 是一款 AI 视频提示词分析工具，帮助用户：
 | 后端 | Next.js API Routes | API 路由 |
 | 数据库 | Supabase PostgreSQL + Drizzle ORM | 数据存储 |
 | 认证 | better-auth | Google 登录 |
-| 存储 | Backblaze B2 | 文件存储 |
+| 存储 | Cloudflare R2 | 文件存储 |
 | AI 分析 | 智谱AI / Gemini / OpenRouter | 视频分析 |
 | AI 生成 | Kie.ai (Sora 2) | 视频生成 |
 

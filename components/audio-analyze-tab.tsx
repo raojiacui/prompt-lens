@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
+import { uploadMediaToR2 } from "@/lib/r2-client";
 import { useTranslations } from "next-intl";
 
 interface TranscriptionSegment {
@@ -88,7 +88,7 @@ export function AudioAnalyzeTab({ activeTab }: AudioAnalyzeTabProps) {
       setProgress(t("uploading"));
 
       try {
-        const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
+        const uploadData = await uploadMediaToR2(selectedFile, (percentage) => {
           setProgress(t("uploadingProgress", { percent: Math.round(percentage) }));
         });
 

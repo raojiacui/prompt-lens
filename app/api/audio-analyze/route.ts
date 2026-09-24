@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 将公开 B2 URL 转换为签名 URL，确保 AssemblyAI / FunASR 能下载
+    // 将 R2 URL 转换为签名 URL，确保 AssemblyAI / FunASR 能下载
     const accessibleUrl = await ensureAccessibleUrl(mediaUrl);
 
     console.log(`Starting ${whisperModelSize === "funasr" ? "FunASR" : "AssemblyAI"} transcription for:`, accessibleUrl);
