@@ -80,6 +80,9 @@ async function getUserApiKey(
   userId: string,
   provider: ApiProvider
 ): Promise<string | null> {
+  // OpenRouter is the platform-funded path. Never consume a user's saved key.
+  if (provider === "openrouter") return ENV_API_KEYS.openrouter;
+
   const records = await db.query.userApiKeys.findMany({
     where: and(
       eq(userApiKeys.userId, userId),
@@ -97,7 +100,8 @@ async function getUserApiKey(
     }
   }
 
-  const envKey = ENV_API_KEYS[provider];
+  // KIE is BYOK-only for analysis. Platform KIE credentials must not be used here.
+  const envKey = provider === "kie" ? null : ENV_API_KEYS[provider];
   if (envKey) {
     console.log(`[Analyzer] Using env API key for ${provider}`);
     return envKey;

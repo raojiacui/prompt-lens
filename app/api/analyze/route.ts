@@ -70,17 +70,31 @@ export async function POST(request: NextRequest) {
       throw error;
     }
 
-    const requestedProvider = provider as ApiProvider;
-    const userKeyProvider = await getUsableUserAnalyzeApiKeyProvider(session.user.id, requestedProvider);
-    const effectiveProvider = userKeyProvider || requestedProvider;
+    if (provider !== "openrouter" && provider !== "kie") {
+      return NextResponse.json({ error: "视频分析仅支持 OpenRouter 或 KIE" }, { status: 400 });
+    }
 
-    let quota: Awaited<ReturnType<typeof assertTrialQuota>>;
-    try {
-      quota = await assertTrialQuota(session.user.id, effectiveProvider);
-    } catch (error) {
-      const quotaError = trialQuotaResponse(error);
-      if (quotaError) return NextResponse.json(quotaError, { status: 402 });
-      throw error;
+    const effectiveProvider = provider as ApiProvider;
+    let apiKeySource: "platform" | "user";
+
+    if (effectiveProvider === "kie") {
+      const hasUserKieKey = await getUsableUserAnalyzeApiKeyProvider(session.user.id, "kie");
+      if (!hasUserKieKey) {
+        return NextResponse.json(
+          { error: "请先在设置中保存自己的 KIE API Key", code: "KIE_KEY_REQUIRED" },
+          { status: 400 },
+        );
+      }
+      apiKeySource = "user";
+    } else {
+      try {
+        const quota = await assertTrialQuota(session.user.id);
+        apiKeySource = quota.apiKeySource;
+      } catch (error) {
+        const quotaError = trialQuotaResponse(error);
+        if (quotaError) return NextResponse.json(quotaError, { status: 402 });
+        throw error;
+      }
     }
 
     // 记录分析开始
@@ -88,7 +102,7 @@ export async function POST(request: NextRequest) {
       userId: session.user.id,
       action: "analysis.start",
       resourceType: mediaType,
-      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: effectiveProvider, requestedProvider, apiKeySource: quota.apiKeySource },
+      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: effectiveProvider, requestedProvider: provider, apiKeySource },
     });
 
     console.log("Calling AI analysis with", frames.length, "frames...");
@@ -131,7 +145,7 @@ export async function POST(request: NextRequest) {
       action: "analysis.complete",
       resourceType: mediaType,
       resourceId: historyRecord[0].id,
-      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: effectiveProvider, requestedProvider, apiKeySource: quota.apiKeySource },
+      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: effectiveProvider, requestedProvider: provider, apiKeySource },
     });
 
     return NextResponse.json({

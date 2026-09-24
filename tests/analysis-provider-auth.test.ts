@@ -21,7 +21,10 @@ vi.mock("@/lib/utils/encryption", () => ({
 }));
 
 import { describeAnalysisProviderError } from "@/lib/ai/provider-error";
-import { getUsableUserAnalyzeApiKeyProvider } from "@/lib/usage/trial-quota";
+import {
+  getUsableUserAnalyzeApiKeyProvider,
+  resolveTrialAccess,
+} from "@/lib/usage/trial-quota";
 
 describe("analysis provider authentication", () => {
   beforeEach(() => {
@@ -53,5 +56,25 @@ describe("analysis provider authentication", () => {
     expect(describeAnalysisProviderError("kie", error)).toContain(
       "IP 白名单",
     );
+  });
+
+  it("gives administrators unlimited platform OpenRouter access", () => {
+    expect(resolveTrialAccess("admin", 99, 2)).toEqual({
+      limit: 2,
+      used: 0,
+      remaining: Number.POSITIVE_INFINITY,
+      isAdmin: true,
+      hasOwnApiKey: false,
+      apiKeySource: "platform",
+    });
+  });
+
+  it("limits regular users to two platform OpenRouter analyses", () => {
+    expect(resolveTrialAccess("user", 1, 2)).toMatchObject({
+      used: 1,
+      remaining: 1,
+      isAdmin: false,
+      apiKeySource: "platform",
+    });
   });
 });

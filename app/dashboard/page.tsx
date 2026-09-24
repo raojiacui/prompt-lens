@@ -40,7 +40,7 @@ export default function DashboardPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const [frameCount, setFrameCount] = useState(8);
   const [analyzeMode, setAnalyzeMode] = useState<"single" | "batch">("single");
-  const [provider, setProvider] = useState<"zhipu" | "gemini" | "openrouter" | "kie">("openrouter");
+  const [provider, setProvider] = useState<"openrouter" | "kie">("openrouter");
   const [progress, setProgress] = useState("");
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -297,8 +297,6 @@ export default function DashboardPage() {
                   onChange={(e) => setProvider(e.target.value as any)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="zhipu">{t("analyze.providerZhipu")}</option>
-                  <option value="gemini">{t("analyze.providerGemini")}</option>
                   <option value="openrouter">{t("analyze.providerOpenrouter")}</option>
                   <option value="kie">{t("analyze.providerKie")}</option>
                 </select>

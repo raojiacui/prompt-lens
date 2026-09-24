@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { useTranslations } from "next-intl";
 
@@ -21,7 +20,6 @@ export function ApiKeySettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [provider, setProvider] = useState("openrouter");
   const [apiKey, setApiKey] = useState("");
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -55,7 +53,7 @@ export function ApiKeySettings() {
       const res = await fetch("/api/settings/api-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, apiKey: apiKey.trim() }),
+        body: JSON.stringify({ provider: "kie", apiKey: apiKey.trim() }),
       });
 
       if (res.ok) {
@@ -89,13 +87,6 @@ export function ApiKeySettings() {
     }
   };
 
-  const providerLabel = (p: string) => {
-    if (p === "zhipu") return t("zhipuName");
-    if (p === "gemini") return t("geminiName");
-    if (p === "kie") return t("kieName");
-    return t("openrouterName");
-  };
-
   return (
     <div className="space-y-6">
       {/* 添加 API Key */}
@@ -110,12 +101,9 @@ export function ApiKeySettings() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="text-sm font-medium text-[#141413] block mb-2">{t("provider")}</label>
-              <Select value={provider} onChange={(e) => setProvider(e.target.value)} className="bg-white">
-                <option value="zhipu">{t("providerZhipuAnalyze")}</option>
-                <option value="gemini">{t("providerGeminiAnalyze")}</option>
-                <option value="openrouter">{t("providerOpenrouterAnalyze")}</option>
-                <option value="kie">{t("providerKie")}</option>
-              </Select>
+              <div className="flex h-10 items-center rounded-lg border border-[#C8C4BC] bg-white px-3 text-sm text-[#141413]">
+                {t("providerKie")}
+              </div>
             </div>
             <div className="md:col-span-2">
               <label className="text-sm font-medium text-[#141413] block mb-2">API Key</label>
@@ -124,13 +112,7 @@ export function ApiKeySettings() {
                   type="password"
                   value={apiKey}
                   onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={
-                    provider === "zhipu"
-                      ? t("placeholderZhipu")
-                      : provider === "gemini"
-                      ? t("placeholderGemini")
-                      : t("placeholderOpenrouter")
-                  }
+                  placeholder={t("placeholderKie")}
                   className="bg-white"
                 />
                 <Button onClick={saveApiKey} disabled={saving} className="bg-[#D97757] hover:bg-[#C96848]">
@@ -179,7 +161,7 @@ export function ApiKeySettings() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>
-                        {providerLabel(key.provider)}
+                        {t("kieName")}
                       </span>
                       {key.isActive && (
                         <span className="text-xs bg-[#5B8C5A]/10 text-[#5B8C5A] px-2 py-0.5 rounded">
@@ -213,51 +195,6 @@ export function ApiKeySettings() {
           <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("providerDocs")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div>
-            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("zhipuRecommended")}</h4>
-            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
-              {t("zhipuDesc")}{" "}
-              <a
-                href="https://open.bigmodel.cn/usercenter/apikeys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#D97757] hover:underline"
-              >
-                {t("zhipuLink")}
-              </a>{" "}
-              {t("zhipuGetKey")}
-            </p>
-          </div>
-          <div>
-            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("geminiName")}</h4>
-            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
-              {t("geminiDesc")}{" "}
-              <a
-                href="https://aistudio.google.com/app/apikey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#D97757] hover:underline"
-              >
-                {t("geminiLink")}
-              </a>{" "}
-              {t("geminiGetKey")}
-            </p>
-          </div>
-          <div>
-            <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("openrouterName")}</h4>
-            <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">
-              {t("openrouterDesc")}{" "}
-              <a
-                href="https://openrouter.ai/keys"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#D97757] hover:underline"
-              >
-                {t("openrouterLink")}
-              </a>{" "}
-              {t("openrouterGetKey")}
-            </p>
-          </div>
           <div>
             <h4 className="font-medium text-[#141413]" style={{ fontFamily: 'var(--font-heading)' }}>{t("kieName")}</h4>
             <p className="text-sm text-[#6B6860] mt-2 leading-relaxed">

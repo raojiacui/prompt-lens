@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, userApiKeys } from "@/lib/db";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { encryptApiKey, decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
 // GET /api/settings/api-key - 获取用户的 API Key
@@ -14,7 +14,10 @@ export async function GET(request: NextRequest) {
     }
 
     const apiKeys = await db.query.userApiKeys.findMany({
-      where: eq(userApiKeys.userId, session.user.id),
+      where: and(
+        eq(userApiKeys.userId, session.user.id),
+        eq(userApiKeys.provider, "kie"),
+      ),
     });
 
     // 返回时隐藏 API Key（解密后显示部分）
@@ -60,18 +63,14 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { provider, apiKey } = body;
 
-    if (!provider || !apiKey) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    if (provider !== "kie") {
+      return NextResponse.json({ error: "Only KIE API keys can be saved" }, { status: 400 });
+    }
+    if (!apiKey) {
+      return NextResponse.json({ error: "Missing API key" }, { status: 400 });
     }
 
-    // 验证 API Key 格式
-    if (provider === "zhipu" && !apiKey.includes(".")) {
-      return NextResponse.json({ error: "Invalid Zhipu API Key format" }, { status: 400 });
-    }
-    if (provider === "gemini" && !apiKey.startsWith("AIza")) {
-      return NextResponse.json({ error: "Invalid Gemini API Key format" }, { status: 400 });
-    }
-    if (provider === "kie" && apiKey.trim().length < 16) {
+    if (apiKey.trim().length < 16) {
       return NextResponse.json({ error: "Invalid Kie.ai API Key format" }, { status: 400 });
     }
 
