@@ -1,16 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_ANALYSIS_MODEL_ID,
+  resolvePlatformAnalysisApiKey,
   resolveAnalysisModel,
 } from "@/lib/ai/analysis-models";
 
 describe("analysis models", () => {
-  it("uses OpenRouter Gemini 2.5 Flash for the platform trial", () => {
+  it("uses KIE Gemini 2.5 Flash for the platform trial", () => {
     expect(resolveAnalysisModel(DEFAULT_ANALYSIS_MODEL_ID)).toMatchObject({
-      provider: "openrouter",
-      providerModel: "google/gemini-2.5-flash",
+      provider: "kie",
+      providerModel: "gemini-2.5-flash",
       keySource: "platform",
     });
+  });
+
+  it("loads the platform KIE key from server environment variables", () => {
+    expect(resolvePlatformAnalysisApiKey({ KIE_API_KEY: "platform-key" })).toBe("platform-key");
+    expect(resolvePlatformAnalysisApiKey({ KIE_AI_API_KEY: "preferred-key", KIE_API_KEY: "fallback-key" })).toBe("preferred-key");
   });
 
   it("offers KIE Flash and Pro through the user's key", () => {

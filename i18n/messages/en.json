@@ -42,7 +42,7 @@
     "feature2Title": "Image Analysis",
     "feature2Desc": "Single or batch image analysis, extract visual features and styles",
     "feature3Title": "Multi-API Support",
-    "feature3Desc": "Switch freely between ZhipuAI, Google Gemini, and OpenRouter",
+    "feature3Desc": "Switch between the platform KIE trial and your own KIE key",
     "ctaExperience": "Try Now →",
     "ctaLoginHistory": "Login to save history",
     "footer": "© 2026 Prompt Lens · AI Video Prompt Analyzer"
