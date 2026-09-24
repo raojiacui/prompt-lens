@@ -53,6 +53,23 @@ export async function uploadMediaToBlob(
   const { presignedUrl, publicUrl, key } = await tokenRes.json();
 
   // 2. 用 XMLHttpRequest 直传 R2，支持进度回调
+  await uploadWithPresignedUrl(file, presignedUrl, contentType, onProgress);
+
+  return {
+    url: publicUrl,
+    filename: file.name,
+    mediaType,
+    size: file.size,
+    key,
+  };
+}
+
+async function uploadWithPresignedUrl(
+  file: File,
+  presignedUrl: string,
+  contentType: string,
+  onProgress?: (percentage: number) => void
+) {
   await new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", presignedUrl, true);
@@ -79,12 +96,62 @@ export async function uploadMediaToBlob(
 
     xhr.send(file);
   });
+}
 
-  return {
-    url: publicUrl,
-    filename: file.name,
-    mediaType,
-    size: file.size,
-    key,
+export async function uploadAnalysisFrames(
+  frames: File[],
+  onProgress?: (current: number, total: number) => void
+): Promise<string[]> {
+  const response = await fetch("/api/upload-analysis-frames", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      frames: frames.map((frame) => ({
+        filename: frame.name,
+        contentType: frame.type,
+        size: frame.size,
+      })),
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: "Failed to prepare frame uploads" }));
+    throw new Error(error.error || `Failed to prepare frame uploads (${response.status})`);
+  }
+
+  const data = await response.json();
+  if (!Array.isArray(data.uploads) || data.uploads.length !== frames.length) {
+    throw new Error("Invalid frame upload response");
+  }
+
+  const urls = new Array<string>(frames.length);
+  let nextIndex = 0;
+  let completed = 0;
+  const uploadNext = async (): Promise<void> => {
+    const index = nextIndex++;
+    if (index >= frames.length) return;
+    const upload = data.uploads[index];
+    if (typeof upload?.presignedUrl !== "string" || typeof upload?.publicUrl !== "string") {
+      throw new Error("Invalid frame upload response");
+    }
+    await uploadWithPresignedUrl(frames[index], upload.presignedUrl, "image/jpeg");
+    urls[index] = upload.publicUrl;
+    completed++;
+    onProgress?.(completed, frames.length);
+    await uploadNext();
   };
+
+  const workers = await Promise.allSettled(
+    Array.from({ length: Math.min(3, frames.length) }, () => uploadNext())
+  );
+  const failedWorker = workers.find((result) => result.status === "rejected");
+  if (failedWorker?.status === "rejected") {
+    await fetch("/api/upload-analysis-frames", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keys: data.uploads.map((upload: { key: string }) => upload.key) }),
+    }).catch(() => undefined);
+    throw failedWorker.reason;
+  }
+  return urls;
 }

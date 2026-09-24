@@ -12,8 +12,8 @@ import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
 import { VideoEditTab } from "@/components/video-edit-tab";
 import { VideoGenerateTab } from "@/components/video-generate-tab";
 import { FloatingChat } from "@/components/floating-chat";
-import { extractVideoFrames, getImageBase64 } from "@/lib/utils/frame-extractor";
-import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
+import { createImageAnalysisFrame, extractVideoFrameFiles } from "@/lib/utils/frame-extractor";
+import { uploadAnalysisFrames, uploadMediaToBlob } from "@/lib/vercel-blob-client";
 import { cn } from "@/lib/utils";
 import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "next/navigation";
@@ -71,19 +71,17 @@ export default function DashboardPage() {
     setProgress(t("analyze.extractingFrames"));
 
     try {
-      let frames: string[];
+      let frameFiles: File[];
       let mediaType: string;
 
       if (selectedFile.type.startsWith("video/")) {
         // 视频：在客户端提取帧
-        frames = await extractVideoFrames(selectedFile, frameCount, (current, total) => {
+        frameFiles = await extractVideoFrameFiles(selectedFile, frameCount, (current, total) => {
           setProgress(t("analyze.extractingFrameProgress", { current, total }));
         });
         mediaType = "video";
       } else {
-        // 图片：直接转 base64
-        const base64 = await getImageBase64(selectedFile);
-        frames = [base64];
+        frameFiles = [await createImageAnalysisFrame(selectedFile)];
         mediaType = "image";
       }
 
@@ -92,6 +90,10 @@ export default function DashboardPage() {
       // 上传到 Vercel Blob（原生支持大文件）
       const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
         setProgress(t("analyze.uploadingProgress", { percent: Math.round(percentage) }));
+      });
+
+      const frameUrls = await uploadAnalysisFrames(frameFiles, (current, total) => {
+        setProgress(t("analyze.uploadingFrameProgress", { current, total }));
       });
 
       setProgress(t("analyze.aiAnalyzing"));
@@ -103,7 +105,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           mediaUrl: uploadData.url,
           mediaType,
-          frames, // 直接发送客户端提取的帧
+          frameUrls,
           analyzeMode,
           provider,
           outputLanguage: locale,
