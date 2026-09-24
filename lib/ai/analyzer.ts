@@ -5,6 +5,7 @@ import { eq, and, desc } from "drizzle-orm";
 import { decodeAnalyzeApiKey } from "@/lib/usage/trial-quota";
 import { ANALYSIS_PROMPTS, extractCorePrompt } from "@/lib/ai/prompts";
 import { describeAnalysisProviderError } from "@/lib/ai/provider-error";
+import { parseKieChatResponse, summarizeKieChatResponse } from "@/lib/ai/kie-chat-response";
 import type { Locale } from "@/i18n/config";
 import { defaultLocale } from "@/i18n/config";
 
@@ -224,7 +225,9 @@ async function callKieGeminiApi(
   const payload = {
     model,
     messages,
-    max_tokens: 4096,
+    max_tokens: 8192,
+    stream: false,
+    include_thoughts: false,
   };
 
   const configuredModel = process.env.KIE_GEMINI_ANALYSIS_MODEL || "gemini-2.5-flash";
@@ -238,12 +241,8 @@ async function callKieGeminiApi(
     ...(axiosProxy ? { proxy: axiosProxy } : {}),
   });
 
-  const content = response.data?.choices?.[0]?.message?.content;
-  if (!content) {
-    throw new Error("KIE Gemini API returned empty result");
-  }
-
-  return content;
+  console.log("[KIE Gemini] Response:", summarizeKieChatResponse(response.data));
+  return parseKieChatResponse(response.data);
 }
 /**
  * 调用 OpenRouter API
