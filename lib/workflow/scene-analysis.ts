@@ -2,7 +2,7 @@ import { getUserKieApiKey } from "@/lib/byok/kie";
 import { getPlatformKieApiKey } from "@/lib/billing/platform-access";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import { FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/billing/video-analysis";
-import { getKieResponseText } from "@/lib/ai/kie-response";
+import { requestKieChat } from "@/lib/ai/kie-client";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
 
@@ -57,7 +57,6 @@ type AnalysisChatJsonResult = {
   modelPriority: ModelPriority;
 };
 
-const KIE_BASE_URL = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
 
 function compactJson(value: unknown) {
   try {
@@ -153,9 +152,6 @@ function resolveAnalysisSelection(selection?: AiModelSelection, options?: { forc
   return { provider: resolved.model.provider, modelId: resolved.model.kieModelId, modelMode: resolved.mode, modelPriority: resolved.priority };
 }
 
-function kieAnalysisUrl(modelId: string) {
-  return `${KIE_BASE_URL}/${modelId}/v1/chat/completions`;
-}
 
 async function callAnalysisChatJson(params: {
   userId: string;
@@ -177,22 +173,7 @@ async function callAnalysisChatJson(params: {
     { role: "user", content: params.content },
   ];
 
-  const response = await fetch(kieAnalysisUrl(selected.modelId), {
-        method: "POST",
-        signal: AbortSignal.timeout(90000),
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages,
-        }),
-      });
-
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(payload?.error?.message || payload?.msg || `${selected.provider} analysis failed with ${response.status}`);
-  const content = getKieResponseText(payload);
-  if (!content) throw new Error(`${selected.provider} returned an empty scene analysis`);
+  const content = await requestKieChat({ apiKey, modelId: selected.modelId, messages });
   return { json: parseJsonObject(content), ...selected };
 }
 
