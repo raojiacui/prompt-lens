@@ -5,13 +5,17 @@ import { analyzeFrames, resolveAnalysisProviderForBillingMode } from "@/lib/ai/a
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { defaultLocale, isLocale } from "@/i18n/config";
 import { assertCanStartVideoAnalysis, settleVideoAnalysisCredits, type VideoAnalysisEntitlement, videoAnalysisBillingErrorResponse } from "@/lib/billing/video-analysis";
-import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { getPlatformKieApiKey, kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/billing/video-analysis";
+import { releaseTrialAnalysis, reserveTrialAnalysis } from "@/lib/usage/trial-quota";
 
 function shouldChargeCredits(entitlement: VideoAnalysisEntitlement) {
-  return entitlement.mode === "platform_credits" || entitlement.mode === "trial";
+  return entitlement.mode === "platform_credits";
 }
 
 export async function POST(request: NextRequest) {
+  let trialUserId: string | null = null;
+  let trialCompleted = false;
   try {
     const session = await auth.api.getSession({ headers: request.headers });
 
@@ -40,7 +44,6 @@ export async function POST(request: NextRequest) {
       mediaType,
       frames: clientFrames,
       analyzeMode = "single",
-      provider: requestedProvider = "openrouter",
       outputLanguage,
     } = body;
 
@@ -61,27 +64,31 @@ export async function POST(request: NextRequest) {
     const entitlement = await assertCanStartVideoAnalysis(session.user.id, 1);
     const chargeCredits = shouldChargeCredits(entitlement);
     const resolvedProvider = resolveAnalysisProviderForBillingMode(entitlement.mode);
-    const keyAccess = resolvedProvider === "kie"
-      ? await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_analysis" })
-      : null;
-    if (resolvedProvider === "kie" && !keyAccess?.apiKey) {
+    const keyAccess = entitlement.mode === "trial"
+      ? { apiKey: getPlatformKieApiKey(), source: "platform_trial" }
+      : await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_analysis" });
+    if (!keyAccess.apiKey) {
       return NextResponse.json(kieAccessError("视频分析"), { status: 402 });
+    }
+    if (entitlement.mode === "trial") {
+      await reserveTrialAnalysis(userId);
+      trialUserId = userId;
     }
 
     await db.insert(operationLogs).values({
       userId: session.user.id,
       action: "analysis.start",
       resourceType: mediaType,
-      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, requestedProvider, billingMode: entitlement.mode, keySource: keyAccess?.source || "platform_trial" },
+      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, billingMode: entitlement.mode, keySource: keyAccess.source },
     });
-
     const result = await analyzeFrames({
       userId: session.user.id,
       provider: resolvedProvider,
       frames,
       mode: analyzeMode as "single" | "batch",
       outputLanguage: resolvedLanguage,
-      apiKeyOverride: keyAccess?.apiKey || undefined,
+      apiKeyOverride: keyAccess.apiKey,
+      modelId: entitlement.mode === "trial" ? FREE_TRIAL_ANALYSIS_MODEL : undefined,
     });
 
     if (!result.success) {
@@ -89,7 +96,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         action: "analysis.error",
         resourceType: mediaType,
-        metadata: { error: result.error, mediaUrl, provider: resolvedProvider, requestedProvider },
+        metadata: { error: result.error, mediaUrl, provider: resolvedProvider },
       });
       return NextResponse.json({ error: result.error }, { status: 500 });
     }
@@ -119,8 +126,9 @@ export async function POST(request: NextRequest) {
       action: "analysis.complete",
       resourceType: mediaType,
       resourceId: historyRecord[0].id,
-      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, requestedProvider, billingMode: entitlement.mode, keySource: keyAccess?.source || "platform_trial" },
+      metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, billingMode: entitlement.mode, keySource: keyAccess.source },
     });
+    trialCompleted = true;
 
     return NextResponse.json({
       success: true,
@@ -134,5 +142,7 @@ export async function POST(request: NextRequest) {
     if (billingError) return NextResponse.json(billingError, { status: 402 });
     console.error("Analyze error:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Analysis failed" }, { status: 500 });
+  } finally {
+    if (trialUserId && !trialCompleted) await releaseTrialAnalysis(trialUserId).catch((error) => console.error("Failed to release trial reservation:", error));
   }
 }

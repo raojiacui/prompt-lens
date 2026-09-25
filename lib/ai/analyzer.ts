@@ -1,78 +1,22 @@
-﻿import axios from "axios";
-import { getUserApiKeyForProvider } from "@/lib/byok/kie";
 import { ANALYSIS_PROMPTS, extractCorePrompt } from "@/lib/ai/prompts";
-import type { Locale } from "@/i18n/config";
-import { defaultLocale } from "@/i18n/config";
-
-// 代理配置（仅本地开发环境使用）
-const isLocalDev = process.env.NODE_ENV === "development";
-const proxyUrl = isLocalDev ? (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897") : undefined;
-
-let axiosProxy: { host: string; port: number; protocol: string } | undefined = undefined;
-if (proxyUrl) {
-  try {
-    const url = new URL(proxyUrl);
-    axiosProxy = {
-      host: url.hostname,
-      port: parseInt(url.port) || (url.protocol === "https:" ? 443 : 80),
-      protocol: url.protocol.replace(":", ""),
-    };
-    console.log("[AI] Proxy enabled (local dev only):", axiosProxy);
-  } catch {
-    console.warn("[AI] Failed to parse proxy URL");
-  }
-}
+import { getKieResponseText } from "@/lib/ai/kie-response";
+import { defaultLocale, type Locale } from "@/i18n/config";
 
 const KIE_BASE_URL = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
-const KIE_ANALYSIS_MODEL = process.env.KIE_ANALYSIS_MODEL || process.env.KIE_GEMINI_ANALYSIS_MODEL || "gemini-2.5-flash";
-const KIE_ANALYSIS_ENDPOINT = process.env.KIE_ANALYSIS_ENDPOINT || process.env.KIE_GEMINI_ANALYSIS_URL;
-const KIE_ANALYSIS_URL = KIE_ANALYSIS_ENDPOINT
-  ? (/^https?:\/\//i.test(KIE_ANALYSIS_ENDPOINT) ? KIE_ANALYSIS_ENDPOINT : `${KIE_BASE_URL}/${KIE_ANALYSIS_ENDPOINT.replace(/^\//, "")}`)
-  : `${KIE_BASE_URL}/${KIE_ANALYSIS_MODEL}/v1/chat/completions`;
+const DEFAULT_ANALYSIS_MODEL = "gemini-3-8-flash-openai";
 
-// API 配置
-const API_CONFIGS = {
-  zhipu: {
-    url: "https://open.bigmodel.cn/api/paas/v4/chat/completions",
-    model: "glm-4v-plus",
-  },
-  gemini: {
-    url: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
-    model: "gemini-2.0-flash-exp",
-  },
-  openrouter: {
-    url: "https://openrouter.ai/api/v1/chat/completions",
-    model: "google/gemini-2.5-flash",
-  },
-  kie: {
-    url: KIE_ANALYSIS_URL,
-    model: KIE_ANALYSIS_MODEL,
-  },
-};
-
-// 环境变量中的 API Keys
-const ENV_API_KEYS = {
-  zhipu: process.env.ZHIPU_API_KEY || null,
-  openrouter: process.env.OPENROUTER_API_KEY || null,
-  gemini: process.env.GEMINI_API_KEY || null,
-  kie: process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY || null,
-};
-
-export type ApiProvider = "zhipu" | "gemini" | "openrouter" | "kie";
-
-export function resolveAnalysisProviderForBillingMode(mode: string): ApiProvider {
-  return mode === "trial" ? "openrouter" : "kie";
+export function resolveAnalysisProviderForBillingMode(_mode: string): "kie" {
+  return "kie";
 }
 
 export interface AnalyzeOptions {
   userId: string;
-  provider?: ApiProvider;
-  frames: string[]; // base64 编码的图片数组
+  provider?: "kie";
+  frames: string[];
   mode: "single" | "batch";
-  /** AI 输出语言（默认 zh，影响生成结果的文本语言） */
   outputLanguage?: Locale;
-  /** Resolved by the server billing layer so callers cannot choose a key source. */
-  apiKeyOverride?: string;
+  apiKeyOverride: string;
+  modelId?: string;
 }
 
 export interface AnalyzeResult {
@@ -82,245 +26,35 @@ export interface AnalyzeResult {
   error?: string;
 }
 
-/**
- * 获取 API Key - OpenRouter 仅使用平台 Key，其他 Provider 优先使用用户 Key。
- */
-async function getUserApiKey(
-  userId: string,
-  provider: ApiProvider
-): Promise<string | null> {
-  // OpenRouter is platform-only: free trials use the platform key and users cannot BYOK OpenRouter.
-  if (provider === "openrouter") {
-    const envKey = ENV_API_KEYS.openrouter;
-    if (envKey) return envKey;
-    return null;
-  }
-
-  try {
-    const userKey = await getUserApiKeyForProvider(userId, provider);
-    if (userKey) return userKey;
-  } catch (error) {
-    console.error(`[Analyzer] Failed to decrypt API key for ${provider}:`, error);
-  }
-
-  return ENV_API_KEYS[provider];
-}
-
-/**
- * 调用智谱AI API
- */
-async function callZhipuApi(
-  apiKey: string,
-  messages: any[]
-): Promise<string> {
-  const headers = {
-    Authorization: `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-  };
-
-  const payload = {
-    model: API_CONFIGS.zhipu.model,
-    messages: messages,
-    max_tokens: 4096,
-    temperature: 0.7,
-  };
-
-  const response = await axios.post(API_CONFIGS.zhipu.url, payload, {
-    headers,
-    timeout: 180000,
-    ...(axiosProxy ? { proxy: axiosProxy } : {}),
-  });
-
-  if (!response.data.choices || response.data.choices.length === 0) {
-    throw new Error("API returned empty result");
-  }
-
-  const content = response.data.choices[0].message.content;
-  if (!content) {
-    const finishReason = response.data.choices[0].finish_reason;
-    throw new Error(
-      `API returned null content (finish_reason: ${finishReason}). The model may not support image input or rejected the request.`
-    );
-  }
-
-  return content;
-}
-
-/**
- * 调用 Gemini API
- */
-async function callGeminiApi(
-  apiKey: string,
-  images: string[],
-  textPrompt: string
-): Promise<string> {
-  const contents = [];
-
-  for (const img of images) {
-    contents.push({
-      role: "user",
-      parts: [
-        { inline_data: { mime_type: "image/jpeg", data: img.split(",")[1] } },
-        { text: textPrompt },
-      ],
-    });
-  }
-
-  const payload = {
-    contents,
-    generationConfig: { maxOutputTokens: 4096 },
-  };
-
-  const url = `${API_CONFIGS.gemini.url}?key=${apiKey}`;
-  const response = await axios.post(url, payload, {
-    timeout: 180000,
-    ...(axiosProxy ? { proxy: axiosProxy } : {}),
-  });
-
-  if (!response.data.candidates || response.data.candidates.length === 0) {
-    throw new Error("API returned empty result");
-  }
-
-  return response.data.candidates[0].content.parts[0].text;
-}
-
-async function callKieGeminiApi(
-  apiKey: string,
-  messages: any[]
-): Promise<string> {
-  const response = await axios.post(
-    API_CONFIGS.kie.url,
-    {
-      model: API_CONFIGS.kie.model,
-      messages,
-      max_tokens: 4096,
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      timeout: 180000,
-      ...(axiosProxy ? { proxy: axiosProxy } : {}),
-    }
-  );
-
-  const content = response.data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error("KIE Gemini API returned empty result");
-  return content;
-}
-
-/**
- * 调用 OpenRouter API
- */
-async function callOpenRouterApi(
-  apiKey: string,
-  messages: any[]
-): Promise<string> {
-  const headers = {
-    Authorization: `Bearer ${apiKey}`,
-    "Content-Type": "application/json",
-    "HTTP-Referer": "https://prompt-analyzer.com",
-    "X-Title": "Prompt Analyzer",
-  };
-
-  const payload = {
-    model: API_CONFIGS.openrouter.model,
-    messages: messages,
-    max_tokens: 4096,
-  };
-
-  console.log("[OpenRouter] Request:", { url: API_CONFIGS.openrouter.url, model: API_CONFIGS.openrouter.model, keyPrefix: apiKey.substring(0, 10) });
-
-  const response = await axios.post(API_CONFIGS.openrouter.url, payload, {
-    headers,
-    timeout: 180000,
-    ...(axiosProxy ? { proxy: axiosProxy } : {}),
-  });
-
-  console.log("[OpenRouter] Response status:", response.status, response.data);
-
-  if (!response.data.choices || response.data.choices.length === 0) {
-    throw new Error("API returned empty result");
-  }
-
-  return response.data.choices[0].message.content;
-}
-
-/**
- * 分析图片/帧
- */
 export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeResult> {
-  const { userId, provider = "openrouter", frames, mode, outputLanguage = defaultLocale, apiKeyOverride } = options;
-
-  // 获取用户 API Key
-  const apiKey = apiKeyOverride || await getUserApiKey(userId, provider);
-
-  if (!apiKey) {
-    const envKeyConfigured = ENV_API_KEYS[provider] ? " (env configured)" : "";
-    return {
-      success: false,
-      error: `No API key found for ${provider}${envKeyConfigured}. Please configure your API key in settings or check .env file.`,
-    };
-  }
-
-  // 按用户选择的语言注入对应 prompt 模板
+  const { frames, mode, outputLanguage = defaultLocale, apiKeyOverride, modelId = DEFAULT_ANALYSIS_MODEL } = options;
   const promptTemplate = ANALYSIS_PROMPTS[outputLanguage];
   const prompt = mode === "batch" ? promptTemplate.batch : promptTemplate.single;
+  const messages = [{
+    role: "user",
+    content: [
+      { type: "text", text: prompt },
+      ...frames.map((frame) => ({ type: "image_url", image_url: { url: frame } })),
+    ],
+  }];
 
   try {
-    let result: string;
-
-    if (provider === "zhipu") {
-      // 智谱AI
-      const messages = [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            ...frames.map((frame) => ({
-              type: "image_url",
-              image_url: { url: frame },
-            })),
-          ],
-        },
-      ];
-      result = await callZhipuApi(apiKey, messages);
-    } else if (provider === "gemini") {
-      // Gemini
-      result = await callGeminiApi(apiKey, frames, prompt);
-    } else {
-      const messages = [
-        {
-          role: "user",
-          content: [
-            { type: "text", text: prompt },
-            ...frames.map((frame) => ({
-              type: "image_url",
-              image_url: { url: frame },
-            })),
-          ],
-        },
-      ];
-      result = provider === "kie"
-        ? await callKieGeminiApi(apiKey, messages)
-        : await callOpenRouterApi(apiKey, messages);
+    const response = await fetch(`${KIE_BASE_URL}/${modelId}/v1/chat/completions`, {
+      method: "POST",
+      signal: AbortSignal.timeout(180000),
+      headers: { Authorization: `Bearer ${apiKeyOverride}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ messages }),
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      const detail = payload?.error?.message || payload?.msg || `KIE API error (${response.status})`;
+      throw new Error(detail);
     }
-
-    // 提取核心提示词（兼容中英文格式）
-    const corePrompt = extractCorePrompt(result);
-
-    return {
-      success: true,
-      prompt: result,
-      corePrompt,
-    };
-  } catch (error: any) {
+    const result = getKieResponseText(payload);
+    if (!result) throw new Error("KIE Gemini API returned empty result");
+    return { success: true, prompt: result, corePrompt: extractCorePrompt(result) };
+  } catch (error) {
     console.error("AI Analysis error:", error);
-    return {
-      success: false,
-      error: error.message || "Analysis failed",
-    };
+    return { success: false, error: error instanceof Error ? error.message : "Analysis failed" };
   }
 }
-

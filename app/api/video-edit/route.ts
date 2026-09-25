@@ -4,6 +4,7 @@ import { db, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import axios from "axios";
 import { extractR2Key, getSignedUrlFromR2 } from "@/lib/cloudflare/r2";
+import { callAIProvider } from "@/lib/ai/chat";
 
 // 把 R2 公开 URL 转成签名 URL，让自托管 FFmpeg 服务能下载
 async function ensureAccessibleUrl(url: string): Promise<string> {
@@ -39,14 +40,9 @@ interface EditInstruction {
 // 解析剪辑指令（用 LLM 把自然语言转成结构化指令）
 async function parseEditInstruction(
   prompt: string,
-  duration: number
+  duration: number,
+  userId: string,
 ): Promise<EditInstruction> {
-  const llmApiKey = process.env.DEEPSEEK_API_KEY;
-  if (!llmApiKey) {
-    // 没有 LLM key 时，尝试简单解析
-    return parseSimpleInstruction(prompt);
-  }
-
   const systemPrompt = `你是一个专业的视频剪辑助手。用户给出剪辑指令，请解析为 JSON 格式。
 
 支持的 action 类型：
@@ -66,55 +62,16 @@ async function parseEditInstruction(
 
 只返回 JSON，不要其他内容。`;
 
-  try {
-    const response = await axios.post(
-      "https://api.deepseek.com/v1/chat/completions",
-      {
-        model: "deepseek-chat",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `视频总时长 ${duration} 秒，剪辑指令：${prompt}` },
-        ],
-        temperature: 0.3,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${llmApiKey}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 60000,
-      }
-    );
-
-    const content = response.data.choices[0]?.message?.content || "{}";
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    return { action: "none" };
-  } catch (error) {
-    console.error("LLM parsing error:", error);
-    return parseSimpleInstruction(prompt);
-  }
-}
-
-// 简单指令解析（无 LLM 时降级）
-function parseSimpleInstruction(prompt: string): EditInstruction {
-  // 尝试匹配 "X到Y秒" / "X-Y秒"
-  const rangeMatch = prompt.match(/(\d+)\s*[到\-~]\s*(\d+)\s*秒/);
-  if (rangeMatch) {
-    return {
-      action: "trim",
-      start: parseInt(rangeMatch[1]),
-      end: parseInt(rangeMatch[2]),
-    };
-  }
-  // 尝试匹配 "前X秒"
-  const frontMatch = prompt.match(/前\s*(\d+)\s*秒/);
-  if (frontMatch) {
-    return { action: "trim", start: 0, end: parseInt(frontMatch[1]) };
-  }
-  return { action: "none" };
+  const content = await callAIProvider({
+    userId,
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: `视频总时长 ${duration} 秒，剪辑指令：${prompt}` },
+    ],
+  });
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error("KIE did not return a video edit instruction");
+  return JSON.parse(jsonMatch[0]) as EditInstruction;
 }
 
 export async function POST(request: NextRequest) {
@@ -160,7 +117,7 @@ export async function POST(request: NextRequest) {
     // 解析剪辑指令
     let instruction: EditInstruction = { action: "none" };
     if (prompt) {
-      instruction = await parseEditInstruction(prompt, 60);
+      instruction = await parseEditInstruction(prompt, 60, session.user.id);
       console.log("[video-edit] Parsed instruction:", instruction);
     }
 

@@ -44,7 +44,6 @@ export function FloatingChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<"deepseek" | "zhipu" | "openrouter">("deepseek");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -71,7 +70,6 @@ export function FloatingChat() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [...messages, { role: "user", content: userMessage }],
-          provider: selectedProvider,
         }),
       });
 
@@ -137,15 +135,6 @@ export function FloatingChat() {
               </div>
               <span className="text-white font-medium">AI 助手</span>
             </div>
-            <select
-              value={selectedProvider}
-              onChange={(e) => setSelectedProvider(e.target.value as any)}
-              className="bg-white/20 text-white text-xs px-2 py-1 rounded border border-white/30 outline-none"
-            >
-              <option value="deepseek">DeepSeek</option>
-              <option value="zhipu">智谱AI</option>
-              <option value="openrouter">OpenRouter</option>
-            </select>
           </div>
 
           {/* 消息区域 */}

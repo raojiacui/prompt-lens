@@ -68,7 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (provider && provider !== SUPPORTED_USER_PROVIDER) {
-      return NextResponse.json({ error: "当前只支持配置 KIE API Key。OpenRouter 仅由平台用于两次免费视频分析试用。" }, { status: 400 });
+      return NextResponse.json({ error: "当前只支持配置 KIE API Key。" }, { status: 400 });
     }
 
     if (apiKey.trim().length < 16) {

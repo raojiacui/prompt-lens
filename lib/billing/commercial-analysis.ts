@@ -66,7 +66,7 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
   }
   if (input.retry) {
     const scene = input.retry.sceneVersions.find((s) => s.id === next)!;
-    const result = await retrySceneAnalysis({ userId: task.userId, projectId: input.projectId, sceneVersionId: scene.sceneVersionId, modelMode: "manual", modelId: input.pricing.model === "flash" ? "analysis-gemini-2-5-flash" : "analysis-gemini-2-5-pro", outputLanguage: input.outputLanguage, analysisApiKey: apiKey, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialOpenRouter: false });
+    const result = await retrySceneAnalysis({ userId: task.userId, projectId: input.projectId, sceneVersionId: scene.sceneVersionId, modelMode: "manual", modelId: input.pricing.model === "flash" ? "analysis-gemini-2-5-flash" : "analysis-gemini-2-5-pro", outputLanguage: input.outputLanguage, analysisApiKey: apiKey, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false });
     const succeeded = (result.metadata as Record<string, unknown>)?.analysisProvider !== "fallback";
     await db.update(commercialTasks).set({ state: "queued", result: { ...progress, successfulSceneIds: succeeded ? [...successes, next] : successes, finishedSceneIds: [...finished, next] }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
     return;
@@ -96,7 +96,7 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
   const scene = progress.assets.scenes[index];
   if (!progress.versionId || !progress.sceneRecords?.[next]) throw new Error("ANALYSIS_CHECKPOINT_MISSING");
   let blueprint;
-  try { blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: input.pricing.model === "flash" ? "analysis-gemini-2-5-flash" : "analysis-gemini-2-5-pro", outputLanguage: input.outputLanguage, analysisApiKey: apiKey, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialOpenRouter: false }); }
+  try { blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: input.pricing.model === "flash" ? "analysis-gemini-2-5-flash" : "analysis-gemini-2-5-pro", outputLanguage: input.outputLanguage, analysisApiKey: apiKey, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false }); }
   catch { blueprint = buildFallbackSceneBlueprint(scene, "Analysis unavailable", undefined, input.outputLanguage); }
   const succeeded = blueprint.metadata?.analysisProvider === "kie";
   await db.transaction(async (tx) => {

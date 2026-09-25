@@ -229,7 +229,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await drain(quote.id);
     await runCommercialTask(quote.id);
     expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(analyzeSceneBlueprint).mock.calls[0][0]).toMatchObject({ analysisKeySource: "platform", forceFreeTrialOpenRouter: false });
+    expect(vi.mocked(analyzeSceneBlueprint).mock.calls[0][0]).toMatchObject({ analysisKeySource: "platform", forceFreeTrialKie: false });
     expect(await balance()).toMatchObject({ credits: 196, heldCredits: 0 });
     const task = (await testDb.select().from(schema.commercialTasks)).find((t) => t.id === quote.id)!;
     expect(task.state).toBe("completed");

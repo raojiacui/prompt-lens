@@ -744,6 +744,12 @@ export const projects = pgTable(
   })
 );
 
+export const trialAnalysisUsage = pgTable("trial_analysis_usage", {
+  userId: uuid("user_id").primaryKey().references(() => user.id, { onDelete: "cascade" }),
+  used: integer("used").default(0).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
 export const projectVersions = pgTable(
   "project_versions",
   {

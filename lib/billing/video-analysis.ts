@@ -7,8 +7,8 @@ export const VIDEO_ANALYSIS_SHORT_MAX_SECONDS = 10;
 export const VIDEO_ANALYSIS_DURATION_TOLERANCE_SECONDS = 0.75;
 export const VIDEO_ANALYSIS_LONG_VIDEO_BASE_CREDITS = 3;
 export const VIDEO_ANALYSIS_PER_SCENE_CREDITS = 1;
-export const FREE_TRIAL_ANALYSIS_PROVIDER = "openrouter";
-export const FREE_TRIAL_ANALYSIS_MODEL = "google/gemini-2.5-flash";
+export const FREE_TRIAL_ANALYSIS_PROVIDER = "kie";
+export const FREE_TRIAL_ANALYSIS_MODEL = "gemini-3-8-flash-openai";
 
 export type VideoAnalysisBillingMode = "admin" | "byok" | "platform_credits" | "trial";
 
@@ -159,7 +159,7 @@ export async function assertCanStartVideoAnalysis(userId: string, options: numbe
     await assertTrialQuota(userId);
   }
 
-  if (entitlement.mode === "platform_credits" || entitlement.mode === "trial") {
+  if (entitlement.mode === "platform_credits") {
     await assertHasCredits(userId, minimumCredits);
   }
   return entitlement;
@@ -178,7 +178,7 @@ export async function settleVideoAnalysisCredits(params: {
   metadata?: Record<string, unknown>;
 }) {
   const units = Math.max(1, Math.floor(params.units || 1));
-  if (params.entitlement.mode !== "platform_credits" && params.entitlement.mode !== "trial") return getSafeNonChargingBalance(params.userId, params.entitlement);
+  if (params.entitlement.mode !== "platform_credits") return getSafeNonChargingBalance(params.userId, params.entitlement);
   return deductCreditsFromUser({
     userId: params.userId,
     amount: units,

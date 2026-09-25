@@ -490,8 +490,8 @@ export async function runVideoBreakdown(params: {
           audio: sceneAudioContexts.get(scene.sceneIndex),
         };
         const analyzedBlueprint = isImage
-          ? await analyzeImageBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter })
-          : await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, analysisApiKey: params.analysisApiKey, analysisKeySource: params.analysisKeySource, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
+          ? await analyzeImageBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialKie: params.forceFreeTrialKie })
+          : await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, analysisApiKey: params.analysisApiKey, analysisKeySource: params.analysisKeySource, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialKie: params.forceFreeTrialKie });
         const blueprint = isImage ? analyzedBlueprint : attachBackgroundMusicToBlueprint(analyzedBlueprint, backgroundMusic);
         insertedBlueprints.push(blueprint);
         await db.insert(sceneVersions).values({
@@ -548,7 +548,10 @@ export async function runVideoBreakdown(params: {
       }
     }
 
-    const overview = params.commercialTaskId ? { theme: project.title, sceneCount: insertedBlueprints.length } : await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
+    if (params.forceFreeTrialKie && failedScenes.length) {
+      throw new Error(`Trial analysis failed: ${failedScenes[0].error}`);
+    }
+    const overview = params.commercialTaskId ? { theme: project.title, sceneCount: insertedBlueprints.length } : await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialKie: params.forceFreeTrialKie });
     const overviewWithMusic = backgroundMusicMetadata
       ? {
           ...overview,
@@ -645,7 +648,7 @@ export async function createRemixVersion(params: {
     });
   }
 
-  const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: remixedBlueprints, remixPrompt: params.remixPrompt, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter });
+  const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: remixedBlueprints, remixPrompt: params.remixPrompt, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialKie: params.forceFreeTrialKie });
   await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
   await db.update(projects).set({ activeVersionId: version.id, updatedAt: new Date() }).where(eq(projects.id, params.projectId));
   return getProjectBundle(params.projectId, params.userId);
@@ -785,9 +788,12 @@ export async function retrySceneAnalysis(params: {
     modelPriority: params.modelPriority,
     outputLanguage: params.outputLanguage,
     allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis,
-    forceFreeTrialOpenRouter: params.forceFreeTrialOpenRouter,
+    forceFreeTrialKie: params.forceFreeTrialKie,
   });
   const usedFallback = blueprint.metadata?.analysisProvider === "fallback";
+  if (params.forceFreeTrialKie && usedFallback) {
+    throw new Error(String(blueprint.metadata?.fallbackReason || "Trial analysis failed"));
+  }
 
   const [updated] = await db
     .update(sceneVersions)

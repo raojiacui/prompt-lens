@@ -44,8 +44,8 @@ describe("BYOK API keys", () => {
 });
 
 describe("Analysis provider billing", () => {
-  it("uses OpenRouter only for the free trial", () => {
-    expect(resolveAnalysisProviderForBillingMode("trial")).toBe("openrouter");
+  it("uses KIE for the free trial", () => {
+    expect(resolveAnalysisProviderForBillingMode("trial")).toBe("kie");
   });
 
   it.each(["byok", "platform_credits", "admin"])("uses KIE for %s mode", (mode) => {

@@ -8,10 +8,6 @@
  * 无 DATABASE_URL 的 fallback 场景不应因为加载 chat 而崩溃。
  */
 
-type ChatProvider = "deepseek" | "zhipu" | "openrouter";
-
-const PLANNER_PROVIDERS: ChatProvider[] = ["openrouter", "zhipu", "deepseek"];
-
 export interface AgentChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
@@ -19,43 +15,24 @@ export interface AgentChatMessage {
 
 /**
  * 尝试调用现有 AI provider 生成文本。
- * 按 PLANNER_PROVIDERS 顺序尝试，任一成功即返回；全部失败返回 null。
+ * 仅使用 KIE；无可用 Key 或请求失败时返回 null。
  */
 export async function tryAgentChat(
   userId: string,
   messages: AgentChatMessage[],
-  preferredProvider?: string | null
+  _preferredProvider?: string | null
 ): Promise<{ content: string; provider: string } | null> {
   // 显式禁用 AI（测试/演示/无网络环境）时直接走 fallback，避免无效网络/DB 等待
   if (process.env.AGENT_DISABLE_AI === "1" || process.env.AGENT_DISABLE_AI === "true") {
     return null;
   }
-  const order: ChatProvider[] = [];
-  if (preferredProvider && PLANNER_PROVIDERS.includes(preferredProvider as ChatProvider)) {
-    order.push(preferredProvider as ChatProvider);
-  }
-  for (const p of PLANNER_PROVIDERS) {
-    if (!order.includes(p)) order.push(p);
-  }
-
-  for (const provider of order) {
-    try {
-      const { callAIProvider } = await import("@/lib/ai/chat");
-      const content = await callAIProvider({
-        userId,
-        provider,
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      });
-      if (content && content.trim()) {
-        return { content: content.trim(), provider };
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      // "No API key configured" 是预期的无 key 情况，静默继续尝试下一个
-      if (!msg.includes("No API key configured")) {
-        console.warn(`[agent-ai] ${provider} call failed:`, msg);
-      }
-    }
+  try {
+    const { callAIProvider } = await import("@/lib/ai/chat");
+    const content = await callAIProvider({ userId, messages });
+    if (content.trim()) return { content: content.trim(), provider: "kie" };
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error);
+    if (!msg.includes("No KIE API key configured")) console.warn("[agent-ai] KIE call failed:", msg);
   }
   return null;
 }

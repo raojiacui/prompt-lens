@@ -89,7 +89,7 @@ POST /breakdown
 - 认证：better-auth
 - 存储：Cloudflare R2
 - 视频处理：本地/self-hosted FFmpeg worker
-- AI 分析：Kie.ai / OpenRouter / 其他模型路由
+- AI 分析：Kie.ai（免费试用锁定 Gemini 3.8 Flash）
 - 视频生成：Kie.ai 系列接口
 - 支付：Creem、XunhuPay / 虎皮椒
 - 测试：Vitest, Playwright
@@ -130,8 +130,6 @@ FFMPEG_WORKER_SECRET=your-worker-secret
 BYOK_ENCRYPTION_KEY=your-32-byte-compatible-secret
 
 KIE_API_KEY=your-kie-api-key
-OPENROUTER_API_KEY=your-openrouter-api-key
-OPENROUTER_ANALYSIS_MODEL=google/gemini-2.5-flash
 ```
 
 本地 worker 脚本会自动把 `FFMPEG_WORKER_SECRET` 映射成 worker 内部使用的 `WORKER_SECRET`。

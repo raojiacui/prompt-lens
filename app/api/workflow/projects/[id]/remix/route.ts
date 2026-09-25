@@ -19,7 +19,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const modelSelection = parseWorkflowModelSelection(body);
   const selectedModel = modelSelection.modelMode === "manual" && modelSelection.modelId ? getModelById(modelSelection.modelId) : null;
   if (selectedModel && selectedModel.provider !== "kie") {
-    return NextResponse.json({ error: "视频 remix 只支持 KIE 模型。免费 OpenRouter Gemini 仅用于两次视频分析试用。", code: "KIE_MODEL_REQUIRED" }, { status: 400 });
+    return NextResponse.json({ error: "视频 remix 只支持 KIE 模型。", code: "KIE_MODEL_REQUIRED" }, { status: 400 });
   }
 
   const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_analysis" });

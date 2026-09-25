@@ -2,9 +2,7 @@ import { z } from "zod";
 import type { ToolDefinition } from "../types";
 import { logTool, ok, fail } from "./shared";
 
-const inputSchema = z.object({
-  provider: z.enum(["zhipu", "gemini", "openrouter", "kie"]).optional(),
-});
+const inputSchema = z.object({});
 
 /**
  * call_existing_analyze_api —— 加分项工具
@@ -53,16 +51,33 @@ export const callExistingAnalyzeApiTool: ToolDefinition = {
       return ok(nextAction, "No frames available; added a next-action to analyze manually.");
     }
 
+    let trialUserId: string | null = null;
+    let trialCompleted = false;
     try {
       // 动态导入，保持工具注册表在无 analyzer 依赖时仍可加载
       const { analyzeFrames } = await import("@/lib/ai/analyzer");
-      const provider = parsed.data.provider || "openrouter";
+      const { assertCanStartVideoAnalysis, FREE_TRIAL_ANALYSIS_MODEL, settleVideoAnalysisCredits } = await import("@/lib/billing/video-analysis");
+      const { reserveTrialAnalysis } = await import("@/lib/usage/trial-quota");
+      const { getPlatformKieApiKey, resolveKieApiKeyForFeature } = await import("@/lib/billing/platform-access");
+      const { db, analysisHistory, operationLogs } = await import("@/lib/db");
+      const entitlement = await assertCanStartVideoAnalysis(ctx.userId, 1);
+      const apiKey = entitlement.mode === "trial"
+        ? getPlatformKieApiKey()
+        : (await resolveKieApiKeyForFeature(ctx.userId, { requiredPackageScope: "video_analysis" })).apiKey;
+      if (!apiKey) throw new Error("KIE API Key is not configured");
+      if (entitlement.mode === "trial") {
+        await reserveTrialAnalysis(ctx.userId);
+        trialUserId = ctx.userId;
+      }
+      const provider = "kie";
       const result = await analyzeFrames({
         userId: ctx.userId,
         provider,
         frames: frames.slice(0, 12),
         mode: "single",
         outputLanguage: (ctx.locale === "zh" ? "zh" : "en") as "zh" | "en",
+        apiKeyOverride: apiKey,
+        modelId: entitlement.mode === "trial" ? FREE_TRIAL_ANALYSIS_MODEL : undefined,
       });
 
       if (!result.success) {
@@ -79,6 +94,25 @@ export const callExistingAnalyzeApiTool: ToolDefinition = {
         await ctx.saveArtifact({ type: "other", title: "Visual Analysis (needs API key)", content: fallback, metadata: { deferred: true } });
         return ok(fallback, "Analysis unavailable (no API key); added a next-action.");
       }
+
+      await db.insert(analysisHistory).values({
+        userId: ctx.userId,
+        mediaType: videoAttachments.length ? "video" : "image",
+        mediaName: ctx.attachments[0]?.name || "Agent attachment",
+        frameCount: frames.length,
+        analyzeMode: "single",
+        prompt: result.prompt!,
+        corePrompt: result.corePrompt,
+        language: ctx.locale === "zh" ? "zh" : "en",
+      });
+      await settleVideoAnalysisCredits({ userId: ctx.userId, entitlement, units: 1, metadata: { agentRunId: ctx.runId } });
+      await db.insert(operationLogs).values({
+        userId: ctx.userId,
+        action: "analysis.complete",
+        resourceType: videoAttachments.length ? "video" : "image",
+        metadata: { billingMode: entitlement.mode, provider: "kie", agentRunId: ctx.runId },
+      });
+      trialCompleted = true;
 
       const analysis = {
         analyzed: true,
@@ -97,6 +131,11 @@ export const callExistingAnalyzeApiTool: ToolDefinition = {
       logTool(ctx, "call_existing_analyze_api", "error", message);
       // 不因为分析失败而让整个 run 失败
       return ok({ analyzed: false, reason: message }, "Analysis could not run; continuing with the rest of the plan.");
+    } finally {
+      if (trialUserId && !trialCompleted) {
+        const { releaseTrialAnalysis } = await import("@/lib/usage/trial-quota");
+        await releaseTrialAnalysis(trialUserId).catch((error) => console.error("Failed to release trial reservation:", error));
+      }
     }
   },
 };

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { account, creditLedger, session, user, userCredits, verification } from "@/lib/db/schema";
+import { account, session, user, verification } from "@/lib/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
@@ -108,24 +108,6 @@ export const auth = betterAuth({
           const userEmail = createdUser.email?.toLowerCase();
 
 
-          await db
-            .insert(userCredits)
-            .values({
-              userId: createdUser.id,
-              balance: 2,
-              lifetimeGranted: 2,
-              metadata: { source: "signup_bonus" },
-            })
-            .onConflictDoNothing({ target: userCredits.userId });
-
-          await db.insert(creditLedger).values({
-            userId: createdUser.id,
-            amount: 2,
-            balanceAfter: 2,
-            type: "manual_grant",
-            note: "注册赠送 2 积分",
-            metadata: { source: "signup_bonus" },
-          });
           if (userEmail && adminEmails.includes(userEmail)) {
             await db
               .update(user)

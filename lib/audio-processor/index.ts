@@ -2,7 +2,7 @@ import ffmpeg from "fluent-ffmpeg";
 import path from "path";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
-import { TranscriptionSegment } from "./llm-segmenter";
+type TranscriptionSegment = { start: number; end: number; text: string };
 
 // 设置 FFmpeg 路径 - 指向 win32-x64 目录
 const ffmpegPath = path.join(

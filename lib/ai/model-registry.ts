@@ -1,5 +1,5 @@
 ﻿export type ModelCategory = "analysis" | "video_generation" | "audio" | "video_edit";
-export type ModelProvider = "kie" | "openrouter";
+export type ModelProvider = "kie";
 export type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
 
 export type ModelCapability =
@@ -55,6 +55,58 @@ export interface ModelSelectionInput {
 
 export const modelRegistry: ModelRegistryEntry[] = [
   {
+    id: "analysis-gemini-3-8-flash",
+    displayName: "Gemini 3.8 Flash",
+    family: "Gemini",
+    category: "analysis",
+    provider: "kie",
+    kieModelId: "gemini-3-8-flash-openai",
+    enabled: true,
+    capabilities: ["text", "image", "video"],
+    speedLevel: 5,
+    qualityLevel: 5,
+    costLevel: 2,
+  },
+  {
+    id: "analysis-gemini-3-7-flash",
+    displayName: "Gemini 3.7 Flash",
+    family: "Gemini",
+    category: "analysis",
+    provider: "kie",
+    kieModelId: "gemini-3-7-flash-openai",
+    enabled: true,
+    capabilities: ["text", "image", "video"],
+    speedLevel: 5,
+    qualityLevel: 4,
+    costLevel: 2,
+  },
+  {
+    id: "analysis-gemini-3-6-flash",
+    displayName: "Gemini 3.6 Flash",
+    family: "Gemini",
+    category: "analysis",
+    provider: "kie",
+    kieModelId: "gemini-3-6-flash-openai",
+    enabled: true,
+    capabilities: ["text", "image", "video"],
+    speedLevel: 5,
+    qualityLevel: 4,
+    costLevel: 2,
+  },
+  {
+    id: "analysis-gemini-3-5-flash",
+    displayName: "Gemini 3.5 Flash",
+    family: "Gemini",
+    category: "analysis",
+    provider: "kie",
+    kieModelId: "gemini-3-5-flash-openai",
+    enabled: true,
+    capabilities: ["text", "image", "video"],
+    speedLevel: 4,
+    qualityLevel: 4,
+    costLevel: 4,
+  },
+  {
     id: "analysis-gemini-2-5-flash",
     displayName: "Gemini 2.5 Flash",
     family: "Gemini",
@@ -80,20 +132,6 @@ export const modelRegistry: ModelRegistryEntry[] = [
     qualityLevel: 5,
     costLevel: 4,
   },
-  {
-    id: "analysis-openrouter-gemini-2-5-flash",
-    displayName: "Gemini 2.5 Flash",
-    family: "Gemini",
-    category: "analysis",
-    provider: "openrouter",
-    kieModelId: "google/gemini-2.5-flash",
-    enabled: false,
-    capabilities: ["text", "image", "video"],
-    speedLevel: 5,
-    qualityLevel: 4,
-    costLevel: 1,
-  },
-
   {
     id: "sora-2-text-video",
     displayName: "Sora 2 Text to Video",

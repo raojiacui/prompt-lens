@@ -448,6 +448,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }
 
   function analysisSelectionPayload() {
+    if (creditStatus?.mode === "trial") {
+      return { modelMode: "auto" as ModelMode, modelId: undefined, modelPriority, outputLanguage: analysisOutputLanguage };
+    }
     const manualModelId = analysisModelValue === "auto" ? "" : analysisModelValue;
     return {
       modelMode: manualModelId ? "manual" as ModelMode : "auto" as ModelMode,
@@ -856,9 +859,10 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <ModelSelector
               label="Analysis model"
-              value={analysisModelValue}
+              value={creditStatus?.mode === "trial" ? "analysis-gemini-3-8-flash" : analysisModelValue}
               models={analysisModels}
               onChange={setAnalysisModelValue}
+              disabled={creditStatus?.mode === "trial"}
             />
             <LanguageSelector
               value={analysisOutputLanguage}
@@ -1179,11 +1183,13 @@ function ModelSelector({
   value,
   models,
   onChange,
+  disabled = false,
 }: {
   label: string;
   value: string;
   models: ModelOption[];
   onChange: (modelId: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <label className="grid gap-2 text-sm font-medium">
@@ -1191,6 +1197,7 @@ function ModelSelector({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
         className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
       >
         <option value="auto">Auto · Balanced</option>
