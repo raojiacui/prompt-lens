@@ -33,7 +33,7 @@ export const callExistingVideoGenerateApiTool: ToolDefinition = {
     logTool(ctx, "call_existing_video_generate_api", "start");
 
     // 复用现有限制：每分钟 3 次
-    const { allowed, resetIn } = checkRateLimit(`agent-video-gen:${ctx.userId}`, 3, 60_000);
+    const { allowed, resetIn } = await checkRateLimit(`agent-video-gen:${ctx.userId}`, 3, 60_000);
     if (!allowed) {
       return ok(
         { created: false, reason: "rate_limited", retryAfter: Math.ceil(resetIn / 1000) },

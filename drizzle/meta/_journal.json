@@ -120,6 +120,13 @@
                         "when":  1790323200000,
                         "tag":  "0016_trial_analysis_usage",
                         "breakpoints":  true
+                    },
+                    {
+                        "idx": 17,
+                        "version": "7",
+                        "when": 1790323200001,
+                        "tag": "0017_request_reservations",
+                        "breakpoints": true
                     }
                 ]
 }

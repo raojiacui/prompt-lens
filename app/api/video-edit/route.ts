@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { allowed, resetIn } = checkRateLimit(
+    const { allowed, resetIn } = await checkRateLimit(
       session.user.id,
       RateLimitConfigs.analyze.limit,
       RateLimitConfigs.analyze.windowMs

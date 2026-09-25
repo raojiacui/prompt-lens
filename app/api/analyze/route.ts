@@ -7,14 +7,14 @@ import { defaultLocale, isLocale } from "@/i18n/config";
 import { assertCanStartVideoAnalysis, settleVideoAnalysisCredits, type VideoAnalysisEntitlement, videoAnalysisBillingErrorResponse } from "@/lib/billing/video-analysis";
 import { getPlatformKieApiKey, kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 import { FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/billing/video-analysis";
-import { releaseTrialAnalysis, reserveTrialAnalysis } from "@/lib/usage/trial-quota";
+import { completeTrialAnalysis, releaseTrialAnalysis, reserveTrialAnalysis } from "@/lib/usage/trial-quota";
 
 function shouldChargeCredits(entitlement: VideoAnalysisEntitlement) {
   return entitlement.mode === "platform_credits";
 }
 
 export async function POST(request: NextRequest) {
-  let trialUserId: string | null = null;
+  let trialReservationId: string | null = null;
   let trialCompleted = false;
   try {
     const session = await auth.api.getSession({ headers: request.headers });
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = session.user.id;
-    const { allowed, resetIn } = checkRateLimit(
+    const { allowed, resetIn } = await checkRateLimit(
       userId,
       RateLimitConfigs.analyze.limit,
       RateLimitConfigs.analyze.windowMs
@@ -71,8 +71,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(kieAccessError("视频分析"), { status: 402 });
     }
     if (entitlement.mode === "trial") {
-      await reserveTrialAnalysis(userId);
-      trialUserId = userId;
+      trialReservationId = await reserveTrialAnalysis(userId);
     }
 
     await db.insert(operationLogs).values({
@@ -128,6 +127,7 @@ export async function POST(request: NextRequest) {
       resourceId: historyRecord[0].id,
       metadata: { mediaUrl, frameCount: frames.length, analyzeMode, provider: resolvedProvider, billingMode: entitlement.mode, keySource: keyAccess.source },
     });
+    await completeTrialAnalysis(trialReservationId);
     trialCompleted = true;
 
     return NextResponse.json({
@@ -143,6 +143,6 @@ export async function POST(request: NextRequest) {
     console.error("Analyze error:", error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Analysis failed" }, { status: 500 });
   } finally {
-    if (trialUserId && !trialCompleted) await releaseTrialAnalysis(trialUserId).catch((error) => console.error("Failed to release trial reservation:", error));
+    if (trialReservationId && !trialCompleted) await releaseTrialAnalysis(trialReservationId).catch((error) => console.error("Failed to release trial reservation:", error));
   }
 }

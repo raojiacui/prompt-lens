@@ -114,7 +114,7 @@ export async function executeAgentRun(
   if (!existing) throw new AgentError("NOT_FOUND", "Agent run not found", 404);
 
   // 速率限制：每分钟最多 10 次执行/继续
-  const { allowed, resetIn } = checkRateLimit(`agent-execute:${userId}`, 10, 60_000);
+  const { allowed, resetIn } = await checkRateLimit(`agent-execute:${userId}`, 10, 60_000);
   if (!allowed) {
     throw new AgentError("RATE_LIMITED", "Too many agent executions, please slow down", 429, { retryAfter: Math.ceil(resetIn / 1000) });
   }

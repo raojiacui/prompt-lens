@@ -51,13 +51,13 @@ export const callExistingAnalyzeApiTool: ToolDefinition = {
       return ok(nextAction, "No frames available; added a next-action to analyze manually.");
     }
 
-    let trialUserId: string | null = null;
+    let trialReservationId: string | null = null;
     let trialCompleted = false;
     try {
       // 动态导入，保持工具注册表在无 analyzer 依赖时仍可加载
       const { analyzeFrames } = await import("@/lib/ai/analyzer");
       const { assertCanStartVideoAnalysis, FREE_TRIAL_ANALYSIS_MODEL, settleVideoAnalysisCredits } = await import("@/lib/billing/video-analysis");
-      const { reserveTrialAnalysis } = await import("@/lib/usage/trial-quota");
+      const { reserveTrialAnalysis, completeTrialAnalysis } = await import("@/lib/usage/trial-quota");
       const { getPlatformKieApiKey, resolveKieApiKeyForFeature } = await import("@/lib/billing/platform-access");
       const { db, analysisHistory, operationLogs } = await import("@/lib/db");
       const entitlement = await assertCanStartVideoAnalysis(ctx.userId, 1);
@@ -66,8 +66,7 @@ export const callExistingAnalyzeApiTool: ToolDefinition = {
         : (await resolveKieApiKeyForFeature(ctx.userId, { requiredPackageScope: "video_analysis" })).apiKey;
       if (!apiKey) throw new Error("KIE API Key is not configured");
       if (entitlement.mode === "trial") {
-        await reserveTrialAnalysis(ctx.userId);
-        trialUserId = ctx.userId;
+        trialReservationId = await reserveTrialAnalysis(ctx.userId);
       }
       const provider = "kie";
       const result = await analyzeFrames({
@@ -112,6 +111,7 @@ export const callExistingAnalyzeApiTool: ToolDefinition = {
         resourceType: videoAttachments.length ? "video" : "image",
         metadata: { billingMode: entitlement.mode, provider: "kie", agentRunId: ctx.runId },
       });
+      await completeTrialAnalysis(trialReservationId);
       trialCompleted = true;
 
       const analysis = {
@@ -132,9 +132,9 @@ export const callExistingAnalyzeApiTool: ToolDefinition = {
       // 不因为分析失败而让整个 run 失败
       return ok({ analyzed: false, reason: message }, "Analysis could not run; continuing with the rest of the plan.");
     } finally {
-      if (trialUserId && !trialCompleted) {
+      if (trialReservationId && !trialCompleted) {
         const { releaseTrialAnalysis } = await import("@/lib/usage/trial-quota");
-        await releaseTrialAnalysis(trialUserId).catch((error) => console.error("Failed to release trial reservation:", error));
+        await releaseTrialAnalysis(trialReservationId).catch((error) => console.error("Failed to release trial reservation:", error));
       }
     }
   },

@@ -750,6 +750,21 @@ export const trialAnalysisUsage = pgTable("trial_analysis_usage", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const trialAnalysisReservations = pgTable("trial_analysis_reservations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  taskKey: text("task_key").notNull(),
+  state: varchar("state", { length: 20 }).notNull().default("pending"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [uniqueIndex("trial_reservation_task_unique").on(t.userId, t.taskKey), index("trial_reservation_expiry_idx").on(t.state, t.expiresAt)]);
+
+export const apiRateLimits = pgTable("api_rate_limits", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull(),
+  resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+}, (t) => [index("api_rate_limit_expiry_idx").on(t.resetAt)]);
+
 export const projectVersions = pgTable(
   "project_versions",
   {

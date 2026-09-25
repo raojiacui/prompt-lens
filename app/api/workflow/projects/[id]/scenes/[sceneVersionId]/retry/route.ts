@@ -4,7 +4,7 @@ import { retrySceneAnalysis } from "@/lib/workflow/service";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 import { defaultLocale, isLocale } from "@/i18n/config";
 import { db, operationLogs } from "@/lib/db";
-import { releaseTrialAnalysis, reserveTrialAnalysis } from "@/lib/usage/trial-quota";
+import { completeTrialAnalysis, releaseTrialAnalysis, reserveTrialAnalysis } from "@/lib/usage/trial-quota";
 import { assertCanStartVideoAnalysis, settleVideoAnalysisCredits, type VideoAnalysisEntitlement, videoAnalysisBillingErrorResponse } from "@/lib/billing/video-analysis";
 
 function shouldChargeCredits(entitlement: VideoAnalysisEntitlement) {
@@ -15,7 +15,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; sceneVersionId: string }> },
 ) {
-  let trialUserId: string | null = null;
+  let trialReservationId: string | null = null;
   let trialCompleted = false;
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -27,8 +27,7 @@ export async function POST(
   try {
     const entitlement = await assertCanStartVideoAnalysis(session.user.id, 1);
     if (entitlement.mode === "trial") {
-      await reserveTrialAnalysis(session.user.id);
-      trialUserId = session.user.id;
+      trialReservationId = await reserveTrialAnalysis(session.user.id);
     }
     const chargeCredits = shouldChargeCredits(entitlement);
     const scene = await retrySceneAnalysis({
@@ -49,6 +48,7 @@ export async function POST(
     });
     if (entitlement.mode === "trial") {
       await db.insert(operationLogs).values({ userId: session.user.id, action: "analysis.complete", resourceType: "video", resourceId: sceneVersionId, metadata: { billingMode: "trial", provider: "kie", feature: "scene_retry" } });
+      await completeTrialAnalysis(trialReservationId);
       trialCompleted = true;
     }
     return NextResponse.json({ scene, billing: { mode: entitlement.mode, chargedCredits: chargeCredits ? 1 : 0, balance: credits.balance } });
@@ -57,6 +57,6 @@ export async function POST(
     if (billingError) return NextResponse.json(billingError, { status: 402 });
     return NextResponse.json({ error: error instanceof Error ? error.message : "Scene retry failed" }, { status: 500 });
   } finally {
-    if (trialUserId && !trialCompleted) await releaseTrialAnalysis(trialUserId).catch((error) => console.error("Failed to release trial reservation:", error));
+    if (trialReservationId && !trialCompleted) await releaseTrialAnalysis(trialReservationId).catch((error) => console.error("Failed to release trial reservation:", error));
   }
 }

@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   }
 
-  const { allowed, resetIn } = checkRateLimit(`linked-media:${session.user.id}`, 3, 60_000);
+  const { allowed, resetIn } = await checkRateLimit(`linked-media:${session.user.id}`, 3, 60_000);
   if (!allowed) {
     return NextResponse.json({ error: `链接解析过于频繁，请在 ${Math.ceil(resetIn / 1000)} 秒后重试。` }, { status: 429 });
   }

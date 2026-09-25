@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq, sql } from "drizzle-orm";
-import { db, paymentOrders, commercialTasks } from "@/lib/db";
+import { apiRateLimits, db, paymentOrders, commercialTasks } from "@/lib/db";
+import { expireTrialReservations } from "@/lib/usage/trial-quota";
 import { reconcilePaymentOrder } from "@/lib/payments/xunhupay-reconciliation";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 import { commercialConsumptionEnabled } from "@/lib/billing/commercial-analysis";
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
   const expected = process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : "";
   const provided = request.headers.get("authorization") || "";
   if (!expected || Buffer.byteLength(expected) !== Buffer.byteLength(provided) || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(provided))) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  await expireTrialReservations();
+  await db.delete(apiRateLimits).where(sql`${apiRateLimits.resetAt} < now() - interval '1 day'`);
   const orders = await db.select({ id: paymentOrders.id, provider: paymentOrders.provider }).from(paymentOrders).where(and(sql`${paymentOrders.provider} IN ('xunhupay', 'alipay')`, eq(paymentOrders.status, "pending"), sql`${paymentOrders.createdAt} > now() - interval '24 hours'`)).orderBy(sql`COALESCE((${paymentOrders.metadata}->>'queryAfter')::bigint, 0)`, asc(paymentOrders.createdAt)).limit(3);
   let checked = 0;
   for (const order of orders) { try { if (order.provider === "alipay") await reconcileAlipayOrder(order.id); else await reconcilePaymentOrder(order.id); checked++; } catch { /* Keep uncertain orders pending for the next run. */ } }
