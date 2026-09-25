@@ -15,7 +15,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, mode: "byok", trial: { limit: 2, remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 } };
       else if (path === "/api/models") body = { models: [] };
       else if (path === "/api/workflow/projects") body = route.request().method() === "POST" ? { project: { id: projectId } } : { projects: [] };
-      else if (path === "/api/upload-b2") body = { presignedUrl: "https://example.com/upload", publicUrl: "https://example.com/video.mp4", key: "uploaded", mediaType: "video" };
+      else if (path === "/api/upload") body = { presignedUrl: "https://example.com/upload", publicUrl: "https://example.com/video.mp4", key: "uploaded", mediaType: "video" };
       else if (path === "/api/commercial/analysis") {
         const data = route.request().postDataJSON();
         if (data.action === "prepare") body = { id: "preview", durationUs: 10000000, scenes: [{ id: "1", startUs: 0, endUs: 2000000 }, { id: "2", startUs: 2000000, endUs: 10000000 }] };

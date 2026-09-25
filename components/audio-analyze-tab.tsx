@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
+import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { useTranslations } from "next-intl";
 import { Copy, Download, Mic2, Upload, X } from "lucide-react";
 
@@ -172,7 +172,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
     setClipUrl(null);
 
     try {
-      const uploadData = await uploadMediaToBlob(selectedFile, (percentage) => {
+      const uploadData = await uploadMediaToR2(selectedFile, (percentage) => {
         setProgress(t("uploadingProgress", { percent: Math.round(percentage) }));
       });
 

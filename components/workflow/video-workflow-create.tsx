@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { AnalysisQuoteDialog } from "@/components/payments/analysis-quote-dialog";
-import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
+import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -581,7 +581,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     try {
       const prepared: PreparedMedia = isLinkedMedia
         ? await resolveLinkedMedia()
-        : await uploadMediaToBlob(file!, (percentage) => {
+        : await uploadMediaToR2(file!, (percentage) => {
             const uploadPercent = Math.round(percentage);
             setProgress(`Uploading ${uploadPercent}%`);
             setAnalysisProgress({
@@ -1196,7 +1196,7 @@ function ModelSelector({
         <option value="auto">Auto · Balanced</option>
         {models.map((model) => (
           <option key={model.id} value={model.id}>
-            {model.displayName}{model.provider === "openrouter" ? " · OpenRouter" : ""}{model.experimental ? " · Experimental" : ""}
+            {model.displayName}{model.experimental ? " · Experimental" : ""}
           </option>
         ))}
       </select>

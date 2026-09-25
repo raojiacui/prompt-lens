@@ -26,7 +26,7 @@ function getMediaType(file: File): "video" | "image" {
  * 通过 R2 presigned URL 直传文件，不经过 Vercel 服务器。
  * 视频文件大小上限由后端配置控制。
  */
-export async function uploadMediaToBlob(
+export async function uploadMediaToR2(
   file: File,
   onProgress?: (percentage: number) => void
 ): Promise<UploadedMedia> {
@@ -34,7 +34,7 @@ export async function uploadMediaToBlob(
   const contentType = file.type || (mediaType === "video" ? "video/mp4" : "image/jpeg");
 
   // 1. 从后端拿 presigned URL
-  const tokenRes = await fetch("/api/upload-b2", {
+  const tokenRes = await fetch("/api/upload", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -52,19 +52,9 @@ export async function uploadMediaToBlob(
 
   const { presignedUrl, publicUrl, key } = await tokenRes.json();
 
-  // 2. 用 XMLHttpRequest 直传 R2，支持进度回调。浏览器 CORS/network 失败时走服务端兜底上传。
-  try {
-    await uploadWithPresignedUrl(file, presignedUrl, contentType, onProgress);
-  } catch (error) {
-    if (!isDirectUploadNetworkError(error)) {
-      throw error;
-    }
+  await uploadWithPresignedUrl(file, presignedUrl, contentType, onProgress);
 
-    console.warn("Direct R2 upload failed, falling back to server upload:", error);
-    return uploadViaServer(file, mediaType, contentType, onProgress);
-  }
-
-  await fetch("/api/upload/complete", {
+  const completion = await fetch("/api/upload/complete", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -74,9 +64,10 @@ export async function uploadMediaToBlob(
       mediaType,
       size: file.size,
     }),
-  }).catch((error) => {
-    console.warn("Failed to record upload completion:", error);
   });
+  if (!completion.ok) {
+    throw new Error(await readUploadError(completion, "Failed to verify R2 upload"));
+  }
   return {
     url: publicUrl,
     filename: file.name,
@@ -113,52 +104,13 @@ async function uploadWithPresignedUrl(
       }
     };
 
-    xhr.onerror = () => reject(new Error("R2 upload network error"));
+    xhr.onerror = () => reject(new Error("R2 upload failed. Check R2 CORS and your connection, then retry."));
     xhr.onabort = () => reject(new Error("R2 upload aborted"));
 
     xhr.send(file);
   });
 }
 
-function isDirectUploadNetworkError(error: unknown) {
-  return error instanceof Error && error.message === "R2 upload network error";
-}
-
-async function uploadViaServer(
-  file: File,
-  mediaType: "video" | "image",
-  contentType: string,
-  onProgress?: (percentage: number) => void
-): Promise<UploadedMedia> {
-  onProgress?.(1);
-
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("filename", file.name);
-  formData.append("contentType", contentType);
-  formData.append("mediaType", mediaType);
-
-  const uploadRes = await fetch("/api/upload-b2", {
-    method: "POST",
-    body: formData,
-  });
-
-  if (!uploadRes.ok) {
-    const message = await readUploadError(uploadRes, "Failed to upload via server");
-    throw new Error(message);
-  }
-
-  const data = await uploadRes.json();
-  onProgress?.(100);
-
-  return {
-    url: data.publicUrl,
-    filename: file.name,
-    mediaType,
-    size: file.size,
-    key: data.key,
-  };
-}
 async function readUploadError(response: Response, fallback: string) {
   const status = `${response.status} ${response.statusText}`.trim();
   const contentType = response.headers.get("content-type") || "";

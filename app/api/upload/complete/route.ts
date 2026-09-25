@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, operationLogs } from "@/lib/db";
+import { getR2ObjectSize, getR2PublicUrl } from "@/lib/cloudflare/r2";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,8 +15,16 @@ export async function POST(request: NextRequest) {
     const mediaType = body?.mediaType === "video" || body?.mediaType === "image" ? body.mediaType : "file";
     const size = typeof body?.size === "number" && Number.isFinite(body.size) ? body.size : 0;
 
-    if (!key || !url || !filename) {
+    if (!key.startsWith(`uploads/${session.user.id}/`) || !url || !filename || size <= 0) {
       return NextResponse.json({ error: "Missing upload completion payload" }, { status: 400 });
+    }
+    if (url !== getR2PublicUrl(key)) {
+      return NextResponse.json({ error: "Upload URL does not match R2 object" }, { status: 400 });
+    }
+
+    const objectSize = await getR2ObjectSize(key);
+    if (objectSize !== size) {
+      return NextResponse.json({ error: "Uploaded file could not be verified" }, { status: 409 });
     }
 
     await db.insert(operationLogs).values({

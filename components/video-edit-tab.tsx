@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { uploadMediaToBlob } from "@/lib/vercel-blob-client";
+import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { useTranslations } from "next-intl";
 import { Copy, Flag, Link, Paperclip, Scissors, Trash2, Wand2, X, ZoomIn, ZoomOut } from "lucide-react";
 
@@ -369,7 +369,7 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
         }
         setProgress(t("uploading"));
         try {
-          const uploadData = await uploadMediaToBlob(videoFile, (percentage) => {
+          const uploadData = await uploadMediaToR2(videoFile, (percentage) => {
             setProgress(t("uploadingProgress", { percent: Math.round(percentage) }));
           });
           finalVideoUrl = uploadData.url;
