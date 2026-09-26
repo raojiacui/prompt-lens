@@ -31,11 +31,11 @@ export async function GET(request: NextRequest, { params }: Context) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ code: "INVALID_TASK" }, { status: 400 });
   let task = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) });
   if (!task) return NextResponse.json({ code: "TASK_NOT_FOUND" }, { status: 404 });
-  if (task.kind === "analysis" && ["running", "review"].includes(task.state) && task.updatedAt.getTime() < Date.now() - 6 * 60000) {
+  if (task.kind === "analysis" && ((["running", "review"].includes(task.state) && task.updatedAt.getTime() < Date.now() - 6 * 60000) || (task.state === "queued" && task.updatedAt.getTime() < Date.now() - 24 * 3600000))) {
     await recoverCommercialAnalysisTasks();
     task = (await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) }))!;
   }
-  if (task.kind === "workflow_analysis" && task.state === "running" && task.updatedAt.getTime() < Date.now() - 6 * 60000) {
+  if (task.kind === "workflow_analysis" && ((task.state === "running" && task.updatedAt.getTime() < Date.now() - 6 * 60000) || (task.state === "queued" && task.expiresAt.getTime() < Date.now()))) {
     await recoverAnalysisTasks();
     task = (await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) }))!;
   }
@@ -49,5 +49,8 @@ export async function GET(request: NextRequest, { params }: Context) {
   const success = Array.isArray(result.successfulSceneIds) ? result.successfulSceneIds.length : 0;
   const retryAvailable = task.kind === "analysis" && ["completed", "failed"].includes(task.state) && !result.nextTaskId && Boolean(result.assets) && success < (input.pricing?.scenes.length || 0);
   const bundle = ["analysis", "workflow_analysis"].includes(task.kind) && ["completed", "failed"].includes(task.state) ? await commercialAnalysisBundle(task) : undefined;
-  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId }, { headers: { "Cache-Control": "private, no-store" } });
+  const totalScenes = task.kind === "workflow_analysis" ? (result.assets as { scenes?: unknown[] } | undefined)?.scenes?.length || 0 : input.pricing?.scenes.length || 0;
+  const completedScenes = task.kind === "workflow_analysis" ? Number(result.cursor || 0) : Array.isArray(result.finishedSceneIds) ? result.finishedSceneIds.length : 0;
+  const partial = task.kind === "workflow_analysis" ? Boolean(result.partial) : success > 0 && success < totalScenes;
+  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error }, { headers: { "Cache-Control": "private, no-store" } });
 }

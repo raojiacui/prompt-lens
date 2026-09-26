@@ -291,6 +291,49 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect((await testDb.select().from(schema.projects))[0].status).toBe("failed");
     expect((await quoteCommercialAnalysisRetry(userId, quote.id)).credits).toBe(quote.credits);
   });
+  it.each([false, true])("discards late paid analysis results after settlement (retry=%s)", async (retry) => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Late response" }).returning();
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 5000000, bytes: 500, metadata: {}, scenes: [{ id: "1", startUs: 0, endUs: 5000000 }] });
+    const preparation = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/a.mp4", mediaName: "a", automaticSplit: false });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preparation.id, sceneIds: ["1"], payer: "platform", model: "flash", outputLanguage: "zh" });
+    await confirmCommercialTask(userId, quote.id);
+    expect((await testDb.select().from(schema.projects))[0].metadata).toMatchObject({ analysisTaskId: quote.id });
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] });
+    await runCommercialTask(quote.id);
+    let taskId = quote.id;
+    if (retry) {
+      vi.mocked(analyzeSceneBlueprint).mockRejectedValueOnce(new Error("provider failed"));
+      await drain(taskId);
+      taskId = (await quoteCommercialAnalysisRetry(userId, taskId)).id;
+      await confirmCommercialTask(userId, taskId);
+    }
+    let deliver!: (value: Awaited<ReturnType<typeof analyzeSceneBlueprint>>) => void;
+    let started!: () => void;
+    const entered = new Promise<void>(resolve => { started = resolve; });
+    vi.mocked(analyzeSceneBlueprint).mockImplementationOnce(() => { started(); return new Promise(resolve => { deliver = resolve; }); });
+    const running = runCommercialTask(taskId);
+    await entered;
+    await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '7 minutes' WHERE id = $1", [taskId]);
+    await recoverCommercialAnalysisTasks();
+    deliver({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Late result", metadata: { analysisProvider: "kie" } });
+    await running;
+    expect((await testDb.select().from(schema.sceneVersions))[0].generationPrompt).toBe("");
+    expect((await testDb.select().from(schema.commercialTasks)).find(t => t.id === taskId)?.state).toBe("failed");
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+  });
+  it("finishes failed and abandoned media preparations", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Preview failure" }).returning();
+    vi.mocked(commercialMediaRequest).mockRejectedValueOnce(new Error("worker unavailable"));
+    await expect(prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/a.mp4", mediaName: "a", automaticSplit: false })).rejects.toThrow("worker unavailable");
+    expect((await testDb.select().from(schema.commercialTasks))[0].state).toBe("failed");
+    await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis_preview", state: "running", input: {}, expiresAt: new Date(Date.now() - 1000) });
+    await recoverCommercialAnalysisTasks();
+    expect((await testDb.select().from(schema.commercialTasks)).every(t => t.state === "failed")).toBe(true);
+  });
   it("reserves a multi-output batch atomically or starts none", async () => {
     await grant(100, 20);
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");

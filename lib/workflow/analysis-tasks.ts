@@ -15,6 +15,7 @@ import { buildSceneAudioContexts, transcribeMediaWithKie, type KieTranscriptionR
 import { recognizeBackgroundMusic, type BackgroundMusicRecognition } from "./music-recognition";
 import { requiresAnalysisQuote } from "./analysis-routing";
 import { attachBackgroundMusicToBlueprint, deriveProjectTitle } from "./service";
+import { AnalysisExecutionLost, executionCondition, lockAnalysisExecution } from "@/lib/billing/analysis-execution";
 
 type Task = typeof commercialTasks.$inferSelect;
 type Input = {
@@ -76,15 +77,22 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
 }
 
 async function saveCheckpoint(task: Task, progress: Progress) {
-  await db.update(commercialTasks).set({ state: "queued", result: progress, updatedAt: new Date() }).where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, "running")));
+  await db.update(commercialTasks).set({ state: "queued", result: progress, updatedAt: new Date() }).where(executionCondition(task));
 }
 
-async function settleAnalysisTask(task: Task, progress: Progress) {
+async function settleAnalysisTask(task: Task, progress: Progress, recovering = false) {
   const input = task.input as Input;
-  progress = { ...progress, failed: Math.max(progress.failed, (progress.assets?.scenes.length || 0) - progress.successful) };
   await db.transaction(async (tx) => {
     const [current] = await tx.select().from(commercialTasks).where(eq(commercialTasks.id, task.id)).for("update");
     if (!current || ["completed", "failed"].includes(current.state)) return;
+    if (recovering) {
+      if (!(current.state === "running" && current.updatedAt.getTime() < Date.now() - LEASE_MS) &&
+          !(current.state === "queued" && current.expiresAt.getTime() < Date.now())) return;
+    } else {
+      await lockAnalysisExecution(tx, task);
+    }
+    progress = { ...current.result as Progress, error: progress.error };
+    progress.failed = Math.max(progress.failed, (progress.assets?.scenes.length || 0) - progress.successful);
     const chargedCredits = input.mode === "platform_credits" && progress.successful > 0
       ? getVideoAnalysisChargeUnits({ sceneCount: progress.successful, longVideo: (progress.preview?.durationUs || 0) > 10_750_000 }) : 0;
     const refund = progress.heldCredits - chargedCredits;
@@ -107,7 +115,8 @@ async function settleAnalysisTask(task: Task, progress: Progress) {
 }
 
 export async function runAnalysisTask(id: string) {
-  const [task] = await db.update(commercialTasks).set({ state: "running", updatedAt: new Date() }).where(and(eq(commercialTasks.id, id), eq(commercialTasks.kind, "workflow_analysis"), eq(commercialTasks.state, "queued"))).returning();
+  await recoverAnalysisTasks();
+  const [task] = await db.update(commercialTasks).set({ state: "running", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionId: randomUUID() })}::jsonb`, updatedAt: new Date() }).where(and(eq(commercialTasks.id, id), eq(commercialTasks.kind, "workflow_analysis"), eq(commercialTasks.state, "queued"), sql`${commercialTasks.expiresAt} > now()`)).returning();
   if (!task) return;
   const input = task.input as Input;
   let progress = task.result as Progress;
@@ -135,6 +144,7 @@ export async function runAnalysisTask(id: string) {
       if (progress.preview && (assets.scenes.length !== progress.preview.scenes.length || assets.scenes.some((scene, index) => Math.abs(scene.startTime * 1_000_000 - progress.preview!.scenes[index].startUs) > 1000 || Math.abs(scene.endTime * 1_000_000 - progress.preview!.scenes[index].endUs) > 1000))) throw new Error("SPLIT_ASSET_MISMATCH");
       const heldCredits = input.mode === "platform_credits" ? getVideoAnalysisChargeUnits({ sceneCount: assets.scenes.length, longVideo: (progress.preview?.durationUs || 0) > 10_750_000 }) : 0;
       await db.transaction(async (tx) => {
+        await lockAnalysisExecution(tx, task);
         if (heldCredits) {
           const [wallet] = await tx.update(userCredits).set({ balance: sql`${userCredits.balance} - ${heldCredits}`, lifetimeUsed: sql`${userCredits.lifetimeUsed} + ${heldCredits}`, updatedAt: new Date() }).where(and(eq(userCredits.userId, task.userId), sql`${userCredits.balance} >= ${heldCredits}`)).returning();
           if (!wallet) throw new InsufficientCreditsError(heldCredits, 0);
@@ -174,6 +184,7 @@ export async function runAnalysisTask(id: string) {
       blueprint = attachBackgroundMusicToBlueprint(blueprint, progress.music);
       const succeeded = blueprint.metadata?.analysisProvider === "kie";
       await db.transaction(async (tx) => {
+        await lockAnalysisExecution(tx, task);
         await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId!, originalSceneId: progress.sceneIds![progress.cursor], sceneIndex: scene.sceneIndex, duration: scene.duration, ...blueprint });
         await tx.update(videoScenes).set({ status: succeeded ? "completed" : "failed", error: succeeded ? null : String(blueprint.metadata?.fallbackReason || "Analysis failed"), updatedAt: new Date() }).where(eq(videoScenes.id, progress.sceneIds![progress.cursor]));
         progress = { ...progress, cursor: progress.cursor + 1, successful: progress.successful + Number(succeeded), failed: progress.failed + Number(!succeeded) };
@@ -182,24 +193,30 @@ export async function runAnalysisTask(id: string) {
       return;
     }
     if (progress.versionId) {
-      const scenes = await db.query.sceneVersions.findMany({ where: eq(sceneVersions.projectVersionId, progress.versionId), orderBy: [asc(sceneVersions.sceneIndex)] });
-      const project = await db.query.projects.findFirst({ where: eq(projects.id, input.projectId) });
+      await db.transaction(async (tx) => {
+      await lockAnalysisExecution(tx, task);
+      const scenes = await tx.query.sceneVersions.findMany({ where: eq(sceneVersions.projectVersionId, progress.versionId!), orderBy: [asc(sceneVersions.sceneIndex)] });
+      const project = await tx.query.projects.findFirst({ where: eq(projects.id, input.projectId) });
       const successful = scenes.filter(s => (s.metadata as Record<string, unknown>).analysisProvider === "kie");
-      if (project && successful.length) await db.update(projects).set({ title: deriveProjectTitle({}, successful as unknown as SceneBlueprintDraft[], project.title) }).where(eq(projects.id, project.id));
-      await db.update(projectVersions).set({ overview: { sceneCount: scenes.length, successfulSceneCount: progress.successful, failedSceneCount: progress.failed, backgroundMusic: progress.music, narrative: scenes.filter(s => (s.metadata as Record<string, unknown>).analysisProvider === "kie").map(s => (s.story as Record<string, unknown>).summary).filter(Boolean).join("\n") }, updatedAt: new Date() }).where(eq(projectVersions.id, progress.versionId));
+      if (project && successful.length) await tx.update(projects).set({ title: deriveProjectTitle({}, successful as unknown as SceneBlueprintDraft[], project.title) }).where(eq(projects.id, project.id));
+      await tx.update(projectVersions).set({ overview: { sceneCount: scenes.length, successfulSceneCount: progress.successful, failedSceneCount: progress.failed, backgroundMusic: progress.music, narrative: scenes.filter(s => (s.metadata as Record<string, unknown>).analysisProvider === "kie").map(s => (s.story as Record<string, unknown>).summary).filter(Boolean).join("\n") }, updatedAt: new Date() }).where(eq(projectVersions.id, progress.versionId!));
+      });
     }
     await settleAnalysisTask(task, progress);
   } catch (error) {
+    if (error instanceof AnalysisExecutionLost) return;
     // Read the last committed checkpoint: a failed DB transaction may have rolled back a hold.
     const current = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) });
-    await settleAnalysisTask(task, { ...current!.result as Progress, error: error instanceof Error ? error.message : "Analysis failed" });
+    if (current) await settleAnalysisTask(task, { ...current.result as Progress, error: error instanceof Error ? error.message : "Analysis failed" }).catch((settlementError) => {
+      if (!(settlementError instanceof AnalysisExecutionLost)) throw settlementError;
+    });
   }
 }
 
 export async function recoverAnalysisTasks() {
-  const abandoned = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "workflow_analysis"), eq(commercialTasks.state, "running"), sql`${commercialTasks.updatedAt} < now() - ${LEASE_MS} * interval '1 millisecond'`)).limit(20);
+  const abandoned = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "workflow_analysis"), sql`((${commercialTasks.state} = 'running' AND ${commercialTasks.updatedAt} < now() - ${LEASE_MS} * interval '1 millisecond') OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.expiresAt} < now()))`)).limit(20);
   for (const task of abandoned) {
     // A synchronous KIE call has no queryable task ID; never automatically bill it twice.
-    await settleAnalysisTask(task, { ...task.result as Progress, error: "任务执行中断，已保留完成的镜头并退回未交付额度。" });
+    await settleAnalysisTask(task, { ...task.result as Progress, error: "任务执行中断或过期，已保留完成的镜头并退回未交付额度。" }, true);
   }
 }

@@ -122,4 +122,32 @@ describe("durable analysis", () => {
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 1 });
     expect(mocks.analyze).toHaveBeenCalledTimes(1);
   });
+
+  it("expires queued analysis without calling the provider or consuming a trial", async () => {
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    await client.query("UPDATE commercial_tasks SET expires_at = now() - interval '1 minute' WHERE id = $1", [queued.id]);
+    await runAnalysisTask(queued.id);
+    expect((await task(queued.id)).state).toBe("failed");
+    expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
+    expect(mocks.analyze).not.toHaveBeenCalled();
+  });
+
+  it("rejects a late result after recovery has released its trial", async () => {
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    await runAnalysisTask(queued.id);
+    await runAnalysisTask(queued.id);
+    let deliver!: (value: typeof blueprint) => void;
+    let started!: () => void;
+    const entered = new Promise<void>(resolve => { started = resolve; });
+    mocks.analyze.mockImplementationOnce(() => { started(); return new Promise(resolve => { deliver = resolve; }); });
+    const running = runAnalysisTask(queued.id);
+    await entered;
+    await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '7 minutes' WHERE id = $1", [queued.id]);
+    await recoverAnalysisTasks();
+    deliver(blueprint);
+    await running;
+    expect((await task(queued.id)).state).toBe("failed");
+    expect((await testDb.select().from(schema.sceneVersions)).filter(row => row.projectId === projectId)).toHaveLength(0);
+    expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
+  });
 });

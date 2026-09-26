@@ -500,7 +500,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     setLoading(true);
     async function poll() {
       try {
-        const response = await fetch(`/api/workflow/analysis-tasks/${analysisTaskId}`, { cache: "no-store", signal: controller.signal });
+        const response = await fetch(`/api/commercial/tasks/${analysisTaskId}`, { cache: "no-store", signal: controller.signal });
         const data = await response.json();
         if (controller.signal.aborted) return;
         if (!response.ok) {
