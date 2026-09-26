@@ -13,10 +13,12 @@ describe("analysis provider surface", () => {
       .map((match) => match[1]);
 
     expect(modelOptions).toEqual([
-      "platform-gemini-3.5-flash",
+      "platform-gemini-3.8-flash",
+      "kie-gemini-3.8-flash",
       "kie-gemini-3.5-flash",
       "kie-gemini-2.5-pro",
     ]);
+    expect(dashboard).toContain("disabled={!trialAccess?.hasOwnApiKey}");
   });
 
   it("only lets users configure KIE in settings", () => {
