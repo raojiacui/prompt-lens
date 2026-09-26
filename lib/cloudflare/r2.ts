@@ -59,17 +59,15 @@ export function extractR2Key(url: string): string | null {
     if (endpoint && parsed.origin === new URL(endpoint).origin) {
       const pathname = parsed.pathname.replace(/^\/+/, "");
       const prefix = bucketName ? `${bucketName}/` : "";
-      return prefix && pathname.startsWith(prefix) ? pathname.slice(prefix.length) : pathname;
+      return prefix && pathname.startsWith(prefix) ? decodeURIComponent(pathname.slice(prefix.length)) : null;
     }
 
-    if (parsed.hostname.endsWith(".r2.cloudflarestorage.com")) {
-      const pathname = parsed.pathname.replace(/^\/+/, "");
-      const prefix = bucketName ? `${bucketName}/` : "";
-      return prefix && pathname.startsWith(prefix) ? pathname.slice(prefix.length) : pathname;
-    }
-
-    if (publicUrl && parsed.href.startsWith(`${publicUrl}/`)) {
-      return parsed.href.slice(publicUrl.length + 1);
+    if (publicUrl) {
+      const publicBase = new URL(publicUrl);
+      const prefix = `${publicBase.pathname.replace(/\/$/, "")}/`;
+      if (parsed.origin === publicBase.origin && parsed.pathname.startsWith(prefix)) {
+        return decodeURIComponent(parsed.pathname.slice(prefix.length));
+      }
     }
 
   } catch {
@@ -164,7 +162,8 @@ export async function getSignedUrlFromR2(key: string, expiresIn: number = 3600):
 export async function getPresignedUploadUrl(
   key: string,
   contentType: string,
-  expiresIn: number = 3600
+  expiresIn: number = 3600,
+  contentLength?: number,
 ): Promise<string> {
   try {
     requireR2Config();
@@ -172,6 +171,7 @@ export async function getPresignedUploadUrl(
       Bucket: bucketName,
       Key: key,
       ContentType: contentType,
+      ContentLength: contentLength,
     });
     return await getSignedUrl(s3Client, command, { expiresIn });
   } catch (error) {

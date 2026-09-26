@@ -2,6 +2,8 @@
 import { auth } from "@/lib/auth";
 import { db, operationLogs } from "@/lib/db";
 import { getR2ObjectSize, getR2PublicUrl } from "@/lib/cloudflare/r2";
+import { and, eq, sql } from "drizzle-orm";
+import { validUploadSize } from "@/lib/media-upload-policy";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,26 +13,31 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const key = typeof body?.key === "string" ? body.key.trim() : "";
     const url = typeof body?.url === "string" ? body.url.trim() : "";
-    const filename = typeof body?.filename === "string" ? body.filename.trim() : "";
-    const mediaType = body?.mediaType === "video" || body?.mediaType === "image" ? body.mediaType : "file";
+    const filename = typeof body?.filename === "string" ? body.filename : "";
+    const mediaType = body?.mediaType === "video" || body?.mediaType === "image" ? body.mediaType as "video" | "image" : null;
     const size = typeof body?.size === "number" && Number.isFinite(body.size) ? body.size : 0;
 
-    if (!key.startsWith(`uploads/${session.user.id}/`) || !url || !filename || size <= 0) {
+    if (!mediaType || !key.startsWith(`uploads/${session.user.id}/${mediaType}/`) || !url || !filename || !validUploadSize(size, mediaType)) {
       return NextResponse.json({ error: "Missing upload completion payload" }, { status: 400 });
     }
     if (url !== getR2PublicUrl(key)) {
       return NextResponse.json({ error: "Upload URL does not match R2 object" }, { status: 400 });
     }
 
+    const [upload] = await db.select().from(operationLogs).where(and(
+      eq(operationLogs.userId, session.user.id), eq(operationLogs.action, "file.upload"), eq(operationLogs.resourceType, mediaType),
+      sql`${operationLogs.metadata}->>'storageKey' = ${key}`, sql`${operationLogs.metadata}->>'phase' IN ('requested', 'completed')`,
+    )).limit(1);
+    const metadata = upload?.metadata as Record<string, unknown> | undefined;
+    if (!upload || metadata?.size !== size || metadata?.url !== url || metadata?.filename !== filename) {
+      return NextResponse.json({ error: "Upload does not match its reservation" }, { status: 409 });
+    }
     const objectSize = await getR2ObjectSize(key);
     if (objectSize !== size) {
       return NextResponse.json({ error: "Uploaded file could not be verified" }, { status: 409 });
     }
 
-    await db.insert(operationLogs).values({
-      userId: session.user.id,
-      action: "file.upload",
-      resourceType: mediaType,
+    await db.update(operationLogs).set({
       metadata: {
         phase: "completed",
         filename,
@@ -39,7 +46,7 @@ export async function POST(request: NextRequest) {
         storageKey: key,
         storage: "r2",
       },
-    });
+    }).where(eq(operationLogs.id, upload.id));
 
     return NextResponse.json({ success: true });
   } catch (error) {

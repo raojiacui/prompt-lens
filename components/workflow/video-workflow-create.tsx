@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { AnalysisQuoteDialog } from "@/components/payments/analysis-quote-dialog";
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
+import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -540,6 +541,10 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       return;
     }
 
+    if (!nextFile.size || nextFile.size > ANALYSIS_MAX_BYTES[type]) {
+      setError(locale === "zh" ? `文件须大于 0 字节且不超过 ${ANALYSIS_MAX_BYTES[type] / 1024 / 1024}MB。` : `File must be non-empty and no larger than ${ANALYSIS_MAX_BYTES[type] / 1024 / 1024}MB.`);
+      return;
+    }
     let duration: number | null = null;
     if (type === "video") {
       try {
