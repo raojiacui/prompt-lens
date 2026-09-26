@@ -1,5 +1,5 @@
 import { and, count, eq, lt, sql } from "drizzle-orm";
-import { db, operationLogs, trialAnalysisReservations, trialAnalysisUsage, user } from "@/lib/db";
+import { commercialTasks, db, operationLogs, trialAnalysisReservations, trialAnalysisUsage, user } from "@/lib/db";
 import { randomUUID } from "node:crypto";
 import { isAdminProfile } from "@/lib/auth";
 
@@ -85,11 +85,18 @@ export async function releaseTrialAnalysis(reservationId: string) {
 }
 
 export async function expireTrialReservations(userId?: string) {
-  const expired = await db.select({ id: trialAnalysisReservations.id }).from(trialAnalysisReservations).where(and(
+  const expired = await db.select().from(trialAnalysisReservations).where(and(
     eq(trialAnalysisReservations.state, "pending"), lt(trialAnalysisReservations.expiresAt, new Date()),
     userId ? eq(trialAnalysisReservations.userId, userId) : undefined,
   )).limit(100);
-  for (const reservation of expired) await releaseTrialAnalysis(reservation.id);
+  for (const reservation of expired) {
+    const [delivered] = await db.select({ id: operationLogs.id }).from(operationLogs).where(and(eq(operationLogs.userId, reservation.userId), eq(operationLogs.action, "analysis.complete"), sql`${operationLogs.metadata}->>'trialReservationId' = ${reservation.id}`)).limit(1);
+    const taskId = reservation.taskKey.startsWith("analysis:") ? reservation.taskKey.slice("analysis:".length) : null;
+    const task = taskId ? await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, taskId), eq(commercialTasks.userId, reservation.userId)) }) : null;
+    if (delivered || Number((task?.result as { successful?: number } | undefined)?.successful || 0) > 0) {
+      await db.update(trialAnalysisReservations).set({ state: "completed" }).where(and(eq(trialAnalysisReservations.id, reservation.id), eq(trialAnalysisReservations.state, "pending")));
+    } else await releaseTrialAnalysis(reservation.id);
+  }
 }
 
 export async function assertTrialQuota(userId: string) {

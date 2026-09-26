@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 import { extractCorePrompt } from "@/lib/ai/prompts";
 import { formatDate, formatFileSize, truncate } from "@/lib/utils";
 import { decodeStoredApiKey } from "@/lib/byok/kie";
-import { resolveAnalysisProviderForBillingMode } from "@/lib/ai/analyzer";
 
 describe("AI Analyzer", () => {
   it("should extract core prompt from result", () => {
@@ -40,16 +39,6 @@ describe("BYOK API keys", () => {
 
   it("rejects an empty stored key", () => {
     expect(decodeStoredApiKey("   ")).toBeNull();
-  });
-});
-
-describe("Analysis provider billing", () => {
-  it("uses KIE for the free trial", () => {
-    expect(resolveAnalysisProviderForBillingMode("trial")).toBe("kie");
-  });
-
-  it.each(["byok", "platform_credits", "admin"])("uses KIE for %s mode", (mode) => {
-    expect(resolveAnalysisProviderForBillingMode(mode)).toBe("kie");
   });
 });
 

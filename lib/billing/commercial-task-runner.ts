@@ -11,7 +11,7 @@ export async function confirmCommercialTask(userId: string, taskId: string) {
 
 export async function confirmCommercialTaskInTransaction(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], userId: string, taskId: string) {
     const [task] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, taskId), eq(commercialTasks.userId, userId))).for("update");
-    if (!task || task.kind === "analysis_preview") throw new Error("TASK_NOT_FOUND");
+    if (!task || !["analysis", "generation"].includes(task.kind)) throw new Error("TASK_NOT_FOUND");
     if (task.state !== "quoted") return task;
     if (task.expiresAt.getTime() < Date.now()) throw new Error("QUOTE_EXPIRED");
     if (task.kind === "generation") {
@@ -38,7 +38,7 @@ export async function confirmCommercialTaskInTransaction(tx: Parameters<Paramete
 }
 
 export async function runCommercialTask(taskId: string) {
-  const [task] = await db.update(commercialTasks).set({ state: "running", updatedAt: new Date() }).where(and(eq(commercialTasks.id, taskId), eq(commercialTasks.state, "queued"))).returning();
+  const [task] = await db.update(commercialTasks).set({ state: "running", updatedAt: new Date() }).where(and(eq(commercialTasks.id, taskId), eq(commercialTasks.state, "queued"), sql`${commercialTasks.kind} IN ('analysis', 'generation')`)).returning();
   if (!task) return;
   try {
     if (task.kind === "analysis") await executeCommercialAnalysis(task);

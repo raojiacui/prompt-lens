@@ -177,59 +177,24 @@ async function callAnalysisChatJson(params: {
   return { json: parseJsonObject(content), ...selected };
 }
 
-export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason?: string, audioContext?: SceneAudioContext, language?: "zh" | "en"): SceneBlueprintDraft {
-  const zh = outputLanguage(language) === "zh";
-  const label = zh ? `镜头 ${String(scene.sceneIndex).padStart(2, "0")}` : `Scene ${String(scene.sceneIndex).padStart(2, "0")}`;
-  const timeRange = `${scene.startTime.toFixed(1)}s-${scene.endTime.toFixed(1)}s`;
+export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason = "Analysis failed", audioContext?: SceneAudioContext, _language?: "zh" | "en"): SceneBlueprintDraft {
   return {
-    story: {
-      summary: zh ? `${label} 覆盖 ${timeRange}，生成前需要结合提取的视频片段或关键帧复核。` : `${label} covers ${timeRange} and should be reviewed against the extracted clip/keyframe before final generation.`,
-      role: zh ? (scene.sceneIndex === 1 ? "开场钩子" : "承接段落") : (scene.sceneIndex === 1 ? "opening hook" : "continuation beat"),
-      beat: zh ? "保留原始时长、节奏和镜头意图。" : "Preserve the original timing and scene intent.",
-    },
-    visual: {
-      sceneDescription: "Describe every visible element in the frame precisely enough for text-to-video recreation.",
-      subject: "Primary visible subject from the reference scene",
-      characters: "Characters, appearance, wardrobe, expression, pose, and relationship to each other",
-      environment: "Location, background layers, props, time of day, weather, and set details inferred from the keyframe",
-      action: "Main action, gesture sequence, object interaction, and motion direction visible in this segment",
-      camera: "Shot size, lens feel, angle, height, movement path, motion speed, focus behavior, and framing",
-      composition: "Subject placement, foreground/midground/background, negative space, symmetry, depth, and occlusion",
-      lighting: "Light source, direction, softness, contrast, exposure, shadow shape, highlights, and time feeling",
-      color: "Dominant palette, saturation, contrast, color temperature, skin/object tones, and grading style",
-      style: "Reference-video style, realism level, texture, format, platform aesthetic, and production quality",
-      motion: "Subject motion, camera motion, background motion, speed changes, and continuity constraints",
-    },
+    story: { sceneIndex: scene.sceneIndex, startTime: scene.startTime, endTime: scene.endTime },
+    visual: {},
     dialogue: audioContext?.dialogue || [],
     narration: [],
     subtitle: audioContext?.subtitle || [],
-    audio: {
-      ambience: scene.audioUrl ? "Use extracted audio as timing reference." : "No scene audio extracted.",
-      music: "Preserve the original rhythm unless the remix changes it.",
-      sfx: [],
-      ...(audioContext?.audio || {}),
-    },
-    transition: {
-      in: scene.transitionIn || (scene.sceneIndex === 1 ? "start" : "hard_cut"),
-      out: scene.transitionOut || "hard_cut",
-      rhythm: "Preserve original edit timing and scene duration.",
-      editing: {
-        pacing: "Describe cut speed, beat placement, and whether this is a fast cut, normal cut, or held shot.",
-        techniques: ["hard_cut"],
-        speedRamp: "unknown",
-        splitScreen: "none",
-        maskOrOverlay: "none",
-        keyframes: "Describe visible zoom, pan, scale, opacity, or position keyframes if present.",
-      },
-    },
-    generationPrompt: zh
-      ? `${label} AI 分析未完成，暂时没有生成可用的画面复刻 Prompt。原因：${reason || "AI 分析服务暂不可用"}。请检查 KIE API Key 或平台分析 Key 配置。`
-      : `${label} AI analysis did not complete, so no usable recreation prompt was generated. Reason: ${reason || "AI analysis service unavailable"}. Check the KIE API key or platform analysis key.`,
-    metadata: { analysisProvider: "fallback", fallbackReason: reason || (zh ? "AI 分析暂不可用" : "KIE analysis unavailable"), transcriptionProvider: audioContext?.audio.transcriptionProvider, transcriptionModel: audioContext?.audio.transcriptionModel, transcriptionTaskId: audioContext?.audio.transcriptionTaskId },
+    audio: audioContext?.audio || {},
+    transition: { in: scene.transitionIn, out: scene.transitionOut },
+    generationPrompt: "",
+    metadata: { analysisProvider: "fallback", analysisStatus: "failed", fallbackReason: reason },
   };
 }
 
 function normalizeBlueprint(raw: Record<string, unknown>, fallback: SceneBlueprintDraft, provider: string, language?: "zh" | "en"): SceneBlueprintDraft {
+  if (!raw || !text(raw.generationPrompt) || !raw.visual || typeof raw.visual !== "object" || Array.isArray(raw.visual) || !raw.story || typeof raw.story !== "object" || Array.isArray(raw.story)) {
+    throw new Error("KIE returned an incomplete scene analysis");
+  }
   const rawGenerationPrompt = text(raw.generationPrompt, fallback.generationPrompt);
   const generationPrompt = outputLanguage(language) === "zh" && looksMostlyEnglish(rawGenerationPrompt)
     ? composeChineseGenerationPrompt(raw, fallback)
@@ -298,49 +263,8 @@ export async function analyzeSceneBlueprint(params: {
 }
 
 export function buildFallbackImageBlueprint(scene: FfmpegSceneAsset, reason?: string): SceneBlueprintDraft {
-  return {
-    story: {
-      summary: "Single static image. Describe the visible frame as a self-contained visual scene.",
-      role: "standalone visual reference",
-      beat: "Recreate the exact visible composition, subject, and mood.",
-    },
-    visual: {
-      sceneDescription: "Describe every visible element in the frame precisely enough for text-to-image/video recreation.",
-      subject: "Primary visible subject from the reference image",
-      characters: "Characters, appearance, wardrobe, expression, pose, and relationship to each other",
-      environment: "Location, background layers, props, time of day, weather, and set details",
-      action: "Static pose or implied motion visible in this still frame",
-      camera: "Shot size, lens feel, angle, height, focus behavior, and framing",
-      composition: "Subject placement, foreground/midground/background, negative space, symmetry, depth, and occlusion",
-      lighting: "Light source, direction, softness, contrast, exposure, shadow shape, highlights, and time feeling",
-      color: "Dominant palette, saturation, contrast, color temperature, skin/object tones, and grading style",
-      style: "Reference-image style, realism level, texture, format, platform aesthetic, and production quality",
-      motion: "Static image. Any motion should be inferred only if strongly implied by pose, blur, or composition.",
-    },
-    dialogue: [],
-    narration: [],
-    subtitle: [],
-    audio: {
-      ambience: "No audio available for a static image.",
-      music: "No audio available for a static image.",
-      sfx: [],
-    },
-    transition: {
-      in: "start",
-      out: "hard_cut",
-      rhythm: "Static image. No editing rhythm to preserve.",
-      editing: {
-        pacing: "None",
-        techniques: [],
-        speedRamp: "none",
-        splitScreen: "none",
-        maskOrOverlay: "none",
-        keyframes: "None",
-      },
-    },
-    generationPrompt: "A single-frame text-to-image/video recreation prompt. Prioritize the exact visible image: subject identity, character appearance, wardrobe, expression, pose, environment, props, background layers, shot size, camera angle, composition, lighting direction, color palette, texture, realism level, and style. This is a static image, so describe motion only if strongly implied. No audio, dialogue, or editing details.",
-    metadata: { analysisProvider: "fallback", fallbackReason: reason || "KIE analysis unavailable", mediaType: "image" },
-  };
+  const failure = buildFallbackSceneBlueprint(scene, reason);
+  return { ...failure, metadata: { ...failure.metadata, mediaType: "image" } };
 }
 
 export async function analyzeImageBlueprint(params: {

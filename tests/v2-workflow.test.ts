@@ -23,17 +23,13 @@ const scene = {
 };
 
 describe("V2 scene analysis", () => {
-  it("builds an editable fallback blueprint with timing and metadata", () => {
+  it("preserves failed scene timing without fabricating a usable prompt", () => {
     const blueprint = buildFallbackSceneBlueprint(scene, "no provider configured", undefined, "en");
 
-    expect(blueprint.story.summary).toContain("Scene 02");
-    expect(blueprint.story.summary).toContain("4.0s-9.5s");
+    expect(blueprint.story).toMatchObject({ sceneIndex: 2, startTime: 4, endTime: 9.5 });
     expect(blueprint.transition.in).toBe("hard_cut");
-    expect(blueprint.visual.sceneDescription).toContain("text-to-video recreation");
-    expect(blueprint.visual.composition).toContain("foreground");
-    expect((blueprint.transition.editing as Record<string, unknown>).techniques).toContain("hard_cut");
-    expect(blueprint.generationPrompt).toContain("AI analysis did not complete");
-    expect(blueprint.generationPrompt).toContain("no provider configured");
+    expect(blueprint.visual).toEqual({});
+    expect(blueprint.generationPrompt).toBe("");
     expect(blueprint.metadata?.analysisProvider).toBe("fallback");
     expect(blueprint.metadata?.fallbackReason).toBe("no provider configured");
   });

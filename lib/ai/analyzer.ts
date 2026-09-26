@@ -3,10 +3,6 @@ import { DEFAULT_KIE_CHAT_MODEL, requestKieChat } from "@/lib/ai/kie-client";
 import { defaultLocale, type Locale } from "@/i18n/config";
 
 
-export function resolveAnalysisProviderForBillingMode(_mode: string): "kie" {
-  return "kie";
-}
-
 export interface AnalyzeOptions {
   userId: string;
   provider?: "kie";

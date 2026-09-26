@@ -12,7 +12,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       const path = new URL(route.request().url()).pathname;
       let body: unknown = {};
       if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
-      else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, mode: "byok", trial: { limit: 2, remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 } };
+      else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, mode: "platform_credits", trial: { limit: 2, remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 } };
       else if (path === "/api/models") body = { models: [] };
       else if (path === "/api/workflow/projects") body = route.request().method() === "POST" ? { project: { id: projectId } } : { projects: [] };
       else if (path === "/api/upload") body = { presignedUrl: "https://example.com/upload", publicUrl: "https://example.com/video.mp4", key: "uploaded", mediaType: "video" };
@@ -28,7 +28,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     });
     await page.goto("/dashboard?tab=analyze");
     await page.locator('input[type="file"]').first().setInputFiles("public/remotion/remix-flow/rewrite-before.mp4");
-    await page.getByRole("button", { name: "Analyze Video", exact: true }).click();
+    await page.getByRole("button", { name: locale === "zh" ? "分析视频" : "Analyze video", exact: true }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: locale === "zh" ? "读取视频信息" : "Inspect video" }).click();

@@ -119,6 +119,7 @@ function statusFrom(payload: unknown) {
 
 async function fetchKieTask(apiKey: string, taskId: string) {
   const response = await fetch(`${KIE_BASE_URL}/api/v1/jobs/recordInfo?taskId=${encodeURIComponent(taskId)}`, {
+    signal: AbortSignal.timeout(15000),
     headers: { Authorization: `Bearer ${apiKey}` },
   });
   const payload = await response.json().catch(() => null);
@@ -136,6 +137,7 @@ export async function transcribeMediaWithKie(input: KieTranscriptionInput): Prom
   const mediaUrl = await ensureAccessibleUrl(input.mediaUrl);
   const response = await fetch(`${KIE_BASE_URL}/api/v1/jobs/createTask`, {
     method: "POST",
+    signal: AbortSignal.timeout(30000),
     headers: {
       Authorization: `Bearer ${input.apiKey}`,
       "Content-Type": "application/json",

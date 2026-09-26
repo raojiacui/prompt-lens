@@ -109,7 +109,7 @@ export const callExistingAnalyzeApiTool: ToolDefinition = {
         userId: ctx.userId,
         action: "analysis.complete",
         resourceType: videoAttachments.length ? "video" : "image",
-        metadata: { billingMode: entitlement.mode, provider: "kie", agentRunId: ctx.runId },
+        metadata: { billingMode: entitlement.mode, provider: "kie", agentRunId: ctx.runId, trialReservationId },
       });
       await completeTrialAnalysis(trialReservationId);
       trialCompleted = true;

@@ -100,7 +100,11 @@ export const commercialTasks = pgTable("commercial_tasks", {
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-}, (t) => [index("commercial_task_user_idx").on(t.userId), index("commercial_task_state_idx").on(t.state)]);
+}, (t) => [
+  index("commercial_task_user_idx").on(t.userId), index("commercial_task_state_idx").on(t.state),
+  check("commercial_tasks_kind_check", sql`${t.kind} IN ('analysis_preview', 'analysis', 'generation', 'workflow_analysis')`),
+  uniqueIndex("workflow_analysis_project_unique").on(t.userId, sql`(${t.input}->>'projectId')`).where(sql`${t.kind} = 'workflow_analysis'`),
+]);
 
 // ============ 复用 nano-video 的用户和认证表 ============
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);

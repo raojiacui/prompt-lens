@@ -127,6 +127,13 @@
                         "when": 1790323200001,
                         "tag": "0017_request_reservations",
                         "breakpoints": true
+                    },
+                    {
+                        "idx": 18,
+                        "version": "7",
+                        "when": 1790323200002,
+                        "tag": "0018_workflow_analysis_tasks",
+                        "breakpoints": true
                     }
                 ]
 }

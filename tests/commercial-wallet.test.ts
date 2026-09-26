@@ -11,7 +11,7 @@ vi.mock("@/lib/workflow/scene-analysis", async (importOriginal) => ({ ...await i
 vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: vi.fn(async () => "owned-upload"), commercialMediaRequest: vi.fn() }));
 import { rewriteSceneBlueprint, analyzeSceneBlueprint } from "@/lib/workflow/scene-analysis";
 import { commercialMediaRequest } from "@/lib/billing/commercial-media";
-import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnalysisRetry } from "@/lib/billing/commercial-analysis";
+import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnalysisRetry, quotedAnalysisModel, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
@@ -229,7 +229,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await drain(quote.id);
     await runCommercialTask(quote.id);
     expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(analyzeSceneBlueprint).mock.calls[0][0]).toMatchObject({ analysisKeySource: "platform", forceFreeTrialKie: false });
+    expect(vi.mocked(analyzeSceneBlueprint).mock.calls[0][0]).toMatchObject({ analysisKeySource: "platform", forceFreeTrialKie: false, modelId: "gemini-3-8-flash-openai" });
     expect(await balance()).toMatchObject({ credits: 196, heldCredits: 0 });
     const task = (await testDb.select().from(schema.commercialTasks)).find((t) => t.id === quote.id)!;
     expect(task.state).toBe("completed");
@@ -262,6 +262,34 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(await balance()).toMatchObject({ credits: 105, heldCredits: 0 });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect((await testDb.select().from(schema.videoGeneration))[0]).toMatchObject({ status: "completed", videoUrl: "https://example.com/result.mp4" });
+  });
+
+  it("snapshots the real analysis model without accepting a platform tier override", () => {
+    expect(quotedAnalysisModel({ payer: "platform", model: "flash", modelId: "analysis-gemini-2-5-pro" })).toBe("gemini-3-8-flash-openai");
+    expect(quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "analysis-gemini-3-5-flash" })).toBe("gemini-3-5-flash-openai");
+    expect(() => quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "nonexistent" })).toThrow();
+  });
+
+  it("recovers a stopped paid analysis without repeating inference or retaining its charge", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Interrupted" }).returning();
+    const intervals = [{ id: "1", startUs: 0, endUs: 5000000 }];
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 5000000, bytes: 500, metadata: {}, scenes: intervals });
+    const preparation = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/a.mp4", mediaName: "a", automaticSplit: false });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preparation.id, sceneIds: ["1"], payer: "platform", model: "flash", outputLanguage: "zh" });
+    await confirmCommercialTask(userId, quote.id);
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] });
+    await runCommercialTask(quote.id);
+    await client.query("UPDATE commercial_tasks SET state = 'running', updated_at = now() - interval '7 minutes' WHERE id = $1", [quote.id]);
+    await recoverCommercialAnalysisTasks();
+    await recoverCommercialAnalysisTasks();
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+    expect((await testDb.select().from(schema.sceneVersions))[0].generationPrompt).toBe("");
+    expect((await testDb.select().from(schema.projects))[0].status).toBe("failed");
+    expect((await quoteCommercialAnalysisRetry(userId, quote.id)).credits).toBe(quote.credits);
   });
   it("reserves a multi-output batch atomically or starts none", async () => {
     await grant(100, 20);

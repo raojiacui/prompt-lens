@@ -1,20 +1,12 @@
 import { db, commercialTasks, projectAssets, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
-import { InsufficientCreditsError } from "@/lib/billing/credits";
 import { reserveCommercialTask, settleCommercialTask, settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
-import { breakdownVideoWithWorker, ingestLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
-import { resolveLinkedMediaWithLeaperOne } from "@/lib/media-resolver/leaperone";
 import { deleteFromR2, extractR2Key } from "@/lib/cloudflare/r2";
 import { routeModel } from "@/lib/ai/model-registry";
-import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
-import { recognizeBackgroundMusic, type BackgroundMusicRecognition } from "@/lib/workflow/music-recognition";
-import { buildSceneAudioContexts, transcribeMediaWithKie, type SceneAudioContext } from "@/lib/workflow/transcription";
+import type { BackgroundMusicRecognition } from "@/lib/workflow/music-recognition";
 import {
-  analyzeImageBlueprint,
   analyzeSceneBlueprint,
-  buildFallbackImageBlueprint,
-  buildFallbackSceneBlueprint,
   buildStructuredVideoOverview,
   remixSceneBlueprint,
   rewriteSceneBlueprint,
@@ -54,15 +46,6 @@ function sceneAssetFromRecords(scene: typeof videoScenes.$inferSelect): FfmpegSc
   };
 }
 
-function textValue(value: unknown) {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  if (typeof value === "object") {
-    const obj = value as Record<string, unknown>;
-    return String(obj.summary || obj.beat || obj.role || obj.action || "");
-  }
-  return String(value);
-}
 
 function parseJsonObject(value: unknown): Record<string, unknown> | null {
   if (value && typeof value === "object" && !Array.isArray(value)) return value as Record<string, unknown>;
@@ -97,7 +80,7 @@ function firstProjectTitleCandidate(...values: unknown[]) {
   return "";
 }
 
-function deriveProjectTitle(overview: Record<string, unknown>, sceneBlueprints: SceneBlueprintDraft[], fallbackTitle: string) {
+export function deriveProjectTitle(overview: Record<string, unknown>, sceneBlueprints: SceneBlueprintDraft[], fallbackTitle: string) {
   const videoSummary = parseJsonObject(overview.video_summary || overview.videoSummary || overview.summary);
   const firstScene = sceneBlueprints[0];
   const firstVisual = firstScene?.visual || {};
@@ -132,7 +115,7 @@ function backgroundMusicSummary(value?: BackgroundMusicRecognition) {
   return value.error ? `Background music recognition failed: ${value.error}` : "Background music recognition failed.";
 }
 
-function attachBackgroundMusicToBlueprint(blueprint: SceneBlueprintDraft, music?: BackgroundMusicRecognition): SceneBlueprintDraft {
+export function attachBackgroundMusicToBlueprint(blueprint: SceneBlueprintDraft, music?: BackgroundMusicRecognition): SceneBlueprintDraft {
   if (!music || music.status === "disabled") return blueprint;
   return {
     ...blueprint,
@@ -148,33 +131,6 @@ function attachBackgroundMusicToBlueprint(blueprint: SceneBlueprintDraft, music?
   };
 }
 
-function getAudioPreviewUrl(metadata: Record<string, unknown>) {
-  return typeof metadata.audioPreviewUrl === "string" && metadata.audioPreviewUrl.trim()
-    ? metadata.audioPreviewUrl.trim()
-    : undefined;
-}
-
-function buildSingleShotBreakdown(mediaUrl: string, duration?: number): { scenes: FfmpegSceneAsset[]; metadata: { duration: number; source: string; mediaType: "video"; singleShot: boolean; audioPreviewUrl?: string; audioPreviewDuration?: number } } {
-  const safeDuration = Number.isFinite(duration) && duration && duration > 0 ? Math.round(duration * 1000) / 1000 : 10;
-  return {
-    scenes: [{
-      sceneIndex: 1,
-      startTime: 0,
-      endTime: safeDuration,
-      duration: safeDuration,
-      shotGroupId: "single-shot",
-      clipUrl: mediaUrl,
-      keyframeUrls: [],
-      audioUrl: undefined,
-      transitionIn: "start",
-      transitionOut: "end",
-    }],
-    metadata: { duration: safeDuration, source: "single-shot-upload", mediaType: "video", singleShot: true, audioPreviewUrl: mediaUrl, audioPreviewDuration: Math.min(12, safeDuration) },
-  };
-}
-export function buildSceneBlueprint(scene: FfmpegSceneAsset): SceneBlueprintDraft {
-  return buildFallbackSceneBlueprint(scene);
-}
 
 export function buildVideoOverview(sceneCount: number) {
   return {
@@ -290,13 +246,12 @@ async function collectProjectR2Keys(projectId: string) {
 export async function deleteProjectForUser(projectId: string, userId: string) {
   const project = await getProjectForUser(projectId, userId);
   if (!project) throw new Error("Project not found");
-  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true") {
     const r2Keys = await collectProjectR2Keys(projectId);
     await db.transaction(async (tx) => {
       const [locked] = await tx.select({ id: projects.id }).from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).for("update");
       if (!locked) throw new Error("Project not found");
       const [pending] = await tx.select({ id: commercialTasks.id }).from(commercialTasks).where(and(eq(commercialTasks.userId, userId), sql`${commercialTasks.input}->>'projectId' = ${projectId}`, sql`${commercialTasks.state} IN ('queued','running','review')`)).limit(1);
-      if (pending) throw new Error("A paid task is still pending. Resolve it before deleting this project.");
+      if (pending) throw new Error("An analysis or generation task is still pending. Resolve it before deleting this project.");
       await tx.delete(projects).where(eq(projects.id, projectId));
     });
     let deletedR2Objects = 0;
@@ -305,279 +260,8 @@ export async function deleteProjectForUser(projectId: string, userId: string) {
       catch { console.warn("[workflow] Deleted project has an orphaned storage object", { projectId, key }); }
     }
     return { success: true, deletedR2Objects };
-  }
-  const r2Keys = await collectProjectR2Keys(projectId);
-  for (const key of r2Keys) {
-    await deleteFromR2(key);
-  }
-  await db.delete(projects).where(eq(projects.id, projectId));
-  return { success: true, deletedR2Objects: r2Keys.length };
 }
 
-export async function runVideoBreakdown(params: {
-  userId: string;
-  projectId: string;
-  mediaUrl: string;
-  mediaName?: string;
-  storageKey?: string;
-  mediaType?: "video" | "image";
-  mediaDuration?: number;
-  singleShot?: boolean;
-  resolveLinkedMedia?: boolean;
-  creditBudget?: { balance: number; baseUnits: number };
-  commercialTaskId?: string;
-  preparedBreakdown?: { scenes: FfmpegSceneAsset[]; metadata: { duration?: number } };
-} & AiModelSelection) {
-  const project = await getProjectForUser(params.projectId, params.userId);
-  if (!project) throw new Error("Project not found");
-  const isImage = params.mediaType === "image";
-  let effectiveMediaUrl = params.mediaUrl;
-  let effectiveMediaName = params.mediaName;
-  let effectiveStorageKey = params.storageKey;
-  let effectiveMediaDuration = params.mediaDuration;
-  let linkedMediaMetadata: Record<string, unknown> | undefined;
-
-  const [job] = await db
-    .insert(workflowJobs)
-    .values({
-      projectId: params.projectId,
-      type: "ANALYZE_VIDEO",
-      status: "processing",
-      input: { commercialTaskId: params.commercialTaskId, mediaUrl: params.mediaUrl, mediaName: params.mediaName, mediaType: params.mediaType, mediaDuration: params.mediaDuration, singleShot: params.singleShot, resolveLinkedMedia: params.resolveLinkedMedia, creditBudget: params.creditBudget },
-    })
-    .returning();
-
-  try {
-    await db.update(projects).set({ status: "analyzing", updatedAt: new Date() }).where(eq(projects.id, params.projectId));
-    if (!isImage && params.resolveLinkedMedia) {
-      const source = await resolveLinkedMediaWithLeaperOne(params.mediaUrl);
-      const resolved = await ingestLinkedMediaWithWorker(source);
-      effectiveMediaUrl = resolved.mediaUrl;
-      effectiveMediaName = resolved.filename || params.mediaName;
-      effectiveStorageKey = resolved.storageKey || params.storageKey;
-      effectiveMediaDuration = typeof resolved.metadata.duration === "number" ? resolved.metadata.duration : params.mediaDuration;
-      linkedMediaMetadata = { platform: resolved.platform, originalUrl: params.mediaUrl, resolvedStorageKey: resolved.storageKey };
-    }
-    const breakdown = params.preparedBreakdown ?? (isImage
-      ? {
-          scenes: [{
-            sceneIndex: 1,
-            startTime: 0,
-            endTime: 0,
-            duration: 0,
-            keyframeUrls: [effectiveMediaUrl],
-            clipUrl: undefined,
-            audioUrl: undefined,
-            transitionIn: "start",
-            transitionOut: "hard_cut",
-          } as FfmpegSceneAsset],
-          metadata: { duration: 0, source: "image", mediaType: "image" },
-        }
-      : effectiveMediaDuration && effectiveMediaDuration <= 10.75
-        ? buildSingleShotBreakdown(effectiveMediaUrl, effectiveMediaDuration)
-        : await breakdownVideoWithWorker(effectiveMediaUrl));
-    if (!breakdown.scenes.length) throw new Error(isImage ? "Failed to prepare image for analysis" : "No scenes detected in the uploaded video");
-
-    if (params.creditBudget) {
-      const baseUnits = Math.max(0, Math.floor(params.creditBudget.baseUnits || 0));
-      const requiredUnits = baseUnits + breakdown.scenes.length;
-      if (requiredUnits > params.creditBudget.balance) {
-        throw new InsufficientCreditsError(requiredUnits, params.creditBudget.balance);
-      }
-    }
-
-    let transcriptionReason: string | undefined;
-    let transcription = null;
-    if (!isImage && !params.commercialTaskId) {
-      try {
-        const keyAccess = await resolveKieApiKeyForFeature(params.userId, { allowPaidPlatformKey: params.allowPlatformKeyForAnalysis === true, requiredPackageScope: "video_analysis" });
-        const kieApiKey = keyAccess.apiKey;
-        transcription = await transcribeMediaWithKie({
-          userId: params.userId,
-          apiKey: kieApiKey,
-          mediaUrl: effectiveMediaUrl,
-          modelPriority: params.modelPriority || "balanced",
-        });
-        if (!transcription) transcriptionReason = "KIE API key is not configured";
-      } catch (error) {
-        transcriptionReason = error instanceof Error ? error.message : "KIE transcription failed";
-      }
-    }
-    const sceneAudioContexts = isImage ? new Map<number, SceneAudioContext>() : buildSceneAudioContexts({ scenes: breakdown.scenes, transcription, unavailableReason: transcriptionReason });
-    const backgroundMusic = isImage || params.commercialTaskId ? undefined : await recognizeBackgroundMusic(
-      getAudioPreviewUrl(breakdown.metadata) || breakdown.scenes[0]?.audioUrl || effectiveMediaUrl,
-    );
-    const backgroundMusicMetadata = backgroundMusic ? {
-      provider: backgroundMusic.provider,
-      status: backgroundMusic.status,
-      title: backgroundMusic.title,
-      artist: backgroundMusic.artist,
-      album: backgroundMusic.album,
-      songLink: backgroundMusic.songLink,
-      appleMusicUrl: backgroundMusic.appleMusicUrl,
-      spotifyUrl: backgroundMusic.spotifyUrl,
-      sourceUrl: backgroundMusic.sourceUrl,
-      error: backgroundMusic.error,
-    } : undefined;
-
-    const imageMimeType = isImage
-      ? (params.mediaName?.match(/\.webp$/i) ? "image/webp" : params.mediaName?.match(/\.png$/i) ? "image/png" : "image/jpeg")
-      : undefined;
-    const [reference] = await db
-      .insert(referenceVideos)
-      .values({
-        projectId: params.projectId,
-        sourceUrl: effectiveMediaUrl,
-        storageKey: effectiveStorageKey,
-        fileName: effectiveMediaName,
-        mimeType: imageMimeType,
-        duration: isImage ? 0 : Math.round(breakdown.metadata.duration || 0),
-        metadata: { ...breakdown.metadata, linkedMedia: linkedMediaMetadata, backgroundMusic: backgroundMusicMetadata, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } },
-      })
-      .returning();
-
-    const [version] = await db
-      .insert(projectVersions)
-      .values({
-        projectId: params.projectId,
-        versionNumber: 0,
-        kind: "original",
-        label: "Original",
-        overview: isImage ? { ...buildVideoOverview(1), mediaType: "image" } : buildVideoOverview(breakdown.scenes.length),
-      })
-      .returning();
-
-    const insertedBlueprints: SceneBlueprintDraft[] = [];
-    const failedScenes: Array<{ sceneIndex: number; error: string }> = [];
-
-    for (const scene of breakdown.scenes) {
-      const [videoScene] = await db
-        .insert(videoScenes)
-        .values({
-          projectId: params.projectId,
-          referenceVideoId: reference.id,
-          sceneIndex: scene.sceneIndex,
-          shotGroupId: scene.shotGroupId,
-          startTime: scene.startTime,
-          endTime: scene.endTime,
-          duration: scene.duration,
-          clipUrl: scene.clipUrl,
-          keyframeUrls: scene.keyframeUrls,
-          audioUrl: scene.audioUrl,
-          transitionIn: scene.transitionIn,
-          transitionOut: scene.transitionOut,
-          status: "processing",
-        })
-        .returning();
-
-      const [sceneJob] = await db
-        .insert(workflowJobs)
-        .values({
-          projectId: params.projectId,
-          sceneId: videoScene.id,
-          type: "ANALYZE_SCENE",
-          status: "processing",
-          input: { sceneIndex: scene.sceneIndex, keyframeUrls: scene.keyframeUrls, clipUrl: scene.clipUrl, modelMode: params.modelMode || "auto", modelId: params.modelId, modelPriority: params.modelPriority || "balanced" },
-        })
-        .returning();
-
-      try {
-        const context = {
-          sceneCount: breakdown.scenes.length,
-          projectTitle: project.title,
-          previousSummary: insertedBlueprints.length ? textValue(insertedBlueprints[insertedBlueprints.length - 1].story) : undefined,
-          nextSummary: breakdown.scenes[scene.sceneIndex]?.shotGroupId,
-          audio: sceneAudioContexts.get(scene.sceneIndex),
-        };
-        const analyzedBlueprint = isImage
-          ? await analyzeImageBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialKie: params.forceFreeTrialKie })
-          : await analyzeSceneBlueprint({ userId: params.userId, scene, context, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, analysisApiKey: params.analysisApiKey, analysisKeySource: params.analysisKeySource, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialKie: params.forceFreeTrialKie });
-        const blueprint = isImage ? analyzedBlueprint : attachBackgroundMusicToBlueprint(analyzedBlueprint, backgroundMusic);
-        insertedBlueprints.push(blueprint);
-        await db.insert(sceneVersions).values({
-          projectId: params.projectId,
-          projectVersionId: version.id,
-          originalSceneId: videoScene.id,
-          sceneIndex: scene.sceneIndex,
-          story: blueprint.story,
-          visual: blueprint.visual,
-          dialogue: blueprint.dialogue,
-          narration: blueprint.narration,
-          subtitle: blueprint.subtitle,
-          audio: blueprint.audio,
-          transition: blueprint.transition,
-          generationPrompt: blueprint.generationPrompt,
-          duration: scene.duration,
-          metadata: blueprint.metadata || {},
-        });
-        const usedFallback = blueprint.metadata?.analysisProvider === "fallback";
-        await db
-          .update(videoScenes)
-          .set({ status: usedFallback ? "failed" : "completed", error: usedFallback ? String(blueprint.metadata?.fallbackReason || "AI analysis fallback used") : null, updatedAt: new Date() })
-          .where(eq(videoScenes.id, videoScene.id));
-        await db
-          .update(workflowJobs)
-          .set({ status: usedFallback ? "failed" : "completed", error: usedFallback ? String(blueprint.metadata?.fallbackReason || "AI analysis fallback used") : null, output: { provider: blueprint.metadata?.analysisProvider || "unknown" }, completedAt: new Date(), updatedAt: new Date() })
-          .where(eq(workflowJobs.id, sceneJob.id));
-        if (usedFallback) failedScenes.push({ sceneIndex: scene.sceneIndex, error: String(blueprint.metadata?.fallbackReason || "AI analysis fallback used") });
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Scene analysis failed";
-        const fallback = isImage
-          ? buildFallbackImageBlueprint(scene, message)
-          : buildFallbackSceneBlueprint(scene, message, sceneAudioContexts.get(scene.sceneIndex));
-        insertedBlueprints.push(fallback);
-        failedScenes.push({ sceneIndex: scene.sceneIndex, error: message });
-        await db.insert(sceneVersions).values({
-          projectId: params.projectId,
-          projectVersionId: version.id,
-          originalSceneId: videoScene.id,
-          sceneIndex: scene.sceneIndex,
-          story: fallback.story,
-          visual: fallback.visual,
-          dialogue: fallback.dialogue,
-          narration: fallback.narration,
-          subtitle: fallback.subtitle,
-          audio: fallback.audio,
-          transition: fallback.transition,
-          generationPrompt: fallback.generationPrompt,
-          duration: scene.duration,
-          metadata: fallback.metadata || {},
-        });
-        await db.update(videoScenes).set({ status: "failed", error: message, updatedAt: new Date() }).where(eq(videoScenes.id, videoScene.id));
-        await db.update(workflowJobs).set({ status: "failed", error: message, updatedAt: new Date() }).where(eq(workflowJobs.id, sceneJob.id));
-      }
-    }
-
-    if (params.forceFreeTrialKie && failedScenes.length) {
-      throw new Error(`Trial analysis failed: ${failedScenes[0].error}`);
-    }
-    const overview = params.commercialTaskId ? { theme: project.title, sceneCount: insertedBlueprints.length } : await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: insertedBlueprints, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialKie: params.forceFreeTrialKie });
-    const overviewWithMusic = backgroundMusicMetadata
-      ? {
-          ...overview,
-          backgroundMusic: backgroundMusicSummary(backgroundMusic),
-          metadata: { ...(parseJsonObject((overview as Record<string, unknown>).metadata) || {}), backgroundMusic: backgroundMusicMetadata },
-        }
-      : overview;
-    const derivedTitle = deriveProjectTitle(overviewWithMusic, insertedBlueprints, project.title);
-    await db.update(projectVersions).set({ overview: overviewWithMusic, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
-    await db
-      .update(projects)
-      .set({ title: derivedTitle, status: "ready", activeVersionId: version.id, updatedAt: new Date(), metadata: { mediaType: params.mediaType || "video", linkedMedia: linkedMediaMetadata, backgroundMusic: backgroundMusicMetadata, autoTitle: derivedTitle, originalTitle: project.title, failedSceneCount: failedScenes.length, failedScenes, transcription: transcription ? { provider: transcription.provider, modelId: transcription.modelId, taskId: transcription.taskId, segmentCount: transcription.segments.length } : { provider: "unavailable", reason: transcriptionReason } } })
-      .where(eq(projects.id, params.projectId));
-    await db
-      .update(workflowJobs)
-      .set({ status: "completed", output: { sceneCount: insertedBlueprints.length, failedSceneCount: failedScenes.length, transcriptionSegmentCount: transcription?.segments.length || 0, transcriptionReason, backgroundMusic: backgroundMusicMetadata }, completedAt: new Date(), updatedAt: new Date() })
-      .where(eq(workflowJobs.id, job.id));
-
-    return getProjectBundle(params.projectId, params.userId);
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Video breakdown failed";
-    await db.update(projects).set({ status: "failed", updatedAt: new Date() }).where(eq(projects.id, params.projectId));
-    await db.update(workflowJobs).set({ status: "failed", error: message, updatedAt: new Date() }).where(eq(workflowJobs.id, job.id));
-    throw error;
-  }
-}
 
 export async function createRemixVersion(params: {
   userId: string;

@@ -5,10 +5,10 @@ import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import type { SceneInterval } from "./pricing-v6";
 
 export type MediaPreview = { sourceHash: string; durationUs: number; bytes: number; scenes: SceneInterval[]; metadata: FfmpegBreakdownResult["metadata"] };
-export async function assertOwnedUploadedVideo(userId: string, mediaUrl: string) {
+export async function assertOwnedUploadedVideo(userId: string, mediaUrl: string, mediaType?: "video" | "image") {
   const key = extractR2Key(mediaUrl);
   if (!key) throw new Error("UPLOAD_NOT_OWNED");
-  const [upload] = await db.select({ id: operationLogs.id }).from(operationLogs).where(and(eq(operationLogs.userId, userId), eq(operationLogs.action, "file.upload"), sql`${operationLogs.metadata}->>'url' = ${mediaUrl}`, sql`${operationLogs.metadata}->>'phase' IN ('presigned','server-upload')`)).limit(1);
+  const [upload] = await db.select({ id: operationLogs.id }).from(operationLogs).where(and(eq(operationLogs.userId, userId), eq(operationLogs.action, "file.upload"), mediaType ? eq(operationLogs.resourceType, mediaType) : undefined, sql`${operationLogs.metadata}->>'url' = ${mediaUrl}`, sql`${operationLogs.metadata}->>'phase' IN ('presigned','server-upload')`)).limit(1);
   if (!upload) throw new Error("UPLOAD_NOT_OWNED");
   return key;
 }

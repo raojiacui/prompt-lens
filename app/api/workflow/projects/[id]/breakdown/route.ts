@@ -1,93 +1,26 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { runVideoBreakdown } from "@/lib/workflow/service";
-import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
-import { defaultLocale, isLocale } from "@/i18n/config";
-import { db, operationLogs } from "@/lib/db";
-import { completeTrialAnalysis, releaseTrialAnalysis, reserveTrialAnalysis } from "@/lib/usage/trial-quota";
-import {
-  assertCanStartVideoAnalysis,
-  getVideoAnalysisChargeUnits,
-  settleVideoAnalysisCredits,
-  VIDEO_ANALYSIS_DURATION_TOLERANCE_SECONDS,
-  VIDEO_ANALYSIS_LONG_VIDEO_BASE_CREDITS,
-  VIDEO_ANALYSIS_SHORT_MAX_SECONDS,
-  type VideoAnalysisEntitlement,
-  videoAnalysisBillingErrorResponse,
-} from "@/lib/billing/video-analysis";
+import { enqueueAnalysis, runAnalysisTask } from "@/lib/workflow/analysis-tasks";
+import { videoAnalysisBillingErrorResponse } from "@/lib/billing/video-analysis";
+import { checkRateLimit } from "@/lib/utils/rate-limit";
 
-function shouldChargeCredits(entitlement: VideoAnalysisEntitlement) {
-  return entitlement.mode === "platform_credits";
-}
-
-function canUsePlatformAnalysisKey(entitlement: VideoAnalysisEntitlement) {
-  return entitlement.mode === "admin" || entitlement.mode === "platform_credits" || entitlement.mode === "trial";
-}
-
+export const maxDuration = 300;
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  let trialReservationId: string | null = null;
-  let trialCompleted = false;
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const body = await request.json().catch(() => null);
-  const mediaUrl = typeof body?.mediaUrl === "string" ? body.mediaUrl.trim() : "";
-  if (!mediaUrl) return NextResponse.json({ error: "Missing mediaUrl" }, { status: 400 });
-  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true" && body?.mediaType !== "image") return NextResponse.json({ code: "CONFIRMED_QUOTE_REQUIRED", error: "Confirm a server quote before starting analysis" }, { status: 409 });
-
+  if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   try {
-    const mediaType = body?.mediaType === "image" ? "image" : "video";
-    const mediaDuration = typeof body?.mediaDuration === "number" && Number.isFinite(body.mediaDuration) ? body.mediaDuration : undefined;
-    const shortVideoLimit = VIDEO_ANALYSIS_SHORT_MAX_SECONDS + VIDEO_ANALYSIS_DURATION_TOLERANCE_SECONDS;
-    const isShortSingleShotVideo = mediaType === "video" && body?.singleShot === true && typeof mediaDuration === "number" && mediaDuration <= shortVideoLimit;
-    const isLongVideo = mediaType === "video" && !isShortSingleShotVideo;
-    const minimumCredits = isLongVideo ? getVideoAnalysisChargeUnits({ sceneCount: 1, longVideo: true }) : 1;
-    const entitlement = await assertCanStartVideoAnalysis(session.user.id, { minimumCredits, longVideo: isLongVideo });
-    if (entitlement.mode === "trial") {
-      trialReservationId = await reserveTrialAnalysis(session.user.id);
-    }
-    const chargeCredits = shouldChargeCredits(entitlement);
-
+    const limit = await checkRateLimit(`workflow-analysis:${session.user.id}`, 5, 60000);
+    if (!limit.allowed) return NextResponse.json({ error: "提交过于频繁，请稍后重试。" }, { status: 429 });
+    const body = await request.json();
     const { id } = await params;
-    const bundle = await runVideoBreakdown({
-      userId: session.user.id,
-      projectId: id,
-      mediaUrl,
-      mediaName: typeof body?.mediaName === "string" ? body.mediaName : undefined,
-      storageKey: typeof body?.storageKey === "string" ? body.storageKey : undefined,
-      mediaType,
-      mediaDuration,
-      singleShot: isShortSingleShotVideo,
-      outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale,
-      creditBudget: chargeCredits ? { balance: entitlement.balance, baseUnits: isLongVideo ? VIDEO_ANALYSIS_LONG_VIDEO_BASE_CREDITS : 0 } : undefined,
-      allowPlatformKeyForAnalysis: canUsePlatformAnalysisKey(entitlement),
-      forceFreeTrialKie: entitlement.mode === "trial",
-      ...parseWorkflowModelSelection(body),
-    });
-    if (!bundle) throw new Error("Video breakdown returned no project bundle");
-    const sceneCount = Math.max(1, Array.isArray(bundle.sceneVersions) ? bundle.sceneVersions.length : 1);
-    const units = getVideoAnalysisChargeUnits({ sceneCount, longVideo: isLongVideo });
-    const credits = await settleVideoAnalysisCredits({
-      userId: session.user.id,
-      entitlement,
-      units,
-      note: isLongVideo ? `长视频自动拆镜分析 ${sceneCount} 个镜头` : `视频分析 ${sceneCount} 个镜头`,
-      metadata: { projectId: id, mediaType, sceneCount, longVideo: isLongVideo, analysisProvider: "kie" },
-    });
-    if (entitlement.mode === "trial") {
-      await db.insert(operationLogs).values({ userId: session.user.id, action: "analysis.complete", resourceType: mediaType, resourceId: id, metadata: { billingMode: "trial", provider: "kie", feature: "workflow_breakdown" } });
-      await completeTrialAnalysis(trialReservationId);
-      trialCompleted = true;
-    }
-    return NextResponse.json({
-      ...bundle,
-      billing: { mode: entitlement.mode, chargedCredits: chargeCredits ? units : 0, balance: credits.balance, longVideo: isLongVideo },
-    });
+    const task = await enqueueAnalysis(session.user.id, id, body);
+    if (task.state === "queued") after(() => runAnalysisTask(task.id));
+    return NextResponse.json({ taskId: task.id, state: task.state }, { status: 202 });
   } catch (error) {
     const billingError = videoAnalysisBillingErrorResponse(error);
     if (billingError) return NextResponse.json(billingError, { status: 402 });
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Breakdown failed" }, { status: 500 });
-  } finally {
-    if (trialReservationId && !trialCompleted) await releaseTrialAnalysis(trialReservationId).catch((error) => console.error("Failed to release trial reservation:", error));
+    const message = error instanceof Error ? error.message : "Analysis submission failed";
+    return NextResponse.json({ error: message, code: message === "CONFIRMED_QUOTE_REQUIRED" ? message : undefined }, { status: 409 });
   }
 }

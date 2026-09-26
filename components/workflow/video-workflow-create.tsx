@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { AnalysisQuoteDialog } from "@/components/payments/analysis-quote-dialog";
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
+import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -363,6 +364,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [copiedSceneVersionId, setCopiedSceneVersionId] = useState("");
   const [analysisModels, setAnalysisModels] = useState<ModelOption[]>([]);
   const [analysisModelValue, setAnalysisModelValue] = useState("auto");
+  const [analysisTaskId, setAnalysisTaskId] = useState("");
   const [analysisOutputLanguage, setAnalysisOutputLanguage] = useState<"zh" | "en">(locale === "en" ? "en" : "zh");
   const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
   const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en" } | null>(null);
@@ -486,7 +488,44 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       return;
     }
     setBundle(data);
+    setAnalysisTaskId(data.project?.status === "analyzing" && typeof data.project?.metadata?.analysisTaskId === "string" ? data.project.metadata.analysisTaskId : "");
+    setLoading(data.project?.status === "analyzing" && typeof data.project?.metadata?.analysisTaskId === "string");
   }
+
+  useEffect(() => {
+    if (!analysisTaskId) return;
+    const controller = new AbortController();
+    let timer: ReturnType<typeof setTimeout>;
+    setLoading(true);
+    async function poll() {
+      try {
+        const response = await fetch(`/api/workflow/analysis-tasks/${analysisTaskId}`, { cache: "no-store", signal: controller.signal });
+        const data = await response.json();
+        if (controller.signal.aborted) return;
+        if (!response.ok) {
+          if ([401, 403, 404].includes(response.status)) { setAnalysisTaskId(""); setLoading(false); }
+          throw new Error(data.error || "Task status unavailable");
+        }
+        setError("");
+        if (["completed", "failed"].includes(data.state)) {
+          if (data.bundle) setBundle(data.bundle);
+          setError(data.state === "failed" ? data.error || "分析失败，请检查 Key 后重试。" : data.partial ? "部分镜头分析失败，成功结果已保留，仅结算成功镜头。" : "");
+          setAnalysisTaskId(""); setLoading(false); setAnalysisProgress(null);
+          setProgress(data.state === "completed" ? "分析完成" : "分析失败");
+          void loadProjects({ force: true }); void loadCreditStatus();
+          return;
+        }
+        const detail = data.totalScenes ? `已处理 ${data.completedScenes}/${data.totalScenes} 个镜头` : "正在准备素材";
+        setAnalysisProgress({ phase: "analysis", percent: data.totalScenes ? 65 + Math.round(data.completedScenes / data.totalScenes * 30) : 60, label: "AI 分析", detail });
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setError(error instanceof Error ? error.message : "查询暂时中断，正在重新连接。");
+      }
+      if (!controller.signal.aborted) timer = setTimeout(poll, 4000);
+    }
+    void poll();
+    return () => { controller.abort(); clearTimeout(timer); };
+  }, [analysisTaskId]);
 
   async function handleDeleteProject(projectId: string) {
     const response = await fetch(`/api/workflow/projects/${projectId}`, { method: "DELETE" });
@@ -615,7 +654,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         body: JSON.stringify({ title: preparedTitle }),
       });
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
-      if (creditStatus?.commercialConsumptionEnabled && prepared.mediaType === "video") {
+      const latestStatus = await loadCreditStatus() || creditStatus;
+      if (requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", longVideo: !(prepared.duration && prepared.duration <= 10.75), trialRemaining: latestStatus?.trial.remaining || 0 })) {
         setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage });
         setAnalysisProgress(null);
         return;
@@ -634,26 +674,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         body: JSON.stringify({ mediaUrl: prepared.url, mediaName: prepared.filename, storageKey: prepared.key, mediaType: prepared.mediaType, mediaDuration: prepared.duration, singleShot: Boolean(prepared.duration && prepared.duration <= MAX_ANALYSIS_VIDEO_SECONDS + VIDEO_DURATION_TOLERANCE_SECONDS), ...analysisSelectionPayload() }),
       });
       const breakdownData = await readJsonResponse(breakdownRes, "Breakdown failed");
-      setAnalysisProgress({
-        phase: "complete",
-        percent: 100,
-        label: "生成蓝图",
-        detail: "分析完成，正在展示结果",
-      });
-      setBundle(breakdownData);
-      if (breakdownData.project) {
-        setProjects((current) => {
-          const nextProjects = [
-            breakdownData.project as Project,
-            ...current.filter((project) => project.id !== breakdownData.project.id),
-          ].slice(0, 20);
-          cacheProjects(nextProjects);
-          return nextProjects;
-        });
-      }
+      if (!breakdownData.taskId) throw new Error("Analysis task was not created");
+      setAnalysisTaskId(breakdownData.taskId);
       void loadProjects({ force: true });
-      void loadCreditStatus();
-      setProgress(prepared.mediaType === "image" ? "Image Blueprint ready" : "Video Blueprint ready");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Workflow failed";
       setError(message === "Failed to fetch" ? "网络请求失败：请检查上传服务、视频拆解服务或本地开发服务是否正常运行。" : message);
