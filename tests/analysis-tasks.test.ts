@@ -11,6 +11,7 @@ vi.mock("@/lib/auth", () => ({ isAdminProfile: () => false }));
 vi.mock("@/lib/billing/video-analysis", () => ({
   FREE_TRIAL_ANALYSIS_MODEL: "gemini-3-8-flash-openai",
   assertCanStartVideoAnalysis: async () => ({ mode: mocks.mode, trial: { remaining: 2 }, capabilities: { videoAnalysis: { canUseLongVideo: mocks.mode !== "trial" } } }),
+  getWorkflowAnalysisEntitlement: async () => ({ mode: mocks.mode, trial: { remaining: 2 }, capabilities: { videoAnalysis: { canUseLongVideo: mocks.mode !== "trial" } } }),
   getVideoAnalysisChargeUnits: ({ sceneCount, longVideo }: { sceneCount: number; longVideo: boolean }) => sceneCount + (longVideo ? 3 : 0),
 }));
 vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "platform-test", resolveKieApiKeyForFeature: async () => ({ apiKey: "own-test", source: "user" }) }));

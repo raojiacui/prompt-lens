@@ -166,6 +166,24 @@ export async function assertCanStartVideoAnalysis(userId: string, options: numbe
   return entitlement;
 }
 
+export async function getWorkflowAnalysisEntitlement(userId: string): Promise<VideoAnalysisEntitlement> {
+  const entitlement = await getVideoAnalysisEntitlement(userId);
+  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED !== "true" || entitlement.mode === "admin") return entitlement;
+  const mode = entitlement.hasUserKieKey ? "byok" : "trial";
+  return {
+    ...entitlement,
+    mode,
+    hasPaidVideoAnalysis: false,
+    canUsePlatformKie: false,
+    capabilities: { videoAnalysis: {
+      ...entitlement.capabilities.videoAnalysis,
+      canUseLongVideo: false,
+      longVideoRequiresPayment: true,
+      canSelectAnalysisModel: mode === "byok",
+    } },
+  };
+}
+
 export function getVideoAnalysisChargeUnits(params: { sceneCount: number; longVideo?: boolean }) {
   const sceneCount = Math.max(1, Math.floor(params.sceneCount || 1));
   return (params.longVideo ? VIDEO_ANALYSIS_LONG_VIDEO_BASE_CREDITS : 0) + sceneCount * VIDEO_ANALYSIS_PER_SCENE_CREDITS;

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { commercialTasks, creditLedger, db, operationLogs, projects, projectVersions, referenceVideos, sceneVersions, trialAnalysisReservations, trialAnalysisUsage, userCredits, videoScenes } from "@/lib/db";
-import { assertCanStartVideoAnalysis, FREE_TRIAL_ANALYSIS_MODEL, getVideoAnalysisChargeUnits, type VideoAnalysisBillingMode } from "@/lib/billing/video-analysis";
+import { assertCanStartVideoAnalysis, getWorkflowAnalysisEntitlement, FREE_TRIAL_ANALYSIS_MODEL, getVideoAnalysisChargeUnits, type VideoAnalysisBillingMode } from "@/lib/billing/video-analysis";
 import { getPlatformKieApiKey, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 import { assertOwnedUploadedVideo, commercialMediaRequest, type MediaPreview } from "@/lib/billing/commercial-media";
 import { generationKeyFingerprint } from "@/lib/billing/generation-key";
@@ -46,7 +46,9 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
   const mediaUrl = typeof body.mediaUrl === "string" ? body.mediaUrl : "";
   await assertOwnedUploadedVideo(userId, mediaUrl, mediaType);
   const longVideo = mediaType === "video" && !(typeof body.mediaDuration === "number" && body.mediaDuration > 0 && body.mediaDuration <= 10.75);
-  const entitlement = await assertCanStartVideoAnalysis(userId, { longVideo: false });
+  const entitlement = process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true"
+    ? await getWorkflowAnalysisEntitlement(userId)
+    : await assertCanStartVideoAnalysis(userId, { longVideo: false });
   if (requiresAnalysisQuote({ commercialEnabled: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true", mediaType, mode: entitlement.mode, longVideo, trialRemaining: entitlement.trial.remaining })) throw new Error("CONFIRMED_QUOTE_REQUIRED");
   const access = entitlement.mode === "trial" ? { apiKey: getPlatformKieApiKey(), source: "platform" } : await resolveKieApiKeyForFeature(userId, { requiredPackageScope: "video_analysis" });
   if (!access.apiKey) throw new Error("KIE API Key is not configured");

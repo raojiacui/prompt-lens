@@ -626,6 +626,10 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       detail: isLinkedMedia ? `正在读取 ${linkedPlatformLabels[linkedPlatform!]} 视频并保存素材` : `正在上传${mediaLabel}到存储服务`,
     });
     try {
+      const latestStatus = await loadCreditStatus() || creditStatus;
+      if (selectedMediaType === "image" && latestStatus?.mode === "trial" && (latestStatus.trial.remaining || 0) <= 0) {
+        throw new Error(locale === "zh" ? "两次免费试用已用完，请先到设置中配置自己的 KIE Key。" : "Your two free trials are used. Add your own KIE key in Settings to continue.");
+      }
       const prepared: PreparedMedia = isLinkedMedia
         ? await resolveLinkedMedia()
         : await uploadMediaToR2(file!, (percentage) => {
@@ -659,7 +663,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         body: JSON.stringify({ title: preparedTitle }),
       });
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
-      const latestStatus = await loadCreditStatus() || creditStatus;
       if (requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", longVideo: !(prepared.duration && prepared.duration <= 10.75), trialRemaining: latestStatus?.trial.remaining || 0 })) {
         setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage });
         setAnalysisProgress(null);
