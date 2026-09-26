@@ -7,13 +7,18 @@ const accepted = {
   KIE_API_KEY: "test-only", FFMPEG_WORKER_URL: "https://worker.example.com", FFMPEG_WORKER_SECRET: "test-only",
   CRON_SECRET: "test-only", COMMERCIAL_SCHEDULER_ACCEPTED: "true", NEXT_PUBLIC_SITE_URL: "https://example.com",
   COMMERCIAL_CONSUMPTION_ENABLED: "true", COMMERCIAL_REWRITE_ENABLED: "true",
-  COMMERCIAL_MIGRATION_ACCEPTED: "0015", COMMERCIAL_PAYMENT_ACCEPTANCE: PRICING_VERSION,
+  COMMERCIAL_MIGRATION_ACCEPTED: "0019", COMMERCIAL_PAYMENT_ACCEPTANCE: PRICING_VERSION,
   COMMERCIAL_MODEL_ACCEPTANCE: PRICING_VERSION, COMMERCIAL_SALES_ENABLED: "true",
 };
 describe("Commercial launch guard", () => {
   beforeEach(() => { for (const [key, value] of Object.entries(accepted)) vi.stubEnv(key, value); });
   afterEach(() => vi.unstubAllEnvs());
   it("requires all acceptance markers", () => { expect(commercialSalesReady()).toBe(true); });
+  it("rejects a migration marker from before analysis and media cleanup", () => {
+    vi.stubEnv("COMMERCIAL_MIGRATION_ACCEPTED", "0015");
+    expect(commercialSalesReady()).toBe(false);
+    expect(commercialAcceptanceAllowed("owner")).toBe(false);
+  });
   it.each(["COMMERCIAL_SCHEDULER_ACCEPTED", "COMMERCIAL_CONSUMPTION_ENABLED", "COMMERCIAL_REWRITE_ENABLED", "COMMERCIAL_MIGRATION_ACCEPTED", "COMMERCIAL_PAYMENT_ACCEPTANCE", "COMMERCIAL_MODEL_ACCEPTANCE", "COMMERCIAL_SALES_ENABLED", "CRON_SECRET"]) ("fails closed without %s", (key) => {
     vi.stubEnv(key, ""); expect(commercialSalesReady()).toBe(false);
   });

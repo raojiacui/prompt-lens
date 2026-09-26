@@ -9,6 +9,7 @@ import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 import { commercialConsumptionEnabled, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
+import { processMediaCleanupJobs } from "@/lib/workflow/media-cleanup";
 
 export const maxDuration = 300;
 export async function GET(request: NextRequest) {
@@ -34,5 +35,6 @@ export async function GET(request: NextRequest) {
   )).orderBy(asc(commercialTasks.updatedAt)).limit(1);
   if (queued?.kind === "workflow_analysis") await runAnalysisTask(queued.id);
   else if (queued && commercialConsumptionEnabled()) await runCommercialTask(queued.id);
+  await processMediaCleanupJobs(10);
   return NextResponse.json({ checked }, { headers: { "Cache-Control": "no-store" } });
 }

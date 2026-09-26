@@ -24,7 +24,7 @@ for (const width of [1440, 390]) {
         submissions++;
         expect(route.request().postDataJSON()).toMatchObject({ modelMode: "auto" });
         body = { taskId, state: "queued" };
-      } else if (path === `/api/workflow/analysis-tasks/${taskId}`) {
+      } else if (path === `/api/commercial/tasks/${taskId}`) {
         polls++;
         body = polls < 2 ? { state: "running", totalScenes: 1, completedScenes: 0 } : { state: "completed", bundle };
       } else if (path.startsWith("/api/commercial/analysis")) quotes++;

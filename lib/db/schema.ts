@@ -106,6 +106,21 @@ export const commercialTasks = pgTable("commercial_tasks", {
   uniqueIndex("workflow_analysis_project_unique").on(t.userId, sql`(${t.input}->>'projectId')`).where(sql`${t.kind} = 'workflow_analysis'`),
 ]);
 
+export const mediaCleanupJobs = pgTable("media_cleanup_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  storageKey: text("storage_key").notNull().unique(),
+  state: varchar("state", { length: 16 }).notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+  lastError: text("last_error"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+}, (t) => [
+  index("media_cleanup_jobs_pending_idx").on(t.state, t.nextAttemptAt),
+  check("media_cleanup_jobs_state_check", sql`${t.state} IN ('pending','working','deleted')`),
+]);
+
 // ============ 复用 nano-video 的用户和认证表 ============
 export const userRoleEnum = pgEnum("user_role", ["user", "admin"]);
 

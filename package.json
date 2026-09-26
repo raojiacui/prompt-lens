@@ -12,6 +12,7 @@
         "remotion:studio": "remotion studio remotion/index.ts --no-open",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
+        "db:check-v2": "node scripts/check-v2-analysis-schema.mjs",
         "db:push": "drizzle-kit push",
         "db:studio": "drizzle-kit studio",
         "test": "vitest",

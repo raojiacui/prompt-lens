@@ -134,6 +134,13 @@
                         "when": 1790323200002,
                         "tag": "0018_workflow_analysis_tasks",
                         "breakpoints": true
+                    },
+                    {
+                        "idx": 19,
+                        "version": "7",
+                        "when": 1790323200003,
+                        "tag": "0019_media_cleanup_jobs",
+                        "breakpoints": true
                     }
                 ]
 }

@@ -1,8 +1,9 @@
-import { db, commercialTasks, projectAssets, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
+import { db, commercialTasks, mediaCleanupJobs, projectAssets, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
 import { reserveCommercialTask, settleCommercialTask, settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
-import { deleteFromR2, extractR2Key } from "@/lib/cloudflare/r2";
+import { extractR2Key } from "@/lib/cloudflare/r2";
+import { processMediaCleanupJobs } from "./media-cleanup";
 import { routeModel } from "@/lib/ai/model-registry";
 import type { BackgroundMusicRecognition } from "@/lib/workflow/music-recognition";
 import {
@@ -212,13 +213,13 @@ function addR2KeysFromJsonArray(keys: Set<string>, value: unknown) {
   value.forEach((item) => addR2Key(keys, item));
 }
 
-async function collectProjectR2Keys(projectId: string) {
+async function collectProjectR2Keys(projectId: string, tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) {
   const keys = new Set<string>();
   const [refs, scenes, sceneVersionRows, assets] = await Promise.all([
-    db.query.referenceVideos.findMany({ where: eq(referenceVideos.projectId, projectId) }),
-    db.query.videoScenes.findMany({ where: eq(videoScenes.projectId, projectId) }),
-    db.query.sceneVersions.findMany({ where: eq(sceneVersions.projectId, projectId) }),
-    db.query.projectAssets.findMany({ where: eq(projectAssets.projectId, projectId) }),
+    tx.query.referenceVideos.findMany({ where: eq(referenceVideos.projectId, projectId) }),
+    tx.query.videoScenes.findMany({ where: eq(videoScenes.projectId, projectId) }),
+    tx.query.sceneVersions.findMany({ where: eq(sceneVersions.projectId, projectId) }),
+    tx.query.projectAssets.findMany({ where: eq(projectAssets.projectId, projectId) }),
   ]);
 
   refs.forEach((reference) => {
@@ -244,21 +245,19 @@ async function collectProjectR2Keys(projectId: string) {
 }
 
 export async function deleteProjectForUser(projectId: string, userId: string) {
-  const project = await getProjectForUser(projectId, userId);
-  if (!project) throw new Error("Project not found");
-    const r2Keys = await collectProjectR2Keys(projectId);
-    await db.transaction(async (tx) => {
+    const r2Keys = await db.transaction(async (tx) => {
       const [locked] = await tx.select({ id: projects.id }).from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).for("update");
       if (!locked) throw new Error("Project not found");
       const [pending] = await tx.select({ id: commercialTasks.id }).from(commercialTasks).where(and(eq(commercialTasks.userId, userId), sql`${commercialTasks.input}->>'projectId' = ${projectId}`, sql`${commercialTasks.state} IN ('queued','running','review')`)).limit(1);
       if (pending) throw new Error("An analysis or generation task is still pending. Resolve it before deleting this project.");
+      const keys = await collectProjectR2Keys(projectId, tx);
+      for (const storageKey of keys) {
+        await tx.insert(mediaCleanupJobs).values({ storageKey }).onConflictDoUpdate({ target: mediaCleanupJobs.storageKey, set: { state: "pending", attempts: 0, lastError: null, deletedAt: null, nextAttemptAt: new Date(), updatedAt: new Date() } });
+      }
       await tx.delete(projects).where(eq(projects.id, projectId));
+      return keys;
     });
-    let deletedR2Objects = 0;
-    for (const key of r2Keys) {
-      try { await deleteFromR2(key); deletedR2Objects++; }
-      catch { console.warn("[workflow] Deleted project has an orphaned storage object", { projectId, key }); }
-    }
+    const deletedR2Objects = r2Keys.length ? await processMediaCleanupJobs(r2Keys.length, r2Keys) : 0;
     return { success: true, deletedR2Objects };
 }
 
