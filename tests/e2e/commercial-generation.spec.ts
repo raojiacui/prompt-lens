@@ -18,6 +18,8 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       else if (path === "/api/generation-jobs" && route.request().method() === "POST") legacySubmissions++;
       await route.fulfill({ json: body });
     });
+    await page.goto("/");
+    await expect(page.locator('#features a[href="/dashboard?tab=video-gen"]')).toHaveCount(1);
     await page.goto("/dashboard?tab=video-gen&duration=5&videoGenPrompt=A%20cinematic%20cloud%20palace");
     await page.getByLabel(locale === "zh" ? "费用来源" : "Payment source").selectOption("platform");
     await page.getByRole("button", { name: /720p.*5s|5s.*720p/i }).click();

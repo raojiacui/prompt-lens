@@ -7,7 +7,7 @@ import { Film, Wand2, Mic2, Sparkles, ArrowRight } from "lucide-react";
 
 const featureIcons = [Film, Wand2, Sparkles, Mic2];
 const featureKeys = ["featureAnalyze", "featureGen", "featureRewrite", "featureAudio"] as const;
-const tabMap = ["analyze", "videoGen", "analyze", "audio"];
+const tabMap = ["analyze", "video-gen", "analyze", "audio"];
 const demoVideos = [
   "/remotion/landing-ad/prompt-lens-analysis-motion-v5.mp4",
   "/remotion/landing-ad/prompt-lens-remix-smooth-v6.mp4",

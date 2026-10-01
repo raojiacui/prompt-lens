@@ -6,7 +6,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await context.addCookies([{ name: "NEXT_LOCALE", value: locale, domain: "localhost", path: "/" }]);
     let paid = false;
     let requests = 0;
-    const checkout = { orderId: "11111111-1111-4111-8111-111111111111", status: "pending", expiresAt: new Date(Date.now() + 300000).toISOString(), qrImageUrl: "https://example.com/test-qr.svg", mobilePaymentUrl: "https://example.com/test-pay" };
+    const checkout = { orderId: "11111111-1111-4111-8111-111111111111", status: "pending", expiresAt: new Date(Date.now() + 300000).toISOString(), qrImageUrl: null, paymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay", mobilePaymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay" };
     await page.route("https://example.com/**", (route) => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="224" height="224"><rect width="224" height="224" fill="white"/><rect x="8" y="8" width="208" height="208" fill="none" stroke="black" stroke-width="8"/><text x="112" y="112" text-anchor="middle" font-family="sans-serif">TEST ONLY</text></svg>' }));
     await page.route("**/api/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
@@ -28,10 +28,8 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await expect(dialog.getByText("¥19.90", { exact: true })).toBeVisible();
-    if (width === 390) {
-      await expect(dialog.getByRole("link", { name: locale === "zh" ? "前往支付宝支付" : "Continue to Alipay" })).toHaveAttribute("href", checkout.mobilePaymentUrl);
-      await expect(dialog.locator("img")).toHaveCount(0);
-    } else await expect(dialog.locator("img")).toBeVisible();
+    await expect(dialog.getByRole("link", { name: locale === "zh" ? "前往支付宝支付" : "Continue to Alipay" })).toHaveAttribute("href", checkout.paymentUrl);
+    await expect(dialog.locator("img")).toHaveCount(0);
     const bounds = await dialog.boundingBox();
     expect(bounds!.x).toBeGreaterThanOrEqual(0);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
