@@ -7,10 +7,15 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { uploadMediaToR2 } from "@/lib/r2-client";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { videoModels } from "@/lib/ai/video-models";
 
-export function VideoGenerateTab() {
+export function VideoGenerateTab({ onConfigureApiKey }: { onConfigureApiKey: () => void }) {
   const t = useTranslations("videoGenerate");
+  const zh = useLocale() === "zh";
+  const [model, setModel] = useState("");
+  const selectedModel = videoModels.find((item) => item.id === model);
+  const [hasOwnApiKey, setHasOwnApiKey] = useState<boolean | null>(null);
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [status, setStatus] = useState("");
@@ -25,7 +30,30 @@ export function VideoGenerateTab() {
   const refImageInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const MAX_REF_IMAGES = 6;
+  const MAX_REF_IMAGES = selectedModel?.maxImages ?? 0;
+
+  const loadAccess = async () => {
+    setHasOwnApiKey(null);
+    try {
+      const res = await fetch("/api/video-generate?access=true", { cache: "no-store" });
+      const data = await res.json();
+      setHasOwnApiKey(res.ok && data.hasOwnApiKey === true);
+    } catch {
+      setHasOwnApiKey(false);
+    }
+  };
+
+  const changeModel = (id: string) => {
+    const next = videoModels.find((item) => item.id === id);
+    setModel(id);
+    if (!next) return;
+    if (!next.durations.includes(Number(duration))) setDuration(String(next.durations[0]));
+    if (!next.resolutions.includes(resolution)) setResolution(next.resolutions[0]);
+    if (!next.aspectRatios.includes(aspectRatio)) setAspectRatio(next.aspectRatios[0]);
+    referenceImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setReferenceImages([]);
+    setReferenceImagePreviews([]);
+  };
 
   const loadRecords = async () => {
     try {
@@ -40,6 +68,7 @@ export function VideoGenerateTab() {
 
   useEffect(() => {
     loadRecords();
+    void loadAccess();
   }, []);
 
   const pollStatus = async (taskId: string) => {
@@ -132,14 +161,14 @@ export function VideoGenerateTab() {
     setReferenceImages(prev => prev.filter((_, i) => i !== index));
     setReferenceImagePreviews(prev => {
       const newPreviews = prev.filter((_, i) => i !== index);
-      prev.forEach((url, i) => { if (i !== index) URL.revokeObjectURL(url); });
+      if (prev[index]) URL.revokeObjectURL(prev[index]);
       return newPreviews;
     });
     if (refImageInputRef.current) refImageInputRef.current.value = "";
   };
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) return;
+    if (!prompt.trim() || !selectedModel || !hasOwnApiKey || referenceImages.length < selectedModel.minImages) return;
     setIsGenerating(true);
     setStatus(t("creating"));
     setVideoUrl(null);
@@ -161,6 +190,8 @@ export function VideoGenerateTab() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           prompt,
+          model,
+          provider: "kie",
           duration: Number(duration),
           resolution,
           negativePrompt,
@@ -171,6 +202,7 @@ export function VideoGenerateTab() {
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => null);
+        if (errorData?.code === "PERSONAL_API_KEY_REQUIRED") setHasOwnApiKey(false);
         throw new Error(errorData?.error || t("createFailed"));
       }
 
@@ -205,6 +237,22 @@ export function VideoGenerateTab() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {hasOwnApiKey !== true && (
+              <div className="border border-[#D8D5CC] rounded-lg p-3 text-sm text-[#6B6860] space-y-2">
+                <p>{hasOwnApiKey === null ? (zh ? "正在检查个人 API Key…" : "Checking personal API key…") : (zh ? "视频生成需要你自己的 KIE API Key，费用由你的 KIE 账户承担。" : "Video generation requires your own KIE API key and uses your KIE credits.")}</p>
+                {hasOwnApiKey === false && <div className="flex gap-4">
+                  <button type="button" onClick={onConfigureApiKey} className="text-[#D97757] underline">{zh ? "配置 API Key" : "Configure API key"}</button>
+                  <button type="button" onClick={() => void loadAccess()} className="underline">{zh ? "重新检查" : "Check again"}</button>
+                </div>}
+              </div>
+            )}
+            <div>
+              <label htmlFor="video-generation-model" className="text-sm font-medium text-[#141413] block mb-2">{zh ? "生成模型" : "Generation model"}</label>
+              <select id="video-generation-model" value={model} onChange={(e) => changeModel(e.target.value)} disabled={isGenerating} className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg bg-white text-[#141413]">
+                <option value="" disabled>{zh ? "请选择模型" : "Select a model"}</option>
+                {videoModels.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </select>
+            </div>
             <Textarea
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -213,7 +261,7 @@ export function VideoGenerateTab() {
             />
 
             {/* 多张参考图上传 */}
-            <div>
+            {MAX_REF_IMAGES > 0 && <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-medium text-[#141413]">{t("refImages")}</label>
                 <span className="text-xs text-[#9C9890]">{referenceImages.length}/{MAX_REF_IMAGES}</span>
@@ -271,7 +319,7 @@ export function VideoGenerateTab() {
                   className="hidden"
                 />
               </div>
-            </div>
+            </div>}
 
             {/* 设置选项 */}
             <div className="grid grid-cols-2 gap-4">
@@ -282,9 +330,7 @@ export function VideoGenerateTab() {
                   onChange={(e) => setDuration(e.target.value)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="5">{t("duration5")}</option>
-                  <option value="10">{t("duration10")}</option>
-                  <option value="15">{t("duration15")}</option>
+                  {(selectedModel?.durations ?? [5, 10, 15]).map((seconds) => <option key={seconds} value={String(seconds)}>{t(`duration${seconds}`)}</option>)}
                 </select>
               </div>
               <div>
@@ -294,8 +340,7 @@ export function VideoGenerateTab() {
                   onChange={(e) => setResolution(e.target.value)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="720p">720p</option>
-                  <option value="1080p">1080p</option>
+                  {(selectedModel?.resolutions ?? ["720p", "1080p"]).map((value) => <option key={value} value={value}>{value}</option>)}
                 </select>
               </div>
             </div>
@@ -308,9 +353,7 @@ export function VideoGenerateTab() {
                   onChange={(e) => setAspectRatio(e.target.value)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="16:9">{t("ratio169")}</option>
-                  <option value="9:16">{t("ratio916")}</option>
-                  <option value="1:1">{t("ratio11")}</option>
+                  {(selectedModel?.aspectRatios ?? ["16:9", "9:16", "1:1"]).map((value) => <option key={value} value={value}>{value}</option>)}
                 </select>
               </div>
               <div>
@@ -327,7 +370,7 @@ export function VideoGenerateTab() {
 
             <Button
               onClick={handleGenerate}
-              disabled={!prompt.trim() || isGenerating}
+              disabled={!prompt.trim() || isGenerating || !model || hasOwnApiKey !== true || referenceImages.length < (selectedModel?.minImages ?? 0)}
               className="w-full bg-[#D97757] hover:bg-[#C96848] text-white"
             >
               {isGenerating ? (

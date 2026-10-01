@@ -18,5 +18,4 @@ export {
   DEFAULT_VIDEO_PROVIDER,
   KieVideoProvider,
   getUserProviderApiKey,
-  KIE_VIDEO_MODEL,
 } from "./video-provider";

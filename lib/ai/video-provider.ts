@@ -6,6 +6,7 @@
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 import { db, userApiKeys } from "@/lib/db";
 import { and, desc, eq } from "drizzle-orm";
+import { buildVideoModelPayload } from "./video-models";
 
 // ============ 类型定义 ============
 
@@ -16,9 +17,12 @@ export type VideoGenerationStatus =
   | "failed";
 
 export interface CreateVideoTaskInput {
+  model: string;
   prompt: string;
-  duration?: number;
-  resolution?: string;
+  duration: number;
+  resolution: string;
+  aspectRatio: string;
+  referenceImageUrls?: string[];
   negativePrompt?: string;
 }
 
@@ -87,7 +91,6 @@ export async function getUserProviderApiKey(
 // ============ Kie.ai Provider ============
 
 const KIE_API_BASE_URL = process.env.KIE_API_BASE_URL || "https://api.kie.ai";
-export const KIE_VIDEO_MODEL = process.env.KIE_VIDEO_MODEL || "wan/2-7-text-to-video";
 
 function kieBuildHeaders(apiKey: string) {
   return {
@@ -132,36 +135,16 @@ export class KieVideoProvider implements VideoProvider {
   private apiKey: string;
 
   constructor(apiKey: string) {
+    if (!apiKey.trim()) throw new Error("Personal KIE API key is required");
     this.apiKey = apiKey;
   }
 
   async createTask(input: CreateVideoTaskInput): Promise<VideoTaskResult> {
-    const prompt = input.prompt.trim();
-    const negativePrompt = input.negativePrompt?.trim();
-    const duration = Number.isFinite(input.duration) ? input.duration : 5;
-
-    const modelInput = KIE_VIDEO_MODEL.startsWith("wan/")
-      ? {
-          prompt,
-          ...(negativePrompt ? { negative_prompt: negativePrompt } : {}),
-          resolution: input.resolution || "720p",
-          ratio: "16:9",
-          duration,
-          prompt_extend: true,
-          watermark: false,
-        }
-      : {
-          prompt: negativePrompt ? `${prompt}\nNegative prompt: ${negativePrompt}` : prompt,
-          aspect_ratio: "landscape",
-          n_frames: String(duration),
-          remove_watermark: true,
-          upload_method: "s3",
-        };
-
-    const payload = { model: KIE_VIDEO_MODEL, input: modelInput };
+    const payload = buildVideoModelPayload(input);
 
     const response = await fetch(`${KIE_API_BASE_URL}/api/v1/jobs/createTask`, {
       method: "POST",
+      signal: AbortSignal.timeout(30000),
       headers: kieBuildHeaders(this.apiKey),
       body: JSON.stringify(payload),
     });

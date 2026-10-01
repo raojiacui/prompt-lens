@@ -431,7 +431,7 @@ export default function DashboardPage() {
         {/* 视频生成页面 */}
         {activeTab === "video-gen" && (
           <div className="animate-fade-in">
-            <VideoGenerateTab />
+          <VideoGenerateTab onConfigureApiKey={() => setActiveTab("settings")} />
           </div>
         )}
 

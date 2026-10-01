@@ -3,19 +3,14 @@ import { auth } from "@/lib/auth";
 import {
   createVideoProvider,
   getUserProviderApiKey,
-  KIE_VIDEO_MODEL,
   DEFAULT_VIDEO_PROVIDER,
 } from "@/lib/ai/video-generator";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { db, videoGeneration } from "@/lib/db";
 import { and, desc, eq } from "drizzle-orm";
+import { videoGenerationInput } from "@/lib/ai/video-models";
 
 const VIDEO_GENERATE_LIMIT = { limit: 3, windowMs: 60000 };
-function maskApiKeyForLog(apiKey: string) {
-  const trimmed = apiKey.trim();
-  if (trimmed.length <= 8) return `${trimmed.length}:****`;
-  return `${trimmed.length}:${trimmed.slice(0, 4)}...${trimmed.slice(-4)}`;
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,40 +33,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => null);
-    const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
-    if (!prompt) {
-      return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
+    const parsed = videoGenerationInput.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid generation settings" }, { status: 400 });
     }
-
-    const provider = (body?.provider as string) || DEFAULT_VIDEO_PROVIDER;
-    const duration = Number(body?.duration);
-    const normalizedDuration = Number.isFinite(duration) ? duration : undefined;
-    const resolution = typeof body?.resolution === "string" ? body.resolution : undefined;
-    const negativePrompt = typeof body?.negativePrompt === "string" ? body.negativePrompt : undefined;
+    const { prompt, provider, model, duration: normalizedDuration, resolution, negativePrompt } = parsed.data;
 
     // 获取用户配置的 provider API Key
     const userApiKey = await getUserProviderApiKey(session.user.id, provider as any);
-    const envApiKey = process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
-    const effectiveApiKey = userApiKey || envApiKey;
-    const apiKeySource = userApiKey ? "user" : envApiKey ? "environment" : "missing";
-    if (!effectiveApiKey) {
-      return NextResponse.json({ error: "未配置 API Key，请先在设置中添加" }, { status: 400 });
+    if (!userApiKey?.trim()) {
+      return NextResponse.json({ error: "请先在设置中配置你自己的 KIE API Key，视频生成不使用平台额度", code: "PERSONAL_API_KEY_REQUIRED" }, { status: 403 });
     }
 
-    console.info("[video-generate] Using API key", {
-      userId: session.user.id,
-      provider,
-      source: apiKeySource,
-      key: maskApiKeyForLog(effectiveApiKey),
-    });
-
-    const videoProvider = createVideoProvider(provider as any, effectiveApiKey);
-    const result = await videoProvider.createTask({
-      prompt,
-      duration: normalizedDuration,
-      resolution,
-      negativePrompt,
-    });
+    const videoProvider = createVideoProvider(provider, userApiKey);
+    const result = await videoProvider.createTask(parsed.data);
 
     const records = await db
       .insert(videoGeneration)
@@ -82,7 +57,7 @@ export async function POST(request: NextRequest) {
         negativePrompt,
         duration: normalizedDuration,
         resolution,
-        model: KIE_VIDEO_MODEL,
+        model,
         provider,
         status: "pending",
         rawResponse: result.raw as any,
@@ -110,6 +85,11 @@ export async function GET(request: NextRequest) {
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (request.nextUrl.searchParams.get("access") === "true") {
+      const apiKey = await getUserProviderApiKey(session.user.id, DEFAULT_VIDEO_PROVIDER);
+      return NextResponse.json({ hasOwnApiKey: Boolean(apiKey?.trim()) }, { headers: { "Cache-Control": "no-store" } });
     }
 
     const taskId = request.nextUrl.searchParams.get("taskId");
