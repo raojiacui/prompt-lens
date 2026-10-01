@@ -699,6 +699,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       setAnalysisProgress(null);
     } finally {
       setLoading(false);
+      if (isLinkedMedia) void loadCreditStatus();
     }
   }
 
@@ -890,7 +891,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                   ) : null}
                   <span className="text-muted-foreground">TikTok · 抖音 · Bilibili</span>
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{locale === "en" ? `${creditStatus?.linkImports?.remaining ?? 0} parsing attempts remaining. Each new attempt counts, including failures; no extra credits. Analysis is quoted separately.` : `剩余 ${creditStatus?.linkImports?.remaining ?? 0} 次链接解析。每次新尝试占一次，失败也计次，不额外扣积分；分析另行报价。`}</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{locale === "en" ? `${creditStatus?.linkImports?.remaining ?? 0} video link imports remaining. Only successful imports count; failures use no credits or import allowance. Analysis is quoted separately.` : `剩余 ${creditStatus?.linkImports?.remaining ?? 0} 次视频链接导入。解析并保存成功才计次，失败不扣积分、不消耗次数；分析另行报价。`}</p>
               </div>
             )}
           </div>
@@ -916,7 +917,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
             className="mt-4 flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5" />}
-            {loading ? (locale === "en" ? "Preparing..." : "正在处理...") : mediaInputMode === "link" ? (locale === "en" ? "Import video · 1 attempt" : "导入视频 · 1 次解析") : mediaType === "image" ? (locale === "en" ? "Analyze image" : "分析图片") : (locale === "en" ? "Analyze video" : "分析视频")}
+            {loading ? (locale === "en" ? "Preparing..." : "正在处理...") : mediaInputMode === "link" ? (locale === "en" ? "Import video · counts on success" : "导入视频 · 成功计次") : mediaType === "image" ? (locale === "en" ? "Analyze image" : "分析图片") : (locale === "en" ? "Analyze video" : "分析视频")}
           </button>
 
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}

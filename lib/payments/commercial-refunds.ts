@@ -15,7 +15,7 @@ export async function requestCommercialRefund(userId: string, orderId: string, r
     const [lot] = await tx.select().from(commercialLots).where(eq(commercialLots.orderId, orderId)).for("update");
     if (!wallet || wallet.frozen || !lot || lot.state !== "active") throw new Error("REFUND_REQUIRES_REVIEW");
     if (lot.usedCredits || lot.usedRewrites || lot.heldCredits || lot.heldRewrites) throw new Error("PACKAGE_USED_OR_RESERVED");
-    const [importAttempt] = await tx.select().from(commercialReservations).where(and(eq(commercialReservations.userId, userId), sql`${commercialReservations.quote}->>'linkImportOrderId' = ${orderId}`));
+    const [importAttempt] = await tx.select().from(commercialReservations).where(and(eq(commercialReservations.userId, userId), sql`${commercialReservations.quote}->>'linkImportOrderId' = ${orderId}`, sql`(${commercialReservations.state} = 'held' OR ${commercialReservations.quote}->>'linkImportDelivered' = 'true')`));
     if (importAttempt) throw new Error("PACKAGE_USED_OR_RESERVED");
     await tx.update(commercialWallets).set({ credits: wallet.credits - lot.availableCredits, rewrites: wallet.rewrites - lot.availableRewrites, updatedAt: new Date() }).where(eq(commercialWallets.userId, userId));
     await tx.update(commercialLots).set({ state: "refunding" }).where(eq(commercialLots.id, lot.id));

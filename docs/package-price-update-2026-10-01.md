@@ -10,15 +10,19 @@ At the existing budget exchange rate of CNY 7.50/USD with 20% contingency,
 one charged Douyin, TikTok or Bilibili parse budgets CNY 0.162.
 Source: https://easydown.org/pricing (checked 2026-10-01).
 
-The user approved 12 / 30 / 61 included link parsing attempts per package.
+The user approved 12 / 30 / 61 included successful video link imports per package.
 New purchase grants snapshot this allowance in the purchase ledger. Active
 purchase lots contribute allowances; historical grants without the snapshot
 do not automatically receive new benefits. Purchases accumulate allowances.
-Each new import reservation consumes one attempt, including failed attempts.
+Each new import reservation temporarily holds one slot. Parsing and storage
+must both succeed before that slot is consumed; failures release the slot.
 Retries of the same request reuse the reservation without another provider
 call. Wallet row locking prevents concurrent calls from exceeding allowances.
 Imports charge zero general credits. Splitting and analysis keep their rates.
-Using an import allowance makes that purchase ineligible for automatic refund.
+Pending or successfully delivered imports make that purchase ineligible for
+automatic refund. A failed import alone does not count as purchase usage.
+Third-party costs incurred by failed imports are borne by the platform;
+per-user rate limits still apply to discourage repeated requests.
 There is no additional database schema migration for this change.
 
 This document supersedes the historical package prices and import charge in

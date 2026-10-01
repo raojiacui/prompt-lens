@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
       ));
       const result = (previous?.metadata as Record<string, unknown> | undefined)?.linkImportResult;
       if (result) return NextResponse.json(result);
-      return NextResponse.json({ code: "LINK_IMPORT_RETRY_NEW_REQUEST", error: "此前导入未完成。重新发起将使用一次套餐解析次数。" }, { status: 409 });
+      return NextResponse.json({ code: "LINK_IMPORT_RETRY_NEW_REQUEST", error: "此前导入失败，未消耗积分或解析次数，请重新发起。" }, { status: 409 });
     }
 
     let result: Record<string, unknown>;
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
           linkImportResult: result,
         },
       });
-      await settleCommercialTaskInTransaction(tx, { userId: session.user.id, taskKey, credits: LINK_IMPORT_CREDITS, rewrites: 0 });
+      await settleCommercialTaskInTransaction(tx, { userId: session.user.id, taskKey, credits: LINK_IMPORT_CREDITS, rewrites: 0, linkImportDelivered: true });
     });
     return NextResponse.json(result);
   } catch (error) {

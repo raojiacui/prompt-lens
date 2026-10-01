@@ -24,6 +24,8 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await page.goto("/#pricing");
     const pricing = page.locator("#pricing");
     await expect(pricing.locator("article")).toHaveCount(3);
+    await expect(pricing).toContainText(locale === "zh" ? "失败不计次" : "failures do not count");
+    await expect(pricing).not.toContainText(locale === "zh" ? "失败尝试也占一次" : "Failed attempts also count");
     for (const [index, price] of ["¥21.90", "¥63.90", "¥139"].entries()) {
       await expect(pricing.locator("article").nth(index).getByText(price, { exact: true })).toBeVisible();
       await expect(pricing.locator("article").nth(index)).toContainText(String([12, 30, 61][index]));

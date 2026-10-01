@@ -83,7 +83,7 @@ describe("linked media resolver route", () => {
     expect(data).toMatchObject({ platform: "bilibili", duration: 42, title: "A useful demo" });
     expect(data.chargedCredits).toBe(0);
     expect(mocks.reserve).toHaveBeenCalledWith(expect.objectContaining({ userId: "owner", credits: 0, rewrites: 0 }));
-    expect(mocks.settleInTransaction).toHaveBeenCalledWith(expect.anything(), { userId: "owner", taskKey: `link-import:${requestId}`, credits: 0, rewrites: 0 });
+    expect(mocks.settleInTransaction).toHaveBeenCalledWith(expect.anything(), { userId: "owner", taskKey: `link-import:${requestId}`, credits: 0, rewrites: 0, linkImportDelivered: true });
     expect(mocks.ingestLinkedMedia).toHaveBeenCalledWith(expect.objectContaining({ platform: "bilibili", videoHeaders: { Referer: "https://www.bilibili.com/" } }));
     expect(mocks.insertValues).toHaveBeenCalledWith(expect.objectContaining({
       userId: "owner",
@@ -151,6 +151,13 @@ describe("linked media resolver route", () => {
     mocks.reserve.mockResolvedValue({ created: false, reservation: { state: "held" } });
     const response = await POST(request());
     expect(response.status).toBe(409);
+    expect(mocks.resolveLinkedMedia).not.toHaveBeenCalled();
+  });
+  it("does not re-submit a failed request and explains that no allowance was spent", async () => {
+    mocks.reserve.mockResolvedValue({ created: false, reservation: { state: "settled", settledCredits: 0 } });
+    const response = await POST(request());
+    expect(response.status).toBe(409);
+    expect(await response.json()).toMatchObject({ code: "LINK_IMPORT_RETRY_NEW_REQUEST", error: "此前导入失败，未消耗积分或解析次数，请重新发起。" });
     expect(mocks.resolveLinkedMedia).not.toHaveBeenCalled();
   });
 

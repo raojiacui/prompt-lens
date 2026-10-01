@@ -5,6 +5,7 @@ import { LINK_IMPORT_PRICING_VERSION } from "./link-import-pricing";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Amounts = { credits: number; rewrites: number };
+type SettlementInput = Amounts & { userId: string; taskKey: string; linkImportDelivered?: boolean };
 
 function validateAmounts(amount: Amounts) {
   for (const value of [amount.credits, amount.rewrites]) {
@@ -50,7 +51,10 @@ export async function getIncludedLinkImportUsage(userId: string, connection: Pic
     const grant = grants.find((item) => item.eventKey === `purchase:${lot.orderId}`);
     const allowance = Number((grant?.metadata as Record<string, unknown> | undefined)?.linkImports ?? 0);
     if (!Number.isSafeInteger(allowance) || allowance <= 0) continue;
-    const attempts = reservations.filter((item) => (item.quote as Record<string, unknown>).linkImportOrderId === lot.orderId).length;
+    const attempts = reservations.filter((item) => {
+      const quote = item.quote as Record<string, unknown>;
+      return quote.linkImportOrderId === lot.orderId && (item.state === "held" || quote.linkImportDelivered === true);
+    }).length;
     total += allowance;
     used += attempts;
     if (!nextOrderId && attempts < allowance) nextOrderId = lot.orderId;
@@ -73,6 +77,7 @@ export async function reserveCommercialTaskInTransaction(tx: Transaction, input:
     if (existing) {
       const storedQuote = { ...(existing.quote as Record<string, unknown>) };
       delete storedQuote.linkImportOrderId;
+      delete storedQuote.linkImportDelivered;
       if (existing.credits !== input.credits || existing.rewrites !== input.rewrites || canonical(storedQuote) !== canonical(quote)) throw new Error("Task quote replay mismatch");
       return { reservation: existing, created: false };
     }
@@ -106,17 +111,21 @@ export async function reserveCommercialTaskInTransaction(tx: Transaction, input:
 }
 
 /** Only a confirmed terminal result may settle. Unknown provider status remains held. */
-export async function settleCommercialTask(input: Amounts & { userId: string; taskKey: string }) {
+export async function settleCommercialTask(input: SettlementInput) {
   return db.transaction((tx) => settleCommercialTaskInTransaction(tx, input));
 }
 
-export async function settleCommercialTaskInTransaction(tx: Transaction, input: Amounts & { userId: string; taskKey: string }) {
+export async function settleCommercialTaskInTransaction(tx: Transaction, input: SettlementInput) {
   validateAmounts(input);
     const wallet = await lockWallet(tx, input.userId);
     const [reservation] = await tx.select().from(commercialReservations).where(and(eq(commercialReservations.userId, input.userId), eq(commercialReservations.taskKey, input.taskKey))).for("update");
     if (!reservation) throw new Error("Reservation not found");
+    const quote = reservation.quote as Record<string, unknown>;
+    const includedImport = quote.kind === "link_import" && quote.pricingVersion === LINK_IMPORT_PRICING_VERSION;
+    if (input.linkImportDelivered !== undefined && !includedImport) throw new Error("Invalid import settlement");
     if (reservation.state === "settled") {
       if (reservation.settledCredits !== input.credits || reservation.settledRewrites !== input.rewrites) throw new Error("Settlement replay mismatch");
+      if (includedImport && (quote.linkImportDelivered === true) !== (input.linkImportDelivered === true)) throw new Error("Settlement replay mismatch");
       return { reservation, settled: false };
     }
     if (input.credits > reservation.credits || input.rewrites > reservation.rewrites) throw new Error("Settlement exceeds confirmed quote");
@@ -140,7 +149,7 @@ export async function settleCommercialTaskInTransaction(tx: Transaction, input: 
       heldCredits: wallet.heldCredits - reservation.credits,
       heldRewrites: wallet.heldRewrites - reservation.rewrites, updatedAt: new Date(),
     }).where(eq(commercialWallets.userId, input.userId));
-    const [updated] = await tx.update(commercialReservations).set({ state: "settled", settledCredits: input.credits, settledRewrites: input.rewrites, updatedAt: new Date() }).where(eq(commercialReservations.id, reservation.id)).returning();
+    const [updated] = await tx.update(commercialReservations).set({ state: "settled", settledCredits: input.credits, settledRewrites: input.rewrites, ...(includedImport ? { quote: { ...quote, linkImportDelivered: input.linkImportDelivered === true } } : {}), updatedAt: new Date() }).where(eq(commercialReservations.id, reservation.id)).returning();
     await tx.insert(commercialLedger).values({ userId: input.userId, eventKey: `settle:${reservation.id}`, credits: -input.credits, rewrites: -input.rewrites, metadata: { reservationId: reservation.id, taskKey: input.taskKey } });
     return { reservation: updated, settled: true };
 }

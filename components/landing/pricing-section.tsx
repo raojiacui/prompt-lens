@@ -42,7 +42,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
               <ul className="my-6 space-y-3 text-sm text-[var(--color-text-secondary)]">
                 {[
                   zh ? "自动拆镜与视频分析，按用量扣积分" : "Automatic shot splitting and video analysis, billed by usage",
-                  zh ? `含 ${pack.linkImports} 次抖音、TikTok、B站链接解析尝试，不另扣积分` : `${pack.linkImports} included Douyin, TikTok and Bilibili link parsing attempts, no extra credits`,
+                  zh ? `含 ${pack.linkImports} 次抖音、TikTok、B站视频链接导入，失败不计次` : `${pack.linkImports} included Douyin, TikTok and Bilibili video link imports; failures do not count`,
                   zh ? "已核价视频生成模型，生成前确认费用" : "Priced video models, with a quote before generation",
                   zh ? `含 ${pack.rewrites} 次 AI 脚本改写，不另扣积分` : `${pack.rewrites} included AI rewrites, no extra credits`,
                   zh ? "自带 Key 也可购买套餐，套餐积分可用于自动拆镜服务" : "You can buy a package with your own API key and use its credits for automatic shot splitting",
@@ -68,7 +68,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
           </div>
           <div>
             <h3 className="font-semibold">{zh ? "费用清楚，再开始" : "Know the cost before you start"}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{zh ? "链接解析使用套餐次数，不额外扣积分；失败尝试也占一次，重复请求不重复计数。拆镜每 6 秒 1 积分；30 秒 5 积分，60 秒 10 积分。分析与生成另行报价，确认后才预留积分。" : "Link parsing uses included attempts, not credits. Failed attempts also count; repeated requests do not count twice. Shot splitting costs 1 credit per started 6 seconds: 5 for 30 seconds, 10 for 60. Analysis and generation are quoted separately."}</p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{zh ? "视频链接解析并保存成功才计一次，不额外扣积分；失败不计次，重复请求不重复计数。处理中暂占一次，失败后释放。拆镜每 6 秒 1 积分；30 秒 5 积分，60 秒 10 积分。分析与生成另行报价。" : "A video link import counts only after parsing and storage succeed, with no extra credits. Failures do not count; repeated requests do not count twice. One slot is held while processing and released on failure. Shot splitting costs 1 credit per started 6 seconds: 5 for 30 seconds, 10 for 60. Analysis and generation are quoted separately."}</p>
           </div>
         </div>
       </div>
