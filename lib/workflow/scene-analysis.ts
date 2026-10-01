@@ -209,7 +209,7 @@ function normalizeBlueprint(raw: Record<string, unknown>, fallback: SceneBluepri
     subtitle: safeArray(raw.subtitle).length ? safeArray(raw.subtitle) : fallback.subtitle,
     audio: { ...fallback.audio, ...safeObject(raw.audio) },
     transition: { ...fallback.transition, ...safeObject(raw.transition) },
-    generationPrompt: buildRecreationPrompt({ generationPrompt, visual: { ...fallback.visual, ...safeObject(raw.visual) } }),
+    generationPrompt: buildRecreationPrompt({ ...raw, metadata: undefined, generationPrompt, visual: { ...fallback.visual, ...safeObject(raw.visual) } }),
     metadata: { ...safeObject(raw.metadata), analysisProvider: provider, analyzedAt: new Date().toISOString(), recreationPromptVersion: 1 },
   };
 }
@@ -406,7 +406,7 @@ export async function rewriteSceneBlueprint(params: SceneRewriteInput): Promise<
           subtitle: safeArray(draft.subtitle),
           audio: safeObject(draft.audio),
           transition: safeObject(draft.transition),
-          generationPrompt: buildRecreationPrompt({ generationPrompt: text(draft.generationPrompt), visual: safeObject(draft.visual) }),
+          generationPrompt: buildRecreationPrompt({ ...draft, metadata: undefined, generationPrompt: text(draft.generationPrompt), visual: safeObject(draft.visual) }),
           metadata: {
             mediaType: params.scene.metadata?.mediaType,
             rewriteProvider: result.provider,

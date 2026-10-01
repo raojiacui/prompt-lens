@@ -1,9 +1,13 @@
-type PromptScene = { generationPrompt: string; visual: Record<string, unknown>; metadata?: Record<string, unknown> | null };
+type PromptScene = { generationPrompt: string; visual: Record<string, unknown>; audio?: unknown; dialogue?: unknown; narration?: unknown; subtitle?: unknown; transition?: unknown; metadata?: Record<string, unknown> | null };
 
 function detail(value: unknown): string {
   if (typeof value === "string") return value.trim();
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
   if (Array.isArray(value)) return value.map(detail).filter(Boolean).join("; ");
-  if (value && typeof value === "object") return Object.values(value).map(detail).filter(Boolean).join("; ");
+  if (value && typeof value === "object") return Object.entries(value).flatMap(([key, entry]) => {
+    const content = detail(entry);
+    return content ? [`${key}: ${content}`] : [];
+  }).join("; ");
   return "";
 }
 
@@ -26,5 +30,16 @@ export function buildRecreationPrompt(scene: PromptScene) {
     });
     return values.length ? [`${label}: ${values.join(zh ? "；" : "; ")}`] : [];
   });
+  for (const [label, value] of [
+    [zh ? "对白" : "Dialogue", scene.dialogue], [zh ? "旁白" : "Narration", scene.narration],
+    [zh ? "字幕" : "Subtitles", scene.subtitle], [zh ? "声音" : "Audio", scene.audio],
+    [zh ? "节奏与转场" : "Timing and transitions", scene.transition],
+  ] as const) {
+    const content = detail(value);
+    if (content && !prompt.includes(content) && !seen.has(content)) {
+      additions.push(`${label}: ${content}`);
+      seen.add(content);
+    }
+  }
   return [prompt, ...additions].join("\n\n");
 }

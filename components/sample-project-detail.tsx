@@ -242,16 +242,16 @@ function ProjectBundleView({
 
               <div className="mt-4">
                 <div className="flex items-center justify-between gap-3">
-                  <label className="text-sm font-semibold">完整复刻提示词</label>
+                  <label htmlFor={`sample-prompt-${sceneVersion.id}`} className="text-sm font-semibold">完整复刻提示词</label>
                   <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
                     <button
                       type="button"
                       aria-label={copy.copy}
+                      title={copiedSceneVersionId === sceneVersion.id ? copy.copied : copy.copy}
                       onClick={() => copySceneAnalysis(sceneVersion)}
-                      className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border-default)] bg-white px-3 transition-colors hover:bg-[var(--color-bg-base)]"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--color-border-default)] bg-white transition-colors hover:bg-[var(--color-bg-base)]"
                     >
                       {copiedSceneVersionId === sceneVersion.id ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      <span>{copiedSceneVersionId === sceneVersion.id ? copy.copied : copy.copy}</span>
                     </button>
                     <button
                       type="button"
@@ -274,7 +274,7 @@ function ProjectBundleView({
                     </button>
                   </div>
                 </div>
-                <Textarea readOnly value={buildRecreationPrompt(sceneVersion)} className="mt-2 min-h-[300px] resize-y rounded-lg font-sans text-sm leading-7" />
+                <Textarea id={`sample-prompt-${sceneVersion.id}`} readOnly value={buildRecreationPrompt(sceneVersion)} className="mt-2 min-h-[300px] resize-y rounded-lg font-sans text-sm leading-7" />
               </div>
             </article>
           );
@@ -306,26 +306,6 @@ function clampIndex(index: number, length: number) {
   return Math.min(Math.max(0, index), length - 1);
 }
 
-function formatSceneAnalysis(sceneVersion: SceneVersion, mediaType: "video" | "image", copy = sampleLabels.zh) {
-  if (sceneVersion.metadata?.analysisProvider === "fallback") {
-    const reason = textValue(sceneVersion.metadata?.fallbackReason) || copy.fallbackUnavailable;
-    return `${copy.fallbackTitle}\n${copy.fallbackReason}：${reason}\n\n${copy.fallbackAction}`;
-  }
-
-  const sections: Array<[string, unknown]> = [
-    [copy.sections.visual, pickField(sceneVersion.visual, ["sceneDescription", "subject", "environment"])],
-    [copy.sections.action, `${pickField(sceneVersion.visual, ["characters", "subject"])}\n${pickField(sceneVersion.visual, ["action", "motion"])}`.trim()],
-    [copy.sections.camera, `${pickField(sceneVersion.visual, ["camera"])}\n${pickField(sceneVersion.visual, ["composition"])}`.trim()],
-    [copy.sections.style, `${pickField(sceneVersion.visual, ["lighting"])}\n${pickField(sceneVersion.visual, ["color"])}\n${pickField(sceneVersion.visual, ["style"])}`.trim()],
-    [copy.sections.story, sceneVersion.story],
-  ];
-
-  if (mediaType === "video") {
-    sections.push([copy.sections.dialogue, sceneVersion.dialogue.length ? sceneVersion.dialogue : sceneVersion.subtitle], [copy.sections.audio, sceneVersion.audio], [copy.sections.edit, sceneVersion.transition]);
-  }
-
-  return sections.map(([title, value]) => `${title}\n${textValue(value) || copy.noDetectedData}`).join("\n\n");
-}
 
 function formatTime(seconds: number) {
   const safe = Math.max(0, seconds || 0);
@@ -358,15 +338,6 @@ function textValue(value: unknown) {
   return String(value);
 }
 
-function pickField(value: unknown, keys: string[]) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return "";
-  const record = value as Record<string, unknown>;
-  for (const key of keys) {
-    const next = textValue(record[key]);
-    if (next) return next;
-  }
-  return "";
-}
 
 function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
   const provider = sceneVersion?.metadata?.analysisProvider;

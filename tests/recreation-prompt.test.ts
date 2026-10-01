@@ -19,6 +19,12 @@ describe("complete generation prompt", () => {
     expect(buildRecreationPrompt({ ...scene, generationPrompt: "", metadata: { analysisProvider: "fallback" } })).toBe("");
   });
   it("formats structured visual constraints without JSON or language switching", () => {
-    expect(buildRecreationPrompt({ generationPrompt: "A tracking shot.", visual: { camera: { movement: "slow dolly", framing: "wide angle" } } })).toBe("A tracking shot.\n\nCamera and composition: slow dolly; wide angle");
+    expect(buildRecreationPrompt({ generationPrompt: "A tracking shot.", visual: { camera: { movement: "slow dolly", framing: "wide angle" } } })).toBe("A tracking shot.\n\nCamera and composition: movement: slow dolly; framing: wide angle");
+  });
+  it("preserves spoken lines, timing and audio in the final prompt", () => {
+    const prompt = buildRecreationPrompt({ ...scene, dialogue: [{ start: 0, end: 2, text: "你好" }], audio: { music: "轻柔钢琴" }, transition: { out: "淡出" } });
+    expect(prompt).toContain("start: 0; end: 2; text: 你好");
+    expect(prompt).toContain("轻柔钢琴");
+    expect(prompt).toContain("淡出");
   });
 });
