@@ -84,10 +84,6 @@ export function SiteFooter() {
         </div>
         <div className="pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-[var(--color-text-muted)]">{t("footer")}</p>
-          <div className="flex items-center gap-6 text-sm text-[var(--color-text-muted)]">
-            <Link href="#" className="hover:text-[var(--color-text-secondary)] transition-colors">{t("footerPrivacy")}</Link>
-            <Link href="#" className="hover:text-[var(--color-text-secondary)] transition-colors">{t("footerTerms")}</Link>
-          </div>
         </div>
       </div>
     </footer>
