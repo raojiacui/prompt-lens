@@ -81,9 +81,9 @@ describe("linked media resolver route", () => {
 
     expect(response.status).toBe(200);
     expect(data).toMatchObject({ platform: "bilibili", duration: 42, title: "A useful demo" });
-    expect(data.chargedCredits).toBe(10);
-    expect(mocks.reserve).toHaveBeenCalledWith(expect.objectContaining({ userId: "owner", credits: 10, rewrites: 0 }));
-    expect(mocks.settleInTransaction).toHaveBeenCalledWith(expect.anything(), { userId: "owner", taskKey: `link-import:${requestId}`, credits: 10, rewrites: 0 });
+    expect(data.chargedCredits).toBe(0);
+    expect(mocks.reserve).toHaveBeenCalledWith(expect.objectContaining({ userId: "owner", credits: 0, rewrites: 0 }));
+    expect(mocks.settleInTransaction).toHaveBeenCalledWith(expect.anything(), { userId: "owner", taskKey: `link-import:${requestId}`, credits: 0, rewrites: 0 });
     expect(mocks.ingestLinkedMedia).toHaveBeenCalledWith(expect.objectContaining({ platform: "bilibili", videoHeaders: { Referer: "https://www.bilibili.com/" } }));
     expect(mocks.insertValues).toHaveBeenCalledWith(expect.objectContaining({
       userId: "owner",
@@ -129,16 +129,17 @@ describe("linked media resolver route", () => {
     expect(mocks.settle).toHaveBeenCalledWith({ userId: "owner", taskKey: `link-import:${requestId}`, credits: 0, rewrites: 0 });
   });
 
-  it("does not call the paid provider when the wallet has insufficient credits", async () => {
-    mocks.reserve.mockRejectedValue(new Error("INSUFFICIENT_COMMERCIAL_BALANCE"));
+  it("does not call the paid provider when the included attempts are exhausted", async () => {
+    mocks.reserve.mockRejectedValue(new Error("LINK_IMPORT_ALLOWANCE_EXHAUSTED"));
     const response = await POST(request());
     expect(response.status).toBe(402);
+    expect(await response.json()).toMatchObject({ code: "LINK_IMPORT_ALLOWANCE_EXHAUSTED" });
     expect(mocks.resolveLinkedMedia).not.toHaveBeenCalled();
   });
 
   it("replays a completed import without a second provider call or charge", async () => {
-    mocks.reserve.mockResolvedValue({ created: false, reservation: { state: "settled", settledCredits: 10 } });
-    mocks.selectResult.mockResolvedValue([{ metadata: { linkImportResult: { mediaUrl: "https://media.example/linked-video.mp4", chargedCredits: 10 } } }]);
+    mocks.reserve.mockResolvedValue({ created: false, reservation: { state: "settled", settledCredits: 0 } });
+    mocks.selectResult.mockResolvedValue([{ metadata: { linkImportResult: { mediaUrl: "https://media.example/linked-video.mp4", chargedCredits: 0 } } }]);
     const response = await POST(request());
     expect(response.status).toBe(200);
     expect((await response.json()).mediaUrl).toBe("https://media.example/linked-video.mp4");

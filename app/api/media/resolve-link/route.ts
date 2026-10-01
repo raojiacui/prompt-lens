@@ -62,11 +62,8 @@ export async function POST(request: NextRequest) {
         sql`${operationLogs.metadata}->>'linkImportRequestId' = ${requestId}`,
       ));
       const result = (previous?.metadata as Record<string, unknown> | undefined)?.linkImportResult;
-      if (reservation.settledCredits === LINK_IMPORT_CREDITS && result) return NextResponse.json(result);
-      if (reservation.settledCredits === LINK_IMPORT_CREDITS) {
-        return NextResponse.json({ code: "LINK_IMPORT_REVIEW", error: "这次导入已扣费但结果暂不可读取，请联系客服核对，勿重复导入。" }, { status: 409 });
-      }
-      return NextResponse.json({ code: "LINK_IMPORT_RETRY_NEW_REQUEST", error: "此前导入未完成且未扣费，请重新发起。" }, { status: 409 });
+      if (result) return NextResponse.json(result);
+      return NextResponse.json({ code: "LINK_IMPORT_RETRY_NEW_REQUEST", error: "此前导入未完成。重新发起将使用一次套餐解析次数。" }, { status: 409 });
     }
 
     let result: Record<string, unknown>;
@@ -119,6 +116,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "视频链接解析失败";
+    if (message === "LINK_IMPORT_ALLOWANCE_EXHAUSTED") return NextResponse.json({ code: message, error: "套餐链接解析次数已用完，请充值或改用本地文件上传。" }, { status: 402 });
     if (message === "INSUFFICIENT_COMMERCIAL_BALANCE") return NextResponse.json({ code: "INSUFFICIENT_COMMERCIAL_BALANCE", error: `余额不足，导入视频链接需 ${LINK_IMPORT_CREDITS} 积分。` }, { status: 402 });
     if (message === "COMMERCIAL_WALLET_UNDER_REVIEW") return NextResponse.json({ error: "账户余额暂不可用，请联系客服。" }, { status: 403 });
     if (message === "Task quote replay mismatch") return NextResponse.json({ error: "请求标识已用于其他视频链接，请刷新后重试。" }, { status: 409 });

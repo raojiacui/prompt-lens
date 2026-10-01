@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { AnalysisQuoteDialog } from "@/components/payments/analysis-quote-dialog";
-import { LINK_IMPORT_CREDITS } from "@/lib/billing/link-import-pricing";
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
@@ -63,6 +62,7 @@ type PreparedMedia = {
   platform?: LinkedMediaPlatform;
 };
 type CreditStatus = {
+  linkImports?: { total: number; used: number; remaining: number };
   commercialConsumptionEnabled?: boolean;
   balance: number;
   hasUserKieKey?: boolean;
@@ -631,8 +631,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     });
     try {
       const latestStatus = await loadCreditStatus() || creditStatus;
-      if (isLinkedMedia && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.commercial?.credits ?? 0) < LINK_IMPORT_CREDITS)) {
-        throw new Error(locale === "en" ? `Importing a video link requires ${LINK_IMPORT_CREDITS} credits. Please top up first.` : `导入视频链接需 ${LINK_IMPORT_CREDITS} 积分，请先充值。`);
+      if (isLinkedMedia && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.linkImports?.remaining ?? 0) < 1)) {
+        throw new Error(locale === "en" ? "No included link parsing attempts remain. Top up or upload a file." : "套餐链接解析次数不足，请充值或改用本地文件上传。");
       }
       if (selectedMediaType === "image" && latestStatus?.mode === "trial" && (latestStatus.trial.remaining || 0) <= 0) {
         throw new Error(locale === "zh" ? "两次免费试用已用完，请先到设置中配置自己的 KIE Key。" : "Your two free trials are used. Add your own KIE key in Settings to continue.");
@@ -890,7 +890,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                   ) : null}
                   <span className="text-muted-foreground">TikTok · 抖音 · Bilibili</span>
                 </div>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{locale === "en" ? `Successful import costs ${LINK_IMPORT_CREDITS} credits; failed imports are not charged. Analysis is quoted separately.` : `导入成功扣 ${LINK_IMPORT_CREDITS} 积分，导入失败不扣；视频分析另行报价。`}</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{locale === "en" ? `${creditStatus?.linkImports?.remaining ?? 0} parsing attempts remaining. Each new attempt counts, including failures; no extra credits. Analysis is quoted separately.` : `剩余 ${creditStatus?.linkImports?.remaining ?? 0} 次链接解析。每次新尝试占一次，失败也计次，不额外扣积分；分析另行报价。`}</p>
               </div>
             )}
           </div>
@@ -916,7 +916,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
             className="mt-4 flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5" />}
-            {loading ? (locale === "en" ? "Preparing..." : "正在处理...") : mediaInputMode === "link" ? (locale === "en" ? `Import video · ${LINK_IMPORT_CREDITS} credits` : `导入视频 · ${LINK_IMPORT_CREDITS} 积分`) : mediaType === "image" ? (locale === "en" ? "Analyze image" : "分析图片") : (locale === "en" ? "Analyze video" : "分析视频")}
+            {loading ? (locale === "en" ? "Preparing..." : "正在处理...") : mediaInputMode === "link" ? (locale === "en" ? "Import video · 1 attempt" : "导入视频 · 1 次解析") : mediaType === "image" ? (locale === "en" ? "Analyze image" : "分析图片") : (locale === "en" ? "Analyze video" : "分析视频")}
           </button>
 
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}

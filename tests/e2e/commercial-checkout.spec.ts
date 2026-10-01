@@ -24,10 +24,14 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await page.goto("/#pricing");
     const pricing = page.locator("#pricing");
     await expect(pricing.locator("article")).toHaveCount(3);
+    for (const [index, price] of ["¥21.90", "¥63.90", "¥139"].entries()) {
+      await expect(pricing.locator("article").nth(index).getByText(price, { exact: true })).toBeVisible();
+      await expect(pricing.locator("article").nth(index)).toContainText(String([12, 30, 61][index]));
+    }
     await page.getByRole("button", { name: locale === "zh" ? "支付宝购买" : "Buy with Alipay" }).first().click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByText("¥19.90", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("¥21.90", { exact: true })).toBeVisible();
     await expect(dialog.getByRole("link", { name: locale === "zh" ? "前往支付宝支付" : "Continue to Alipay" })).toHaveAttribute("href", checkout.paymentUrl);
     await expect(dialog.locator("img")).toHaveCount(0);
     const bounds = await dialog.boundingBox();

@@ -21,7 +21,8 @@ import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnal
 import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
-import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask } from "@/lib/billing/commercial-wallet";
+import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
+import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
 import { settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
 import { requestCommercialRefund } from "@/lib/payments/commercial-refunds";
@@ -76,6 +77,45 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await client.exec("TRUNCATE video_generation, commercial_tasks, commercial_refunds, commercial_allocations, commercial_lots, commercial_ledger, commercial_reservations, commercial_wallets, payment_orders, credit_ledger, user_credits CASCADE");
   });
   afterAll(async () => { await client.close(); });
+
+  it("grants, accumulates and bounds zero-credit link imports without changing balances", async () => {
+    await grant();
+    const quote = { kind: "link_import", pricingVersion: LINK_IMPORT_PRICING_VERSION, urlHash: "test" };
+    for (let i = 0; i < 12; i++) {
+      const input = { userId, taskKey: `link-import:${i}`, credits: 0, rewrites: 0, quote };
+      expect((await reserveCommercialTask(input)).created).toBe(true);
+      if (i === 0) expect((await reserveCommercialTask(input)).created).toBe(false);
+      await settleCommercialTask(input);
+    }
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ total: 12, used: 12, remaining: 0 });
+    await expect(reserveCommercialTask({ userId, taskKey: "link-import:overflow", credits: 0, rewrites: 0, quote })).rejects.toThrow("LINK_IMPORT_ALLOWANCE_EXHAUSTED");
+    expect(await balance()).toMatchObject({ credits: 200, rewrites: 20, heldCredits: 0 });
+    await grant();
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ total: 24, used: 12, remaining: 12 });
+  });
+
+  it("rejects imports without a qualifying purchase", async () => {
+    await expect(reserveCommercialTask({ userId, taskKey: "link-import:unpaid", credits: 0, rewrites: 0, quote: { kind: "link_import", pricingVersion: LINK_IMPORT_PRICING_VERSION } })).rejects.toThrow("LINK_IMPORT_ALLOWANCE_EXHAUSTED");
+  });
+
+  it("allocates the last parsing attempt only once across competing requests", async () => {
+    await grant();
+    const quote = { kind: "link_import", pricingVersion: LINK_IMPORT_PRICING_VERSION };
+    for (let i = 0; i < 11; i++) await reserveCommercialTask({ userId, taskKey: `link-import:prior-${i}`, credits: 0, rewrites: 0, quote });
+    const results = await Promise.allSettled(["a", "b"].map((id) => reserveCommercialTask({ userId, taskKey: `link-import:last-${id}`, credits: 0, rewrites: 0, quote })));
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ remaining: 0, used: 12 });
+  });
+
+  it("does not invent included imports for historical grants or refunded lots", async () => {
+    await grant();
+    await client.exec("UPDATE commercial_ledger SET metadata = metadata - 'linkImports'");
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ total: 0, remaining: 0 });
+    await grant();
+    await client.exec("UPDATE commercial_lots SET state = 'refunded'");
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ total: 0, remaining: 0 });
+  });
 
   it("grants a purchase exactly once, including rewrites", async () => {
     const id = randomUUID();
@@ -357,6 +397,15 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await expect(requestCommercialRefund(userId, row.id, "Unused")).rejects.toThrow("PACKAGE_USED_OR_RESERVED");
     await settleCommercialTask({ userId, taskKey: "rewrite:refund-test", credits: 0, rewrites: 1 });
     await expect(requestCommercialRefund(userId, row.id, "Unused")).rejects.toThrow("PACKAGE_USED_OR_RESERVED");
+  });
+  it("counts a zero-credit import attempt as usage for that purchase's refund", async () => {
+    const row = await paidOrder();
+    const input = { userId, taskKey: "link-import:refund", credits: 0, rewrites: 0, quote: { kind: "link_import", pricingVersion: LINK_IMPORT_PRICING_VERSION } };
+    await reserveCommercialTask(input);
+    await settleCommercialTask(input);
+    await expect(requestCommercialRefund(userId, row.id, "Unused")).rejects.toThrow("PACKAGE_USED_OR_RESERVED");
+    expect(refundAlipayTrade).not.toHaveBeenCalled();
+    expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
   });
   it("keeps an uncertain refund frozen for manual review", async () => {
     const row = await paidOrder();

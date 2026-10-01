@@ -1,9 +1,9 @@
 // Price snapshots are immutable. Legacy credits must not use these rates.
 export const PRICING_VERSION = "2026-09-14-v6";
 export const COMMERCIAL_PACKAGES = [
-  { id: "v6_trial_200", name: "体验包", priceCents: 2190, credits: 200, rewrites: 20 },
-  { id: "v6_creator_650", name: "创作包", priceCents: 6390, credits: 650, rewrites: 60 },
-  { id: "v6_volume_1500", name: "大容量包", priceCents: 13900, credits: 1500, rewrites: 150 },
+  { id: "v6_trial_200", name: "体验包", priceCents: 2190, credits: 200, rewrites: 20, linkImports: 12 },
+  { id: "v6_creator_650", name: "创作包", priceCents: 6390, credits: 650, rewrites: 60, linkImports: 30 },
+  { id: "v6_volume_1500", name: "大容量包", priceCents: 13900, credits: 1500, rewrites: 150, linkImports: 61 },
 ] as const;
 
 export type AnalysisModel = "flash" | "pro";

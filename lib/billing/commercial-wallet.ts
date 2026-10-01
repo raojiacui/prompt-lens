@@ -1,5 +1,7 @@
 import { and, asc, eq } from "drizzle-orm";
 import { db, commercialWallets, commercialReservations, commercialLedger, commercialLots, commercialAllocations } from "@/lib/db";
+import { COMMERCIAL_PACKAGES } from "./pricing-v6";
+import { LINK_IMPORT_PRICING_VERSION } from "./link-import-pricing";
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type Amounts = { credits: number; rewrites: number };
@@ -27,13 +29,33 @@ export async function grantCommercialPurchase(tx: Transaction, input: Amounts & 
     return false;
   }
   await tx.update(commercialWallets).set({ credits: wallet.credits + input.credits, rewrites: wallet.rewrites + input.rewrites, updatedAt: new Date() }).where(eq(commercialWallets.userId, input.userId));
-  await tx.insert(commercialLedger).values({ userId: input.userId, eventKey, credits: input.credits, rewrites: input.rewrites, metadata: { orderId: input.orderId, packageId: input.packageId } });
+  const pack = COMMERCIAL_PACKAGES.find((item) => item.id === input.packageId && item.credits === input.credits && item.rewrites === input.rewrites);
+  await tx.insert(commercialLedger).values({ userId: input.userId, eventKey, credits: input.credits, rewrites: input.rewrites, metadata: { orderId: input.orderId, packageId: input.packageId, linkImports: pack?.linkImports ?? 0 } });
   await tx.insert(commercialLots).values({ userId: input.userId, orderId: input.orderId, credits: input.credits, rewrites: input.rewrites, availableCredits: input.credits, availableRewrites: input.rewrites });
   return true;
 }
 
 export async function reserveCommercialTask(input: Amounts & { userId: string; taskKey: string; quote: Record<string, unknown> }) {
   return db.transaction((tx) => reserveCommercialTaskInTransaction(tx, input));
+}
+
+export async function getIncludedLinkImportUsage(userId: string, connection: Pick<Transaction, "select"> = db) {
+  const lots = await connection.select().from(commercialLots).where(and(eq(commercialLots.userId, userId), eq(commercialLots.state, "active"))).orderBy(asc(commercialLots.createdAt), asc(commercialLots.id));
+  const grants = await connection.select().from(commercialLedger).where(eq(commercialLedger.userId, userId));
+  const reservations = await connection.select().from(commercialReservations).where(eq(commercialReservations.userId, userId));
+  let total = 0;
+  let used = 0;
+  let nextOrderId: string | undefined;
+  for (const lot of lots) {
+    const grant = grants.find((item) => item.eventKey === `purchase:${lot.orderId}`);
+    const allowance = Number((grant?.metadata as Record<string, unknown> | undefined)?.linkImports ?? 0);
+    if (!Number.isSafeInteger(allowance) || allowance <= 0) continue;
+    const attempts = reservations.filter((item) => (item.quote as Record<string, unknown>).linkImportOrderId === lot.orderId).length;
+    total += allowance;
+    used += attempts;
+    if (!nextOrderId && attempts < allowance) nextOrderId = lot.orderId;
+  }
+  return { total, used, remaining: Math.max(0, total - used), nextOrderId };
 }
 
 export async function reserveCommercialTaskInTransaction(tx: Transaction, input: Amounts & { userId: string; taskKey: string; quote: Record<string, unknown> }) {
@@ -49,11 +71,19 @@ export async function reserveCommercialTaskInTransaction(tx: Transaction, input:
     const wallet = await lockWallet(tx, input.userId);
     const [existing] = await tx.select().from(commercialReservations).where(and(eq(commercialReservations.userId, input.userId), eq(commercialReservations.taskKey, input.taskKey)));
     if (existing) {
-      if (existing.credits !== input.credits || existing.rewrites !== input.rewrites || canonical(existing.quote) !== canonical(quote)) throw new Error("Task quote replay mismatch");
+      const storedQuote = { ...(existing.quote as Record<string, unknown>) };
+      delete storedQuote.linkImportOrderId;
+      if (existing.credits !== input.credits || existing.rewrites !== input.rewrites || canonical(storedQuote) !== canonical(quote)) throw new Error("Task quote replay mismatch");
       return { reservation: existing, created: false };
     }
     if (wallet.frozen) throw new Error("COMMERCIAL_WALLET_UNDER_REVIEW");
     if (wallet.credits < input.credits || wallet.rewrites < input.rewrites) throw new Error("INSUFFICIENT_COMMERCIAL_BALANCE");
+    if (quote.kind === "link_import" && quote.pricingVersion === LINK_IMPORT_PRICING_VERSION) {
+      // The wallet lock serializes allowance allocation, including zero-credit imports.
+      const allowance = await getIncludedLinkImportUsage(input.userId, tx);
+      if (!allowance.nextOrderId) throw new Error("LINK_IMPORT_ALLOWANCE_EXHAUSTED");
+      quote.linkImportOrderId = allowance.nextOrderId;
+    }
     const [reservation] = await tx.insert(commercialReservations).values({ userId: input.userId, taskKey: input.taskKey, credits: input.credits, rewrites: input.rewrites, quote }).returning();
     const lots = await tx.select().from(commercialLots).where(and(eq(commercialLots.userId, input.userId), eq(commercialLots.state, "active"))).orderBy(asc(commercialLots.createdAt), asc(commercialLots.id)).for("update");
     let creditsLeft = input.credits;

@@ -2,6 +2,7 @@
 import { auth } from "@/lib/auth";
 import { getWorkflowAnalysisEntitlement } from "@/lib/billing/video-analysis";
 import { getCommercialRewriteBalance } from "@/lib/billing/commercial-rewrite";
+import { getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -9,9 +10,11 @@ export async function GET(request: NextRequest) {
 
   const entitlement = await getWorkflowAnalysisEntitlement(session.user.id);
   const commercial = await getCommercialRewriteBalance(session.user.id);
+  const { total, used, remaining } = await getIncludedLinkImportUsage(session.user.id);
   return NextResponse.json({
     balance: entitlement.balance,
     commercial,
+    linkImports: { total, used, remaining },
     commercialConsumptionEnabled: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true",
     mode: entitlement.mode,
     hasPaidVideoAnalysis: entitlement.hasPaidVideoAnalysis,
