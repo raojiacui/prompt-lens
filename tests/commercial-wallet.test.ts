@@ -25,7 +25,7 @@ import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, g
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
 import { settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
-import { requestCommercialRefund } from "@/lib/payments/commercial-refunds";
+import { requestCommercialRefund, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
 import { queryAlipayRefund, queryAlipayTrade, refundAlipayTrade } from "@/lib/payments/alipay";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 
@@ -401,7 +401,14 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
       expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
       return { code: "10000", outTradeNo: row.providerOrderId, refundFee: "19.90", fundChange: "Y" } as never;
     });
-    expect((await requestCommercialRefund(userId, row.id, "Unused")).state).toBe("succeeded");
+    const request = await requestCommercialRefund(userId, row.id, "Unused", "customer-wechat");
+    expect(request.state).toBe("requested");
+    expect(refundAlipayTrade).not.toHaveBeenCalled();
+    expect((await requestCommercialRefund(userId, row.id, "Unused")).id).toBe(request.id);
+    const approved = await reviewCommercialRefund(userId, request.id, "approve", "Contacted customer and verified untouched package");
+    expect(approved.state).toBe("succeeded");
+    expect(approved.evidence).toMatchObject({ contact: "customer-wechat", actorId: userId, decision: "approve" });
+    await expect(reviewCommercialRefund(userId, request.id, "approve", "Contacted customer and verified untouched package")).rejects.toThrow("REFUND_ALREADY_REVIEWED");
     expect((await requestCommercialRefund(userId, row.id, "Unused")).state).toBe("succeeded");
     expect(refundAlipayTrade).toHaveBeenCalledTimes(1);
     expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
@@ -428,13 +435,37 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await reserveCommercialTask(input);
     await settleCommercialTask(input);
     vi.mocked(refundAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, refundFee: "19.90", fundChange: "Y" } as never);
-    expect((await requestCommercialRefund(userId, row.id, "Unused")).state).toBe("succeeded");
+    const request = await requestCommercialRefund(userId, row.id, "Unused");
+    expect(refundAlipayTrade).not.toHaveBeenCalled();
+    expect((await reviewCommercialRefund(userId, request.id, "approve", "Contacted customer and verified failed import")).state).toBe("succeeded");
   });
   it("keeps an uncertain refund frozen for manual review", async () => {
     const row = await paidOrder();
     vi.mocked(refundAlipayTrade).mockRejectedValueOnce(new Error("timeout"));
-    expect((await requestCommercialRefund(userId, row.id, "Unused")).state).toBe("review");
+    const request = await requestCommercialRefund(userId, row.id, "Unused");
+    expect((await reviewCommercialRefund(userId, request.id, "approve", "Contacted customer and approved full refund")).state).toBe("review");
+    await expect(reviewCommercialRefund(userId, request.id, "approve", "Contacted customer and approved full refund")).rejects.toThrow("REFUND_ALREADY_REVIEWED");
+    expect(refundAlipayTrade).toHaveBeenCalledTimes(1);
     expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
+  });
+  it("restores package benefits once when support declines, without calling Alipay", async () => {
+    const row = await paidOrder();
+    const request = await requestCommercialRefund(userId, row.id, "Unused");
+    expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
+    expect((await reviewCommercialRefund(userId, request.id, "reject", "Customer contacted; declined with explanation")).state).toBe("failed");
+    expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
+    expect((await getIncludedLinkImportUsage(userId)).remaining).toBe(12);
+    await expect(reviewCommercialRefund(userId, request.id, "reject", "Customer contacted; declined with explanation")).rejects.toThrow("REFUND_ALREADY_REVIEWED");
+    expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
+    expect(refundAlipayTrade).not.toHaveBeenCalled();
+  });
+  it("sends one gateway refund for concurrent admin approvals", async () => {
+    const row = await paidOrder();
+    const request = await requestCommercialRefund(userId, row.id, "Unused");
+    vi.mocked(refundAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, refundFee: "19.90", fundChange: "Y" } as never);
+    const results = await Promise.allSettled([1, 2].map(() => reviewCommercialRefund(userId, request.id, "approve", "Customer contacted and full refund approved")));
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(refundAlipayTrade).toHaveBeenCalledTimes(1);
   });
   it("settles only authenticated, amount-matched query responses and throttles duplicate polls", async () => {
     const row = await order();

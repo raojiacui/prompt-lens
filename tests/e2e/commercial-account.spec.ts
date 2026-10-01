@@ -13,9 +13,12 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       if (path === "/api/payments/account") body = {
         wallet: { credits: requested ? 0 : 200, rewrites: requested ? 0 : 20, heldCredits: 0, heldRewrites: 0, frozen: false },
         orders: [{ id, packageId: "v6_trial_200", packageName: "Starter", amountCents: 1990, status: "paid", createdAt: new Date().toISOString() }],
-        refunds: requested ? [{ id: "refund", orderId: id, state: "processing" }] : [], tasks: [],
+        refunds: requested ? [{ id: "refund", orderId: id, state: "requested" }] : [], tasks: [],
       };
-      else if (path.endsWith("/refund")) { requested = true; body = { id: "refund", state: "processing" }; }
+      else if (path.endsWith("/refund")) {
+        expect(route.request().postDataJSON()).toEqual({ reason: "Purchased by mistake", contact: "customer-wechat" });
+        requested = true; body = { id: "refund", state: "requested" };
+      }
       else if (path === "/api/payments/checkout" && route.request().method() === "POST") checkoutPosts++;
       await route.fulfill({ json: body });
     });
@@ -24,8 +27,15 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await page.reload();
     await page.getByRole("button", { name: locale === "zh" ? "申请退款" : "Request refund" }).click();
     expect(requested).toBe(false);
-    await page.getByRole("button", { name: locale === "zh" ? "确认申请" : "Confirm request" }).click();
-    await expect(page.getByText(locale === "zh" ? "退款处理中" : "processing", { exact: true })).toBeVisible();
+    const form = page.getByRole("form", { name: locale === "zh" ? "退款申请表单" : "Refund request form" });
+    const submit = page.getByRole("button", { name: locale === "zh" ? "提交申请，等待客服审核" : "Submit for support review" });
+    await expect(submit).toBeDisabled();
+    await form.locator("textarea").fill("Purchased by mistake");
+    await form.locator("input").fill("customer-wechat");
+    await page.screenshot({ path: `test-results/refund-form-${locale}-${width}.png`, fullPage: true });
+    await submit.click();
+    await expect(page.getByText(locale === "zh" ? "等待客服审核" : "Awaiting support review", { exact: true })).toBeVisible();
+    await expect(page.getByText(/13117177652/).first()).toBeVisible();
     expect(checkoutPosts).toBe(0);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow).toBe(false);

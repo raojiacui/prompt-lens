@@ -9,9 +9,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const { id } = await params;
   const body = await request.json().catch(() => null);
-  if (!/^[0-9a-f-]{36}$/i.test(id) || typeof body?.reason !== "string") return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  if (!/^[0-9a-f-]{36}$/i.test(id) || typeof body?.reason !== "string" || typeof body?.contact !== "string" || body.contact.length > 100 || body.contact.trim().length < 3) return NextResponse.json({ error: "请填写退款原因和联系方式。" }, { status: 400 });
   try {
-    const refund = await requestCommercialRefund(session.user.id, id, body.reason);
+    const refund = await requestCommercialRefund(session.user.id, id, body.reason, body.contact.trim());
     return NextResponse.json({ id: refund.id, state: refund.state }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const code = error instanceof Error ? error.message : "REFUND_REQUIRES_REVIEW";

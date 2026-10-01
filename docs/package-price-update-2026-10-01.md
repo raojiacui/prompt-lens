@@ -19,8 +19,10 @@ must both succeed before that slot is consumed; failures release the slot.
 Retries of the same request reuse the reservation without another provider
 call. Wallet row locking prevents concurrent calls from exceeding allowances.
 Imports charge zero general credits. Splitting and analysis keep their rates.
-Pending or successfully delivered imports make that purchase ineligible for
-automatic refund. A failed import alone does not count as purchase usage.
+Pending or successfully delivered imports require direct support review rather
+than the unused-package request form. A failed import alone does not count as
+purchase usage. No request issues an automatic refund: customer contact and an
+explicit administrator approval are required before the Alipay refund call.
 Third-party costs incurred by failed imports are borne by the platform;
 per-user rate limits still apply to discourage repeated requests.
 There is no additional database schema migration for this change.

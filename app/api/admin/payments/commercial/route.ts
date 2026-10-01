@@ -5,11 +5,12 @@ import { db, paymentOrders, commercialRefunds, commercialReservations, commercia
 import { settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { commercialReadiness } from "@/lib/billing/commercial-readiness";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
+import { reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
 
 export async function GET(request: NextRequest) {
   if (!await getAdminUserFromHeaders(request.headers)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const orders = await db.select({ id: paymentOrders.id, userId: paymentOrders.userId, amountCents: paymentOrders.amountCents, status: paymentOrders.status, createdAt: paymentOrders.createdAt, reconciliation: sql<string>`${paymentOrders.metadata}->>'reconciliation'` }).from(paymentOrders).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"))).orderBy(asc(paymentOrders.createdAt)).limit(100);
-  const refunds = await db.select({ id: commercialRefunds.id, orderId: commercialRefunds.orderId, userId: commercialRefunds.userId, state: commercialRefunds.state, reason: commercialRefunds.reason, createdAt: commercialRefunds.createdAt }).from(commercialRefunds).where(inArray(commercialRefunds.state, ["requested", "processing", "review"])).orderBy(asc(commercialRefunds.createdAt)).limit(100);
+  const refunds = await db.select({ id: commercialRefunds.id, orderId: commercialRefunds.orderId, userId: commercialRefunds.userId, state: commercialRefunds.state, reason: commercialRefunds.reason, contact: sql<string>`${commercialRefunds.evidence}->>'contact'`, amountCents: paymentOrders.amountCents, createdAt: commercialRefunds.createdAt }).from(commercialRefunds).innerJoin(paymentOrders, eq(paymentOrders.id, commercialRefunds.orderId)).where(inArray(commercialRefunds.state, ["requested", "processing", "review"])).orderBy(asc(commercialRefunds.createdAt)).limit(100);
   const tasks = await db.select({ id: commercialReservations.id, userId: commercialReservations.userId, taskKey: commercialReservations.taskKey, credits: commercialReservations.credits, rewrites: commercialReservations.rewrites, createdAt: commercialReservations.createdAt }).from(commercialReservations).where(and(eq(commercialReservations.state, "held"), sql`${commercialReservations.createdAt} < now() - interval '24 hours'`)).orderBy(asc(commercialReservations.createdAt)).limit(100);
   const frozen = await db.select({ userId: commercialWallets.userId }).from(commercialWallets).where(eq(commercialWallets.frozen, true)).limit(100);
   return NextResponse.json({ orders, refunds, tasks, frozen, readiness: commercialReadiness() }, { headers: { "Cache-Control": "private, no-store" } });
@@ -20,6 +21,14 @@ export async function POST(request: NextRequest) {
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const body = await request.json().catch(() => null);
+  if (body?.action === "approve_refund" || body?.action === "reject_refund") {
+    if (body.action === "approve_refund" && body.approveConfirmed !== true) return NextResponse.json({ error: "Explicit refund approval is required" }, { status: 400 });
+    if (!/^[0-9a-f-]{36}$/i.test(body.refundId || "") || typeof body.evidence !== "string" || body.evidence.trim().length < 12 || body.evidence.length > 2000 || body.customerContacted !== true) return NextResponse.json({ error: "Customer contact and review evidence are required" }, { status: 400 });
+    try {
+      const refund = await reviewCommercialRefund(admin.id, body.refundId, body.action === "approve_refund" ? "approve" : "reject", body.evidence);
+      return NextResponse.json({ id: refund.id, state: refund.state });
+    } catch { return NextResponse.json({ error: "Refund changed or requires review; do not repeat the payment request" }, { status: 409 }); }
+  }
   if (body?.action === "release_unfulfilled_task") {
     if (!/^[0-9a-f-]{36}$/i.test(body.reservationId || "") || typeof body.evidence !== "string" || body.evidence.trim().length < 12 || body.evidence.length > 2000) return NextResponse.json({ error: "Evidence is required" }, { status: 400 });
     const reservation = await db.query.commercialReservations.findFirst({ where: eq(commercialReservations.id, body.reservationId) });
