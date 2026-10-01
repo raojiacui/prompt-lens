@@ -5,7 +5,7 @@ import { db, paymentOrders, commercialRefunds, commercialReservations, commercia
 import { settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { commercialReadiness } from "@/lib/billing/commercial-readiness";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
-import { reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
+import { reconcileCommercialRefund, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
 
 export async function GET(request: NextRequest) {
   if (!await getAdminUserFromHeaders(request.headers)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -21,6 +21,13 @@ export async function POST(request: NextRequest) {
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const body = await request.json().catch(() => null);
+  if (body?.action === "query_refund") {
+    if (typeof body.refundId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.refundId)) return NextResponse.json({ error: "Invalid refund" }, { status: 400 });
+    try {
+      const refund = await reconcileCommercialRefund(admin.id, body.refundId);
+      return NextResponse.json({ id: refund.id, state: refund.state });
+    } catch { return NextResponse.json({ error: "Refund requires manual review; no refund was resubmitted" }, { status: 409 }); }
+  }
   if (body?.action === "approve_refund" || body?.action === "reject_refund") {
     if (body.action === "approve_refund" && body.approveConfirmed !== true) return NextResponse.json({ error: "Explicit refund approval is required" }, { status: 400 });
     if (!/^[0-9a-f-]{36}$/i.test(body.refundId || "") || typeof body.evidence !== "string" || body.evidence.trim().length < 12 || body.evidence.length > 2000 || body.customerContacted !== true) return NextResponse.json({ error: "Customer contact and review evidence are required" }, { status: 400 });

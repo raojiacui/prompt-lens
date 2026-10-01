@@ -6,7 +6,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await context.addCookies([{ name: "NEXT_LOCALE", value: locale, domain: "localhost", path: "/" }]);
     let paid = false;
     let requests = 0;
-    const checkout = { orderId: "11111111-1111-4111-8111-111111111111", status: "pending", expiresAt: new Date(Date.now() + 300000).toISOString(), qrImageUrl: null, paymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay", mobilePaymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay" };
+    const checkout = { orderId: "11111111-1111-4111-8111-111111111111", amountCents: 2190, credits: 200, rewrites: 20, status: "pending", expiresAt: new Date(Date.now() + 300000).toISOString(), qrImageUrl: null, paymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay", mobilePaymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay" };
     await page.route("https://example.com/**", (route) => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="224" height="224"><rect width="224" height="224" fill="white"/><rect x="8" y="8" width="208" height="208" fill="none" stroke="black" stroke-width="8"/><text x="112" y="112" text-anchor="middle" font-family="sans-serif">TEST ONLY</text></svg>' }));
     await page.route("**/api/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
@@ -69,7 +69,7 @@ test("network retry reuses the request and expiry does not imply failed payment"
       if (route.request().method() === "GET") return route.fulfill({ json: { enabled: true } });
       requestIds.push(route.request().postDataJSON().requestId);
       if (requestIds.length === 1) return route.fulfill({ status: 502, json: { code: "CHECKOUT_STATUS_UNKNOWN" } });
-      return route.fulfill({ json: { orderId: "11111111-1111-4111-8111-111111111111", status: "pending", expiresAt: new Date(Date.now() - 1000).toISOString(), qrImageUrl: "https://example.com/qr.png", mobilePaymentUrl: null } });
+      return route.fulfill({ json: { orderId: "11111111-1111-4111-8111-111111111111", amountCents: 2190, credits: 200, rewrites: 20, status: "pending", expiresAt: new Date(Date.now() - 1000).toISOString(), qrImageUrl: "https://example.com/qr.png", mobilePaymentUrl: null } });
     }
     if (path.includes("/api/payments/orders/")) return route.fulfill({ status: 503, json: {} });
     return route.fulfill({ json: {} });

@@ -6,10 +6,10 @@ vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: {} })
 vi.mock("@/lib/billing/commercial-wallet", () => ({ settleCommercialTaskInTransaction: vi.fn() }));
 vi.mock("@/lib/billing/commercial-readiness", () => ({ commercialReadiness: vi.fn() }));
 vi.mock("@/lib/payments/alipay-reconciliation", () => ({ reconcileAlipayOrder: vi.fn() }));
-vi.mock("@/lib/payments/commercial-refunds", () => ({ requestCommercialRefund: vi.fn(), reviewCommercialRefund: vi.fn() }));
+vi.mock("@/lib/payments/commercial-refunds", () => ({ requestCommercialRefund: vi.fn(), reviewCommercialRefund: vi.fn(), reconcileCommercialRefund: vi.fn() }));
 
 import { auth, getAdminUserFromHeaders } from "@/lib/auth";
-import { requestCommercialRefund, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
+import { requestCommercialRefund, reviewCommercialRefund, reconcileCommercialRefund } from "@/lib/payments/commercial-refunds";
 import { POST as requestRefund } from "@/app/api/payments/orders/[id]/refund/route";
 import { POST as reviewRefund } from "@/app/api/admin/payments/commercial/route";
 
@@ -27,6 +27,7 @@ describe("manual refund route authorization", () => {
     vi.mocked(getAdminUserFromHeaders).mockResolvedValue({ id: "admin" } as never);
     vi.mocked(requestCommercialRefund).mockResolvedValue({ id, state: "requested" } as never);
     vi.mocked(reviewCommercialRefund).mockResolvedValue({ id, state: "succeeded" } as never);
+    vi.mocked(reconcileCommercialRefund).mockResolvedValue({ id, state: "review" } as never);
   });
   it("requires authentication and same-origin for customer requests", async () => {
     vi.mocked(auth.api.getSession).mockResolvedValueOnce(null);
@@ -63,5 +64,23 @@ describe("manual refund route authorization", () => {
     vi.mocked(reviewCommercialRefund).mockRejectedValueOnce(new Error("REFUND_ALREADY_REVIEWED"));
     expect((await reviewRefund(req(body))).status).toBe(409);
     expect(reviewCommercialRefund).toHaveBeenCalledTimes(1);
+  });
+  it("lets an authenticated admin query without issuing another refund", async () => {
+    const response = await reviewRefund(req({ action: "query_refund", refundId: id }));
+    expect(await response.json()).toEqual({ id, state: "review" });
+    expect(reconcileCommercialRefund).toHaveBeenCalledWith("admin", id);
+    expect(reviewCommercialRefund).not.toHaveBeenCalled();
+  });
+  it("protects refund queries from non-admins, cross-site requests and invalid IDs", async () => {
+    vi.mocked(getAdminUserFromHeaders).mockResolvedValueOnce(null);
+    expect((await reviewRefund(req({ action: "query_refund", refundId: id }))).status).toBe(403);
+    expect((await reviewRefund(req({ action: "query_refund", refundId: id }, "https://other.example"))).status).toBe(403);
+    expect((await reviewRefund(req({ action: "query_refund", refundId: "-".repeat(36) }))).status).toBe(400);
+    expect(reconcileCommercialRefund).not.toHaveBeenCalled();
+  });
+  it("does not disguise an ineligible refund as a successful query", async () => {
+    vi.mocked(reconcileCommercialRefund).mockRejectedValue(new Error("REFUND_NOT_APPROVED"));
+    expect((await reviewRefund(req({ action: "query_refund", refundId: id }))).status).toBe(409);
+    expect(reviewCommercialRefund).not.toHaveBeenCalled();
   });
 });

@@ -48,3 +48,27 @@ test("homepage lists support WeChat and partnership email", async ({ page }) => 
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
   await page.screenshot({ path: "test-results/support-footer-mobile.png", fullPage: false });
 });
+
+for (const width of [1440, 390]) for (const state of ["succeeded", "review"]) test(`query existing refund ${state} ${width}`, async ({ page, context }) => {
+  await page.setViewportSize({ width, height: 1000 });
+  await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
+  const id = "11111111-1111-4111-8111-111111111111";
+  let queried = false;
+  const actions: unknown[] = [];
+  await page.route("**/api/**", async (route) => {
+    if (new URL(route.request().url()).pathname !== "/api/admin/payments/commercial") return route.fulfill({ json: {} });
+    if (route.request().method() === "POST") {
+      actions.push(route.request().postDataJSON()); queried = true;
+      return route.fulfill({ json: { id, state } });
+    }
+    return route.fulfill({ json: { orders: [], tasks: [], frozen: [], refunds: queried && state === "succeeded" ? [] : [{ id, orderId: id, state: "review", reason: "Unused", contact: "wechat", amountCents: 2190 }] } });
+  });
+  await page.goto("/billing/review");
+  await expect(page.getByRole("button", { name: "审核申请" })).toHaveCount(0);
+  await page.getByRole("button", { name: "查询退款状态" }).click();
+  await expect(page.getByRole("status")).toContainText(state === "succeeded" ? "支付宝已确认退款成功" : "未再次发起退款");
+  expect(actions).toEqual([{ action: "query_refund", refundId: id }]);
+  if (state === "succeeded") await expect(page.getByRole("button", { name: "查询退款状态" })).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await page.screenshot({ path: `test-results/refund-query-${state}-${width}.png` });
+});

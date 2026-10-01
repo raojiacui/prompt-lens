@@ -24,9 +24,9 @@ import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileC
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
-import { settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
+import { createAlipayCreditCheckout, settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
-import { requestCommercialRefund, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
+import { reconcileCommercialRefund, requestCommercialRefund, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
 import { queryAlipayRefund, queryAlipayTrade, refundAlipayTrade, closeAlipayTrade } from "@/lib/payments/alipay";
 import { ALIPAY_EXPIRY_VERSION } from "@/lib/payments/order-expiry";
 import { eq } from "drizzle-orm";
@@ -416,6 +416,80 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect((await requestCommercialRefund(userId, row.id, "Unused")).state).toBe("succeeded");
     expect(refundAlipayTrade).toHaveBeenCalledTimes(1);
     expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
+  });
+  it.each([
+    { outTradeNo: "another-order" }, { outRequestNo: "another-refund" },
+    { refundAmount: "0.01" }, { refundAmount: undefined }, { outRequestNo: undefined },
+  ])("rejects a successful refund query with mismatched identity or amount: %j", async (override) => {
+    const row = await paidOrder();
+    const request = await requestCommercialRefund(userId, row.id, "Unused");
+    vi.mocked(refundAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, refundFee: "19.90", fundChange: "N" } as never);
+    vi.mocked(queryAlipayRefund).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, outRequestNo: request.id, refundAmount: "19.90", refundStatus: "REFUND_SUCCESS", ...override } as never);
+    expect((await reviewCommercialRefund(userId, request.id, "approve", "Contacted customer and approved full refund")).state).toBe("review");
+    expect((await reconcileCommercialRefund(userId, request.id)).state).toBe("review");
+    expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("paid");
+    expect((await testDb.select().from(schema.commercialLots))[0].state).toBe("refunding");
+    expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
+    expect(refundAlipayTrade).toHaveBeenCalledTimes(1);
+  });
+  it("recovers a timed-out refund by query only, preserving approval evidence and idempotency", async () => {
+    const row = await paidOrder();
+    const request = await requestCommercialRefund(userId, row.id, "Unused", "customer-wechat");
+    vi.mocked(refundAlipayTrade).mockRejectedValue(new Error("timeout"));
+    await reviewCommercialRefund(userId, request.id, "approve", "Contacted customer and approved full refund");
+    vi.mocked(queryAlipayRefund).mockResolvedValue({ code: "10000", out_trade_no: row.providerOrderId, out_request_no: request.id, refund_amount: "19.90", refund_status: "REFUND_SUCCESS" } as never);
+    const result = await reconcileCommercialRefund("admin-recovery", request.id);
+    expect(result.state).toBe("succeeded");
+    expect(result.evidence).toMatchObject({ contact: "customer-wechat", actorId: userId, decision: "approve", lastReconciliation: { actorId: "admin-recovery" } });
+    expect((await reconcileCommercialRefund("admin-recovery", request.id)).state).toBe("succeeded");
+    expect(queryAlipayRefund).toHaveBeenCalledTimes(1);
+    expect(queryAlipayRefund).toHaveBeenCalledWith(row.providerOrderId, request.id);
+    expect(refundAlipayTrade).toHaveBeenCalledTimes(1);
+    expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("refunded");
+    expect((await testDb.select().from(schema.commercialLots))[0].state).toBe("refunded");
+    expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
+  });
+  it.each(["pending", "missing", "invalid-signature"])("retains paused benefits for an unconfirmed refund query: %s", async (outcome) => {
+    const row = await paidOrder();
+    const request = await requestCommercialRefund(userId, row.id, "Unused");
+    vi.mocked(refundAlipayTrade).mockRejectedValue(new Error("timeout"));
+    await reviewCommercialRefund(userId, request.id, "approve", "Contacted customer and approved full refund");
+    if (outcome === "invalid-signature") vi.mocked(queryAlipayRefund).mockRejectedValue(new Error("invalid response signature"));
+    else vi.mocked(queryAlipayRefund).mockResolvedValue(outcome === "missing" ? { code: "40004" } as never : { code: "10000", outTradeNo: row.providerOrderId, outRequestNo: request.id, refundAmount: "19.90" } as never);
+    expect((await reconcileCommercialRefund(userId, request.id)).state).toBe("review");
+    expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("paid");
+    expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
+    expect(refundAlipayTrade).toHaveBeenCalledTimes(1);
+  });
+  it("does not query unapproved or declined requests", async () => {
+    const row = await paidOrder();
+    const request = await requestCommercialRefund(userId, row.id, "Unused");
+    await expect(reconcileCommercialRefund(userId, request.id)).rejects.toThrow("REFUND_NOT_APPROVED");
+    await reviewCommercialRefund(userId, request.id, "reject", "Customer contacted; declined with explanation");
+    await expect(reconcileCommercialRefund(userId, request.id)).rejects.toThrow("REFUND_NOT_APPROVED");
+    expect(queryAlipayRefund).not.toHaveBeenCalled();
+    expect(refundAlipayTrade).not.toHaveBeenCalled();
+    expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
+  });
+  it("recovers processing after a crash and never regresses success under competing queries", async () => {
+    const row = await paidOrder();
+    const request = await requestCommercialRefund(userId, row.id, "Unused");
+    await testDb.update(schema.commercialRefunds).set({ state: "processing", evidence: { decision: "approve", actorId: userId } }).where(eq(schema.commercialRefunds.id, request.id));
+    vi.mocked(queryAlipayRefund).mockResolvedValueOnce({ code: "10000", outTradeNo: row.providerOrderId, outRequestNo: request.id, refundAmount: "19.90", refundStatus: "REFUND_SUCCESS" } as never).mockRejectedValueOnce(new Error("timeout"));
+    const results = await Promise.all([1, 2].map(() => reconcileCommercialRefund(userId, request.id)));
+    expect(results.every((r) => r.state === "succeeded")).toBe(true);
+    expect(refundAlipayTrade).not.toHaveBeenCalled();
+    expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("refunded");
+    expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
+  });
+  it("uses saved checkout price and benefits when replaying an old purchase request", async () => {
+    vi.stubEnv("ALIPAY_APP_ID", "test-app");
+    vi.stubEnv("ALIPAY_PRIVATE_KEY", "mock-private-key");
+    vi.stubEnv("ALIPAY_PUBLIC_KEY", "mock-public-key");
+    const requestId = randomUUID();
+    const first = await createAlipayCreditCheckout(userId, "v6_trial_200", requestId);
+    await testDb.update(schema.paymentOrders).set({ amountCents: 1990, credits: 180, metadata: { rewrites: 12 } }).where(eq(schema.paymentOrders.id, first.orderId));
+    expect(await createAlipayCreditCheckout(userId, "v6_trial_200", requestId)).toMatchObject({ orderId: first.orderId, amountCents: 1990, credits: 180, rewrites: 12 });
   });
   it("counts an included rewrite as package usage for cash refunds", async () => {
     const row = await paidOrder();

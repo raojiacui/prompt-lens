@@ -42,3 +42,32 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await page.screenshot({ path: `test-results/billing-${locale}-${width}.png`, fullPage: true });
   });
 }
+
+for (const width of [1440, 390]) test(`historical checkout uses order snapshot ${width}`, async ({ page, context }) => {
+  await page.setViewportSize({ width, height: 1000 });
+  await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
+  const id = "11111111-1111-4111-8111-111111111111";
+  let posts = 0;
+  await page.route("**/api/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.startsWith("/api/payments/") && route.request().method() === "POST") posts++;
+    if (path === "/api/payments/account") return route.fulfill({ json: {
+      wallet: { credits: 0, rewrites: 0, heldCredits: 0, heldRewrites: 0 },
+      orders: [{ id, packageId: "v6_trial_200", packageName: "Starter", amountCents: 1990, status: "pending", createdAt: new Date().toISOString() }], refunds: [], tasks: [],
+    } });
+    if (path === `/api/payments/orders/${id}`) return route.fulfill({ json: {
+      orderId: id, amountCents: 1990, credits: 180, rewrites: 12, status: "pending", expiresAt: new Date(Date.now() + 600000).toISOString(), paymentUrl: `/api/payments/orders/${id}/pay`,
+    } });
+    await route.fulfill({ json: {} });
+  });
+  await page.goto("/billing");
+  await page.getByRole("button", { name: "查看订单" }).click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog.getByText("¥19.90", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("180 积分 · 12 次改写", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("¥21.90", { exact: true })).toHaveCount(0);
+  await expect(dialog.getByRole("link", { name: "前往支付宝支付" })).toHaveAttribute("href", `/api/payments/orders/${id}/pay`);
+  expect(posts).toBe(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  await page.screenshot({ path: `test-results/historical-checkout-${width}.png` });
+});

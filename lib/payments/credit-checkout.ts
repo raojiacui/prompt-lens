@@ -103,6 +103,9 @@ export async function createAlipayCreditCheckout(userId: string, packageId: stri
   return {
     provider: "alipay" as const,
     orderId: order.id,
+    amountCents: order.amountCents,
+    credits: order.credits,
+    rewrites: asObject(order.metadata).rewrites ?? 0,
     status: order.status,
     cancellationRequested: (order.metadata as Record<string, unknown>).cancellationRequested === true,
     paymentUrl: order.status === "pending" && Date.now() < alipayOrderDeadline(order.createdAt).getTime() && (order.metadata as Record<string, unknown>).cancellationRequested !== true ? `/api/payments/orders/${order.id}/pay` : null,

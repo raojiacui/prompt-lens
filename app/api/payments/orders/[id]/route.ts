@@ -20,6 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     id: order.id, orderId: order.id, status: order.status, packageName: order.packageName,
     expiresAt: alipayOrderDeadline(order.createdAt).toISOString(),
     amountCents: order.amountCents, currency: order.currency, credits: order.credits,
+    rewrites: (order.metadata as Record<string, unknown>).rewrites ?? 0,
     paidAt: order.paidAt,
     qrImageUrl: null,
     mobilePaymentUrl: officialPaymentUrl,

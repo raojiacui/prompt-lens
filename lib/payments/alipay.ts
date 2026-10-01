@@ -75,11 +75,11 @@ export function createAlipayPaymentForm(input: {
 }
 
 export async function queryAlipayTrade(outTradeNo: string) {
-  return createAlipaySdk().exec("alipay.trade.query", { bizContent: { out_trade_no: outTradeNo } });
+  return createAlipaySdk().exec("alipay.trade.query", { bizContent: { out_trade_no: outTradeNo } }, { validateSign: true });
 }
 
 export async function closeAlipayTrade(outTradeNo: string) {
-  return createAlipaySdk().exec("alipay.trade.close", { bizContent: { out_trade_no: outTradeNo } });
+  return createAlipaySdk().exec("alipay.trade.close", { bizContent: { out_trade_no: outTradeNo } }, { validateSign: true });
 }
 
 export async function refundAlipayTrade(input: { outTradeNo: string; outRequestNo: string; amountCents: number; reason: string }) {
@@ -90,13 +90,13 @@ export async function refundAlipayTrade(input: { outTradeNo: string; outRequestN
       refund_amount: cny(input.amountCents),
       refund_reason: input.reason,
     },
-  });
+  }, { validateSign: true });
 }
 
 export async function queryAlipayRefund(outTradeNo: string, outRequestNo: string) {
   return createAlipaySdk().exec("alipay.trade.fastpay.refund.query", {
     bizContent: { out_trade_no: outTradeNo, out_request_no: outRequestNo },
-  });
+  }, { validateSign: true });
 }
 
 export function verifyAlipayNotification(payload: Record<string, string>) {

@@ -5,7 +5,7 @@ import { useLocale } from "next-intl";
 import { CheckCircle2, RefreshCw, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 
-type Checkout = { orderId: string; qrImageUrl: string | null; mobilePaymentUrl: string | null; paymentUrl?: string | null; cancellationRequested?: boolean; expiresAt: string; status: string };
+type Checkout = { orderId: string; amountCents: number; credits: number; rewrites: number; qrImageUrl: string | null; mobilePaymentUrl: string | null; paymentUrl?: string | null; cancellationRequested?: boolean; expiresAt: string; status: string };
 function safePaymentUrl(value: string | null | undefined) {
   if (value?.startsWith("/api/payments/orders/")) return value;
   try { const url = new URL(value || ""); return url.protocol === "https:" ? url.href : null; } catch { return null; }
@@ -45,7 +45,8 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.code === "CHECKOUT_NOT_OPEN" ? (zh ? "收款暂未开放" : "Checkout is not open yet") : (zh ? "暂时无法确认订单，请重试查询。" : "Unable to confirm the order. Retry to check."));
-        if (!data.orderId || !Number.isFinite(Date.parse(data.expiresAt))) throw new Error(zh ? "订单信息不完整" : "Incomplete order information");
+        if (!data.orderId || !Number.isFinite(Date.parse(data.expiresAt)) || !Number.isSafeInteger(data.amountCents) || data.amountCents < 1
+          || !Number.isSafeInteger(data.credits) || data.credits < 0 || !Number.isSafeInteger(data.rewrites) || data.rewrites < 0) throw new Error(zh ? "订单信息不完整" : "Incomplete order information");
         if (!controller.signal.aborted) { setLoading(false); setCheckout(data); }
       }).catch((reason) => { if (!controller.signal.aborted) setError(reason.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -106,8 +107,8 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
         <h3 id="alipay-checkout-title" className="text-xl font-semibold">{zh ? "支付宝支付" : "Alipay checkout"}</h3>
         <button onClick={onClose} aria-label={zh ? "关闭" : "Close"} title={zh ? "关闭" : "Close"} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border"><X className="h-4 w-4" /></button>
       </div>
-      <p className="mt-4 text-3xl font-semibold">¥{(pack.priceCents / 100).toFixed(2)}</p>
-      <p className="mt-2 text-sm text-muted-foreground">{pack.credits} {zh ? "积分" : "credits"} · {pack.rewrites} {zh ? "次改写" : "rewrites"}</p>
+      <p className="mt-4 min-h-9 text-3xl font-semibold">{checkout ? `¥${(checkout.amountCents / 100).toFixed(2)}` : "--"}</p>
+      <p className="mt-2 min-h-5 text-sm text-muted-foreground">{checkout && <>{checkout.credits} {zh ? "积分" : "credits"} · {checkout.rewrites} {zh ? "次改写" : "rewrites"}</>}</p>
       <div className="my-5 flex min-h-60 flex-col items-center justify-center gap-3 text-center" aria-live="polite">
         {loading && <Spinner />}
         {paid && <><CheckCircle2 className="h-12 w-12 text-green-700" /><p>{zh ? "支付成功，权益已到账" : "Payment received. Credits and rewrites added."}</p></>}

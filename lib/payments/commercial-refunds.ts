@@ -55,7 +55,7 @@ export async function reviewCommercialRefund(actorId: string, refundId: string, 
       await finalizeAlipayRefund(result.order.id, result.refund.id, "succeeded", data);
     } else {
       const query = await queryAlipayRefund(result.order.providerOrderId, result.refund.id) as Record<string, unknown>;
-      const succeeded = String(query.code) === "10000" && String(query.refundStatus ?? query.refund_status) === "REFUND_SUCCESS";
+      const succeeded = matchedRefundSucceeded(result.order, result.refund.id, query);
       await finalizeAlipayRefund(result.order.id, result.refund.id, succeeded ? "succeeded" : "review", query);
     }
   } catch {
@@ -64,15 +64,49 @@ export async function reviewCommercialRefund(actorId: string, refundId: string, 
   return (await db.select().from(commercialRefunds).where(eq(commercialRefunds.id, result.refund.id)))[0];
 }
 
-async function finalizeAlipayRefund(orderId: string, refundId: string, state: "succeeded" | "review", evidence: Record<string, unknown>) {
+function matchedRefundSucceeded(order: { providerOrderId: string; amountCents: number; currency: string }, refundId: string, data: Record<string, unknown>) {
+  if (String(data.code) !== "10000") return false;
+  if (String(data.outTradeNo ?? data.out_trade_no) !== order.providerOrderId
+    || String(data.outRequestNo ?? data.out_request_no) !== refundId
+    || order.currency !== "cny" || parseCny(data.refundAmount ?? data.refund_amount) !== order.amountCents) {
+    throw new Error("REFUND_QUERY_MISMATCH");
+  }
+  return String(data.refundStatus ?? data.refund_status) === "REFUND_SUCCESS";
+}
+
+/** Read-only provider recovery: never submit another refund, even after a timeout. */
+export async function reconcileCommercialRefund(actorId: string, refundId: string) {
+  if (!actorId) throw new Error("INVALID_REVIEWER");
+  const refund = await db.query.commercialRefunds.findFirst({ where: eq(commercialRefunds.id, refundId) });
+  if (!refund) throw new Error("REFUND_NOT_FOUND");
+  if (refund.state === "succeeded") return refund;
+  if (!["processing", "review"].includes(refund.state) || (refund.evidence as Record<string, unknown>)?.decision !== "approve") throw new Error("REFUND_NOT_APPROVED");
+  const order = await db.query.paymentOrders.findFirst({ where: eq(paymentOrders.id, refund.orderId) });
+  if (!order || order.provider !== "alipay" || order.status !== "paid") throw new Error("REFUND_REQUIRES_REVIEW");
+  const reconciliation = { actorId, checkedAt: new Date().toISOString() };
+  try {
+    const data = await queryAlipayRefund(order.providerOrderId, refund.id) as Record<string, unknown>;
+    const succeeded = matchedRefundSucceeded(order, refund.id, data);
+    await finalizeAlipayRefund(order.id, refund.id, succeeded ? "succeeded" : "review", data, reconciliation);
+  } catch {
+    // Missing, mismatched or unverified replies are uncertainty, never refund failure.
+    await finalizeAlipayRefund(order.id, refund.id, "review", { queryUnconfirmed: true }, reconciliation);
+  }
+  return (await db.select().from(commercialRefunds).where(eq(commercialRefunds.id, refund.id)))[0];
+}
+
+async function finalizeAlipayRefund(orderId: string, refundId: string, state: "succeeded" | "review", evidence: Record<string, unknown>, reconciliation?: { actorId: string; checkedAt: string }) {
   return db.transaction(async (tx) => {
+    const [order] = await tx.select().from(paymentOrders).where(eq(paymentOrders.id, orderId)).for("update");
     const [refund] = await tx.select().from(commercialRefunds).where(and(eq(commercialRefunds.id, refundId), eq(commercialRefunds.orderId, orderId))).for("update");
     if (!refund || refund.state === "succeeded") return;
+    if (!["processing", "review"].includes(refund.state) || (refund.evidence as Record<string, unknown>)?.decision !== "approve") throw new Error("REFUND_NOT_APPROVED");
     const [lot] = await tx.select().from(commercialLots).where(eq(commercialLots.orderId, orderId)).for("update");
-    if (state === "succeeded" && lot?.state === "refunding") {
+    if (!order || order.provider !== "alipay" || order.status !== "paid" || lot?.state !== "refunding") throw new Error("REFUND_REQUIRES_REVIEW");
+    if (state === "succeeded") {
       await tx.update(commercialLots).set({ state: "refunded" }).where(eq(commercialLots.id, lot.id));
       await tx.update(paymentOrders).set({ status: "refunded", updatedAt: new Date() }).where(eq(paymentOrders.id, orderId));
     }
-    await tx.update(commercialRefunds).set({ state, evidence: { ...refund.evidence as Record<string, unknown>, gateway: evidence }, updatedAt: new Date() }).where(eq(commercialRefunds.id, refundId));
+    await tx.update(commercialRefunds).set({ state, evidence: { ...refund.evidence as Record<string, unknown>, gateway: evidence, ...(reconciliation ? { lastReconciliation: reconciliation } : {}) }, updatedAt: new Date() }).where(eq(commercialRefunds.id, refundId));
   });
 }

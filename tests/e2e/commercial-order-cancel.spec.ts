@@ -6,7 +6,7 @@ for (const width of [1440, 390]) for (const outcome of ["cancelled", "paid", "un
     await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
     let state = "pending";
     let closes = 0;
-    const checkout = { orderId: "11111111-1111-4111-8111-111111111111", expiresAt: new Date(Date.now() + 15 * 60000).toISOString(), paymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay" };
+    const checkout = { orderId: "11111111-1111-4111-8111-111111111111", amountCents: 2190, credits: 200, rewrites: 20, expiresAt: new Date(Date.now() + 15 * 60000).toISOString(), paymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay" };
     await page.route("**/api/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
       if (path.includes("/auth/get-session")) return route.fulfill({ json: { user: { id: "test", email: "test@example.com" }, session: { id: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } } });

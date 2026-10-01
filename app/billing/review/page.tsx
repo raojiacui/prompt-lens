@@ -9,6 +9,7 @@ export default function CommercialReviewPage() {
   const zh = useLocale() === "zh";
   const [data, setData] = useState<Review | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [selectedTask, setSelectedTask] = useState("");
   const [evidence, setEvidence] = useState("");
@@ -18,10 +19,16 @@ export default function CommercialReviewPage() {
   const [approveConfirmed, setApproveConfirmed] = useState(false);
   async function act(body: Record<string, unknown>) {
     if (busy) return;
-    setBusy(true); setError("");
+    setBusy(true); setError(""); setNotice("");
     try {
       const response = await fetch("/api/admin/payments/commercial", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!response.ok) throw new Error(zh ? "处理未完成，请刷新并核对记录后重试。" : "Action not completed. Refresh and verify the records before retrying.");
+      if (body.action === "query_refund") {
+        const result = await response.json();
+        setNotice(result.state === "succeeded"
+          ? (zh ? "支付宝已确认退款成功，订单已更新。" : "Alipay confirmed the refund. The order has been updated.")
+          : (zh ? "尚未确认退款成功，保留待核对状态，未再次发起退款。" : "Refund remains unconfirmed. No refund was resubmitted."));
+      }
       setSelectedTask(""); setEvidence(""); setSelectedRefund(""); setReviewNote(""); setCustomerContacted(false); setApproveConfirmed(false); await load();
     } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
     finally { setBusy(false); }
@@ -38,6 +45,7 @@ export default function CommercialReviewPage() {
     <header className="flex items-center justify-between border-b border-border pb-5"><Link href="/dashboard?tab=admin" className="flex items-center gap-2"><ArrowLeft size={18} />{zh ? "后台" : "Admin"}</Link><button onClick={() => void load()} title={zh ? "刷新" : "Refresh"} aria-label={zh ? "刷新" : "Refresh"} className="flex h-10 w-10 items-center justify-center rounded-lg border border-border"><RefreshCw size={18} /></button></header>
     <h1 className="mt-8 text-2xl font-semibold">{zh ? "资金对账" : "Payment reconciliation"}</h1>
     {error && <p role="alert" className="mt-5 text-red-700">{error}</p>}
+    {notice && <p role="status" className="mt-5 text-sm">{notice}</p>}
     {data && <>
       <h2 className="mt-8 text-lg font-semibold">{zh ? "待确认订单" : "Unconfirmed orders"} ({data.orders.length})</h2>
       {data.orders.map((o) => <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-border py-4 text-sm"><span className="break-all">{o.id}</span><span>¥{(o.amountCents / 100).toFixed(2)} · {zh ? "待核对" : (o.reconciliation || "Pending")}</span><button disabled={busy} onClick={() => void act({ action: "query", orderId: o.id })} className="min-h-10 px-3 underline disabled:opacity-50">{zh ? "查询支付状态" : "Query payment"}</button></div>)}
@@ -57,7 +65,10 @@ export default function CommercialReviewPage() {
               <button disabled={busy || !customerContacted || reviewNote.trim().length < 12} onClick={() => void act({ action: "reject_refund", refundId: r.id, evidence: reviewNote, customerContacted })} className="min-h-11 rounded-lg border border-border px-4 disabled:opacity-50">{zh ? "拒绝申请并恢复额度" : "Decline and restore allowance"}</button>
             </div>
           </div>}
-        </> : <p className="text-red-700">{zh ? "退款处理中或结果待核对。请先核对支付宝商户记录，不要重复发起退款。" : "Refund processing or outcome uncertain. Verify Alipay merchant records; do not submit another refund."}</p>}
+        </> : <>
+          <p className="text-red-700">{zh ? "退款处理中或结果待核对。请先核对支付宝商户记录，不要重复发起退款。" : "Refund processing or outcome uncertain. Verify Alipay merchant records; do not submit another refund."}</p>
+          <button disabled={busy} onClick={() => void act({ action: "query_refund", refundId: r.id })} className="flex min-h-10 items-center gap-2 underline disabled:opacity-50"><RefreshCw size={16} />{zh ? "查询退款状态" : "Query refund status"}</button>
+        </>}
       </div>)}
       <h2 className="mt-8 text-lg font-semibold">{zh ? "超过24小时的任务预留" : "Reservations older than 24 hours"} ({data.tasks.length})</h2>
       {data.tasks.map((t) => <div key={t.id} className="border-b border-border py-4 text-sm"><p className="break-all">{t.id} · {t.credits} {zh ? "积分" : "credits"} · {t.rewrites} {zh ? "次改写" : "rewrites"}</p><button disabled={busy} onClick={() => { setSelectedTask(t.id); setEvidence(""); }} className="mt-2 min-h-10 underline">{zh ? "核对未交付任务" : "Review undelivered task"}</button>
