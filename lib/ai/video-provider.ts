@@ -6,7 +6,7 @@
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 import { db, userApiKeys } from "@/lib/db";
 import { and, desc, eq } from "drizzle-orm";
-import { buildVideoModelPayload } from "./video-models";
+import { buildVideoModelPayload, isVeoModel } from "./video-models";
 
 // ============ 类型定义 ============
 
@@ -42,7 +42,7 @@ export interface VideoTaskResult {
 export interface VideoProvider {
   readonly name: string;
   createTask(input: CreateVideoTaskInput): Promise<VideoTaskResult>;
-  getStatus(taskId: string): Promise<NormalizedVideoTaskStatus>;
+  getStatus(taskId: string, model?: string | null): Promise<NormalizedVideoTaskStatus>;
 }
 
 // ============ Provider 名称枚举 ============
@@ -126,7 +126,9 @@ function extractVideoUrl(data: any): string | undefined {
     firstString(result.urls) ||
     firstString(result.url) ||
     firstString(data?.videoUrl) ||
-    firstString(data?.url)
+    firstString(data?.url) ||
+    firstString(data?.response?.resultUrls) ||
+    firstString(data?.response?.originUrls)
   );
 }
 
@@ -142,7 +144,8 @@ export class KieVideoProvider implements VideoProvider {
   async createTask(input: CreateVideoTaskInput): Promise<VideoTaskResult> {
     const payload = buildVideoModelPayload(input);
 
-    const response = await fetch(`${KIE_API_BASE_URL}/api/v1/jobs/createTask`, {
+    const endpoint = isVeoModel(input.model) ? "/api/v1/veo/generate" : "/api/v1/jobs/createTask";
+    const response = await fetch(`${KIE_API_BASE_URL}${endpoint}`, {
       method: "POST",
       signal: AbortSignal.timeout(30000),
       headers: kieBuildHeaders(this.apiKey),
@@ -159,11 +162,12 @@ export class KieVideoProvider implements VideoProvider {
     return { taskId, raw: data };
   }
 
-  async getStatus(taskId: string): Promise<NormalizedVideoTaskStatus> {
-    const url = new URL(`${KIE_API_BASE_URL}/api/v1/jobs/recordInfo`);
+  async getStatus(taskId: string, model?: string | null): Promise<NormalizedVideoTaskStatus> {
+    const veo = isVeoModel(model);
+    const url = new URL(`${KIE_API_BASE_URL}${veo ? "/api/v1/veo/record-info" : "/api/v1/jobs/recordInfo"}`);
     url.searchParams.set("taskId", taskId);
 
-    const response = await fetch(url, { headers: kieBuildHeaders(this.apiKey) });
+    const response = await fetch(url, { headers: kieBuildHeaders(this.apiKey), signal: AbortSignal.timeout(30000) });
     const body = await response.json().catch(() => null);
 
     if (!response.ok || (body?.code !== undefined && body.code !== 200)) {
@@ -171,6 +175,17 @@ export class KieVideoProvider implements VideoProvider {
     }
 
     const data = body?.data || body;
+    if (veo) {
+      const flag = Number(data?.successFlag);
+      if (flag === 1) {
+        const videoUrl = extractVideoUrl(data);
+        return { status: videoUrl ? "completed" : "processing", videoUrl, raw: body };
+      }
+      if (flag === 2 || flag === 3) {
+        return { status: "failed", error: data?.errorMessage || data?.failMsg || "Veo generation failed", raw: body };
+      }
+      return { status: "processing", raw: body };
+    }
     const state = String(data?.state || data?.status || "").toLowerCase();
 
     if (state === "success" || state === "completed" || state === "done") {

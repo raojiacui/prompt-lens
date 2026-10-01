@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { uploadMediaToR2 } from "@/lib/r2-client";
 import { useLocale, useTranslations } from "next-intl";
 import { videoModels } from "@/lib/ai/video-models";
+import { ArrowRight, KeyRound, RefreshCw, Settings } from "lucide-react";
 
 export function VideoGenerateTab({ onConfigureApiKey }: { onConfigureApiKey: () => void }) {
   const t = useTranslations("videoGenerate");
@@ -223,6 +224,27 @@ export function VideoGenerateTab({ onConfigureApiKey }: { onConfigureApiKey: () 
 
   return (
     <div className="animate-fade-in space-y-6">
+      {hasOwnApiKey !== true && (
+        <section aria-label={zh ? "个人 API Key 配置" : "Personal API key setup"} className="flex flex-col gap-4 border-b border-[#D8D5CC] pb-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex gap-3">
+            <KeyRound className="mt-1 h-5 w-5 shrink-0 text-[#D97757]" />
+            <div>
+              <h2 className="text-base font-semibold text-[#141413]">{hasOwnApiKey === null ? (zh ? "正在检查个人 API Key" : "Checking your API key") : (zh ? "生成前必须配置自己的 KIE API Key" : "Your own KIE API key is required")}</h2>
+              <p className="mt-1 text-sm leading-relaxed text-[#6B6860]">{zh ? "生成费用由你的 KIE 账户承担，不使用平台额度。" : "Generation is billed to your KIE account, never to platform credits."}</p>
+            </div>
+          </div>
+          {hasOwnApiKey === false && <div className="flex shrink-0 items-center gap-2">
+            <Button type="button" onClick={onConfigureApiKey} className="bg-[#D97757] hover:bg-[#C96848] text-white">
+              <Settings className="mr-2 h-4 w-4" />
+              {zh ? "前往设置，配置 API Key" : "Configure API key in Settings"}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <button type="button" onClick={() => void loadAccess()} aria-label={zh ? "重新检查 API Key" : "Check API key again"} title={zh ? "重新检查 API Key" : "Check API key again"} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-[#C8C4BC] text-[#6B6860]">
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          </div>}
+        </section>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 左侧：输入区域 */}
         <Card className="bg-[#F5F3EC] border-[#D8D5CC] shadow-sm">
@@ -237,20 +259,15 @@ export function VideoGenerateTab({ onConfigureApiKey }: { onConfigureApiKey: () 
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {hasOwnApiKey !== true && (
-              <div className="border border-[#D8D5CC] rounded-lg p-3 text-sm text-[#6B6860] space-y-2">
-                <p>{hasOwnApiKey === null ? (zh ? "正在检查个人 API Key…" : "Checking personal API key…") : (zh ? "视频生成需要你自己的 KIE API Key，费用由你的 KIE 账户承担。" : "Video generation requires your own KIE API key and uses your KIE credits.")}</p>
-                {hasOwnApiKey === false && <div className="flex gap-4">
-                  <button type="button" onClick={onConfigureApiKey} className="text-[#D97757] underline">{zh ? "配置 API Key" : "Configure API key"}</button>
-                  <button type="button" onClick={() => void loadAccess()} className="underline">{zh ? "重新检查" : "Check again"}</button>
-                </div>}
-              </div>
-            )}
             <div>
               <label htmlFor="video-generation-model" className="text-sm font-medium text-[#141413] block mb-2">{zh ? "生成模型" : "Generation model"}</label>
               <select id="video-generation-model" value={model} onChange={(e) => changeModel(e.target.value)} disabled={isGenerating} className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg bg-white text-[#141413]">
                 <option value="" disabled>{zh ? "请选择模型" : "Select a model"}</option>
-                {videoModels.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                {[...new Set(videoModels.map((item) => item.family))].map((family) => (
+                  <optgroup key={family} label={family}>
+                    {videoModels.filter((item) => item.family === family).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </optgroup>
+                ))}
               </select>
             </div>
             <Textarea
@@ -330,7 +347,7 @@ export function VideoGenerateTab({ onConfigureApiKey }: { onConfigureApiKey: () 
                   onChange={(e) => setDuration(e.target.value)}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  {(selectedModel?.durations ?? [5, 10, 15]).map((seconds) => <option key={seconds} value={String(seconds)}>{t(`duration${seconds}`)}</option>)}
+                  {(selectedModel?.durations ?? [5, 10, 15]).map((seconds) => <option key={seconds} value={String(seconds)}>{zh ? `${seconds} 秒` : `${seconds} s`}</option>)}
                 </select>
               </div>
               <div>

@@ -8,6 +8,7 @@ vi.mock("@/lib/utils/rate-limit", () => ({ checkRateLimit: mocks.rate }));
 vi.mock("@/lib/db", () => ({ db: { insert: mocks.insert, query: { videoGeneration: { findFirst: mocks.findFirst } } }, videoGeneration: {} }));
 import { POST, GET } from "@/app/api/video-generate/route";
 import { GET as statusGET } from "@/app/api/video-generate/status/route";
+import { videoModels } from "@/lib/ai/video-models";
 
 const valid = { model: "wan/2-6-text-to-video", prompt: "A cinematic cloud palace", duration: 5, resolution: "720p", aspectRatio: "16:9" };
 const request = (body: unknown) => new NextRequest("http://localhost/api/video-generate", { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
@@ -35,6 +36,11 @@ describe("V1 personal-key generation boundary", () => {
     expect(await res.json()).toMatchObject({ code: "PERSONAL_API_KEY_REQUIRED" });
     expect(mocks.provider).not.toHaveBeenCalled();
     expect(mocks.insert).not.toHaveBeenCalled();
+  });
+  it.each(videoModels)("never uses platform keys for $label", async (model) => {
+    const res = await POST(request({ ...valid, model: model.id, duration: model.durations[0], resolution: model.resolutions[0], aspectRatio: model.aspectRatios[0], referenceImageUrls: Array.from({ length: model.minImages }, () => "https://example.com/image.png") }));
+    expect(res.status).toBe(403);
+    expect(mocks.provider).not.toHaveBeenCalled();
   });
   it("uses the user's key and persists the chosen model", async () => {
     mocks.key.mockResolvedValue("personal-key-test-only");
