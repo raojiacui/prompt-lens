@@ -38,7 +38,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
           {COMMERCIAL_PACKAGES.map((pack, index) => (
             <article key={pack.id} className="flex flex-col rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-6">
               <h3 className="text-xl font-semibold">{zh ? pack.name : ["Starter", "Creator", "Volume"][index]}</h3>
-              <p className="mt-5 text-3xl font-semibold">¥{(pack.priceCents / 100).toFixed(index === 0 ? 2 : 0)}</p>
+              <p className="mt-5 text-3xl font-semibold">¥{(pack.priceCents / 100).toFixed(pack.priceCents % 100 === 0 ? 0 : 2)}</p>
               <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{pack.credits.toLocaleString()} {zh ? "通用积分" : "credits"}</p>
               <ul className="my-6 space-y-3 text-sm text-[var(--color-text-secondary)]">
                 {[
