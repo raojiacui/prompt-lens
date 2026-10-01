@@ -186,4 +186,15 @@ describe("admin overview analytics", () => {
       expect(spy).toHaveBeenCalledTimes(5);
     } finally { spy.mockRestore(); }
   });
+
+  it("recovers active accounts from real usage without inventing historical visitors", async () => {
+    const older = await testDb.query.user.findFirst({ where: (u, { eq }) => eq(u.email, "older@example.com") });
+    const day = new Date();
+    day.setUTCDate(day.getUTCDate() - 3);
+    await client.query(`INSERT INTO analysis_history VALUES ($1,$2),($1,$2)`, [older!.id, day.toISOString()]);
+    const body = await (await GET(new NextRequest("http://localhost/api/admin/overview?days=17&summary=1"))).json();
+    expect(body.overview.signedIn7d).toBe(3);
+    expect(body.overview.visitor7d).toBe(3);
+    expect(body.daily.find((row: { date: string }) => row.date === day.toISOString().slice(0,10))).toMatchObject({ activeUsers: null, signedInUsers: 1, analyses: 2 });
+  });
 });

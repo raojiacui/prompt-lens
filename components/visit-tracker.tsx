@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
+import { useSession } from "@/lib/auth/auth-client";
 
 function trackVisit() {
   if (typeof window === "undefined") return;
@@ -17,9 +19,16 @@ function trackVisit() {
 }
 
 export function VisitTracker() {
+  const pathname = usePathname();
+  const { data: session, isPending } = useSession();
   useEffect(() => {
+    if (isPending) return;
     trackVisit();
-  }, []);
+    const trackVisible = () => { if (document.visibilityState === "visible") trackVisit(); };
+    document.addEventListener("visibilitychange", trackVisible);
+    const timer = window.setInterval(trackVisible, 5 * 60_000);
+    return () => { window.clearInterval(timer); document.removeEventListener("visibilitychange", trackVisible); };
+  }, [pathname, session?.user?.id, isPending]);
 
   return null;
 }

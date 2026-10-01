@@ -46,7 +46,7 @@ type AdminOverview = {
     generationCount: number;
     videoClips: number;
   };
-  daily: Array<{ date: string; activeUsers: number; signedInUsers: number; uploads: number; uploadBytes: number; analyses: number; generations: number }>;
+  daily: Array<{ date: string; activeUsers: number | null; signedInUsers: number; uploads: number; uploadBytes: number; analyses: number; generations: number }>;
   actionCounts: Array<{ action: string; value: number }>;
   topUsers: Array<{
     userId: string;
@@ -148,7 +148,7 @@ export function AdminOverviewPanel() {
     };
   }, []);
 
-  const maxDaily = useMemo(() => Math.max(1, ...(data?.daily || []).flatMap((day) => [day.activeUsers, day.signedInUsers, day.uploads, day.analyses, day.generations])), [data]);
+  const maxDaily = useMemo(() => Math.max(1, ...(data?.daily || []).flatMap((day) => [day.activeUsers || 0, day.signedInUsers, day.uploads, day.analyses, day.generations])), [data]);
 
   if (loading && !data) {
     return <div className="grid min-h-[420px] place-items-center rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)]"><Spinner /></div>;
@@ -198,7 +198,7 @@ export function AdminOverviewPanel() {
               <p className="text-sm font-semibold text-[var(--color-text-primary)]">{day.date}</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
                 {[[copy.visitors, day.activeUsers, "bg-[#D97757]"], [copy.signedIn, day.signedInUsers, "bg-[#2F6B5F]"], [copy.uploads, day.uploads, "bg-[#7C8F7A]"], [copy.analyses, day.analyses, "bg-[#8D7DB8]"], [copy.generations, day.generations, "bg-[#4F7EA8]"]].map(([label, value, color]) => (
-                  <div key={String(label)} className="min-w-0"><div className="h-2 overflow-hidden rounded-full bg-black/5"><div className={`h-full rounded-full ${color}`} style={{ width: `${Math.max(3, (Number(value) / maxDaily) * 100)}%` }} /></div><p className="mt-1 truncate text-[11px] text-[var(--color-text-muted)]">{label}: {value}</p></div>
+                  <div key={String(label)} className="min-w-0"><div className="h-2 overflow-hidden rounded-full bg-black/5"><div className={`h-full rounded-full ${color}`} style={{ width: `${(Number(value) / maxDaily) * 100}%` }} /></div><p className="mt-1 truncate text-[11px] text-[var(--color-text-muted)]">{label}: {value === null ? (zh ? "未采集" : "Not recorded") : value}</p></div>
                 ))}
               </div>
               <p className="text-xs text-[var(--color-text-muted)] lg:text-right">{formatBytes(day.uploadBytes)}</p>

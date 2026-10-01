@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { sql, type SQL } from "drizzle-orm";
 import { getAdminUserFromHeaders } from "@/lib/auth";
 import { adminQuery } from "@/lib/admin/query";
+import { usageEvents } from "@/lib/admin/usage";
 
 const DAY_MS = 86_400_000;
 const privateHeaders = { "Cache-Control": "private, no-store" };
 const tables = ["projects", "video_generation", "workflow_jobs", "analysis_history", "audio_analysis", "video_clip", "operation_logs", "commercial_wallets", "user_credits"];
-type Metric = { date: string; activeUsers: number; signedInUsers: number; uploads: number; uploadBytes: number; analyses: number; generations: number };
+type Metric = { date: string; activeUsers: number | null; signedInUsers: number; uploads: number; uploadBytes: number; analyses: number; generations: number };
 type Usage = { userId: string; actions: number; uploads: number; uploadBytes: number; analyses: number; generations: number; projects: number; clips: number; lastSeen: string; name: string; email: string; role: string; banned: boolean; creditBalance: number };
 type PaidUser = { userId: string; email: string; name: string; orderCount: number; totalPaidCents: number; lastPaidAt: string; latestPackageId: string; latestPackageName: string };
 type RecentUser = { id: string; email: string; name: string; role: string; createdAt: string };
@@ -68,14 +69,26 @@ async function loadOverview(days: number, summary = false) {
         ${summary ? sql`'[]'::jsonb` : sql`(select coalesce(jsonb_agg(r), '[]') from (select id, email, name, role, created_at as "createdAt" from "user" order by created_at desc limit 20) r)`} as "recentUsers"
       from "user"`, []),
     safe<{ visitorToday: number; visitor7d: number; visitor30d: number; signedInToday: number; signedIn7d: number; signedIn30d: number; daily: Metric[] }>("activity windows", sql`
+      with account_activity as (
+        select date, user_id from daily_visits where date >= ${key(since < since30 ? since : since30)} and user_id is not null
+        union
+        select to_char(created_at at time zone 'UTC','YYYY-MM-DD'), user_id
+        from (${usageEvents(available, since < since30 ? since : since30)}) e where user_id is not null
+      ), signed as (
+        select distinct a.date, a.user_id from account_activity a join "user" u on u.id = a.user_id where not u.is_anonymous
+      ), visitor_days as (
+        select date, count(distinct session_id)::int as "activeUsers" from daily_visits where date >= ${key(since)} group by date
+      ), signed_days as (
+        select date, count(distinct user_id)::int as "signedInUsers" from signed where date >= ${key(since)} group by date
+      )
       select count(distinct session_id) filter (where date >= ${key(today)})::int as "visitorToday",
         count(distinct session_id) filter (where date >= ${key(since7)})::int as "visitor7d",
         count(distinct session_id) filter (where date >= ${key(since30)})::int as "visitor30d",
-        count(distinct user_id) filter (where date >= ${key(today)})::int as "signedInToday",
-        count(distinct user_id) filter (where date >= ${key(since7)})::int as "signedIn7d",
-        count(distinct user_id) filter (where date >= ${key(since30)})::int as "signedIn30d",
-        (select coalesce(jsonb_agg(d), '[]') from (select date, count(distinct session_id)::int as "activeUsers", count(distinct user_id)::int as "signedInUsers"
-          from daily_visits where date >= ${key(since)} group by date) d) as daily
+        (select count(distinct user_id)::int from signed where date >= ${key(today)}) as "signedInToday",
+        (select count(distinct user_id)::int from signed where date >= ${key(since7)}) as "signedIn7d",
+        (select count(distinct user_id)::int from signed where date >= ${key(since30)}) as "signedIn30d",
+        (select coalesce(jsonb_agg(d), '[]') from (select coalesce(v.date,s.date) as date, v."activeUsers", coalesce(s."signedInUsers",0) as "signedInUsers"
+          from visitor_days v full join signed_days s on s.date=v.date) d) as daily
       from daily_visits where date >= ${key(since < since30 ? since : since30)}`, []),
     safe<{ purchasedUsers: number; paidUsers: PaidUser[] }>("paid orders", sql`
       with paid as (select user_id, count(*)::int as "orderCount", sum(amount_cents)::bigint as "totalPaidCents",
@@ -109,7 +122,7 @@ async function loadOverview(days: number, summary = false) {
   const u = users[0]; const v = visits[0]; const p = payments[0]; const s = usage[0];
   const daily = Array.from({ length: days }, (_, i): Metric => {
     const date = key(new Date(since.getTime() + i * DAY_MS));
-    return { date, activeUsers: 0, signedInUsers: 0, uploads: 0, uploadBytes: 0, analyses: 0, generations: 0,
+    return { date, activeUsers: null, signedInUsers: 0, uploads: 0, uploadBytes: 0, analyses: 0, generations: 0,
       ...v?.daily.find(row => row.date === date), ...s?.daily.find(row => row.date === date) };
   });
   return {
