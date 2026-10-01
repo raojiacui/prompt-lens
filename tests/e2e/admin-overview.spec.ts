@@ -47,7 +47,7 @@ for (const scenario of [{ locale: "zh", width: 1440 }, { locale: "en", width: 39
       const path = new URL(route.request().url()).pathname;
       let body: unknown = {};
       if (path.includes("/auth/get-session")) {
-        body = { session: { id: "admin-session", token: "test", expiresAt: "2099-01-01T00:00:00.000Z" }, user: { id: "admin", email: "admin@example.com", name: "Admin", role: "admin" } };
+        body = { session: { id: "admin-session", token: "test", expiresAt: "2099-01-01T00:00:00.000Z" }, user: { id: "admin", email: "raojiacui@gmail.com", name: "Admin", role: "admin" } };
       } else if (path === "/api/admin/me") {
         body = { isAdmin: true };
       } else if (path === "/api/admin/overview") {
@@ -70,3 +70,39 @@ for (const scenario of [{ locale: "zh", width: 1440 }, { locale: "en", width: 39
     await page.screenshot({ path: `test-results/admin-overview-${scenario.locale}-${scenario.width}.png`, fullPage: true });
   });
 }
+
+for (const role of ["user", "admin"]) {
+  test(`other accounts cannot see administration even with role ${role}`, async ({ page }) => {
+    let statisticsRequests = 0;
+    await page.route("**/api/**", async route => {
+      const path = new URL(route.request().url()).pathname;
+      if (path === "/api/admin/overview") statisticsRequests++;
+      await route.fulfill({ json: path.includes("/auth/get-session")
+        ? { session: { id: "other-session", token: "test", expiresAt: "2099-01-01T00:00:00.000Z" }, user: { id: "other", email: "other@example.com", name: "Other", role } }
+        : path === "/api/admin/me" ? { isAdmin: true } : {} });
+    });
+    await page.goto("/dashboard?tab=admin");
+    await expect(page.getByRole("button", { name: /退出|Log out/, exact: true })).toBeVisible();
+    await expect(page.getByText("运营概览", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /后台|Admin/, exact: true })).toHaveCount(0);
+    expect(statisticsRequests).toBe(0);
+  });
+}
+
+test("admin can retry a failed request without losing the page", async ({ page }) => {
+  let attempts = 0;
+  await page.route("**/api/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/admin/overview" && ++attempts === 1) {
+      await route.fulfill({ status: 503, json: { error: "后台统计暂不可用，请重试" } });
+      return;
+    }
+    await route.fulfill({ json: path.includes("/auth/get-session")
+      ? { session: { id: "owner-session", token: "test", expiresAt: "2099-01-01T00:00:00.000Z" }, user: { id: "owner", email: "raojiacui@gmail.com", name: "Owner", role: "user" } }
+      : path === "/api/admin/me" ? { isAdmin: true } : path === "/api/admin/overview" ? overview : {} });
+  });
+  await page.goto("/dashboard?tab=admin");
+  await expect(page.getByRole("alert").filter({ hasText: "后台统计暂不可用，请重试" })).toBeVisible();
+  await page.getByRole("button", { name: /重试|Retry/ }).click();
+  await expect(page.getByText("buyer@example.com")).toBeVisible();
+});

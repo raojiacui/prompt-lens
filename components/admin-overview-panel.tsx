@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Activity, AlertTriangle, CreditCard, LogIn, RefreshCw, UploadCloud, UserPlus, Users, Video, type LucideIcon } from "lucide-react";
 import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -81,7 +81,7 @@ type AdminOverview = {
   dataHealth: { degraded: boolean; unavailable: string[] };
 };
 
-function MetricCard({ icon: Icon, label, value, note }: { icon: LucideIcon; label: string; value: string; note: string }) {
+function MetricCard({ icon: Icon, label, value, note, unavailable = false }: { icon: LucideIcon; label: string; value: string; note: string; unavailable?: boolean }) {
   return (
     <div className="min-w-0 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
@@ -90,8 +90,8 @@ function MetricCard({ icon: Icon, label, value, note }: { icon: LucideIcon; labe
           <Icon className="h-4 w-4" aria-hidden="true" />
         </div>
       </div>
-      <p className="mt-3 text-3xl font-semibold text-[var(--color-text-primary)]">{value}</p>
-      <p className="mt-1 text-xs text-[var(--color-text-muted)]">{note}</p>
+      <p className="mt-3 text-3xl font-semibold text-[var(--color-text-primary)]">{unavailable ? "--" : value}</p>
+      <p className="mt-1 text-xs text-[var(--color-text-muted)]">{unavailable ? "--" : note}</p>
     </div>
   );
 }
@@ -115,18 +115,22 @@ export function AdminOverviewPanel() {
   const [data, setData] = useState<AdminOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const activeRequest = useRef<AbortController | null>(null);
 
   async function loadOverview() {
+    activeRequest.current?.abort();
     setLoading(true);
     setError("");
     const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 12_000);
+    activeRequest.current = controller;
+    const timeout = window.setTimeout(() => controller.abort(), 20_000);
     try {
       const response = await fetch("/api/admin/overview?days=14", { cache: "no-store", signal: controller.signal });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || (zh ? "后台统计加载失败" : "Failed to load admin analytics"));
-      setData(payload as AdminOverview);
+      if (activeRequest.current === controller && !controller.signal.aborted) setData(payload as AdminOverview);
     } catch (cause) {
+      if (activeRequest.current !== controller) return;
       if (cause instanceof DOMException && cause.name === "AbortError") {
         setError(zh ? "后台统计查询超时，请稍后重试" : "The analytics request timed out. Please retry.");
       } else {
@@ -134,12 +138,17 @@ export function AdminOverviewPanel() {
       }
     } finally {
       window.clearTimeout(timeout);
-      setLoading(false);
+      if (activeRequest.current === controller) setLoading(false);
     }
   }
 
   useEffect(() => {
     void loadOverview();
+    return () => {
+      const request = activeRequest.current;
+      activeRequest.current = null;
+      request?.abort();
+    };
   }, []);
 
   const maxDaily = useMemo(() => Math.max(1, ...(data?.daily || []).flatMap((day) => [day.activeUsers, day.signedInUsers, day.uploads, day.analyses, day.generations])), [data]);
@@ -149,7 +158,7 @@ export function AdminOverviewPanel() {
   }
 
   if (error && !data) {
-    return <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>;
+    return <div role="alert" className="flex flex-wrap items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">{error}<Button variant="outline" size="sm" onClick={() => void loadOverview()}><RefreshCw className="mr-2 h-4 w-4" />{zh ? "重试" : "Retry"}</Button></div>;
   }
 
   if (!data) return null;
@@ -161,6 +170,8 @@ export function AdminOverviewPanel() {
   };
 
   const conversion = data.overview.totalUsers ? (data.overview.purchasedUsers / data.overview.totalUsers) * 100 : 0;
+  const unavailable = new Set(data.dataHealth?.unavailable || []);
+  const usageMissing = ["product usage", "data sources", "projects", "analysis_history", "audio_analysis", "video_generation"].some(source => unavailable.has(source));
 
   return (
     <div className="mx-auto flex max-w-[1680px] min-w-0 flex-col gap-5 px-0 py-1">
@@ -175,12 +186,12 @@ export function AdminOverviewPanel() {
       ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-        <MetricCard icon={Users} label={copy.totalUsers} value={formatNumber(data.overview.totalUsers, numberLocale)} note={`${copy.thirtyDays}: +${formatNumber(data.overview.newUsers30d, numberLocale)}`} />
-        <MetricCard icon={UserPlus} label={copy.newUsers} value={`+${formatNumber(data.overview.newUsersToday, numberLocale)}`} note={`${copy.sevenDays}: +${formatNumber(data.overview.newUsers7d, numberLocale)} · ${copy.thirtyDays}: +${formatNumber(data.overview.newUsers30d, numberLocale)}`} />
-        <MetricCard icon={CreditCard} label={copy.paidUsers} value={formatNumber(data.overview.purchasedUsers, numberLocale)} note={`${copy.conversion}: ${conversion.toFixed(1)}%`} />
-        <MetricCard icon={Activity} label={copy.visitorDau} value={formatNumber(data.overview.visitorToday, numberLocale)} note={`${copy.sevenDays}: ${formatNumber(data.overview.visitor7d, numberLocale)} · MAU: ${formatNumber(data.overview.visitor30d, numberLocale)}`} />
-        <MetricCard icon={LogIn} label={copy.signedInDau} value={formatNumber(data.overview.signedInToday, numberLocale)} note={`${copy.sevenDays}: ${formatNumber(data.overview.signedIn7d, numberLocale)} · MAU: ${formatNumber(data.overview.signedIn30d, numberLocale)}`} />
-        <MetricCard icon={Video} label={copy.aiWork} value={formatNumber(data.overview.analysisCount + data.overview.generationCount, numberLocale)} note={`${copy.analyses}: ${formatNumber(data.overview.analysisCount, numberLocale)} · ${copy.generations}: ${formatNumber(data.overview.generationCount, numberLocale)}`} />
+        <MetricCard unavailable={unavailable.has("users")} icon={Users} label={copy.totalUsers} value={formatNumber(data.overview.totalUsers, numberLocale)} note={`${copy.thirtyDays}: +${formatNumber(data.overview.newUsers30d, numberLocale)}`} />
+        <MetricCard unavailable={unavailable.has("users")} icon={UserPlus} label={copy.newUsers} value={`+${formatNumber(data.overview.newUsersToday, numberLocale)}`} note={`${copy.sevenDays}: +${formatNumber(data.overview.newUsers7d, numberLocale)} · ${copy.thirtyDays}: +${formatNumber(data.overview.newUsers30d, numberLocale)}`} />
+        <MetricCard unavailable={unavailable.has("paid orders") || unavailable.has("users")} icon={CreditCard} label={copy.paidUsers} value={formatNumber(data.overview.purchasedUsers, numberLocale)} note={`${copy.conversion}: ${conversion.toFixed(1)}%`} />
+        <MetricCard unavailable={unavailable.has("activity windows")} icon={Activity} label={copy.visitorDau} value={formatNumber(data.overview.visitorToday, numberLocale)} note={`${copy.sevenDays}: ${formatNumber(data.overview.visitor7d, numberLocale)} · MAU: ${formatNumber(data.overview.visitor30d, numberLocale)}`} />
+        <MetricCard unavailable={unavailable.has("activity windows")} icon={LogIn} label={copy.signedInDau} value={formatNumber(data.overview.signedInToday, numberLocale)} note={`${copy.sevenDays}: ${formatNumber(data.overview.signedIn7d, numberLocale)} · MAU: ${formatNumber(data.overview.signedIn30d, numberLocale)}`} />
+        <MetricCard unavailable={usageMissing} icon={Video} label={copy.aiWork} value={formatNumber(data.overview.analysisCount + data.overview.generationCount, numberLocale)} note={`${copy.analyses}: ${formatNumber(data.overview.analysisCount, numberLocale)} · ${copy.generations}: ${formatNumber(data.overview.generationCount, numberLocale)}`} />
       </div>
 
       <Section title={copy.activityTitle} note={copy.activityNote}>

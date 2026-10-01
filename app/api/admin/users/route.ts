@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminUserFromHeaders } from "@/lib/auth";
-import { db, user, analysisHistory, operationLogs } from "@/lib/db";
-import { eq, desc, count } from "drizzle-orm";
+import { db, user, operationLogs } from "@/lib/db";
+import { eq, sql } from "drizzle-orm";
+import { adminQuery } from "@/lib/admin/query";
 
 // GET /api/admin/users - 获取所有用户列表
 export async function GET(request: NextRequest) {
@@ -13,41 +14,30 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const bounded = (key: string, fallback: number, max: number) => {
+      const value = Number(searchParams.get(key) || fallback);
+      return Number.isFinite(value) ? Math.min(max, Math.max(1, Math.floor(value))) : fallback;
+    };
+    const page = bounded("page", 1, 100000);
+    const limit = bounded("limit", 20, 100);
     const offset = (page - 1) * limit;
 
-    // 获取用户列表
-    const users = await db.query.user.findMany({
-      limit,
-      offset,
-      orderBy: [desc(user.createdAt)],
-    });
-
-    // 获取用户统计
-    const userStats = await Promise.all(
-      users.map(async (u) => {
-        const analysisCount = await db
-          .select({ count: count() })
-          .from(analysisHistory)
-          .where(eq(analysisHistory.userId, u.id));
-
-        return {
-          ...u,
-          analysisCount: analysisCount[0]?.count || 0,
-        };
-      })
-    );
-
-    // 获取总数
-    const total = await db.select({ count: count() }).from(user);
+    const [userStats, total] = await Promise.all([
+      adminQuery<typeof user.$inferSelect & { analysisCount: number }>(sql`
+        with selected as (select * from "user" order by created_at desc, id desc limit ${limit} offset ${offset}),
+        analyses as (select user_id, count(*)::int as total from analysis_history where user_id in (select id from selected) group by user_id)
+        select s.id, s.email, s.name, s.image, s.role, s.email_verified as "emailVerified", s.is_anonymous as "isAnonymous",
+          s.banned, s.ban_reason as "banReason", s.ban_expires as "banExpires", s.created_at as "createdAt", s.updated_at as "updatedAt",
+          coalesce(a.total, 0) as "analysisCount" from selected s left join analyses a on a.user_id = s.id order by s.created_at desc, s.id desc`),
+      adminQuery<{ count: number }>(sql`select count(*)::int as count from "user"`),
+    ]);
 
     return NextResponse.json({
       users: userStats,
       total: total[0]?.count || 0,
       page,
       limit,
-    });
+    }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Admin users error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -69,6 +59,11 @@ export async function PATCH(request: NextRequest) {
     if (!userId || !action) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
+
+    if (action === "set_admin" || action === "remove_admin" || (action === "ban" && userId === adminUser.id)) {
+      return NextResponse.json({ error: "The product has one fixed administrator" }, { status: 400 });
+    }
+    if (!["ban", "unban"].includes(action)) return NextResponse.json({ error: "Invalid action" }, { status: 400 });
 
     if (action === "ban") {
       await db
@@ -104,16 +99,6 @@ export async function PATCH(request: NextRequest) {
         resourceType: "user",
         resourceId: userId,
       });
-    } else if (action === "set_admin") {
-      await db
-        .update(user)
-        .set({ role: "admin" })
-        .where(eq(user.id, userId));
-    } else if (action === "remove_admin") {
-      await db
-        .update(user)
-        .set({ role: "user" })
-        .where(eq(user.id, userId));
     }
 
     return NextResponse.json({ success: true });

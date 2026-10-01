@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ElementType } from "react";
 import { useSession, signOut } from "@/lib/auth/auth-client";
+import { isOwnerEmail } from "@/lib/auth/admin-policy";
 import { HistoryList } from "@/components/history-list";
 import { ApiKeySettings } from "@/components/api-key-settings";
 import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
@@ -109,8 +110,13 @@ export default function DashboardPage() {
   const [historyRefreshTrigger] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [hiddenSceneReferenceImageUrl, setHiddenSceneReferenceImageUrl] = useState<string | null>(null);
-  const sessionIsAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
-  const [canAccessAdmin, setCanAccessAdmin] = useState(sessionIsAdmin);
+  const sessionIsOwner = isOwnerEmail(session?.user.email);
+  const [adminConfirmed, setCanAccessAdmin] = useState(false);
+  const canAccessAdmin = sessionIsOwner && adminConfirmed;
+
+  useEffect(() => {
+    if (!isPending && session?.user && activeTab === "admin" && !sessionIsOwner) router.replace(pathname);
+  }, [activeTab, isPending, pathname, router, session?.user, sessionIsOwner]);
 
   useEffect(() => {
     if (!isPending && !session?.user) {
@@ -120,13 +126,9 @@ export default function DashboardPage() {
   useEffect(() => {
     let cancelled = false;
 
-    if (isPending || !session?.user) {
+    setCanAccessAdmin(false);
+    if (isPending || !session?.user || !sessionIsOwner) {
       setCanAccessAdmin(false);
-      return;
-    }
-
-    if (sessionIsAdmin) {
-      setCanAccessAdmin(true);
       return;
     }
 
@@ -141,7 +143,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [isPending, session?.user, sessionIsAdmin]);
+  }, [isPending, session?.user, sessionIsOwner]);
 
 
   // const handleNavigateVideoGen = (prompt: string) => {
@@ -525,7 +527,7 @@ export default function DashboardPage() {
           )}
 
           {/* 管理后台 */}
-          {activeTab === "admin" && (
+          {activeTab === "admin" && canAccessAdmin && (
             <div className="animate-fade-in">
               <Link href="/billing/review" className="mb-5 inline-flex min-h-11 items-center underline underline-offset-4">{zh ? "支付对账与异常处理" : "Payment reconciliation and review"}</Link>
               <AdminOverviewPanel />

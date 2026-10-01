@@ -8,6 +8,7 @@ import { emailOTP } from "better-auth/plugins/email-otp";
 import { eq } from "drizzle-orm";
 import { sendOtpEmail } from "@/lib/email/send-otp-email";
 import { sendWelcomeEmail, welcomeEmailEnabled } from "@/lib/email/send-welcome-email";
+import { isOwnerEmail } from "@/lib/auth/admin-policy";
 
 // 配置代理（仅本地开发环境使用，禁止在生产环境使用）
 const isLocalDev = process.env.NODE_ENV === "development";
@@ -104,11 +105,9 @@ export const auth = betterAuth({
       create: {
         after: async (createdUser, ctx) => {
           // 检查是否为管理员邮箱
-          const adminEmails = (process.env.ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
-          const userEmail = createdUser.email?.toLowerCase();
 
 
-          if (userEmail && adminEmails.includes(userEmail)) {
+          if (isOwnerEmail(createdUser.email) && createdUser.emailVerified) {
             await db
               .update(user)
               .set({ role: "admin" })
@@ -172,43 +171,16 @@ export const auth = betterAuth({
 
 type CurrentUser = typeof user.$inferSelect;
 
-function envList(name: string) {
-  return (process.env[name] || "")
-    .split(",")
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
 export function isAdminEmail(email: string | null | undefined): boolean {
-  const normalized = email?.trim().toLowerCase();
-  if (!normalized) return false;
-  return envList("ADMIN_EMAILS")
-    .map((item) => item.toLowerCase())
-    .includes(normalized);
+  return isOwnerEmail(email);
 }
 
-export function isAdminUserId(userId: string | null | undefined): boolean {
-  const normalized = userId?.trim();
-  if (!normalized) return false;
-  return envList("ADMIN_USER_IDS").includes(normalized);
+export function isAdminUserId(_userId: string | null | undefined): boolean {
+  return false;
 }
 
-export function isAdminProfile(profile: Pick<CurrentUser, "id" | "email" | "role"> | null | undefined): boolean {
-  return profile?.role === "admin" || isAdminEmail(profile?.email) || isAdminUserId(profile?.id);
-}
-
-async function persistEnvAdminRole(currentUser: CurrentUser): Promise<CurrentUser> {
-  if (currentUser.role === "admin" || (!isAdminEmail(currentUser.email) && !isAdminUserId(currentUser.id))) {
-    return currentUser;
-  }
-
-  try {
-    await db.update(user).set({ role: "admin" }).where(eq(user.id, currentUser.id));
-    return { ...currentUser, role: "admin" };
-  } catch (error) {
-    console.warn("[Auth] Failed to persist admin role:", error);
-    return currentUser;
-  }
+export function isAdminProfile(profile: Pick<CurrentUser, "id" | "email" | "role" | "emailVerified" | "banned" | "isAnonymous"> | null | undefined): boolean {
+  return Boolean(profile && isOwnerEmail(profile.email) && profile.emailVerified && !profile.banned && !profile.isAnonymous);
 }
 
 // 辅助函数：获取当前用户
@@ -221,12 +193,13 @@ export async function getCurrentUser(userId: string) {
 export async function getAdminUser(userId: string): Promise<CurrentUser | null> {
   const currentUser = await getCurrentUser(userId);
   if (!currentUser || !isAdminProfile(currentUser)) return null;
-  return persistEnvAdminRole(currentUser);
+  return currentUser;
 }
 
 export async function getAdminUserFromHeaders(headers: Headers): Promise<CurrentUser | null> {
   const session = await auth.api.getSession({ headers });
   if (!session?.user) return null;
+  if (!isOwnerEmail(session.user.email)) return null;
   return getAdminUser(session.user.id);
 }
 
