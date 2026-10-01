@@ -9,7 +9,7 @@ PromptLens V2 是一个 AI 视频创作工作流工具。核心目标不是简�
 PromptLens V2 支持上传本地素材，也支持粘贴公开视频链接作为分析来源。
 
 - 上传视频或图片进行分析
-- 粘贴 YouTube、TikTok、X、抖音或 Bilibili 公热视频链接进行分析
+- 粘贴 TikTok、抖音或 Bilibili 公热视频链接进行分析
 - 10 秒以内视频按单镜头分析
 - 已解锁长视频权限的账号可上传长视频自动拆镜
 - 本地 FFmpeg worker 负责长视频切镜、切 clip、抽关键帧、抽音频
@@ -91,7 +91,7 @@ POST /breakdown
 - 视频处理：本地/self-hosted FFmpeg worker
 - AI 分析：Kie.ai（免费试用锁定 Gemini 3.8 Flash）
 - 视频生成：Kie.ai 系列接口
-- 支付：Creem、XunhuPay / 虎皮椒
+- 支付：支付宝开放平台网页支付、Creem
 - 测试：Vitest, Playwright
 
 ## 本地启动
@@ -230,7 +230,7 @@ ffprobe -version
 
 ### 视频平台链接
 
-平台链接解析后端使用 LEAPERone，支持 YouTube、TikTok、X、抖音和 Bilibili 的公开视频。用户可在视频分析页切换到“粘贴链接”；应用取得临时媒体流后会立即交给媒体 worker 下载并保存到 R2，再沿用现有的分析报价、自动拆镜和积分结算流程。链接解析接口要求登录、同源请求，并按用户限流；拆镜流程不长期依赖第三方临时直链，也不使用 `yt-dlp` 或共享登录 Cookie。
+平台链接解析支持配置 EasyDown，未配置时沿用 LEAPERone，目标平台为 TikTok、抖音和 Bilibili 的公开视频。用户可在视频分析页切换到“粘贴链接”；应用取得临时媒体流后会立即交给媒体 worker 下载并保存到 R2，再沿用现有的分析报价、自动拆镜和积分结算流程。链接解析接口要求登录、同源请求，并按用户限流；拆镜流程不长期依赖第三方临时直链，也不使用 `yt-dlp` 或共享登录 Cookie。EasyDown 需设置服务端环境变量 `EASYDOWN_API_KEY`，并在上线前逐个平台测试解析与媒体下载。
 
 ## 项目结构
 
@@ -297,7 +297,7 @@ Invoke-WebRequest -UseBasicParsing http://localhost:8080/healthz
 
 ### 视频链接为什么要先入库
 
-LEAPERone 返回的媒体地址有时效性。PromptLens 会在解析成功后立即把视频保存到自己的 R2，再进行读取时长、报价、拆镜和分析，避免长任务执行期间第三方地址过期。
+解析服务返回的媒体地址有时效性。PromptLens 会在解析成功后立即把视频保存到自己的 R2，再进行读取时长、报价、拆镜和分析，避免长任务执行期间第三方地址过期。
 
 ## 部署说明
 

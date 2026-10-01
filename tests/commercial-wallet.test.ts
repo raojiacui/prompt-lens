@@ -9,6 +9,12 @@ const isolated = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return isolated.db; } }));
 vi.mock("@/lib/workflow/scene-analysis", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/workflow/scene-analysis")>(), rewriteSceneBlueprint: vi.fn(), analyzeSceneBlueprint: vi.fn() }));
 vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: vi.fn(async () => "owned-upload"), commercialMediaRequest: vi.fn() }));
+vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
+  ...await importOriginal<typeof import("@/lib/payments/alipay")>(),
+  queryAlipayTrade: vi.fn(),
+  refundAlipayTrade: vi.fn(),
+  queryAlipayRefund: vi.fn(),
+}));
 import { rewriteSceneBlueprint, analyzeSceneBlueprint } from "@/lib/workflow/scene-analysis";
 import { commercialMediaRequest } from "@/lib/billing/commercial-media";
 import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnalysisRetry, quotedAnalysisModel, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
@@ -16,11 +22,11 @@ import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercia
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask } from "@/lib/billing/commercial-wallet";
-import { settlePaidCreditOrder, createXunhuPayCreditCheckout, getXunhuPaySecretForApp } from "@/lib/payments/credit-checkout";
-import { createXunhuPayHash } from "@/lib/payments/xunhupay-signature";
+import { settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
-import { requestCommercialRefund, applyCommercialRefundNotification } from "@/lib/payments/commercial-refunds";
-import { reconcilePaymentOrder } from "@/lib/payments/xunhupay-reconciliation";
+import { requestCommercialRefund } from "@/lib/payments/commercial-refunds";
+import { queryAlipayRefund, queryAlipayTrade, refundAlipayTrade } from "@/lib/payments/alipay";
+import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 
 const client = new PGlite();
 const testDb = drizzle(client, { schema });
@@ -49,6 +55,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await client.exec("CREATE TYPE log_action AS ENUM ('video.edit.start');");
     await client.exec(readFileSync("drizzle/0007_foamy_lily_hollister.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0008_payment_orders.sql", "utf8"));
+    await client.exec(readFileSync("drizzle/0015_alipay_official_provider.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0010_commercial_wallets.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0011_commercial_purchase_lots.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0002_video_generation.sql", "utf8"));
@@ -62,6 +69,9 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.mocked(rewriteSceneBlueprint).mockReset();
     vi.mocked(analyzeSceneBlueprint).mockReset();
     vi.mocked(commercialMediaRequest).mockReset();
+    vi.mocked(queryAlipayTrade).mockReset();
+    vi.mocked(refundAlipayTrade).mockReset();
+    vi.mocked(queryAlipayRefund).mockReset();
     await client.exec("TRUNCATE projects CASCADE");
     await client.exec("TRUNCATE video_generation, commercial_tasks, commercial_refunds, commercial_allocations, commercial_lots, commercial_ledger, commercial_reservations, commercial_wallets, payment_orders, credit_ledger, user_credits CASCADE");
   });
@@ -135,12 +145,12 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   });
 
   async function order(commercial = true) {
-    const [row] = await testDb.insert(schema.paymentOrders).values({ userId, provider: "xunhupay", providerOrderId: randomUUID(), packageId: commercial ? "v6_trial_200" : "starter_10", packageName: "Test", credits: commercial ? 200 : 10, amountCents: 1990, currency: "cny", metadata: { appId: "ali", method: "alipay", pricingVersion: PRICING_VERSION, rewrites: 20 } }).returning();
+    const [row] = await testDb.insert(schema.paymentOrders).values({ userId, provider: "alipay", providerOrderId: randomUUID(), packageId: commercial ? "v6_trial_200" : "starter_10", packageName: "Test", credits: commercial ? 200 : 10, amountCents: 1990, currency: "cny", metadata: { appId: "ali", method: "alipay", pricingVersion: PRICING_VERSION, rewrites: 20 } }).returning();
     return row;
   }
   it("atomically marks the new order paid and grants both benefits once", async () => {
     const row = await order();
-    const input = { provider: "xunhupay" as const, lookupOrderId: row.providerOrderId, rawPayload: { appid: "ali", total_fee: "19.90", status: "OD" } };
+    const input = { provider: "alipay" as const, lookupOrderId: row.providerOrderId, rawPayload: { out_trade_no: row.providerOrderId, total_amount: "19.90", trade_status: "TRADE_SUCCESS" }, verifiedAlipayQuery: true };
     const results = await Promise.all([settlePaidCreditOrder(input), settlePaidCreditOrder(input)]);
     expect(results.filter((result) => result.granted)).toHaveLength(1);
     expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
@@ -149,7 +159,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   });
   it("retains legacy grants in the legacy wallet and prevents duplicate credits", async () => {
     const row = await order(false);
-    const input = { provider: "xunhupay" as const, lookupOrderId: row.providerOrderId, rawPayload: { appid: "ali", total_fee: "19.90", status: "OD" } };
+    const input = { provider: "alipay" as const, lookupOrderId: row.providerOrderId, rawPayload: { out_trade_no: row.providerOrderId, total_amount: "19.90", trade_status: "TRADE_SUCCESS" }, verifiedAlipayQuery: true };
     await settlePaidCreditOrder(input);
     expect((await settlePaidCreditOrder(input)).granted).toBe(false);
     expect((await testDb.select().from(schema.userCredits))[0].balance).toBe(10);
@@ -157,42 +167,9 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   });
   it("never grants for an underpayment", async () => {
     const row = await order();
-    await expect(settlePaidCreditOrder({ provider: "xunhupay", lookupOrderId: row.providerOrderId, rawPayload: { appid: "ali", total_fee: "1.00", status: "OD" } })).rejects.toThrow("amount mismatch");
+    await expect(settlePaidCreditOrder({ provider: "alipay", lookupOrderId: row.providerOrderId, rawPayload: { out_trade_no: row.providerOrderId, total_amount: "1.00", trade_status: "TRADE_SUCCESS" }, verifiedAlipayQuery: true })).rejects.toThrow("amount mismatch");
     expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("pending");
     expect(await testDb.select().from(schema.commercialWallets)).toHaveLength(0);
-  });
-  it("persists an order before requesting a signed QR and separates QR from mobile link", async () => {
-    vi.stubEnv("XUNHUPAY_ALIPAY_APP_ID", "ali");
-    vi.stubEnv("XUNHUPAY_ALIPAY_APP_SECRET", "test-secret");
-    vi.stubGlobal("fetch", vi.fn(async () => {
-      expect(await testDb.select().from(schema.paymentOrders)).toHaveLength(1);
-      const data = { errcode: 0, url_qrcode: "https://example.com/qr.png", url: "https://example.com/pay" };
-      return Response.json({ ...data, hash: createXunhuPayHash(data, "test-secret") });
-    }));
-    const checkout = await createXunhuPayCreditCheckout(userId, "starter_10", "alipay");
-    expect(checkout).toMatchObject({ qrImageUrl: "https://example.com/qr.png", mobilePaymentUrl: "https://example.com/pay" });
-    expect(getXunhuPaySecretForApp("unknown")).toBe("");
-  });
-
-  it("snapshots the commercial package and reuses one checkout on duplicate submissions", async () => {
-    vi.stubEnv("XUNHUPAY_ALIPAY_APP_ID", "ali");
-    vi.stubEnv("XUNHUPAY_ALIPAY_APP_SECRET", "test-secret");
-    const fetchMock = vi.fn(async () => {
-      const data = { errcode: 0, url_qrcode: "https://example.com/qr.png", url: "https://example.com/pay" };
-      return Response.json({ ...data, hash: createXunhuPayHash(data, "test-secret") });
-    });
-    vi.stubGlobal("fetch", fetchMock);
-    const id = randomUUID();
-    const first = await createXunhuPayCreditCheckout(userId, "v6_trial_200", "alipay", id);
-    const second = await createXunhuPayCreditCheckout(userId, "v6_trial_200", "alipay", id);
-    expect(first.orderId).toBe(second.orderId);
-    expect(second.qrImageUrl).toBe("https://example.com/qr.png");
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [saved] = await testDb.select().from(schema.paymentOrders);
-    expect(saved).toMatchObject({ credits: 200, amountCents: 1990, metadata: { rewrites: 20, pricingVersion: PRICING_VERSION } });
-    await expect(createXunhuPayCreditCheckout(userId, "v6_creator_650", "alipay", id)).rejects.toThrow("replay mismatch");
-    await settlePaidCreditOrder({ provider: "xunhupay", lookupOrderId: saved.providerOrderId, rawPayload: { appid: "ali", total_fee: "19.90", status: "OD" } });
-    expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
   });
 
   async function rewriteInput() {
@@ -205,9 +182,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   }
   async function paidOrder() {
     const row = await order();
-    await settlePaidCreditOrder({ provider: "xunhupay", lookupOrderId: row.providerOrderId, rawPayload: { appid: "ali", total_fee: "19.90", status: "OD" } });
-    vi.stubEnv("XUNHUPAY_ALIPAY_APP_ID", "ali");
-    vi.stubEnv("XUNHUPAY_ALIPAY_APP_SECRET", "test-secret");
+    await settlePaidCreditOrder({ provider: "alipay", lookupOrderId: row.providerOrderId, rawPayload: { out_trade_no: row.providerOrderId, total_amount: "19.90", trade_status: "TRADE_SUCCESS" }, verifiedAlipayQuery: true });
     return row;
   }
   it("runs paid analysis from server probe through partial settlement with no duplicate inference", async () => {
@@ -367,16 +342,13 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   });
   it("refunds an untouched purchase once and never re-submits the gateway request", async () => {
     const row = await paidOrder();
-    const fetchMock = vi.fn(async () => {
+    vi.mocked(refundAlipayTrade).mockImplementationOnce(async () => {
       expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
-      const data = { errcode: 0, trade_order_id: row.providerOrderId, refund_fee: "19.90", refund_status: "CD" };
-      return Response.json({ ...data, hash: createXunhuPayHash(data, "test-secret") });
+      return { code: "10000", outTradeNo: row.providerOrderId, refundFee: "19.90", fundChange: "Y" } as never;
     });
-    vi.stubGlobal("fetch", fetchMock);
     expect((await requestCommercialRefund(userId, row.id, "Unused")).state).toBe("succeeded");
     expect((await requestCommercialRefund(userId, row.id, "Unused")).state).toBe("succeeded");
-    await applyCommercialRefundNotification({ appid: "ali", trade_order_id: row.providerOrderId, total_fee: "19.90", status: "CD" });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(refundAlipayTrade).toHaveBeenCalledTimes(1);
     expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
   });
   it("counts an included rewrite as package usage for cash refunds", async () => {
@@ -386,45 +358,26 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await settleCommercialTask({ userId, taskKey: "rewrite:refund-test", credits: 0, rewrites: 1 });
     await expect(requestCommercialRefund(userId, row.id, "Unused")).rejects.toThrow("PACKAGE_USED_OR_RESERVED");
   });
-  it("keeps an uncertain refund frozen, then restores benefits once on signed failure", async () => {
+  it("keeps an uncertain refund frozen for manual review", async () => {
     const row = await paidOrder();
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("timeout")));
+    vi.mocked(refundAlipayTrade).mockRejectedValueOnce(new Error("timeout"));
     expect((await requestCommercialRefund(userId, row.id, "Unused")).state).toBe("review");
     expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
-    const data = { appid: "ali", trade_order_id: row.providerOrderId, total_fee: "19.90", status: "UD" };
-    await applyCommercialRefundNotification(data);
-    await applyCommercialRefundNotification(data);
-    expect(await balance()).toMatchObject({ credits: 200, rewrites: 20, frozen: false });
-  });
-  it("freezes externally refunded spent packages instead of creating negative balances", async () => {
-    const row = await paidOrder();
-    await reserveCommercialTask({ userId, taskKey: "spent", credits: 150, rewrites: 0, quote: {} });
-    await settleCommercialTask({ userId, taskKey: "spent", credits: 150, rewrites: 0 });
-    await applyCommercialRefundNotification({ appid: "ali", trade_order_id: row.providerOrderId, total_fee: "19.90", status: "CD" });
-    expect(await balance()).toMatchObject({ credits: 50, frozen: true });
-    await expect(reserveCommercialTask({ userId, taskKey: "blocked", credits: 1, rewrites: 0, quote: {} })).rejects.toThrow("COMMERCIAL_WALLET_UNDER_REVIEW");
   });
   it("settles only authenticated, amount-matched query responses and throttles duplicate polls", async () => {
     const row = await order();
-    vi.stubEnv("XUNHUPAY_ALIPAY_APP_ID", "ali");
-    vi.stubEnv("XUNHUPAY_ALIPAY_APP_SECRET", "test-secret");
-    const data = { appid: "ali", trade_order_id: row.providerOrderId, total_fee: "19.90", status: "OD", errcode: 0 };
-    const fetchMock = vi.fn(async () => Response.json({ ...data, hash: createXunhuPayHash(data, "test-secret") }));
-    vi.stubGlobal("fetch", fetchMock);
-    await reconcilePaymentOrder(row.id, randomUUID());
-    expect(fetchMock).not.toHaveBeenCalled();
-    await reconcilePaymentOrder(row.id, userId);
-    await reconcilePaymentOrder(row.id, userId);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    vi.mocked(queryAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, tradeNo: "provider-trade", tradeStatus: "TRADE_SUCCESS", totalAmount: "19.90" } as never);
+    await reconcileAlipayOrder(row.id, randomUUID());
+    expect(queryAlipayTrade).not.toHaveBeenCalled();
+    await reconcileAlipayOrder(row.id, userId);
+    await reconcileAlipayOrder(row.id, userId);
+    expect(queryAlipayTrade).toHaveBeenCalledTimes(1);
     expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
   });
-  it("does not interpret query CD as a refund or settle unsigned nested results", async () => {
+  it("does not settle a mismatched Alipay query result", async () => {
     const row = await order();
-    vi.stubEnv("XUNHUPAY_ALIPAY_APP_ID", "ali");
-    vi.stubEnv("XUNHUPAY_ALIPAY_APP_SECRET", "test-secret");
-    const data = { errcode: 0, data: { status: "OD", trade_order_id: row.providerOrderId } };
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ ...data, hash: createXunhuPayHash(data, "test-secret") })));
-    await reconcilePaymentOrder(row.id, userId);
+    vi.mocked(queryAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, tradeNo: "provider-trade", tradeStatus: "TRADE_SUCCESS", totalAmount: "1.00" } as never);
+    await reconcileAlipayOrder(row.id, userId);
     expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("pending");
     expect(await testDb.select().from(schema.commercialWallets)).toHaveLength(0);
   });

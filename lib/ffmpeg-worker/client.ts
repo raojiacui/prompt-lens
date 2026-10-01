@@ -17,7 +17,7 @@ export interface LinkedMediaResolveResult {
   mediaUrl: string;
   storageKey?: string;
   mediaType: "video";
-  platform: "youtube" | "tiktok" | "douyin" | "x" | "bilibili";
+  platform: "tiktok" | "douyin" | "bilibili";
   filename?: string;
   metadata: FfmpegBreakdownResult["metadata"];
 }
@@ -43,6 +43,8 @@ export async function ingestLinkedMediaWithWorker(source: {
   platform: LinkedMediaResolveResult["platform"];
   videoUrl: string;
   audioUrl?: string;
+  videoHeaders?: Record<string, string>;
+  audioHeaders?: Record<string, string>;
   filename?: string;
 }): Promise<LinkedMediaResolveResult> {
   if (!workerUrl) throw new Error("媒体入库服务未配置：请设置 FFMPEG_WORKER_URL。");

@@ -1,9 +1,11 @@
-export type LinkedMediaPlatform = "youtube" | "tiktok" | "douyin" | "x" | "bilibili";
+export type LinkedMediaPlatform = "tiktok" | "douyin" | "bilibili";
 
 export interface ResolvedLinkedMediaSource {
   platform: LinkedMediaPlatform;
   videoUrl: string;
   audioUrl?: string;
+  videoHeaders?: Record<string, string>;
+  audioHeaders?: Record<string, string>;
   filename: string;
   title?: string;
   duration?: number;
@@ -35,7 +37,7 @@ interface LeaperResponse {
 
 const DEFAULT_BASE_URL = "https://api.leaper.one";
 
-function sourcePlatform(url: string): LinkedMediaPlatform {
+export function sourcePlatform(url: string): LinkedMediaPlatform {
   let hostname: string;
   try {
     hostname = new URL(url).hostname.toLowerCase();
@@ -43,12 +45,12 @@ function sourcePlatform(url: string): LinkedMediaPlatform {
     throw new Error("视频链接格式无效");
   }
 
-  if (hostname === "youtu.be" || hostname.endsWith(".youtube.com") || hostname === "youtube.com") return "youtube";
+  if (hostname === "youtu.be" || hostname.endsWith(".youtube.com") || hostname === "youtube.com") throw new Error("暂不支持 YouTube 视频链接");
   if (hostname === "tiktok.com" || hostname.endsWith(".tiktok.com")) return "tiktok";
   if (["douyin.com", "iesdouyin.com", "amemv.com"].some((host) => hostname === host || hostname.endsWith(`.${host}`))) return "douyin";
-  if (hostname === "x.com" || hostname.endsWith(".x.com") || hostname === "twitter.com" || hostname.endsWith(".twitter.com")) return "x";
+  if (hostname === "x.com" || hostname.endsWith(".x.com") || hostname === "twitter.com" || hostname.endsWith(".twitter.com")) throw new Error("暂不支持 X 视频链接");
   if (hostname === "bilibili.com" || hostname.endsWith(".bilibili.com") || hostname === "b23.tv" || hostname.endsWith(".b23.tv")) return "bilibili";
-  throw new Error("目前仅支持 YouTube、TikTok、X、抖音和 Bilibili 的公开视频链接");
+  throw new Error("目前仅支持 TikTok、抖音和 Bilibili 的公开视频链接");
 }
 
 function asStreams(value: unknown): LeaperMediaStream[] {
@@ -78,7 +80,7 @@ export function selectLeaperMedia(payload: LeaperResponse, requestedPlatform: Li
   const videos = asStreams(payload.data?.videos).filter((stream) => Boolean(streamUrl(stream))).sort((a, b) => streamScore(b) - streamScore(a));
   if (!videos.length) throw new Error("LEAPERone 没有返回可下载的视频资源");
 
-  const requiresSeparateAudio = requestedPlatform === "youtube" || requestedPlatform === "bilibili";
+  const requiresSeparateAudio = requestedPlatform === "bilibili";
   const muxed = requiresSeparateAudio ? videos.find(hasEmbeddedAudio) : videos[0];
   const selectedVideo = muxed || videos[0];
   const selectedAudio = !muxed && requiresSeparateAudio

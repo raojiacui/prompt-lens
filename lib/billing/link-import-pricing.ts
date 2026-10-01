@@ -1,0 +1,2 @@
+export const LINK_IMPORT_CREDITS = 10;
+export const LINK_IMPORT_PRICING_VERSION = "2026-09-27-v1";

@@ -32,8 +32,8 @@ describe("admin overview analytics", () => {
       { id: randomUUID(), email: "older@example.com", name: "Older", createdAt: old },
     ]).returning();
     await testDb.insert(schema.paymentOrders).values([
-      { userId: buyer.id, provider: "xunhupay", providerOrderId: "paid-1", packageId: "v6_trial_200", packageName: "Starter", credits: 200, amountCents: 1990, currency: "cny", status: "paid", paidAt: now },
-      { userId: recent.id, provider: "xunhupay", providerOrderId: "pending-1", packageId: "v6_trial_200", packageName: "Starter", credits: 200, amountCents: 1990, currency: "cny", status: "pending" },
+      { userId: buyer.id, provider: "alipay", providerOrderId: "paid-1", packageId: "v6_trial_200", packageName: "Starter", credits: 200, amountCents: 1990, currency: "cny", status: "paid", paidAt: now },
+      { userId: recent.id, provider: "alipay", providerOrderId: "pending-1", packageId: "v6_trial_200", packageName: "Starter", credits: 200, amountCents: 1990, currency: "cny", status: "pending" },
     ]);
     const today = now.toISOString().slice(0, 10);
     const yesterdayKey = yesterday.toISOString().slice(0, 10);

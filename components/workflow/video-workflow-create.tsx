@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { AnalysisQuoteDialog } from "@/components/payments/analysis-quote-dialog";
+import { LINK_IMPORT_CREDITS } from "@/lib/billing/link-import-pricing";
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
@@ -51,7 +52,7 @@ type AnalysisProgressState = {
   detail: string;
 };
 type MediaInputMode = "upload" | "link";
-type LinkedMediaPlatform = "youtube" | "tiktok" | "douyin" | "x" | "bilibili";
+type LinkedMediaPlatform = "tiktok" | "douyin" | "bilibili";
 type PreparedMedia = {
   url: string;
   filename: string;
@@ -84,20 +85,16 @@ type CreditStatus = {
 const MAX_ANALYSIS_VIDEO_SECONDS = 10;
 const VIDEO_DURATION_TOLERANCE_SECONDS = 0.75;
 const linkedPlatformLabels: Record<LinkedMediaPlatform, string> = {
-  youtube: "YouTube",
   tiktok: "TikTok",
   douyin: "抖音",
-  x: "X",
   bilibili: "Bilibili",
 };
 
 function detectLinkedPlatform(value: string): LinkedMediaPlatform | null {
   try {
     const hostname = new URL(value.trim()).hostname.toLowerCase();
-    if (hostname === "youtu.be" || hostname === "youtube.com" || hostname.endsWith(".youtube.com")) return "youtube";
     if (hostname === "tiktok.com" || hostname.endsWith(".tiktok.com")) return "tiktok";
     if (["douyin.com", "iesdouyin.com", "amemv.com"].some((host) => hostname === host || hostname.endsWith(`.${host}`))) return "douyin";
-    if (["x.com", "twitter.com"].some((host) => hostname === host || hostname.endsWith(`.${host}`))) return "x";
     if (["bilibili.com", "b23.tv"].some((host) => hostname === host || hostname.endsWith(`.${host}`))) return "bilibili";
   } catch {}
   return null;
@@ -348,6 +345,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [mediaInputMode, setMediaInputMode] = useState<MediaInputMode>("upload");
   const [sourceUrl, setSourceUrl] = useState("");
+  const linkImportRequestRef = useRef<{ url: string; id: string } | null>(null);
   const [preview, setPreview] = useState("");
   const [mediaType, setMediaType] = useState<"video" | "image" | null>(null);
   const [mediaDuration, setMediaDuration] = useState<number | null>(null);
@@ -594,11 +592,17 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }
 
   async function resolveLinkedMedia(): Promise<PreparedMedia> {
+    const url = sourceUrl.trim();
+    if (linkImportRequestRef.current?.url !== url) linkImportRequestRef.current = { url, id: crypto.randomUUID() };
     const response = await fetch("/api/media/resolve-link", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: sourceUrl.trim() }),
+      body: JSON.stringify({ url, requestId: linkImportRequestRef.current.id }),
     });
+    if (!response.ok) {
+      const failure = await response.clone().json().catch(() => null);
+      if (failure?.code === "LINK_IMPORT_RETRY_NEW_REQUEST" || failure?.code === "LINK_IMPORT_FAILED" || failure?.code === "LINK_RESOLVER_NOT_CONFIGURED") linkImportRequestRef.current = null;
+    }
     const data = await readJsonResponse(response, locale === "en" ? "Link resolution failed" : "视频链接解析失败");
     return {
       url: data.mediaUrl,
@@ -627,6 +631,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     });
     try {
       const latestStatus = await loadCreditStatus() || creditStatus;
+      if (isLinkedMedia && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.commercial?.credits ?? 0) < LINK_IMPORT_CREDITS)) {
+        throw new Error(locale === "en" ? `Importing a video link requires ${LINK_IMPORT_CREDITS} credits. Please top up first.` : `导入视频链接需 ${LINK_IMPORT_CREDITS} 积分，请先充值。`);
+      }
       if (selectedMediaType === "image" && latestStatus?.mode === "trial" && (latestStatus.trial.remaining || 0) <= 0) {
         throw new Error(locale === "zh" ? "两次免费试用已用完，请先到设置中配置自己的 KIE Key。" : "Your two free trials are used. Add your own KIE key in Settings to continue.");
       }
@@ -861,16 +868,16 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                     id="workflow-video-link"
                     type="url"
                     value={sourceUrl}
-                    onChange={(event) => { setSourceUrl(event.target.value); setError(""); }}
+                    onChange={(event) => { setSourceUrl(event.target.value); linkImportRequestRef.current = null; setError(""); }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && linkedPlatform && !loading) void startBreakdown();
                     }}
-                    placeholder="https://www.youtube.com/watch?v=..."
+                    placeholder="https://v.douyin.com/..."
                     disabled={loading}
                     className="h-11 w-full rounded-lg border border-border bg-background pl-10 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring"
                   />
                   {sourceUrl ? (
-                    <button type="button" onClick={() => setSourceUrl("")} aria-label={locale === "en" ? "Clear link" : "清空链接"} className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground">
+                    <button type="button" onClick={() => { setSourceUrl(""); linkImportRequestRef.current = null; }} aria-label={locale === "en" ? "Clear link" : "清空链接"} className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground">
                       <X className="h-4 w-4" />
                     </button>
                   ) : null}
@@ -881,8 +888,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                   ) : sourceUrl.trim() ? (
                     <span className="text-destructive">{locale === "en" ? "Paste a supported public video link." : "请粘贴受支持平台的公开视频链接。"}</span>
                   ) : null}
-                  <span className="text-muted-foreground">YouTube · TikTok · X · 抖音 · Bilibili</span>
+                  <span className="text-muted-foreground">TikTok · 抖音 · Bilibili</span>
                 </div>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{locale === "en" ? `Successful import costs ${LINK_IMPORT_CREDITS} credits; failed imports are not charged. Analysis is quoted separately.` : `导入成功扣 ${LINK_IMPORT_CREDITS} 积分，导入失败不扣；视频分析另行报价。`}</p>
               </div>
             )}
           </div>
@@ -908,7 +916,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
             className="mt-4 flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5" />}
-            {loading ? (locale === "en" ? "Preparing..." : "正在处理...") : mediaInputMode === "upload" && mediaType === "image" ? (locale === "en" ? "Analyze image" : "分析图片") : (locale === "en" ? "Analyze video" : "分析视频")}
+            {loading ? (locale === "en" ? "Preparing..." : "正在处理...") : mediaInputMode === "link" ? (locale === "en" ? `Import video · ${LINK_IMPORT_CREDITS} credits` : `导入视频 · ${LINK_IMPORT_CREDITS} 积分`) : mediaType === "image" ? (locale === "en" ? "Analyze image" : "分析图片") : (locale === "en" ? "Analyze video" : "分析视频")}
           </button>
 
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}

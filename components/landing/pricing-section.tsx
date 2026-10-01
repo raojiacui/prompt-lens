@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { Check } from "lucide-react";
 import { COMMERCIAL_PACKAGES } from "@/lib/billing/pricing-v6";
+import { LINK_IMPORT_CREDITS } from "@/lib/billing/link-import-pricing";
 import { AlipayCheckoutDialog } from "@/components/payments/alipay-checkout-dialog";
 import { useSession } from "@/lib/auth/auth-client";
 
@@ -42,6 +43,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
               <ul className="my-6 space-y-3 text-sm text-[var(--color-text-secondary)]">
                 {[
                   zh ? "自动拆镜与视频分析，按用量扣积分" : "Automatic shot splitting and video analysis, billed by usage",
+                  zh ? `抖音、TikTok、B站链接导入成功扣 ${LINK_IMPORT_CREDITS} 积分` : `Douyin, TikTok and Bilibili link imports cost ${LINK_IMPORT_CREDITS} credits on success`,
                   zh ? "已核价视频生成模型，生成前确认费用" : "Priced video models, with a quote before generation",
                   zh ? `含 ${pack.rewrites} 次 AI 脚本改写，不另扣积分` : `${pack.rewrites} included AI rewrites, no extra credits`,
                   zh ? "自带 Key 也可用积分购买拆镜服务" : "Use credits for shot splitting alongside your own API key",
@@ -67,7 +69,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
           </div>
           <div>
             <h3 className="font-semibold">{zh ? "费用清楚，再开始" : "Know the cost before you start"}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{zh ? "拆镜每 6 秒 1 积分，不足 6 秒按 1 积分计；30 秒 5 积分，60 秒 10 积分。分析与生成另行报价，确认后才预留积分。" : "Shot splitting costs 1 credit per started 6 seconds: 5 credits for 30 seconds, 10 for 60. Analysis and generation are quoted separately; credits are reserved after confirmation."}</p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{zh ? `链接导入成功扣 ${LINK_IMPORT_CREDITS} 积分，失败不扣；与拆镜、分析费用分开。拆镜每 6 秒 1 积分，不足 6 秒按 1 积分计；30 秒 5 积分，60 秒 10 积分。分析与生成另行报价，确认后才预留积分。` : `Successful link imports cost ${LINK_IMPORT_CREDITS} credits; failed imports are free. This is separate from splitting and analysis. Shot splitting costs 1 credit per started 6 seconds: 5 credits for 30 seconds, 10 for 60. Analysis and generation are quoted separately.`}</p>
           </div>
         </div>
       </div>

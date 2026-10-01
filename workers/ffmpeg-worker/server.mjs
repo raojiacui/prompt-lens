@@ -98,8 +98,18 @@ function run(command, args, options = {}) {
   });
 }
 
-async function download(url, target, maxBytes = Number.POSITIVE_INFINITY) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(10 * 60 * 1000) });
+function mediaHeaders(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const headers = {};
+  for (const [name, raw] of Object.entries(value)) {
+    if (!["referer", "origin", "user-agent"].includes(name.toLowerCase())) continue;
+    if (typeof raw === "string" && raw.length <= 2048 && !/[\r\n]/.test(raw)) headers[name] = raw;
+  }
+  return headers;
+}
+
+async function download(url, target, maxBytes = Number.POSITIVE_INFINITY, headers) {
+  const response = await fetch(url, { headers: mediaHeaders(headers), signal: AbortSignal.timeout(10 * 60 * 1000) });
   if (!response.ok || !response.body) throw new Error(`Download failed: ${response.status}`);
   let bytes = 0;
   const limiter = new Transform({ transform(chunk, _encoding, callback) {
@@ -131,16 +141,16 @@ function parseRemoteMediaUrl(url) {
   return parsed;
 }
 
-async function ingestMediaToLocalFile({ videoUrl, audioUrl }, workDir) {
+async function ingestMediaToLocalFile({ videoUrl, audioUrl, videoHeaders, audioHeaders }, workDir) {
   parseRemoteMediaUrl(videoUrl);
   if (audioUrl) parseRemoteMediaUrl(audioUrl);
   const downloadedVideoPath = path.join(workDir, "source-video");
-  await download(videoUrl, downloadedVideoPath, MAX_RESOLVE_BYTES);
+  await download(videoUrl, downloadedVideoPath, MAX_RESOLVE_BYTES, videoHeaders);
   let inputPath = downloadedVideoPath;
   if (audioUrl) {
     const audioPath = path.join(workDir, "source-audio");
     const muxedPath = path.join(workDir, "resolved-video.mp4");
-    await download(audioUrl, audioPath, MAX_RESOLVE_BYTES);
+    await download(audioUrl, audioPath, MAX_RESOLVE_BYTES, audioHeaders);
     await run(FFMPEG_PATH, [
       "-y", "-hide_banner",
       "-i", downloadedVideoPath,
@@ -391,7 +401,7 @@ async function handleIngestMedia(req, res) {
   assertAuth(req);
   requireEnv();
   const body = await readJson(req);
-  const supportedPlatforms = ["youtube", "tiktok", "douyin", "x", "bilibili"];
+  const supportedPlatforms = ["tiktok", "douyin", "bilibili"];
   if (!body.videoUrl || typeof body.videoUrl !== "string") {
     return json(res, 400, { error: "Missing videoUrl" });
   }

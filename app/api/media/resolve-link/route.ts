@@ -1,15 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createHash } from "node:crypto";
+import { and, eq, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db, operationLogs } from "@/lib/db";
+import { LINK_IMPORT_CREDITS, LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
+import { reserveCommercialTask, settleCommercialTaskInTransaction, settleCommercialTask } from "@/lib/billing/commercial-wallet";
 import { ingestLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
-import { resolveLinkedMediaWithLeaperOne } from "@/lib/media-resolver/leaperone";
+import { resolveLinkedMedia } from "@/lib/media-resolver";
+import { sourcePlatform } from "@/lib/media-resolver/leaperone";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
 function statusForError(message: string) {
-  if (message.includes("仅支持") || message.includes("格式无效")) return 400;
+  if (message.includes("仅支持") || message.includes("暂不支持") || message.includes("格式无效")) return 400;
   if (message.includes("未配置")) return 503;
   return 502;
 }
@@ -28,42 +33,95 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => null);
   const url = typeof body?.url === "string" ? body.url.trim() : "";
+  const requestId = typeof body?.requestId === "string" ? body.requestId : "";
   if (!url) return NextResponse.json({ error: "请粘贴视频链接。" }, { status: 400 });
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
+    return NextResponse.json({ error: "请求标识无效，请刷新后重试。" }, { status: 400 });
+  }
+  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED !== "true") {
+    return NextResponse.json({ error: "视频链接导入暂未开放。" }, { status: 503 });
+  }
 
   try {
-    const source = await resolveLinkedMediaWithLeaperOne(url);
-    const stored = await ingestLinkedMediaWithWorker(source);
-    const duration = stored.metadata.duration ?? source.duration;
+    sourcePlatform(url);
+    const taskKey = `link-import:${requestId}`;
+    const quote = {
+      kind: "link_import",
+      pricingVersion: LINK_IMPORT_PRICING_VERSION,
+      urlHash: createHash("sha256").update(url).digest("hex"),
+    };
+    const { reservation, created } = await reserveCommercialTask({
+      userId: session.user.id, taskKey, credits: LINK_IMPORT_CREDITS, rewrites: 0, quote,
+    });
+    if (!created) {
+      if (reservation.state === "held") {
+        return NextResponse.json({ code: "LINK_IMPORT_PENDING", error: "这次导入仍在处理中，请稍后查看，避免重复扣费。" }, { status: 409 });
+      }
+      const [previous] = await db.select().from(operationLogs).where(and(
+        eq(operationLogs.userId, session.user.id),
+        sql`${operationLogs.metadata}->>'linkImportRequestId' = ${requestId}`,
+      ));
+      const result = (previous?.metadata as Record<string, unknown> | undefined)?.linkImportResult;
+      if (reservation.settledCredits === LINK_IMPORT_CREDITS && result) return NextResponse.json(result);
+      if (reservation.settledCredits === LINK_IMPORT_CREDITS) {
+        return NextResponse.json({ code: "LINK_IMPORT_REVIEW", error: "这次导入已扣费但结果暂不可读取，请联系客服核对，勿重复导入。" }, { status: 409 });
+      }
+      return NextResponse.json({ code: "LINK_IMPORT_RETRY_NEW_REQUEST", error: "此前导入未完成且未扣费，请重新发起。" }, { status: 409 });
+    }
 
-    await db.insert(operationLogs).values({
-      userId: session.user.id,
-      action: "file.upload",
-      resourceType: "video",
-      metadata: {
-        phase: "server-upload",
-        filename: stored.filename || source.filename,
-        url: stored.mediaUrl,
+    let result: Record<string, unknown>;
+    try {
+      const source = await resolveLinkedMedia(url);
+      const stored = await ingestLinkedMediaWithWorker(source);
+      const duration = stored.metadata.duration ?? source.duration;
+      result = {
+        mediaUrl: stored.mediaUrl,
         storageKey: stored.storageKey,
-        storage: "r2",
-        source: "linked-media",
-        sourcePlatform: source.platform,
-        sourceUrl: url,
+        mediaType: "video",
+        platform: source.platform,
+        filename: stored.filename || source.filename,
+        title: source.title,
         duration,
-      },
-    });
+        metadata: stored.metadata,
+        chargedCredits: LINK_IMPORT_CREDITS,
+      };
+    } catch (error) {
+      // A confirmed failure delivers no media, so return the hold. Unknown settlement failures stay held.
+      await settleCommercialTask({ userId: session.user.id, taskKey, credits: 0, rewrites: 0 });
+      const message = error instanceof Error ? error.message : "视频链接解析失败";
+      if (message.includes("未配置")) {
+        return NextResponse.json({ code: "LINK_RESOLVER_NOT_CONFIGURED", error: "视频链接解析服务尚未启用。" }, { status: 503 });
+      }
+      return NextResponse.json({ code: "LINK_IMPORT_FAILED", error: message }, { status: statusForError(message) });
+    }
 
-    return NextResponse.json({
-      mediaUrl: stored.mediaUrl,
-      storageKey: stored.storageKey,
-      mediaType: "video",
-      platform: source.platform,
-      filename: stored.filename || source.filename,
-      title: source.title,
-      duration,
-      metadata: stored.metadata,
+    await db.transaction(async (tx) => {
+      await tx.insert(operationLogs).values({
+        userId: session.user.id,
+        action: "file.upload",
+        resourceType: "video",
+        metadata: {
+          phase: "server-upload",
+          filename: result.filename,
+          url: result.mediaUrl,
+          storageKey: result.storageKey,
+          storage: "r2",
+          source: "linked-media",
+          sourcePlatform: result.platform,
+          sourceUrl: url,
+          duration: result.duration,
+          linkImportRequestId: requestId,
+          linkImportResult: result,
+        },
+      });
+      await settleCommercialTaskInTransaction(tx, { userId: session.user.id, taskKey, credits: LINK_IMPORT_CREDITS, rewrites: 0 });
     });
+    return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "视频链接解析失败";
+    if (message === "INSUFFICIENT_COMMERCIAL_BALANCE") return NextResponse.json({ code: "INSUFFICIENT_COMMERCIAL_BALANCE", error: `余额不足，导入视频链接需 ${LINK_IMPORT_CREDITS} 积分。` }, { status: 402 });
+    if (message === "COMMERCIAL_WALLET_UNDER_REVIEW") return NextResponse.json({ error: "账户余额暂不可用，请联系客服。" }, { status: 403 });
+    if (message === "Task quote replay mismatch") return NextResponse.json({ error: "请求标识已用于其他视频链接，请刷新后重试。" }, { status: 409 });
     if (message.includes("未配置")) {
       return NextResponse.json({ code: "LINK_RESOLVER_NOT_CONFIGURED", error: "视频链接解析服务尚未启用。" }, { status: 503 });
     }

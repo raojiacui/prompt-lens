@@ -8,7 +8,7 @@ afterEach(() => {
 });
 
 describe("LEAPERone linked media resolver", () => {
-  it("prefers a muxed MP4 for YouTube", () => {
+  it("prefers a muxed MP4 for Bilibili", () => {
     const result = selectLeaperMedia({
       data: {
         videos: [
@@ -17,9 +17,9 @@ describe("LEAPERone linked media resolver", () => {
         ],
         audios: [{ url: "https://cdn.example/audio.m4a", format: "m4a" }],
       },
-    }, "youtube");
+    }, "bilibili");
 
-    expect(result).toMatchObject({ platform: "youtube", videoUrl: "https://cdn.example/video-360.mp4" });
+    expect(result).toMatchObject({ platform: "bilibili", videoUrl: "https://cdn.example/video-360.mp4" });
     expect(result.audioUrl).toBeUndefined();
   });
 
@@ -62,6 +62,15 @@ describe("LEAPERone linked media resolver", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(resolveLinkedMediaWithLeaperOne("https://example.com/video.mp4")).rejects.toThrow("目前仅支持");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects YouTube before calling the provider", async () => {
+    process.env.LEAPERONE_API_KEY = "test-key";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(resolveLinkedMediaWithLeaperOne("https://youtu.be/MEoxtFRfPoc")).rejects.toThrow("暂不支持 YouTube");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

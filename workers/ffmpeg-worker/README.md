@@ -44,13 +44,11 @@ Response:
 ```
 
 
-`/ingest-media` receives media URLs already resolved by the app's LEAPERone provider, downloads them, optionally merges a separate audio stream, uploads the resulting MP4 to R2, and returns the stored media URL for the analysis flow.
+`/ingest-media` receives media URLs already resolved by the app's video-link provider, downloads them, optionally merges a separate audio stream, uploads the resulting MP4 to R2, and returns the stored media URL for the analysis flow. It accepts optional `videoHeaders` and `audioHeaders` for public media-host headers such as `Referer`.
 
 Supported pasted-link platforms:
 
-- YouTube
 - TikTok
-- X / Twitter
 - Douyin
 - Bilibili
 
@@ -58,10 +56,10 @@ Request:
 
 ```json
 {
-  "platform": "youtube",
+  "platform": "bilibili",
   "videoUrl": "https://temporary-provider-video-url",
   "audioUrl": "https://optional-separate-audio-url",
-  "filename": "youtube-linked-video.mp4"
+  "filename": "bilibili-linked-video.mp4"
 }
 ```
 
@@ -69,12 +67,12 @@ Response:
 
 ```json
 {
-  "mediaUrl": "https://.../linked-media/youtube/<id>.mp4",
-  "storageKey": "linked-media/youtube/<id>.mp4",
+  "mediaUrl": "https://.../linked-media/bilibili/<id>.mp4",
+  "storageKey": "linked-media/bilibili/<id>.mp4",
   "mediaType": "video",
-  "platform": "youtube",
+  "platform": "bilibili",
   "metadata": { "duration": 9.2, "width": 1080, "height": 1920, "fps": 30, "hasAudio": true },
-  "filename": "youtube-linked-video.mp4"
+  "filename": "bilibili-linked-video.mp4"
 }
 ```
 ## Environment
@@ -114,4 +112,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-w
 
 The script loads .env.local, derives R2_ENDPOINT from R2_ACCOUNT_ID when needed, and serves http://localhost:8080.
 
-The Dockerfile installs `scenedetect-headless` for `/breakdown`. Social-platform extraction is handled by LEAPERone in the main app; this worker never receives the LEAPERone API key.
+The Dockerfile installs `scenedetect-headless` for `/breakdown`. Social-platform extraction is handled by the configured provider in the main app; this worker never receives the provider API key.

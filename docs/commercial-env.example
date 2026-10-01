@@ -1,8 +1,13 @@
 # Server-only template. Do not paste secrets into chat or commit configured copies.
 # Existing database/auth/R2 variables are still required.
 NEXT_PUBLIC_SITE_URL=https://your-domain.example
-XUNHUPAY_ALIPAY_APP_ID=
-XUNHUPAY_ALIPAY_APP_SECRET=
+ALIPAY_APP_ID=
+ALIPAY_PRIVATE_KEY=
+ALIPAY_PUBLIC_KEY=
+ALIPAY_SELLER_ID=
+ALIPAY_SANDBOX=false
+ALIPAY_GATEWAY=https://openapi.alipay.com/gateway.do
+ALIPAY_NOTIFY_URL=https://your-domain.example/api/payments/webhooks/alipay
 KIE_API_KEY=
 FFMPEG_WORKER_URL=
 FFMPEG_WORKER_SECRET=

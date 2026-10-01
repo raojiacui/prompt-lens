@@ -4,7 +4,6 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { apiRateLimits, db, paymentOrders, commercialTasks } from "@/lib/db";
 import { expireTrialReservations } from "@/lib/usage/trial-quota";
 import { recoverAnalysisTasks, runAnalysisTask } from "@/lib/workflow/analysis-tasks";
-import { reconcilePaymentOrder } from "@/lib/payments/xunhupay-reconciliation";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 import { commercialConsumptionEnabled, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { runCommercialTask } from "@/lib/billing/commercial-task-runner";
@@ -20,10 +19,10 @@ export async function GET(request: NextRequest) {
   await recoverCommercialAnalysisTasks();
   await expireTrialReservations();
   await db.delete(apiRateLimits).where(sql`${apiRateLimits.resetAt} < now() - interval '1 day'`);
-  const orders = await db.select({ id: paymentOrders.id, provider: paymentOrders.provider }).from(paymentOrders).where(and(sql`${paymentOrders.provider} IN ('xunhupay', 'alipay')`, eq(paymentOrders.status, "pending"), sql`${paymentOrders.createdAt} > now() - interval '24 hours'`)).orderBy(sql`COALESCE((${paymentOrders.metadata}->>'queryAfter')::bigint, 0)`, asc(paymentOrders.createdAt)).limit(3);
+  const orders = await db.select({ id: paymentOrders.id }).from(paymentOrders).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"), sql`${paymentOrders.createdAt} > now() - interval '24 hours'`)).orderBy(sql`COALESCE((${paymentOrders.metadata}->>'queryAfter')::bigint, 0)`, asc(paymentOrders.createdAt)).limit(3);
   let checked = 0;
-  for (const order of orders) { try { if (order.provider === "alipay") await reconcileAlipayOrder(order.id); else await reconcilePaymentOrder(order.id); checked++; } catch { /* Keep uncertain orders pending for the next run. */ } }
-  await db.update(paymentOrders).set({ metadata: sql`${paymentOrders.metadata} || '{"reconciliation":"manual_review"}'::jsonb` }).where(and(sql`${paymentOrders.provider} IN ('xunhupay', 'alipay')`, eq(paymentOrders.status, "pending"), sql`${paymentOrders.createdAt} < now() - interval '24 hours'`));
+  for (const order of orders) { try { await reconcileAlipayOrder(order.id); checked++; } catch { /* Keep uncertain orders pending for the next run. */ } }
+  await db.update(paymentOrders).set({ metadata: sql`${paymentOrders.metadata} || '{"reconciliation":"manual_review"}'::jsonb` }).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"), sql`${paymentOrders.createdAt} < now() - interval '24 hours'`));
   if (commercialConsumptionEnabled()) {
     const generation = await db.select({ id: commercialTasks.id }).from(commercialTasks).where(and(eq(commercialTasks.kind, "generation"), eq(commercialTasks.state, "running"))).orderBy(sql`COALESCE((${commercialTasks.result}->>'queryAfter')::bigint, 0)`, asc(commercialTasks.updatedAt)).limit(3);
     for (const task of generation) { try { await reconcileCommercialGeneration(task.id); } catch { /* Leave an uncertain provider result reserved. */ } }
