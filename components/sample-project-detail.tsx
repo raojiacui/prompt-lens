@@ -9,6 +9,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
+import { VideoOverview } from "@/components/workflow/video-overview";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown> };
@@ -192,17 +193,7 @@ function ProjectBundleView({
         ) : null}
       </section>
 
-      <section className="rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-5 shadow-sm">
-        <h2 className="font-semibold">Whole Video Overview</h2>
-        <div className="mt-3 grid gap-2 text-sm text-[var(--color-text-secondary)] md:grid-cols-2">
-          {Object.entries(bundle.activeVersion?.overview || {}).map(([key, value]) => (
-            <p key={key}>
-              <span className="font-medium text-[var(--color-text-primary)]">{key}: </span>
-              {textValue(value)}
-            </p>
-          ))}
-        </div>
-      </section>
+      <VideoOverview overview={bundle.activeVersion?.overview || {}} scenes={bundle.sceneVersions} image={mediaType === "image"} />
 
       <div className="grid gap-4">
         {bundle.sceneVersions.map((latestSceneVersion) => {
@@ -315,28 +306,6 @@ function formatTime(seconds: number) {
   return `${mins}:${secs.toString().padStart(2, "0")}${tenths ? `.${tenths}` : ""}`;
 }
 
-function textValue(value: unknown) {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => {
-        if (typeof item === "string") return item;
-        if (typeof item !== "object" || item === null) return String(item);
-        const record = item as Record<string, unknown>;
-        const time = typeof record.start === "number" || typeof record.end === "number" ? `[${formatTime(Number(record.start || 0))}-${formatTime(Number(record.end || 0))}] ` : "";
-        const speaker = record.speaker ? `${record.speaker}: ` : "";
-        return `${time}${speaker}${record.text || record.summary || record.role || ""}`.trim();
-      })
-      .filter(Boolean)
-      .join("\n");
-  }
-  if (typeof value === "object") {
-    const obj = value as Record<string, unknown>;
-    return String(obj.summary || obj.transcriptSummary || obj.ambience || obj.music || obj.role || obj.action || obj.beat || JSON.stringify(obj));
-  }
-  return String(value);
-}
 
 
 function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {

@@ -10,9 +10,9 @@ for (const width of [1440, 390]) {
       } } });
     });
     const project = { id: "project-1", title: "Prompt integration preview", status: "ready", updatedAt: new Date().toISOString(), activeVersionId: "version-1" };
-    const version = { id: "version-1", label: "Original", versionNumber: 1, kind: "original", overview: {} };
-    const scene = { id: "scene-version-1", projectVersionId: version.id, originalSceneId: "scene-1", sceneIndex: 1, story: {},
-      visual: { characters: "黑色西装与白衬衫", camera: "低机位广角跟拍", lighting: "清晨逆光", environment: "云海与雕花栏杆" },
+    const version = { id: "version-1", label: "Original", versionNumber: 1, kind: "original", overview: { narrative: "The video is prepared as 8 editable scene blueprint units.", metadata: { analysisModel: "internal-model" } } };
+    const scene = { id: "scene-version-1", projectVersionId: version.id, originalSceneId: "scene-1", sceneIndex: 1, story: { summary: "男子沿云海边的长廊缓步前行。" },
+      visual: { characters: "黑色西装与白衬衫", camera: "低机位广角跟拍", lighting: "清晨逆光", environment: "云海与雕花栏杆", style: "电影感写实风格" },
       dialogue: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "男子走过长廊。", duration: 2 };
     await page.route("**/api/**", async route => {
       const path = new URL(route.request().url()).pathname;
@@ -29,6 +29,10 @@ for (const width of [1440, 390]) {
     await expect(page.locator("#features video")).toHaveCount(3);
     await page.goto("/dashboard?tab=analyze");
     await page.getByRole("button", { name: /Prompt integration preview/ }).click();
+    await expect(page.getByRole("heading", { name: "整片解读" })).toBeVisible();
+    await expect(page.getByText("男子沿云海边的长廊缓步前行。", { exact: true })).toBeVisible();
+    await expect(page.getByText("Whole Video Overview", { exact: true })).toHaveCount(0);
+    await expect(page.getByText(/editable scene blueprint units|internal-model/)).toHaveCount(0);
     const prompt = page.getByLabel("完整复刻提示词", { exact: true });
     const original = await prompt.inputValue();
     for (const value of Object.values(scene.visual)) expect(original).toContain(value);

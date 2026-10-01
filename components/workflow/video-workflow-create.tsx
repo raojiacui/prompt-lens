@@ -7,6 +7,7 @@ import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
+import { VideoOverview } from "@/components/workflow/video-overview";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -194,38 +195,6 @@ function formatTime(seconds: number) {
   return `${mins}:${secs.toString().padStart(2, "0")}${tenths ? `.${tenths}` : ""}`;
 }
 
-function textValue(value: unknown) {
-  if (!value) return "";
-  if (typeof value === "string") return value;
-  if (Array.isArray(value)) {
-    return value
-      .map((item) => {
-        if (typeof item === "string") return item;
-        if (typeof item !== "object" || item === null) return String(item);
-        const record = item as Record<string, unknown>;
-        const time = typeof record.start === "number" || typeof record.end === "number" ? `[${formatTime(Number(record.start || 0))}-${formatTime(Number(record.end || 0))}] ` : "";
-        const speaker = record.speaker ? `${record.speaker}: ` : "";
-        return `${time}${speaker}${record.text || record.summary || record.role || ""}`.trim();
-      })
-      .filter(Boolean)
-      .join("\n");
-  }
-  if (typeof value === "object") {
-    const obj = value as Record<string, unknown>;
-    const recognizedBgm = obj.recognizedBgm && typeof obj.recognizedBgm === "object" ? obj.recognizedBgm as Record<string, unknown> : null;
-    if (recognizedBgm) {
-      const title = typeof recognizedBgm.title === "string" ? recognizedBgm.title : "";
-      const artist = typeof recognizedBgm.artist === "string" ? recognizedBgm.artist : "";
-      const status = typeof recognizedBgm.status === "string" ? recognizedBgm.status : "";
-      const song = [title, artist].filter(Boolean).join(" - ");
-      const link = typeof recognizedBgm.songLink === "string" ? recognizedBgm.songLink : typeof recognizedBgm.spotifyUrl === "string" ? recognizedBgm.spotifyUrl : typeof recognizedBgm.appleMusicUrl === "string" ? recognizedBgm.appleMusicUrl : "";
-      const summary = typeof obj.recognizedBgmSummary === "string" ? obj.recognizedBgmSummary : "";
-      return [song || summary || `BGM recognition: ${status}`, link].filter(Boolean).join("\n");
-    }
-    return String(obj.summary || obj.transcriptSummary || obj.ambience || obj.music || obj.role || obj.action || obj.beat || JSON.stringify(obj));
-  }
-  return String(value);
-}
 
 
 function getVideoDuration(file: File) {
@@ -975,14 +944,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
               </div>
 
-              <div className="rounded-xl border border-border bg-background p-4">
-                <h3 className="font-semibold">Whole Video Overview</h3>
-                <div className="mt-3 grid max-h-64 gap-2 overflow-y-auto pr-2 text-sm text-muted-foreground md:grid-cols-2">
-                  {Object.entries(bundle.activeVersion?.overview || {}).map(([key, value]) => (
-                    <p key={key}><span className="font-medium text-foreground">{key}: </span>{textValue(value)}</p>
-                  ))}
-                </div>
-              </div>
+              <VideoOverview overview={bundle.activeVersion?.overview || {}} scenes={bundle.sceneVersions} image={projectMediaType === "image"} />
 
               <div className="grid gap-4">
                 {bundle.sceneVersions.map((latestSceneVersion) => {
