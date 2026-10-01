@@ -5,6 +5,7 @@ import { Activity, AlertTriangle, CreditCard, LogIn, RefreshCw, UploadCloud, Use
 import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
+import { AdminUserDirectory } from "@/components/admin-user-directory";
 
 function formatNumber(value: number, locale: string) {
   return new Intl.NumberFormat(locale).format(value || 0);
@@ -20,10 +21,6 @@ function formatBytes(value: number) {
     index += 1;
   }
   return `${size.toFixed(index === 0 ? 0 : 1)} ${units[index]}`;
-}
-
-function formatCurrencyCny(amountCents: number, locale: string) {
-  return new Intl.NumberFormat(locale, { style: "currency", currency: "CNY" }).format((amountCents || 0) / 100);
 }
 
 type AdminOverview = {
@@ -125,7 +122,7 @@ export function AdminOverviewPanel() {
     activeRequest.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), 20_000);
     try {
-      const response = await fetch("/api/admin/overview?days=14", { cache: "no-store", signal: controller.signal });
+      const response = await fetch("/api/admin/overview?days=14&summary=1", { cache: "no-store", signal: controller.signal });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || (zh ? "后台统计加载失败" : "Failed to load admin analytics"));
       if (activeRequest.current === controller && !controller.signal.aborted) setData(payload as AdminOverview);
@@ -210,30 +207,7 @@ export function AdminOverviewPanel() {
         </div>
       </Section>
 
-      <Section title={copy.paidTitle} note={copy.paidNote}>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="text-xs text-[var(--color-text-muted)]"><tr className="border-b border-[var(--color-border-default)]"><th className="py-2 pr-4">{copy.user}</th><th className="py-2 pr-4">{copy.package}</th><th className="py-2 pr-4">{copy.orders}</th><th className="py-2 pr-4">{copy.paidTotal}</th><th className="py-2">{copy.lastPaid}</th></tr></thead>
-            <tbody>
-              {data.purchasedUsers.map((item) => <tr key={item.userId} className="border-b border-[var(--color-border-default)]/70"><td className="py-3 pr-4"><p className="font-medium text-[var(--color-text-primary)]">{item.name || item.email}</p><p className="text-xs text-[var(--color-text-muted)]">{item.email}</p></td><td className="py-3 pr-4 text-[var(--color-text-secondary)]">{item.latestPackageName}</td><td className="py-3 pr-4">{formatNumber(item.orderCount, numberLocale)}</td><td className="py-3 pr-4 font-semibold text-[#D97757]">{formatCurrencyCny(item.totalPaidCents, numberLocale)}</td><td className="py-3 text-xs text-[var(--color-text-muted)]">{new Date(item.lastPaidAt).toLocaleString(numberLocale)}</td></tr>)}
-              {!data.purchasedUsers.length ? <tr><td colSpan={5} className="py-8 text-center text-[var(--color-text-muted)]">{copy.noPaid}</td></tr> : null}
-            </tbody>
-          </table>
-        </div>
-      </Section>
-
-      <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
-        <Section title={copy.usageTitle} note={copy.usageNote}>
-          <div className="mt-3 overflow-x-auto"><table className="w-full min-w-[780px] text-left text-sm"><thead className="text-xs text-[var(--color-text-muted)]"><tr className="border-b border-[var(--color-border-default)]"><th className="py-2 pr-3">{copy.user}</th><th className="py-2 pr-3">{copy.uploads}</th><th className="py-2 pr-3">{copy.storage}</th><th className="py-2 pr-3">{copy.credits}</th><th className="py-2 pr-3">{copy.analyses}</th><th className="py-2 pr-3">{copy.generations}</th><th className="py-2">{copy.lastSeen}</th></tr></thead><tbody>
-            {data.topUsers.map((item) => <tr key={item.userId} className="border-b border-[var(--color-border-default)]/70"><td className="py-3 pr-3"><p className="font-medium text-[var(--color-text-primary)]">{item.name || item.email}</p><p className="max-w-48 truncate text-xs text-[var(--color-text-muted)]">{item.email}</p></td><td className="py-3 pr-3">{formatNumber(item.uploads, numberLocale)}</td><td className="py-3 pr-3">{formatBytes(item.uploadBytes)}</td><td className="py-3 pr-3 font-semibold text-[#D97757]">{formatNumber(item.creditBalance, numberLocale)}</td><td className="py-3 pr-3">{formatNumber(item.analyses, numberLocale)}</td><td className="py-3 pr-3">{formatNumber(item.generations, numberLocale)}</td><td className="py-3 text-xs text-[var(--color-text-muted)]">{new Date(item.lastSeen).toLocaleString(numberLocale)}</td></tr>)}
-            {!data.topUsers.length ? <tr><td colSpan={7} className="py-8 text-center text-[var(--color-text-muted)]">{copy.noUsage}</td></tr> : null}
-          </tbody></table></div>
-        </Section>
-
-        <Section title={copy.newTitle} note={`${copy.latest} ${data.recentUsers.length}`}>
-          <div className="mt-3 grid gap-2">{data.recentUsers.map((item) => <div key={item.id} className="rounded-lg bg-[var(--color-bg-base)] px-3 py-2 text-sm"><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className="truncate font-medium text-[var(--color-text-primary)]">{item.name || item.email}</p><p className="truncate text-xs text-[var(--color-text-secondary)]">{item.email}</p></div><span className="shrink-0 rounded-full bg-black/5 px-2 py-0.5 text-xs text-[var(--color-text-muted)]">{item.role}</span></div><p className="mt-1 text-xs text-[var(--color-text-muted)]">{new Date(item.createdAt).toLocaleString(numberLocale)}</p></div>)}</div>
-        </Section>
-      </div>
+      <AdminUserDirectory />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex items-center gap-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-4"><UploadCloud className="h-5 w-5 text-[#7C8F7A]" aria-hidden="true" /><div><p className="text-xs text-[var(--color-text-muted)]">{copy.uploads} · 14d</p><p className="font-semibold text-[var(--color-text-primary)]">{formatNumber(data.overview.uploadCount, numberLocale)} · {formatBytes(data.overview.uploadBytes)}</p></div></div>

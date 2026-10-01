@@ -39,6 +39,8 @@ const overview = {
   dataHealth: { degraded: false, unavailable: [] },
 };
 
+const users = { users: [{ id: "paid-1", email: "buyer@example.com", name: "Buyer", role: "user", banned: false, createdAt: "2026-09-16T09:00:00.000Z" }], total: 1, page: 1, limit: 20, dataHealth: { degraded: false, unavailable: [] } };
+
 for (const scenario of [{ locale: "zh", width: 1440 }, { locale: "en", width: 390 }]) {
   test(`admin overview ${scenario.locale} ${scenario.width}`, async ({ page, context }) => {
     await page.setViewportSize({ width: scenario.width, height: 1000 });
@@ -52,6 +54,8 @@ for (const scenario of [{ locale: "zh", width: 1440 }, { locale: "en", width: 39
         body = { isAdmin: true };
       } else if (path === "/api/admin/overview") {
         body = overview;
+      } else if (path === "/api/admin/users") {
+        body = users;
       } else if (path === "/api/credits/me") {
         body = { balance: 0, trial: { isAdmin: true } };
       }
@@ -76,7 +80,7 @@ for (const role of ["user", "admin"]) {
     let statisticsRequests = 0;
     await page.route("**/api/**", async route => {
       const path = new URL(route.request().url()).pathname;
-      if (path === "/api/admin/overview") statisticsRequests++;
+      if (path === "/api/admin/overview" || path === "/api/admin/users") statisticsRequests++;
       await route.fulfill({ json: path.includes("/auth/get-session")
         ? { session: { id: "other-session", token: "test", expiresAt: "2099-01-01T00:00:00.000Z" }, user: { id: "other", email: "other@example.com", name: "Other", role } }
         : path === "/api/admin/me" ? { isAdmin: true } : {} });
@@ -99,7 +103,7 @@ test("admin can retry a failed request without losing the page", async ({ page }
     }
     await route.fulfill({ json: path.includes("/auth/get-session")
       ? { session: { id: "owner-session", token: "test", expiresAt: "2099-01-01T00:00:00.000Z" }, user: { id: "owner", email: "raojiacui@gmail.com", name: "Owner", role: "user" } }
-      : path === "/api/admin/me" ? { isAdmin: true } : path === "/api/admin/overview" ? overview : {} });
+      : path === "/api/admin/me" ? { isAdmin: true } : path === "/api/admin/overview" ? overview : path === "/api/admin/users" ? users : {} });
   });
   await page.goto("/dashboard?tab=admin");
   await expect(page.getByRole("alert").filter({ hasText: "后台统计暂不可用，请重试" })).toBeVisible();

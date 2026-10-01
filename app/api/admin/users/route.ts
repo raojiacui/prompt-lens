@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminUserFromHeaders } from "@/lib/auth";
 import { db, user, operationLogs } from "@/lib/db";
-import { eq, sql } from "drizzle-orm";
-import { adminQuery } from "@/lib/admin/query";
+import { eq } from "drizzle-orm";
+import { queryUserDirectory } from "@/lib/admin/user-directory";
+import type { AdminUserView } from "@/lib/admin/user-directory-types";
 
 // GET /api/admin/users - 获取所有用户列表
 export async function GET(request: NextRequest) {
@@ -20,24 +21,13 @@ export async function GET(request: NextRequest) {
     };
     const page = bounded("page", 1, 100000);
     const limit = bounded("limit", 20, 100);
-    const offset = (page - 1) * limit;
-
-    const [userStats, total] = await Promise.all([
-      adminQuery<typeof user.$inferSelect & { analysisCount: number }>(sql`
-        with selected as (select * from "user" order by created_at desc, id desc limit ${limit} offset ${offset}),
-        analyses as (select user_id, count(*)::int as total from analysis_history where user_id in (select id from selected) group by user_id)
-        select s.id, s.email, s.name, s.image, s.role, s.email_verified as "emailVerified", s.is_anonymous as "isAnonymous",
-          s.banned, s.ban_reason as "banReason", s.ban_expires as "banExpires", s.created_at as "createdAt", s.updated_at as "updatedAt",
-          coalesce(a.total, 0) as "analysisCount" from selected s left join analyses a on a.user_id = s.id order by s.created_at desc, s.id desc`),
-      adminQuery<{ count: number }>(sql`select count(*)::int as count from "user"`),
-    ]);
-
-    return NextResponse.json({
-      users: userStats,
-      total: total[0]?.count || 0,
-      page,
-      limit,
-    }, { headers: { "Cache-Control": "private, no-store" } });
+    const view = searchParams.get("view") || "all";
+    const query = (searchParams.get("q") || "").trim();
+    if (!["all", "paid", "usage"].includes(view) || query.length > 128) {
+      return NextResponse.json({ error: "Invalid search parameters" }, { status: 400 });
+    }
+    const result = await queryUserDirectory({ view: view as AdminUserView, query, page, limit });
+    return NextResponse.json(result, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("Admin users error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

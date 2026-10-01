@@ -111,6 +111,50 @@ describe("admin overview analytics", () => {
     expect((await listUsers(new NextRequest("http://localhost/api/admin/users"))).status).toBe(403);
   });
 
+  it("loads summary totals without preview lists and keeps caches separate", async () => {
+    const summary = await (await GET(new NextRequest("http://localhost/api/admin/overview?days=14&summary=1"))).json();
+    expect(summary.overview).toMatchObject({ totalUsers: 3, purchasedUsers: 1, analysisCount: 1100 });
+    expect(summary.recentUsers).toEqual([]);
+    expect(summary.purchasedUsers).toEqual([]);
+    expect(summary.topUsers).toEqual([]);
+    const full = await (await GET(new NextRequest("http://localhost/api/admin/overview?days=14"))).json();
+    expect(full.recentUsers).toHaveLength(3);
+    expect(full.purchasedUsers).toHaveLength(1);
+  });
+
+  it("paginates all three directories without dropping users beyond old caps", async () => {
+    await client.exec(`INSERT INTO "user" (id,email,name,created_at)
+      SELECT gen_random_uuid(), 'page-'||n||'@example.com', 'Page '||n, now() + n * interval '1 second' FROM generate_series(1,65) n;
+      INSERT INTO payment_orders (user_id,provider,provider_order_id,package_id,package_name,credits,amount_cents,currency,status,paid_at)
+      SELECT id,'alipay','page-'||id,'creator','Creator',200,2000,'cny','paid',created_at FROM "user" WHERE email LIKE 'page-%';
+      INSERT INTO analysis_history SELECT id,now() FROM "user" WHERE email LIKE 'page-%';`);
+    for (const view of ["all", "paid", "usage"]) {
+      const first = await (await listUsers(new NextRequest(`http://localhost/api/admin/users?view=${view}&page=1&limit=20`))).json();
+      const second = await (await listUsers(new NextRequest(`http://localhost/api/admin/users?view=${view}&page=2&limit=20`))).json();
+      const last = await (await listUsers(new NextRequest(`http://localhost/api/admin/users?view=${view}&page=4&limit=20`))).json();
+      expect(first.total).toBe(view === "all" ? 68 : 66);
+      expect(first.users).toHaveLength(20);
+      expect(second.users).toHaveLength(20);
+      expect(last.users).toHaveLength(view === "all" ? 8 : 6);
+      const ids = new Set(first.users.map((u: { id: string }) => u.id));
+      expect(second.users.every((u: { id: string }) => !ids.has(u.id))).toBe(true);
+      const missing = await (await listUsers(new NextRequest(`http://localhost/api/admin/users?view=${view}&page=100`))).json();
+      expect(missing.users).toEqual([]);
+      expect(missing.total).toBe(first.total);
+      const found = await (await listUsers(new NextRequest(`http://localhost/api/admin/users?view=${view}&q=PAGE%2065`))).json();
+      expect(found.total).toBe(1);
+      expect(found.users[0].email).toBe("page-65@example.com");
+    }
+    const paid = await (await listUsers(new NextRequest("http://localhost/api/admin/users?view=paid&q=buyer"))).json();
+    expect(paid.users[0]).toMatchObject({ orderCount: 1002, totalPaidCents: 2003990 });
+    const literal = await (await listUsers(new NextRequest("http://localhost/api/admin/users?q=%25"))).json();
+    expect(literal.total).toBe(0);
+    expect((await listUsers(new NextRequest("http://localhost/api/admin/users?view=invalid"))).status).toBe(400);
+    await client.exec(`DELETE FROM payment_orders WHERE user_id IN (SELECT id FROM "user" WHERE email LIKE 'page-%');
+      DELETE FROM analysis_history WHERE user_id IN (SELECT id FROM "user" WHERE email LIKE 'page-%');
+      DELETE FROM "user" WHERE email LIKE 'page-%';`);
+  });
+
   it("keeps healthy metrics available when a query times out and allows retry", async () => {
     const original = adminQueries.adminQuery;
     const spy = vi.spyOn(adminQueries, "adminQuery").mockImplementation(async <T>(query: SQL): Promise<T[]> => {

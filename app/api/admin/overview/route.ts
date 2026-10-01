@@ -14,7 +14,7 @@ type Payload = Awaited<ReturnType<typeof loadOverview>>;
 const cache = new Map<number, { expires: number; data: Payload }>();
 const pending = new Map<number, Promise<Payload>>();
 
-async function loadOverview(days: number) {
+async function loadOverview(days: number, summary = false) {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   const since = new Date(today.getTime() - (days - 1) * DAY_MS);
@@ -65,7 +65,7 @@ async function loadOverview(days: number) {
         count(*) filter (where created_at >= ${today.toISOString()}::timestamptz)::int as "newUsersToday",
         count(*) filter (where created_at >= ${since7.toISOString()}::timestamptz)::int as "newUsers7d",
         count(*) filter (where created_at >= ${since30.toISOString()}::timestamptz)::int as "newUsers30d",
-        (select coalesce(jsonb_agg(r), '[]') from (select id, email, name, role, created_at as "createdAt" from "user" order by created_at desc limit 20) r) as "recentUsers"
+        ${summary ? sql`'[]'::jsonb` : sql`(select coalesce(jsonb_agg(r), '[]') from (select id, email, name, role, created_at as "createdAt" from "user" order by created_at desc limit 20) r)`} as "recentUsers"
       from "user"`, []),
     safe<{ visitorToday: number; visitor7d: number; visitor30d: number; signedInToday: number; signedIn7d: number; signedIn30d: number; daily: Metric[] }>("activity windows", sql`
       select count(distinct session_id) filter (where date >= ${key(today)})::int as "visitorToday",
@@ -83,9 +83,9 @@ async function loadOverview(days: number) {
         (array_agg(package_id order by coalesce(paid_at, created_at) desc, id desc))[1] as "latestPackageId",
         (array_agg(package_name order by coalesce(paid_at, created_at) desc, id desc))[1] as "latestPackageName"
         from payment_orders where status = 'paid' group by user_id)
-      select count(*)::int as "purchasedUsers", (select coalesce(jsonb_agg(p), '[]') from
+      select count(*)::int as "purchasedUsers", ${summary ? sql`'[]'::jsonb` : sql`(select coalesce(jsonb_agg(p), '[]') from
         (select paid.user_id as "userId", u.email, u.name, paid."orderCount", paid."totalPaidCents", paid."lastPaidAt", paid."latestPackageId", paid."latestPackageName"
-          from paid join "user" u on u.id = paid.user_id order by paid."lastPaidAt" desc limit 50) p) as "paidUsers" from paid`, []),
+          from paid join "user" u on u.id = paid.user_id order by paid."lastPaidAt" desc limit 50) p)`} as "paidUsers" from paid`, []),
     safe<{ daily: Metric[]; topUsers: Usage[]; actionCounts: { action: string; value: number }[]; totalProjects: number; totalGenerations: number; totalWorkflowJobs: number; videoClips: number }>("product usage", sql`
       with events as materialized (${activity}), stats as (
         select user_id, count(*) filter (where kind = 'action')::int as actions,
@@ -101,9 +101,9 @@ async function loadOverview(days: number) {
           count(*) filter (where kind = 'upload')::int as uploads, sum(bytes)::bigint as "uploadBytes",
           count(*) filter (where kind in ('analysis','project'))::int as analyses,
           count(*) filter (where kind = 'generation')::int as generations from events group by 1) d) as daily,
-        (select coalesce(jsonb_agg(t), '[]') from (select s.user_id as "userId", s.actions, s.uploads, s."uploadBytes", s.analyses, s.generations, s.projects, s.clips, s."lastSeen",
+        ${summary ? sql`'[]'::jsonb` : sql`(select coalesce(jsonb_agg(t), '[]') from (select s.user_id as "userId", s.actions, s.uploads, s."uploadBytes", s.analyses, s.generations, s.projects, s.clips, s."lastSeen",
           u.name, u.email, u.role, coalesce(u.banned,false) as banned, ${balance} as "creditBalance"
-          from stats s join "user" u on u.id = s.user_id ${balances} order by s."uploadBytes" desc, s.generations desc, s.analyses desc, s.actions desc) t) as "topUsers",
+          from stats s join "user" u on u.id = s.user_id ${balances} order by s."uploadBytes" desc, s.generations desc, s.analyses desc, s.actions desc) t)`} as "topUsers",
         (select coalesce(jsonb_agg(a), '[]') from (select action, count(*)::int as value from events where kind = 'action' group by action order by value desc) a) as "actionCounts"`, []),
   ]);
   const u = users[0]; const v = visits[0]; const p = payments[0]; const s = usage[0];
@@ -133,15 +133,17 @@ export async function GET(request: NextRequest) {
     if (request.nextUrl.searchParams.get("probe") === "1") return NextResponse.json({ ok: true }, { headers: privateHeaders });
     const input = Number(request.nextUrl.searchParams.get("days") || 14);
     const days = Number.isFinite(input) ? Math.max(7, Math.min(60, Math.round(input))) : 14;
-    const saved = cache.get(days);
+    const summary = request.nextUrl.searchParams.get("summary") === "1";
+    const cacheKey = days * 2 + Number(summary);
+    const saved = cache.get(cacheKey);
     if (saved && saved.expires > Date.now()) return NextResponse.json(saved.data, { headers: privateHeaders });
-    let task = pending.get(days);
+    let task = pending.get(cacheKey);
     if (!task) {
-      task = loadOverview(days).then(data => {
-        if (!data.dataHealth.degraded) cache.set(days, { expires: Date.now() + 20_000, data });
+      task = loadOverview(days, summary).then(data => {
+        if (!data.dataHealth.degraded) cache.set(cacheKey, { expires: Date.now() + 20_000, data });
         return data;
-      }).finally(() => pending.delete(days));
-      pending.set(days, task);
+      }).finally(() => pending.delete(cacheKey));
+      pending.set(cacheKey, task);
     }
     return NextResponse.json(await task, { headers: privateHeaders });
   } catch (error) {
