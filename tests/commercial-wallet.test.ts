@@ -12,6 +12,7 @@ vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: vi.
 vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/payments/alipay")>(),
   queryAlipayTrade: vi.fn(),
+  closeAlipayTrade: vi.fn(),
   refundAlipayTrade: vi.fn(),
   queryAlipayRefund: vi.fn(),
 }));
@@ -26,7 +27,9 @@ import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
 import { settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
 import { requestCommercialRefund, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
-import { queryAlipayRefund, queryAlipayTrade, refundAlipayTrade } from "@/lib/payments/alipay";
+import { queryAlipayRefund, queryAlipayTrade, refundAlipayTrade, closeAlipayTrade } from "@/lib/payments/alipay";
+import { ALIPAY_EXPIRY_VERSION } from "@/lib/payments/order-expiry";
+import { eq } from "drizzle-orm";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 
 const client = new PGlite();
@@ -71,6 +74,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.mocked(analyzeSceneBlueprint).mockReset();
     vi.mocked(commercialMediaRequest).mockReset();
     vi.mocked(queryAlipayTrade).mockReset();
+    vi.mocked(closeAlipayTrade).mockReset();
     vi.mocked(refundAlipayTrade).mockReset();
     vi.mocked(queryAlipayRefund).mockReset();
     await client.exec("TRUNCATE projects CASCADE");
@@ -476,6 +480,67 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await reconcileAlipayOrder(row.id, userId);
     expect(queryAlipayTrade).toHaveBeenCalledTimes(1);
     expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
+  });
+  it("cancels an unpaid order only after Alipay confirms closure", async () => {
+    const row = await order();
+    vi.mocked(queryAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, tradeStatus: "WAIT_BUYER_PAY", totalAmount: "19.90" } as never);
+    vi.mocked(closeAlipayTrade).mockResolvedValue({ code: "10000" } as never);
+    await reconcileAlipayOrder(row.id, userId, true);
+    expect(closeAlipayTrade).toHaveBeenCalledWith(row.providerOrderId);
+    expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("cancelled");
+    expect(await testDb.select().from(schema.commercialWallets)).toHaveLength(0);
+    await reconcileAlipayOrder(row.id, userId, true);
+    expect(closeAlipayTrade).toHaveBeenCalledTimes(1);
+  });
+  it("expires at 15 minutes without closing younger unpaid orders", async () => {
+    const row = await order();
+    const now = Date.now();
+    await testDb.update(schema.paymentOrders).set({ createdAt: new Date(now - 14 * 60000) }).where(eq(schema.paymentOrders.id, row.id));
+    vi.mocked(queryAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, tradeStatus: "WAIT_BUYER_PAY", totalAmount: "19.90" } as never);
+    vi.mocked(closeAlipayTrade).mockResolvedValue({ code: "10000" } as never);
+    await reconcileAlipayOrder(row.id, userId);
+    expect(closeAlipayTrade).not.toHaveBeenCalled();
+    await testDb.update(schema.paymentOrders).set({ createdAt: new Date(now - 15 * 60000), metadata: { ...(row.metadata as object), queryAfter: 0 } }).where(eq(schema.paymentOrders.id, row.id));
+    await reconcileAlipayOrder(row.id, userId);
+    expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("cancelled");
+  });
+  it("reconciles a paid order instead of cancelling at its deadline", async () => {
+    const row = await order();
+    await testDb.update(schema.paymentOrders).set({ createdAt: new Date(Date.now() - 16 * 60000) }).where(eq(schema.paymentOrders.id, row.id));
+    vi.mocked(queryAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, tradeNo: "provider-trade", tradeStatus: "TRADE_SUCCESS", totalAmount: "19.90" } as never);
+    await reconcileAlipayOrder(row.id, userId, true);
+    expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("paid");
+    expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
+    expect(closeAlipayTrade).not.toHaveBeenCalled();
+  });
+  it("keeps a cancellation pending when the close result is unknown", async () => {
+    const row = await order();
+    vi.mocked(queryAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, tradeStatus: "WAIT_BUYER_PAY", totalAmount: "19.90" } as never);
+    vi.mocked(closeAlipayTrade).mockRejectedValue(new Error("timeout"));
+    await reconcileAlipayOrder(row.id, userId, true);
+    const current = (await testDb.select().from(schema.paymentOrders))[0];
+    expect(current.status).toBe("pending");
+    expect(current.metadata).toMatchObject({ cancellationRequested: true, reconciliation: "query_unconfirmed" });
+    expect(await testDb.select().from(schema.commercialWallets)).toHaveLength(0);
+  });
+  it("does not cancel a missing trade while an issued form is still payable", async () => {
+    const row = await order();
+    await testDb.update(schema.paymentOrders).set({ metadata: { ...(row.metadata as object), expiryVersion: ALIPAY_EXPIRY_VERSION, paymentFormIssuedAt: new Date().toISOString() } }).where(eq(schema.paymentOrders.id, row.id));
+    vi.mocked(queryAlipayTrade).mockResolvedValue({ code: "40004", subCode: "ACQ.TRADE_NOT_EXIST" } as never);
+    await reconcileAlipayOrder(row.id, userId, true);
+    expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("pending");
+    await testDb.update(schema.paymentOrders).set({ createdAt: new Date(Date.now() - 16 * 60000), metadata: { ...(row.metadata as object), expiryVersion: ALIPAY_EXPIRY_VERSION, paymentFormIssuedAt: new Date().toISOString(), queryAfter: 0 } }).where(eq(schema.paymentOrders.id, row.id));
+    await reconcileAlipayOrder(row.id, userId);
+    expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("cancelled");
+  });
+  it("does not close someone else's order or an unverified trade", async () => {
+    const row = await order();
+    await reconcileAlipayOrder(row.id, randomUUID(), true);
+    expect(queryAlipayTrade).not.toHaveBeenCalled();
+    vi.mocked(queryAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: "wrong-order", tradeStatus: "WAIT_BUYER_PAY", totalAmount: "19.90" } as never);
+    await reconcileAlipayOrder(row.id, userId, true);
+    expect(closeAlipayTrade).not.toHaveBeenCalled();
+    expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("pending");
   });
   it("does not settle a mismatched Alipay query result", async () => {
     const row = await order();

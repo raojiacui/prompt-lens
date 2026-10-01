@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { cny, isAlipayPaid, parseCny } from "@/lib/payments/alipay";
 import { normalizeAlipayTradeResult } from "@/lib/payments/alipay-reconciliation";
+import { alipayOrderDeadline, alipayExpiryTimestamp } from "@/lib/payments/order-expiry";
 
 describe("official Alipay payment helpers", () => {
+  it("sets a fixed 15-minute deadline and formats it in Alipay's China timezone", () => {
+    const deadline = alipayOrderDeadline(new Date("2026-10-01T16:55:00Z"));
+    expect(deadline.toISOString()).toBe("2026-10-01T17:10:00.000Z");
+    expect(alipayExpiryTimestamp(deadline)).toBe("2026-10-02 01:10:00");
+  });
   it("converts money without floating-point comparisons", () => {
     expect(cny(1990)).toBe("19.90");
     expect(parseCny("19.9")).toBe(1990);

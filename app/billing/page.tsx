@@ -25,6 +25,7 @@ export default function BillingPage() {
   const [refundOrder, setRefundOrder] = useState<Order | null>(null);
   const [refundReason, setRefundReason] = useState("");
   const [refundContact, setRefundContact] = useState("");
+  const [cancelOrder, setCancelOrder] = useState<Order | null>(null);
   const load = useCallback(async () => {
     try {
       const response = await fetch("/api/payments/account", { cache: "no-store" });
@@ -36,6 +37,17 @@ export default function BillingPage() {
   useEffect(() => { void load(); }, [load]);
   const status = (value: string) => zh ? ({ pending: "待确认", paid: "已到账", refunded: "已退款", cancelled: "已取消", failed: "失败", requested: "等待客服审核", processing: "退款处理中", succeeded: "退款成功", rejected: "退款申请未通过", review: "人工复核中", held: "任务处理中", settled: "已结算" }[value] || value) : ({ requested: "Awaiting support review", rejected: "Refund request declined" }[value] || value);
   const pack = COMMERCIAL_PACKAGES.find((p) => p.id === selected?.packageId);
+  async function cancelPayment() {
+    if (!cancelOrder || busy) return;
+    setBusy(true); setError("");
+    try {
+      const response = await fetch(`/api/payments/orders/${cancelOrder.id}/close`, { method: "POST" });
+      const data = await response.json();
+      if (!response.ok || data.status === "pending") throw new Error(zh ? "取消结果待核对，请保留订单号，暂勿继续付款。" : "Cancellation is unconfirmed. Keep the order ID and do not continue payment.");
+      setCancelOrder(null); await load();
+    } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
+    finally { setBusy(false); }
+  }
   async function refund() {
     if (!refundOrder || busy || !refundReason.trim() || refundContact.trim().length < 3) return;
     setBusy(true);
@@ -68,10 +80,15 @@ export default function BillingPage() {
           <div className="min-w-0"><p className="font-medium">{order.packageName} · ¥{(order.amountCents / 100).toFixed(2)}</p><p className="mt-1 text-sm text-muted-foreground">{new Date(order.createdAt).toLocaleString(zh ? "zh-CN" : "en-US")}</p><p className="mt-1 break-all text-xs text-muted-foreground">{order.id}</p></div>
           <div className="flex flex-wrap items-center gap-3 text-sm"><span>{status(refundInfo?.state || order.status)}</span>
             {order.status === "pending" && <button className="min-h-10 rounded-lg border border-border px-3" onClick={() => setSelected(order)}>{zh ? "查看订单" : "View order"}</button>}
+            {order.status === "pending" && <button disabled={busy} className="min-h-10 rounded-lg border border-border px-3" onClick={() => setCancelOrder(order)}>{zh ? "取消本次付款" : "Cancel this payment"}</button>}
             {order.status === "paid" && !refundInfo && <button className="min-h-10 rounded-lg border border-border px-3" onClick={() => { setRefundOrder(order); setRefundReason(""); setRefundContact(""); setError(""); }}>{zh ? "申请退款" : "Request refund"}</button>}
           </div>
         </div>;
       })}
+      {cancelOrder && <div className="space-y-3 border-b border-border py-5 text-sm" role="group" aria-label={zh ? "取消付款确认" : "Payment cancellation confirmation"}>
+        <p className="break-all">{cancelOrder.id}</p><p>{zh ? "确认取消这笔未支付订单？如已付款，会先核对到账，不会退款。" : "Cancel this unpaid order? Completed payments will be reconciled, not refunded."}</p>
+        <div className="flex gap-3"><button disabled={busy} onClick={() => void cancelPayment()} className="min-h-10 rounded-lg border border-border px-4">{zh ? "确认取消" : "Confirm cancellation"}</button><button disabled={busy} onClick={() => setCancelOrder(null)} className="min-h-10 px-4">{zh ? "返回" : "Back"}</button></div>
+      </div>}
       {refundOrder && <form aria-label={zh ? "退款申请表单" : "Refund request form"} onSubmit={(event) => { event.preventDefault(); void refund(); }} className="space-y-4 border-b border-border py-6">
         <h2 className="text-lg font-semibold">{zh ? "提交退款申请" : "Submit a refund request"}</h2>
         <p className="text-sm text-muted-foreground">{zh ? `请填写表单后添加客服微信 ${SUPPORT_WECHAT}，提供订单号并沟通退款原因。提交申请不会自动退款；客服审核同意后才办理。审核期间该套餐权益暂停使用，未通过则恢复。已有消耗或处理中任务的订单请直接联系客服核对。` : `Complete the form, then add support on WeChat at ${SUPPORT_WECHAT} with your order ID and reason. Submitting does not issue a refund: support approval is required. Package benefits are paused during review and restored if declined. Contact support directly for used packages or pending tasks.`}</p>

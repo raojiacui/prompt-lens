@@ -5,6 +5,7 @@ import { getCreditPackage, type CreditPackage } from "@/lib/billing/credit-packa
 import { grantCommercialPurchase } from "@/lib/billing/commercial-wallet";
 import { COMMERCIAL_PACKAGES, PRICING_VERSION } from "@/lib/billing/pricing-v6";
 import { alipayConfig, assertAlipayOrderMatch, assertAlipayQueryMatch } from "./alipay";
+import { alipayOrderDeadline, ALIPAY_EXPIRY_VERSION } from "./order-expiry";
 
 export type PaymentProvider = "creem" | "alipay" | "manual_qr";
 export type ManualPaymentMethod = "wechat" | "alipay";
@@ -93,7 +94,7 @@ export async function createAlipayCreditCheckout(userId: string, packageId: stri
     amountCents: commercial.priceCents,
     currency: "cny",
     status: "pending",
-    metadata: { method: "alipay", appId, pricingVersion: PRICING_VERSION, rewrites: commercial.rewrites },
+    metadata: { method: "alipay", appId, pricingVersion: PRICING_VERSION, rewrites: commercial.rewrites, expiryVersion: ALIPAY_EXPIRY_VERSION },
   }).onConflictDoNothing({ target: [paymentOrders.provider, paymentOrders.providerOrderId] }).returning();
   const order = created || await db.query.paymentOrders.findFirst({
     where: and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.providerOrderId, providerOrderId), eq(paymentOrders.userId, userId)),
@@ -103,8 +104,9 @@ export async function createAlipayCreditCheckout(userId: string, packageId: stri
     provider: "alipay" as const,
     orderId: order.id,
     status: order.status,
-    paymentUrl: `/api/payments/orders/${order.id}/pay`,
-    expiresAt: new Date(order.createdAt.getTime() + 30 * 60 * 1000).toISOString(),
+    cancellationRequested: (order.metadata as Record<string, unknown>).cancellationRequested === true,
+    paymentUrl: order.status === "pending" && Date.now() < alipayOrderDeadline(order.createdAt).getTime() && (order.metadata as Record<string, unknown>).cancellationRequested !== true ? `/api/payments/orders/${order.id}/pay` : null,
+    expiresAt: alipayOrderDeadline(order.createdAt).toISOString(),
   };
 }
 

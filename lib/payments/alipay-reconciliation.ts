@@ -1,7 +1,8 @@
 import crypto from "node:crypto";
 import { and, eq, sql } from "drizzle-orm";
 import { db, paymentOrders } from "@/lib/db";
-import { assertAlipayQueryMatch, queryAlipayTrade } from "./alipay";
+import { assertAlipayQueryMatch, queryAlipayTrade, closeAlipayTrade } from "./alipay";
+import { alipayOrderDeadline, ALIPAY_EXPIRY_VERSION } from "./order-expiry";
 import { settlePaidCreditOrder } from "./credit-checkout";
 
 function value(result: Record<string, unknown>, snake: string, camel: string) {
@@ -19,11 +20,15 @@ export function normalizeAlipayTradeResult(result: Record<string, unknown>) {
   };
 }
 
-export async function reconcileAlipayOrder(id: string, userId?: string) {
+export async function reconcileAlipayOrder(id: string, userId?: string, cancel = false) {
   const order = await db.query.paymentOrders.findFirst({
     where: and(eq(paymentOrders.id, id), userId ? eq(paymentOrders.userId, userId) : undefined),
   });
   if (!order || order.provider !== "alipay" || order.status !== "pending") return;
+
+  const expired = Date.now() >= alipayOrderDeadline(order.createdAt).getTime();
+  const shouldClose = cancel || expired || (order.metadata as Record<string, unknown>).cancellationRequested === true;
+  if (shouldClose) await db.update(paymentOrders).set({ metadata: sql`${paymentOrders.metadata} || '{"cancellationRequested":true}'::jsonb` }).where(and(eq(paymentOrders.id, id), eq(paymentOrders.status, "pending")));
 
   const token = crypto.randomUUID();
   const [claimed] = await db.update(paymentOrders).set({
@@ -53,12 +58,25 @@ export async function reconcileAlipayOrder(id: string, userId?: string) {
         reconciliation = "confirmed";
       } else if (payload.trade_status === "WAIT_BUYER_PAY") {
         reconciliation = "awaiting_payment";
+        if (shouldClose) {
+          const closed = await closeAlipayTrade(order.providerOrderId) as Record<string, unknown>;
+          if (String(closed.code) !== "10000") throw new Error("CLOSE_STATUS_UNKNOWN");
+          await db.update(paymentOrders).set({ status: "cancelled", rawPayload: closed, updatedAt: new Date() }).where(and(eq(paymentOrders.id, id), eq(paymentOrders.status, "pending")));
+          reconciliation = "closed";
+        }
       } else if (payload.trade_status === "TRADE_CLOSED") {
         reconciliation = "closed";
         await db.update(paymentOrders).set({ status: "cancelled", updatedAt: new Date() }).where(and(eq(paymentOrders.id, id), eq(paymentOrders.status, "pending")));
       }
     } else if (String(result.subCode || result.sub_code) === "ACQ.TRADE_NOT_EXIST") {
       reconciliation = "awaiting_payment";
+      const snapshot = claimed.metadata as Record<string, unknown>;
+      // An issued payment form can still create a trade; only its gateway deadline
+      // or confirmed close makes a missing trade safe to cancel locally.
+      if (shouldClose && snapshot.expiryVersion === ALIPAY_EXPIRY_VERSION && (!snapshot.paymentFormIssuedAt || expired)) {
+        await db.update(paymentOrders).set({ status: "cancelled", updatedAt: new Date() }).where(and(eq(paymentOrders.id, id), eq(paymentOrders.status, "pending")));
+        reconciliation = "closed";
+      } else if (shouldClose) reconciliation = "close_unconfirmed";
     }
   } catch {
     reconciliation = "query_unconfirmed";

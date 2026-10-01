@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   await recoverCommercialAnalysisTasks();
   await expireTrialReservations();
   await db.delete(apiRateLimits).where(sql`${apiRateLimits.resetAt} < now() - interval '1 day'`);
-  const orders = await db.select({ id: paymentOrders.id }).from(paymentOrders).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"), sql`${paymentOrders.createdAt} > now() - interval '24 hours'`)).orderBy(sql`COALESCE((${paymentOrders.metadata}->>'queryAfter')::bigint, 0)`, asc(paymentOrders.createdAt)).limit(3);
+  const orders = await db.select({ id: paymentOrders.id }).from(paymentOrders).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"))).orderBy(sql`COALESCE((${paymentOrders.metadata}->>'queryAfter')::bigint, 0)`, asc(paymentOrders.createdAt)).limit(20);
   let checked = 0;
   for (const order of orders) { try { await reconcileAlipayOrder(order.id); checked++; } catch { /* Keep uncertain orders pending for the next run. */ } }
   await db.update(paymentOrders).set({ metadata: sql`${paymentOrders.metadata} || '{"reconciliation":"manual_review"}'::jsonb` }).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"), sql`${paymentOrders.createdAt} < now() - interval '24 hours'`));

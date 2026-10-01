@@ -1,4 +1,5 @@
 import { AlipaySdk } from "alipay-sdk";
+import { alipayExpiryTimestamp } from "./order-expiry";
 
 const SANDBOX_GATEWAY = "https://openapi-sandbox.dl.alipaydev.com/gateway.do";
 const PRODUCTION_GATEWAY = "https://openapi.alipay.com/gateway.do";
@@ -57,6 +58,7 @@ export function createAlipayPaymentForm(input: {
   subject: string;
   returnUrl: string;
   notifyUrl?: string;
+  expiresAt?: Date;
 }) {
   const options: Record<string, unknown> = {
     returnUrl: input.returnUrl,
@@ -65,6 +67,7 @@ export function createAlipayPaymentForm(input: {
       total_amount: cny(input.amountCents),
       subject: input.subject,
       product_code: "FAST_INSTANT_TRADE_PAY",
+      ...(input.expiresAt ? { time_expire: alipayExpiryTimestamp(input.expiresAt) } : { timeout_express: "15m" }),
     },
   };
   if (input.notifyUrl) options.notifyUrl = input.notifyUrl;
