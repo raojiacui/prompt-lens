@@ -28,17 +28,16 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       await expect(generate).toBeDisabled();
       await expect(model.locator("optgroup[label='Seedance'] option")).toHaveCount(10);
       await expect(model.locator("optgroup[label='Veo'] option")).toHaveCount(2);
-      await expect(model.locator("optgroup[label='Sora'] option")).toHaveCount(2);
+      await expect(model.locator("optgroup[label='Sora']")).toHaveCount(0);
+      await expect(model.locator("option[value^='sora-']")).toHaveCount(0);
       await model.selectOption("bytedance/seedance-2-mini");
       const controls = model.locator("xpath=../..");
       await expect(controls.locator("select").nth(2)).not.toContainText("1080p");
       await expect(page.locator('input[type="file"][accept="image/*"]')).toHaveCount(1);
       await model.selectOption("veo3_fast");
       await expect(controls.locator("select").nth(1)).toHaveValue("8");
-      await model.selectOption("sora-2/text-to-video");
-      await expect(controls.locator("select").nth(1)).toHaveValue("10");
-      await expect(page.locator('input[type="file"][accept="image/*"]')).toHaveCount(0);
       await model.selectOption("kling-2.6/text-to-video");
+      await expect(page.locator('input[type="file"][accept="image/*"]')).toHaveCount(0);
       await expect(controls.locator("select").nth(1)).not.toContainText("15");
       await expect(controls.locator("select").nth(2)).toHaveValue("1080p");
       if (personalKey) {

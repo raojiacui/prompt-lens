@@ -50,8 +50,11 @@ describe("explicit video-model payloads", () => {
   it("maps Lite 1.0 first and last images without losing either", () => {
     expect(buildVideoModelPayload({ ...wan, model: "bytedance/v1-lite-image-to-video", aspectRatio: "16:9", referenceImageUrls: ["https://example.com/first.png", "https://example.com/last.png"] }).input).toMatchObject({ image_url: "https://example.com/first.png", end_image_url: "https://example.com/last.png" });
   });
-  it("maps Sora frames and orientation rather than Wan parameters", () => {
-    expect(buildVideoModelPayload({ ...wan, model: "sora-2/image-to-video", duration: 15, referenceImageUrls: ["https://example.com/image.png"] }).input).toEqual({ prompt: wan.prompt, n_frames: "15", aspect_ratio: "portrait", remove_watermark: true, image_urls: ["https://example.com/image.png"] });
+  it.each(["sora-2/text-to-video", "sora-2/image-to-video"])("rejects removed model %s before sending a request", async (model) => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(new KieVideoProvider("personal-key-test-only").createTask({ ...wan, model })).rejects.toThrow();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
   it("does not allow Veo to silently switch models", () => {
     expect(buildVideoModelPayload({ ...wan, model: "veo3_fast", duration: 8, referenceImageUrls: ["https://example.com/image.png"] })).toMatchObject({ enableFallback: false, generationType: "FIRST_AND_LAST_FRAMES_2_VIDEO", imageUrls: ["https://example.com/image.png"] });

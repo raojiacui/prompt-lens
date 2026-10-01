@@ -52,6 +52,8 @@ describe("V1 personal-key generation boundary", () => {
   it.each([
     { ...valid, model: undefined },
     { ...valid, model: "wan/2-7-text-to-video" },
+    { ...valid, model: "sora-2/text-to-video" },
+    { ...valid, model: "sora-2/image-to-video", referenceImageUrls: ["https://example.com/image.png"] },
     { ...valid, provider: "runway" },
     { ...valid, duration: 100 },
     { ...valid, resolution: "4k" },

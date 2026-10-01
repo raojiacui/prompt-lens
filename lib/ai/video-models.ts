@@ -15,9 +15,6 @@ const standardRatios = ["16:9", "9:16", "1:1", "4:3", "3:4"];
 const seedance2 = { family: "Seedance", durations: [5, 10, 15], resolutions: ["720p", "1080p"], aspectRatios: standardRatios, maxImages: 9, minImages: 0 };
 const seedance1 = { family: "Seedance", durations: [5, 10], resolutions: ["720p"], aspectRatios: standardRatios, maxImages: 0, minImages: 0 };
 const veo = { family: "Veo", durations: [8], resolutions: ["720p"], aspectRatios: ["16:9", "9:16"], maxImages: 2, minImages: 0 };
-const sora = { family: "Sora", durations: [10, 15], resolutions: ["720p"], aspectRatios: ["16:9", "9:16"], maxImages: 0, minImages: 0 };
-
-// Sora retains the V2 legacy adapter; upstream availability must be verified with a personal key.
 export const videoModels: VideoModel[] = [
   { ...seedance2, id: "bytedance/seedance-2", label: "Seedance 2.0" },
   { ...seedance2, id: "bytedance/seedance-2-fast", label: "Seedance 2.0 Fast" },
@@ -31,8 +28,6 @@ export const videoModels: VideoModel[] = [
   { ...seedance1, id: "bytedance/v1-lite-image-to-video", label: "Seedance 1.0 Lite · Image to Video", aspectRatios: ["16:9"], minImages: 1, maxImages: 2 },
   { ...veo, id: "veo3_fast", label: "Veo 3.1 Fast" },
   { ...veo, id: "veo3", label: "Veo 3.1 Quality" },
-  { ...sora, id: "sora-2/text-to-video", label: "Sora 2 · Text to Video" },
-  { ...sora, id: "sora-2/image-to-video", label: "Sora 2 · Image to Video", minImages: 1, maxImages: 1 },
   { id: "wan/2-6-text-to-video", family: "Wan", label: "Wan 2.6", durations: [5, 10, 15], resolutions: ["720p", "1080p"], aspectRatios: ["16:9", "9:16", "1:1"], maxImages: 0, minImages: 0 },
   { id: "wan/2-6-image-to-video", family: "Wan", label: "Wan 2.6 · Image to Video", durations: [5, 10, 15], resolutions: ["720p", "1080p"], aspectRatios: ["16:9"], maxImages: 1, minImages: 1 },
   { id: "kling-2.6/text-to-video", family: "Kling", label: "Kling 2.6", durations: [5, 10], resolutions: ["1080p"], aspectRatios: ["16:9", "9:16", "1:1"], maxImages: 0, minImages: 0 },
@@ -72,18 +67,6 @@ export function buildVideoModelPayload(raw: unknown) {
       enableTranslation: true,
       generationType: images.length ? "FIRST_AND_LAST_FRAMES_2_VIDEO" : "TEXT_2_VIDEO",
       ...(images.length ? { imageUrls: images } : {}),
-    };
-  }
-  if (input.model.startsWith("sora-2/")) {
-    return {
-      model: input.model,
-      input: {
-        prompt,
-        aspect_ratio: input.aspectRatio === "9:16" ? "portrait" : "landscape",
-        n_frames: String(input.duration),
-        remove_watermark: true,
-        ...(images.length ? { image_urls: images } : {}),
-      },
     };
   }
   if (input.model.startsWith("bytedance/seedance-")) {
