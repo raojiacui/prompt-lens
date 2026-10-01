@@ -65,7 +65,7 @@ for (const scenario of [{ locale: "zh", width: 1440 }, { locale: "en", width: 39
     await page.goto("/dashboard?tab=admin");
     await expect(page.getByText("buyer@example.com")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(scenario.locale === "zh" ? "访客 DAU" : "Visitor DAU")).toBeVisible();
-    await expect(page.getByText(scenario.locale === "zh" ? "登录用户 DAU" : "Signed-in DAU")).toBeVisible();
+    await expect(page.getByText(scenario.locale === "zh" ? "活跃用户 DAU" : "Active user DAU")).toBeVisible();
     await expect(page.getByText(scenario.locale === "zh" ? "后台发放积分" : "Manual credit grant")).toHaveCount(0);
     await expect(page.getByText(scenario.locale === "zh" ? "待确认付款" : "Pending manual payments")).toHaveCount(0);
 
