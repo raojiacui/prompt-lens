@@ -7,7 +7,8 @@ import { ApiKeySettings } from "@/components/api-key-settings";
 import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
 import { VideoEditTab } from "@/components/video-edit-tab";
 import { ReferenceVideoComposer } from "@/components/reference-video/ReferenceVideoComposer";
-import { CreateWithAgent } from "@/components/agent/create-with-agent";
+// Agent entry is paused until the module is ready for release.
+// import { CreateWithAgent } from "@/components/agent/create-with-agent";
 import { VideoWorkflowCreate } from "@/components/workflow/video-workflow-create";
 import { AdminOverviewPanel } from "@/components/admin-overview-panel";
 import { cn } from "@/lib/utils";
@@ -143,9 +144,9 @@ export default function DashboardPage() {
   }, [isPending, session?.user, sessionIsAdmin]);
 
 
-  const handleNavigateVideoGen = (prompt: string) => {
-    selectTab("video-gen", { videoGenPrompt: prompt });
-  };
+  // const handleNavigateVideoGen = (prompt: string) => {
+  //   selectTab("video-gen", { videoGenPrompt: prompt });
+  // };
 
   const handleWorkflowSendToGenerate = (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string; hiddenReferenceImageUrl?: string }) => {
     setHiddenSceneReferenceImageUrl(payload.hiddenReferenceImageUrl || null);
@@ -454,9 +455,11 @@ export default function DashboardPage() {
                 })}
               </div>
 
+              {/* Agent entry is paused until the module is ready for release.
               <div className="pt-8 md:pt-12">
                 <CreateWithAgent onNavigateVideoGen={handleNavigateVideoGen} />
               </div>
+              */}
             </div>
           )}
 
