@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { rewriteSceneBlueprint, type SceneBlueprintDraft } from "@/lib/workflow/scene-analysis";
+import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 
 vi.mock("@/lib/byok/kie", () => ({ getUserKieApiKey: vi.fn(async () => "test-key") }));
 vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "platform-test-key" }));
@@ -44,7 +45,7 @@ describe("semantic scene rewrite", () => {
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.messages[1].content[0].text).toContain("完整提示词末尾");
     expect(body.messages[1].content[0].text).toContain(input.instruction);
-    expect(result.generationPrompt).toBe(candidate.generationPrompt);
+    expect(result.generationPrompt).toBe(buildRecreationPrompt(candidate));
     expect(result.visual).toEqual(candidate.visual);
     expect(result.metadata?.rewriteValidated).toBe(true);
   });

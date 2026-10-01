@@ -6,6 +6,7 @@ import { AnalysisQuoteDialog } from "@/components/payments/analysis-quote-dialog
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
+import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -182,7 +183,7 @@ function shouldAttachHiddenReferenceImage(sceneVersion: SceneVersion, promptDraf
     typeof metadata.sourceSceneVersionId === "string";
   if (hasScriptRewrite) return false;
 
-  return promptDraft.trim() === sceneVersion.generationPrompt.trim();
+  return promptDraft.trim() === buildRecreationPrompt(sceneVersion).trim();
 }
 
 function formatTime(seconds: number) {
@@ -406,7 +407,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   useEffect(() => {
     const drafts: Record<string, string> = {};
     bundle?.allSceneVersions.forEach((scene) => {
-      drafts[scene.id] = scene.generationPrompt;
+      drafts[scene.id] = buildRecreationPrompt(scene);
     });
     setSceneDrafts(drafts);
   }, [bundle?.activeVersion?.id, bundle?.allSceneVersions]);
@@ -742,7 +743,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     setRewritingSceneId(scene.id);
     setError("");
     try {
-      const payload = { instruction, currentPrompt: sceneDrafts[scene.id] ?? scene.generationPrompt, ...rewriteSelectionPayload(), ...(creditStatus?.commercial?.enabled ? { payer: rewritePayer } : {}) };
+      const payload = { instruction, currentPrompt: sceneDrafts[scene.id] ?? buildRecreationPrompt(scene), ...rewriteSelectionPayload(), ...(creditStatus?.commercial?.enabled ? { payer: rewritePayer } : {}) };
       const fingerprint = JSON.stringify(payload);
       const pendingStorageKey = `promptlens:rewrite:${bundle.project.id}:${scene.id}`;
       try { const saved = JSON.parse(localStorage.getItem(pendingStorageKey) || "null"); if (saved?.fingerprint === fingerprint && typeof saved.id === "string") rewriteRequestsRef.current[scene.id] = saved; } catch { /* Storage may be unavailable. */ }
@@ -775,7 +776,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }
 
   async function copySceneAnalysis(scene: SceneVersion) {
-    const text = formatSceneAnalysis(scene, projectMediaType, copy);
+    const text = sceneDrafts[scene.id] ?? buildRecreationPrompt(scene);
     await navigator.clipboard.writeText(text);
     setCopiedSceneVersionId(scene.id);
     window.setTimeout(() => setCopiedSceneVersionId((current) => (current === scene.id ? "" : current)), 1600);
@@ -786,7 +787,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-4xl font-semibold tracking-tight">视频分析</h1>
-          <p className="mt-2 max-w-5xl text-lg leading-relaxed text-muted-foreground">全新升级保姆级视频脚本拆解，从全方位多维度（可复用提示词，画面，角色，动作，光线、色彩、风格、镜头）对视频或者图片进行分析。</p>
+          <p className="mt-2 max-w-5xl text-lg leading-relaxed text-muted-foreground">提取原视频的画面、人物、动作、运镜与光影细节，整合为可直接用于生成的复刻提示词。</p>
         </div>
 
       </div>
@@ -1019,7 +1020,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                             size="sm"
                             variant="outline"
                             onClick={() => {
-                              const promptDraft = sceneDrafts[sceneVersion.id] || sceneVersion.generationPrompt;
+                              const promptDraft = sceneDrafts[sceneVersion.id] ?? buildRecreationPrompt(sceneVersion);
                               const hiddenReferenceImageUrl = shouldAttachHiddenReferenceImage(sceneVersion, promptDraft)
                                 ? scene?.keyframeUrls?.[0]
                                 : undefined;
@@ -1048,12 +1049,12 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                       <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
                         <div>
                           <div className="flex h-8 items-center">
-                            <label className="text-sm font-semibold">复刻 Prompt</label>
+                            <label className="text-sm font-semibold">完整复刻提示词</label>
                           </div>
                           <Textarea
-                            value={sceneDrafts[sceneVersion.id] ?? sceneVersion.generationPrompt}
+                            value={sceneDrafts[sceneVersion.id] ?? buildRecreationPrompt(sceneVersion)}
                             onChange={(event) => updateSceneDraft(sceneVersion, event.target.value)}
-                            className="mt-2 min-h-40 rounded-xl"
+                            className="mt-2 min-h-72 rounded-lg text-sm leading-7"
                           />
                         </div>
                         <div className="flex flex-col">
@@ -1100,7 +1101,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
                       <div className="mt-4">
                         <div className="flex items-center justify-between gap-3">
-                          <label className="text-sm font-semibold">分析拆解</label>
+                          <span className="text-xs text-muted-foreground">提示词版本</span>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <button
                               type="button"
@@ -1132,11 +1133,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                             </button>
                           </div>
                         </div>
-                        <Textarea
-                          readOnly
-                          value={formatSceneAnalysis(sceneVersion, projectMediaType, copy)}
-                          className="mt-2 max-h-[420px] min-h-[300px] resize-y rounded-xl font-sans text-sm leading-7 text-muted-foreground"
-                        />
                       </div>
                     </article>
                   );

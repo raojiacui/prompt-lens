@@ -8,6 +8,7 @@ import { ArrowLeft, Check, ChevronLeft, ChevronRight, Copy, FileVideo, Image as 
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown> };
@@ -121,7 +122,7 @@ export function SampleProjectDetail({ sampleId }: { sampleId: string }) {
   }, [sampleId]);
 
   async function copySceneAnalysis(sceneVersion: SceneVersion) {
-    const text = formatSceneAnalysis(sceneVersion, projectMediaType(bundle), copy);
+    const text = buildRecreationPrompt(sceneVersion);
     await navigator.clipboard.writeText(text);
     setCopiedSceneVersionId(sceneVersion.id);
     window.setTimeout(() => setCopiedSceneVersionId(null), 1400);
@@ -240,13 +241,8 @@ function ProjectBundleView({
               )}
 
               <div className="mt-4">
-                <label className="text-sm font-semibold">复刻 Prompt</label>
-                <Textarea readOnly value={sceneVersion.generationPrompt} className="mt-2 min-h-40 rounded-lg" />
-              </div>
-
-              <div className="mt-4">
                 <div className="flex items-center justify-between gap-3">
-                  <label className="text-sm font-semibold">分析拆解</label>
+                  <label className="text-sm font-semibold">完整复刻提示词</label>
                   <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
                     <button
                       type="button"
@@ -278,7 +274,7 @@ function ProjectBundleView({
                     </button>
                   </div>
                 </div>
-                <Textarea readOnly value={formatSceneAnalysis(sceneVersion, mediaType, copy)} className="mt-2 max-h-[420px] min-h-[300px] resize-y rounded-lg font-sans text-sm leading-7 text-[var(--color-text-secondary)]" />
+                <Textarea readOnly value={buildRecreationPrompt(sceneVersion)} className="mt-2 min-h-[300px] resize-y rounded-lg font-sans text-sm leading-7" />
               </div>
             </article>
           );

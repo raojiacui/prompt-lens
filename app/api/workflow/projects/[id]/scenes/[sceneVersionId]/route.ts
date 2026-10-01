@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, sceneVersions } from "@/lib/db";
 import { getProjectForUser } from "@/lib/workflow/service";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 const editableKeys = ["story", "visual", "dialogue", "narration", "subtitle", "audio", "transition", "generationPrompt", "duration"] as const;
 
@@ -21,6 +21,9 @@ export async function PATCH(
   const updates: Record<string, unknown> = { updatedAt: new Date() };
   for (const key of editableKeys) {
     if (body[key] !== undefined) updates[key] = body[key];
+  }
+  if (typeof body.generationPrompt === "string") {
+    updates.metadata = sql`${sceneVersions.metadata} || '{"recreationPromptVersion":1}'::jsonb`;
   }
 
   if (Object.keys(updates).length === 1) {

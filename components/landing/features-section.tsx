@@ -3,16 +3,15 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
-import { Film, Wand2, Mic2, Sparkles, ArrowRight } from "lucide-react";
+import { Film, Wand2, Sparkles, ArrowRight } from "lucide-react";
 
-const featureIcons = [Film, Wand2, Sparkles, Mic2];
-const featureKeys = ["featureAnalyze", "featureGen", "featureRewrite", "featureAudio"] as const;
-const tabMap = ["analyze", "video-gen", "analyze", "audio"];
+const featureIcons = [Film, Wand2, Sparkles];
+const featureKeys = ["featureAnalyze", "featureGen", "featureRewrite"] as const;
+const tabMap = ["analyze", "video-gen", "analyze"];
 const demoVideos = [
   "/remotion/landing-ad/prompt-lens-analysis-motion-v5.mp4",
   "/remotion/landing-ad/prompt-lens-remix-smooth-v6.mp4",
   "/remotion/landing-ad/prompt-lens-rewrite-v4.mp4",
-  "/feature-audio-recognition.mp4",
 ];
 
 function FeatureDemoVideo({ label, src, nativeAspect = false }: { label: string; src: string; nativeAspect?: boolean }) {
@@ -80,7 +79,7 @@ export function FeaturesSection() {
                   </Link>
                 </div>
                 <div className="flex-1 w-full">
-                  <FeatureDemoVideo label={title} src={demoVideos[index]} nativeAspect={key !== "featureAudio"} />
+                  <FeatureDemoVideo label={title} src={demoVideos[index]} nativeAspect />
                 </div>
               </div>
             );

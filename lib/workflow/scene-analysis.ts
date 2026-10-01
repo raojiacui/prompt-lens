@@ -5,6 +5,7 @@ import { FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/billing/video-analysis";
 import { requestKieChat } from "@/lib/ai/kie-client";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
+import { buildRecreationPrompt } from "./recreation-prompt";
 
 export interface SceneBlueprintDraft {
   story: Record<string, unknown>;
@@ -208,8 +209,8 @@ function normalizeBlueprint(raw: Record<string, unknown>, fallback: SceneBluepri
     subtitle: safeArray(raw.subtitle).length ? safeArray(raw.subtitle) : fallback.subtitle,
     audio: { ...fallback.audio, ...safeObject(raw.audio) },
     transition: { ...fallback.transition, ...safeObject(raw.transition) },
-    generationPrompt,
-    metadata: { ...safeObject(raw.metadata), analysisProvider: provider, analyzedAt: new Date().toISOString() },
+    generationPrompt: buildRecreationPrompt({ generationPrompt, visual: { ...fallback.visual, ...safeObject(raw.visual) } }),
+    metadata: { ...safeObject(raw.metadata), analysisProvider: provider, analyzedAt: new Date().toISOString(), recreationPromptVersion: 1 },
   };
 }
 
@@ -405,7 +406,7 @@ export async function rewriteSceneBlueprint(params: SceneRewriteInput): Promise<
           subtitle: safeArray(draft.subtitle),
           audio: safeObject(draft.audio),
           transition: safeObject(draft.transition),
-          generationPrompt: text(draft.generationPrompt),
+          generationPrompt: buildRecreationPrompt({ generationPrompt: text(draft.generationPrompt), visual: safeObject(draft.visual) }),
           metadata: {
             mediaType: params.scene.metadata?.mediaType,
             rewriteProvider: result.provider,
@@ -415,6 +416,7 @@ export async function rewriteSceneBlueprint(params: SceneRewriteInput): Promise<
             modelPriority: result.modelPriority,
             outputLanguage: language,
             rewriteValidated: true,
+            recreationPromptVersion: 1,
             rewrittenAt: new Date().toISOString(),
           },
         };
