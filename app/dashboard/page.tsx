@@ -5,8 +5,7 @@ import { useSession, signOut } from "@/lib/auth/auth-client";
 import { isOwnerEmail } from "@/lib/auth/admin-policy";
 import { HistoryList } from "@/components/history-list";
 import { ApiKeySettings } from "@/components/api-key-settings";
-import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
-import { VideoEditTab } from "@/components/video-edit-tab";
+import { isDeferredDashboardFeature } from "@/lib/dashboard-feature-policy";
 import { ReferenceVideoComposer } from "@/components/reference-video/ReferenceVideoComposer";
 // Agent entry is paused until the module is ready for release.
 // import { CreateWithAgent } from "@/components/agent/create-with-agent";
@@ -52,11 +51,12 @@ export default function DashboardPage() {
   const rawTab = searchParams.get("tab");
   const activeTab: Tab = rawTab === "create" || rawTab === "projects"
     ? "analyze"
-    : rawTab && validTabs.includes(rawTab as Tab)
+    : rawTab && !isDeferredDashboardFeature(rawTab) && validTabs.includes(rawTab as Tab)
       ? (rawTab as Tab)
       : "home";
 
   const selectTab = (tab: Tab, extraParams?: Record<string, string>) => {
+    if (isDeferredDashboardFeature(tab)) return;
     if (tab !== "video-gen" || !extraParams?.sceneId) {
       setHiddenSceneReferenceImageUrl(null);
     }
@@ -104,9 +104,6 @@ export default function DashboardPage() {
   const videoGenVersionId = activeTab === "video-gen" ? searchParams.get("versionId") : null;
   const videoGenDuration = activeTab === "video-gen" ? Number(searchParams.get("duration") || 0) : null;
   const videoGenModel = activeTab === "video-gen" ? searchParams.get("model") : null;
-  const workflowProjectId = activeTab === "audio" || activeTab === "edit" ? searchParams.get("projectId") : null;
-  const workflowVersionId = activeTab === "audio" || activeTab === "edit" ? searchParams.get("versionId") : null;
-  const workflowSceneId = activeTab === "audio" || activeTab === "edit" ? searchParams.get("sceneId") : null;
   const [historyRefreshTrigger] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [hiddenSceneReferenceImageUrl, setHiddenSceneReferenceImageUrl] = useState<string | null>(null);
@@ -368,9 +365,11 @@ export default function DashboardPage() {
               <button
                 key={item.key}
                 type="button"
+                disabled={isDeferredDashboardFeature(item.key)}
+                title={isDeferredDashboardFeature(item.key) ? (zh ? "待开放" : "Coming soon") : undefined}
                 onClick={() => selectTab(item.key)}
                 className={cn(
-                  "flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors",
+                  "flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
                   activeTab === item.key
                     ? "bg-[#D97757]/10 text-[#D97757]"
                     : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-base)]"
@@ -439,14 +438,16 @@ export default function DashboardPage() {
                     <button
                       key={feature.key}
                       type="button"
+                      disabled={isDeferredDashboardFeature(feature.key)}
                       onClick={() => selectTab(feature.key)}
-                      className="group flex h-full flex-col text-left rounded-xl bg-[var(--color-bg-raised)] p-5 shadow-md ring-1 ring-[var(--color-border-default)] transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:ring-[var(--color-accent-orange)]/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-orange)] text-left"
+                      className="group relative flex h-full flex-col text-left rounded-xl bg-[var(--color-bg-raised)] p-5 shadow-md ring-1 ring-[var(--color-border-default)] transition-all duration-300 enabled:hover:-translate-y-1 enabled:hover:shadow-xl enabled:hover:ring-[var(--color-accent-orange)]/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-orange)] disabled:cursor-not-allowed text-left"
                     >
+                      {isDeferredDashboardFeature(feature.key) && <span className="absolute right-3 top-3 z-10 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-semibold text-muted-foreground">{zh ? "待开放" : "Coming soon"}</span>}
                       <div className="relative mb-6 aspect-[5/3] overflow-hidden rounded-xl bg-[#F3E8DA] ring-1 ring-[var(--color-border-default)]">
                         <img
                           src={feature.image}
                           alt=""
-                          className="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
+                          className="h-full w-full object-cover object-center transition-transform duration-500 group-enabled:group-hover:scale-[1.03]"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-text-primary)]/10 via-transparent to-[var(--color-bg-raised)]/5" />
                       </div>
@@ -487,14 +488,8 @@ export default function DashboardPage() {
             <VideoWorkflowCreate onSendToGenerate={handleWorkflowSendToGenerate} />
           )}
           {/* 音频分析页面 */}
-          {activeTab === "audio" && <AudioAnalyzeTab activeTab={activeTab} initialProjectId={workflowProjectId} initialVersionId={workflowVersionId} />}
 
           {/* 视频剪辑页面 */}
-          {activeTab === "edit" && (
-            <div className="animate-fade-in">
-              <VideoEditTab initialProjectId={workflowProjectId} initialVersionId={workflowVersionId} initialSceneId={workflowSceneId} />
-            </div>
-          )}
 
           {/* 视频生成页面 */}
           {activeTab === "video-gen" && (
@@ -557,9 +552,10 @@ function SidebarItem({
   return (
     <button
       type="button"
+      disabled={isDeferredDashboardFeature(item.key)}
       onClick={onClick}
       className={cn(
-        "flex items-center rounded-xl text-sm font-semibold transition-colors",
+        "flex items-center rounded-xl text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
         collapsed
           ? "h-9 w-9 justify-center p-0"
           : "w-full gap-3 px-3 py-2.5",
@@ -568,7 +564,7 @@ function SidebarItem({
           : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-base)] hover:text-[var(--color-text-primary)]"
       )}
       aria-label={collapsed ? item.label : undefined}
-      title={collapsed ? item.label : undefined}
+      title={isDeferredDashboardFeature(item.key) ? `${item.label} · Coming soon / 待开放` : collapsed ? item.label : undefined}
     >
       <Icon className="h-4 w-4" />
       {!collapsed && item.label}
