@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { localizedStatus } from "@/lib/workflow/interface-copy";
 import { GenerationQuoteDialog } from "@/components/payments/generation-quote-dialog";
 import type { KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -430,20 +431,20 @@ export function ReferenceVideoComposer({
   const mentionableAssets = readyReplacementAssets;
   const generationMode = readyReferenceVideoAsset
     ? {
-        label: "Reference video to video",
+        label: zh ? "参考视频生成" : "Reference video to video",
         description:
           model === "wan/2-7-videoedit"
-            ? "Edit the uploaded video directly with replacement images and your instruction."
-            : "Use the uploaded video as motion, pacing, and camera reference for a new video.",
+            ? (zh ? "根据替换图片和修改要求，编辑上传的视频。" : "Edit the uploaded video directly with replacement images and your instruction.")
+            : (zh ? "参考原视频的动作、节奏与运镜，生成新的画面。" : "Use the uploaded video as motion, pacing, and camera reference for a new video."),
       }
     : readyReplacementAssets.length
       ? {
-          label: "Image to video",
-          description: "Animate uploaded image references with the prompt.",
+          label: zh ? "图片生成视频" : "Image to video",
+          description: zh ? "上传参考图片，用提示词让画面动起来。" : "Animate uploaded image references with the prompt.",
         }
       : {
-          label: "Text to video",
-          description: "No upload needed. Generate directly from the prompt.",
+          label: zh ? "文字生成视频" : "Text to video",
+          description: zh ? "无需上传素材，直接描述你想生成的画面。" : "No upload needed. Generate directly from the prompt.",
         };
   const activeGenerationTaskIdsKey = variants
     .filter(
@@ -453,7 +454,7 @@ export function ReferenceVideoComposer({
     .join("|");
   const durationSeconds = durationToSeconds(duration);
   const durationLabel = duration === "0s" ? "Original" : duration;
-  const formatSummary = `${aspectRatio} | ${quality} | ${durationLabel} | ${outputCount} Variation${outputCount === "1" ? "" : "s"}`;
+  const formatSummary = `${aspectRatio} | ${quality} | ${zh ? (duration === "0s" ? "原视频时长" : `${durationSeconds} 秒`) : durationLabel} | ${zh ? `${outputCount} 条视频` : `${outputCount} Variation${outputCount === "1" ? "" : "s"}`}`;
 
   useEffect(() => {
     setDurationDraft(String(durationSeconds || ""));
@@ -861,7 +862,7 @@ export function ReferenceVideoComposer({
               progress: 100,
               providerTaskId,
               videoUrl: result.payload.videoUrl,
-              notes: "Generation completed.",
+              notes: zh ? "视频已生成。" : "Generation completed.",
             };
           }
 
@@ -881,7 +882,7 @@ export function ReferenceVideoComposer({
             ...variant,
             providerTaskId,
             progress: Math.min(95, Math.max(variant.progress + 6, 28)),
-            notes: "Generating video. Checking provider status...",
+            notes: zh ? "正在生成视频，等待模型返回结果……" : "Generating video. Checking provider status...",
           };
         });
         persistGenerationVariants(next);
@@ -1051,7 +1052,7 @@ export function ReferenceVideoComposer({
         label: `Variation ${index + 1}`,
         status: "queued",
         progress: 8,
-        notes: "Submitting image-to-video generation.",
+        notes: zh ? "正在提交生成任务……" : "Submitting image-to-video generation.",
       }),
     );
     setVariants(queuedVariants);
@@ -1141,7 +1142,7 @@ export function ReferenceVideoComposer({
             submitError instanceof Error
               ? submitError.message
               : "Failed to create generation job",
-          notes: "Submission failed.",
+          notes: zh ? "任务提交失败，请检查后重试。" : "Submission failed.",
         };
         submittedVariants[index] = failedVariant;
         setVariants((current) =>
@@ -1172,7 +1173,7 @@ export function ReferenceVideoComposer({
             generationError instanceof Error
               ? generationError.message
               : "Generation failed",
-          notes: "Generation failed.",
+          notes: zh ? "视频生成失败。" : "Generation failed.",
         },
       ]);
       setError(
@@ -1269,7 +1270,7 @@ export function ReferenceVideoComposer({
                   </span>
                   <span className="text-xs text-muted-foreground">
                     {uploadedReferenceImageCount}/{maxUploadedReferenceImages}{" "}
-                    images · {uploadedReferenceVideoCount}/{maxUploadedReferenceVideos} video
+                    {zh ? "张图片" : "images"} · {uploadedReferenceVideoCount}/{maxUploadedReferenceVideos} {zh ? "条视频" : "video"}
                   </span>
                 </button>
 
@@ -1279,7 +1280,7 @@ export function ReferenceVideoComposer({
                       {generationMode.label}
                     </span>
                     <span className="text-xs text-muted-foreground">
-                      Current path
+                      {zh ? "当前生成方式" : "Current path"}
                     </span>
                   </div>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -1325,7 +1326,7 @@ export function ReferenceVideoComposer({
                               );
                             });
                           }}
-                          aria-label="Remove asset"
+                          aria-label={zh ? "移除参考素材" : "Remove asset"}
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -1347,8 +1348,8 @@ export function ReferenceVideoComposer({
                       type="button"
                       onClick={clearPrompt}
                       className="absolute right-0 top-0 z-10 grid h-7 w-7 place-items-center rounded-md bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
-                      aria-label="Clear prompt"
-                      title="Clear prompt"
+                      aria-label={zh ? "清空提示词" : "Clear prompt"}
+                      title={zh ? "清空提示词" : "Clear prompt"}
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -1375,9 +1376,9 @@ export function ReferenceVideoComposer({
                           setIsReferenceMenuOpen((open) => !open);
                         }}
                         className="grid h-5 w-5 place-items-center rounded-lg bg-muted text-muted-foreground hover:text-foreground"
-                        aria-label="Mention an uploaded image"
+                        aria-label={zh ? "引用参考图片" : "Mention an uploaded image"}
                         aria-expanded={isReferenceMenuOpen}
-                        title="Mention an uploaded image"
+                        title={zh ? "引用参考图片" : "Mention an uploaded image"}
                       >
                         <AtSign className="h-3.5 w-3.5" />
                       </button>
@@ -1447,7 +1448,7 @@ export function ReferenceVideoComposer({
                     }
                     className="h-10 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
                   >
-                    <option value={autoBalancedModelId}>Auto · Balanced</option>
+                    <option value={autoBalancedModelId}>{zh ? "自动选择 · 均衡" : "Auto · Balanced"}</option>
                     {models.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.label}
@@ -1590,7 +1591,7 @@ export function ReferenceVideoComposer({
                         </div>
                         <div>
                           <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-                            Variations
+                            {zh ? "生成数量" : "Variations"}
                           </p>
                           <div className="grid grid-cols-4 gap-1.5 rounded-xl bg-muted/50 p-1.5">
                             {outputCountOptions.map((option) => (
@@ -1645,20 +1646,20 @@ export function ReferenceVideoComposer({
                   {t("emptyHint") || "Generated video will appear here"}
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Enter a prompt on the left and click generate to start.
+                  {zh ? "输入提示词，选择模型，开始生成你的作品。" : "Enter a prompt, choose a model and generate your video."}
                 </p>
               </div>
             ) : (
               <div className="rounded-xl border border-border bg-background p-4">
-                <h3 className="font-semibold">Generation status</h3>
+                <h3 className="font-semibold">{zh ? "生成进度" : "Generation status"}</h3>
                 {variants.map((variant) => (
                   <div
                     key={variant.id}
                     className="mt-3 text-sm text-muted-foreground"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <span>{variant.error || variant.notes}</span>
-                      <span className="shrink-0">{variant.status}</span>
+                      <span>{variant.error || (zh && variant.notes === "Ready to submit." ? "填写提示词后即可开始生成。" : variant.notes)}</span>
+                      <span className="shrink-0">{localizedStatus(variant.status, zh ? "zh" : "en")}</span>
                     </div>
                     <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
                       <span
@@ -1667,7 +1668,7 @@ export function ReferenceVideoComposer({
                       />
                     </div>
                     <p className="mt-1 text-xs font-medium text-foreground">
-                      {variant.label}
+                      {zh ? (variant.label === "Primary output" ? "生成结果" : variant.label.replace(/^Variation (\d+)$/, "生成结果 $1")) : variant.label}
                     </p>
                     {variant.providerTaskId ? (
                       <p className="mt-2 break-all text-xs">
@@ -1684,7 +1685,7 @@ export function ReferenceVideoComposer({
                         />
                         <div className="flex items-center justify-between gap-3 bg-background px-3 py-2">
                           <span className="text-xs text-muted-foreground">
-                            {variant.label}
+                            {zh ? (variant.label === "Primary output" ? "生成结果" : variant.label.replace(/^Variation (\d+)$/, "生成结果 $1")) : variant.label}
                           </span>
                         </div>
                       </div>

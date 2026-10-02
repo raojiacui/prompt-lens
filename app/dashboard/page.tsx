@@ -172,30 +172,30 @@ export default function DashboardPage() {
   }> = [
     {
       key: "analyze",
-      title: "视频分析",
-      description: "上传视频或图片，提取镜头信息并生成可复用提示词",
+      title: zh ? "视频分析" : "Video analysis",
+      description: zh ? "拆分镜头，提取画面细节，获得可复刻、可改写的提示词" : "Break down a reference into shots and detailed prompts you can reuse or rewrite",
       icon: Sparkles,
       image: "/feature-video-analysis.png",
-      badge: "LAST USED",
+      badge: zh ? "最近使用" : "Last used",
     },
     {
       key: "video-gen",
-      title: "视频生成",
-      description: "输入创意提示词，配置比例、时长和参考图生成视频",
+      title: zh ? "视频生成" : "Video generation",
+      description: zh ? "选择模型，把提示词和参考图变成自己的视频" : "Choose a model and turn prompts and reference images into your own video",
       icon: Video,
       image: "/feature-video-generation.png",
     },
     {
       key: "audio",
-      title: "音频分析",
-      description: "识别视频语音，整理片段摘要并辅助选择剪辑段落",
+      title: zh ? "音频分析" : "Audio analysis",
+      description: zh ? "识别语音与对白，整理片段摘要" : "Transcribe speech and dialogue into useful summaries",
       icon: Mic2,
       image: "/feature-audio-recognition.png",
     },
     {
       key: "edit",
-      title: "视频剪辑",
-      description: "用自然语言描述剪辑目标，调用 FFmpeg 服务输出成片",
+      title: zh ? "视频剪辑" : "Video editing",
+      description: zh ? "描述剪辑目标，整理片段并输出成片" : "Describe your edit, refine the clips and export a finished video",
       icon: Scissors,
       image: "/feature-video-edit.png",
     },
@@ -213,7 +213,7 @@ export default function DashboardPage() {
   const systemTools = [
     { key: "history" as Tab, label: t("dashboard.tabs.history"), icon: Clock },
     { key: "settings" as Tab, label: t("dashboard.tabs.settings"), icon: Settings },
-    ...(canAccessAdmin ? [{ key: "admin" as Tab, label: "后台", icon: Shield }] : []),
+    ...(canAccessAdmin ? [{ key: "admin" as Tab, label: zh ? "管理后台" : "Administration", icon: Shield }] : []),
   ];
   if (isPending || !session?.user) {
     return (
@@ -410,7 +410,7 @@ export default function DashboardPage() {
                       className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-[#D97757] transition-colors hover:bg-[var(--color-bg-raised)]"
                     >
                       <Shield className="h-4 w-4" />
-                      后台
+                      {zh ? "管理后台" : "Administration"}
                     </button>
                   ) : null}
                   {session?.user ? (
@@ -428,9 +428,9 @@ export default function DashboardPage() {
 
               <div className="text-center mb-10 md:mb-14">
                 <h1 className="text-4xl md:text-6xl font-bold tracking-normal text-[var(--color-text-primary)]" style={{ fontFamily: 'var(--font-display)' }}>
-                  Create with AI
+                  {zh ? "开始你的创作" : "Create with AI"}
                 </h1>
-                <p className="mt-5 text-xl md:text-2xl text-[var(--color-text-secondary)]">How would you like to get started?</p>
+                <p className="mt-5 text-xl md:text-2xl text-[var(--color-text-secondary)]">{zh ? "从参考视频出发，或直接把创意变成画面。" : "Start with a reference or bring a new idea to life."}</p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 md:gap-7">

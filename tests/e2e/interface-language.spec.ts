@@ -28,6 +28,12 @@ for (const locale of ["zh", "en"]) {
       await expect(page.getByRole("heading", { name: zh ? "我的项目" : "Your projects", exact: true })).toBeVisible();
       await expect(page.getByText(zh ? "分析结果会显示在这里" : "Your analysis will appear here", { exact: true })).toBeVisible();
       await expect(page.getByText(zh ? "还没有项目" : "No projects yet", { exact: true })).toBeVisible();
+      await page.goto("/dashboard");
+      await expect(page.getByRole("heading", { name: zh ? "开始你的创作" : "Create with AI", exact: true })).toBeVisible();
+      await page.goto("/dashboard?tab=video-gen");
+      await expect(page.getByText(zh ? "文字生成视频" : "Text to video", { exact: true })).toBeVisible();
+      await expect(page.getByText(zh ? "输入提示词，选择模型，开始生成你的作品。" : "Enter a prompt, choose a model and generate your video.", { exact: true })).toBeVisible();
+      if (zh) await expect(page.getByText(/Current path|Variation|images ·/)).toHaveCount(0);
       await page.screenshot({ path: `test-results/interface-${locale}-${width}.png`, fullPage: true });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     });

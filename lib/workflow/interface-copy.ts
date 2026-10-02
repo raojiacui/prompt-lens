@@ -35,6 +35,7 @@ export function localizedStatus(status: string | undefined, locale: string, fall
   const statuses: Record<string, [string, string]> = {
     draft: ["草稿", "Draft"], ready: ["已就绪", "Ready"], pending: ["等待处理", "Pending"],
     queued: ["排队中", "Queued"], processing: ["处理中", "Processing"],
+    generating: ["生成中", "Generating"], uploading: ["上传中", "Uploading"],
     analyzing: ["分析中", "Analyzing"], completed: ["已完成", "Completed"],
     failed: ["失败", "Failed"], cancelled: ["已取消", "Cancelled"],
   };
