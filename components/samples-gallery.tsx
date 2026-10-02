@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useLocale } from "next-intl";
+import { localizedStatus } from "@/lib/workflow/interface-copy";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn, formatDate, truncate } from "@/lib/utils";
@@ -25,6 +27,7 @@ type ProjectSample = {
 type Filter = "all" | "video" | "image";
 
 export function SamplesGallery() {
+  const zh = useLocale() !== "en";
   const [records, setRecords] = useState<ProjectSample[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -75,9 +78,9 @@ export function SamplesGallery() {
         <section className="flex flex-col gap-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)]/80 px-3 py-3 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-2">
             {[
-              { key: "all", label: `全部 ${records.length}` },
-              { key: "video", label: `视频 ${videoCount}` },
-              { key: "image", label: `图片 ${imageCount}` },
+              { key: "all", label: `${zh ? "全部" : "All"} ${records.length}` },
+              { key: "video", label: `${zh ? "视频" : "Videos"} ${videoCount}` },
+              { key: "image", label: `${zh ? "图片" : "Images"} ${imageCount}` },
             ].map((item) => (
               <button
                 key={item.key}
@@ -97,7 +100,7 @@ export function SamplesGallery() {
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="搜索项目名或提示词"
+              placeholder={zh ? "搜索项目名或提示词" : "Search projects or prompts"}
               className="min-w-0 flex-1 bg-transparent text-sm text-[var(--color-text-primary)] outline-none placeholder:text-[var(--color-text-muted)]"
             />
           </label>
@@ -105,11 +108,11 @@ export function SamplesGallery() {
 
         <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
           <p className="min-w-0 flex-1 text-base leading-relaxed text-[var(--color-text-secondary)] md:whitespace-nowrap">
-            这里展示视频分析 Projects 中精选的公开项目，访客可以直接浏览素材、场景结构和可复用提示词方向。
+            {zh ? "看看参考视频是如何拆成镜头和提示词的，找到你的创作灵感。" : "Explore reference videos, shot breakdowns and reusable prompts for your next project."}
           </p>
           <Link href="/" className="inline-flex items-center gap-2 text-lg font-semibold text-[#B76442] transition-colors hover:text-[#8F4630]">
             <ArrowLeft className="h-5 w-5" />
-            返回
+            {zh ? "返回首页" : "Back to home"}
           </Link>
         </div>
 
@@ -127,10 +130,10 @@ export function SamplesGallery() {
           </div>
         ) : (
           <div className="mt-10 rounded-lg border border-dashed border-[var(--color-border-default)] bg-[var(--color-bg-raised)]/80 p-8 text-center">
-            <p className="font-semibold">还没有可展示的样例</p>
-            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">管理员账号完成视频分析 Project 后，项目样例会公开展示在这里。</p>
+            <p className="font-semibold">{zh ? "暂时没有匹配的样例" : "No matching samples"}</p>
+            <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{zh ? "换个关键词试试，或上传自己的素材开始分析。" : "Try another search, or analyze your own reference."}</p>
             <Link href="/dashboard?tab=analyze" className="mt-5 inline-flex">
-              <Button className="rounded-full bg-[#B76442] px-6 hover:bg-[#8F4630]">去分析</Button>
+              <Button className="rounded-full bg-[#B76442] px-6 hover:bg-[#8F4630]">{zh ? "开始分析" : "Analyze a reference"}</Button>
             </Link>
           </div>
         )}
@@ -140,8 +143,10 @@ export function SamplesGallery() {
 }
 
 function SampleCard({ record }: { record: ProjectSample }) {
+  const locale = useLocale();
+  const zh = locale !== "en";
   const isVideo = record.mediaType === "video";
-  const title = record.title || record.mediaName || "Untitled project";
+  const title = record.title || record.mediaName || (zh ? "未命名项目" : "Untitled project");
   const description = record.summary || record.prompt || "";
   const durationLabel = record.duration ? formatDuration(record.duration) : null;
 
@@ -160,17 +165,17 @@ function SampleCard({ record }: { record: ProjectSample }) {
           </div>
         )}
         <div className="absolute right-3 top-3 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-          {isVideo ? "Video" : "Image"}
+          {isVideo ? (zh ? "视频" : "Video") : (zh ? "图片" : "Image")}
         </div>
       </div>
       <div className="p-5">
         <div className="flex items-start justify-between gap-3">
           <h2 className="min-w-0 break-words text-xl font-semibold leading-tight">{title}</h2>
-          <span className="shrink-0 rounded-full bg-[#F1E0D4] px-2 py-1 text-xs font-semibold text-[#8F4630]">{statusLabel(record.status)}</span>
+          <span className="shrink-0 rounded-full bg-[#F1E0D4] px-2 py-1 text-xs font-semibold text-[#8F4630]">{localizedStatus(record.status, locale)}</span>
         </div>
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-[var(--color-text-secondary)]">
           <span>{formatDate(record.updatedAt || record.createdAt).split(" ")[0]}</span>
-          <span>{record.sceneCount} 个场景</span>
+          <span>{record.sceneCount} {zh ? "个镜头" : (record.sceneCount === 1 ? "shot" : "shots")}</span>
           {durationLabel ? <span>{durationLabel}</span> : null}
         </div>
         {description ? <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-[var(--color-text-secondary)]">{truncate(description, 150)}</p> : null}
@@ -178,16 +183,6 @@ function SampleCard({ record }: { record: ProjectSample }) {
       </div>
     </Link>
   );
-}
-
-function statusLabel(status: string) {
-  const labels: Record<string, string> = {
-    draft: "草稿",
-    analyzing: "分析中",
-    ready: "ready",
-    failed: "失败",
-  };
-  return labels[status] || status;
 }
 
 function formatDuration(seconds: number) {

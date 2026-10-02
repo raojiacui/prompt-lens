@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { VideoOverview } from "@/components/workflow/video-overview";
+import { workspaceCopyFor, localizedStatus, localizedVersionLabel } from "@/lib/workflow/interface-copy";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown> };
@@ -134,7 +135,7 @@ export function SampleProjectDetail({ sampleId }: { sampleId: string }) {
       <div className="mx-auto max-w-[1480px]">
         <Link href="/samples" className="inline-flex items-center gap-2 text-base font-semibold text-[#B76442] transition-colors hover:text-[#8F4630]">
           <ArrowLeft className="h-5 w-5" />
-          返回样例
+          {workspaceCopyFor(locale).backSamples}
         </Link>
 
         {loading ? (
@@ -173,6 +174,8 @@ function ProjectBundleView({
   copiedSceneVersionId: string | null;
   copySceneAnalysis: (sceneVersion: SceneVersion) => void;
 }) {
+  const locale = useLocale();
+  const ui = workspaceCopyFor(locale);
   const mediaType = projectMediaType(bundle);
 
   return (
@@ -182,10 +185,10 @@ function ProjectBundleView({
           <div>
             <h1 className="text-3xl font-semibold tracking-normal md:text-5xl">{bundle.project.title}</h1>
             <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-              Active version: {bundle.activeVersion?.label || "None"} · {bundle.scenes.length} scene{bundle.scenes.length === 1 ? "" : "s"}
+              {ui.activeVersion}：{localizedVersionLabel(bundle.activeVersion, locale)} · {bundle.scenes.length} {ui.scene}{locale === "en" && bundle.scenes.length !== 1 ? "s" : ""}
             </p>
           </div>
-          <span className="rounded-full bg-[#F1E0D4] px-3 py-1 text-sm font-semibold text-[#8F4630]">公开视频样例</span>
+          <span className="rounded-full bg-[#F1E0D4] px-3 py-1 text-sm font-semibold text-[#8F4630]">{ui.publicSample}</span>
         </div>
 
         {bundle.referenceVideos[0]?.sourceUrl ? (
@@ -210,12 +213,12 @@ function ProjectBundleView({
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold">Scene {String(sceneVersion.sceneIndex).padStart(2, "0")}</h3>
-                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", needsReview ? "bg-amber-500/15 text-amber-700" : "bg-emerald-500/15 text-emerald-700")}>{sceneStatusLabel(scene, sceneVersion)}</span>
+                    <h3 className="font-semibold">{ui.scene} {String(sceneVersion.sceneIndex).padStart(2, "0")}</h3>
+                    <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", needsReview ? "bg-amber-500/15 text-amber-700" : "bg-emerald-500/15 text-emerald-700")}>{sceneStatusLabel(locale, scene, sceneVersion)}</span>
                   </div>
                   {mediaType === "video" ? (
                     <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                      {formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}s
+                      {formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}{ui.seconds}
                     </p>
                   ) : null}
                 </div>
@@ -233,7 +236,7 @@ function ProjectBundleView({
 
               <div className="mt-4">
                 <div className="flex items-center justify-between gap-3">
-                  <label htmlFor={`sample-prompt-${sceneVersion.id}`} className="text-sm font-semibold">完整复刻提示词</label>
+                  <label htmlFor={`sample-prompt-${sceneVersion.id}`} className="text-sm font-semibold">{ui.prompt}</label>
                   <div className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)]">
                     <button
                       type="button"
@@ -308,10 +311,9 @@ function formatTime(seconds: number) {
 
 
 
-function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
+function sceneStatusLabel(locale: string, scene?: Scene, sceneVersion?: SceneVersion) {
   const provider = sceneVersion?.metadata?.analysisProvider;
-  if (scene?.status === "failed") return provider === "fallback" ? "Needs review" : "Failed";
-  if (scene?.status === "completed") return "Analyzed";
-  if (scene?.status === "processing") return "Analyzing";
-  return scene?.status || "Ready";
+  if (scene?.status === "completed") return locale === "en" ? "Analyzed" : "已分析";
+  if (scene?.status === "processing") return locale === "en" ? "Analyzing" : "分析中";
+  return localizedStatus(scene?.status, locale, provider === "fallback");
 }
