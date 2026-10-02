@@ -16,6 +16,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
   const [selected, setSelected] = useState<(typeof COMMERCIAL_PACKAGES)[number] | null>(null);
   const requestIds = useRef<Record<string, string>>({});
   const [checkoutAttempt, setCheckoutAttempt] = useState(0);
+  const [previousOrderUnconfirmed, setPreviousOrderUnconfirmed] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/payments/checkout", { cache: "no-store", signal: controller.signal })
@@ -53,6 +54,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
                 const storageKey = `promptlens:checkout:${session?.user.id || "current"}:${pack.id}`;
                 try { requestIds.current[pack.id] ??= localStorage.getItem(storageKey) || crypto.randomUUID(); localStorage.setItem(storageKey, requestIds.current[pack.id]); }
                 catch { requestIds.current[pack.id] ??= crypto.randomUUID(); }
+                setPreviousOrderUnconfirmed(false);
                 setSelected(pack);
               }} className="mt-auto min-h-11 rounded-lg bg-[#241915] px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50">
                 {enabled ? (zh ? "支付宝购买" : "Buy with Alipay") : (zh ? "即将开放" : "Coming soon")}
@@ -73,7 +75,8 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
         </div>
       </div>
       <div className="mx-auto mt-6 max-w-6xl px-4 text-center"><Link href="/billing" className="text-sm underline underline-offset-4">{zh ? "余额与订单" : "Balance and orders"}</Link></div>
-      {selected && <AlipayCheckoutDialog key={`${selected.id}:${checkoutAttempt}`} pack={selected} requestId={requestIds.current[selected.id]} onClose={() => setSelected(null)} onNewOrder={() => {
+      {selected && <AlipayCheckoutDialog key={`${selected.id}:${checkoutAttempt}`} pack={selected} requestId={requestIds.current[selected.id]} previousOrderUnconfirmed={previousOrderUnconfirmed} onClose={() => setSelected(null)} onNewOrder={(previous) => {
+        setPreviousOrderUnconfirmed(previous?.status === "pending");
         requestIds.current[selected.id] = crypto.randomUUID();
         try { localStorage.setItem(`promptlens:checkout:${session?.user.id || "current"}:${selected.id}`, requestIds.current[selected.id]); } catch { /* Keep the in-memory ID when storage is unavailable. */ }
         setCheckoutAttempt((value) => value + 1);

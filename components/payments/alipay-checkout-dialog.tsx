@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { CheckCircle2, RefreshCw, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
+import { shouldRestartCheckout } from "@/lib/payments/checkout-restart";
 
 type Checkout = { orderId: string; amountCents: number; credits: number; rewrites: number; qrImageUrl: string | null; mobilePaymentUrl: string | null; paymentUrl?: string | null; cancellationRequested?: boolean; expiresAt: string; status: string };
 function safePaymentUrl(value: string | null | undefined) {
@@ -11,10 +12,11 @@ function safePaymentUrl(value: string | null | undefined) {
   try { const url = new URL(value || ""); return url.protocol === "https:" ? url.href : null; } catch { return null; }
 }
 
-export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose, onPaid, onNewOrder }: {
+export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose, onPaid, onNewOrder, previousOrderUnconfirmed = false }: {
   pack: { id: string; priceCents: number; credits: number; rewrites: number };
   requestId: string; existingOrderId?: string; onClose: () => void; onPaid: () => void;
-  onNewOrder?: () => void;
+  onNewOrder?: (previous?: { orderId: string; status: string }) => void;
+  previousOrderUnconfirmed?: boolean;
 }) {
   const zh = useLocale() === "zh";
   const dialog = useRef<HTMLDialogElement>(null);
@@ -47,6 +49,12 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
         if (!response.ok) throw new Error(data.code === "CHECKOUT_NOT_OPEN" ? (zh ? "收款暂未开放" : "Checkout is not open yet") : (zh ? "暂时无法确认订单，请重试查询。" : "Unable to confirm the order. Retry to check."));
         if (!data.orderId || !Number.isFinite(Date.parse(data.expiresAt)) || !Number.isSafeInteger(data.amountCents) || data.amountCents < 1
           || !Number.isSafeInteger(data.credits) || data.credits < 0 || !Number.isSafeInteger(data.rewrites) || data.rewrites < 0) throw new Error(zh ? "订单信息不完整" : "Incomplete order information");
+        // A purchase click may restore an expired idempotency key. Start a fresh
+        // checkout, but never replace an order opened explicitly from history.
+        if (!controller.signal.aborted && !existingOrderId && onNewOrder && shouldRestartCheckout(data)) {
+          onNewOrder({ orderId: data.orderId, status: data.status });
+          return;
+        }
         if (!controller.signal.aborted) { setLoading(false); setCheckout(data); }
       }).catch((reason) => { if (!controller.signal.aborted) setError(reason.message); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -110,6 +118,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
       </div>
       <p className="mt-4 min-h-9 text-center text-3xl font-semibold">{checkout ? `¥${(checkout.amountCents / 100).toFixed(2)}` : "--"}</p>
       <p className="mt-2 min-h-5 text-center text-sm text-muted-foreground">{checkout && <>{checkout.credits} {zh ? "积分" : "credits"} · {checkout.rewrites} {zh ? "次改写" : "rewrites"}</>}</p>
+      {previousOrderUnconfirmed && <p role="status" className="mt-3 text-sm text-amber-800">{zh ? "上一笔订单已超时，已重新下单。若上一笔已经付款，请勿重复支付，可在「余额与订单」核对到账。" : "Your previous order expired and a new checkout was created. If you already paid, do not pay again; check Balance and orders."}</p>}
       <div className={`my-4 flex flex-col items-center justify-center gap-2 text-center ${loading ? "min-h-56" : ""}`} aria-live="polite">
         {loading && <><Spinner /><p className="text-sm text-muted-foreground">{zh ? "正在加载订单…" : "Loading your order…"}</p></>}
         {paid && <><CheckCircle2 className="h-12 w-12 text-green-700" /><p>{zh ? "支付成功，权益已到账" : "Payment received. Credits and rewrites added."}</p></>}
@@ -136,7 +145,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
       {!paid && !loading && <button onClick={() => setAttempt((value) => value + 1)} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm"><RefreshCw className="h-4 w-4" />{zh ? "重新查询" : "Check again"}</button>}
       {onNewOrder && checkout && !paid && (pending ? remaining === 0 : ["failed", "cancelled", "refunded"].includes(checkout.status)) && <div className="mt-4 border-t border-border pt-4 text-sm">
         <label className="flex items-start gap-2"><input type="checkbox" className="mt-1" checked={unpaidConfirmed} onChange={(event) => setUnpaidConfirmed(event.target.checked)} /><span>{zh ? "我已核对支付宝账单，确认此订单未付款或已退款。新订单不会取消旧订单，请勿重复付款。" : "I checked Alipay and this order is unpaid or refunded. A new order does not cancel the old one. Do not pay twice."}</span></label>
-        <button disabled={!unpaidConfirmed} onClick={onNewOrder} className="mt-3 min-h-11 w-full rounded-lg border border-border px-3 disabled:opacity-50">{zh ? "创建新订单" : "Create a new order"}</button>
+        <button disabled={!unpaidConfirmed} onClick={() => onNewOrder({ orderId: checkout.orderId, status: checkout.status })} className="mt-3 min-h-11 w-full rounded-lg border border-border px-3 disabled:opacity-50">{zh ? "创建新订单" : "Create a new order"}</button>
       </div>}
       {checkout && <p className="mt-4 break-all text-xs text-muted-foreground">{zh ? "订单号：" : "Order: "}{checkout.orderId}</p>}
     </dialog>
