@@ -149,6 +149,7 @@ export function AdminOverviewPanel() {
   }, []);
 
   const maxDaily = useMemo(() => Math.max(1, ...(data?.daily || []).flatMap((day) => [day.activeUsers || 0, day.signedInUsers, day.uploads, day.analyses, day.generations])), [data]);
+  const dailyNewestFirst = useMemo(() => [...(data?.daily || [])].sort((a, b) => b.date.localeCompare(a.date)), [data]);
 
   if (loading && !data) {
     return <div className="grid min-h-[420px] place-items-center rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)]"><Spinner /></div>;
@@ -193,7 +194,7 @@ export function AdminOverviewPanel() {
 
       <Section title={copy.activityTitle} note={copy.activityNote}>
         <div className="mt-4 grid gap-2">
-          {data.daily.map((day) => (
+          {dailyNewestFirst.map((day) => (
             <div key={day.date} className="grid gap-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-base)] p-3 lg:grid-cols-[7rem_minmax(0,1fr)_7rem] lg:items-center">
               <p className="text-sm font-semibold text-[var(--color-text-primary)]">{day.date}</p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">

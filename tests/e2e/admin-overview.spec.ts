@@ -29,8 +29,9 @@ const overview = {
     videoClips: 91,
   },
   daily: [
-    { date: "2026-09-15", activeUsers: 72, signedInUsers: 18, uploads: 9, uploadBytes: 1_200_000, analyses: 12, generations: 5 },
-    { date: "2026-09-16", activeUsers: 88, signedInUsers: 24, uploads: 14, uploadBytes: 2_400_000, analyses: 19, generations: 8 },
+    { date: "2026-09-30", activeUsers: 72, signedInUsers: 18, uploads: 9, uploadBytes: 1_200_000, analyses: 12, generations: 5 },
+    { date: "2026-10-02", activeUsers: 88, signedInUsers: 24, uploads: 14, uploadBytes: 2_400_000, analyses: 19, generations: 8 },
+    { date: "2026-10-01", activeUsers: 80, signedInUsers: 20, uploads: 10, uploadBytes: 1_800_000, analyses: 15, generations: 6 },
   ],
   actionCounts: [{ action: "video.analysis", value: 73 }],
   topUsers: [],
@@ -66,6 +67,8 @@ for (const scenario of [{ locale: "zh", width: 1440 }, { locale: "en", width: 39
     await expect(page.getByText("buyer@example.com")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(scenario.locale === "zh" ? "今日网站访客" : "Website visitors today")).toBeVisible();
     await expect(page.getByText(scenario.locale === "zh" ? "活跃用户 DAU" : "Active user DAU")).toBeVisible();
+    const activitySection = page.locator("section").filter({ has: page.getByRole("heading", { name: scenario.locale === "zh" ? "近 14 天活跃趋势" : "14-day activity", exact: true }) });
+    await expect(activitySection.locator("p").filter({ hasText: /^\d{4}-\d{2}-\d{2}$/ })).toHaveText(["2026-10-02", "2026-10-01", "2026-09-30"]);
     await expect(page.getByText(scenario.locale === "zh" ? "后台发放积分" : "Manual credit grant")).toHaveCount(0);
     await expect(page.getByText(scenario.locale === "zh" ? "待确认付款" : "Pending manual payments")).toHaveCount(0);
 
