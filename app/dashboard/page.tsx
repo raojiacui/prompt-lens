@@ -71,7 +71,7 @@ export default function DashboardPage() {
       nextParams.delete("model");
     } else {
       nextParams.set("tab", tab);
-      if (tab !== "video-gen" && tab !== "audio" && tab !== "edit") {
+      if (tab !== "video-gen") {
         nextParams.delete("videoGenPrompt");
         nextParams.delete("projectId");
         nextParams.delete("sceneId");
