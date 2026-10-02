@@ -13,6 +13,36 @@ const accepted = {
 describe("Commercial launch guard", () => {
   beforeEach(() => { for (const [key, value] of Object.entries(accepted)) vi.stubEnv(key, value); });
   afterEach(() => vi.unstubAllEnvs());
+  function localCheckout() {
+    vi.stubEnv("NODE_ENV", "development");
+    vi.stubEnv("VERCEL", "");
+    vi.stubEnv("COMMERCIAL_ACCEPTANCE_ENABLED", "true");
+    vi.stubEnv("COMMERCIAL_ACCEPTANCE_USER_IDS", "");
+    vi.stubEnv("COMMERCIAL_LOCAL_CHECKOUT_ENABLED", "true");
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "http://localhost:3000");
+    vi.stubEnv("COMMERCIAL_SALES_ENABLED", "false");
+    vi.stubEnv("COMMERCIAL_SCHEDULER_ACCEPTED", "false");
+    vi.stubEnv("ALIPAY_SANDBOX", "false");
+  }
+  it("permits all signed-in users to test live checkout locally without opening sales", () => {
+    localCheckout();
+    expect(commercialAcceptanceAllowed("any-user")).toBe(true);
+    expect(commercialAcceptanceAllowed("")).toBe(false);
+    expect(commercialSalesReady()).toBe(false);
+  });
+  it.each([
+    ["NODE_ENV", "production"], ["VERCEL", "1"],
+    ["NEXT_PUBLIC_SITE_URL", "https://example.com"],
+    ["NEXT_PUBLIC_SITE_URL", "http://localhost.example.com"],
+    ["NEXT_PUBLIC_SITE_URL", "not-a-url"],
+    ["COMMERCIAL_LOCAL_CHECKOUT_ENABLED", "false"],
+    ["COMMERCIAL_ACCEPTANCE_ENABLED", "false"],
+    ["ALIPAY_PRIVATE_KEY", ""], ["COMMERCIAL_MIGRATION_ACCEPTED", "0015"],
+  ])("does not enable local testing with %s=%s", (key, value) => {
+    localCheckout();
+    vi.stubEnv(key, value);
+    expect(commercialAcceptanceAllowed("any-user")).toBe(false);
+  });
   it("requires all acceptance markers", () => { expect(commercialSalesReady()).toBe(true); });
   it("rejects a migration marker from before analysis and media cleanup", () => {
     vi.stubEnv("COMMERCIAL_MIGRATION_ACCEPTED", "0015");
