@@ -88,6 +88,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
   const pending = checkout?.status === "pending";
   const qr = checkout && safePaymentUrl(checkout.qrImageUrl);
   const paymentUrl = checkout && safePaymentUrl(checkout.paymentUrl || checkout.mobilePaymentUrl);
+  const embeddedUrl = paymentUrl && /^\/api\/payments\/orders\/[0-9a-f-]{36}\/pay$/i.test(paymentUrl) ? `${paymentUrl}?embedded=1` : null;
   async function cancelPayment() {
     if (!checkout || cancelling) return;
     setCancelling(true); setError("");
@@ -112,7 +113,11 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
       <div className="my-5 flex min-h-60 flex-col items-center justify-center gap-3 text-center" aria-live="polite">
         {loading && <Spinner />}
         {paid && <><CheckCircle2 className="h-12 w-12 text-green-700" /><p>{zh ? "支付成功，权益已到账" : "Payment received. Credits and rewrites added."}</p></>}
-        {pending && remaining > 0 && !checkout.cancellationRequested && (paymentUrl ? <a href={paymentUrl} className="rounded-lg bg-[#1677ff] px-5 py-3 text-white">{zh ? "前往支付宝支付" : "Continue to Alipay"}</a> : qr ? <img src={qr} alt={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={224} height={224} className="h-56 w-56 max-w-full object-contain" onError={() => setError(zh ? "二维码加载失败，请稍后查询订单。" : "QR code could not load. Check the order later.")} /> : <p>{zh ? "正在准备支付宝收银台，请勿另建订单。" : "Preparing Alipay checkout. Do not create another order."}</p>)}
+        {pending && remaining > 0 && !checkout.cancellationRequested && (embeddedUrl ? <>
+          <iframe key={`${checkout.orderId}:${attempt}`} src={embeddedUrl} title={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={256} height={300} className="h-[300px] w-64 max-w-full rounded-lg bg-white" sandbox="allow-scripts allow-forms allow-same-origin" referrerPolicy="same-origin" />
+          <p className="text-sm">{zh ? "打开支付宝，扫一扫付款" : "Scan with Alipay to pay"}</p>
+          <a href={paymentUrl!} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground underline underline-offset-4">{zh ? "手机付款 / 二维码无法显示" : "Pay on mobile / QR unavailable"}</a>
+        </> : qr ? <img src={qr} alt={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={224} height={224} className="h-56 w-56 max-w-full object-contain" onError={() => setError(zh ? "二维码加载失败，请稍后查询订单。" : "QR code could not load. Check the order later.")} /> : paymentUrl ? <a href={paymentUrl} className="rounded-lg bg-[#1677ff] px-5 py-3 text-white">{zh ? "前往支付宝支付" : "Continue to Alipay"}</a> : <p>{zh ? "正在准备支付宝收银台，请勿另建订单。" : "Preparing Alipay checkout. Do not create another order."}</p>)}
         {pending && checkout.cancellationRequested && <p>{zh ? "正在核对取消结果，请勿继续付款。" : "Verifying cancellation. Do not continue payment."}</p>}
         {pending && <p className="text-sm text-muted-foreground">{remaining ? (zh ? `付款码有效时间 ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` : `Payment code expires in ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`) : (zh ? "付款码已过期；如已付款，请等待到账确认。" : "Payment code expired. If paid, wait for confirmation.")}</p>}
         {checkout && !pending && !paid && <p>{zh ? ({ failed: "订单未完成", refunded: "订单已退款", cancelled: "订单已取消" }[checkout.status] || "订单状态待确认") : `Order ${checkout.status}`}</p>}

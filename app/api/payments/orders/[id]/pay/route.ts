@@ -31,6 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!issued) return NextResponse.redirect(new URL(`/billing/payment/return?orderId=${order.id}`, request.url));
 
   const base = siteUrl(request);
+  const embedded = request.nextUrl.searchParams.get("embedded") === "1";
   const html = createAlipayPaymentForm({
     outTradeNo: order.providerOrderId,
     amountCents: order.amountCents,
@@ -38,12 +39,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     returnUrl: `${base}/billing/payment/return?orderId=${order.id}`,
     notifyUrl: alipayNotifyUrl(base),
     expiresAt: deadline,
+    embedded,
   });
   return new NextResponse(html, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "private, no-store",
-      "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; form-action https://openapi.alipay.com https://openapi-sandbox.dl.alipaydev.com",
+      "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-ancestors 'self'; form-action https://openapi.alipay.com https://openapi-sandbox.dl.alipaydev.com",
+      "X-Frame-Options": "SAMEORIGIN",
       "Referrer-Policy": "no-referrer",
     },
   });

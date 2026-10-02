@@ -22,6 +22,7 @@ export function middleware(request: NextRequest) {
     : defaultLocale;
 
   const response = NextResponse.next();
+  const paymentFrame = /^\/api\/payments\/orders\/[0-9a-f-]{36}\/pay$/i.test(request.nextUrl.pathname);
 
   // 2. 若 cookie 不存在，写入检测到的 locale（不重写 URL —— cookie 模式核心）
   if (!isLocale(cookieLocale)) {
@@ -35,7 +36,7 @@ export function middleware(request: NextRequest) {
   // 3. 安全头部配置（原有逻辑保留）
   const securityHeaders = {
     "X-XSS-Protection": "1; mode=block",
-    "X-Frame-Options": "DENY",
+    "X-Frame-Options": paymentFrame ? "SAMEORIGIN" : "DENY",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
@@ -54,7 +55,8 @@ export function middleware(request: NextRequest) {
     "img-src 'self' blob: data: https:",
     "media-src 'self' blob: https:",
     "connect-src 'self' https: wss:",
-    "frame-ancestors 'none'",
+    "frame-src 'self' https://*.alipay.com https://*.alipaydev.com",
+    paymentFrame ? "frame-ancestors 'self'" : "frame-ancestors 'none'",
   ].join("; ");
 
   response.headers.set("Content-Security-Policy", cspHeader);

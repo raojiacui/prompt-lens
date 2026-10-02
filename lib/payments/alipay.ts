@@ -59,14 +59,16 @@ export function createAlipayPaymentForm(input: {
   returnUrl: string;
   notifyUrl?: string;
   expiresAt?: Date;
+  embedded?: boolean;
 }) {
   const options: Record<string, unknown> = {
-    returnUrl: input.returnUrl,
+    ...(input.embedded ? {} : { returnUrl: input.returnUrl }),
     bizContent: {
       out_trade_no: input.outTradeNo,
       total_amount: cny(input.amountCents),
       subject: input.subject,
       product_code: "FAST_INSTANT_TRADE_PAY",
+      ...(input.embedded ? { qr_pay_mode: "4", qrcode_width: "224" } : {}),
       ...(input.expiresAt ? { time_expire: alipayExpiryTimestamp(input.expiresAt) } : { timeout_express: "15m" }),
     },
   };
