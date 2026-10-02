@@ -21,9 +21,9 @@
     "dependencies": {
         "@amcharts/amcharts5": "^5.19.1",
         "@amcharts/amcharts5-geodata": "^5.1.5",
-        "@aws-sdk/client-s3": "^3.540.0",
-        "@aws-sdk/lib-storage": "^3.540.0",
-        "@aws-sdk/s3-request-presigner": "3.540.0",
+        "@aws-sdk/client-s3": "^3.1145.0",
+        "@aws-sdk/lib-storage": "^3.1145.0",
+        "@aws-sdk/s3-request-presigner": "^3.1145.0",
         "@ffmpeg-installer/ffmpeg": "^1.1.0",
         "@mux/mux-node": "^12.8.1",
         "@neondatabase/serverless": "^0.10.0",
@@ -71,10 +71,10 @@
         "eslint": "^9.18.0",
         "eslint-config-next": "^15.5.27",
         "playwright": "^1.49.1",
-        "postcss": "^8.4.49",
+        "postcss": "^8.5.28",
         "remotion": "^4.0.509",
         "tailwindcss": "^3.4.17",
         "typescript": "^5.7.2",
-        "vitest": "^2.1.8"
+        "vitest": "^3.2.7"
     }
 }
