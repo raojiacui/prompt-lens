@@ -77,11 +77,9 @@ export class KieProviderError extends Error {
   }
 }
 
-function getApiKey() {
-  const apiKey = process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
-  if (!apiKey)
-    throw new Error("KIE_AI_API_KEY or KIE_API_KEY is not configured");
-  return apiKey;
+function requireApiKey(apiKey?: string) {
+  if (!apiKey?.trim()) throw new Error("KIE_ACCESS_REQUIRED");
+  return apiKey.trim();
 }
 
 function classifyKieError(message: string, code?: number): KieErrorKind {
@@ -295,7 +293,7 @@ export async function createKieVeoGeneration(input: KieVideoGenerationRequest, a
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${apiKey || getApiKey()}`,
+        Authorization: `Bearer ${requireApiKey(apiKey)}`,
         "Content-Type": "application/json",
       },
       signal: AbortSignal.timeout(20000),
@@ -360,7 +358,7 @@ export async function getKieVeoGenerationStatus(
   const url = new URL(`${baseUrl}${statusEndpoint}`);
   url.searchParams.set("taskId", taskId);
   const headers = {
-    Authorization: `Bearer ${apiKey || getApiKey()}`,
+    Authorization: `Bearer ${requireApiKey(apiKey)}`,
     Accept: "application/json",
   };
   let response = await fetch(url, {

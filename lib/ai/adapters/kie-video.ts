@@ -73,12 +73,9 @@ interface KIEVeoRecordInfoResponse {
   };
 }
 
-function getKIEApiKey() {
-  const apiKey = process.env.KIE_API_KEY || process.env.KIE_AI_API_KEY;
-  if (!apiKey) {
-    throw new Error("KIE_API_KEY or KIE_AI_API_KEY is not configured");
-  }
-  return apiKey;
+function requireKIEApiKey(apiKey?: string) {
+  if (!apiKey?.trim()) throw new Error("KIE_ACCESS_REQUIRED");
+  return apiKey.trim();
 }
 
 export function isKIEVeoModel(modelId: string): boolean {
@@ -326,8 +323,9 @@ async function submitJobTask(
  */
 export async function generateVideoWithKIE(
   input: VideoGenerationInput,
+  authorizedApiKey?: string,
 ): Promise<KIEVideoResult> {
-  const apiKey = getKIEApiKey();
+  const apiKey = requireKIEApiKey(authorizedApiKey);
 
   const kieTaskId = isKIEVeoModel(input.modelId)
     ? await submitVeoTask(input, apiKey)
@@ -415,8 +413,9 @@ function parseVideoUrlFromResultJson(resultJson?: string): string | undefined {
 export async function fetchKIETaskResult(
   kieTaskId: string,
   modelId?: string,
+  authorizedApiKey?: string,
 ): Promise<{ status: string; videoUrl?: string; error?: string }> {
-  const apiKey = getKIEApiKey();
+  const apiKey = requireKIEApiKey(authorizedApiKey);
 
   if (modelId && isKIEVeoModel(modelId)) {
     return fetchKIEVeoTaskResult(kieTaskId, apiKey);
