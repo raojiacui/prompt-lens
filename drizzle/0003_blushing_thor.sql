@@ -2,7 +2,7 @@ ALTER TYPE "public"."api_provider" ADD VALUE 'kie';--> statement-breakpoint
 ALTER TYPE "public"."log_action" ADD VALUE 'video.edit.start';--> statement-breakpoint
 ALTER TYPE "public"."log_action" ADD VALUE 'video.edit.complete';--> statement-breakpoint
 ALTER TYPE "public"."log_action" ADD VALUE 'video.edit.error';--> statement-breakpoint
-CREATE TABLE "video_generation" (
+CREATE TABLE IF NOT EXISTS "video_generation" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"user_id" uuid NOT NULL,
 	"task_id" text NOT NULL,
@@ -22,9 +22,14 @@ CREATE TABLE "video_generation" (
 	CONSTRAINT "video_generation_task_id_unique" UNIQUE("task_id")
 );
 --> statement-breakpoint
-ALTER TABLE "analysis_history" ADD COLUMN "language" text DEFAULT 'zh' NOT NULL;--> statement-breakpoint
-ALTER TABLE "video_generation" ADD CONSTRAINT "video_generation_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "idx_video_generation_user_id" ON "video_generation" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "idx_video_generation_task_id" ON "video_generation" USING btree ("task_id");--> statement-breakpoint
-CREATE INDEX "idx_video_generation_status" ON "video_generation" USING btree ("status");--> statement-breakpoint
-CREATE INDEX "idx_video_generation_created_at" ON "video_generation" USING btree ("created_at");
+ALTER TABLE "video_generation" ADD COLUMN IF NOT EXISTS "provider" varchar(20) DEFAULT 'kie' NOT NULL;--> statement-breakpoint
+ALTER TABLE "analysis_history" ADD COLUMN IF NOT EXISTS "language" text DEFAULT 'zh' NOT NULL;--> statement-breakpoint
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'video_generation_user_id_user_id_fk' AND conrelid = 'public.video_generation'::regclass) THEN
+    ALTER TABLE "video_generation" ADD CONSTRAINT "video_generation_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;
+  END IF;
+END $$;--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_video_generation_user_id" ON "video_generation" USING btree ("user_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_video_generation_task_id" ON "video_generation" USING btree ("task_id");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_video_generation_status" ON "video_generation" USING btree ("status");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "idx_video_generation_created_at" ON "video_generation" USING btree ("created_at");
