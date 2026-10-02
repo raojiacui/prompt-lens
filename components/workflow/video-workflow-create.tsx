@@ -8,6 +8,7 @@ import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { VideoOverview } from "@/components/workflow/video-overview";
+import { CreditBalanceLink } from "@/components/workflow/credit-balance-link";
 import { workspaceCopyFor, localizedStatus, localizedVersionLabel } from "@/lib/workflow/interface-copy";
 import { extractVideoLink } from "@/lib/media-resolver/video-link-input";
 import { Button } from "@/components/ui/button";
@@ -331,6 +332,18 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [analysisTaskId, setAnalysisTaskId] = useState("");
   const [analysisOutputLanguage, setAnalysisOutputLanguage] = useState<"zh" | "en">(locale === "en" ? "en" : "zh");
   const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
+  const [creditStatusFailed, setCreditStatusFailed] = useState(false);
+
+  useEffect(() => {
+    const refresh = () => { void loadCreditStatus(); };
+    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, []);
   const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en" } | null>(null);
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
   const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
@@ -398,13 +411,19 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }
 
   async function loadCreditStatus() {
-    const response = await fetch("/api/credits/me", { cache: "no-store" });
-    if (!response.ok) return null;
-    const data = await response.json().catch(() => null);
-    if (!data) return null;
-    const status = data as CreditStatus;
-    setCreditStatus(status);
-    return status;
+    try {
+      const response = await fetch("/api/credits/me", { cache: "no-store" });
+      if (!response.ok) throw new Error("Credit status unavailable");
+      const data = await response.json().catch(() => null);
+      if (!data) throw new Error("Invalid credit status");
+      const status = data as CreditStatus;
+      setCreditStatus(status);
+      setCreditStatusFailed(false);
+      return status;
+    } catch {
+      setCreditStatusFailed(true);
+      return null;
+    }
   }
   async function loadModels() {
     const response = await fetch("/api/models?category=analysis");
@@ -750,11 +769,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       {commercialSource && <AnalysisQuoteDialog source={commercialSource} onClose={() => setCommercialSource(null)} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); void loadCreditStatus(); void loadProjects({ force: true }); }} />}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-4xl font-semibold tracking-tight">视频分析</h1>
-          <p className="mt-2 max-w-5xl text-lg leading-relaxed text-muted-foreground">提取原视频的画面、人物、动作、运镜与光影细节，整合为可直接用于生成的复刻提示词。</p>
+          <h1 className="text-4xl font-semibold tracking-tight">{locale === "en" ? "Video analysis" : "视频分析"}</h1>
         </div>
-
+        <CreditBalanceLink status={creditStatus} failed={creditStatusFailed} locale={locale} />
       </div>
+      <p className="max-w-5xl text-lg leading-relaxed text-muted-foreground">{locale === "en" ? "Capture the subjects, action, camera movement and lighting of your reference in detailed recreation prompts." : "提取原视频的画面、人物、动作、运镜与光影细节，整合为可直接用于生成的复刻提示词。"}</p>
 
       <div className="grid gap-4 xl:h-[calc(100vh-8rem)] xl:min-h-[680px] xl:grid-cols-[0.68fr_1.32fr]">
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:min-h-0 xl:flex-col xl:overflow-hidden">
