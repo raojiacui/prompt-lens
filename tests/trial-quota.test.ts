@@ -28,11 +28,19 @@ describe("trial reservation", () => {
   afterAll(async () => { await client.close(); });
 
   it("does not count a completed BYOK project as a trial", async () => {
-    const anonymousId = randomUUID();
-    await client.query('INSERT INTO "user" (id, email, is_anonymous) VALUES ($1, $2, true)', [anonymousId, "anon@example.com"]);
-    await expect(reserveTrialAnalysis(anonymousId)).rejects.toThrow("VERIFIED_ACCOUNT_REQUIRED");
     await client.query('INSERT INTO projects (user_id, title, status) VALUES ($1, $2, $3)', [userId, "Own KIE key", "ready"]);
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0, remaining: 2 });
+  });
+
+  it.each([
+    { anonymous: true, verified: true, banned: false },
+    { anonymous: false, verified: false, banned: false },
+    { anonymous: false, verified: true, banned: true },
+  ])("rejects ineligible trial accounts: %j", async (profile) => {
+    const id = randomUUID();
+    await client.query('INSERT INTO "user" (id, email, is_anonymous, email_verified, banned) VALUES ($1, $2, $3, $4, $5)', [id, `${id}@example.com`, profile.anonymous, profile.verified, profile.banned]);
+    await expect(reserveTrialAnalysis(id)).rejects.toThrow("VERIFIED_ACCOUNT_REQUIRED");
+    expect((await client.query("SELECT id FROM trial_analysis_reservations WHERE user_id = $1", [id])).rows).toHaveLength(0);
   });
 
   it("reserves at most two calls even when three start together", async () => {

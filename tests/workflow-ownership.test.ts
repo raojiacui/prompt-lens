@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PgDialect } from "drizzle-orm/pg-core";
 
 const mocks = vi.hoisted(() => ({ project: vi.fn(), version: vi.fn(), scenes: vi.fn(), insert: vi.fn() }));
 vi.mock("@/lib/db", async () => {
@@ -22,6 +23,6 @@ describe("remix ownership", () => {
     await expect(createRemixVersion({ userId: "alice", projectId: "alice-project", sourceVersionId: "bob-version", remixPrompt: "copy" })).rejects.toThrow("Source version not found");
     expect(mocks.scenes).not.toHaveBeenCalled();
     expect(mocks.insert).not.toHaveBeenCalled();
-    expect(mocks.version).toHaveBeenCalledWith(expect.objectContaining({ where: expect.anything() }));
+    expect(new PgDialect().sqlToQuery(mocks.version.mock.calls[0][0].where).params).toEqual(["bob-version", "alice-project"]);
   });
 });
