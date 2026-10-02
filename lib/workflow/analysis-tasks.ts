@@ -50,7 +50,7 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
     ? await getWorkflowAnalysisEntitlement(userId)
     : await assertCanStartVideoAnalysis(userId, { longVideo: false });
   if (requiresAnalysisQuote({ commercialEnabled: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true", mediaType, mode: entitlement.mode, longVideo, trialRemaining: entitlement.trial.remaining })) throw new Error("CONFIRMED_QUOTE_REQUIRED");
-  const access = entitlement.mode === "trial" ? { apiKey: getPlatformKieApiKey(), source: "platform" } : await resolveKieApiKeyForFeature(userId, { requiredPackageScope: "video_analysis" });
+  const access = entitlement.mode === "trial" ? { apiKey: getPlatformKieApiKey(), source: "platform" } : await resolveKieApiKeyForFeature(userId, { requiredPackageScope: "video_analysis", allowPaidPlatformKey: entitlement.mode === "platform_credits" });
   if (!access.apiKey) throw new Error("KIE API Key is not configured");
   const selection = parseWorkflowModelSelection(body);
   const modelId = entitlement.mode === "trial" ? FREE_TRIAL_ANALYSIS_MODEL : resolveModelSelection("analysis", { mode: selection.modelMode, modelId: selection.modelId, priority: selection.modelPriority }).model.kieModelId;

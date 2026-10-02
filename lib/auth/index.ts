@@ -3,7 +3,7 @@ import { account, session, user, verification } from "@/lib/db/schema";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { admin, anonymous } from "better-auth/plugins";
+import { admin } from "better-auth/plugins";
 import { emailOTP } from "better-auth/plugins/email-otp";
 import { eq } from "drizzle-orm";
 import { sendOtpEmail } from "@/lib/email/send-otp-email";
@@ -147,7 +147,6 @@ export const auth = betterAuth({
     process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "",
   ].filter(Boolean),
   plugins: [
-    anonymous(),
     admin(),
     nextCookies(),
     emailOTP({

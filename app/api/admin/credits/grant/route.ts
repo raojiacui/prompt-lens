@@ -15,6 +15,10 @@ export async function POST(request: NextRequest) {
     const adminUser = await getAdminUserFromHeaders(request.headers);
     if (!adminUser) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
 
+    if (request.headers.get("origin") !== new URL(request.url).origin) {
+      return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
+    }
+
     const body = await request.json().catch(() => ({}));
     const packageConfig = getCreditPackage(body.packageId);
     const amount = normalizeCreditAmount(body.amount ?? packageConfig?.credits);

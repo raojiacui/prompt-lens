@@ -52,7 +52,7 @@ describe("durable analysis", () => {
     mocks.analyze.mockReset().mockResolvedValue(blueprint);
     mocks.probe.mockReset();
     userId = randomUUID(); projectId = randomUUID();
-    await testDb.insert(schema.user).values({ id: userId, email: `${userId}@example.com` });
+    await testDb.insert(schema.user).values({ id: userId, email: `${userId}@example.com`, emailVerified: true });
     await testDb.insert(schema.projects).values({ id: projectId, userId, title: "test" });
   });
   afterAll(async () => { vi.unstubAllEnvs(); await client.close(); });

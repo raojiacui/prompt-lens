@@ -5,7 +5,7 @@ import { and, desc, eq } from "drizzle-orm";
 export function decodeStoredApiKey(apiKey: string): string | null {
   const trimmed = apiKey.trim();
   if (!trimmed) return null;
-  if (!isValidEncryptedKey(trimmed)) return trimmed;
+  if (!isValidEncryptedKey(trimmed)) return null;
 
   try {
     return decryptApiKey(trimmed).trim() || null;
@@ -33,7 +33,7 @@ export async function getUserApiKeyForProvider(userId: string, provider: string)
     if (apiKey) return apiKey;
   }
 
-  if (records.some((record) => isValidEncryptedKey(record.apiKey.trim()))) {
+  if (records.length) {
     throw new Error("保存的 KIE API Key 无法解密。请确认 BYOK_ENCRYPTION_KEY 没有变更，或在设置中删除后重新保存 KIE API Key。");
   }
 

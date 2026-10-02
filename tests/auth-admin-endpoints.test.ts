@@ -21,4 +21,11 @@ describe("role-based admin plugin endpoints", () => {
     expect((await GET(new Request("http://localhost/api/auth/get-session"))).status).toBe(200);
     expect(next).toHaveBeenCalledTimes(1);
   });
+  it("blocks anonymous registration even through encoded paths", async () => {
+    next.mockClear();
+    for (const path of ["sign-in/anonymous", "sign-in/%61nonymous", "delete-anonymous-user"]) {
+      expect((await POST(new Request(`http://localhost/api/auth/${path}`, { method: "POST" }))).status).toBe(403);
+    }
+    expect(next).not.toHaveBeenCalled();
+  });
 });

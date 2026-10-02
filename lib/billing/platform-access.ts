@@ -76,7 +76,7 @@ export async function resolveKieApiKeyForFeature(
     console.warn("[billing] Failed to load paid package access for admin; continuing as admin:", error);
   }
 
-  if (platformKey && hasPaidPackage && options.allowPaidPlatformKey !== false) {
+  if (platformKey && hasPaidPackage && options.allowPaidPlatformKey === true) {
     return {
       apiKey: platformKey,
       source: "platform_paid",

@@ -23,11 +23,14 @@ describe("trial reservation", () => {
     await client.exec(readFileSync("drizzle/0005_v2_workflow.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0016_trial_analysis_usage.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0017_request_reservations.sql", "utf8"));
-    await client.query('INSERT INTO "user" (id, email) VALUES ($1, $2)', [userId, "trial@example.com"]);
+    await client.query('INSERT INTO "user" (id, email, email_verified) VALUES ($1, $2, true)', [userId, "trial@example.com"]);
   });
   afterAll(async () => { await client.close(); });
 
   it("does not count a completed BYOK project as a trial", async () => {
+    const anonymousId = randomUUID();
+    await client.query('INSERT INTO "user" (id, email, is_anonymous) VALUES ($1, $2, true)', [anonymousId, "anon@example.com"]);
+    await expect(reserveTrialAnalysis(anonymousId)).rejects.toThrow("VERIFIED_ACCOUNT_REQUIRED");
     await client.query('INSERT INTO projects (user_id, title, status) VALUES ($1, $2, $3)', [userId, "Own KIE key", "ready"]);
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0, remaining: 2 });
   });

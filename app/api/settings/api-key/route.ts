@@ -25,9 +25,10 @@ export async function GET(request: NextRequest) {
       try {
         if (isValidEncryptedKey(key.apiKey)) {
           const decrypted = decryptApiKey(key.apiKey);
-          displayKey = decrypted.substring(0, 8) + "••••••••" + decrypted.substring(decrypted.length - 4);
+          displayKey = decrypted.substring(0, 4) + "••••••••" + decrypted.substring(decrypted.length - 4);
         } else {
-          displayKey = key.apiKey.substring(0, 8) + "••••••••" + key.apiKey.substring(key.apiKey.length - 4);
+          decryptError = true;
+          displayKey = "••••••••";
         }
       } catch (e) {
         decryptError = true;
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { provider, apiKey } = body;
 
-    if (!apiKey) {
+    if (typeof apiKey !== "string" || !apiKey.trim() || apiKey.length > 512) {
       return NextResponse.json({ error: "Missing API Key" }, { status: 400 });
     }
 

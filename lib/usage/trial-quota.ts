@@ -28,6 +28,9 @@ function getTrialLimit() {
 export async function getUserTrialUsage(userId: string) {
   const limit = getTrialLimit();
   const currentUser = await db.query.user.findFirst({ where: eq(user.id, userId) });
+  if (!currentUser || currentUser.isAnonymous || !currentUser.emailVerified || currentUser.banned) {
+    throw new Error("VERIFIED_ACCOUNT_REQUIRED");
+  }
 
   if (isAdminProfile(currentUser)) {
     return { limit, used: 0, remaining: Number.POSITIVE_INFINITY, isAdmin: true };

@@ -33,8 +33,8 @@ describe("AI Analyzer", () => {
 });
 
 describe("BYOK API keys", () => {
-  it("normalizes a usable legacy plaintext key", () => {
-    expect(decodeStoredApiKey("  kie-test-key-123456  ")).toBe("kie-test-key-123456");
+  it("rejects legacy plaintext keys", () => {
+    expect(decodeStoredApiKey("  kie-test-key-123456  ")).toBeNull();
   });
 
   it("rejects an empty stored key", () => {
