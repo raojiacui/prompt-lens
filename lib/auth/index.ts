@@ -75,7 +75,7 @@ export const auth = betterAuth({
   },
   user: {
     deleteUser: {
-      enabled: true,
+      enabled: false,
     },
   },
   database: drizzleAdapter(db, {

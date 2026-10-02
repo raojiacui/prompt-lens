@@ -3,6 +3,7 @@ import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
 import { db, operationLogs } from "@/lib/db";
 import { uploadToR2 } from "@/lib/cloudflare/r2";
 import { randomUUID } from "crypto";
+import { checkRateLimit } from "@/lib/utils/rate-limit";
 
 export const runtime = "nodejs";
 
@@ -26,6 +27,11 @@ export async function POST(request: Request) {
   if (auth.response) return auth.response;
 
   try {
+    if (request.headers.get("origin") !== new URL(request.url).origin) {
+      return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
+    }
+    const rate = await checkRateLimit(`project-assets:${auth.user.id}`, 10, 60_000);
+    if (!rate.allowed) return NextResponse.json({ error: "Too many uploads" }, { status: 429 });
     const formData = await request.formData();
     const file = formData.get("file");
 
@@ -36,6 +42,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (file.size === 0 || file.size > 15 * 1024 * 1024) {
+      return NextResponse.json({ error: "Replacement assets must be between 1 byte and 15 MB" }, { status: 413 });
+    }
+    const contentType = getContentType(file.name);
+    if (contentType === "application/octet-stream" || file.type !== contentType) {
+      return NextResponse.json({ error: "Unsupported replacement asset format" }, { status: 415 });
+    }
     const assetType = formData.get("assetType") || "product";
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
@@ -70,10 +83,7 @@ export async function POST(request: Request) {
     console.error("Project asset upload error:", error);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Failed to process replacement asset",
+        error: "Failed to process replacement asset",
       },
       { status: 500 },
     );

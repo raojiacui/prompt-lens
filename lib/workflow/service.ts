@@ -271,8 +271,13 @@ export async function createRemixVersion(params: {
   const project = await getProjectForUser(params.projectId, params.userId);
   if (!project) throw new Error("Project not found");
 
+  const sourceVersion = await db.query.projectVersions.findFirst({
+    where: and(eq(projectVersions.id, params.sourceVersionId), eq(projectVersions.projectId, params.projectId)),
+  });
+  if (!sourceVersion) throw new Error("Source version not found");
+
   const sourceScenes = await db.query.sceneVersions.findMany({
-    where: eq(sceneVersions.projectVersionId, params.sourceVersionId),
+    where: and(eq(sceneVersions.projectVersionId, params.sourceVersionId), eq(sceneVersions.projectId, params.projectId)),
     orderBy: [asc(sceneVersions.sceneIndex)],
   });
   if (!sourceScenes.length) throw new Error("Source version has no scenes");

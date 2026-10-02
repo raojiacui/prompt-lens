@@ -74,7 +74,11 @@ async function parseEditInstruction(
   return JSON.parse(jsonMatch[0]) as EditInstruction;
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
+  return NextResponse.json({ error: "FEATURE_NOT_AVAILABLE" }, { status: 410 });
+}
+
+async function deferredPOST(request: NextRequest) {
   try {
     console.log("[video-edit] Request received");
 

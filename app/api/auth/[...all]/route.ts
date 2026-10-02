@@ -10,7 +10,7 @@ function withoutAdminPlugin(next: (request: Request) => Promise<Response>) {
     let pathname: string;
     try { pathname = decodeURIComponent(new URL(request.url).pathname).replace(/\/+/g, "/"); }
     catch { return Response.json({ error: "Invalid path" }, { status: 400 }); }
-    if (pathname === "/api/auth/sign-in/anonymous" || pathname === "/api/auth/delete-anonymous-user") {
+    if (pathname === "/api/auth/sign-in/anonymous" || pathname === "/api/auth/delete-anonymous-user" || pathname === "/api/auth/delete-user") {
       return Response.json({ error: "Verified account required" }, { status: 403 });
     }
     if (pathname === "/api/auth/admin" || pathname.startsWith("/api/auth/admin/")) {

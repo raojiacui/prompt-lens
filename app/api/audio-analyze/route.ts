@@ -58,7 +58,11 @@ function buildVtt(subtitles: ExtractedSubtitle[]) {
   });
   return ["WEBVTT", "", ...cues].join("\n\n");
 }
-export async function POST(request: NextRequest) {
+export async function POST() {
+  return NextResponse.json({ error: "FEATURE_NOT_AVAILABLE" }, { status: 410 });
+}
+
+async function deferredPOST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

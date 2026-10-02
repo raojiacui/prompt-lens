@@ -28,7 +28,11 @@ function parseMode(value: unknown): EditMode | "auto" {
   return value === "standard" || value === "generative" ? value : "auto";
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST() {
+  return NextResponse.json({ error: "FEATURE_NOT_AVAILABLE" }, { status: 410 });
+}
+
+async function deferredPOST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

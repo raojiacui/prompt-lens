@@ -27,7 +27,12 @@ interface ClipSegment {
   end: number;
 }
 
-export async function POST(request: NextRequest) {
+export async function POST() {
+  return NextResponse.json({ error: "FEATURE_NOT_AVAILABLE" }, { status: 410 });
+}
+
+// Deferred until ownership and media-fetch boundaries have been implemented.
+async function deferredPOST(request: NextRequest) {
   let tempDir: string | null = null;
 
   try {
