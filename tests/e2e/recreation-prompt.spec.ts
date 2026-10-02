@@ -33,6 +33,15 @@ for (const width of [1440, 390]) {
     await expect(page.getByText("男子沿云海边的长廊缓步前行。", { exact: true })).toBeVisible();
     await expect(page.getByText("Whole Video Overview", { exact: true })).toHaveCount(0);
     await expect(page.getByText(/editable scene blueprint units|internal-model/)).toHaveCount(0);
+    const overview = page.getByRole("region", { name: "整片解读", exact: true });
+    await overview.evaluate(element => {
+      const paragraph = element.querySelector("p")!;
+      paragraph.textContent = paragraph.textContent!.repeat(100);
+    });
+    expect(await overview.evaluate(element => element.clientHeight <= 256 && element.scrollHeight > element.clientHeight)).toBe(true);
+    await overview.focus();
+    await page.keyboard.press("End");
+    await expect.poll(() => overview.evaluate(element => element.scrollTop)).toBeGreaterThan(0);
     const prompt = page.getByLabel("完整复刻提示词", { exact: true });
     const original = await prompt.inputValue();
     for (const value of Object.values(scene.visual)) expect(original).toContain(value);

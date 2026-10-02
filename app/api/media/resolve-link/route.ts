@@ -8,6 +8,7 @@ import { reserveCommercialTask, settleCommercialTaskInTransaction, settleCommerc
 import { ingestLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
 import { resolveLinkedMedia } from "@/lib/media-resolver";
 import { sourcePlatform } from "@/lib/media-resolver/leaperone";
+import { extractVideoLink } from "@/lib/media-resolver/video-link-input";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 
 export const runtime = "nodejs";
@@ -32,9 +33,15 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json().catch(() => null);
-  const url = typeof body?.url === "string" ? body.url.trim() : "";
+  const rawUrl = typeof body?.url === "string" ? body.url.trim() : "";
   const requestId = typeof body?.requestId === "string" ? body.requestId : "";
-  if (!url) return NextResponse.json({ error: "请粘贴视频链接。" }, { status: 400 });
+  if (!rawUrl) return NextResponse.json({ error: "请粘贴视频链接。" }, { status: 400 });
+  let url: string;
+  try {
+    url = extractVideoLink(rawUrl);
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "视频链接格式无效" }, { status: 400 });
+  }
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestId)) {
     return NextResponse.json({ error: "请求标识无效，请刷新后重试。" }, { status: 400 });
   }

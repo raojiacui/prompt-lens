@@ -8,6 +8,7 @@ import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { VideoOverview } from "@/components/workflow/video-overview";
+import { extractVideoLink } from "@/lib/media-resolver/video-link-input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,7 +95,7 @@ const linkedPlatformLabels: Record<LinkedMediaPlatform, string> = {
 
 function detectLinkedPlatform(value: string): LinkedMediaPlatform | null {
   try {
-    const hostname = new URL(value.trim()).hostname.toLowerCase();
+    const hostname = new URL(extractVideoLink(value)).hostname.toLowerCase();
     if (hostname === "tiktok.com" || hostname.endsWith(".tiktok.com")) return "tiktok";
     if (["douyin.com", "iesdouyin.com", "amemv.com"].some((host) => hostname === host || hostname.endsWith(`.${host}`))) return "douyin";
     if (["bilibili.com", "b23.tv"].some((host) => hostname === host || hostname.endsWith(`.${host}`))) return "bilibili";
@@ -553,7 +554,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }
 
   async function resolveLinkedMedia(): Promise<PreparedMedia> {
-    const url = sourceUrl.trim();
+    const url = extractVideoLink(sourceUrl);
     if (linkImportRequestRef.current?.url !== url) linkImportRequestRef.current = { url, id: crypto.randomUUID() };
     const response = await fetch("/api/media/resolve-link", {
       method: "POST",
@@ -828,13 +829,13 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                   <Link2 className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <input
                     id="workflow-video-link"
-                    type="url"
+                    type="text"
                     value={sourceUrl}
                     onChange={(event) => { setSourceUrl(event.target.value); linkImportRequestRef.current = null; setError(""); }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && linkedPlatform && !loading) void startBreakdown();
                     }}
-                    placeholder="https://v.douyin.com/..."
+                    placeholder={locale === "en" ? "Paste a video URL or share text" : "粘贴视频网址或完整分享文本"}
                     disabled={loading}
                     className="h-11 w-full rounded-lg border border-border bg-background pl-10 pr-10 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-ring"
                   />

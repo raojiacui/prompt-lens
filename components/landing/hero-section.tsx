@@ -36,7 +36,7 @@ export function HeroSection({ isAuthenticated = false }: { isAuthenticated?: boo
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </Button>
           </Link>
-          <Link href="#demo">
+          <Link href="/samples">
             <Button variant="outline" className="rounded-full border-white/40 text-white hover:bg-white/15 hover:text-white hover:border-white/50 px-8 h-12 text-base backdrop-blur-sm bg-black/15 shadow-lg shadow-black/15">
               {t("heroCtaSecondary")}
             </Button>

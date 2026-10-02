@@ -92,6 +92,20 @@ describe("linked media resolver route", () => {
     }));
   });
 
+  it("extracts share text before provider calls and records the canonical URL", async () => {
+    const url = "https://www.bilibili.com/video/BV11mFLziEyP/?share_source=copy_web";
+    const response = await POST(request(`【参考视频标题】 ${url}`));
+    expect(response.status).toBe(200);
+    expect(mocks.resolveLinkedMedia).toHaveBeenCalledWith(url);
+    expect(mocks.insertValues).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ sourceUrl: url }) }));
+  });
+
+  it("rejects multiple links before reserving allowance or calling the provider", async () => {
+    expect((await POST(request("https://b23.tv/one https://b23.tv/two"))).status).toBe(400);
+    expect(mocks.reserve).not.toHaveBeenCalled();
+    expect(mocks.resolveLinkedMedia).not.toHaveBeenCalled();
+  });
+
   it("rejects cross-origin requests before spending a provider call", async () => {
     const response = await POST(request(undefined, "https://other.example"));
     expect(response.status).toBe(403);

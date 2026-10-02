@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Plus, Minus } from "lucide-react";
 
-const faqKeys = ["faq1", "faq2", "faq3", "faq4", "faq5"] as const;
+const faqKeys = ["faq1", "faq2", "faq3", "faq4", "faq5", "faq6"] as const;
 
 export function FAQSection() {
   const t = useTranslations("home");
@@ -48,13 +48,18 @@ export function FAQSection() {
                     </span>
                   </button>
                   <div
-                    className={`overflow-hidden transition-all duration-300 ${
-                      isOpen ? "max-h-96 opacity-100 pb-5" : "max-h-0 opacity-0"
-                    }`}
+                    hidden={!isOpen}
+                    className="pb-5"
                   >
                     <p className="text-[var(--color-text-secondary)] leading-relaxed">
                       {t(`${key}A`)}
                     </p>
+                    {key === "faq6" && <div className="mt-4 space-y-3 text-sm text-[var(--color-text-secondary)]">
+                      <p className="font-medium">{t("faq6UrlLabel")}</p>
+                      <code className="block break-all rounded-md border border-[var(--color-border-subtle)] p-3">https://www.bilibili.com/video/BV11mFLziEyP/?spm_id_from=333.1387.0.0</code>
+                      <p className="font-medium">{t("faq6ShareLabel")}</p>
+                      <code className="block whitespace-pre-wrap break-all rounded-md border border-[var(--color-border-subtle)] p-3">{t("faq6ShareExample")}{"\n"}https://www.bilibili.com/video/BV11mFLziEyP/?share_source=copy_web</code>
+                    </div>}
                   </div>
                 </div>
               );

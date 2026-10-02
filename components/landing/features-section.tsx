@@ -48,6 +48,7 @@ export function FeaturesSection() {
             return (
               <div
                 key={key}
+                id={["video-analysis", "video-generation", "prompt-rewrite"][index]}
                 className={`flex flex-col lg:flex-row items-center gap-12 lg:gap-20 ${
                   isReversed ? "lg:flex-row-reverse" : ""
                 }`}
