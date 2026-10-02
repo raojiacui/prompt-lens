@@ -41,7 +41,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
     setError("");
     // Defer until effect setup completes so Strict Mode does not start two checkouts.
     const timer = setTimeout(() => {
-    fetch(existingOrderId ? `/api/payments/orders/${existingOrderId}` : "/api/payments/checkout", existingOrderId ? { cache: "no-store", signal: controller.signal } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ packageId: pack.id, provider: "alipay", method: "alipay", requestId }), signal: controller.signal })
+    fetch(existingOrderId ? `/api/payments/orders/${existingOrderId}?snapshot=1` : "/api/payments/checkout", existingOrderId ? { cache: "no-store", signal: controller.signal } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ packageId: pack.id, provider: "alipay", method: "alipay", requestId }), signal: controller.signal })
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.code === "CHECKOUT_NOT_OPEN" ? (zh ? "收款暂未开放" : "Checkout is not open yet") : (zh ? "暂时无法确认订单，请重试查询。" : "Unable to confirm the order. Retry to check."));
@@ -76,7 +76,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
       if (!controller.signal.aborted && Date.now() < stopAt) timer = setTimeout(poll, 5000);
       else if (!controller.signal.aborted) setError(zh ? "到账仍待确认，请保留订单号并稍后查询。" : "Payment is still unconfirmed. Keep your order ID and check later.");
     };
-    void poll();
+    timer = setTimeout(poll, 1500);
     return () => { controller.abort(); clearTimeout(timer); };
   }, [checkout?.orderId, checkout?.status, attempt, zh]);
   useEffect(() => {
@@ -103,18 +103,21 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
     finally { setCancelling(false); }
   }
   return (
-    <dialog ref={dialog} onCancel={onClose} aria-labelledby="alipay-checkout-title" className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-lg border border-border bg-background p-6 text-foreground shadow-xl backdrop:bg-black/50">
+    <dialog ref={dialog} onCancel={onClose} aria-labelledby="alipay-checkout-title" className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-md overflow-y-auto rounded-lg border border-border bg-background p-4 text-foreground shadow-xl backdrop:bg-black/50 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <h3 id="alipay-checkout-title" className="text-xl font-semibold">{zh ? "支付宝支付" : "Alipay checkout"}</h3>
         <button onClick={onClose} aria-label={zh ? "关闭" : "Close"} title={zh ? "关闭" : "Close"} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border"><X className="h-4 w-4" /></button>
       </div>
-      <p className="mt-4 min-h-9 text-3xl font-semibold">{checkout ? `¥${(checkout.amountCents / 100).toFixed(2)}` : "--"}</p>
-      <p className="mt-2 min-h-5 text-sm text-muted-foreground">{checkout && <>{checkout.credits} {zh ? "积分" : "credits"} · {checkout.rewrites} {zh ? "次改写" : "rewrites"}</>}</p>
-      <div className="my-5 flex min-h-60 flex-col items-center justify-center gap-3 text-center" aria-live="polite">
-        {loading && <Spinner />}
+      <p className="mt-4 min-h-9 text-center text-3xl font-semibold">{checkout ? `¥${(checkout.amountCents / 100).toFixed(2)}` : "--"}</p>
+      <p className="mt-2 min-h-5 text-center text-sm text-muted-foreground">{checkout && <>{checkout.credits} {zh ? "积分" : "credits"} · {checkout.rewrites} {zh ? "次改写" : "rewrites"}</>}</p>
+      <div className={`my-4 flex flex-col items-center justify-center gap-2 text-center ${loading ? "min-h-56" : ""}`} aria-live="polite">
+        {loading && <><Spinner /><p className="text-sm text-muted-foreground">{zh ? "正在加载订单…" : "Loading your order…"}</p></>}
         {paid && <><CheckCircle2 className="h-12 w-12 text-green-700" /><p>{zh ? "支付成功，权益已到账" : "Payment received. Credits and rewrites added."}</p></>}
         {pending && remaining > 0 && !checkout.cancellationRequested && (embeddedUrl ? <>
-          <iframe key={`${checkout.orderId}:${attempt}`} src={embeddedUrl} title={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={256} height={300} className="h-[300px] w-64 max-w-full rounded-lg bg-white" sandbox="allow-scripts allow-forms allow-same-origin" referrerPolicy="same-origin" />
+          {/* Alipay anchors the 224px code at the frame origin; retain a 16px quiet zone on every side. */}
+          <div className="relative h-64 w-64 shrink-0 overflow-hidden rounded-lg bg-white">
+            <iframe key={checkout.orderId} src={embeddedUrl} title={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={256} height={256} className="absolute left-4 top-4 h-64 w-64 border-0 bg-white" sandbox="allow-scripts allow-forms allow-same-origin" referrerPolicy="same-origin" />
+          </div>
           <p className="text-sm">{zh ? "打开支付宝，扫一扫付款" : "Scan with Alipay to pay"}</p>
           <a href={paymentUrl!} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground underline underline-offset-4">{zh ? "手机付款 / 二维码无法显示" : "Pay on mobile / QR unavailable"}</a>
         </> : qr ? <img src={qr} alt={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={224} height={224} className="h-56 w-56 max-w-full object-contain" onError={() => setError(zh ? "二维码加载失败，请稍后查询订单。" : "QR code could not load. Check the order later.")} /> : paymentUrl ? <a href={paymentUrl} className="rounded-lg bg-[#1677ff] px-5 py-3 text-white">{zh ? "前往支付宝支付" : "Continue to Alipay"}</a> : <p>{zh ? "正在准备支付宝收银台，请勿另建订单。" : "Preparing Alipay checkout. Do not create another order."}</p>)}

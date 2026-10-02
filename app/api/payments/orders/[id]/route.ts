@@ -10,7 +10,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) return NextResponse.json({ error: "Invalid order" }, { status: 400 });
-  await reconcileAlipayOrder(id, session.user.id);
+  // Opening a saved checkout should not wait for the provider's network query.
+  // The normal status poll still reconciles and verifies any completed payment.
+  if (request.nextUrl.searchParams.get("snapshot") !== "1") await reconcileAlipayOrder(id, session.user.id);
   const order = await db.query.paymentOrders.findFirst({ where: and(eq(paymentOrders.id, id), eq(paymentOrders.userId, session.user.id)) });
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
   const expired = Date.now() >= alipayOrderDeadline(order.createdAt).getTime();
