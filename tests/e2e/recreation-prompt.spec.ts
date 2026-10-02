@@ -30,6 +30,12 @@ for (const width of [1440, 390]) {
     await page.goto("/dashboard?tab=analyze");
     await page.getByRole("button", { name: /Prompt integration preview/ }).click();
     await expect(page.getByRole("heading", { name: "整片解读" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "我的项目", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "镜头 01", exact: true })).toBeVisible();
+    await expect(page.getByText("已分析", { exact: true })).toBeVisible();
+    await expect(page.getByText("当前版本：原始版本 · 1 镜头", { exact: true })).toBeVisible();
+    await expect(page.getByPlaceholder(/例如：把人物换成红裙女子/)).toBeVisible();
+    await expect(page.getByText(/Active version:|No projects yet|Auto · Balanced/)).toHaveCount(0);
     await expect(page.getByText("男子沿云海边的长廊缓步前行。", { exact: true })).toBeVisible();
     await expect(page.getByText("Whole Video Overview", { exact: true })).toHaveCount(0);
     await expect(page.getByText(/editable scene blueprint units|internal-model/)).toHaveCount(0);

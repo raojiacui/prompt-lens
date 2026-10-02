@@ -8,6 +8,7 @@ import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { VideoOverview } from "@/components/workflow/video-overview";
+import { workspaceCopyFor, localizedStatus, localizedVersionLabel } from "@/lib/workflow/interface-copy";
 import { extractVideoLink } from "@/lib/media-resolver/video-link-input";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -118,7 +119,7 @@ const workflowLabels = {
     fallbackTitle: "AI 分析未完成",
     fallbackReason: "原因",
     fallbackUnavailable: "AI 分析服务暂不可用",
-    fallbackAction: "当前没有生成可用的画面拆解或复刻 Prompt。请检查 KIE API Key / BYOK_ENCRYPTION_KEY / 平台分析 Key 配置。",
+    fallbackAction: "暂时没有生成可用的提示词，请检查设置中的接口密钥或联系客服。",
     sections: {
       visual: "画面复刻",
       action: "角色/动作",
@@ -224,12 +225,11 @@ function shortVideoLimitSeconds(status: CreditStatus | null) {
   return (caps?.shortVideoMaxSeconds ?? MAX_ANALYSIS_VIDEO_SECONDS) + (caps?.durationToleranceSeconds ?? VIDEO_DURATION_TOLERANCE_SECONDS);
 }
 
-function sceneStatusLabel(scene?: Scene, sceneVersion?: SceneVersion) {
+function sceneStatusLabel(locale: string, scene?: Scene, sceneVersion?: SceneVersion) {
   const provider = sceneVersion?.metadata?.analysisProvider;
-  if (scene?.status === "failed") return provider === "fallback" ? "Needs review" : "Failed";
-  if (scene?.status === "completed") return "Analyzed";
-  if (scene?.status === "processing") return "Analyzing";
-  return scene?.status || "Ready";
+  if (scene?.status === "completed") return locale === "en" ? "Analyzed" : "已分析";
+  if (scene?.status === "processing") return locale === "en" ? "Analyzing" : "分析中";
+  return localizedStatus(scene?.status, locale, provider === "fallback");
 }
 
 const analysisProgressSteps: Array<{ phase: AnalysisProgressPhase; label: string; percent: number }> = [
@@ -240,6 +240,8 @@ const analysisProgressSteps: Array<{ phase: AnalysisProgressPhase; label: string
 ];
 
 function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }) {
+  const zh = useLocale() !== "en";
+  const stepLabels = zh ? ["上传素材", "创建项目", "拆镜分析", "生成提示词"] : ["Upload reference", "Create project", "Analyze shots", "Prepare prompts"];
   const currentStepIndex = Math.max(0, analysisProgressSteps.findIndex((step) => step.phase === progress.phase));
 
   return (
@@ -247,7 +249,7 @@ function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-background p-5 shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[#D97757]">分析进度</p>
+            <p className="text-sm font-semibold text-[#D97757]">{zh ? "分析进度" : "Analysis progress"}</p>
             <h2 className="mt-2 text-2xl font-semibold text-foreground">{progress.label}</h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{progress.detail}</p>
           </div>
@@ -283,7 +285,7 @@ function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className={cn("text-xs font-semibold", isDone || isActive ? "text-[#D97757]" : "text-muted-foreground")}>
-                    {step.label}
+                    {stepLabels[index]}
                   </span>
                   {isDone ? <Check className="h-4 w-4 text-[#D97757]" /> : isActive ? <Spinner size="sm" /> : null}
                 </div>
@@ -300,6 +302,7 @@ function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }
 export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const locale = useLocale();
   const copy = workflowCopyFor(locale);
+  const ui = workspaceCopyFor(locale);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const promptSaveTimersRef = useRef<Record<string, number>>({});
   const [projects, setProjects] = useState<Project[]>([]);
@@ -584,12 +587,12 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     setError("");
     const selectedMediaType = isLinkedMedia ? "video" : mediaType!;
     const mediaLabel = selectedMediaType === "image" ? "图片" : "视频";
-    setProgress(isLinkedMedia ? "Resolving video link" : `Uploading reference ${selectedMediaType} to R2`);
+    setProgress(locale === "en" ? (isLinkedMedia ? "Importing video link" : "Uploading reference") : (isLinkedMedia ? "正在导入视频链接" : "正在上传参考素材"));
     setAnalysisProgress({
       phase: "upload",
       percent: 5,
-      label: isLinkedMedia ? "读取视频链接" : "上传素材",
-      detail: isLinkedMedia ? `正在读取 ${linkedPlatformLabels[linkedPlatform!]} 视频并保存素材` : `正在上传${mediaLabel}到存储服务`,
+      label: locale === "en" ? (isLinkedMedia ? "Import video" : "Upload reference") : (isLinkedMedia ? "读取视频链接" : "上传素材"),
+      detail: locale === "en" ? "Preparing your reference for analysis." : (isLinkedMedia ? `正在读取 ${linkedPlatformLabels[linkedPlatform!]} 视频并保存素材` : `正在上传${mediaLabel}到存储服务`),
     });
     try {
       const latestStatus = await loadCreditStatus() || creditStatus;
@@ -603,12 +606,12 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         ? await resolveLinkedMedia()
         : await uploadMediaToR2(file!, (percentage) => {
             const uploadPercent = Math.round(percentage);
-            setProgress(`Uploading ${uploadPercent}%`);
+            setProgress(locale === "en" ? `Uploading ${uploadPercent}%` : `正在上传 ${uploadPercent}%`);
             setAnalysisProgress({
               phase: "upload",
               percent: Math.max(5, Math.min(45, Math.round(uploadPercent * 0.45))),
-              label: "上传素材",
-              detail: `正在上传${mediaLabel} ${uploadPercent}%`,
+              label: locale === "en" ? "Upload reference" : "上传素材",
+              detail: locale === "en" ? `Uploading reference · ${uploadPercent}%` : `正在上传${mediaLabel} ${uploadPercent}%`,
             });
           }).then((upload) => ({
             url: upload.url,
@@ -619,12 +622,12 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           }));
       const preparedTitle = prepared.title?.trim() || title;
       if (prepared.title) setTitle(prepared.title);
-      setProgress("Creating project");
+      setProgress(locale === "en" ? "Creating project" : "正在创建项目");
       setAnalysisProgress({
         phase: "project",
         percent: 55,
-        label: "创建项目",
-        detail: "正在创建可编辑的视频分析项目",
+        label: locale === "en" ? "Create project" : "创建项目",
+        detail: locale === "en" ? "Setting up your analysis project." : "正在创建可编辑的分析项目",
       });
       const projectRes = await fetch("/api/workflow/projects", {
         method: "POST",
@@ -638,12 +641,12 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         return;
       }
 
-      setProgress(prepared.mediaType === "image" ? "Analyzing image blueprint" : "Analyzing video blueprint");
+      setProgress(locale === "en" ? "Analyzing reference" : "正在分析参考素材");
       setAnalysisProgress({
         phase: "analysis",
         percent: 68,
-        label: prepared.mediaType === "image" ? "AI 图片分析" : "AI 视频拆解分析",
-        detail: prepared.mediaType === "image" ? "正在提取画面结构和复刻提示词" : "正在拆解镜头、画面、动作、光线和复刻提示词",
+        label: locale === "en" ? "Analyze reference" : (prepared.mediaType === "image" ? "图片分析" : "视频拆镜分析"),
+        detail: locale === "en" ? "Extracting visual details, camera movement and recreation prompts." : (prepared.mediaType === "image" ? "正在提取画面结构和复刻提示词" : "正在拆解镜头、画面、动作、光线和复刻提示词"),
       });
       const breakdownRes = await fetch(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
         method: "POST",
@@ -801,13 +804,13 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                 {preview ? (
                   <div className="relative mb-3">
                     {mediaType === "image" ? (
-                      <img src={preview} alt="Preview" className="max-h-56 w-full rounded-lg object-contain" />
+                      <img src={preview} alt={ui.preview} className="max-h-56 w-full rounded-lg object-contain" />
                     ) : (
                       <video src={preview} muted playsInline controls className="max-h-56 w-full rounded-lg bg-black object-contain" />
                     )}
                     <button
                       type="button"
-                      aria-label="删除已上传素材"
+                      aria-label={ui.removeMedia}
                       onClick={clearSelectedMedia}
                       disabled={loading}
                       className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-border bg-background/95 text-muted-foreground shadow-sm backdrop-blur transition-colors hover:bg-destructive hover:text-destructive-foreground disabled:cursor-not-allowed disabled:opacity-50"
@@ -851,7 +854,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                   ) : sourceUrl.trim() ? (
                     <span className="text-destructive">{locale === "en" ? "Paste a supported public video link." : "请粘贴受支持平台的公开视频链接。"}</span>
                   ) : null}
-                  <span className="text-muted-foreground">TikTok · 抖音 · Bilibili</span>
+                  <span className="text-muted-foreground">{locale === "en" ? "TikTok · Douyin · Bilibili" : "抖音 · TikTok · 哔哩哔哩"}</span>
                 </div>
                 <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{locale === "en" ? `${creditStatus?.linkImports?.remaining ?? 0} video link imports remaining. Only successful imports count; failures use no credits or import allowance. Analysis is quoted separately.` : `剩余 ${creditStatus?.linkImports?.remaining ?? 0} 次视频链接导入。解析并保存成功才计次，失败不扣积分、不消耗次数；分析另行报价。`}</p>
               </div>
@@ -860,7 +863,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <ModelSelector
-              label="Analysis model"
+              label={ui.analysisModel}
               value={creditStatus?.mode === "trial" ? "analysis-gemini-3-8-flash" : analysisModelValue}
               models={analysisModels}
               onChange={setAnalysisModelValue}
@@ -887,7 +890,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
           <div className="mt-6 min-h-0 border-t border-border pt-4 xl:flex-1 xl:overflow-y-auto xl:pr-1">
             <div className="flex items-center justify-between gap-3">
-              <h2 className="font-semibold">Projects</h2>
+              <h2 className="font-semibold">{ui.projects}</h2>
               {projectsLoading ? <Spinner size="sm" /> : null}
             </div>
             <div className="mt-3 grid gap-2">
@@ -895,13 +898,13 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                 <div key={project.id} className={cn("group flex items-center justify-between rounded-xl border px-3 py-2 text-sm hover:border-primary/50", bundle?.project.id === project.id ? "border-primary bg-primary/10" : "border-border bg-background")}>
                   <button type="button" onClick={() => void loadProject(project.id)} className="min-w-0 flex-1 text-left">
                     <span className="block truncate font-medium">{project.title}</span>
-                    <span className="text-xs text-muted-foreground">{project.status}</span>
+                    <span className="text-xs text-muted-foreground">{localizedStatus(project.status, locale)}</span>
                   </button>
                   <button
                     type="button"
-                    aria-label="删除项目"
+                    aria-label={ui.deleteProject}
                     onClick={() => {
-                      if (!confirm("确定要删除这个项目吗？此操作无法撤销。")) return;
+                      if (!confirm(ui.confirmDelete)) return;
                       void (async () => {
                         try {
                           await handleDeleteProject(project.id);
@@ -918,7 +921,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                   </button>
                 </div>
               ))}
-              {!projects.length ? <p className="text-sm text-muted-foreground">No projects yet.</p> : null}
+              {!projects.length ? <p className="text-sm text-muted-foreground">{ui.noProjects}</p> : null}
             </div>
           </div>
         </section>
@@ -931,8 +934,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
             ) : (
               <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
                 <Play className="mb-4 h-10 w-10 text-muted-foreground" />
-                <p className="font-medium">Video or image analysis workflow will appear here</p>
-                <p className="text-sm text-muted-foreground">Upload a video or image to create the first editable scene blueprint.</p>
+                <p className="font-medium">{ui.emptyTitle}</p>
+                <p className="text-sm text-muted-foreground">{ui.emptyHint}</p>
               </div>
             )
           ) : (
@@ -940,7 +943,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">{bundle.project.title}</h2>
-                  <p className="mt-1 text-sm text-muted-foreground">Active version: {bundle.activeVersion?.label || "None"} · {bundle.scenes.length} scene{bundle.scenes.length === 1 ? "" : "s"}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{ui.activeVersion}：{localizedVersionLabel(bundle.activeVersion, locale)} · {bundle.scenes.length} {ui.scene}{locale === "en" && bundle.scenes.length !== 1 ? "s" : ""}</p>
                 </div>
 
               </div>
@@ -961,11 +964,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                       <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                           <div className="flex flex-wrap items-center gap-2">
-                            <h3 className="font-semibold">Scene {String(sceneVersion.sceneIndex).padStart(2, "0")}</h3>
-                            <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", needsReview ? "bg-amber-500/15 text-amber-700" : "bg-emerald-500/15 text-emerald-700")}>{sceneStatusLabel(scene, sceneVersion)}</span>
+                            <h3 className="font-semibold">{ui.scene} {String(sceneVersion.sceneIndex).padStart(2, "0")}</h3>
+                            <span className={cn("rounded-full px-2 py-0.5 text-xs font-semibold", needsReview ? "bg-amber-500/15 text-amber-700" : "bg-emerald-500/15 text-emerald-700")}>{sceneStatusLabel(locale, scene, sceneVersion)}</span>
                           </div>
                           {projectMediaType === "video" ? (
-                            <p className="mt-1 text-sm text-muted-foreground">{formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}s</p>
+                            <p className="mt-1 text-sm text-muted-foreground">{formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}{ui.seconds}</p>
                           ) : null}
                           {scene?.error ? <p className="mt-1 max-w-3xl text-xs text-amber-700">{scene.error}</p> : null}
                         </div>
@@ -989,7 +992,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                               });
                             }}
                           >
-                            <Video className="mr-2 h-4 w-4" />做同款
+                            <Video className="mr-2 h-4 w-4" />{ui.recreate}
                           </Button>
                         </div>
                       </div>
@@ -1003,7 +1006,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                       <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
                         <div>
                           <div className="flex h-8 items-center">
-                            <label htmlFor={`recreation-prompt-${sceneVersion.id}`} className="text-sm font-semibold">完整复刻提示词</label>
+                            <label htmlFor={`recreation-prompt-${sceneVersion.id}`} className="text-sm font-semibold">{ui.prompt}</label>
                           </div>
                           <Textarea
                             id={`recreation-prompt-${sceneVersion.id}`}
@@ -1014,15 +1017,15 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                         </div>
                         <div className="flex flex-col">
                           <div className="flex h-8 items-center justify-between gap-3">
-                            <label className="text-sm font-semibold">AI 修改脚本</label>
+                            <label className="text-sm font-semibold">{ui.rewrite}</label>
                             <select
                               value={analysisOutputLanguage}
                               onChange={(event) => setAnalysisOutputLanguage(event.target.value === "en" ? "en" : "zh")}
                               className="h-8 rounded-lg border border-border bg-background px-2 text-xs font-medium outline-none focus:border-ring"
-                              aria-label="AI 修改脚本输出语言"
+                              aria-label={ui.rewriteLanguage}
                             >
-                              <option value="zh">中文</option>
-                              <option value="en">English</option>
+                              <option value="zh">{ui.chinese}</option>
+                              <option value="en">{ui.english}</option>
                             </select>
                           </div>
                           {creditStatus?.commercial?.enabled && (
@@ -1038,12 +1041,12 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                             <Textarea
                               value={rewriteDrafts[sceneVersion.id] || ""}
                               onChange={(event) => setRewriteDrafts((drafts) => ({ ...drafts, [sceneVersion.id]: event.target.value }))}
-                              placeholder="Make this scene warmer and more comedic, but keep the same timing and camera move."
+                              placeholder={ui.rewritePlaceholder}
                               className="min-h-40 rounded-xl pb-14 pr-14"
                             />
                             <button
                               type="button"
-                              aria-label="重写脚本"
+                              aria-label={ui.rewriteAction}
                               onClick={() => void rewriteScene(sceneVersion)}
                               disabled={!rewriteDrafts[sceneVersion.id]?.trim() || Boolean(rewritingSceneId) || Boolean(creditStatus?.commercial?.enabled && rewritePayer === "included" && !creditStatus.commercial.rewrites)}
                               className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-[#D97757] text-white shadow-sm transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-50"
@@ -1056,7 +1059,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
                       <div className="mt-4">
                         <div className="flex items-center justify-between gap-3">
-                          <span className="whitespace-nowrap text-xs text-muted-foreground">提示词版本</span>
+                          <span className="whitespace-nowrap text-xs text-muted-foreground">{ui.versions}</span>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <button
                               type="button"
@@ -1129,16 +1132,17 @@ function LanguageSelector({
   value: "zh" | "en";
   onChange: (language: "zh" | "en") => void;
 }) {
+  const ui = workspaceCopyFor(useLocale());
   return (
     <label className="grid gap-2 text-sm font-medium">
-      输出语言
+      {ui.outputLanguage}
       <select
         value={value}
         onChange={(event) => onChange(event.target.value === "en" ? "en" : "zh")}
         className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
       >
-        <option value="zh">中文</option>
-        <option value="en">English</option>
+        <option value="zh">{ui.chinese}</option>
+        <option value="en">{ui.english}</option>
       </select>
     </label>
   );
@@ -1156,6 +1160,7 @@ function ModelSelector({
   onChange: (modelId: string) => void;
   disabled?: boolean;
 }) {
+  const ui = workspaceCopyFor(useLocale());
   return (
     <label className="grid gap-2 text-sm font-medium">
       {label}
@@ -1165,10 +1170,10 @@ function ModelSelector({
         disabled={disabled}
         className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
       >
-        <option value="auto">Auto · Balanced</option>
+        <option value="auto">{ui.autoModel}</option>
         {models.map((model) => (
           <option key={model.id} value={model.id}>
-            {model.displayName}{model.experimental ? " · Experimental" : ""}
+            {model.displayName}{model.experimental ? ` · ${ui.experimental}` : ""}
           </option>
         ))}
       </select>
