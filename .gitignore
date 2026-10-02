@@ -64,3 +64,6 @@ public/remotion/landing-ad/prompt-lens-rewrite-v2.mp4
 public/remotion/landing-ad/prompt-lens-rewrite-v3.mp4
 public/remotion/remix-flow/screen-flow.mp4
 .vercel
+
+# Local promotional film; publish to media hosting separately for production.
+public/brand-video/

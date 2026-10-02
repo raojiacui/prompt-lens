@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { LOCALE_COOKIE, type Locale } from "@/i18n/config";
 import { cn } from "@/lib/utils";
 import { Menu, X, LayoutDashboard } from "lucide-react";
+import { BrandVideoButton } from "./brand-video-button";
 
 const LOCALE_DISPLAY: Record<Locale, { label: string }> = {
   zh: { label: "中文" },
@@ -113,8 +114,7 @@ export function SiteHeader({
     { href: "/#features", label: t("navFeatures") },
     { href: "/samples", label: t("navSamples") },
     { href: "/#pricing", label: t("navPricing") },
-    { href: "/#articles", label: t("navArticles") },
-    { href: "/#blog", label: t("navBlog") },
+    { href: "/guide", label: t("navDocs") },
   ];
 
   return (
@@ -145,6 +145,7 @@ export function SiteHeader({
                 {item.label}
               </Link>
             ))}
+            <BrandVideoButton className={cn("text-base transition-colors", isLight ? "text-[var(--color-text-secondary)] hover:text-[#B76442]" : "text-white/80 hover:text-blue-300")} />
             <LanguageDropdown variant={variant} />
           </nav>
 
@@ -191,6 +192,7 @@ export function SiteHeader({
               {item.label}
             </Link>
           ))}
+          <BrandVideoButton className={cn("block py-2", isLight ? "text-[var(--color-text-secondary)] hover:text-[#B76442]" : "text-white/80 hover:text-blue-300")} />
           <div className="py-2">
             <LanguageDropdown variant={variant} />
           </div>
