@@ -21,4 +21,9 @@ describe("workspace credit balance", () => {
     expect(renderToStaticMarkup(<CreditBalanceLink status={null} failed={false} locale="zh" />)).toContain("加载中");
     expect(renderToStaticMarkup(<CreditBalanceLink status={{ balance: 123 }} failed locale="zh" />)).toContain("暂不可用");
   });
+  it("shows reserved credits separately from the spendable balance", () => {
+    const html = renderToStaticMarkup(<CreditBalanceLink status={{ balance: 0, commercial: { credits: 400, heldCredits: 200 } }} failed={false} locale="zh" />);
+    expect(html).toContain("积分余额: 400");
+    expect(html).toContain("任务预留: 200");
+  });
 });

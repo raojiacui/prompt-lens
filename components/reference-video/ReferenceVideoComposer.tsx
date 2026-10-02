@@ -14,6 +14,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { localizedStatus } from "@/lib/workflow/interface-copy";
 import { GenerationQuoteDialog } from "@/components/payments/generation-quote-dialog";
+import { CreditBalanceLink } from "@/components/workflow/credit-balance-link";
 import type { KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -373,13 +374,51 @@ export function ReferenceVideoComposer({
   const [error, setError] = useState("");
   const zh = useLocale() === "zh";
   const [commercialEnabled, setCommercialEnabled] = useState(false);
+  const [creditStatus, setCreditStatus] = useState<{ balance: number; commercial?: { credits?: number; heldCredits?: number } } | null>(null);
+  const [creditStatusFailed, setCreditStatusFailed] = useState(false);
+  const [balanceRefresh, setBalanceRefresh] = useState(0);
   const [generationPayer, setGenerationPayer] = useState("byok");
   const [commercialRequest, setCommercialRequest] = useState<{ request: Record<string, unknown>; quantity: number } | null>(null);
   useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/credits/me", { cache: "no-store", signal: controller.signal }).then((r) => r.ok ? r.json() : null).then((data) => setCommercialEnabled(data?.commercialConsumptionEnabled === true)).catch(() => {});
-    return () => controller.abort();
-  }, []);
+    let active = true;
+    let controller: AbortController | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    setCreditStatus(null);
+    setCreditStatusFailed(false);
+    const refresh = async () => {
+      controller?.abort();
+      clearTimeout(timer);
+      const request = new AbortController();
+      controller = request;
+      timer = setTimeout(() => request.abort(), 15000);
+      try {
+        const response = await fetch("/api/credits/me", { cache: "no-store", signal: request.signal });
+        if (!response.ok) throw new Error("Balance unavailable");
+        const data = await response.json();
+        if (active && controller === request) {
+          setCreditStatus(data);
+          setCreditStatusFailed(false);
+          setCommercialEnabled(data?.commercialConsumptionEnabled === true);
+        }
+      } catch {
+        if (active && controller === request) setCreditStatusFailed(true);
+      } finally {
+        if (controller === request) clearTimeout(timer);
+      }
+    };
+    const onFocus = () => { void refresh(); };
+    const onVisible = () => { if (document.visibilityState === "visible") onFocus(); };
+    if (session?.user.id) void refresh();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      active = false;
+      controller?.abort();
+      clearTimeout(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [session?.user.id, balanceRefresh]);
   const [variants, setVariants] = useState<GenerationVariant[]>(initialVariants);
   const [sceneReferenceImageUrl, setSceneReferenceImageUrl] = useState(hiddenReferenceImageUrl || "");
 
@@ -837,6 +876,9 @@ export function ReferenceVideoComposer({
       );
 
       if (cancelled) return;
+      if (results.some((result) => result.taskId.startsWith("commercial:") && (result.payload?.status === "success" || result.payload?.status === "fail"))) {
+        setBalanceRefresh((value) => value + 1);
+      }
       setVariants((current) => {
         const next = current.map((variant) => {
           const taskId = variant.providerTaskId;
@@ -1205,19 +1247,19 @@ export function ReferenceVideoComposer({
       {commercialRequest && <GenerationQuoteDialog {...commercialRequest} onClose={() => setCommercialRequest(null)} onConfirmed={(ids) => {
         const next: GenerationVariant[] = ids.map((id, i) => ({ id: `variant-${i + 1}`, label: `Variation ${i + 1}`, status: "generating", progress: 10, providerTaskId: `commercial:${id}`, notes: zh ? "已预留积分" : "Credits reserved" }));
         setVariants(next); window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(next)); setCommercialRequest(null);
+        setBalanceRefresh((value) => value + 1);
       }} />}
       <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
         {commercialEnabled && <label className="flex flex-wrap items-center gap-3 text-sm">{zh ? "费用来源" : "Payment source"}<select value={generationPayer} disabled={isRunning} onChange={(e) => { setGenerationPayer(e.target.value); }} className="min-h-10 rounded-lg border border-border bg-background px-3"><option value="byok">{zh ? "自己的 KIE Key" : "My KIE key"}</option><option value="platform">{zh ? "平台积分" : "Platform credits"}</option></select><a href="/billing" className="underline">{zh ? "余额与订单" : "Balance and orders"}</a></label>}
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
-              视频生成：文生视频、图生视频、参考视频生成与视频编辑
+              {zh ? "视频生成" : "Video generation"}
             </h1>
-            <p className="mt-1 max-w-5xl text-sm leading-6 text-muted-foreground">
-              支持三条链路：直接输入提示词生成视频；上传参考图生成图生视频；上传一条参考视频和参考图，生成类似风格、运镜和节奏的新视频。选择 Wan 系列视频编辑模型时，也可以对视频做生成式编辑，比如 AI 换脸，或把视频中的橘猫换成狸花猫。
-            </p>
           </div>
+          <CreditBalanceLink status={creditStatus} failed={creditStatusFailed} locale={zh ? "zh" : "en"} />
         </div>
+        <p className="max-w-5xl text-sm leading-6 text-muted-foreground">{zh ? "输入提示词，或上传参考图与视频，生成自己的视频。自带 Key 的任务使用你自己的 KIE 余额，不扣平台积分。" : "Create videos from prompts, reference images or video. Jobs using your own key charge your KIE account, not platform credits."}</p>
 
         <div className="grid items-stretch gap-4 xl:grid-cols-[0.74fr_1.26fr]">
           <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">
