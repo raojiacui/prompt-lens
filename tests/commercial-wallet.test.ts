@@ -654,7 +654,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const input = await rewriteInput();
     await client.exec("CREATE FUNCTION reject_settlement() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.event_key LIKE 'settle:%' THEN RAISE EXCEPTION 'simulated billing failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER reject_settlement BEFORE INSERT ON commercial_ledger FOR EACH ROW EXECUTE FUNCTION reject_settlement();");
     try {
-      await expect(rewriteSceneVersion(input)).rejects.toThrow("simulated billing failure");
+      await expect(rewriteSceneVersion(input)).rejects.toMatchObject({ cause: expect.objectContaining({ message: "simulated billing failure" }) });
       expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(1);
       expect(await balance()).toMatchObject({ rewrites: 19, heldRewrites: 1 });
     } finally {

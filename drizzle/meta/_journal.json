@@ -155,6 +155,13 @@
                         "when": 1790323200005,
                         "tag": "0021_private_application_tables",
                         "breakpoints": true
+                    },
+                    {
+                        "idx": 22,
+                        "version": "7",
+                        "when": 1790323200006,
+                        "tag": "0022_auth_session_compatibility",
+                        "breakpoints": true
                     }
                 ]
 }
