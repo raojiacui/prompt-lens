@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { adminQuery } from "@/lib/admin/query";
+import { queryCreditAccounts } from "./credit-audit";
 import { ADMIN_USAGE_TABLES, usageEvents, usageSourcesQuery, usageStats } from "@/lib/admin/usage";
 import type { AdminDirectoryUser, AdminUserPage, AdminUserView } from "@/lib/admin/user-directory-types";
 
@@ -12,7 +13,11 @@ export async function queryUserDirectory(params: { view: AdminUserView; query: s
   let users: AdminDirectoryUser[] = [];
   let total = 0;
 
-  if (view === "all") {
+  if (view === "credits") {
+    const result = await queryCreditAccounts(matches, limit, offset);
+    users = result.users;
+    total = result.total;
+  } else if (view === "all") {
     const [rows, counts] = await Promise.all([
       adminQuery<AdminDirectoryUser>(sql`
         with selected as (select u.* from "user" u where ${matches} order by u.created_at desc, u.id desc limit ${limit} offset ${offset}),

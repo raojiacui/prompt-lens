@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const limit = bounded("limit", 20, 100);
     const view = searchParams.get("view") || "all";
     const query = (searchParams.get("q") || "").trim();
-    if (!["all", "paid", "usage"].includes(view) || query.length > 128) {
+    if (!["all", "paid", "credits", "usage"].includes(view) || query.length > 128) {
       return NextResponse.json({ error: "Invalid search parameters" }, { status: 400 });
     }
     const result = await queryUserDirectory({ view: view as AdminUserView, query, page, limit });
