@@ -13,8 +13,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const requestedPage = parseInt(searchParams.get("page") || "1", 10);
+    const requestedLimit = parseInt(searchParams.get("limit") || "20", 10);
+    const page = Number.isFinite(requestedPage) ? Math.max(1, Math.min(100_000, requestedPage)) : 1;
+    const limit = Number.isFinite(requestedLimit) ? Math.max(1, Math.min(100, requestedLimit)) : 20;
     const search = searchParams.get("search") || "";
     const favorite = searchParams.get("favorite");
     const mediaType = searchParams.get("mediaType");
@@ -62,7 +64,7 @@ export async function GET(request: NextRequest) {
       total: total[0]?.count || 0,
       page,
       limit,
-    });
+    }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("History error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ apiKeys: sanitizedKeys });
+    return NextResponse.json({ apiKeys: sanitizedKeys }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("API key get error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
     const session = await auth.api.getSession({ headers: request.headers });
 
     if (!session?.user) {
@@ -114,6 +115,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
     const session = await auth.api.getSession({ headers: request.headers });
 
     if (!session?.user) {
@@ -138,7 +140,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "API key not found" }, { status: 404 });
     }
 
-    await db.delete(userApiKeys).where(eq(userApiKeys.id, id));
+    await db.delete(userApiKeys).where(and(eq(userApiKeys.id, id), eq(userApiKeys.userId, session.user.id)));
 
     return NextResponse.json({ success: true });
   } catch (error) {
