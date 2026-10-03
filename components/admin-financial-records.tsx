@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, RefreshCw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import type { AdminDirectoryUser, AdminFinancialPage } from "@/lib/admin/user-directory-types";
 
 export function AdminFinancialRecords({ user, zh, onClose }: { user: AdminDirectoryUser; zh: boolean; onClose: () => void }) {
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => { dialog.current?.showModal(); }, []);
   const [kind, setKind] = useState<"orders" | "ledger">("orders");
   const [page, setPage] = useState(1);
   const [data, setData] = useState<AdminFinancialPage | null>(null);
@@ -28,8 +30,10 @@ export function AdminFinancialRecords({ user, zh, onClose }: { user: AdminDirect
   }, [user.id, kind, page, retry]);
   const statuses: Record<string, string> = zh ? { pending: "待支付", paid: "已到账", cancelled: "已取消", failed: "失败", refunded: "已退款", payment_grant: "购买到账", manual_grant: "人工赠送", admin_adjustment: "积分调整", feature_usage: "功能扣费" } : {};
   const pages = Math.max(1, Math.ceil((data?.total || 0) / 20));
-  return <section aria-label={zh ? "订单与积分流水" : "Orders and credit ledger"} className="mt-4 border-t border-[var(--color-border-default)] py-4">
+  return <dialog ref={dialog} onCancel={event => { event.preventDefault(); onClose(); }} aria-label={zh ? "订单与积分流水" : "Orders and credit ledger"} className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-6xl overflow-y-auto rounded-lg border border-border bg-background p-5 text-foreground shadow-xl backdrop:bg-black/50">
     <div className="flex items-center justify-between gap-3"><h3 className="min-w-0 break-all font-semibold">{user.email}</h3><Button size="icon" variant="ghost" title={zh ? "关闭" : "Close"} aria-label={zh ? "关闭" : "Close"} onClick={onClose}><X className="h-4 w-4" /></Button></div>
+    <p className="mt-2 break-all text-sm text-muted-foreground">{user.name || "--"} · {zh ? "账户编号：" : "Account ID: "}{user.id}</p>
+    {user.commercialBalance !== undefined && <p className="mt-2 text-sm">{zh ? "V2 剩余积分：" : "V2 credits: "}{user.commercialBalance} · {zh ? "预留积分：" : "Reserved credits: "}{user.heldCredits || 0}</p>}
     <div role="tablist" className="mt-3 flex gap-1" aria-label={zh ? "财务记录" : "Financial records"}>{(["orders","ledger"] as const).map(tab => <button key={tab} role="tab" aria-selected={kind===tab} onClick={() => { setKind(tab); setPage(1); }} className={`rounded-md px-3 py-2 text-sm ${kind===tab ? "bg-[var(--color-text-primary)] text-[var(--color-bg-base)]" : "text-[var(--color-text-secondary)]"}`}>{tab==="orders" ? (zh ? "全部订单" : "All orders") : (zh ? "积分流水" : "Credit ledger")}</button>)}</div>
     <div role="tabpanel" aria-busy={loading} className="mt-3 min-h-[140px] overflow-x-auto">
       {loading ? <div className="grid h-36 place-items-center"><Spinner /></div> : error ? <div role="alert" className="flex items-center gap-3 py-5 text-sm text-destructive">{zh ? "记录加载失败，请重试" : "Unable to load records"}<Button variant="outline" size="icon" title={zh ? "重试" : "Retry"} aria-label={zh ? "重试" : "Retry"} onClick={() => setRetry(n=>n+1)}><RefreshCw className="h-4 w-4" /></Button></div> :
@@ -44,5 +48,5 @@ export function AdminFinancialRecords({ user, zh, onClose }: { user: AdminDirect
         </tr>)}{!data?.entries.length && <tr><td colSpan={6} className="py-8 text-center text-[var(--color-text-muted)]">{zh ? "没有记录" : "No records"}</td></tr>}</tbody></table>}
     </div>
     <div className="mt-3 flex items-center justify-end gap-2"><span className="mr-2 text-sm text-[var(--color-text-muted)]">{data?.total ?? "--"} {zh ? "条" : "records"}</span><Button size="icon" variant="outline" disabled={loading || error || page<=1} title={zh ? "上一页" : "Previous"} aria-label={zh ? "上一页" : "Previous"} onClick={()=>setPage(n=>n-1)}><ChevronLeft className="h-4 w-4" /></Button><span className="min-w-16 text-center text-sm">{page} / {pages}</span><Button size="icon" variant="outline" disabled={loading || error || page>=pages} title={zh ? "下一页" : "Next"} aria-label={zh ? "下一页" : "Next"} onClick={()=>setPage(n=>n+1)}><ChevronRight className="h-4 w-4" /></Button></div>
-  </section>;
+  </dialog>;
 }

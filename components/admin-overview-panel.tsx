@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Activity, AlertTriangle, CreditCard, LogIn, RefreshCw, UploadCloud, UserPlus, Users, Video, type LucideIcon } from "lucide-react";
+import { Activity, AlertTriangle, CreditCard, LogIn, RefreshCw, UploadCloud, UserPlus, Users, Video, X, type LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -78,9 +79,10 @@ type AdminOverview = {
   dataHealth: { degraded: boolean; unavailable: string[] };
 };
 
-function MetricCard({ icon: Icon, label, value, note, unavailable = false }: { icon: LucideIcon; label: string; value: string; note: string; unavailable?: boolean }) {
+function MetricCard({ icon: Icon, label, value, note, unavailable = false, onClick }: { icon: LucideIcon; label: string; value: string; note: string; unavailable?: boolean; onClick?: () => void }) {
+  const Container = onClick ? "button" : "div";
   return (
-    <div className="min-w-0 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-4 shadow-sm">
+    <Container onClick={onClick} className={`min-w-0 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-4 text-left shadow-sm ${onClick ? "hover:border-[var(--color-text-secondary)] focus-visible:outline focus-visible:outline-2" : ""}`}>
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium text-[var(--color-text-secondary)]">{label}</p>
         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#D97757]/10 text-[#D97757]">
@@ -89,7 +91,7 @@ function MetricCard({ icon: Icon, label, value, note, unavailable = false }: { i
       </div>
       <p className="mt-3 text-3xl font-semibold text-[var(--color-text-primary)]">{unavailable ? "--" : value}</p>
       <p className="mt-1 text-xs text-[var(--color-text-muted)]">{unavailable ? "--" : note}</p>
-    </div>
+    </Container>
   );
 }
 
@@ -113,6 +115,9 @@ export function AdminOverviewPanel() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const activeRequest = useRef<AbortController | null>(null);
+  const [showPurchases, setShowPurchases] = useState(false);
+  const purchasesDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => { if (showPurchases) purchasesDialog.current?.showModal(); }, [showPurchases]);
 
   async function loadOverview() {
     activeRequest.current?.abort();
@@ -175,7 +180,7 @@ export function AdminOverviewPanel() {
     <div className="mx-auto flex max-w-[1680px] min-w-0 flex-col gap-5 px-0 py-1">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div><h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">{copy.title}</h1><p className="mt-1 text-sm text-[var(--color-text-secondary)]">{copy.description}</p></div>
-        <Button variant="outline" size="sm" onClick={() => void loadOverview()} disabled={loading} aria-label={copy.refresh}>{loading ? <Spinner size="sm" className="mr-2" /> : <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />}{copy.refresh}</Button>
+        <div className="flex flex-wrap gap-2"><Link href="/billing/review#refunds" className="inline-flex min-h-9 items-center rounded-md border border-border px-3 text-sm"><CreditCard className="mr-2 h-4 w-4" />{zh ? "退款申请与资金对账" : "Refund requests and reconciliation"}</Link><Button variant="outline" size="sm" onClick={() => void loadOverview()} disabled={loading} aria-label={copy.refresh}>{loading ? <Spinner size="sm" className="mr-2" /> : <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />}{copy.refresh}</Button></div>
       </header>
 
       {error ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div> : null}
@@ -186,7 +191,7 @@ export function AdminOverviewPanel() {
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <MetricCard unavailable={unavailable.has("users")} icon={Users} label={copy.totalUsers} value={formatNumber(data.overview.totalUsers, numberLocale)} note={`${copy.thirtyDays}: +${formatNumber(data.overview.newUsers30d, numberLocale)}`} />
         <MetricCard unavailable={unavailable.has("users")} icon={UserPlus} label={copy.newUsers} value={`+${formatNumber(data.overview.newUsersToday, numberLocale)}`} note={`${copy.sevenDays}: +${formatNumber(data.overview.newUsers7d, numberLocale)} · ${copy.thirtyDays}: +${formatNumber(data.overview.newUsers30d, numberLocale)}`} />
-        <MetricCard unavailable={unavailable.has("paid orders") || unavailable.has("users")} icon={CreditCard} label={copy.paidUsers} value={formatNumber(data.overview.purchasedUsers, numberLocale)} note={`${copy.conversion}: ${conversion.toFixed(1)}%`} />
+        <MetricCard onClick={() => setShowPurchases(true)} unavailable={unavailable.has("paid orders") || unavailable.has("users")} icon={CreditCard} label={copy.paidUsers} value={formatNumber(data.overview.purchasedUsers, numberLocale)} note={`${copy.conversion}: ${conversion.toFixed(1)}%`} />
         <MetricCard unavailable={unavailable.has("activity windows")} icon={Activity} label={copy.visitorDau} value={formatNumber(data.overview.visitorToday, numberLocale)} note={`${copy.sevenDays}: ${formatNumber(data.overview.visitor7d, numberLocale)} · ${copy.thirtyDays}: ${formatNumber(data.overview.visitor30d, numberLocale)}`} />
         <MetricCard unavailable={unavailable.has("activity windows")} icon={LogIn} label={copy.signedInDau} value={formatNumber(data.overview.signedInToday, numberLocale)} note={`${copy.sevenDays}: ${formatNumber(data.overview.signedIn7d, numberLocale)} · MAU: ${formatNumber(data.overview.signedIn30d, numberLocale)}`} />
         <MetricCard unavailable={usageMissing} icon={Video} label={copy.aiWork} value={formatNumber(data.overview.analysisCount + data.overview.generationCount, numberLocale)} note={`${copy.analyses}: ${formatNumber(data.overview.analysisCount, numberLocale)} · ${copy.generations}: ${formatNumber(data.overview.generationCount, numberLocale)}`} />
@@ -209,6 +214,10 @@ export function AdminOverviewPanel() {
       </Section>
 
       <AdminUserDirectory />
+      {showPurchases && <dialog ref={purchasesDialog} aria-label={copy.paidTitle} onCancel={event => { event.preventDefault(); setShowPurchases(false); }} className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-6xl overflow-y-auto rounded-lg border border-border bg-background p-5 text-foreground shadow-xl backdrop:bg-black/50">
+        <header className="flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{copy.paidTitle}</h2><Button size="icon" variant="ghost" title={zh ? "关闭" : "Close"} aria-label={zh ? "关闭" : "Close"} onClick={() => setShowPurchases(false)}><X className="h-4 w-4" /></Button></header>
+        <AdminUserDirectory initialView="paid" />
+      </dialog>}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="flex items-center gap-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-4"><UploadCloud className="h-5 w-5 text-[#7C8F7A]" aria-hidden="true" /><div><p className="text-xs text-[var(--color-text-muted)]">{copy.uploads} · 14d</p><p className="font-semibold text-[var(--color-text-primary)]">{formatNumber(data.overview.uploadCount, numberLocale)} · {formatBytes(data.overview.uploadBytes)}</p></div></div>

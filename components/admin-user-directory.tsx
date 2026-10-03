@@ -8,10 +8,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { AdminFinancialRecords } from "@/components/admin-financial-records";
 import type { AdminDirectoryUser, AdminUserPage, AdminUserView } from "@/lib/admin/user-directory-types";
 
-export function AdminUserDirectory() {
+export function AdminUserDirectory({ initialView = "all" }: { initialView?: AdminUserView }) {
   const zh = useLocale() === "zh";
   const locale = zh ? "zh-CN" : "en-US";
-  const [params, setParams] = useState({ view: "all" as AdminUserView, page: 1, limit: 20, query: "" });
+  const [params, setParams] = useState({ view: initialView, page: 1, limit: 20, query: "" });
   const [search, setSearch] = useState("");
   const [data, setData] = useState<AdminUserPage | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,7 +90,7 @@ export function AdminUserDirectory() {
       <h2 className="text-lg font-semibold">{copy.title}</h2>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div role="tablist" aria-label={copy.title} className="flex flex-wrap gap-1">
-          {(["all", "credits", "usage"] as const).map(view => <button key={view} role="tab" aria-selected={params.view === view} className={`rounded-md px-3 py-2 text-sm ${params.view === view ? "bg-[var(--color-text-primary)] text-[var(--color-bg-base)]" : "text-[var(--color-text-secondary)] hover:bg-black/5"}`} onClick={() => setParams(old => ({ ...old, view, page: 1 }))}>{view==="credits" ? copy.creditsTab : copy[view]}</button>)}
+          {(["all", "paid", "credits", "usage"] as const).map(view => <button key={view} role="tab" aria-selected={params.view === view} className={`rounded-md px-3 py-2 text-sm ${params.view === view ? "bg-[var(--color-text-primary)] text-[var(--color-bg-base)]" : "text-[var(--color-text-secondary)] hover:bg-black/5"}`} onClick={() => setParams(old => ({ ...old, view, page: 1 }))}>{view==="credits" ? copy.creditsTab : copy[view]}</button>)}
         </div>
         <form className="flex w-full gap-2 sm:w-auto" onSubmit={event => { event.preventDefault(); setParams(old => ({ ...old, query: search.trim(), page: 1 })); }}>
           <input aria-label={copy.search} placeholder={copy.search} maxLength={128} value={search} onChange={event => setSearch(event.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] px-3 text-sm sm:w-64" />
@@ -103,9 +103,9 @@ export function AdminUserDirectory() {
         {loading ? <div role="status" aria-label={copy.loading} className="grid h-[180px] place-items-center"><Spinner /></div> : error ?
           <div role="alert" className="flex flex-wrap items-center gap-3 py-5 text-sm text-destructive">{error}<Button size="sm" variant="outline" onClick={() => setRetry(value => value + 1)}><RefreshCw className="mr-2 h-4 w-4" />{copy.retry}</Button></div> :
           <table className="w-full min-w-[720px] text-left text-sm">
-            <thead><tr className="border-b border-[var(--color-border-default)] text-xs text-[var(--color-text-muted)]"><th className="py-3 pr-4">{copy.user}</th>{columns.map(column => <th key={column.label} className="whitespace-nowrap py-3 pr-4">{column.label}</th>)}{params.view==="credits" && <th className="py-3">{zh ? "记录" : "Records"}</th>}</tr></thead>
-            <tbody>{data?.users.map(user => <tr key={user.id} className="border-b border-[var(--color-border-default)]/70"><td className="max-w-72 py-3 pr-4"><p className="break-words font-medium">{user.name || user.email}</p><p className="break-all text-xs text-[var(--color-text-muted)]">{user.email}</p></td>{columns.map(column => <td key={column.label} className={`whitespace-nowrap py-3 pr-4 ${column.label===(zh ? "核对状态" : "Audit status") && ["balance_mismatch","unverified_source"].includes(user.auditStatus || "") ? "text-red-700" : "text-[var(--color-text-secondary)]"}`}>{column.value(user)}</td>)}{params.view==="credits" && <td className="py-3"><Button size="sm" variant="outline" onClick={()=>setSelectedUser(user)}>{zh ? "订单与流水" : "Orders and ledger"}</Button></td>}</tr>)}
-              {!data?.users.length && <tr><td colSpan={columns.length + (params.view==="credits" ? 2 : 1)} className="py-10 text-center text-[var(--color-text-muted)]">{copy.empty}</td></tr>}
+            <thead><tr className="border-b border-[var(--color-border-default)] text-xs text-[var(--color-text-muted)]"><th className="py-3 pr-4">{copy.user}</th>{columns.map(column => <th key={column.label} className="whitespace-nowrap py-3 pr-4">{column.label}</th>)}<th className="py-3">{zh ? "记录" : "Records"}</th></tr></thead>
+            <tbody>{data?.users.map(user => <tr key={user.id} className="border-b border-[var(--color-border-default)]/70"><td className="max-w-72 py-3 pr-4"><p className="break-words font-medium">{user.name || user.email}</p><p className="break-all text-xs text-[var(--color-text-muted)]">{user.email}</p></td>{columns.map(column => <td key={column.label} className={`whitespace-nowrap py-3 pr-4 ${column.label===(zh ? "核对状态" : "Audit status") && ["balance_mismatch","unverified_source"].includes(user.auditStatus || "") ? "text-red-700" : "text-[var(--color-text-secondary)]"}`}>{column.value(user)}</td>)}<td className="py-3"><Button size="sm" variant="outline" onClick={()=>setSelectedUser(user)}>{zh ? "订单与流水" : "Orders and ledger"}</Button></td></tr>)}
+              {!data?.users.length && <tr><td colSpan={columns.length + 2} className="py-10 text-center text-[var(--color-text-muted)]">{copy.empty}</td></tr>}
             </tbody>
           </table>}
       </div>

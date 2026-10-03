@@ -11,7 +11,7 @@ vi.mock("@/lib/payments/commercial-refunds", () => ({ requestCommercialRefund: v
 import { auth, getAdminUserFromHeaders } from "@/lib/auth";
 import { requestCommercialRefund, reviewCommercialRefund, reconcileCommercialRefund } from "@/lib/payments/commercial-refunds";
 import { POST as requestRefund } from "@/app/api/payments/orders/[id]/refund/route";
-import { POST as reviewRefund } from "@/app/api/admin/payments/commercial/route";
+import { GET as listReviews, POST as reviewRefund } from "@/app/api/admin/payments/commercial/route";
 
 const id = "11111111-1111-4111-8111-111111111111";
 const params = { params: Promise.resolve({ id }) };
@@ -47,6 +47,10 @@ describe("manual refund route authorization", () => {
     expect((await reviewRefund(req(body))).status).toBe(403);
     expect((await reviewRefund(req(body, "https://other.example"))).status).toBe(403);
     expect(reviewCommercialRefund).not.toHaveBeenCalled();
+  });
+  it("does not expose refund forms or reconciliation records to non-admins", async () => {
+    vi.mocked(getAdminUserFromHeaders).mockResolvedValueOnce(null);
+    expect((await listReviews(new NextRequest("http://localhost/api/admin/payments/commercial"))).status).toBe(403);
   });
   it("requires customer communication, explicit approval and evidence", async () => {
     for (const missing of [{ customerContacted: false }, { approveConfirmed: false }, { evidence: "short" }]) {

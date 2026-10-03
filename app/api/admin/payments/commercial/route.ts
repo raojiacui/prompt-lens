@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getAdminUserFromHeaders } from "@/lib/auth";
-import { db, paymentOrders, commercialRefunds, commercialReservations, commercialWallets, commercialLedger, commercialTasks } from "@/lib/db";
+import { db, user, paymentOrders, commercialRefunds, commercialReservations, commercialWallets, commercialLedger, commercialTasks } from "@/lib/db";
 import { settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { commercialReadiness } from "@/lib/billing/commercial-readiness";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
@@ -10,7 +10,7 @@ import { reconcileCommercialRefund, reviewCommercialRefund } from "@/lib/payment
 export async function GET(request: NextRequest) {
   if (!await getAdminUserFromHeaders(request.headers)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   const orders = await db.select({ id: paymentOrders.id, userId: paymentOrders.userId, amountCents: paymentOrders.amountCents, status: paymentOrders.status, createdAt: paymentOrders.createdAt, reconciliation: sql<string>`${paymentOrders.metadata}->>'reconciliation'` }).from(paymentOrders).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"))).orderBy(asc(paymentOrders.createdAt)).limit(100);
-  const refunds = await db.select({ id: commercialRefunds.id, orderId: commercialRefunds.orderId, userId: commercialRefunds.userId, state: commercialRefunds.state, reason: commercialRefunds.reason, contact: sql<string>`${commercialRefunds.evidence}->>'contact'`, amountCents: paymentOrders.amountCents, createdAt: commercialRefunds.createdAt }).from(commercialRefunds).innerJoin(paymentOrders, eq(paymentOrders.id, commercialRefunds.orderId)).where(inArray(commercialRefunds.state, ["requested", "processing", "review"])).orderBy(asc(commercialRefunds.createdAt)).limit(100);
+  const refunds = await db.select({ id: commercialRefunds.id, orderId: commercialRefunds.orderId, userId: commercialRefunds.userId, email: user.email, name: user.name, packageName: paymentOrders.packageName, state: commercialRefunds.state, reason: commercialRefunds.reason, contact: sql<string>`${commercialRefunds.evidence}->>'contact'`, amountCents: paymentOrders.amountCents, createdAt: commercialRefunds.createdAt }).from(commercialRefunds).innerJoin(paymentOrders, eq(paymentOrders.id, commercialRefunds.orderId)).leftJoin(user, eq(user.id, commercialRefunds.userId)).where(inArray(commercialRefunds.state, ["requested", "processing", "review"])).orderBy(asc(commercialRefunds.createdAt)).limit(100);
   const tasks = await db.select({ id: commercialReservations.id, userId: commercialReservations.userId, taskKey: commercialReservations.taskKey, credits: commercialReservations.credits, rewrites: commercialReservations.rewrites, createdAt: commercialReservations.createdAt }).from(commercialReservations).where(and(eq(commercialReservations.state, "held"), sql`${commercialReservations.createdAt} < now() - interval '24 hours'`)).orderBy(asc(commercialReservations.createdAt)).limit(100);
   const frozen = await db.select({ userId: commercialWallets.userId }).from(commercialWallets).where(eq(commercialWallets.frozen, true)).limit(100);
   return NextResponse.json({ orders, refunds, tasks, frozen, readiness: commercialReadiness() }, { headers: { "Cache-Control": "private, no-store" } });

@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
-type Review = { orders: { id: string; userId: string; amountCents: number; reconciliation: string | null }[]; refunds: { id: string; orderId: string; state: string; reason: string; contact: string | null; amountCents: number }[]; tasks: { id: string; userId: string; credits: number; rewrites: number }[]; frozen: { userId: string }[] };
+type Review = { orders: { id: string; userId: string; amountCents: number; reconciliation: string | null }[]; refunds: { id: string; orderId: string; userId: string; email?: string | null; name?: string | null; packageName?: string; createdAt?: string; state: string; reason: string; contact: string | null; amountCents: number }[]; tasks: { id: string; userId: string; credits: number; rewrites: number }[]; frozen: { userId: string }[] };
 export default function CommercialReviewPage() {
   const zh = useLocale() === "zh";
   const [data, setData] = useState<Review | null>(null);
@@ -17,6 +17,14 @@ export default function CommercialReviewPage() {
   const [reviewNote, setReviewNote] = useState("");
   const [customerContacted, setCustomerContacted] = useState(false);
   const [approveConfirmed, setApproveConfirmed] = useState(false);
+  const refundHeading = useRef<HTMLHeadingElement>(null);
+  const locatedRefunds = useRef(false);
+  useEffect(() => {
+    if (data && !locatedRefunds.current && window.location.hash === "#refunds") {
+      refundHeading.current?.scrollIntoView({ block: "start" });
+      locatedRefunds.current = true;
+    }
+  }, [data]);
   async function act(body: Record<string, unknown>) {
     if (busy) return;
     setBusy(true); setError(""); setNotice("");
@@ -49,8 +57,11 @@ export default function CommercialReviewPage() {
     {data && <>
       <h2 className="mt-8 text-lg font-semibold">{zh ? "待确认订单" : "Unconfirmed orders"} ({data.orders.length})</h2>
       {data.orders.map((o) => <div key={o.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-border py-4 text-sm"><span className="break-all">{o.id}</span><span>¥{(o.amountCents / 100).toFixed(2)} · {zh ? "待核对" : (o.reconciliation || "Pending")}</span><button disabled={busy} onClick={() => void act({ action: "query", orderId: o.id })} className="min-h-10 px-3 underline disabled:opacity-50">{zh ? "查询支付状态" : "Query payment"}</button></div>)}
-      <h2 className="mt-8 text-lg font-semibold">{zh ? "退款待复核" : "Refund review"} ({data.refunds.length})</h2>
+      <h2 ref={refundHeading} id="refunds" className="mt-8 scroll-mt-6 text-lg font-semibold">{zh ? "退款待复核" : "Refund review"} ({data.refunds.length})</h2>
+      {!data.refunds.length && <p className="mt-3 text-sm text-muted-foreground">{zh ? "暂无待处理的退款申请" : "No refund requests awaiting review"}</p>}
       {data.refunds.map((r) => <div key={r.id} className="space-y-3 border-b border-border py-4 text-sm">
+        <p className="break-all font-medium">{r.name || r.email || r.userId}{r.name && r.email ? ` · ${r.email}` : ""}</p>
+        <p>{r.packageName || "--"} · {({ requested: zh ? "待审核" : "Awaiting approval", processing: zh ? "退款处理中" : "Processing refund", review: zh ? "结果待核对" : "Outcome unconfirmed" }[r.state]) || r.state}{r.createdAt ? ` · ${new Date(r.createdAt).toLocaleString(zh ? "zh-CN" : "en-US")}` : ""}</p>
         <p className="break-all">{r.orderId} · ¥{(r.amountCents / 100).toFixed(2)}</p>
         <p className="break-words">{zh ? "申请原因：" : "Reason: "}{r.reason}</p>
         <p className="break-all">{zh ? "联系方式：" : "Contact: "}{r.contact || (zh ? "未提供，请核对用户资料" : "Not provided; check customer records")}</p>
