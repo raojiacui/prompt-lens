@@ -11,15 +11,16 @@ import { ReferenceVideoComposer } from "@/components/reference-video/ReferenceVi
 // import { CreateWithAgent } from "@/components/agent/create-with-agent";
 import { VideoWorkflowCreate } from "@/components/workflow/video-workflow-create";
 import { AdminOverviewPanel } from "@/components/admin-overview-panel";
+import { BillingAccount } from "@/components/payments/billing-account";
 import { cn } from "@/lib/utils";
 import { Spinner } from "@/components/ui/spinner";
 import Image from "next/image";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, Clock, Home, LogOut, Mic2, Scissors, Settings, Shield, Sparkles, Video } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Home, LogOut, Mic2, Scissors, Settings, Shield, Sparkles, Video, Wallet } from "lucide-react";
 
-type Tab = "home" | "analyze" | "audio" | "edit" | "video-gen" | "history" | "settings" | "admin";
+type Tab = "home" | "analyze" | "audio" | "edit" | "video-gen" | "history" | "account" | "settings" | "admin";
 type FeatureTab = "analyze" | "audio" | "edit" | "video-gen";
 
 export default function DashboardPage() {
@@ -31,7 +32,7 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const searchString = searchParams.toString();
   const currentDashboardPath = searchString ? `${pathname}?${searchString}` : pathname;
-  const validTabs: Tab[] = ["home", "analyze", "audio", "edit", "video-gen", "history", "settings", "admin"];
+  const validTabs: Tab[] = ["home", "analyze", "audio", "edit", "video-gen", "history", "account", "settings", "admin"];
   const authLoadingSteps = ["加载中", "加载中", "加载中"];
   const [authLoadingStep, setAuthLoadingStep] = useState(0);
 
@@ -208,6 +209,7 @@ export default function DashboardPage() {
   ];
 
   const systemTools = [
+    { key: "account" as Tab, label: zh ? "账户" : "Account", icon: Wallet },
     { key: "history" as Tab, label: t("dashboard.tabs.history"), icon: Clock },
     { key: "settings" as Tab, label: t("dashboard.tabs.settings"), icon: Settings },
     ...(canAccessAdmin ? [{ key: "admin" as Tab, label: zh ? "管理后台" : "Administration", icon: Shield }] : []),
@@ -512,6 +514,8 @@ export default function DashboardPage() {
               <HistoryList refreshTrigger={historyRefreshTrigger} />
             </div>
           )}
+
+          {activeTab === "account" && <div className="animate-fade-in"><BillingAccount embedded /></div>}
 
           {/* 设置页面 */}
           {activeTab === "settings" && (
