@@ -314,6 +314,10 @@ worker 服务器需要配置同一组 R2 环境变量，并安装 `ffmpeg` / `ff
 
 MIT
 
+## Star 趋势
+
+[![Star History](https://api.star-history.com/svg?repos=raojiacui/prompt-lens&type=Date&legend=top-left)](https://www.star-history.com/?repos=raojiacui%2Fprompt-lens&type=date&legend=top-left)
+
 ## 请勿刷 Star 或 Fork
 
 请不要使用机器人、脚本、批量账号或刷星服务给本仓库添加 Star 或 Fork。
