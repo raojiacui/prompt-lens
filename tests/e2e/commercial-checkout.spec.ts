@@ -21,7 +21,10 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
           body = checkout;
         } else body = { enabled: true };
       } else if (path.endsWith("/pay")) return route.fulfill({ contentType: "text/html", body: "<p>Test QR placeholder</p>" });
-      else if (path.includes("/api/payments/orders/")) body = { ...checkout, status: paid ? "paid" : "pending", paymentUrl: paid ? null : checkout.paymentUrl };
+      else if (path.includes("/api/payments/orders/")) {
+        if (paid) await new Promise((resolve) => setTimeout(resolve, 600));
+        body = { ...checkout, status: paid ? "paid" : "pending", paymentUrl: paid ? null : checkout.paymentUrl };
+      }
       await route.fulfill({ json: body });
     });
     await page.goto("/#pricing");
@@ -45,6 +48,9 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await page.screenshot({ path: `test-results/checkout-${locale}-${width}.png` });
     paid = true;
     await dialog.getByRole("button", { name: locale === "zh" ? "我已付款，查询到账" : "I have paid, check payment" }).click();
+    const checking = dialog.getByRole("button", { name: locale === "zh" ? "正在查询到账…" : "Checking payment…" });
+    await expect(checking).toBeDisabled();
+    await expect(checking).toHaveAttribute("aria-busy", "true");
     await expect(dialog.getByText(locale === "zh" ? "支付成功，积分已到账" : "Payment successful. Credits added.", { exact: true })).toBeVisible();
     await expect(dialog.locator("iframe")).toHaveCount(0);
     await expect(dialog).not.toContainText(locale === "zh" ? "付款码有效时间" : "Payment code expires in");

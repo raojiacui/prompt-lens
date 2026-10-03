@@ -26,6 +26,9 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [attempt, setAttempt] = useState(0);
+  const [checking, setChecking] = useState(false);
+  const [checkMessage, setCheckMessage] = useState("");
+  const manualCheck = useRef(false);
   const [now, setNow] = useState(Date.now());
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -62,7 +65,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
         }
         if (!controller.signal.aborted) { setLoading(false); setCheckout(data); }
       }).catch((reason) => { if (!controller.signal.aborted) setError(reason.message); })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+      .finally(() => { if (!controller.signal.aborted) { setLoading(false); setChecking(false); manualCheck.current = false; } });
     }, 0);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [pack.id, requestId, existingOrderId, attempt, zh, checkout?.orderId]);
@@ -72,12 +75,16 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
     let timer: ReturnType<typeof setTimeout>;
     const stopAt = Math.max(Date.now() + 120000, Date.parse(checkout.expiresAt) + 120000);
     const poll = async () => {
+      const requestedManually = manualCheck.current;
+      manualCheck.current = false;
       try {
         const response = await fetch(`/api/payments/orders/${checkout.orderId}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]) });
         if (!response.ok) throw new Error("status unavailable");
         const data = await response.json();
         if (!["pending", "paid", "failed", "refunded", "cancelled"].includes(data.status)) throw new Error("invalid status");
         if (!controller.signal.aborted) {
+          if (requestedManually) setCheckMessage(data.status === "pending" && !data.paymentIssue
+            ? (zh ? "本次查询尚未确认到账，将继续自动核对。如已付款，请勿重复支付。" : "This check has not confirmed payment yet. We will keep checking automatically; do not pay again.") : "");
           setError(data.paymentIssue === "ALIPAY_SIGNATURE_INVALID"
             ? (zh ? "支付宝到账校验异常，请联系客服核对。如已付款，请勿重复支付。" : "Payment verification needs support. If you paid, do not pay again.")
             : data.paymentIssue ? (zh ? "到账确认暂未完成，正在重试。已付款请勿重复支付。" : "Payment confirmation is delayed. Retrying; do not pay again.") : "");
@@ -86,7 +93,9 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
         }
         if (data.status !== "pending") return;
       } catch {
-        if (!controller.signal.aborted) setError(zh ? "暂时无法查询到账状态，请勿重复付款。" : "Payment status is unavailable. Do not pay again.");
+        if (!controller.signal.aborted) { setCheckMessage(""); setError(zh ? "暂时无法查询到账状态，请勿重复付款。" : "Payment status is unavailable. Do not pay again."); }
+      } finally {
+        if (!controller.signal.aborted) setChecking(false);
       }
       if (!controller.signal.aborted && Date.now() < stopAt) timer = setTimeout(poll, 5000);
       else if (!controller.signal.aborted) setError(zh ? "到账仍待确认，请保留订单号并稍后查询。" : "Payment is still unconfirmed. Keep your order ID and check later.");
@@ -104,6 +113,14 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
   const qr = checkout && safePaymentUrl(checkout.qrImageUrl);
   const paymentUrl = checkout && safePaymentUrl(checkout.paymentUrl || checkout.mobilePaymentUrl);
   const embeddedUrl = paymentUrl && /^\/api\/payments\/orders\/[0-9a-f-]{36}\/pay$/i.test(paymentUrl) ? `${paymentUrl}?embedded=1` : null;
+  function checkPayment() {
+    if (manualCheck.current || checking || cancelling) return;
+    manualCheck.current = true;
+    setChecking(true);
+    setCheckMessage("");
+    setError("");
+    setAttempt((value) => value + 1);
+  }
   async function cancelPayment() {
     if (!checkout || cancelling) return;
     setCancelling(true); setError("");
@@ -151,7 +168,8 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
           <div className="flex gap-3"><button disabled={cancelling} onClick={() => void cancelPayment()} className="min-h-10 flex-1 rounded-lg border border-border px-3 disabled:opacity-50">{zh ? "确认取消" : "Confirm cancellation"}</button><button disabled={cancelling} onClick={() => setCancelConfirm(false)} className="min-h-10 px-3">{zh ? "返回" : "Back"}</button></div>
         </>}
       </div>}
-      {!paid && !loading && <button onClick={() => setAttempt((value) => value + 1)} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm"><RefreshCw className="h-4 w-4" />{zh ? "我已付款，查询到账" : "I have paid, check payment"}</button>}
+      {pending && !error && checkMessage && <p role="status" className="mb-3 text-sm text-muted-foreground">{checkMessage}</p>}
+      {!loading && (pending || !checkout) && <button onClick={checkPayment} disabled={checking || cancelling} aria-busy={checking} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm disabled:cursor-wait disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${checking ? "animate-spin" : ""}`} />{checking ? (zh ? "正在查询到账…" : "Checking payment…") : (zh ? "我已付款，查询到账" : "I have paid, check payment")}</button>}
       {paid && <div className="flex gap-3"><Link href="/billing" className="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-border px-3 text-sm">{zh ? "查看余额与订单" : "Balance and orders"}</Link><button onClick={onClose} className="min-h-11 flex-1 rounded-lg bg-primary px-3 text-sm text-primary-foreground">{zh ? "完成" : "Done"}</button></div>}
       {onNewOrder && checkout && ["failed", "cancelled", "refunded"].includes(checkout.status) && <div className="mt-4 border-t border-border pt-4 text-sm">
         <button onClick={() => onNewOrder({ orderId: checkout.orderId, status: checkout.status })} className="mt-3 min-h-11 w-full rounded-lg border border-border px-3">{zh ? "重新购买，创建新订单" : "Purchase again with a new order"}</button>
