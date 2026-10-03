@@ -17,18 +17,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
   const expired = Date.now() >= alipayOrderDeadline(order.createdAt).getTime();
   const cancellationRequested = (order.metadata as Record<string, unknown>).cancellationRequested === true;
-  const officialPaymentUrl = order.provider === "alipay" && order.status === "pending" && !expired && !cancellationRequested ? `/api/payments/orders/${order.id}/pay` : null;
+  const paymentIssue = order.status === "pending" ? (order.metadata as Record<string, unknown>).queryError ?? null : null;
+  const officialPaymentUrl = order.provider === "alipay" && order.status === "pending" && !expired && !cancellationRequested && !paymentIssue ? `/api/payments/orders/${order.id}/pay` : null;
   return NextResponse.json({
     id: order.id, orderId: order.id, status: order.status, packageName: order.packageName,
     expiresAt: alipayOrderDeadline(order.createdAt).toISOString(),
     amountCents: order.amountCents, currency: order.currency, credits: order.credits,
     rewrites: (order.metadata as Record<string, unknown>).rewrites ?? 0,
     paidAt: order.paidAt,
+    paymentIssue,
     qrImageUrl: null,
     mobilePaymentUrl: officialPaymentUrl,
     paymentUrl: officialPaymentUrl,
     cancellationRequested,
     // An expired QR is not evidence that the provider failed to collect payment.
-    qrExpired: order.provider === "alipay" && expired,
+    qrExpired: order.provider === "alipay" && order.status === "pending" && expired,
   }, { headers: { "Cache-Control": "private, no-store" } });
 }

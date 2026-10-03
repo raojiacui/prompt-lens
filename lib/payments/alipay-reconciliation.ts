@@ -4,6 +4,7 @@ import { db, paymentOrders } from "@/lib/db";
 import { assertAlipayQueryMatch, queryAlipayTrade, closeAlipayTrade } from "./alipay";
 import { alipayOrderDeadline, ALIPAY_EXPIRY_VERSION } from "./order-expiry";
 import { settlePaidCreditOrder } from "./credit-checkout";
+import { alipayQueryErrorCode } from "./alipay-query-error";
 
 function value(result: Record<string, unknown>, snake: string, camel: string) {
   return result[snake] ?? result[camel];
@@ -41,12 +42,15 @@ export async function reconcileAlipayOrder(id: string, userId?: string, cancel =
   if (!claimed) return;
 
   let reconciliation = "query_unconfirmed";
+  let queryError: string | null = null;
+  let settling = false;
   try {
     const result = await queryAlipayTrade(order.providerOrderId) as Record<string, unknown>;
     const payload = normalizeAlipayTradeResult(result);
     if (String(result.code) === "10000") {
       assertAlipayQueryMatch(order, payload);
       if (["TRADE_SUCCESS", "TRADE_FINISHED"].includes(String(payload.trade_status))) {
+        settling = true;
         await settlePaidCreditOrder({
           provider: "alipay",
           lookupOrderId: order.providerOrderId,
@@ -77,13 +81,16 @@ export async function reconcileAlipayOrder(id: string, userId?: string, cancel =
         await db.update(paymentOrders).set({ status: "cancelled", updatedAt: new Date() }).where(and(eq(paymentOrders.id, id), eq(paymentOrders.status, "pending")));
         reconciliation = "closed";
       } else if (shouldClose) reconciliation = "close_unconfirmed";
-    }
-  } catch {
+    } else queryError = "ALIPAY_QUERY_UNAVAILABLE";
+  } catch (error) {
     reconciliation = "query_unconfirmed";
+    queryError = settling ? "PAYMENT_SETTLEMENT_UNCONFIRMED" : alipayQueryErrorCode(error);
+    // SDK errors can contain signed payloads and buyer details; never log them.
+    console.error("Alipay reconciliation failed", { orderId: id, code: queryError });
   }
 
   await db.update(paymentOrders).set({
-    metadata: sql`${paymentOrders.metadata} || ${JSON.stringify({ reconciliation, lastQueryAt: new Date().toISOString() })}::jsonb`,
+    metadata: sql`${paymentOrders.metadata} || ${JSON.stringify({ reconciliation, queryError, lastQueryAt: new Date().toISOString() })}::jsonb`,
     updatedAt: new Date(),
   }).where(and(eq(paymentOrders.id, id), sql`${paymentOrders.metadata}->>'queryLease' = ${token}`));
 }

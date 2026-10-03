@@ -75,7 +75,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
         </div>
       </div>
       <div className="mx-auto mt-6 max-w-6xl px-4 text-center"><Link href="/billing" className="text-sm underline underline-offset-4">{zh ? "余额与订单" : "Balance and orders"}</Link></div>
-      {selected && <AlipayCheckoutDialog key={`${selected.id}:${checkoutAttempt}`} pack={selected} requestId={requestIds.current[selected.id]} previousOrderUnconfirmed={previousOrderUnconfirmed} onClose={() => setSelected(null)} onNewOrder={(previous) => {
+      {selected && <AlipayCheckoutDialog key={`${selected.id}:${checkoutAttempt}`} pack={{ ...selected, name: zh ? selected.name : ["Starter", "Creator", "Volume"][COMMERCIAL_PACKAGES.findIndex((pack) => pack.id === selected.id)] }} requestId={requestIds.current[selected.id]} previousOrderUnconfirmed={previousOrderUnconfirmed} onClose={() => setSelected(null)} onNewOrder={(previous) => {
         setPreviousOrderUnconfirmed(previous?.status === "pending");
         requestIds.current[selected.id] = crypto.randomUUID();
         try { localStorage.setItem(`promptlens:checkout:${session?.user.id || "current"}:${selected.id}`, requestIds.current[selected.id]); } catch { /* Keep the in-memory ID when storage is unavailable. */ }

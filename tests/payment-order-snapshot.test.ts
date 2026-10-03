@@ -44,4 +44,13 @@ describe("saved payment order snapshot", () => {
     state.find.mockResolvedValue({ id, provider: "alipay", status: "pending", createdAt: new Date(Date.now() - 20 * 60000), metadata: {} });
     expect((await (await request("?snapshot=1")).json()).paymentUrl).toBeNull();
   });
+  it("shows completed payments without a payment link or an expiry warning", async () => {
+    state.find.mockResolvedValue({ id, provider: "alipay", status: "paid", createdAt: new Date(Date.now() - 20 * 60000), paidAt: new Date(), credits: 200, metadata: { rewrites: 20, queryError: "ALIPAY_SIGNATURE_INVALID" } });
+    const body = await (await request()).json();
+    expect(body).toMatchObject({ status: "paid", credits: 200, paymentUrl: null, qrExpired: false, paymentIssue: null });
+  });
+  it("reports pending verification issues without declaring payment failed", async () => {
+    state.find.mockResolvedValue({ id, provider: "alipay", status: "pending", createdAt: new Date(), metadata: { queryError: "ALIPAY_SIGNATURE_INVALID" } });
+    expect(await (await request()).json()).toMatchObject({ status: "pending", paymentIssue: "ALIPAY_SIGNATURE_INVALID" });
+  });
 });

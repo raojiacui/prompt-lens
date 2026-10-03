@@ -555,6 +555,24 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(queryAlipayTrade).toHaveBeenCalledTimes(1);
     expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
   });
+  it("recovers from failed verification and grants the paid order exactly once", async () => {
+    const row = await order();
+    vi.mocked(queryAlipayTrade).mockRejectedValueOnce(new Error("验签失败，sign: private"));
+    await reconcileAlipayOrder(row.id, userId);
+    let current = (await testDb.select().from(schema.paymentOrders))[0];
+    expect(current.status).toBe("pending");
+    expect(current.metadata).toMatchObject({ queryError: "ALIPAY_SIGNATURE_INVALID" });
+    expect(await testDb.select().from(schema.commercialWallets)).toHaveLength(0);
+    await testDb.update(schema.paymentOrders).set({ metadata: { ...(current.metadata as object), queryAfter: 0 } }).where(eq(schema.paymentOrders.id, row.id));
+    vi.mocked(queryAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, tradeNo: "verified-trade", tradeStatus: "TRADE_SUCCESS", totalAmount: "19.90" } as never);
+    await reconcileAlipayOrder(row.id, userId);
+    await reconcileAlipayOrder(row.id, userId);
+    current = (await testDb.select().from(schema.paymentOrders))[0];
+    expect(current.status).toBe("paid");
+    expect(current.metadata).toMatchObject({ queryError: null, reconciliation: "confirmed" });
+    expect(await balance()).toMatchObject({ credits: 200, rewrites: 20 });
+    expect(closeAlipayTrade).not.toHaveBeenCalled();
+  });
   it("cancels an unpaid order only after Alipay confirms closure", async () => {
     const row = await order();
     vi.mocked(queryAlipayTrade).mockResolvedValue({ code: "10000", outTradeNo: row.providerOrderId, tradeStatus: "WAIT_BUYER_PAY", totalAmount: "19.90" } as never);
