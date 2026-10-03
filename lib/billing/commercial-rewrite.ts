@@ -7,7 +7,7 @@ export function commercialRewriteEnabled() {
 }
 
 export async function getCommercialRewriteBalance(userId: string) {
-  if (!commercialRewriteEnabled() && process.env.COMMERCIAL_CONSUMPTION_ENABLED !== "true") return { enabled: false as const };
+  // Display purchased balances even while paid task execution is disabled.
   const [wallet] = await db.select().from(commercialWallets).where(eq(commercialWallets.userId, userId));
   return { enabled: commercialRewriteEnabled(), frozen: wallet?.frozen ?? false, credits: wallet?.credits ?? 0, rewrites: wallet?.rewrites ?? 0, heldCredits: wallet?.heldCredits ?? 0, heldRewrites: wallet?.heldRewrites ?? 0 };
 }
