@@ -250,3 +250,11 @@ vercel deploy
 ## License
 
 MIT
+
+## 请勿刷 Star 或 Fork
+
+请不要使用机器人、脚本、批量账号或刷星服务给本仓库添加 Star 或 Fork。
+
+欢迎真实用户因兴趣或使用需要自愿 Star、Fork，也欢迎反馈问题、分享使用体验和贡献代码。感谢每一份真实的支持。
+
+Please do not use bots, scripts, bulk accounts, or paid services to inflate this repository's stars or forks, including unsolicited promotion. Genuine interest, feedback, and contributions are welcome.
