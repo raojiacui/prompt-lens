@@ -4,6 +4,14 @@ PromptLens V2 是一个 AI 视频创作工作流工具。核心目标不是简�
 
 用户上传参考素材后，系统会完成上传、拆镜、关键帧提取、音频/字幕上下文整理、AI 分析、提示词生成和二次改写，最终帮助用户快速做同款、改同款、生成新视频。
 
+## 请勿刷 Star 或 Fork
+
+请不要使用机器人、脚本、批量账号或刷星服务给本仓库添加 Star 或 Fork，也请不要以“帮助推广”为由代刷。本项目不需要虚假的热度。
+
+欢迎真实用户因兴趣或使用需要自愿 Star、Fork，也欢迎反馈问题、分享使用体验和贡献代码。感谢每一份真实的支持。
+
+Please do not use bots, scripts, bulk accounts, or paid services to inflate this repository's stars or forks, including unsolicited promotion. Genuine interest, feedback, and contributions are welcome.
+
 ## 当前产品形态
 
 PromptLens V2 支持上传本地素材，也支持粘贴公开视频链接作为分析来源。
