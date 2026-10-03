@@ -32,6 +32,7 @@
     "skipLogin": "跳过登录"
   },
   "home": {
+    "dashboard": "工作台",
     "login": "登录",
     "signIn": "登录",
     "startFree": "免费体验",

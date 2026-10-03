@@ -1,98 +1,84 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 import { getLocale } from "next-intl/server";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BookOpen, Check, ChevronDown, LifeBuoy } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { SiteHeader } from "@/components/landing/site-header";
 import { SiteFooter } from "@/components/landing/site-footer";
-import { SUPPORT_WECHAT } from "@/lib/support-contact";
-
-const steps = {
-  zh: [
-    { id: "import", title: "导入参考视频", paragraphs: [
-      "登录后进入工作台的视频分析页面。可以上传本地视频，也可以切换到视频链接，粘贴抖音、TikTok 或 B站的公开视频网址。整段「标题＋分享链接」也可以，每次只放一条链接。",
-      "链接导入会先解析并将视频保存到存储服务；只有导入成功才消耗套餐中的链接导入次数，失败不扣用户积分或次数。本地文件上传不消耗链接导入次数。请使用你有权处理的素材；私密、已删除或访问受限的视频可能无法导入。",
-    ] },
-    { id: "breakdown", title: "自动拆镜与分析", paragraphs: [
-      "选择分析模式或模型，开始处理参考视频。多镜头视频会自动划分片段，并标注起止时间。遇到费用确认时，先核对页面报价和可用额度，再确认开始。",
-      "新账号的免费体验适用于 10 秒以内单镜头视频；完整多镜头工作流请按页面提示购买套餐或配置自己的 Key。自带 Key 也可以购买套餐，套餐积分可用于自动拆镜服务，模型调用费用则由你的服务商账户承担。",
-      "处理时等待进度更新，不要重复提交同一任务。失败后先查看错误信息，再按提示重试；用户任务费用以成功完成的结果结算。",
-    ] },
-    { id: "prompts", title: "获取与修改提示词", paragraphs: [
-      "分析完成后，先阅读整片解读，再逐个选择镜头，对照片段、参考画面和完整复刻提示词。提示词会整理主体、动作、环境、构图、光影与运镜等细节。",
-      "可以直接复制提示词到你使用的生成工具，也可以在提示词框中修改细节。检查人物、动作和时间顺序是否符合原视频；模型分析与复刻不是绝对精确的，生成前仍需你复核。",
-    ] },
-    { id: "rewrite", title: "用 AI 改写自己的故事", paragraphs: [
-      "在改写区域说明你想更换的人物、场景、动作或风格，再确认改写。先表达具体的变化，例如「保留运镜，把古风宫殿换成未来城市」。",
-      "完成后切换原版和改写版进行对照。保留满意的细节，再继续修改其他镜头；改写的费用和次数以页面确认信息为准。",
-    ] },
-    { id: "generate", title: "生成与下载视频", paragraphs: [
-      "先在设置中配置自己的 KIE API Key，确认服务商账户有可用余额。视频生成不使用平台提供的免费额度。不要将 Key 放到公开提示词、截图或分享链接中。",
-      "选择镜头并点击「做同款」，将提示词带入生成页面。选择模型、生成方式、时长和画面比例，核对模型所需的参考素材后提交；最终相似程度取决于模型能力与素材。",
-      "等待任务完成，预览生成视频后使用下载入口保存文件。失败时查看任务错误和服务商扣费记录，不要连续重复提交；不同生成模型的收费规则可能不同。",
-    ] },
-    { id: "help", title: "订单、退款与问题反馈", paragraphs: [
-      "在「订单与退款申请」页面查看付款状态、余额及订单。已付款订单可提交退款原因和联系方式，随后与客服沟通；提交申请不会立即触发退款，审核同意后才办理。",
-      `遇到问题请添加客服微信 ${SUPPORT_WECHAT}，提供订单号或任务编号、错误截图和操作步骤。不要发送 API Key 或其他密码。`,
-    ] },
-  ],
-  en: [
-    { id: "import", title: "Import a reference video", paragraphs: [
-      "Sign in and open video analysis in the workspace. Upload a local video, or switch to Video link and paste a public Douyin, TikTok, or Bilibili URL. A title followed by a share link also works. Paste one link at a time.",
-      "Link import resolves and stores the video first. Only successful imports consume your package's import allowance; failures consume no user credits or allowance. Local uploads do not consume link imports. Use authorized media; private, deleted, or restricted videos may not import.",
-    ] },
-    { id: "breakdown", title: "Detect shots and analyze", paragraphs: [
-      "Choose an analysis mode or model and start processing. Multi-shot videos are divided into timestamped clips. Review the quote and available balance before confirming any charge.",
-      "The new-account trial covers single-shot videos up to 10 seconds. Follow the displayed requirements for full multi-shot workflows. You can buy a package while using your own key: package credits cover automatic shot detection, while model calls use your provider account.",
-      "Wait for progress updates instead of submitting duplicate tasks. Read any error before retrying. User task charges are settled against successfully completed results.",
-    ] },
-    { id: "prompts", title: "Get and refine prompts", paragraphs: [
-      "Read the video interpretation, then select each shot and compare its clip, reference frame, and detailed recreation prompt. Prompts organize subject, action, setting, composition, lighting, and camera motion.",
-      "Copy a prompt to your preferred generator or edit its details in the prompt field. Check identities, actions, and timing before generation; analysis and recreation are not guaranteed to be exact.",
-    ] },
-    { id: "rewrite", title: "Rewrite your own story", paragraphs: [
-      "Describe the characters, setting, actions, or style you want to change in the rewrite area. Be specific: for example, keep the camera motion but replace the palace with a futuristic city.",
-      "Compare the original and rewritten versions, retain the details you like, and refine other shots. Review the displayed rewrite quote and allowance before confirming.",
-    ] },
-    { id: "generate", title: "Generate and download", paragraphs: [
-      "Configure your own KIE API key in settings and check your provider balance. Video generation does not use platform trial credits. Never put your key into public prompts, screenshots, or share links.",
-      "Select a shot and choose Make same to carry its prompt into generation. Select the model, mode, duration, aspect ratio, and required reference media before submitting. Similarity depends on the model and references.",
-      "Wait for completion, preview the result, and use the download control to save it. For failures, check the task error and provider billing before retrying. Billing rules vary by model.",
-    ] },
-    { id: "help", title: "Orders, refunds, and support", paragraphs: [
-      "Open Orders and refund requests to check payment status and balances. For a paid order, submit a reason and contact details, then speak with support. Submitting the form does not issue a refund; approval is required.",
-      `Contact WeChat support at ${SUPPORT_WECHAT} with your order or task ID, error screenshot, and steps. Do not send API keys or passwords.`,
-    ] },
-  ],
-};
+import { guideContent } from "./content";
 
 export default async function GuidePage() {
   const zh = await getLocale() === "zh";
   const session = await auth.api.getSession({ headers: await headers() }).catch(() => null);
-  const sections = zh ? steps.zh : steps.en;
+  const sections = guideContent[zh ? "zh" : "en"];
+  const contents = <ol className="space-y-1">
+    {sections.map((section, index) => <li key={section.id}>
+      <a href={`#${section.id}`} className="group flex min-h-10 items-baseline gap-3 rounded-md px-2 py-2 text-sm text-[var(--color-text-secondary)] transition-colors hover:bg-[var(--color-bg-raised)] hover:text-[var(--color-text-primary)]">
+        <span className="shrink-0 font-mono text-xs text-[var(--color-text-muted)]">{String(index + 1).padStart(2, "0")}</span>
+        <span>{section.title}</span>
+      </a>
+    </li>)}
+  </ol>;
+
   return (
-    <div className="min-h-screen bg-[var(--color-bg-base)]">
+    <div className="min-h-screen bg-[var(--color-bg-base)] text-[var(--color-text-primary)]">
       <SiteHeader user={session?.user ?? null} variant="light" />
-      <main className="mx-auto max-w-6xl px-4 pb-20 pt-28 md:px-6 md:pt-36">
-        <header className="border-b border-[var(--color-border-subtle)] pb-8">
-          <p className="text-sm text-[var(--color-text-secondary)]">Prompt Lens</p>
-          <h1 className="mt-3 text-3xl font-semibold">{zh ? "完整使用教程" : "Complete walkthrough"}</h1>
-          <p className="mt-4 max-w-2xl leading-7 text-[var(--color-text-secondary)]">{zh ? "从参考视频到镜头提示词，再到改写与生成，按顺序完成你的第一次创作。" : "From a reference video to shot prompts, rewriting, and generation: complete your first workflow step by step."}</p>
+      <main className="mx-auto max-w-6xl px-4 pb-20 pt-28 md:px-6 md:pt-32">
+        <header className="border-b border-[var(--color-border-default)] pb-8 md:pb-10">
+          <div className="flex items-center gap-2 text-sm text-[var(--color-text-secondary)]"><BookOpen className="h-4 w-4" aria-hidden="true" />Prompt Lens / {zh ? "文档" : "Docs"}</div>
+          <h1 className="mt-4 text-3xl font-semibold md:text-4xl">{zh ? "完整使用教程" : "Complete walkthrough"}</h1>
+          <p className="mt-4 max-w-2xl text-base leading-8 text-[var(--color-text-secondary)]">{zh ? "从第一条参考视频开始，学会拆镜提词、改写创意和生成视频。操作步骤、费用来源与问题处理，都可以在这里找到。" : "Take your first reference from shot analysis to prompts, rewrites, and a generated video. Find the steps, understand the costs, and resolve common issues along the way."}</p>
+          <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm font-medium">
+            <Link href={session ? "/dashboard?tab=analyze" : "/login"} className="inline-flex min-h-10 items-center gap-2 text-[var(--color-accent-orange)] hover:underline underline-offset-4">{zh ? "进入工作台" : "Open workspace"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+            <a href="#credits" className="inline-flex min-h-10 items-center hover:underline underline-offset-4">{zh ? "先了解费用" : "Understand costs"}</a>
+            <a href="#help" className="inline-flex min-h-10 items-center gap-2 hover:underline underline-offset-4"><LifeBuoy className="h-4 w-4" aria-hidden="true" />{zh ? "遇到问题" : "Get help"}</a>
+          </div>
+          <ol aria-label={zh ? "核心创作流程" : "Core workflow"} className="mt-6 grid grid-cols-2 gap-4 border-t border-[var(--color-border-subtle)] pt-6 sm:grid-cols-4">
+            {(zh ? [["导入参考", "本地文件或视频分享链接"], ["拆镜提词", "逐镜头提取画面与运镜"], ["改写创意", "保留细节，替换你的故事"], ["生成视频", "确认参数，预览并下载"]] : [["Import", "A file or public video link"], ["Analyze", "Details and motion, shot by shot"], ["Rewrite", "Keep the structure, change the story"], ["Generate", "Review settings, preview, download"]]).map(([title, detail], index) => <li key={title} className="min-w-0">
+              <p className="flex items-center gap-2 text-sm font-semibold"><span className="font-mono text-xs text-[var(--color-text-muted)]">0{index + 1}</span>{title}</p>
+              <p className="mt-2 text-xs leading-5 text-[var(--color-text-secondary)]">{detail}</p>
+            </li>)}
+          </ol>
         </header>
-        <div className="mt-8 grid gap-10 lg:grid-cols-[220px_minmax(0,1fr)]">
-          <nav aria-label={zh ? "教程目录" : "Guide contents"} className="self-start lg:sticky lg:top-24">
-            <ol className="space-y-3 text-sm">
-              {sections.map((section, index) => <li key={section.id}><a href={`#${section.id}`} className="leading-6 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">{index + 1}. {section.title}</a></li>)}
-            </ol>
-          </nav>
+
+        <div className="mt-8 grid items-start gap-8 lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-14">
+          <aside className="lg:sticky lg:top-6 lg:max-h-[calc(100dvh-3rem)] lg:overflow-y-auto">
+            <nav aria-label={zh ? "教程目录" : "Guide contents"}>
+              <div className="hidden lg:block">
+                <p className="mb-3 px-2 text-xs font-semibold text-[var(--color-text-muted)]">{zh ? "本页目录" : "ON THIS PAGE"}</p>
+                {contents}
+              </div>
+              <details className="group border-y border-[var(--color-border-subtle)] lg:hidden">
+                <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between text-sm font-medium [&::-webkit-details-marker]:hidden">{zh ? "查看教程目录" : "Browse the guide"}<ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" aria-hidden="true" /></summary>
+                <div className="pb-3">{contents}</div>
+              </details>
+            </nav>
+            <Link href="/dashboard?tab=settings" className="mt-6 hidden border-t border-[var(--color-border-subtle)] px-2 pt-5 text-sm text-[var(--color-text-secondary)] underline underline-offset-4 lg:block">{zh ? "配置自己的 API Key" : "Set up your API key"}</Link>
+          </aside>
+
           <div className="min-w-0">
-            {sections.map((section, index) => <section key={section.id} id={section.id} className="scroll-mt-28 border-b border-[var(--color-border-subtle)] py-8 first:pt-0">
-              <h2 className="text-xl font-semibold">{index + 1}. {section.title}</h2>
-              <div className="mt-4 space-y-4 text-sm leading-7 text-[var(--color-text-secondary)]">{section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div>
-              {section.id === "generate" && <Link href="/dashboard?tab=settings" className="mt-4 inline-block text-sm underline underline-offset-4">{zh ? "前往设置配置 Key" : "Configure your key in settings"}</Link>}
-              {section.id === "help" && <Link href="/billing" className="mt-4 inline-block text-sm underline underline-offset-4">{zh ? "订单与退款申请" : "Orders and refund requests"}</Link>}
+            {sections.map((section, index) => <section key={section.id} id={section.id} aria-labelledby={`heading-${section.id}`} className="scroll-mt-8 border-b border-[var(--color-border-default)] py-10 first:pt-0 md:py-12">
+              <p className="mb-3 font-mono text-xs text-[var(--color-text-muted)]">{zh ? "第" : "CHAPTER"} {String(index + 1).padStart(2, "0")} {zh ? "章" : ""}</p>
+              <h2 id={`heading-${section.id}`} className="text-2xl font-semibold leading-snug">{section.title}</h2>
+              <p className="mt-4 text-base leading-8 text-[var(--color-text-secondary)]">{section.summary}</p>
+
+              <div className="mt-7 space-y-8">
+                {section.topics.map(topic => <div key={topic.title}>
+                  <h3 className="text-base font-semibold leading-7">{topic.title}</h3>
+                  {topic.paragraphs && <div className="mt-3 space-y-3 text-sm leading-7 text-[var(--color-text-secondary)]">{topic.paragraphs.map(text => <p key={text}>{text}</p>)}</div>}
+                  {topic.steps && <ol className="mt-4 space-y-4">{topic.steps.map((step, stepIndex) => <li key={step} className="flex items-baseline gap-3 text-sm leading-7 text-[var(--color-text-secondary)]"><span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-bg-raised)] text-xs font-semibold text-[var(--color-text-primary)] ring-1 ring-[var(--color-border-default)]" aria-hidden="true">{stepIndex + 1}</span><span className="min-w-0">{step}</span></li>)}</ol>}
+                  {topic.example && <figure className="mt-4 border-l-2 border-[var(--color-accent-orange)] bg-[var(--color-bg-raised)] px-4 py-4 sm:px-5"><figcaption className="mb-3 text-xs font-semibold text-[var(--color-text-primary)]">{topic.example.label}</figcaption><p className="whitespace-pre-wrap break-words text-sm leading-7 text-[var(--color-text-secondary)] [overflow-wrap:anywhere]">{topic.example.text}</p></figure>}
+                </div>)}
+              </div>
+
+              {section.note && <aside className="mt-7 border-l-2 border-[#2f6d61] bg-[#2f6d61]/5 px-4 py-4 sm:px-5"><p className="text-sm font-semibold">{section.note.title}</p><p className="mt-2 text-sm leading-7 text-[var(--color-text-secondary)]">{section.note.text}</p></aside>}
+              {section.outcome && <p className="mt-7 flex items-start gap-2 text-sm leading-7 text-[var(--color-text-secondary)]"><Check className="mt-1 h-5 w-5 shrink-0 text-[#2f6d61]" aria-hidden="true" /><span><strong className="font-medium text-[var(--color-text-primary)]">{zh ? "完成后：" : "Ready when: "}</strong>{section.outcome}</span></p>}
+              {section.link && <Link href={section.link.href} className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-medium text-[var(--color-accent-orange)] hover:underline underline-offset-4">{section.link.label}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>}
             </section>)}
-            <Link href={session ? "/dashboard?tab=analyze" : "/login"} className="mt-8 inline-flex items-center gap-2 text-sm font-medium">{zh ? "开始分析参考视频" : "Analyze a reference video"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+            <div className="mt-8 flex flex-wrap items-center justify-between gap-4 text-sm">
+              <Link href={session ? "/dashboard?tab=analyze" : "/login"} className="inline-flex min-h-11 items-center gap-2 font-medium">{zh ? "开始分析参考视频" : "Analyze a reference video"}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Link>
+              <a href="#start" className="text-[var(--color-text-secondary)] underline underline-offset-4">{zh ? "回到第一章" : "Back to the first chapter"}</a>
+            </div>
           </div>
         </div>
       </main>

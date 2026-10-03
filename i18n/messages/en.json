@@ -32,6 +32,7 @@
     "skipLogin": "Skip login"
   },
   "home": {
+    "dashboard": "Workspace",
     "login": "Login",
     "signIn": "Sign in",
     "startFree": "Start free",
