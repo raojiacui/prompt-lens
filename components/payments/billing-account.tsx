@@ -7,6 +7,7 @@ import { ArrowLeft, RefreshCw, X } from "lucide-react";
 import { AlipayCheckoutDialog } from "@/components/payments/alipay-checkout-dialog";
 import { COMMERCIAL_PACKAGES } from "@/lib/billing/pricing-v6";
 import { SUPPORT_WECHAT } from "@/lib/support-contact";
+import { refreshWalletBalance, useWalletBalance } from "@/lib/billing/use-wallet-balance";
 
 type Order = { id: string; packageId: string; packageName: string; amountCents: number; status: string; createdAt: string };
 type Account = {
@@ -19,6 +20,7 @@ type Account = {
 export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
   const Container = embedded ? "section" : "main";
   const zh = useLocale() === "zh";
+  const { wallet, failed: walletFailed } = useWalletBalance();
   const [account, setAccount] = useState<Account | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -33,7 +35,7 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
       const response = await fetch("/api/payments/account", { cache: "no-store" });
       if (response.status === 401) { window.location.href = "/login?next=%2Fbilling"; return; }
       if (!response.ok) throw new Error();
-      setAccount(await response.json()); setError("");
+      setAccount(await response.json()); setError(""); refreshWalletBalance();
     } catch { setError(zh ? "暂时无法读取账户，请稍后重试。" : "Unable to load your account. Try again later."); }
   }, [zh]);
   useEffect(() => { void load(); }, [load]);
@@ -76,8 +78,9 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
     {account && <>
       {account.wallet.frozen && <p className="mt-5 text-red-700">{zh ? "账户正在进行资金复核，暂不可启动付费任务。" : "Your wallet is under review. Paid tasks are temporarily unavailable."}</p>}
       <dl className="my-8 grid grid-cols-2 gap-6 border-b border-border pb-8 sm:grid-cols-4">
-        {[ [zh ? "可用积分" : "Available credits", account.wallet.credits], [zh ? "可用改写" : "Rewrites", account.wallet.rewrites], [zh ? "任务预留积分" : "Reserved credits", account.wallet.heldCredits], [zh ? "任务预留改写" : "Reserved rewrites", account.wallet.heldRewrites] ].map(([label, value]) => <div key={label}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-2 text-2xl font-semibold">{value}</dd></div>)}
+        {[ [zh ? "可用积分" : "Available credits", wallet?.credits], [zh ? "可用改写" : "Rewrites", wallet?.rewrites], [zh ? "任务预留积分" : "Reserved credits", wallet?.heldCredits], [zh ? "任务预留改写" : "Reserved rewrites", wallet?.heldRewrites] ].map(([label, value]) => <div key={label}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-2 text-2xl font-semibold">{walletFailed ? (zh ? "暂不可用" : "Unavailable") : value ?? "…"}</dd></div>)}
       </dl>
+      {!!wallet?.refundHeldCredits && <p role="status" className="mb-5 text-sm text-muted-foreground">{zh ? `${wallet.refundHeldCredits} 积分正在退款审核中，暂不可使用；申请未通过后会恢复。` : `${wallet.refundHeldCredits} credits are unavailable during refund review and will be restored if the request is declined.`}</p>}
       <div className="flex items-center justify-between"><h2 className="text-lg font-semibold">{zh ? "购买记录" : "Purchases"}</h2><Link href="/#pricing" className="text-sm underline">{zh ? "购买积分" : "Buy credits"}</Link></div>
       {!account.orders.length && <p className="py-6 text-sm text-muted-foreground">{zh ? "暂无购买记录" : "No purchases yet"}</p>}
       {account.orders.map((order) => {

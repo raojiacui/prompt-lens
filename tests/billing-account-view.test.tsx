@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next-intl", () => ({ useLocale: () => "zh" }));
+vi.mock("@/lib/auth/auth-client", () => ({ authClient: { useSession: () => ({ data: null }) } }));
 vi.mock("@/components/payments/alipay-checkout-dialog", () => ({ AlipayCheckoutDialog: () => null }));
 import { BillingAccount } from "@/components/payments/billing-account";
 import { CreditBalanceLink } from "@/components/workflow/credit-balance-link";
@@ -23,6 +24,11 @@ describe("account in the workspace", () => {
   it("uses purchased credits and links to the sidebar account view", () => {
     const html = renderToStaticMarkup(<CreditBalanceLink status={{ balance: 0, commercial: { credits: 200 } }} failed={false} locale="zh" />);
     expect(html).toContain('href="/dashboard?tab=account"');
+    expect(html).toContain("200");
+  });
+  it("distinguishes a refund hold from available credits", () => {
+    const html = renderToStaticMarkup(<CreditBalanceLink status={{ balance: 0, commercial: { credits: 0, refundHeldCredits: 200 } }} failed={false} locale="zh" />);
+    expect(html).toContain("退款审核中，暂停使用");
     expect(html).toContain("200");
   });
 });

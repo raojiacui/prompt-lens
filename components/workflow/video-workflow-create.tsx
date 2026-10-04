@@ -8,7 +8,7 @@ import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { VideoOverview } from "@/components/workflow/video-overview";
-import { CreditBalanceLink } from "@/components/workflow/credit-balance-link";
+import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
 import { workspaceCopyFor, localizedStatus, localizedVersionLabel } from "@/lib/workflow/interface-copy";
 import { extractVideoLink } from "@/lib/media-resolver/video-link-input";
 import { Button } from "@/components/ui/button";
@@ -332,7 +332,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [analysisTaskId, setAnalysisTaskId] = useState("");
   const [analysisOutputLanguage, setAnalysisOutputLanguage] = useState<"zh" | "en">(locale === "en" ? "en" : "zh");
   const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
-  const [creditStatusFailed, setCreditStatusFailed] = useState(false);
 
   useEffect(() => {
     const refresh = () => { void loadCreditStatus(); };
@@ -418,10 +417,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       if (!data) throw new Error("Invalid credit status");
       const status = data as CreditStatus;
       setCreditStatus(status);
-      setCreditStatusFailed(false);
       return status;
     } catch {
-      setCreditStatusFailed(true);
       return null;
     }
   }
@@ -771,7 +768,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         <div>
           <h1 className="text-4xl font-semibold tracking-tight">{locale === "en" ? "Video analysis" : "视频分析"}</h1>
         </div>
-        <CreditBalanceLink status={creditStatus} failed={creditStatusFailed} locale={locale} />
+        <LiveCreditBalanceLink status={creditStatus} locale={locale} />
       </div>
       <p className="max-w-5xl text-lg leading-relaxed text-muted-foreground">{locale === "en" ? "Capture the subjects, action, camera movement and lighting of your reference in detailed recreation prompts." : "提取原视频的画面、人物、动作、运镜与光影细节，整合为可直接用于生成的复刻提示词。"}</p>
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { CheckCircle2, RefreshCw, X } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { shouldRestartCheckout } from "@/lib/payments/checkout-restart";
+import { refreshWalletBalance } from "@/lib/billing/use-wallet-balance";
 
 type Checkout = { orderId: string; amountCents: number; credits: number; rewrites: number; qrImageUrl: string | null; mobilePaymentUrl: string | null; paymentUrl?: string | null; cancellationRequested?: boolean; expiresAt: string; status: string };
 function safePaymentUrl(value: string | null | undefined) {
@@ -104,7 +105,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
     return () => { controller.abort(); clearTimeout(timer); };
   }, [checkout?.orderId, checkout?.status, attempt, zh]);
   useEffect(() => {
-    if (checkout?.status === "paid" && !paidNotified.current) { paidNotified.current = true; onPaidRef.current(); }
+    if (checkout?.status === "paid" && !paidNotified.current) { paidNotified.current = true; refreshWalletBalance(); onPaidRef.current(); }
   }, [checkout?.status]);
 
   const remaining = checkout ? Math.max(0, Math.ceil((Date.parse(checkout.expiresAt) - now) / 1000)) : 0;

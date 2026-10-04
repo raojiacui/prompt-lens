@@ -14,7 +14,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { localizedStatus } from "@/lib/workflow/interface-copy";
 import { GenerationQuoteDialog } from "@/components/payments/generation-quote-dialog";
-import { CreditBalanceLink } from "@/components/workflow/credit-balance-link";
+import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
 import type { KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 
@@ -375,7 +375,6 @@ export function ReferenceVideoComposer({
   const zh = useLocale() === "zh";
   const [commercialEnabled, setCommercialEnabled] = useState(false);
   const [creditStatus, setCreditStatus] = useState<{ balance: number; commercial?: { credits?: number; heldCredits?: number } } | null>(null);
-  const [creditStatusFailed, setCreditStatusFailed] = useState(false);
   const [balanceRefresh, setBalanceRefresh] = useState(0);
   const [generationPayer, setGenerationPayer] = useState("byok");
   const [commercialRequest, setCommercialRequest] = useState<{ request: Record<string, unknown>; quantity: number } | null>(null);
@@ -384,7 +383,6 @@ export function ReferenceVideoComposer({
     let controller: AbortController | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
     setCreditStatus(null);
-    setCreditStatusFailed(false);
     const refresh = async () => {
       controller?.abort();
       clearTimeout(timer);
@@ -397,11 +395,10 @@ export function ReferenceVideoComposer({
         const data = await response.json();
         if (active && controller === request) {
           setCreditStatus(data);
-          setCreditStatusFailed(false);
           setCommercialEnabled(data?.commercialConsumptionEnabled === true);
         }
       } catch {
-        if (active && controller === request) setCreditStatusFailed(true);
+        if (active && controller === request) setCommercialEnabled(false);
       } finally {
         if (controller === request) clearTimeout(timer);
       }
@@ -1257,7 +1254,7 @@ export function ReferenceVideoComposer({
               {zh ? "视频生成" : "Video generation"}
             </h1>
           </div>
-          <CreditBalanceLink status={creditStatus} failed={creditStatusFailed} locale={zh ? "zh" : "en"} />
+          <LiveCreditBalanceLink status={creditStatus} locale={zh ? "zh" : "en"} />
         </div>
         <p className="max-w-5xl text-sm leading-6 text-muted-foreground">{zh ? "输入提示词，或上传参考图与视频，生成自己的视频。自带 Key 的任务使用你自己的 KIE 余额，不扣平台积分。" : "Create videos from prompts, reference images or video. Jobs using your own key charge your KIE account, not platform credits."}</p>
 
