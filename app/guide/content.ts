@@ -243,11 +243,6 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "付款后等待订单确认，到「余额与订单」查看购买记录和可用余额。付款页面关闭不代表订单失败。",
           "如果支付宝已扣款但页面仍待确认，使用订单查询或刷新，保留订单号，先不要重复付款。",
         ] },
-        { title: "为什么可用积分先减少了", paragraphs: [
-          "付费任务确认后，预计费用会先从可用余额转为「任务预留积分」，以保证任务有足够额度。完成后再结算实际费用，不是预留一次、结束后再重复扣一次。",
-          "例如任务报价 20 积分，确认后先预留 20；若最终成功部分结算 12，则释放剩余 8。这个数字只是帮助理解的示例，实际费用看任务记录。",
-          "结果待核对时，预留可能暂时保留。到「任务消费」查看状态，或提供任务编号联系客服。",
-        ] },
         ...creditRuleTopics(true),
       ],
       link: { href: "/billing", label: "查看余额与订单" },
@@ -494,11 +489,6 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "Choose a package and check its price and allowances before opening Alipay payment.",
           "After payment, wait for confirmation and check the purchase record and balance in Balance and orders. Closing the payment window does not make an order fail.",
           "If Alipay has charged you but confirmation is pending, refresh or query the order, keep the order ID, and avoid paying again.",
-        ] },
-        { title: "Why available credits decrease before completion", paragraphs: [
-          "A confirmed paid task moves its estimated cost from available credits to Reserved credits. The actual cost is settled when the outcome is known; reservation and settlement are not two separate charges.",
-          "For example, a 20-credit quote reserves 20. If successful work settles for 12, the remaining eight are released. These are illustrative numbers; consult your task record for actual costs.",
-          "An uncertain result may keep credits reserved while it is checked. Look under Task usage or contact support with the task ID.",
         ] },
         ...creditRuleTopics(false),
       ],

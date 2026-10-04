@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { guideContent } from "@/app/guide/content";
 
 describe("Published credit rules", () => {
+  it.each(["zh", "en"] as const)("keeps %s fees free of formulas and internal billing steps", locale => {
+    const section = guideContent[locale].find(s => s.id === "credits")!;
+    const text = JSON.stringify(section);
+    expect(text).not.toMatch(/向上取整|×|÷|总费用＝|总积分＝|预留|后台检测|ceiling\(|reservation|reserved|server probes|From quote to settlement/i);
+  });
+
   it.each(["zh", "en"] as const)("publishes live pricing and allowances in %s", locale => {
     const topics = guideContent[locale].find(s => s.id === "credits")!.topics;
     const tables = topics.filter(t => t.table).map(t => t.table!);
