@@ -3,6 +3,9 @@ import { shouldRestartCheckout } from "@/lib/payments/checkout-restart";
 
 const now = Date.parse("2026-10-02T13:00:00Z");
 describe("restarting a saved checkout", () => {
+  it("starts a new purchase immediately after accepted cancellation", () => {
+    expect(shouldRestartCheckout({ status: "pending", cancellationRequested: true, expiresAt: new Date(now + 900000).toISOString() }, now)).toBe(true);
+  });
   it("reconciles expired pending orders before allowing another payment", () => {
     expect(shouldRestartCheckout({ status: "pending", expiresAt: new Date(now).toISOString() }, now)).toBe(false);
   });

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Activity, AlertTriangle, CreditCard, LogIn, RefreshCw, UploadCloud, UserPlus, Users, Video, X, type LucideIcon } from "lucide-react";
-import Link from "next/link";
+import { RefundRequestsLink } from "@/components/refund-requests-link";
 import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -180,7 +180,7 @@ export function AdminOverviewPanel() {
     <div className="mx-auto flex max-w-[1680px] min-w-0 flex-col gap-5 px-0 py-1">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div><h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">{copy.title}</h1><p className="mt-1 text-sm text-[var(--color-text-secondary)]">{copy.description}</p></div>
-        <div className="flex flex-wrap gap-2"><Link href="/billing/review#refunds" className="inline-flex min-h-9 items-center rounded-md border border-border px-3 text-sm"><CreditCard className="mr-2 h-4 w-4" />{zh ? "退款申请与资金对账" : "Refund requests and reconciliation"}</Link><Button variant="outline" size="sm" onClick={() => void loadOverview()} disabled={loading} aria-label={copy.refresh}>{loading ? <Spinner size="sm" className="mr-2" /> : <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />}{copy.refresh}</Button></div>
+        <div className="flex flex-wrap gap-2"><RefundRequestsLink /><Button variant="outline" size="sm" onClick={() => void loadOverview()} disabled={loading} aria-label={copy.refresh}>{loading ? <Spinner size="sm" className="mr-2" /> : <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />}{copy.refresh}</Button></div>
       </header>
 
       {error ? <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div> : null}

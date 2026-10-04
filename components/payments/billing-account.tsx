@@ -47,9 +47,9 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
     try {
       const response = await fetch(`/api/payments/orders/${cancelOrder.id}/close`, { method: "POST" });
       const data = await response.json();
-      if (!response.ok || data.status === "pending") throw new Error(zh ? "取消结果待核对，请保留订单号，暂勿继续付款。" : "Cancellation is unconfirmed. Keep the order ID and do not continue payment.");
+      if (!response.ok || (data.status === "pending" && !data.cancellationRequested)) throw new Error(zh ? "取消请求未能保存，请重试。" : "Cancellation could not be saved. Please retry.");
       setCancelOrder(null); await load();
-      setNotice(data.status === "paid" ? (zh ? "此订单已付款，已核对到账，没有取消或退款。" : "This order was paid and has been credited, not cancelled or refunded.") : (zh ? "订单已结束，不会再要求支付这笔订单。" : "This order has ended and no longer requires payment."));
+      setNotice(data.status === "paid" ? (zh ? "此订单已付款，已核对到账，没有取消或退款。" : "This order was paid and has been credited, not cancelled or refunded.") : (zh ? "已取消本次付款，可以重新下单。如已付款，系统会继续确认到账。" : "This checkout was cancelled. You can place a new order; any completed payment will still be reconciled."));
     } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
     finally { setBusy(false); }
   }

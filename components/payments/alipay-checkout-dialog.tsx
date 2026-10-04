@@ -14,10 +14,11 @@ function safePaymentUrl(value: string | null | undefined) {
   try { const url = new URL(value || ""); return url.protocol === "https:" ? url.href : null; } catch { return null; }
 }
 
-export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose, onPaid, onNewOrder, previousOrderUnconfirmed = false }: {
+export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose, onPaid, onCancelled, onNewOrder, previousOrderUnconfirmed = false }: {
   pack: { id: string; name?: string; priceCents: number; credits: number; rewrites: number };
   requestId: string; existingOrderId?: string; onClose: () => void; onPaid: () => void;
   onNewOrder?: (previous?: { orderId: string; status: string }) => void;
+  onCancelled?: () => void;
   previousOrderUnconfirmed?: boolean;
 }) {
   const zh = useLocale() === "zh";
@@ -31,7 +32,6 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
   const [checkMessage, setCheckMessage] = useState("");
   const manualCheck = useRef(false);
   const [now, setNow] = useState(Date.now());
-  const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const onPaidRef = useRef(onPaid);
   onPaidRef.current = onPaid;
@@ -129,9 +129,11 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
     try {
       const response = await fetch(`/api/payments/orders/${checkout.orderId}/close`, { method: "POST" });
       const data = await response.json();
-      if (!response.ok || !["cancelled", "paid", "refunded"].includes(data.status)) throw new Error(zh ? "取消结果待核对，请重新查询，暂勿付款或另建订单。" : "Cancellation is unconfirmed. Check again; do not pay or create another order yet.");
+      if (!response.ok || (!data.cancellationRequested && !["cancelled", "paid", "refunded"].includes(data.status))) throw new Error(zh ? "取消请求未能保存，请重试。" : "Cancellation could not be saved. Please retry.");
       setCheckout((current) => current ? { ...current, status: data.status } : null);
-      setCancelConfirm(false);
+      if (data.status === "paid") { refreshWalletBalance(); onPaidRef.current(); }
+      onCancelled?.();
+      onClose();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Error"); }
     finally { setCancelling(false); }
   }
@@ -164,10 +166,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
       {error && <p role="alert" className="mb-3 text-sm text-red-700">{error}</p>}
       {pending && <div className="mb-3 space-y-3 text-sm">
         <p className="text-muted-foreground">{zh ? "下单后 15 分钟内未完成付款，订单将自动取消。已付款的订单会核对到账，不会按未付款取消。" : "Unpaid orders expire 15 minutes after creation. Completed payments are reconciled, not cancelled as unpaid."}</p>
-        {!cancelConfirm ? <button disabled={cancelling} onClick={() => setCancelConfirm(true)} className="min-h-10 w-full rounded-lg border border-border px-3">{zh ? "取消本次付款" : "Cancel this payment"}</button> : <>
-          <p>{zh ? "确认不再支付这笔订单？若已付款，将先核对到账，此操作不是退款。" : "Stop paying this order? Any completed payment will be reconciled. This is not a refund."}</p>
-          <div className="flex gap-3"><button disabled={cancelling} onClick={() => void cancelPayment()} className="min-h-10 flex-1 rounded-lg border border-border px-3 disabled:opacity-50">{zh ? "确认取消" : "Confirm cancellation"}</button><button disabled={cancelling} onClick={() => setCancelConfirm(false)} className="min-h-10 px-3">{zh ? "返回" : "Back"}</button></div>
-        </>}
+        <button disabled={cancelling} onClick={() => void cancelPayment()} className="min-h-10 w-full rounded-lg border border-border px-3">{cancelling ? (zh ? "正在取消…" : "Cancelling…") : (zh ? "取消本次付款" : "Cancel this payment")}</button>
       </div>}
       {pending && !error && checkMessage && <p role="status" className="mb-3 text-sm text-muted-foreground">{checkMessage}</p>}
       {!loading && (pending || !checkout) && <button onClick={checkPayment} disabled={checking || cancelling} aria-busy={checking} className="flex min-h-10 w-full items-center justify-center gap-2 rounded-lg border border-border px-3 text-sm disabled:cursor-wait disabled:opacity-60"><RefreshCw className={`h-4 w-4 ${checking ? "animate-spin" : ""}`} />{checking ? (zh ? "正在查询到账…" : "Checking payment…") : (zh ? "我已付款，查询到账" : "I have paid, check payment")}</button>}

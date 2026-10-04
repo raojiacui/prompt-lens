@@ -80,6 +80,9 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
         requestIds.current[selected.id] = crypto.randomUUID();
         try { localStorage.setItem(`promptlens:checkout:${session?.user.id || "current"}:${selected.id}`, requestIds.current[selected.id]); } catch { /* Keep the in-memory ID when storage is unavailable. */ }
         setCheckoutAttempt((value) => value + 1);
+      }} onCancelled={() => {
+        delete requestIds.current[selected.id];
+        try { localStorage.removeItem(`promptlens:checkout:${session?.user.id || "current"}:${selected.id}`); } catch { /* Use a fresh in-memory ID on the next purchase. */ }
       }} onPaid={() => {
         delete requestIds.current[selected.id];
         try { localStorage.removeItem(`promptlens:checkout:${session?.user.id || "current"}:${selected.id}`); } catch { /* Storage may be unavailable in private browsing. */ }

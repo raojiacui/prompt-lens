@@ -53,7 +53,7 @@ describe("manual refund route authorization", () => {
     expect((await listReviews(new NextRequest("http://localhost/api/admin/payments/commercial"))).status).toBe(403);
   });
   it("requires customer communication, explicit approval and evidence", async () => {
-    for (const missing of [{ customerContacted: false }, { approveConfirmed: false }, { evidence: "short" }]) {
+    for (const missing of [{ customerContacted: false }, { approveConfirmed: false }, { evidence: " " }]) {
       expect((await reviewRefund(req({ ...body, ...missing }))).status).toBe(400);
     }
     expect(reviewCommercialRefund).not.toHaveBeenCalled();
@@ -63,6 +63,10 @@ describe("manual refund route authorization", () => {
     expect(reviewCommercialRefund).toHaveBeenCalledWith("admin", id, "approve", body.evidence);
     expect((await reviewRefund(req({ ...body, action: "reject_refund", approveConfirmed: false }))).status).toBe(200);
     expect(reviewCommercialRefund).toHaveBeenLastCalledWith("admin", id, "reject", body.evidence);
+  });
+  it("accepts a short nonempty customer-service review note", async () => {
+    expect((await reviewRefund(req({ ...body, evidence: "可以退款" }))).status).toBe(200);
+    expect(reviewCommercialRefund).toHaveBeenCalledWith("admin", id, "approve", "可以退款");
   });
   it("does not retry an uncertain or already reviewed refund", async () => {
     vi.mocked(reviewCommercialRefund).mockRejectedValueOnce(new Error("REFUND_ALREADY_REVIEWED"));

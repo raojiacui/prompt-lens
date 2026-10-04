@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-for (const width of [1440, 390]) for (const outcome of ["cancelled", "paid", "unknown"]) {
+for (const width of [1440, 390]) for (const outcome of ["cancelled", "paid", "pending", "unknown"]) {
   test(`cancel checkout ${outcome} ${width}`, async ({ page, context }) => {
     await page.setViewportSize({ width, height: 1000 });
     await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
@@ -16,7 +16,7 @@ for (const width of [1440, 390]) for (const outcome of ["cancelled", "paid", "un
         closes++;
         if (outcome === "unknown") return route.fulfill({ status: 502, json: { code: "CLOSE_STATUS_UNKNOWN" } });
         state = outcome;
-        return route.fulfill({ json: { status: state } });
+        return route.fulfill({ status: outcome === "pending" ? 202 : 200, json: { status: state, cancellationRequested: true } });
       }
       if (path.includes("/api/payments/orders/")) return route.fulfill({ json: { ...checkout, status: state, cancellationRequested: closes > 0, paymentUrl: closes ? null : checkout.paymentUrl } });
       await route.fulfill({ json: {} });
@@ -26,15 +26,13 @@ for (const width of [1440, 390]) for (const outcome of ["cancelled", "paid", "un
     const dialog = page.getByRole("dialog");
     await expect(dialog.getByRole("link", { name: "前往支付宝支付" })).toBeVisible();
     await dialog.getByRole("button", { name: "取消本次付款" }).click();
-    expect(closes).toBe(0);
-    await dialog.getByRole("button", { name: "确认取消" }).click();
     if (outcome === "unknown") {
-      await expect(dialog.getByRole("alert")).toContainText("取消结果待核对");
+      await expect(dialog.getByRole("alert")).toContainText("取消请求未能保存");
       await expect(dialog.getByRole("link", { name: "前往支付宝支付" })).toHaveCount(0);
-    } else await expect(dialog.getByText(outcome === "paid" ? "支付成功，权益已到账" : "订单已取消", { exact: true })).toBeVisible();
+      const bounds = await dialog.boundingBox();
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
+    } else await expect(dialog).toHaveCount(0);
     expect(closes).toBe(1);
-    const bounds = await dialog.boundingBox();
-    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
     await page.screenshot({ path: `test-results/cancel-${outcome}-${width}.png` });
   });
 }

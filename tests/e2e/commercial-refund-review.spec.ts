@@ -15,7 +15,7 @@ for (const width of [1440, 390]) for (const decision of ["approve", "reject"]) {
         actions.push(route.request().postDataJSON());
         reviewed = true;
         await route.fulfill({ json: { state: decision === "approve" ? "succeeded" : "rejected" } });
-      } else await route.fulfill({ json: { orders: [], tasks: [], frozen: [], refunds: reviewed ? [] : [{ id: "11111111-1111-4111-8111-111111111111", orderId: "22222222-2222-4222-8222-222222222222", state: "requested", reason: "Purchased by mistake", contact: "customer-wechat", amountCents: 2190 }] } });
+      } else await route.fulfill({ json: { total: reviewed ? 0 : 1, refunds: reviewed ? [] : [{ id: "11111111-1111-4111-8111-111111111111", orderId: "22222222-2222-4222-8222-222222222222", state: "requested", reason: "Purchased by mistake", contact: "customer-wechat", amountCents: 2190 }] } });
     });
     await page.goto("/billing/review");
     await page.getByRole("button", { name: "审核申请" }).click();
@@ -23,7 +23,7 @@ for (const width of [1440, 390]) for (const decision of ["approve", "reject"]) {
     const reject = page.getByRole("button", { name: "拒绝申请并恢复额度" });
     await expect(approve).toBeDisabled();
     await expect(reject).toBeDisabled();
-    await page.getByLabel("沟通记录与处理依据").fill("Customer contacted and order verified");
+    await page.getByLabel("处理备注（必填）").fill("可以退款");
     await expect(reject).toBeDisabled();
     await page.getByLabel("已与用户沟通并核对订单").check();
     await expect(reject).toBeEnabled();
@@ -34,7 +34,7 @@ for (const width of [1440, 390]) for (const decision of ["approve", "reject"]) {
     await (decision === "approve" ? approve : reject).click();
     await expect(page.getByRole("button", { name: "审核申请" })).toHaveCount(0);
     expect(actions).toHaveLength(1);
-    expect(actions[0]).toMatchObject({ action: `${decision}_refund`, customerContacted: true, evidence: "Customer contacted and order verified" });
+    expect(actions[0]).toMatchObject({ action: `${decision}_refund`, customerContacted: true, evidence: "可以退款" });
   });
 }
 
@@ -61,7 +61,7 @@ for (const width of [1440, 390]) for (const state of ["succeeded", "review"]) te
       actions.push(route.request().postDataJSON()); queried = true;
       return route.fulfill({ json: { id, state } });
     }
-    return route.fulfill({ json: { orders: [], tasks: [], frozen: [], refunds: queried && state === "succeeded" ? [] : [{ id, orderId: id, state: "review", reason: "Unused", contact: "wechat", amountCents: 2190 }] } });
+    return route.fulfill({ json: { total: queried && state === "succeeded" ? 0 : 1, refunds: queried && state === "succeeded" ? [] : [{ id, orderId: id, state: "review", reason: "Unused", contact: "wechat", amountCents: 2190 }] } });
   });
   await page.goto("/billing/review");
   await expect(page.getByRole("button", { name: "审核申请" })).toHaveCount(0);

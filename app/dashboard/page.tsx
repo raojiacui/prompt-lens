@@ -528,7 +528,6 @@ export default function DashboardPage() {
           {/* 管理后台 */}
           {activeTab === "admin" && canAccessAdmin && (
             <div className="animate-fade-in">
-              <Link href="/billing/review" className="mb-5 inline-flex min-h-11 items-center underline underline-offset-4">{zh ? "支付对账与异常处理" : "Payment reconciliation and review"}</Link>
               <AdminOverviewPanel />
             </div>
           )}

@@ -32,7 +32,7 @@ for (const width of [1440, 390]) {
     const directory = page.getByRole("region", { name: "用户明细" });
     await expect(directory.getByText("all-0@example.com")).toBeVisible();
     expect(requests).toHaveLength(1);
-    await expect(page.getByRole("link", { name: "退款申请与资金对账" })).toHaveAttribute("href", "/billing/review#refunds");
+    await expect(page.getByRole("link", { name: /退款申请/ })).toHaveAttribute("href", "/billing/review#refunds");
     await page.getByRole("button", { name: /已购买套餐/ }).click();
     const purchases = page.getByRole("dialog", { name: "已到账套餐用户" });
     await expect(purchases.getByText("paid-0@example.com")).toBeVisible();

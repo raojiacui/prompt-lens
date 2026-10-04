@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { after, NextRequest, NextResponse } from "next/server";
+import { and, eq, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db, paymentOrders } from "@/lib/db";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
@@ -16,10 +16,11 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
   if (order.status !== "pending") return NextResponse.json({ status: order.status });
   try {
-    await reconcileAlipayOrder(id, session.user.id, true);
+    await db.update(paymentOrders).set({ metadata: sql`${paymentOrders.metadata} || '{"cancellationRequested":true}'::jsonb`, updatedAt: new Date() }).where(and(eq(paymentOrders.id, id), eq(paymentOrders.userId, session.user.id), eq(paymentOrders.status, "pending")));
+    after(async () => { try { await reconcileAlipayOrder(id, session.user.id, true); } catch { /* The reconciliation worker retries persisted cancellation requests. */ } });
     const current = await db.query.paymentOrders.findFirst({ where: and(eq(paymentOrders.id, id), eq(paymentOrders.userId, session.user.id)) });
-    if (!current || current.status === "pending") throw new Error("CLOSE_STATUS_UNKNOWN");
-    return NextResponse.json({ status: current.status }, { headers: { "Cache-Control": "no-store" } });
+    if (!current) throw new Error("CLOSE_STATUS_UNKNOWN");
+    return NextResponse.json({ status: current.status, cancellationRequested: (current.metadata as Record<string, unknown>).cancellationRequested === true }, { status: current.status === "pending" ? 202 : 200, headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Unable to close order", code: "CLOSE_STATUS_UNKNOWN" }, { status: 502 });
   }

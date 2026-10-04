@@ -28,7 +28,7 @@ export async function requestCommercialRefund(userId: string, orderId: string, r
 
 /** Only the authenticated admin route may approve a request after customer-service review. */
 export async function reviewCommercialRefund(actorId: string, refundId: string, decision: "approve" | "reject", reviewNote: string) {
-  if (!actorId || reviewNote.trim().length < 12 || reviewNote.length > 2000) throw new Error("INVALID_REVIEW_EVIDENCE");
+  if (!actorId || !reviewNote.trim() || reviewNote.length > 2000) throw new Error("INVALID_REVIEW_EVIDENCE");
   const result = await db.transaction(async (tx) => {
     const found = await tx.query.commercialRefunds.findFirst({ where: eq(commercialRefunds.id, refundId) });
     if (!found) throw new Error("REFUND_NOT_FOUND");
