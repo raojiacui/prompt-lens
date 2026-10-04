@@ -122,11 +122,18 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
     },
     {
       id: "generate", title: "生成与下载视频",
-      summary: "从镜头的「做同款」进入，或直接打开视频生成写入提示词。生成是一次新的模型调用，与前面的分析分别计费。",
+      summary: "视频生成有三条路径：文字生成视频、图片生成视频、参考视频生成。可以直接从左侧「视频生成」开始，不必先分析视频；从镜头的「做同款」进入时，请先核对带入的提示词与参考画面。生成与分析分别计费。",
       topics: [
+        { title: "怎么选择三条路径", paragraphs: [
+          "只有想法和文字描述，没有参考素材：选择文字生成视频。适合从零构思场景、动作和镜头。",
+          "已有角色图、商品图或场景图，希望画面动起来：选择图片生成视频。参考图用于约束外观和构图，提示词说明如何运动。",
+          "已有视频，希望借用动作、节奏、运镜，或编辑原视频：选择参考视频生成。使用普通参考模型和 Wan 视频编辑模型时，上传视频的作用不同，详见后面的第三条路径。",
+          "不用寻找三种模式的切换按钮。页面会根据上传完成的素材显示「当前生成方式」：有视频时优先使用参考视频路径；没有视频但有图片时使用图片路径；没有上传素材时显示文字路径。上传中或失败的文件不能作为有效参考。",
+        ] },
         { title: "先确认费用来源", paragraphs: [
           "使用自己的 KIE Key：打开设置，填写并保存 Key，确认你的 KIE 账户有余额。保存成功后回到视频生成，模型费用由该账户承担，不消耗平台推理积分。",
           "如果页面显示「平台积分」选项，可以选择已开放的付费模型与参数组合，先获取报价，再确认生成。界面有某个模型，不代表它的每一种参数都已支持平台积分付款。",
+          "当前平台积分支持 Wan 2.6 Text to Video 和 Wan 2.6 Image to Video：720p、5 秒或 10 秒，比例选择自动或 16:9，图生视频使用一张图片。参考视频、多图和其他模型组合目前需要自带 Key。图生视频的实际构图还会受到源图片比例影响，报价成功后再确认。",
           "免费分析次数不用于生成视频。没有自己的有效 Key，也没有可用的积分生成条件时，需要先补齐再提交。",
         ] },
         { title: "从提示词到一条成片", steps: [
@@ -134,7 +141,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "选择模型，再检查它支持的参考素材。只输入文字是文生视频；需要参考图或参考视频时，按当前模型要求上传，并检查预览。",
           "选择画面比例、时长、画质和生成数量。尽量让比例与参考素材一致；不是所有模型都支持相同的参数组合。",
           "平台积分模式先核对报价，再点击「确认并生成」；自带 Key 模式确认模型和参数后提交。第一次先生成一条，满意后再扩展。",
-          "等待任务完成，播放结果，对照原镜头检查人物、动作、运镜和光影。使用结果中的下载入口保存视频。",
+          "等待右侧「生成进度」显示完成，播放结果，对照原镜头检查人物、动作、运镜和光影。在播放器菜单中使用下载选项保存视频；不同浏览器显示的菜单可能不同，也可到历史记录重新查看结果。",
         ] },
         { title: "效果不理想时怎么调整", paragraphs: [
           "人物或构图偏差较大：先检查参考图是否合适，再补充人物位置、朝向和景别。",
@@ -144,6 +151,80 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         ] },
       ],
       link: { href: "/dashboard?tab=settings", label: "前往设置配置 Key" },
+    },
+    {
+      id: "generate-text", title: "路径一：文字生成视频",
+      summary: "用文字描述一段画面，让模型从零生成。适合没有参考图、先验证创意的情况；只写一个镜头，通常比把整部故事塞进一次生成更容易控制。",
+      topics: [
+        { title: "准备与操作步骤", steps: [
+          "在左侧选择「视频生成」。检查上传区是否保留了上一次的素材；若要纯文字生成，用素材旁的移除按钮清掉图片和视频，确认「当前生成方式」显示「文字生成视频」。",
+          "在提示词框中依次写清主体、场景、主要动作、镜头运动和光线。文字路径必须填写提示词。先写一个连续镜头，不要同时要求多个互相冲突的动作。",
+          "选择支持文字生成的模型，再选择费用来源。用平台积分时，使用当前支持的 Wan 2.6 Text to Video 组合；自带 Key 时，确认设置中已保存有效的 Key，KIE 账户有余额。",
+          "展开生成参数，核对比例、画质、时长和生成数量。竖屏内容选择支持竖屏的模型与计费方式；第一次先生成 1 条，避免尚未验证提示词就同时提交多条任务。",
+          "点击生成。积分模式先查看报价，再确认开始；自带 Key 模式提交后查看右侧进度。完成后播放结果，检查画面是否符合描述，再下载或修改提示词重新生成。",
+        ] },
+        { title: "提示词应该写到什么程度", paragraphs: [
+          "写具体的画面，而不是只写「高级、震撼、电影感」。让模型知道谁在什么位置、发生什么变化、镜头从哪里看。短片里只安排一两个主要动作。",
+          "文字路径没有图片来固定人物和商品外观。如果你必须保持某个角色的长相、衣服或商品包装，准备参考图并使用下一条图片路径会更合适。",
+        ], example: { label: "单镜头文字生成示例", text: "黄昏的海边，一名穿白色衬衫的青年背对镜头站在木栈道上。海风轻轻吹动衣角，他缓慢转头看向右侧的夕阳。镜头从背后缓慢推进，始终保持半身中景。暖金色逆光，海面柔和反光，写实电影质感，无字幕。" } },
+        { title: "结果偏离预期时", paragraphs: [
+          "主体出现错位时，补充位置、朝向和景别；动作混乱时，把多个动作缩减为一个；画面跳切时，明确要求单个连续镜头。每次先调整一个因素，再比较结果。",
+          "需要沿用前一次的人物时，保存合适的画面作为参考图，再进入图片生成路径。再次点击生成会创建新任务，并产生相应费用。",
+        ] },
+      ],
+      outcome: "得到从文字创意生成的一条或多条独立视频，可以继续筛选、下载和调整。",
+      link: { href: "/dashboard?tab=video-gen", label: "开始文字生成视频" },
+    },
+    {
+      id: "generate-image", title: "路径二：图片生成视频",
+      summary: "让已有图片中的人物、商品或场景动起来。图片交代外观与构图，提示词交代动作、镜头和变化；两者需要表达同一个目标。",
+      topics: [
+        { title: "准备与操作步骤", steps: [
+          "准备主体清晰、比例合适的图片，上传 JPG、PNG 或 WebP。先移除不需要的参考视频，避免页面继续走视频路径。也可以从分析镜头的「做同款」带入提示词与参考画面。",
+          "等待上传成功，检查缩略图是否正确。「当前生成方式」在直接上传图片时显示「图片生成视频」。从「做同款」进入时，可能已经带入镜头参考帧，不必重复上传同一张图。",
+          "选择支持图片输入的模型。在提示词中写出图片里的主体要做什么、背景怎样变化、镜头怎样移动。保留你想沿用的外观，不要又要求与参考图完全不同的主体和构图。",
+          "有多张图片时，可点击提示词框下方的 @ 按钮，选择图片并插入引用，再在引用后说明它的用途，例如人物外观或产品细节。插入了图片引用时，会使用被引用的图片；没有引用时，会使用已上传的图片。",
+          "选择比例、时长、画质和数量，再核对费用来源。积分模式当前支持 Wan 2.6 Image to Video 的单图组合；多图或其他模型使用自己的 Key，并确认模型支持这些参考数量。",
+          "提交并等待结果。先检查人物、商品外观是否接近参考图，再检查动作和运镜；满意后保存视频，不满意时优先缩减动作幅度或更换更清楚的参考图。",
+        ] },
+        { title: "多张图片怎么用", paragraphs: [
+          "页面最多可上传 9 张图片，但这是上传区的容量，不代表每个模型都会接受 9 张。图片引用也不会自动变成分镜或首尾帧：需要选择支持相应参考的模型，并在提示词中清楚说明用途。",
+          "先从一张图、一个动作开始。多图中人物服装、商品颜色或场景风格互相矛盾时，容易让结果不稳定；删掉无关图片，引用这次真正需要的素材。",
+        ], example: { label: "单图动画示例", text: "保持参考图中人物的脸部、蓝色外套和站位不变。人物轻轻抬头，发梢随风摆动，随后向镜头露出微笑。背景树叶缓慢晃动。镜头保持固定半身中景，柔和自然光，不增加其他人物，不改变服装。" } },
+        { title: "避免常见偏差", paragraphs: [
+          "图中的人物是静态正面半身像时，先尝试眨眼、转头、轻微表情变化，再挑战大幅走动。要求主体跨越画面或频繁转身时，模型需要补出图片中没有的信息，外观更容易变化。",
+          "图片比例尽量接近目标成片。不要把选择了某个比例理解为一定不会裁切；模型可能依照源图构图或补画边缘。参考图和详细提示词能约束画面，但不能保证每一帧完全一致。",
+        ] },
+      ],
+      outcome: "得到以图片为外观参考的视频，能对照原图检查主体和动作。",
+      link: { href: "/dashboard?tab=video-gen", label: "上传图片开始生成" },
+    },
+    {
+      id: "generate-reference", title: "路径三：参考视频生成与编辑",
+      summary: "把已有视频作为动作、节奏和镜头参考，或使用视频编辑模型修改原素材。这条路径直接在生成页上传视频，不等于前面的自动拆镜和提示词分析。",
+      topics: [
+        { title: "先区分两种目标", paragraphs: [
+          "生成新的画面：使用支持视频参考的生成模型，借用原视频的动作、节奏、风格或运镜，再通过提示词说明新的主体与场景。输出是新生成的视频，不是把原视频逐帧复制。",
+          "修改上传的视频：选择 Wan 2.7 Video Edit，视频作为被编辑素材，提示词说明要替换或保留的内容，图片可提供替换对象的外观。编辑模式与普通参考生成不是同一种处理方式。",
+        ] },
+        { title: "准备与操作步骤", steps: [
+          "准备一条你有权使用、能正常播放的视频文件，上传区支持 MP4、MOV、WebM，目前最多保留 1 条参考视频。公开视频分享链接请先在视频分析页导入；生成页这里选择的是本地视频文件。",
+          "等待上传成功，检查视频预览，确认「当前生成方式」显示「参考视频生成」。若上传失败，先解决素材问题，不要直接提交。文件大小和时长还需要满足上传提示与所选模型的要求。",
+          "按目标选择支持视频参考的模型，或 Wan 2.7 Video Edit。只支持文字或图片的模型不能因为上传了视频就自动获得视频参考能力。",
+          "普通参考生成写清「保留的动作、节奏与运镜」和「要变更的主体、场景、风格」；视频编辑写清原片里修改哪个对象、改成什么，以及哪些背景、动作和镜头需要保留。",
+          "需要替换人物或商品时，另外上传清晰图片，使用 @ 图片引用把修改要求与素材对应起来。先只替换一个对象，避免第一次就同时改变人物、背景、光线和所有动作。",
+          "费用来源选择自己的 KIE Key，确认余额与模型支持情况；当前平台积分不支持参考视频生成或视频编辑。核对比例、画质、数量和模型允许的时长，再提交任务。模型提供原视频时长选项时，按本次目标选择。",
+          "在右侧查看各条任务的进度。完成后对照原视频播放，分别检查动作时序、运镜，以及替换对象的外观；保存满意结果，需要继续改动时重新调整指令。",
+        ] },
+        { title: "分别怎样写指令", example: { label: "普通视频参考与视频编辑的指令区别", text: "参考生成：保留参考视频中人物缓慢行走的节奏和从背后跟随的运镜。将场景改为雨后的未来城市，把人物服装改为银灰色外套。保持单个连续镜头，路面有霓虹倒影，不增加字幕。\n\n视频编辑：把原视频中桌面中央的杯子替换为引用图片里的白色杯子，保留杯子的原位置和大小。保留手部动作、桌面、背景和镜头运动，只修改杯子外观。请通过 @ 按钮插入对应的替换图片。" } },
+        { title: "遇到不支持或效果不理想", paragraphs: [
+          "出现素材类型、时长或参数不支持时，先检查所选模型，而不是重复提交。换成支持视频输入的模型，或先截取需要的片段；想改为图生视频时，移除参考视频并上传图片。",
+          "动作参考不明显时，写清要保留的动作与时序；编辑改动了不该改的背景时，缩小修改范围、明确保留内容，并使用更清楚的替换图。要求越多，越难逐项对齐。",
+        ] },
+      ],
+      note: { title: "分析与生成是两次不同操作", text: "在分析页导入链接、拆镜、提取提示词，与生成页提交参考视频任务是分别处理、分别计费的。生成页不会自动替你完成整片拆镜，也不会自动把多个结果拼接成长片。" },
+      outcome: "得到参考原片的新视频，或按修改指令编辑后的视频，可以与原素材对照。",
+      link: { href: "/dashboard?tab=video-gen", label: "进入参考视频生成" },
     },
     {
       id: "credits", title: "积分、次数与订单",
@@ -292,11 +373,18 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
     },
     {
       id: "generate", title: "Generate and download",
-      summary: "Continue from a shot's recreation action, or write a prompt directly in Video generation. Generation is a new model call, billed separately from analysis.",
+      summary: "Choose between text-to-video, image-to-video, and reference-video generation. Open Video generation directly without analyzing a reference first, or check the prompt and reference frame brought over by a shot's recreation action. Generation is billed separately from analysis.",
       topics: [
+        { title: "Choose the right path", paragraphs: [
+          "Use text-to-video when you have an idea but no reference assets. Describe the scene, action, and camera from scratch.",
+          "Use image-to-video when you have a character, product, or scene image to animate. The image guides appearance and composition; your prompt describes movement.",
+          "Use reference-video generation to borrow motion, pacing, or camera work, or choose a video-edit model to modify the uploaded footage. These are different uses of the source video, explained in Path three.",
+          "There is no separate mode switch. Current path updates after assets finish uploading: video takes priority, otherwise images select image-to-video, and no uploaded assets selects text-to-video. Uploading or failed assets are not usable references.",
+        ] },
         { title: "Check your payment source first", paragraphs: [
           "For your own KIE key, open Settings, enter and save the key, and check your KIE balance. Return to generation after saving. Model calls use that account rather than platform inference credits.",
           "If Platform credits is available, select a supported paid model and parameter combination, get a quote, and confirm it. A model appearing in the selector does not mean every configuration supports platform billing.",
+          "Platform billing currently supports Wan 2.6 Text to Video and Wan 2.6 Image to Video at 720p, for five or ten seconds, with Auto or 16:9 selected. Image-to-video accepts one image. Video references, multiple images, and other models require your own key. Source-image framing also affects image-to-video output; review a successful quote before confirming.",
           "Free analysis attempts cannot be used for video generation. You need a valid funded key or an eligible platform-credit generation option before submitting.",
         ] },
         { title: "Generate your first clip", steps: [
@@ -304,7 +392,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "Select a model and inspect its reference requirements. Text alone uses text-to-video; upload and preview reference images or videos when supported and needed.",
           "Choose the aspect ratio, duration, quality, and output count. Match the reference's ratio where possible. Supported settings vary by model.",
           "For platform credits, review the quote and choose Confirm and generate. With your own key, check your model and settings before submitting. Start with one output.",
-          "Wait for completion, play the result, and compare its subject, action, camera, and lighting with the reference. Use the download action to save the video.",
+          "Wait for Generation status to show completion, play the result, and compare its subject, action, camera, and lighting. Save through the player's download menu when available; browser menus differ. You can also revisit results in History.",
         ] },
         { title: "Refine an unsatisfying result", paragraphs: [
           "If the subject or composition is wrong, check the reference image and describe position, facing direction, and shot size more precisely.",
@@ -314,6 +402,80 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         ] },
       ],
       link: { href: "/dashboard?tab=settings", label: "Configure your key in settings" },
+    },
+    {
+      id: "generate-text", title: "Path one: Text to video",
+      summary: "Describe a scene and let the model create it from scratch. This works well for exploring an idea without reference images. Start with one continuous shot rather than an entire story in one request.",
+      topics: [
+        { title: "Prepare and generate", steps: [
+          "Open Video generation in the sidebar. Remove any images or videos left from a previous session, and check that Current path reads Text to video.",
+          "Describe the subject, setting, main action, camera movement, and lighting in the prompt. Text-to-video needs a prompt. Keep the action within one shot and avoid conflicting instructions.",
+          "Choose a text-capable model and payment source. For platform credits, use a supported Wan 2.6 Text to Video configuration. For your own key, save a valid KIE key in Settings and fund that provider account.",
+          "Open the generation settings and review aspect ratio, quality, duration, and output count. Portrait video needs a model and billing configuration that support portrait output. Start with one output while testing the prompt.",
+          "Generate, review and confirm the quote when using platform credits, then watch the status on the right. Play the completed result, save it, or adjust the prompt for another generation.",
+        ] },
+        { title: "Write a usable prompt", paragraphs: [
+          "Describe visible details instead of relying on words such as cinematic or impressive. Specify where the subject stands, what changes, and how the camera observes it. Limit a short clip to one or two main actions.",
+          "Text alone cannot fix a particular face, outfit, or product package as strongly as an image reference. If matching an existing subject matters, prepare an image and use Path two.",
+        ], example: { label: "One-shot text-to-video example", text: "At sunset on a seaside boardwalk, a young man in a white shirt stands with his back to the camera. A light breeze moves his shirt as he slowly turns toward the setting sun on the right. The camera gently pushes forward from behind, keeping a medium shot. Warm golden backlight and soft reflections on the sea, realistic cinematic style, no subtitles." } },
+        { title: "When the result misses the mark", paragraphs: [
+          "For misplaced subjects, add position, facing direction, and shot size. For confused motion, reduce several actions to one. For unwanted cuts, request one continuous shot. Change one factor at a time.",
+          "To reuse a successful character, save a suitable image and continue with image-to-video. Each new generation creates a separate task with its own cost.",
+        ] },
+      ],
+      outcome: "One or more independent clips created from your written idea, ready to compare, save, and refine.",
+      link: { href: "/dashboard?tab=video-gen", label: "Start text-to-video" },
+    },
+    {
+      id: "generate-image", title: "Path two: Image to video",
+      summary: "Animate a character, product, or scene from an existing image. The image supplies appearance and composition; the prompt supplies action and camera movement. Both should describe the same goal.",
+      topics: [
+        { title: "Prepare and generate", steps: [
+          "Upload a clear JPG, PNG, or WebP with suitable framing. Remove any unwanted video reference first. You can also bring a prompt and reference frame over from a shot's recreation action.",
+          "Wait for upload completion and inspect the thumbnail. A directly uploaded image selects Image to video. Recreation from analysis may already include a shot reference frame, so you do not need to upload the same image again.",
+          "Choose an image-capable model. Describe what the subject does, how the background changes, and how the camera moves. Preserve the appearance you want rather than asking for a completely contradictory subject or composition.",
+          "With multiple images, use the @ button below the prompt to insert image references, then explain each image's role. When you insert references, the referenced images are used; without references, the uploaded images are used.",
+          "Review aspect ratio, duration, quality, output count, and payment source. Platform credits currently support the single-image Wan 2.6 Image to Video configuration. Other models or multiple images require your own key and a model that accepts those inputs.",
+          "Submit and wait for results. Check subject appearance first, then motion and camera work. Save a good result; otherwise reduce the movement or replace the source with a clearer image.",
+        ] },
+        { title: "Using multiple images", paragraphs: [
+          "The upload area holds up to nine images, but each model has its own input limits. Image references do not automatically become separate shots or first and last frames. Choose a compatible model and explain their intended roles.",
+          "Begin with one image and one action. Conflicting outfits, product colors, or scene styles can make results less consistent. Remove unrelated assets and reference only what this generation needs.",
+        ], example: { label: "Single-image animation example", text: "Keep the character's face, blue jacket, and position from the reference image. The character gently raises their head, their hair moves in the breeze, and they smile toward the camera. Leaves sway slowly in the background. Fixed medium shot, soft natural light, no additional people or outfit changes." } },
+        { title: "Avoid common mismatches", paragraphs: [
+          "For a static front-facing portrait, start with blinking, a head turn, or a subtle expression before attempting large movements. Walking across the frame or turning repeatedly requires the model to invent unseen details and can change appearance.",
+          "Match the source image to the intended output ratio where possible. A ratio selection does not guarantee no cropping: models may follow source framing or extend the image. A reference constrains the result but cannot guarantee identical details in every frame.",
+        ] },
+      ],
+      outcome: "A video guided by your source image, with appearance and motion you can compare against the original.",
+      link: { href: "/dashboard?tab=video-gen", label: "Upload an image to generate" },
+    },
+    {
+      id: "generate-reference", title: "Path three: Reference video and video editing",
+      summary: "Use footage as a motion and camera reference, or edit that footage with a video-edit model. Upload the video in the generation page; this is a separate operation from shot splitting and prompt analysis.",
+      topics: [
+        { title: "Decide what the source video should do", paragraphs: [
+          "For a new scene, choose a video-reference generation model. Borrow motion, pacing, style, or camera work and describe the new subject and setting. The output is newly generated footage, not a frame-by-frame copy.",
+          "For changes to the original footage, choose Wan 2.7 Video Edit. The uploaded video is the material being edited, instructions describe the changes, and images can guide replacement subjects. Editing and ordinary reference generation serve different goals.",
+        ] },
+        { title: "Prepare and generate", steps: [
+          "Prepare playable footage you have permission to use. Upload MP4, MOV, or WebM; the generation page holds one reference video. Public share links are imported through Video analysis, while this upload area accepts a local video file.",
+          "Wait for upload completion, inspect the video preview, and check that Current path reads Reference video to video. Resolve failed uploads before submitting. File size and duration must meet the upload instructions and chosen model's requirements.",
+          "Select a video-reference model or Wan 2.7 Video Edit. Uploading a video does not give a text-only or image-only model video-reference capabilities.",
+          "For reference generation, explain the motion, pacing, and camera work to keep, plus the subject, setting, or style to change. For editing, identify the object to replace and the background, action, and camera work to preserve.",
+          "Upload a clear replacement image when changing a person or product, and insert it with the @ button next to the relevant instruction. Start by changing one object rather than the subject, background, lighting, and all movement at once.",
+          "Use your own funded KIE key. Platform credits currently do not support video references or video editing. Review quality, aspect ratio, output count, and supported duration; choose original-video duration when the model offers it and that fits your goal.",
+          "Watch each task on the right. Compare completed footage with the source for action timing, camera movement, and replacement appearance. Save the result or adjust the instructions for another task.",
+        ] },
+        { title: "Two different instruction styles", example: { label: "Reference generation versus video editing", text: "Reference generation: Keep the source video's slow walking rhythm and rear tracking camera. Change the setting to a futuristic city after rain and the outfit to a silver-gray coat. One continuous shot, neon reflections on the road, no subtitles.\n\nVideo editing: Replace the cup at the center of the table with the white cup in the referenced image. Keep its original size and position. Preserve hand movements, the table, background, and camera motion; change only the cup's appearance. Insert the replacement image using the @ button." } },
+        { title: "Unsupported inputs or an unsatisfying result", paragraphs: [
+          "For unsupported asset types, durations, or settings, check the model before submitting again. Choose a video-capable model or trim the source. To switch to image-to-video, remove the video and upload an image.",
+          "For weak motion matching, specify the actions and timing to preserve. If an edit changes the background unnecessarily, narrow the edit, list what should remain, and use a clearer replacement image. Fewer changes are easier to assess.",
+        ] },
+      ],
+      note: { title: "Analysis and generation are separate tasks", text: "Link import, shot splitting, and prompt analysis are separate from submitting a reference-video generation task, with separate charges. The generation page does not automatically split the source into shots or assemble outputs into a longer film." },
+      outcome: "New footage guided by your source video, or an edited version of that footage, ready for side-by-side comparison.",
+      link: { href: "/dashboard?tab=video-gen", label: "Open reference-video generation" },
     },
     {
       id: "credits", title: "Credits, allowances, and orders",

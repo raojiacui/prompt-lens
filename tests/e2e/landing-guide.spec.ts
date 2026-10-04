@@ -24,7 +24,7 @@ for (const width of [1440, 390]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     await footer.getByRole("link", { name: "完整使用教程" }).click();
     await expect(page.getByRole("heading", { name: "完整使用教程", exact: true })).toBeVisible();
-    await expect(page.locator("main section")).toHaveCount(8);
+    await expect(page.locator("main section")).toHaveCount(11);
     if (width < 1024) await page.getByText("查看教程目录", { exact: true }).click();
     await page.getByRole("navigation", { name: "教程目录" }).getByRole("link", { name: /生成与下载视频/ }).click();
     await expect(page).toHaveURL(/\/guide#generate$/);
