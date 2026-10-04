@@ -520,7 +520,6 @@ export default function DashboardPage() {
           {/* 设置页面 */}
           {activeTab === "settings" && (
             <div className="animate-fade-in space-y-6">
-              <Link href="/billing" className="inline-flex min-h-11 items-center underline underline-offset-4">{zh ? "余额、订单与任务记录" : "Balance, orders and task history"}</Link>
               <ApiKeySettings />
             </div>
           )}

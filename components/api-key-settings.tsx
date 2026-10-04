@@ -193,7 +193,7 @@ export function ApiKeySettings() {
             <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>{t("kieName")}</h4>
             <p className="mt-2">
               {t("kieDesc")} {" "}
-              <a href="https://api.kie.ai" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-orange)] hover:underline">
+              <a href="https://kie.ai/api-key" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-orange)] hover:underline">
                 {t("kieLink")}
               </a>{" "}
               {t("kieGetKey")}
