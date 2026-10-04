@@ -14,6 +14,8 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import { localizedStatus } from "@/lib/workflow/interface-copy";
 import { GenerationQuoteDialog } from "@/components/payments/generation-quote-dialog";
+import { generationCreditPreview } from "@/lib/billing/generation-credit-preview";
+import { refreshWalletBalance } from "@/lib/billing/use-wallet-balance";
 import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
 import type { KeyboardEvent } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -52,6 +54,9 @@ type UploadedAsset = {
 
 
 type GenerationStatusPayload = {
+  state?: string;
+  credits?: number;
+  chargedCredits?: number;
   status?: string;
   providerTaskId?: string;
   videoUrl?: string;
@@ -378,6 +383,7 @@ export function ReferenceVideoComposer({
   const [balanceRefresh, setBalanceRefresh] = useState(0);
   const [generationPayer, setGenerationPayer] = useState("platform");
   const [commercialRequest, setCommercialRequest] = useState<{ request: Record<string, unknown>; quantity: number } | null>(null);
+  const [referenceTiming, setReferenceTiming] = useState<{ url: string; seconds: number } | null>(null);
   useEffect(() => {
     let active = true;
     let controller: AbortController | undefined;
@@ -489,6 +495,31 @@ export function ReferenceVideoComposer({
     .map((variant) => variant.providerTaskId)
     .join("|");
   const durationSeconds = durationToSeconds(duration);
+  const referenceUrl = readyReferenceVideoAsset?.url;
+  useEffect(() => {
+    if (!referenceUrl) return;
+    const video = document.createElement("video");
+    let active = true;
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      if (active && Number.isFinite(video.duration) && video.duration > 0) setReferenceTiming({ url: referenceUrl, seconds: Math.ceil(video.duration) });
+    };
+    video.src = referenceUrl;
+    return () => { active = false; video.onloadedmetadata = null; video.removeAttribute("src"); video.load(); };
+  }, [referenceUrl]);
+  const creditPreview = generationCreditPreview({
+    model: model === autoBalancedModelId ? undefined : model, resolution: quality,
+    duration: durationSeconds, quantity: Number(outputCount),
+    hasImages: readyReplacementAssets.length > 0 || Boolean(sceneReferenceImageUrl), hasVideo: Boolean(referenceUrl),
+    referenceSeconds: referenceTiming?.url === referenceUrl ? referenceTiming?.seconds : undefined,
+  });
+  const generationCostLabel = !commercialEnabled || generationPayer === "byok"
+    ? (zh ? "0 平台积分 · 自带 Key" : "0 platform credits · own key")
+    : creditPreview.state === "priced"
+      ? (zh ? `预计 ${creditPreview.total} 积分` : `Est. ${creditPreview.total} credits`)
+      : creditPreview.state === "pending"
+        ? (zh ? "积分待报价" : "Credits pending quote")
+        : (zh ? "当前配置暂未核价" : "Configuration not priced");
   const durationLabel = duration === "0s" ? "Original" : duration;
   const formatSummary = `${aspectRatio} | ${quality} | ${zh ? (duration === "0s" ? "原视频时长" : `${durationSeconds} 秒`) : durationLabel} | ${zh ? `${outputCount} 条视频` : `${outputCount} Variation${outputCount === "1" ? "" : "s"}`}`;
 
@@ -875,6 +906,7 @@ export function ReferenceVideoComposer({
       if (cancelled) return;
       if (results.some((result) => result.taskId.startsWith("commercial:") && (result.payload?.status === "success" || result.payload?.status === "fail"))) {
         setBalanceRefresh((value) => value + 1);
+        refreshWalletBalance();
       }
       setVariants((current) => {
         const next = current.map((variant) => {
@@ -901,12 +933,16 @@ export function ReferenceVideoComposer({
               progress: 100,
               providerTaskId,
               videoUrl: result.payload.videoUrl,
-              notes: zh ? "视频已生成。" : "Generation completed.",
+              notes: taskId.startsWith("commercial:")
+                ? (zh ? `视频已生成，已结算 ${result.payload.chargedCredits ?? result.payload.credits} 积分。` : `Video generated. ${result.payload.chargedCredits ?? result.payload.credits} credits charged.`)
+                : (zh ? "视频已生成。" : "Generation completed."),
             };
           }
 
           if (result.payload.status === "fail") {
-            const failureReason = result.payload.error || "Generation failed.";
+            const failureReason = taskId.startsWith("commercial:")
+              ? (zh ? `生成失败，已释放 ${result.payload.credits} 积分，本次未扣费。` : `Generation failed. ${result.payload.credits} reserved credits released. No charge.`)
+              : result.payload.error || (zh ? "生成失败。" : "Generation failed.");
             return {
               ...variant,
               status: "failed" as const,
@@ -921,7 +957,11 @@ export function ReferenceVideoComposer({
             ...variant,
             providerTaskId,
             progress: Math.min(95, Math.max(variant.progress + 6, 28)),
-            notes: zh ? "正在生成视频，等待模型返回结果……" : "Generating video. Checking provider status...",
+            notes: result.payload.state === "review"
+              ? (zh ? "结果待核实，积分仍预留，请勿重复提交。" : "Result under review. Credits remain reserved; do not resubmit.")
+              : taskId.startsWith("commercial:")
+                ? (zh ? `正在生成，已预留 ${result.payload.credits} 积分。` : `Generating. ${result.payload.credits} credits reserved.`)
+                : (zh ? "正在生成视频，等待模型返回结果……" : "Generating video. Checking provider status..."),
           };
         });
         persistGenerationVariants(next);
@@ -1245,6 +1285,7 @@ export function ReferenceVideoComposer({
         const next: GenerationVariant[] = ids.map((id, i) => ({ id: `variant-${i + 1}`, label: `Variation ${i + 1}`, status: "generating", progress: 10, providerTaskId: `commercial:${id}`, notes: zh ? "已预留积分" : "Credits reserved" }));
         setVariants(next); window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(next)); setCommercialRequest(null);
         setBalanceRefresh((value) => value + 1);
+        refreshWalletBalance();
       }} />}
       <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
         {commercialEnabled && <label className="flex flex-wrap items-center gap-3 text-sm">{zh ? "费用来源" : "Payment source"}<select value={generationPayer} disabled={isRunning} onChange={(e) => { setGenerationPayer(e.target.value); }} className="min-h-10 rounded-lg border border-border bg-background px-3"><option value="byok">{zh ? "自己的 KIE Key" : "My KIE key"}</option><option value="platform">{zh ? "平台积分" : "Platform credits"}</option></select><a href="/billing" className="underline">{zh ? "余额与订单" : "Balance and orders"}</a></label>}
@@ -1664,12 +1705,13 @@ export function ReferenceVideoComposer({
                 type="button"
                 onClick={() => void createVideo()}
                 disabled={isRunning}
-                className="mt-auto flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
+                className="mt-auto flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#D97757] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <WandSparkles className="h-5 w-5" />
-                {isRunning
+                <span className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">{isRunning
                   ? t("create.preparing") || "Preparing..."
                   : t("create.button") || "Generate Video"}
+                {!isRunning && <span aria-live="polite">· {generationCostLabel}</span>}</span>
               </button>
             </div>
           </section>
