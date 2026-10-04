@@ -33,6 +33,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
   const manualCheck = useRef(false);
   const [now, setNow] = useState(Date.now());
   const [cancelling, setCancelling] = useState(false);
+  const [readyPaymentSource, setReadyPaymentSource] = useState("");
   const onPaidRef = useRef(onPaid);
   onPaidRef.current = onPaid;
   useEffect(() => {
@@ -154,11 +155,16 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
         {pending && remaining > 0 && !checkout.cancellationRequested && (embeddedUrl ? <>
           {/* Alipay anchors the 224px code at the frame origin; retain a 16px quiet zone on every side. */}
           <div className="relative h-64 w-64 shrink-0 overflow-hidden rounded-lg bg-white">
-            <iframe key={checkout.orderId} src={embeddedUrl} title={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={256} height={256} className="absolute left-4 top-4 h-64 w-64 border-0 bg-white" sandbox="allow-scripts allow-forms allow-same-origin" referrerPolicy="same-origin" />
+            <iframe key={checkout.orderId} src={embeddedUrl} title={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={256} height={256} className="absolute left-4 top-4 h-64 w-64 border-0 bg-white" sandbox="allow-scripts allow-forms allow-same-origin" referrerPolicy="same-origin" onLoad={(event) => {
+              // The local signing form loads before it navigates to Alipay.
+              try { if (event.currentTarget.contentDocument?.querySelector("form")) return; } catch { /* The Alipay page is cross-origin. */ }
+              setReadyPaymentSource(embeddedUrl);
+            }} />
+            {readyPaymentSource !== embeddedUrl && <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white text-foreground"><Spinner size="lg" /><p className="text-sm">{zh ? "正在加载付款码…" : "Loading payment QR code…"}</p></div>}
           </div>
           <p className="text-sm">{zh ? "打开支付宝，扫一扫付款" : "Scan with Alipay to pay"}</p>
           <a href={paymentUrl!} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground underline underline-offset-4">{zh ? "手机付款 / 二维码无法显示" : "Pay on mobile / QR unavailable"}</a>
-        </> : qr ? <img src={qr} alt={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={224} height={224} className="h-56 w-56 max-w-full object-contain" onError={() => setError(zh ? "二维码加载失败，请稍后查询订单。" : "QR code could not load. Check the order later.")} /> : paymentUrl ? <a href={paymentUrl} className="rounded-lg bg-[#1677ff] px-5 py-3 text-white">{zh ? "前往支付宝支付" : "Continue to Alipay"}</a> : <p>{error ? (zh ? "订单正在核对，请保留订单号，暂勿继续付款。" : "Your order is being verified. Keep your order ID and do not pay again.") : (zh ? "正在准备支付宝收银台，请勿另建订单。" : "Preparing Alipay checkout. Do not create another order.")}</p>)}
+        </> : qr ? <div className="relative h-56 w-56"><img src={qr} alt={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={224} height={224} className="h-56 w-56 max-w-full object-contain" onLoad={() => setReadyPaymentSource(qr)} onError={() => { setReadyPaymentSource(qr); setError(zh ? "二维码加载失败，请稍后查询订单。" : "QR code could not load. Check the order later."); }} />{readyPaymentSource !== qr && <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white text-foreground"><Spinner size="lg" /><p className="text-sm">{zh ? "正在加载付款码…" : "Loading payment QR code…"}</p></div>}</div> : paymentUrl ? <a href={paymentUrl} className="rounded-lg bg-[#1677ff] px-5 py-3 text-white">{zh ? "前往支付宝支付" : "Continue to Alipay"}</a> : <div role="status" className="flex min-h-56 flex-col items-center justify-center gap-3">{!error && <Spinner size="lg" />}<p>{error ? (zh ? "订单正在核对，请保留订单号，暂勿继续付款。" : "Your order is being verified. Keep your order ID and do not pay again.") : (zh ? "正在准备支付宝收银台…" : "Preparing Alipay checkout…")}</p></div>)}
         {pending && checkout.cancellationRequested && <p>{zh ? "订单已停止付款，正在核对最终状态。如已付款，会继续确认到账。" : "Payment is paused while we verify the final status. Any completed payment will still be credited."}</p>}
         {pending && <p className="text-sm text-muted-foreground">{remaining ? (zh ? `付款码有效时间 ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}` : `Payment code expires in ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, "0")}`) : (zh ? "付款码已过期；如已付款，请等待到账确认。" : "Payment code expired. If paid, wait for confirmation.")}</p>}
         {checkout && !pending && !paid && <p>{zh ? ({ failed: "订单未完成", refunded: "订单已退款", cancelled: "订单已取消" }[checkout.status] || "订单状态待确认") : `Order ${checkout.status}`}</p>}

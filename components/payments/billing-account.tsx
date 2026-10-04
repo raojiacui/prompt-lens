@@ -29,7 +29,6 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
   const [refundOrder, setRefundOrder] = useState<Order | null>(null);
   const [refundReason, setRefundReason] = useState("");
   const [refundContact, setRefundContact] = useState("");
-  const [cancelOrder, setCancelOrder] = useState<Order | null>(null);
   const load = useCallback(async () => {
     try {
       const response = await fetch("/api/payments/account", { cache: "no-store" });
@@ -40,19 +39,11 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
   }, [zh]);
   useEffect(() => { void load(); }, [load]);
   const status = (value: string) => zh ? ({ pending: "待确认", paid: "已到账", refunded: "已退款", cancelled: "已取消", failed: "失败", requested: "等待客服审核", processing: "退款处理中", succeeded: "退款成功", rejected: "退款申请未通过", review: "人工复核中", held: "任务处理中", settled: "已结算" }[value] || value) : ({ requested: "Awaiting support review", rejected: "Refund request declined" }[value] || value);
+  useEffect(() => {
+    if (account && window.location.hash === "#refund-request") document.getElementById("refund-request")?.scrollIntoView({ block: "start" });
+  }, [account]);
+  const refundableOrders = account?.orders.filter(order => order.status === "paid" && !account.refunds.some(refund => refund.orderId === order.id)) ?? [];
   const pack = COMMERCIAL_PACKAGES.find((p) => p.id === selected?.packageId);
-  async function cancelPayment() {
-    if (!cancelOrder || busy) return;
-    setBusy(true); setError("");
-    try {
-      const response = await fetch(`/api/payments/orders/${cancelOrder.id}/close`, { method: "POST" });
-      const data = await response.json();
-      if (!response.ok || (data.status === "pending" && !data.cancellationRequested)) throw new Error(zh ? "取消请求未能保存，请重试。" : "Cancellation could not be saved. Please retry.");
-      setCancelOrder(null); await load();
-      setNotice(data.status === "paid" ? (zh ? "此订单已付款，已核对到账，没有取消或退款。" : "This order was paid and has been credited, not cancelled or refunded.") : (zh ? "已取消本次付款，可以重新下单。如已付款，系统会继续确认到账。" : "This checkout was cancelled. You can place a new order; any completed payment will still be reconciled."));
-    } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
-    finally { setBusy(false); }
-  }
   async function refund() {
     if (!refundOrder || busy || !refundReason.trim() || refundContact.trim().length < 3) return;
     setBusy(true);
@@ -72,7 +63,7 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
       <button onClick={() => void load()} title={zh ? "刷新" : "Refresh"} aria-label={zh ? "刷新" : "Refresh"} className="flex h-10 w-10 items-center justify-center rounded-lg border border-border"><RefreshCw size={18} /></button>
     </header>
     {!embedded && <h1 className="mt-8 text-2xl font-semibold">{zh ? "余额与订单" : "Balance and orders"}</h1>}
-    {error && !cancelOrder && !refundOrder && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
+    {error && !refundOrder && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
     {notice && <p role="status" className="mt-4 text-sm text-green-700">{notice}</p>}
     {!account && !error && <p className="mt-6" role="status">{zh ? "加载中…" : "Loading…"}</p>}
     {account && <>
@@ -89,19 +80,23 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
           <div className="min-w-0"><p className="font-medium">{order.packageName} · ¥{(order.amountCents / 100).toFixed(2)}</p><p className="mt-1 text-sm text-muted-foreground">{new Date(order.createdAt).toLocaleString(zh ? "zh-CN" : "en-US")}</p><p className="mt-1 break-all text-xs text-muted-foreground">{order.id}</p></div>
           <div className="flex flex-wrap items-center gap-3 text-sm"><span>{status(refundInfo?.state || order.status)}</span>
             {order.status === "pending" && <button className="min-h-10 rounded-lg border border-border px-3" onClick={() => setSelected(order)}>{zh ? "查看订单" : "View order"}</button>}
-            {order.status === "pending" && <button disabled={busy} className="min-h-10 rounded-lg border border-border px-3" onClick={() => { setCancelOrder(order); setError(""); setNotice(""); }}>{zh ? "取消本次付款" : "Cancel this payment"}</button>}
             {order.status === "paid" && !refundInfo && <button disabled={busy} className="min-h-10 rounded-lg border border-border px-3" onClick={() => { setRefundOrder(order); setRefundReason(""); setRefundContact(""); setError(""); setNotice(""); }}>{zh ? "申请退款" : "Request refund"}</button>}
           </div>
         </div>;
       })}
-      {cancelOrder && <AccountActionDialog title={zh ? "取消付款确认" : "Confirm payment cancellation"} busy={busy} onClose={() => { setCancelOrder(null); setError(""); }}>
-        <div className="space-y-4 text-sm">
-        <p className="font-medium">{cancelOrder.packageName} · ¥{(cancelOrder.amountCents / 100).toFixed(2)}</p>
-        <p className="break-all">{cancelOrder.id}</p><p>{zh ? "确认取消这笔未支付订单？如已付款，会先核对到账，不会退款。" : "Cancel this unpaid order? Completed payments will be reconciled, not refunded."}</p>
-        {error && <p role="alert" className="text-red-700">{error}</p>}
-        <div className="flex gap-3"><button disabled={busy} onClick={() => void cancelPayment()} className="min-h-10 rounded-lg border border-border px-4 disabled:opacity-50">{busy ? (zh ? "正在核对订单…" : "Checking order…") : (zh ? "确认取消" : "Confirm cancellation")}</button><button disabled={busy} onClick={() => { setCancelOrder(null); setError(""); }} className="min-h-10 px-4">{zh ? "返回" : "Back"}</button></div>
-        </div>
-      </AccountActionDialog>}
+      <section id="refund-request" className="mt-8 scroll-mt-6 border-t border-border pt-6">
+        <h2 className="text-lg font-semibold">{zh ? "退款工单" : "Refund ticket"}</h2>
+        <label className="mt-4 block text-sm">{zh ? "选择要申请退款的订单" : "Choose an order for your refund request"}
+          <select value="" disabled={busy || !refundableOrders.length} onChange={(event) => {
+            const order = refundableOrders.find(item => item.id === event.target.value);
+            if (order) { setRefundOrder(order); setRefundReason(""); setRefundContact(""); setError(""); setNotice(""); }
+          }} className="mt-2 min-h-11 w-full max-w-lg rounded-lg border border-border bg-background px-3 disabled:opacity-50">
+            <option value="">{zh ? "选择订单并填写工单" : "Select an order to fill out your ticket"}</option>
+            {refundableOrders.map(order => <option key={order.id} value={order.id}>{order.packageName} · ¥{(order.amountCents / 100).toFixed(2)} · {order.id.slice(-8)}</option>)}
+          </select>
+        </label>
+        {!refundableOrders.length && <p className="mt-3 text-sm text-muted-foreground">{zh ? "暂无可提交新退款申请的已付款订单。已有申请可在购买记录中查看进度，其他问题请联系微信客服。" : "No paid orders are available for a new refund request. Check existing requests in your purchase history or contact WeChat support."}</p>}
+      </section>
       {refundOrder && <AccountActionDialog title={zh ? "提交退款申请" : "Submit a refund request"} busy={busy} onClose={() => { setRefundOrder(null); setError(""); }}>
         <form aria-label={zh ? "退款申请表单" : "Refund request form"} onSubmit={(event) => { event.preventDefault(); void refund(); }} className="space-y-4">
         <p className="font-medium">{refundOrder.packageName} · ¥{(refundOrder.amountCents / 100).toFixed(2)}</p>

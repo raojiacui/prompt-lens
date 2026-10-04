@@ -37,7 +37,7 @@ for (const width of [1440, 390]) for (const outcome of ["cancelled", "paid", "pe
   });
 }
 
-test("a pending purchase can be cancelled from the order list", async ({ page, context }) => {
+test("the order list does not offer payment cancellation", async ({ page, context }) => {
   await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
   const id = "11111111-1111-4111-8111-111111111111";
   let cancelled = false;
@@ -47,8 +47,7 @@ test("a pending purchase can be cancelled from the order list", async ({ page, c
     await route.fulfill({ json: { wallet: { credits: 0, rewrites: 0, heldCredits: 0, heldRewrites: 0 }, orders: [{ id, packageId: "v6_trial_200", packageName: "Starter", amountCents: 2190, status: cancelled ? "cancelled" : "pending", createdAt: new Date().toISOString() }], refunds: [], tasks: [] } });
   });
   await page.goto("/billing");
-  await page.getByRole("button", { name: "取消本次付款" }).click();
+  await expect(page.getByRole("button", { name: "取消本次付款" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "查看订单" })).toBeVisible();
   expect(cancelled).toBe(false);
-  await page.getByRole("button", { name: "确认取消" }).click();
-  await expect(page.getByText("已取消", { exact: true })).toBeVisible();
 });

@@ -77,7 +77,7 @@ export function SiteFooter() {
         </div>
 
         <div id="support" className="mb-8 border-t border-[var(--color-border-subtle)] pt-8 text-sm">
-          <div><h4 className="font-medium">{zh ? "如有问题，请联系客服" : "Questions? Contact customer support"}</h4><p className="mt-2 break-words text-[var(--color-text-secondary)]">{zh ? "微信添加：" : "Add us on WeChat: "}{SUPPORT_WECHAT}</p><p className="mt-2 text-[var(--color-text-secondary)]">{zh ? "退款请先提交申请表单，再与客服沟通，审核同意后办理。" : "For refunds, submit the request form and contact support. Refunds are issued only after approval."}</p><Link href="/billing" className="mt-2 inline-block underline underline-offset-4">{zh ? "订单与退款申请" : "Orders and refund requests"}</Link></div>
+          <div><h4 className="font-medium">{zh ? "如有问题，请联系客服" : "Questions? Contact customer support"}</h4><p className="mt-2 break-words text-[var(--color-text-secondary)]">{zh ? "微信添加：" : "Add us on WeChat: "}{SUPPORT_WECHAT}</p><p className="mt-2 text-[var(--color-text-secondary)]">{zh ? "退款请先提交申请表单，再与客服沟通，审核同意后办理。" : "For refunds, submit the request form and contact support. Refunds are issued only after approval."}</p><Link href="/billing#refund-request" className="mt-2 inline-block underline underline-offset-4">{zh ? "填写退款工单" : "Submit a refund ticket"}</Link></div>
         </div>
         <div className="pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-[var(--color-text-muted)]">{t("footer")}</p>
