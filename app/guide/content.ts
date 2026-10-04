@@ -1,10 +1,12 @@
 import { SUPPORT_WECHAT } from "@/lib/support-contact";
+import { creditRuleTopics } from "./credit-rules";
 
-type GuideTopic = {
+export type GuideTopic = {
   title: string;
   paragraphs?: string[];
   steps?: string[];
   example?: { label: string; text: string };
+  table?: { columns: string[]; rows: string[][] };
 };
 
 export type GuideSection = {
@@ -231,7 +233,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       summary: "平台积分、链接导入次数、改写次数和 KIE 余额各有用途。判断一笔费用时，先看这次任务选择了哪一种费用来源。",
       topics: [
         { title: "四种额度分别用在哪里", paragraphs: [
-          "平台积分：用于自动拆镜，以及页面已开放的积分分析、生成服务。分析和生成页面右上角显示余额，点击可以查看「余额与订单」。",
+          "平台积分：用于自动拆镜，以及页面已开放的积分分析、生成服务。分析和生成页面右上角显示余额，侧栏「账户」统一查看余额、订单与任务消费。",
           "链接导入次数：粘贴视频链接并成功导入时使用。只扣导入次数，不额外扣解析积分；之后的拆镜和分析另算。",
           "套餐改写次数：使用套餐模式生成一个镜头的新脚本版本时计次，不另扣积分。选择自己的 Key 改写时，费用改由 KIE 账户承担。",
           "KIE 余额：由你在服务商账户中管理。向 Prompt Lens 购买套餐不会给 KIE 充值，在 KIE 充值也不会增加 Prompt Lens 积分。",
@@ -246,6 +248,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "例如任务报价 20 积分，确认后先预留 20；若最终成功部分结算 12，则释放剩余 8。这个数字只是帮助理解的示例，实际费用看任务记录。",
           "结果待核对时，预留可能暂时保留。到「任务消费」查看状态，或提供任务编号联系客服。",
         ] },
+        ...creditRuleTopics(true),
       ],
       link: { href: "/billing", label: "查看余额与订单" },
     },
@@ -482,7 +485,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       summary: "Platform credits, link imports, included rewrites, and your KIE balance serve different purposes. Check the payment source to understand each charge.",
       topics: [
         { title: "What each balance pays for", paragraphs: [
-          "Platform credits cover automatic splitting and supported platform analysis and generation. The top-right balance on the analysis and generation pages links to Balance and orders.",
+          "Platform credits cover automatic splitting and supported analysis and generation. The top-right display shows balance; Account in the sidebar contains your balance, orders, and task usage.",
           "Link imports are used when a pasted video link is imported successfully. The import itself consumes no extra credits; subsequent splitting and analysis are separate.",
           "Included rewrites pay for successful new shot-script versions without extra credits. Selecting your own key instead bills the model call to KIE.",
           "Your KIE balance is managed with the provider. Buying a Prompt Lens package does not top up KIE, and adding funds to KIE does not add Prompt Lens credits.",
@@ -497,6 +500,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "For example, a 20-credit quote reserves 20. If successful work settles for 12, the remaining eight are released. These are illustrative numbers; consult your task record for actual costs.",
           "An uncertain result may keep credits reserved while it is checked. Look under Task usage or contact support with the task ID.",
         ] },
+        ...creditRuleTopics(false),
       ],
       link: { href: "/billing", label: "View balance and orders" },
     },
