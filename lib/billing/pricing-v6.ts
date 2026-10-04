@@ -93,7 +93,11 @@ export type GenerationPriceInput = {
   referenceVideoSeconds?: number;
 };
 
-export const GENERATION_PRICING_VERSION = "2026-10-04-generation";
+export const GENERATION_PRICING_VERSION = "2026-10-04-generation-v2";
+
+const generationCreditBasis = COMMERCIAL_PACKAGES.reduce((lowest, pack) =>
+  BigInt(pack.priceCents) * BigInt(lowest.credits) < BigInt(lowest.priceCents) * BigInt(pack.credits) ? pack : lowest
+);
 
 /** Official public rates. Input-video seconds come from the server's media probe. */
 export function estimateGeneration(input: GenerationPriceInput) {
@@ -134,8 +138,9 @@ export function estimateGeneration(input: GenerationPriceInput) {
   if (!microUsdPerSecond && !wan1080) throw new Error("MODEL_PRICE_UNVERIFIED");
   const billInputVideo = modelId.startsWith("bytedance/seedance-2");
   const microUsd = wan1080 ? BigInt(wan1080) : BigInt(microUsdPerSecond) * (BigInt(seconds) + BigInt(billInputVideo ? reference ?? 0 : 0));
-  // USD * 7.5 * 1.2 + CNY 0.15; each 5 credits budgets CNY 0.175.
-  const credits = 5 * ceilRatio(microUsd * 9n + 150000n, 175000n);
+  // Convert the buffered CNY budget at the cheapest actual package rate, rounding to five credits.
+  const budgetMicroCny = microUsd * 9n + 150000n;
+  const credits = 5 * ceilRatio(budgetMicroCny * BigInt(generationCreditBasis.credits), BigInt(generationCreditBasis.priceCents) * 10000n * 5n);
   if (!Number.isSafeInteger(credits)) throw new Error("Generation price overflow");
   return { version: GENERATION_PRICING_VERSION, credits, microUsd: Number(microUsd), adapterVerified: false as const };
 }
