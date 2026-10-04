@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import Link from "next/link";
 import { X } from "lucide-react";
-import type { SceneInterval } from "@/lib/billing/pricing-v6";
+import { quoteAnalysis, type SceneInterval } from "@/lib/billing/pricing-v6";
 import { listModels } from "@/lib/ai/model-registry";
 
 export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en" }; onClose: () => void; onComplete: (bundle: unknown) => void }) {
@@ -21,7 +21,20 @@ export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const completed = useRef(false);
+  const selectAll = useRef<HTMLInputElement>(null);
+  const selectedScenes = preparation?.scenes.filter(scene => selected.includes(scene.id)) || [];
+  const allSelected = Boolean(preparation && selectedScenes.length === preparation.scenes.length);
+  const selectionLocked = busy || Boolean(quote);
+  const selectedSeconds = selectedScenes.reduce((total, scene) => total + scene.endUs - scene.startUs, 0) / 1000000;
+  const estimatedCredits = preparation && selectedScenes.length ? quoteAnalysis({
+    payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok",
+    model: model as "flash" | "pro", sourceDurationUs: preparation.durationUs,
+    scenes: selectedScenes, automaticSplit, paidSplitReusable: false,
+  }).credits : null;
   const onCompleteRef = useRef(onComplete); onCompleteRef.current = onComplete;
+  useEffect(() => {
+    if (selectAll.current) selectAll.current.indeterminate = selectedScenes.length > 0 && !allSelected;
+  }, [selectedScenes.length, allSelected]);
   useEffect(() => { dialog.current?.showModal(); }, []);
   async function post(url: string, body: unknown) {
     const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -74,7 +87,16 @@ export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: {
         <label className="text-sm">{zh ? "分析模型" : "Analysis model"}<select value={payer === "byok" ? byokModel : model} onChange={(e) => payer === "byok" ? setByokModel(e.target.value) : setModel(e.target.value)} className="mt-2 min-h-10 w-full rounded-lg border border-border bg-background px-2">{payer === "byok" ? listModels("analysis").filter(m => m.enabled).map(m => <option key={m.id} value={m.id}>{m.displayName}</option>) : <><option value="flash">Gemini 3.8 Flash</option><option value="pro">Gemini 2.5 Pro</option></>}</select></label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={automaticSplit} disabled={Boolean(preparation)} onChange={(e) => setAutomaticSplit(e.target.checked)} />{zh ? "自动拆镜" : "Automatic shot splitting"}</label>
       </fieldset>
-      {preparation && <div className="mt-5"><p className="mb-3 text-sm">{(preparation.durationUs / 1000000).toFixed(2)}s · {preparation.scenes.length} {zh ? "个镜头" : "shots"}</p><div className="max-h-52 overflow-auto border-y border-border">{preparation.scenes.map((scene) => <label key={scene.id} className="flex min-h-11 items-center justify-between gap-3 border-b border-border py-2 text-sm"><span className="flex items-center gap-2"><input type="checkbox" checked={selected.includes(scene.id)} disabled={Boolean(quote) || !automaticSplit} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, scene.id] : ids.filter((id) => id !== scene.id))} />{zh ? "镜头" : "Shot"} {scene.id}</span><span>{(scene.startUs / 1000000).toFixed(2)}–{(scene.endUs / 1000000).toFixed(2)}s · {((scene.endUs - scene.startUs) / 1000000).toFixed(2)}s</span></label>)}</div></div>}
+      {preparation && <div className="mt-5">
+        <p className="mb-3 text-sm">{(preparation.durationUs / 1000000).toFixed(2)}s · {preparation.scenes.length} {zh ? "个镜头" : "shots"}</p>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
+          <label className="flex min-h-11 items-center gap-2"><input ref={selectAll} type="checkbox" checked={allSelected} disabled={selectionLocked} onChange={e => setSelected(e.target.checked ? preparation.scenes.map(scene => scene.id) : [])} />{zh ? "全选" : "Select all"}</label>
+          <span role="status" className="text-muted-foreground">{zh ? `已选 ${selectedScenes.length}/${preparation.scenes.length} 个镜头 · ${selectedSeconds.toFixed(2)} 秒` : `${selectedScenes.length}/${preparation.scenes.length} shots selected · ${selectedSeconds.toFixed(2)} sec`}</span>
+        </div>
+        <div className="max-h-52 overflow-auto border-y border-border">{preparation.scenes.map((scene, index) => <label key={scene.id} className="flex min-h-11 items-center justify-between gap-3 border-b border-border py-2 text-sm"><span className="flex shrink-0 items-center gap-2"><input type="checkbox" aria-label={zh ? `镜头 ${index + 1}` : `Shot ${index + 1}`} checked={selected.includes(scene.id)} disabled={selectionLocked} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, scene.id] : ids.filter((id) => id !== scene.id))} />{zh ? "镜头" : "Shot"} {index + 1}</span><span className="text-right">{(scene.startUs / 1000000).toFixed(2)}–{(scene.endUs / 1000000).toFixed(2)}s · {((scene.endUs - scene.startUs) / 1000000).toFixed(2)}s</span></label>)}</div>
+        {!selectedScenes.length && <p className="mt-2 text-sm text-muted-foreground">{zh ? "请至少选择一个镜头。" : "Select at least one shot."}</p>}
+        {estimatedCredits !== null && !quote && <p className="mt-3 text-sm">{zh ? `预计 ${estimatedCredits} 积分` : `Estimated ${estimatedCredits} credits`}</p>}
+      </div>}
       {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。确认后预留，按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Reserved on confirmation, settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
       <div className="mt-5 flex gap-3"><button disabled={busy || Boolean(preparation && !selected.length)} onClick={() => void next()} className="min-h-11 rounded-lg bg-foreground px-4 text-background disabled:opacity-50">{busy ? (zh ? "处理中…" : "Working…") : !preparation ? (zh ? "读取视频信息" : "Inspect video") : !quote ? (zh ? "获取报价" : "Get quote") : (zh ? "确认并开始" : "Confirm and start")}</button>{quote && <button disabled={busy} onClick={() => setQuote(null)} className="px-3 text-sm">{zh ? "调整选择" : "Adjust selection"}</button>}</div>
     </>}
