@@ -133,7 +133,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "先确认费用来源", paragraphs: [
           "使用自己的 KIE Key：打开设置，填写并保存 Key，确认你的 KIE 账户有余额。保存成功后回到视频生成，模型费用由该账户承担，不消耗平台推理积分。",
           "如果页面显示「平台积分」选项，可以选择已开放的付费模型与参数组合，先获取报价，再确认生成。界面有某个模型，不代表它的每一种参数都已支持平台积分付款。",
-          "当前平台积分支持 Wan 2.6 Text to Video 和 Wan 2.6 Image to Video：720p、5 秒或 10 秒，比例选择自动或 16:9，图生视频使用一张图片。参考视频、多图和其他模型组合目前需要自带 Key。图生视频的实际构图还会受到源图片比例影响，报价成功后再确认。",
+          "三个套餐共用通用积分钱包，已核价的文字、图片、参考视频生成与视频编辑均可使用。Wan、Seedance、Kling、Grok、HappyHorse 按各自支持的素材与参数报价，并非所有模型都支持所有参数。Sora 的官方价格、Veo 的新旧接口仍待核对，暂不支持平台积分提交；可选择其他已核价模型。图生视频构图还会受到源图片比例影响。",
           "免费分析次数不用于生成视频。没有自己的有效 Key，也没有可用的积分生成条件时，需要先补齐再提交。",
         ] },
         { title: "从提示词到一条成片", steps: [
@@ -159,7 +159,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "准备与操作步骤", steps: [
           "在左侧选择「视频生成」。检查上传区是否保留了上一次的素材；若要纯文字生成，用素材旁的移除按钮清掉图片和视频，确认「当前生成方式」显示「文字生成视频」。",
           "在提示词框中依次写清主体、场景、主要动作、镜头运动和光线。文字路径必须填写提示词。先写一个连续镜头，不要同时要求多个互相冲突的动作。",
-          "选择支持文字生成的模型，再选择费用来源。用平台积分时，使用当前支持的 Wan 2.6 Text to Video 组合；自带 Key 时，确认设置中已保存有效的 Key，KIE 账户有余额。",
+          "选择支持文字生成的模型，再选择费用来源。用平台积分时，可选择 Wan、Seedance、Kling 或 Grok 的已核价组合；不同模型、画质和时长的积分消耗不同。自带 Key 时，确认设置中已保存有效的 Key，KIE 账户有余额。",
           "展开生成参数，核对比例、画质、时长和生成数量。竖屏内容选择支持竖屏的模型与计费方式；第一次先生成 1 条，避免尚未验证提示词就同时提交多条任务。",
           "点击生成。积分模式先查看报价，再确认开始；自带 Key 模式提交后查看右侧进度。完成后播放结果，检查画面是否符合描述，再下载或修改提示词重新生成。",
         ] },
@@ -184,7 +184,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "等待上传成功，检查缩略图是否正确。「当前生成方式」在直接上传图片时显示「图片生成视频」。从「做同款」进入时，可能已经带入镜头参考帧，不必重复上传同一张图。",
           "选择支持图片输入的模型。在提示词中写出图片里的主体要做什么、背景怎样变化、镜头怎样移动。保留你想沿用的外观，不要又要求与参考图完全不同的主体和构图。",
           "有多张图片时，可点击提示词框下方的 @ 按钮，选择图片并插入引用，再在引用后说明它的用途，例如人物外观或产品细节。插入了图片引用时，会使用被引用的图片；没有引用时，会使用已上传的图片。",
-          "选择比例、时长、画质和数量，再核对费用来源。积分模式当前支持 Wan 2.6 Image to Video 的单图组合；多图或其他模型使用自己的 Key，并确认模型支持这些参考数量。",
+          "选择比例、时长、画质和数量，再核对费用来源。平台积分支持 Wan 单图、Seedance 多图与 Kling 3 的图片参考组合；图片数量必须符合所选模型的限制。提交前核对报价，不能将多图参考自动当作首尾帧控制。",
           "提交并等待结果。先检查人物、商品外观是否接近参考图，再检查动作和运镜；满意后保存视频，不满意时优先缩减动作幅度或更换更清楚的参考图。",
         ] },
         { title: "多张图片怎么用", paragraphs: [
@@ -213,7 +213,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "按目标选择支持视频参考的模型，或 Wan 2.7 Video Edit。只支持文字或图片的模型不能因为上传了视频就自动获得视频参考能力。",
           "普通参考生成写清「保留的动作、节奏与运镜」和「要变更的主体、场景、风格」；视频编辑写清原片里修改哪个对象、改成什么，以及哪些背景、动作和镜头需要保留。",
           "需要替换人物或商品时，另外上传清晰图片，使用 @ 图片引用把修改要求与素材对应起来。先只替换一个对象，避免第一次就同时改变人物、背景、光线和所有动作。",
-          "费用来源选择自己的 KIE Key，确认余额与模型支持情况；当前平台积分不支持参考视频生成或视频编辑。核对比例、画质、数量和模型允许的时长，再提交任务。模型提供原视频时长选项时，按本次目标选择。",
+          "费用来源可选择平台积分或自己的 KIE Key。平台积分支持 Seedance 参考视频、Wan 2.6 视频参考，以及 Wan 2.7、Kling Omni、HappyHorse 视频编辑的已核价组合。服务器先检测上传视频的实际时长；Seedance 按参考视频加输出时长计价，编辑模型按其输出时长规则计价。核对画质、数量、时长与总积分，再确认生成。",
           "在右侧查看各条任务的进度。完成后对照原视频播放，分别检查动作时序、运镜，以及替换对象的外观；保存满意结果，需要继续改动时重新调整指令。",
         ] },
         { title: "分别怎样写指令", example: { label: "普通视频参考与视频编辑的指令区别", text: "参考生成：保留参考视频中人物缓慢行走的节奏和从背后跟随的运镜。将场景改为雨后的未来城市，把人物服装改为银灰色外套。保持单个连续镜头，路面有霓虹倒影，不增加字幕。\n\n视频编辑：把原视频中桌面中央的杯子替换为引用图片里的白色杯子，保留杯子的原位置和大小。保留手部动作、桌面、背景和镜头运动，只修改杯子外观。请通过 @ 按钮插入对应的替换图片。" } },
@@ -384,7 +384,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "Check your payment source first", paragraphs: [
           "For your own KIE key, open Settings, enter and save the key, and check your KIE balance. Return to generation after saving. Model calls use that account rather than platform inference credits.",
           "If Platform credits is available, select a supported paid model and parameter combination, get a quote, and confirm it. A model appearing in the selector does not mean every configuration supports platform billing.",
-          "Platform billing currently supports Wan 2.6 Text to Video and Wan 2.6 Image to Video at 720p, for five or ten seconds, with Auto or 16:9 selected. Image-to-video accepts one image. Video references, multiple images, and other models require your own key. Source-image framing also affects image-to-video output; review a successful quote before confirming.",
+          "All three packages share one credit wallet. Priced text, image, reference-video and video-editing configurations can use it. Wan, Seedance, Kling, Grok and HappyHorse have different supported inputs and settings. Sora pricing and the Veo API migration still need verification, so choose another priced model for platform billing. Source-image framing also affects image-to-video output.",
           "Free analysis attempts cannot be used for video generation. You need a valid funded key or an eligible platform-credit generation option before submitting.",
         ] },
         { title: "Generate your first clip", steps: [
@@ -410,7 +410,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "Prepare and generate", steps: [
           "Open Video generation in the sidebar. Remove any images or videos left from a previous session, and check that Current path reads Text to video.",
           "Describe the subject, setting, main action, camera movement, and lighting in the prompt. Text-to-video needs a prompt. Keep the action within one shot and avoid conflicting instructions.",
-          "Choose a text-capable model and payment source. For platform credits, use a supported Wan 2.6 Text to Video configuration. For your own key, save a valid KIE key in Settings and fund that provider account.",
+          "Choose a text-capable model and payment source. Platform credits support priced Wan, Seedance, Kling and Grok configurations; charges depend on the model, quality and duration. For your own key, save a valid KIE key in Settings and fund that provider account.",
           "Open the generation settings and review aspect ratio, quality, duration, and output count. Portrait video needs a model and billing configuration that support portrait output. Start with one output while testing the prompt.",
           "Generate, review and confirm the quote when using platform credits, then watch the status on the right. Play the completed result, save it, or adjust the prompt for another generation.",
         ] },
@@ -435,7 +435,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "Wait for upload completion and inspect the thumbnail. A directly uploaded image selects Image to video. Recreation from analysis may already include a shot reference frame, so you do not need to upload the same image again.",
           "Choose an image-capable model. Describe what the subject does, how the background changes, and how the camera moves. Preserve the appearance you want rather than asking for a completely contradictory subject or composition.",
           "With multiple images, use the @ button below the prompt to insert image references, then explain each image's role. When you insert references, the referenced images are used; without references, the uploaded images are used.",
-          "Review aspect ratio, duration, quality, output count, and payment source. Platform credits currently support the single-image Wan 2.6 Image to Video configuration. Other models or multiple images require your own key and a model that accepts those inputs.",
+          "Review aspect ratio, duration, quality, output count and payment source. Platform credits support priced Wan single-image, Seedance multi-image and Kling 3 image-reference configurations. Respect each model's image limits; multiple references do not automatically mean first-and-last-frame control.",
           "Submit and wait for results. Check subject appearance first, then motion and camera work. Save a good result; otherwise reduce the movement or replace the source with a clearer image.",
         ] },
         { title: "Using multiple images", paragraphs: [
@@ -464,7 +464,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "Select a video-reference model or Wan 2.7 Video Edit. Uploading a video does not give a text-only or image-only model video-reference capabilities.",
           "For reference generation, explain the motion, pacing, and camera work to keep, plus the subject, setting, or style to change. For editing, identify the object to replace and the background, action, and camera work to preserve.",
           "Upload a clear replacement image when changing a person or product, and insert it with the @ button next to the relevant instruction. Start by changing one object rather than the subject, background, lighting, and all movement at once.",
-          "Use your own funded KIE key. Platform credits currently do not support video references or video editing. Review quality, aspect ratio, output count, and supported duration; choose original-video duration when the model offers it and that fits your goal.",
+          "Choose platform credits or your funded KIE key. Priced Seedance and Wan 2.6 video-reference configurations, plus Wan 2.7, Kling Omni and HappyHorse editing, support platform billing. The server verifies source-video duration. Seedance charges for input plus output seconds; editing follows its output-duration rules. Review settings and the total quote before confirming.",
           "Watch each task on the right. Compare completed footage with the source for action timing, camera movement, and replacement appearance. Save the result or adjust the instructions for another task.",
         ] },
         { title: "Two different instruction styles", example: { label: "Reference generation versus video editing", text: "Reference generation: Keep the source video's slow walking rhythm and rear tracking camera. Change the setting to a futuristic city after rain and the outfit to a silver-gray coat. One continuous shot, neon reflections on the road, no subtitles.\n\nVideo editing: Replace the cup at the center of the table with the white cup in the referenced image. Keep its original size and position. Preserve hand movements, the table, background, and camera motion; change only the cup's appearance. Insert the replacement image using the @ button." } },

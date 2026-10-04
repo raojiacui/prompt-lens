@@ -1,4 +1,5 @@
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
@@ -81,6 +82,17 @@ export async function getR2ObjectSize(key: string): Promise<number | undefined> 
   requireR2Config();
   const response = await s3Client.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }));
   return response.ContentLength;
+}
+
+export async function copyR2Object(sourceKey: string, destinationKey: string): Promise<string> {
+  requireR2Config();
+  requirePublicUrl();
+  await s3Client.send(new CopyObjectCommand({
+    Bucket: bucketName,
+    Key: destinationKey,
+    CopySource: `${bucketName}/${sourceKey.split("/").map(encodeURIComponent).join("/")}`,
+  }), { abortSignal: AbortSignal.timeout(30000) });
+  return getR2PublicUrl(destinationKey);
 }
 
 export async function uploadToR2(

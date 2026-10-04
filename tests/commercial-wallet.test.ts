@@ -9,6 +9,7 @@ const isolated = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return isolated.db; } }));
 vi.mock("@/lib/workflow/scene-analysis", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/workflow/scene-analysis")>(), rewriteSceneBlueprint: vi.fn(), analyzeSceneBlueprint: vi.fn() }));
 vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: vi.fn(async () => "owned-upload"), commercialMediaRequest: vi.fn() }));
+vi.mock("@/lib/cloudflare/r2", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/cloudflare/r2")>(), copyR2Object: vi.fn(async () => "https://example.com/frozen-video.mp4") }));
 vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/payments/alipay")>(),
   queryAlipayTrade: vi.fn(),
@@ -17,7 +18,8 @@ vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
   queryAlipayRefund: vi.fn(),
 }));
 import { rewriteSceneBlueprint, analyzeSceneBlueprint } from "@/lib/workflow/scene-analysis";
-import { commercialMediaRequest } from "@/lib/billing/commercial-media";
+import { assertOwnedUploadedVideo, commercialMediaRequest } from "@/lib/billing/commercial-media";
+import { copyR2Object } from "@/lib/cloudflare/r2";
 import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnalysisRetry, quotedAnalysisModel, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
@@ -65,6 +67,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await client.exec(readFileSync("drizzle/0002_video_generation.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0006_generation_workflow_links.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0012_commercial_tasks.sql", "utf8"));
+    await client.exec(readFileSync("drizzle/0019_media_cleanup_jobs.sql", "utf8"));
     await client.query('INSERT INTO "user" (id) VALUES ($1)', [userId]);
   });
   beforeEach(async () => {
@@ -73,6 +76,8 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.mocked(rewriteSceneBlueprint).mockReset();
     vi.mocked(analyzeSceneBlueprint).mockReset();
     vi.mocked(commercialMediaRequest).mockReset();
+    vi.mocked(copyR2Object).mockClear();
+    await client.exec("TRUNCATE media_cleanup_jobs");
     vi.mocked(queryAlipayTrade).mockReset();
     vi.mocked(closeAlipayTrade).mockReset();
     vi.mocked(refundAlipayTrade).mockReset();
@@ -147,7 +152,15 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const input = { userPrompt: "A cinematic cloud palace", duration: 5, quality: "720p" };
     expect(buildCommercialGenerationPayload(input)).toMatchObject({ model: "wan/2-6-text-to-video", input: { duration: "5", resolution: "720p" } });
     expect(buildCommercialGenerationPayload({ ...input, hiddenReferenceImageUrl: "https://example.com/image.jpg" })).toMatchObject({ model: "wan/2-6-image-to-video", input: { image_urls: ["https://example.com/image.jpg"] } });
-    for (const override of [{ duration: 8 }, { quality: "1080p" }, { aspectRatio: "9:16" }, { model: "unverified-model" }, { referenceVideoUrl: "https://example.com/video.mp4" }, { hiddenReferenceImageUrl: "http://example.com/image.jpg" }]) expect(() => buildCommercialGenerationPayload({ ...input, ...override })).toThrow();
+    expect(buildCommercialGenerationPayload({ ...input, quality: "1080p", aspectRatio: "9:16" })).toMatchObject({ input: { resolution: "1080p", aspect_ratio: "9:16" } });
+    for (const override of [{ duration: 8 }, { quality: "4k" }, { aspectRatio: "2:3" }, { model: "unverified-model" }, { referenceVideoUrl: "https://example.com/video.mp4" }, { hiddenReferenceImageUrl: "http://example.com/image.jpg" }]) expect(() => buildCommercialGenerationPayload({ ...input, ...override })).toThrow();
+  });
+  it("uses explicit provider fields for paid image and video paths", () => {
+    const body = { userPrompt: "A cinematic cloud palace", duration: 5, quality: "720p", aspectRatio: "auto", referenceVideoUrl: "https://example.com/video.mp4", replacementAssets: [{ url: "https://example.com/image.jpg" }] };
+    expect(buildCommercialGenerationPayload({ ...body, model: "seedance-2-fast" }, 5)).toMatchObject({ model: "bytedance/seedance-2-fast", input: { duration: 5, reference_video_urls: [body.referenceVideoUrl], reference_image_urls: [body.replacementAssets[0].url], generate_audio: false } });
+    expect(buildCommercialGenerationPayload({ ...body, duration: 0, model: "wan-video-edit" }, 5)).toMatchObject({ input: { duration: 0, video_url: body.referenceVideoUrl, reference_image: body.replacementAssets[0].url } });
+    expect(buildCommercialGenerationPayload({ ...body, duration: 0, model: "kling-omni-transform" }, 5)).toMatchObject({ model: "kling-3.0-omni/transformation", input: { video_urls: [body.referenceVideoUrl], duration: "5" } });
+    expect(() => buildCommercialGenerationPayload({ ...body, referenceVideoSeconds: 1, model: "seedance-2-fast" })).toThrow("REFERENCE_VIDEO_PROBE_REQUIRED");
   });
   it("rejects another owner's or expired quotes before reserving funds", async () => {
     await grant(); vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true"); vi.stubEnv("KIE_API_KEY", "test-key");
@@ -155,6 +168,47 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await expect(confirmCommercialTask(randomUUID(), quote.id)).rejects.toThrow("TASK_NOT_FOUND");
     await client.query("UPDATE commercial_tasks SET expires_at = now() - interval '1 minute' WHERE id = $1", [quote.id]);
     await expect(confirmCommercialTask(userId, quote.id)).rejects.toThrow("QUOTE_EXPIRED");
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+  });
+  it.each(["success", "fail"] as const)("quotes reference duration on the server and settles %s once", async (state) => {
+    await grant(650, 60);
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true"); vi.stubEnv("KIE_API_KEY", "test-key");
+    vi.mocked(commercialMediaRequest).mockResolvedValue({ durationUs: 5_000_000 });
+    const quote = await quoteCommercialGeneration(userId, { model: "seedance-2-fast", userPrompt: "Follow the reference motion in a new city", referenceVideoUrl: "https://example.com/video.mp4", referenceVideoSeconds: 1, duration: 10, quality: "720p" });
+    expect(quote).toMatchObject({ credits: 295, referenceVideoSeconds: 5, duration: 10 });
+    expect(assertOwnedUploadedVideo).toHaveBeenCalledWith(userId, "https://example.com/video.mp4");
+    expect(copyR2Object).toHaveBeenCalledWith("owned-upload", expect.stringContaining(`generation-input/${userId}/`));
+    expect(commercialMediaRequest).toHaveBeenCalledWith("https://example.com/frozen-video.mp4", { mode: "preview", automaticSplit: false });
+    expect(await testDb.select().from(schema.mediaCleanupJobs)).toHaveLength(1);
+    await confirmCommercialTask(userId, quote.id);
+    await confirmCommercialTask(userId, quote.id);
+    expect(await balance()).toMatchObject({ credits: 355, heldCredits: 295 });
+    const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { taskId: "reference-task" } }))).mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { taskId: "reference-task", state, resultJson: JSON.stringify({ resultUrls: ["https://example.com/output.mp4"] }) } })));
+    vi.stubGlobal("fetch", fetchMock);
+    await runCommercialTask(quote.id);
+    await runCommercialTask(quote.id);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({ model: "bytedance/seedance-2-fast", input: { duration: 10, reference_video_urls: ["https://example.com/frozen-video.mp4"] } });
+    await reconcileCommercialGeneration(quote.id);
+    await reconcileCommercialGeneration(quote.id);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(await balance()).toMatchObject({ credits: state === "success" ? 355 : 650, heldCredits: 0 });
+  });
+  it("does not probe another user's video or an unfunded wallet", async () => {
+    vi.stubEnv("KIE_API_KEY", "test-key");
+    const input = { model: "seedance-2-fast", userPrompt: "Follow the video", referenceVideoUrl: "https://example.com/video.mp4", duration: 5 };
+    vi.mocked(assertOwnedUploadedVideo).mockRejectedValueOnce(new Error("UPLOAD_NOT_OWNED"));
+    await expect(quoteCommercialGeneration(userId, input)).rejects.toThrow("UPLOAD_NOT_OWNED");
+    await expect(quoteCommercialGeneration(userId, input)).rejects.toThrow("INSUFFICIENT_COMMERCIAL_BALANCE");
+    expect(commercialMediaRequest).not.toHaveBeenCalled();
+    expect(copyR2Object).not.toHaveBeenCalled();
+  });
+  it("does not create a billable quote when the reference snapshot fails", async () => {
+    await grant(); vi.stubEnv("KIE_API_KEY", "test-key");
+    vi.mocked(copyR2Object).mockRejectedValueOnce(new Error("Storage unavailable"));
+    await expect(quoteCommercialGeneration(userId, { model: "seedance-2-fast", userPrompt: "Follow the video", referenceVideoUrl: "https://example.com/video.mp4", duration: 5 })).rejects.toThrow("Storage unavailable");
+    expect(commercialMediaRequest).not.toHaveBeenCalled();
+    expect(await testDb.select().from(schema.commercialTasks)).toMatchObject([{ kind: "analysis_preview", state: "failed" }]);
+    expect(await testDb.select().from(schema.mediaCleanupJobs)).toHaveLength(1);
     expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
   });
   it("reserves once, releases the unused amount and rejects late re-debits", async () => {

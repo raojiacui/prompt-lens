@@ -332,6 +332,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     kieModelId: "wan/2-6-video-to-video",
     enabled: true,
     capabilities: ["video", "reference_video", "video_to_video", "generative_edit"],
+    maxDuration: 15,
     aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4"],
     resolutionOptions: ["720p", "1080p"],
     speedLevel: 3,

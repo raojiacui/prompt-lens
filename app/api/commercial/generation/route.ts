@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { commercialConsumptionEnabled } from "@/lib/billing/commercial-analysis";
 import { quoteCommercialGeneration } from "@/lib/billing/commercial-generation";
+export const maxDuration = 300;
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -376,7 +376,7 @@ export function ReferenceVideoComposer({
   const [commercialEnabled, setCommercialEnabled] = useState(false);
   const [creditStatus, setCreditStatus] = useState<{ balance: number; commercial?: { credits?: number; heldCredits?: number } } | null>(null);
   const [balanceRefresh, setBalanceRefresh] = useState(0);
-  const [generationPayer, setGenerationPayer] = useState("byok");
+  const [generationPayer, setGenerationPayer] = useState("platform");
   const [commercialRequest, setCommercialRequest] = useState<{ request: Record<string, unknown>; quantity: number } | null>(null);
   useEffect(() => {
     let active = true;

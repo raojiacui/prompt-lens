@@ -93,7 +93,9 @@ export type GenerationPriceInput = {
   referenceVideoSeconds?: number;
 };
 
-/** Public-price estimate only; adapters still require paid-call acceptance before enabling. */
+export const GENERATION_PRICING_VERSION = "2026-10-04-generation";
+
+/** Official public rates. Input-video seconds come from the server's media probe. */
 export function estimateGeneration(input: GenerationPriceInput) {
   const seconds = integer(input.durationSeconds, 1);
   const reference = input.referenceVideoSeconds;
@@ -101,14 +103,16 @@ export function estimateGeneration(input: GenerationPriceInput) {
   let microUsdPerSecond = 0;
   const { modelId, resolution, audio } = input;
   if (modelId === "grok-imagine/text-to-video" && resolution === "720p" && [6, 10].includes(seconds) && reference === undefined && !audio) microUsdPerSecond = 22500;
-  if (["wan/2-6-text-to-video", "wan/2-6-image-to-video"].includes(modelId) && resolution === "720p" && [5, 10].includes(seconds) && reference === undefined && !audio) microUsdPerSecond = 70000;
+  if (["wan/2-6-text-to-video", "wan/2-6-image-to-video", "wan/2-6-video-to-video"].includes(modelId) && [5, 10, 15].includes(seconds)) {
+    if (resolution === "720p") microUsdPerSecond = 70000;
+  }
   if (modelId === "kling-2.6/text-to-video" && resolution === "1080p" && [5, 10].includes(seconds) && reference === undefined) microUsdPerSecond = audio ? 110000 : 55000;
-  if (modelId === "kling-3.0/video" && ["720p", "1080p"].includes(resolution) && [5, 10].includes(seconds) && reference === undefined) {
+  if (modelId === "kling-3.0/video" && ["720p", "1080p"].includes(resolution) && seconds >= 3 && seconds <= 15 && reference === undefined) {
     microUsdPerSecond = resolution === "720p" ? (audio ? 100000 : 70000) : (audio ? 135000 : 90000);
   }
-  if ([5, 10].includes(seconds)) {
-    if (modelId === "bytedance/seedance-2-mini" && !audio && reference === undefined) {
-      microUsdPerSecond = resolution === "480p" ? 19000 : resolution === "720p" ? 41000 : 0;
+  if (seconds >= 4 && seconds <= 15) {
+    if (modelId === "bytedance/seedance-2-mini") {
+      microUsdPerSecond = resolution === "480p" ? (reference === undefined ? 19000 : 12000) : resolution === "720p" ? (reference === undefined ? 41000 : 25000) : 0;
     }
     if (modelId === "bytedance/seedance-2-fast" && resolution === "720p") microUsdPerSecond = reference === undefined ? 124000 : 75000;
     if (modelId === "bytedance/seedance-2") {
@@ -116,10 +120,22 @@ export function estimateGeneration(input: GenerationPriceInput) {
         : resolution === "1080p" ? (reference === undefined ? 510000 : 310000) : 0;
     }
   }
-  if (!microUsdPerSecond) throw new Error("MODEL_PRICE_UNVERIFIED");
-  const microUsd = BigInt(microUsdPerSecond) * (BigInt(seconds) + BigInt(reference ?? 0));
+  if (modelId === "wan/2-7-videoedit" && reference !== undefined && seconds <= reference && seconds >= 2 && seconds <= 10) {
+    microUsdPerSecond = resolution === "720p" ? 80000 : resolution === "1080p" ? 120000 : 0;
+  }
+  if (modelId === "happyhorse/video-edit" && reference !== undefined && seconds === reference && seconds >= 3 && seconds <= 60) {
+    microUsdPerSecond = resolution === "720p" ? 140000 : resolution === "1080p" ? 240000 : 0;
+  }
+  if (modelId === "kling-3.0-omni/transformation" && reference !== undefined && seconds >= 3 && seconds <= 16) {
+    microUsdPerSecond = resolution === "720p" ? 100000 : resolution === "1080p" ? 135000 : 0;
+  }
+  const wan1080 = ["wan/2-6-text-to-video", "wan/2-6-image-to-video", "wan/2-6-video-to-video"].includes(modelId) && resolution === "1080p"
+    ? ({ 5: 522500, 10: 1047500, 15: 1575000 } as Record<number, number>)[seconds] : undefined;
+  if (!microUsdPerSecond && !wan1080) throw new Error("MODEL_PRICE_UNVERIFIED");
+  const billInputVideo = modelId.startsWith("bytedance/seedance-2");
+  const microUsd = wan1080 ? BigInt(wan1080) : BigInt(microUsdPerSecond) * (BigInt(seconds) + BigInt(billInputVideo ? reference ?? 0 : 0));
   // USD * 7.5 * 1.2 + CNY 0.15; each 5 credits budgets CNY 0.175.
   const credits = 5 * ceilRatio(microUsd * 9n + 150000n, 175000n);
   if (!Number.isSafeInteger(credits)) throw new Error("Generation price overflow");
-  return { version: PRICING_VERSION, credits, microUsd: Number(microUsd), adapterVerified: false as const };
+  return { version: GENERATION_PRICING_VERSION, credits, microUsd: Number(microUsd), adapterVerified: false as const };
 }

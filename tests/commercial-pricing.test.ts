@@ -74,6 +74,8 @@ describe("V6 commercial pricing", () => {
     ["kling-3.0/video", "1080p", 5, true, 180],
     ["bytedance/seedance-2-fast", "720p", 5, true, 165],
     ["bytedance/seedance-2", "1080p", 10, true, 1320],
+    ["wan/2-6-image-to-video", "1080p", 5, false, 140],
+    ["bytedance/seedance-2-fast", "720p", 7, false, 230],
   ] as const)("estimates %s %s %is", (modelId, resolution, durationSeconds, audio, expected) => {
     expect(estimateGeneration({ modelId, resolution, durationSeconds, audio })).toMatchObject({ credits: expected, adapterVerified: false });
   });
@@ -83,5 +85,12 @@ describe("V6 commercial pricing", () => {
       expect(() => estimateGeneration({ modelId, resolution: "720p", durationSeconds: 10, audio: false })).toThrow("MODEL_PRICE_UNVERIFIED");
     }
     expect(() => estimateGeneration({ modelId: "bytedance/seedance-2-fast", resolution: "1080p", durationSeconds: 10, audio: true })).toThrow();
+  });
+  it("bills output-only video editing separately from Seedance input-plus-output", () => {
+    expect(estimateGeneration({ modelId: "wan/2-7-videoedit", resolution: "720p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false })).toMatchObject({ credits: 110, microUsd: 400000 });
+    expect(estimateGeneration({ modelId: "wan/2-7-videoedit", resolution: "1080p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false }).credits).toBe(160);
+    expect(estimateGeneration({ modelId: "happyhorse/video-edit", resolution: "720p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false }).credits).toBe(185);
+    expect(estimateGeneration({ modelId: "kling-3.0-omni/transformation", resolution: "720p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false })).toMatchObject({ microUsd: 500000, credits: 135 });
+    expect(() => estimateGeneration({ modelId: "wan/2-7-videoedit", resolution: "720p", durationSeconds: 12, referenceVideoSeconds: 12, audio: false })).toThrow();
   });
 });
