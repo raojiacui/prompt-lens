@@ -26,7 +26,7 @@ import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, g
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
 import { createAlipayCreditCheckout, settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
-import { reconcileCommercialRefund, requestCommercialRefund, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
+import { reconcileCommercialRefund, requestCommercialRefund, updateCommercialRefundRequest, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
 import { queryAlipayRefund, queryAlipayTrade, refundAlipayTrade, closeAlipayTrade } from "@/lib/payments/alipay";
 import { ALIPAY_EXPIRY_VERSION } from "@/lib/payments/order-expiry";
 import { eq } from "drizzle-orm";
@@ -398,6 +398,19 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await runCommercialTask(uncertain.id);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(await balance()).toMatchObject({ credits: 105, heldCredits: 95 });
+  });
+  it("edits a pending ticket without another wallet hold and rejects edits by other users or after review", async () => {
+    const row = await paidOrder();
+    const request = await requestCommercialRefund(userId, row.id, "Unused", "old-contact");
+    const before = await balance();
+    const updated = await updateCommercialRefundRequest(userId, row.id, " Changed reason ", " new-contact ");
+    expect(updated).toMatchObject({ id: request.id, state: "requested", reason: "Changed reason", evidence: { contact: "new-contact" } });
+    expect(await balance()).toEqual(before);
+    expect(await testDb.select().from(schema.commercialRefunds)).toHaveLength(1);
+    await expect(updateCommercialRefundRequest("00000000-0000-4000-8000-000000000000", row.id, "Other user", "contact")).rejects.toThrow("ORDER_NOT_FOUND");
+    await reviewCommercialRefund(userId, request.id, "reject", "Customer contacted and reviewed");
+    await expect(updateCommercialRefundRequest(userId, row.id, "New reason", "contact")).rejects.toThrow("REFUND_ALREADY_REVIEWED");
+    expect(refundAlipayTrade).not.toHaveBeenCalled();
   });
   it("refunds an untouched purchase once and never re-submits the gateway request", async () => {
     const row = await paidOrder();

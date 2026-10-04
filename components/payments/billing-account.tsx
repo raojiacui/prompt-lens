@@ -13,7 +13,7 @@ type Order = { id: string; packageId: string; packageName: string; amountCents: 
 type Account = {
   wallet: { credits: number; rewrites: number; heldCredits: number; heldRewrites: number; frozen: boolean };
   orders: Order[];
-  refunds: { id: string; orderId: string; state: string }[];
+  refunds: { id: string; orderId: string; state: string; reason?: string; contact?: string; createdAt?: string }[];
   tasks: { id: string; taskKey: string; state: string; credits: number; rewrites: number; settledCredits: number | null; settledRewrites: number | null; createdAt: string }[];
 };
 
@@ -42,18 +42,24 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
   useEffect(() => {
     if (account && window.location.hash === "#refund-request") document.getElementById("refund-request")?.scrollIntoView({ block: "start" });
   }, [account]);
-  const refundableOrders = account?.orders.filter(order => order.status === "paid" && !account.refunds.some(refund => refund.orderId === order.id)) ?? [];
+  const refundableOrders = account?.orders.filter(order => order.status === "paid" || account.refunds.some(refund => refund.orderId === order.id)) ?? [];
+  const existingRefund = account?.refunds.find(refund => refund.orderId === refundOrder?.id);
+  const canEditRefund = !existingRefund || existingRefund.state === "requested";
+  function openRefund(order: Order) {
+    const existing = account?.refunds.find(refund => refund.orderId === order.id);
+    setRefundOrder(order); setRefundReason(existing?.reason || ""); setRefundContact(existing?.contact || ""); setError(""); setNotice("");
+  }
   const pack = COMMERCIAL_PACKAGES.find((p) => p.id === selected?.packageId);
   async function refund() {
-    if (!refundOrder || busy || !refundReason.trim() || refundContact.trim().length < 3) return;
+    if (!refundOrder || busy || !canEditRefund || !refundReason.trim() || refundContact.trim().length < 3) return;
     setBusy(true);
     setError("");
     try {
-      const response = await fetch(`/api/payments/orders/${refundOrder.id}/refund`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: refundReason.trim(), contact: refundContact.trim() }) });
+      const response = await fetch(`/api/payments/orders/${refundOrder.id}/refund`, { method: existingRefund ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ reason: refundReason.trim(), contact: refundContact.trim() }) });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.code === "PACKAGE_USED_OR_RESERVED" ? (zh ? "此套餐已有消耗或任务占用，不能整单退款，需要人工核对。" : "This package has usage or pending tasks. A full refund requires review.") : (zh ? "退款暂时无法确认，请保留订单号，不要重复申请。" : "Refund unconfirmed. Keep your order ID and do not submit again."));
+      if (!response.ok) throw new Error(data.code === "REFUND_ALREADY_REVIEWED" ? (zh ? "客服已开始处理这张工单，请刷新查看进度。" : "Support has started processing this ticket. Refresh to view its status.") : data.code === "PACKAGE_USED_OR_RESERVED" ? (zh ? "此套餐已有消耗或任务占用，不能整单退款，需要人工核对。" : "This package has usage or pending tasks. A full refund requires review.") : (zh ? "工单暂未保存，请稍后重试。" : "Your ticket could not be saved. Please try again."));
       setRefundOrder(null); await load();
-      setNotice(zh ? `退款申请已提交，请联系微信客服 ${SUPPORT_WECHAT}，审核同意后办理退款。` : `Refund request submitted. Contact WeChat support at ${SUPPORT_WECHAT}; approval is required before a refund is issued.`);
+      setNotice(existingRefund ? (zh ? "工单已更新，继续等待客服审核。" : "Ticket updated. Awaiting support review.") : (zh ? `退款申请已提交，请联系微信客服 ${SUPPORT_WECHAT}，审核同意后办理退款。` : `Refund request submitted. Contact WeChat support at ${SUPPORT_WECHAT}; approval is required before a refund is issued.`));
     } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
     finally { setBusy(false); }
   }
@@ -80,32 +86,33 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
           <div className="min-w-0"><p className="font-medium">{order.packageName} · ¥{(order.amountCents / 100).toFixed(2)}</p><p className="mt-1 text-sm text-muted-foreground">{new Date(order.createdAt).toLocaleString(zh ? "zh-CN" : "en-US")}</p><p className="mt-1 break-all text-xs text-muted-foreground">{order.id}</p></div>
           <div className="flex flex-wrap items-center gap-3 text-sm"><span>{status(refundInfo?.state || order.status)}</span>
             {order.status === "pending" && <button className="min-h-10 rounded-lg border border-border px-3" onClick={() => setSelected(order)}>{zh ? "查看订单" : "View order"}</button>}
-            {order.status === "paid" && !refundInfo && <button disabled={busy} className="min-h-10 rounded-lg border border-border px-3" onClick={() => { setRefundOrder(order); setRefundReason(""); setRefundContact(""); setError(""); setNotice(""); }}>{zh ? "申请退款" : "Request refund"}</button>}
+            {(order.status === "paid" || refundInfo) && <button disabled={busy} className="min-h-10 rounded-lg border border-border px-3" onClick={() => openRefund(order)}>{refundInfo ? (zh ? "查看工单" : "View ticket") : (zh ? "申请退款" : "Request refund")}</button>}
           </div>
         </div>;
       })}
       <section id="refund-request" className="mt-8 scroll-mt-6 border-t border-border pt-6">
         <h2 className="text-lg font-semibold">{zh ? "退款工单" : "Refund ticket"}</h2>
-        <label className="mt-4 block text-sm">{zh ? "选择要申请退款的订单" : "Choose an order for your refund request"}
+        <label className="mt-4 block text-sm">{zh ? "选择订单，填写或查看工单" : "Choose an order to create or view a ticket"}
           <select value="" disabled={busy || !refundableOrders.length} onChange={(event) => {
             const order = refundableOrders.find(item => item.id === event.target.value);
-            if (order) { setRefundOrder(order); setRefundReason(""); setRefundContact(""); setError(""); setNotice(""); }
+            if (order) openRefund(order);
           }} className="mt-2 min-h-11 w-full max-w-lg rounded-lg border border-border bg-background px-3 disabled:opacity-50">
             <option value="">{zh ? "选择订单并填写工单" : "Select an order to fill out your ticket"}</option>
-            {refundableOrders.map(order => <option key={order.id} value={order.id}>{order.packageName} · ¥{(order.amountCents / 100).toFixed(2)} · {order.id.slice(-8)}</option>)}
+            {refundableOrders.map(order => <option key={order.id} value={order.id}>{order.packageName} · ¥{(order.amountCents / 100).toFixed(2)} · {order.id.slice(-8)}{account.refunds.some(refund => refund.orderId === order.id) ? (zh ? " · 已有工单" : " · Existing ticket") : ""}</option>)}
           </select>
         </label>
-        {!refundableOrders.length && <p className="mt-3 text-sm text-muted-foreground">{zh ? "暂无可提交新退款申请的已付款订单。已有申请可在购买记录中查看进度，其他问题请联系微信客服。" : "No paid orders are available for a new refund request. Check existing requests in your purchase history or contact WeChat support."}</p>}
+        {!refundableOrders.length && <p className="mt-3 text-sm text-muted-foreground">{zh ? "暂无已付款订单或退款工单，其他问题请联系微信客服。" : "No paid orders or refund tickets yet. Contact WeChat support for other questions."}</p>}
       </section>
-      {refundOrder && <AccountActionDialog title={zh ? "提交退款申请" : "Submit a refund request"} busy={busy} onClose={() => { setRefundOrder(null); setError(""); }}>
+      {refundOrder && <AccountActionDialog title={existingRefund ? (zh ? "退款工单详情" : "Refund ticket details") : (zh ? "提交退款申请" : "Submit a refund request")} busy={busy} onClose={() => { setRefundOrder(null); setError(""); }}>
         <form aria-label={zh ? "退款申请表单" : "Refund request form"} onSubmit={(event) => { event.preventDefault(); void refund(); }} className="space-y-4">
         <p className="font-medium">{refundOrder.packageName} · ¥{(refundOrder.amountCents / 100).toFixed(2)}</p>
-        <p className="text-sm text-muted-foreground">{zh ? `请填写表单后添加客服微信 ${SUPPORT_WECHAT}，提供订单号并沟通退款原因。提交申请不会自动退款；客服审核同意后才办理。审核期间该套餐权益暂停使用，未通过则恢复。已有消耗或处理中任务的订单请直接联系客服核对。` : `Complete the form, then add support on WeChat at ${SUPPORT_WECHAT} with your order ID and reason. Submitting does not issue a refund: support approval is required. Package benefits are paused during review and restored if declined. Contact support directly for used packages or pending tasks.`}</p>
+        {existingRefund && <p role="status" className="text-sm">{status(existingRefund.state)} · {canEditRefund ? (zh ? "可以修改原因和联系方式，保存后仍是同一张工单。" : "You can edit the reason and contact details on this ticket.") : existingRefund.state === "succeeded" ? (zh ? "退款已完成，以下为原申请记录。" : "The refund is complete. Your original request is shown below.") : (zh ? "如需补充信息，请联系微信客服并提供订单号。" : "Contact WeChat support with your order ID to add information.")}</p>}
+        {!existingRefund && <p className="text-sm text-muted-foreground">{zh ? `请填写表单后添加客服微信 ${SUPPORT_WECHAT}，提供订单号并沟通退款原因。提交申请不会自动退款；客服审核同意后才办理。审核期间该套餐权益暂停使用，未通过则恢复。已有消耗或处理中任务的订单请直接联系客服核对。` : `Complete the form, then add support on WeChat at ${SUPPORT_WECHAT} with your order ID and reason. Submitting does not issue a refund: support approval is required. Package benefits are paused during review and restored if declined. Contact support directly for used packages or pending tasks.`}</p>}
         <p className="break-all text-sm">{zh ? "订单号：" : "Order ID: "}{refundOrder.id}</p>
-        <label className="block text-sm">{zh ? "退款原因" : "Refund reason"}<textarea required maxLength={80} value={refundReason} onChange={(event) => setRefundReason(event.target.value)} className="mt-2 min-h-24 w-full rounded-lg border border-border bg-background p-3" /></label>
-        <label className="block text-sm">{zh ? "联系邮箱或微信号" : "Contact email or WeChat ID"}<input required minLength={3} maxLength={100} value={refundContact} onChange={(event) => setRefundContact(event.target.value)} className="mt-2 min-h-11 w-full rounded-lg border border-border bg-background px-3" /></label>
+        <label className="block text-sm">{zh ? "退款原因" : "Refund reason"}<textarea required readOnly={!canEditRefund} maxLength={80} value={refundReason} onChange={(event) => setRefundReason(event.target.value)} className="mt-2 min-h-24 w-full rounded-lg border border-border bg-background p-3" /></label>
+        <label className="block text-sm">{zh ? "联系邮箱或微信号" : "Contact email or WeChat ID"}<input required readOnly={!canEditRefund} minLength={3} maxLength={100} value={refundContact} onChange={(event) => setRefundContact(event.target.value)} className="mt-2 min-h-11 w-full rounded-lg border border-border bg-background px-3" /></label>
         {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-        <div className="flex flex-wrap gap-3"><button disabled={busy || !refundReason.trim() || refundContact.trim().length < 3} className="min-h-10 rounded-lg bg-foreground px-4 text-background disabled:opacity-50">{busy ? (zh ? "正在提交申请…" : "Submitting request…") : (zh ? "提交申请，等待客服审核" : "Submit for support review")}</button><button type="button" disabled={busy} onClick={() => { setRefundOrder(null); setError(""); }} className="px-4">{zh ? "取消" : "Cancel"}</button></div>
+        <div className="flex flex-wrap gap-3">{canEditRefund && <button disabled={busy || !refundReason.trim() || refundContact.trim().length < 3} className="min-h-10 rounded-lg bg-foreground px-4 text-background disabled:opacity-50">{busy ? (zh ? "正在保存…" : "Saving…") : existingRefund ? (zh ? "保存修改" : "Save changes") : (zh ? "提交申请，等待客服审核" : "Submit for support review")}</button>}<button type="button" disabled={busy} onClick={() => { setRefundOrder(null); setError(""); }} className="px-4">{zh ? "关闭" : "Close"}</button></div>
       </form></AccountActionDialog>}
       {account.refunds.some((refund) => refund.state === "requested") && <p className="my-5 text-sm">{zh ? `退款申请已提交，请添加客服微信 ${SUPPORT_WECHAT} 并提供订单号。审核通过前不会发起支付宝退款。` : `Request submitted. Contact WeChat support at ${SUPPORT_WECHAT} with your order ID. No Alipay refund is issued before approval.`}</p>}
       <h2 className="mt-10 text-lg font-semibold">{zh ? "任务消费" : "Task usage"}</h2>

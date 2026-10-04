@@ -6,11 +6,11 @@ vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: {} })
 vi.mock("@/lib/billing/commercial-wallet", () => ({ settleCommercialTaskInTransaction: vi.fn() }));
 vi.mock("@/lib/billing/commercial-readiness", () => ({ commercialReadiness: vi.fn() }));
 vi.mock("@/lib/payments/alipay-reconciliation", () => ({ reconcileAlipayOrder: vi.fn() }));
-vi.mock("@/lib/payments/commercial-refunds", () => ({ requestCommercialRefund: vi.fn(), reviewCommercialRefund: vi.fn(), reconcileCommercialRefund: vi.fn() }));
+vi.mock("@/lib/payments/commercial-refunds", () => ({ requestCommercialRefund: vi.fn(), updateCommercialRefundRequest: vi.fn(), reviewCommercialRefund: vi.fn(), reconcileCommercialRefund: vi.fn() }));
 
 import { auth, getAdminUserFromHeaders } from "@/lib/auth";
-import { requestCommercialRefund, reviewCommercialRefund, reconcileCommercialRefund } from "@/lib/payments/commercial-refunds";
-import { POST as requestRefund } from "@/app/api/payments/orders/[id]/refund/route";
+import { requestCommercialRefund, updateCommercialRefundRequest, reviewCommercialRefund, reconcileCommercialRefund } from "@/lib/payments/commercial-refunds";
+import { POST as requestRefund, PATCH as updateRefund } from "@/app/api/payments/orders/[id]/refund/route";
 import { GET as listReviews, POST as reviewRefund } from "@/app/api/admin/payments/commercial/route";
 
 const id = "11111111-1111-4111-8111-111111111111";
@@ -47,6 +47,25 @@ describe("manual refund route authorization", () => {
     expect((await reviewRefund(req(body))).status).toBe(403);
     expect((await reviewRefund(req(body, "https://other.example"))).status).toBe(403);
     expect(reviewCommercialRefund).not.toHaveBeenCalled();
+  });
+  it("protects customer ticket edits and binds them to the authenticated user", async () => {
+    vi.mocked(auth.api.getSession).mockResolvedValueOnce(null);
+    expect((await updateRefund(req({ reason: "Updated", contact: "wechat" }), params)).status).toBe(401);
+    expect((await updateRefund(req({ reason: "Updated", contact: "wechat" }, "https://other.example"), params)).status).toBe(403);
+    expect((await updateRefund(req({ reason: " ", contact: "wechat" }), params)).status).toBe(400);
+    expect(updateCommercialRefundRequest).not.toHaveBeenCalled();
+    vi.mocked(updateCommercialRefundRequest).mockResolvedValue({ id, state: "requested" } as never);
+    expect((await updateRefund(req({ reason: "Updated", contact: "wechat" }), params)).status).toBe(200);
+    expect(updateCommercialRefundRequest).toHaveBeenCalledWith("customer", id, "Updated", "wechat");
+    expect(requestCommercialRefund).not.toHaveBeenCalled();
+    expect(reviewCommercialRefund).not.toHaveBeenCalled();
+  });
+  it("reports ticket ownership and review conflicts without creating another refund", async () => {
+    vi.mocked(updateCommercialRefundRequest).mockRejectedValueOnce(new Error("ORDER_NOT_FOUND"));
+    expect((await updateRefund(req({ reason: "Updated", contact: "wechat" }), params)).status).toBe(404);
+    vi.mocked(updateCommercialRefundRequest).mockRejectedValueOnce(new Error("REFUND_ALREADY_REVIEWED"));
+    expect((await updateRefund(req({ reason: "Updated", contact: "wechat" }), params)).status).toBe(409);
+    expect(requestCommercialRefund).not.toHaveBeenCalled();
   });
   it("does not expose refund forms or reconciliation records to non-admins", async () => {
     vi.mocked(getAdminUserFromHeaders).mockResolvedValueOnce(null);

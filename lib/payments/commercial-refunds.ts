@@ -26,6 +26,21 @@ export async function requestCommercialRefund(userId: string, orderId: string, r
   return result.refund;
 }
 
+export async function updateCommercialRefundRequest(userId: string, orderId: string, reason: string, contact: string) {
+  if (!reason.trim() || reason.length > 80) throw new Error("INVALID_REFUND_REASON");
+  if (contact.trim().length < 3 || contact.length > 100) throw new Error("INVALID_REFUND_CONTACT");
+  return db.transaction(async (tx) => {
+    // Match the approval lock order so customer edits cannot race a review decision.
+    const [order] = await tx.select().from(paymentOrders).where(and(eq(paymentOrders.id, orderId), eq(paymentOrders.userId, userId))).for("update");
+    if (!order || order.provider !== "alipay" || !order.packageId.startsWith("v6_")) throw new Error("ORDER_NOT_FOUND");
+    const [refund] = await tx.select().from(commercialRefunds).where(and(eq(commercialRefunds.orderId, orderId), eq(commercialRefunds.userId, userId))).for("update");
+    if (!refund) throw new Error("REFUND_NOT_FOUND");
+    if (refund.state !== "requested") throw new Error("REFUND_ALREADY_REVIEWED");
+    const [updated] = await tx.update(commercialRefunds).set({ reason: reason.trim(), evidence: { ...refund.evidence as Record<string, unknown>, contact: contact.trim() }, updatedAt: new Date() }).where(and(eq(commercialRefunds.id, refund.id), eq(commercialRefunds.userId, userId), eq(commercialRefunds.state, "requested"))).returning();
+    return updated;
+  });
+}
+
 /** Only the authenticated admin route may approve a request after customer-service review. */
 export async function reviewCommercialRefund(actorId: string, refundId: string, decision: "approve" | "reject", reviewNote: string) {
   if (!actorId || !reviewNote.trim() || reviewNote.length > 2000) throw new Error("INVALID_REVIEW_EVIDENCE");
