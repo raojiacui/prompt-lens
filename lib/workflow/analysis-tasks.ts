@@ -133,7 +133,7 @@ export async function runAnalysisTask(id: string) {
         progress = { ...progress, phase: "assets", assets: { metadata: { duration: 0 }, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 0, duration: 0, keyframeUrls: [input.mediaUrl] }] } };
       } else {
         const preview = await commercialMediaRequest<MediaPreview>(input.mediaUrl, { mode: "preview", automaticSplit: input.longVideoAllowed });
-        if (!Number.isSafeInteger(preview.durationUs) || preview.durationUs <= 0 || preview.durationUs > 60_000_000 || preview.bytes > 100 * 1024 * 1024 || !preview.scenes?.length || preview.scenes.length > 20) throw new Error("视频须在 60 秒、100MB 和 20 个镜头以内。");
+        if (!Number.isSafeInteger(preview.durationUs) || preview.durationUs <= 0 || !Number.isSafeInteger(preview.bytes) || preview.bytes <= 0 || preview.bytes > 100 * 1024 * 1024 || !preview.scenes?.length) throw new Error("视频信息无效或文件超过 100MB。");
         if (!input.longVideoAllowed && preview.durationUs > 10_750_000) throw new Error("当前账号仅支持 10 秒以内视频，请使用付费拆镜流程。");
         progress = { ...progress, phase: "assets", preview };
       }
@@ -142,7 +142,7 @@ export async function runAnalysisTask(id: string) {
     }
     if (progress.phase === "assets") {
       const assets = progress.assets || await commercialMediaRequest<FfmpegBreakdownResult>(input.mediaUrl, { mode: "assets", sourceHash: progress.preview!.sourceHash, scenes: progress.preview!.scenes });
-      if (!assets.scenes.length || assets.scenes.length > 20) throw new Error("INVALID_SCENE_ASSETS");
+      if (!assets.scenes.length) throw new Error("INVALID_SCENE_ASSETS");
       if (progress.preview && (assets.scenes.length !== progress.preview.scenes.length || assets.scenes.some((scene, index) => Math.abs(scene.startTime * 1_000_000 - progress.preview!.scenes[index].startUs) > 1000 || Math.abs(scene.endTime * 1_000_000 - progress.preview!.scenes[index].endUs) > 1000))) throw new Error("SPLIT_ASSET_MISMATCH");
       const heldCredits = input.mode === "platform_credits" ? getVideoAnalysisChargeUnits({ sceneCount: assets.scenes.length, longVideo: (progress.preview?.durationUs || 0) > 10_750_000 }) : 0;
       await db.transaction(async (tx) => {

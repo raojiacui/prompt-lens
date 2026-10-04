@@ -484,17 +484,16 @@ async function handleCommercialMedia(req, res) {
     const sourceHash = hash.digest("hex");
     const metadata = await probeVideo(inputPath);
     const durationUs = Math.round(metadata.duration * 1000000);
-    if (!metadata.width || !Number.isSafeInteger(durationUs) || durationUs <= 0 || durationUs > 60000000) throw new Error("Video must be between 0 and 60 seconds");
+    if (!metadata.width || !Number.isSafeInteger(durationUs) || durationUs <= 0) throw new Error("Invalid video duration");
     if (body.mode === "preview") {
       const detection = body.automaticSplit === true ? await detectSceneCutsWithFallback(inputPath, metadata) : { cuts: [] };
       // Real detected shots, without the legacy worker's arbitrary eight-second chunks.
       const cuts = [0, ...new Set(detection.cuts.map((n) => Math.round(n * 1000000)).filter((n) => n > 0 && n < durationUs)), durationUs].sort((a, b) => a - b);
-      if (cuts.length > 21) throw new Error("Video exceeds 20 detected shots");
       const scenes = cuts.slice(0, -1).map((startUs, index) => ({ id: String(index + 1), startUs, endUs: cuts[index + 1] }));
       return json(res, 200, { sourceHash, durationUs, bytes, metadata, scenes });
     }
     if (body.sourceHash !== sourceHash) throw new Error("Source changed after quote");
-    if (!Array.isArray(body.scenes) || !body.scenes.length || body.scenes.length > 20) throw new Error("Invalid scene selection");
+    if (!Array.isArray(body.scenes) || !body.scenes.length) throw new Error("Invalid scene selection");
     let end = 0;
     const boundaries = body.scenes.map((scene) => {
       if (!Number.isSafeInteger(scene.startUs) || !Number.isSafeInteger(scene.endUs) || scene.startUs < end || scene.endUs <= scene.startUs || scene.endUs > durationUs) throw new Error("Invalid scene interval");

@@ -839,7 +839,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                   <FileUp className="h-6 w-6 text-muted-foreground" />
                   <span className="font-semibold">{preview ? (locale === "en" ? "Replace file" : "更换文件") : canUploadLongVideo ? (locale === "en" ? "Choose a video or image" : "选择视频或图片") : (locale === "en" ? "Choose a video up to 10s, or an image" : "选择 10 秒以内的视频或图片")}</span>
                 </button>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{creditStatus?.commercialConsumptionEnabled ? (locale === "zh" ? "视频最多60秒、100MB、20个镜头。确认报价后开始分析。" : "Up to 60 seconds, 100MB and 20 shots. Analysis starts after quote confirmation.") : canUploadLongVideo ? (locale === "en" ? "Long-video automatic shot splitting is available." : "已解锁长视频自动拆镜分析。") : (locale === "en" ? "Free accounts can analyze one complete shot up to 10 seconds." : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段。")}</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{creditStatus?.commercialConsumptionEnabled && canUploadLongVideo ? (locale === "zh" ? "付费分析不限视频时长，文件最大 100MB。可选择镜头分析，确认积分报价后开始。" : "Paid analysis has no source-duration cap. Files up to 100MB. Select shots and confirm the credit quote to start.") : canUploadLongVideo ? (locale === "en" ? "Long-video automatic shot splitting is available." : "已解锁长视频自动拆镜分析。") : (locale === "en" ? "Free accounts can analyze one complete shot up to 10 seconds." : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段。")}</p>
               </>
             ) : (
               <div className="rounded-lg bg-background p-3">

@@ -113,6 +113,19 @@ describe("durable analysis", () => {
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
   });
 
+  it("prepares paid videos longer than a minute with more than twenty shots", async () => {
+    mocks.mode = "platform_credits";
+    await testDb.insert(schema.userCredits).values({ userId, balance: 100 });
+    const scenes = Array.from({ length: 30 }, (_, i) => ({ sceneIndex: i + 1, startTime: i * 6, endTime: (i + 1) * 6, duration: 6, keyframeUrls: ["https://r2.example/frame.png"] }));
+    mocks.probe.mockResolvedValueOnce({ durationUs: 180_000_000, bytes: 500, sourceHash: "a".repeat(64), scenes: scenes.map((s, i) => ({ id: String(i + 1), startUs: s.startTime * 1e6, endUs: s.endTime * 1e6 })) }).mockResolvedValueOnce({ scenes, metadata: { duration: 180 } });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "video", mediaUrl: "https://r2.example/a.mp4", mediaDuration: 180 });
+    await runAnalysisTask(queued.id);
+    await runAnalysisTask(queued.id);
+    expect((await task(queued.id)).result).toMatchObject({ phase: "transcription", heldCredits: 33 });
+    expect((await testDb.select().from(schema.videoScenes)).filter(s => s.projectId === projectId)).toHaveLength(30);
+    expect(mocks.analyze).not.toHaveBeenCalled();
+  });
+
   it("does not refund a delivered trial when the final settlement was interrupted", async () => {
     const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
     for (let i = 0; i < 3; i++) await runAnalysisTask(queued.id);

@@ -1,10 +1,15 @@
 import { test, expect } from "@playwright/test";
-for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
-  test(`analysis quote and confirmation ${locale} ${width}`, async ({ page, context }) => {
+import { quoteAnalysis } from "../../lib/billing/pricing-v6";
+for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const seconds of [10, 180]) {
+  test(`analysis quote and confirmation ${locale} ${width} ${seconds}s`, async ({ page, context }) => {
     await page.setViewportSize({ width, height: 1000 });
     await context.addCookies([{ name: "NEXT_LOCALE", value: locale, domain: "localhost", path: "/" }]);
     const projectId = "11111111-1111-4111-8111-111111111111";
     const taskId = "22222222-2222-4222-8222-222222222222";
+    const scenes = seconds === 10 ? [{ id: "1", startUs: 0, endUs: 2000000 }, { id: "2", startUs: 2000000, endUs: 10000000 }] : Array.from({ length: 30 }, (_, i) => ({ id: String(i + 1), startUs: i * 6000000, endUs: (i + 1) * 6000000 }));
+    const pricing = { payer: "platform" as const, model: "flash" as const, sourceDurationUs: seconds * 1000000, automaticSplit: true, paidSplitReusable: false, scenes };
+    const totalCredits = quoteAnalysis(pricing).credits;
+    const singleCredits = quoteAnalysis({ ...pricing, scenes: scenes.slice(0, 1) }).credits;
     let confirmations = 0;
     let quoteRequest: Record<string, unknown> | undefined;
     await page.route("https://example.com/upload", (r) => r.fulfill({ status: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "PUT, OPTIONS", "Access-Control-Allow-Headers": "*" }, body: "" }));
@@ -18,8 +23,8 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       else if (path === "/api/upload") body = { presignedUrl: "https://example.com/upload", publicUrl: "https://example.com/video.mp4", key: "uploaded", mediaType: "video" };
       else if (path === "/api/commercial/analysis") {
         const data = route.request().postDataJSON();
-        if (data.action === "prepare") body = { id: "preview", durationUs: 10000000, scenes: [{ id: "1", startUs: 0, endUs: 2000000 }, { id: "2", startUs: 2000000, endUs: 10000000 }] };
-        else { quoteRequest = data; body = { id: taskId, credits: 8, splitCredits: 2, analysisCredits: 6 }; }
+        if (data.action === "prepare") body = { id: "preview", durationUs: pricing.sourceDurationUs, scenes };
+        else { quoteRequest = data; body = { id: taskId, ...quoteAnalysis({ ...pricing, scenes: scenes.filter(s => data.sceneIds.includes(s.id)) }) }; }
       } else if (path === `/api/commercial/tasks/${taskId}`) {
         if (route.request().method() === "POST") confirmations++;
         body = { id: taskId, state: "running", credits: 8 };
@@ -32,22 +37,22 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await dialog.getByRole("button", { name: locale === "zh" ? "读取视频信息" : "Inspect video" }).click();
-    await expect(dialog.getByText(/^10\.00s · 2/)).toBeVisible();
+    await expect(dialog.getByText(`${seconds.toFixed(2)}s · ${scenes.length} ${locale === "zh" ? "个镜头" : "shots"}`, { exact: true })).toBeVisible();
     expect(confirmations).toBe(0);
     const all = dialog.getByRole("checkbox", { name: locale === "zh" ? "全选" : "Select all", exact: true });
     const first = dialog.getByRole("checkbox", { name: locale === "zh" ? "镜头 1" : "Shot 1", exact: true });
     const second = dialog.getByRole("checkbox", { name: locale === "zh" ? "镜头 2" : "Shot 2", exact: true });
     await expect(all).toBeChecked();
-    await expect(dialog.getByText(locale === "zh" ? "预计 8 积分" : "Estimated 8 credits", { exact: true })).toBeVisible();
+    await expect(dialog.getByText(locale === "zh" ? `预计 ${totalCredits} 积分` : `Estimated ${totalCredits} credits`, { exact: true })).toBeVisible();
     await all.uncheck();
     await expect(first).not.toBeChecked();
     await expect(second).not.toBeChecked();
     await expect(dialog.getByRole("button", { name: locale === "zh" ? "获取报价" : "Get quote" })).toBeDisabled();
     await first.check();
     await expect(all).toBeChecked({ indeterminate: true });
-    await expect(dialog.getByText(locale === "zh" ? "预计 4 积分" : "Estimated 4 credits", { exact: true })).toBeVisible();
+    await expect(dialog.getByText(locale === "zh" ? `预计 ${singleCredits} 积分` : `Estimated ${singleCredits} credits`, { exact: true })).toBeVisible();
     await dialog.getByRole("button", { name: locale === "zh" ? "获取报价" : "Get quote" }).click();
-    await expect(dialog.getByText(locale === "zh" ? "8 积分" : "8 credits", { exact: true })).toBeVisible();
+    await expect(dialog.getByText(locale === "zh" ? `${singleCredits} 积分` : `${singleCredits} credits`, { exact: true })).toBeVisible();
     expect(quoteRequest).toMatchObject({ sceneIds: ["1"] });
     await expect(first).toBeDisabled();
     await dialog.getByRole("button", { name: locale === "zh" ? "调整选择" : "Adjust selection" }).click();
@@ -55,12 +60,12 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await expect(first).toBeChecked();
     await expect(second).toBeChecked();
     await dialog.getByRole("button", { name: locale === "zh" ? "获取报价" : "Get quote" }).click();
-    await expect(dialog.getByText(locale === "zh" ? "8 积分" : "8 credits", { exact: true })).toBeVisible();
-    expect(quoteRequest).toMatchObject({ payer: "platform", sceneIds: ["1", "2"] });
+    await expect(dialog.getByText(locale === "zh" ? `${totalCredits} 积分` : `${totalCredits} credits`, { exact: true })).toBeVisible();
+    expect(quoteRequest).toMatchObject({ payer: "platform", sceneIds: scenes.map(s => s.id) });
     expect(confirmations).toBe(0);
     const box = await dialog.boundingBox();
     expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.x + box!.width).toBeLessThanOrEqual(width);
-    await page.screenshot({ path: `test-results/analysis-quote-${locale}-${width}.png` });
+    await page.screenshot({ path: `test-results/analysis-quote-${locale}-${width}-${seconds}s.png` });
     await dialog.getByRole("button", { name: locale === "zh" ? "确认并开始" : "Confirm and start" }).click();
     await expect.poll(() => confirmations).toBe(1);
   });

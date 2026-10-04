@@ -50,11 +50,11 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
     } },
     { title: zh ? "拆镜和分析每次怎么扣" : "Splitting and analysis charges", paragraphs: zh ? [
       "自动拆镜：5 秒扣 1 积分，10 秒扣 2，30 秒扣 5，60 秒扣 10。已支付且可复用的拆镜结果不重复收费。",
-      "下表为对应时长和镜头数量全部分析成功时的总积分，标为“包含”的费用已含自动拆镜。当前付费分析支持最多 60 秒、20 个镜头；其他组合以页面显示的积分为准。",
+      "下表为对应时长和镜头数量全部分析成功时的总积分，标为“包含”的费用已含自动拆镜。付费分析不限原视频时长和镜头数量，文件最大 100MB；其他组合以页面显示的积分为准。",
       "新账号的两次免费体验只用于符合条件的 10 秒以内单镜头分析，不适用于视频生成。试用用完后，不会自动继续使用平台 Key；需要购买额度或选择自己的 Key。",
     ] : [
       "Automatic splitting costs 1 credit for 5 seconds, 2 for 10 seconds, 5 for 30 seconds, and 10 for 60 seconds. Reusable splitting that was already paid is not charged again.",
-      "The table shows total credits when all listed shots are successfully analyzed. Rows marked Included cover automatic splitting. Paid analysis supports up to 60 seconds and 20 shots; check the credits shown on the page for other combinations.",
+      "The table shows total credits when all listed shots are successfully analyzed. Rows marked Included cover automatic splitting. Paid analysis has no source-duration or shot-count cap. Files must be within 100MB; check the credits shown on the page for other combinations.",
       "Two introductory trials apply only to eligible single-shot analysis within 10 seconds, not generation. After trials, purchase credits or explicitly use your own key; the platform key is not an automatic fallback.",
     ], table: { columns: zh ? ["总秒数", "镜头数", "拆镜", "Flash 总积分", "Pro 总积分"] : ["Seconds", "Shots", "Splitting", "Flash credits", "Pro credits"], rows: analysisRows } },
     { title: zh ? "文字、图片生成积分表（每条）" : "Text and image generation (per output)", paragraphs: zh ? [

@@ -56,7 +56,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         ], example: { label: "两种粘贴格式都可以", text: "直接粘贴网址：\nhttps://www.bilibili.com/video/BV11mFLziEyP/\n\n粘贴完整分享文本：\n【牌子】当世界过分“诚实”，我们要如何保持好奇与勇气 https://www.bilibili.com/video/BV11mFLziEyP/" } },
         { title: "导入前检查这三件事", paragraphs: [
           "视频是否公开且仍然存在：私密、已删除、需要额外权限或受地区限制的内容可能无法导入。分享链接不会把你在原平台的登录状态一并带过来。",
-          "素材是否在当前限制内：付费分析流程目前支持最多 60 秒、100MB、20 个镜头。超出时先在外部截取需要的部分，再上传。",
+          "付费分析不限制原视频时长和镜头数量，文件最大 100MB。拆镜后可以全选或只选部分镜头分析，开始前确认所需积分。免费体验仍限 10 秒以内的单个完整镜头。",
           "是否还有链接导入次数：只有链接解析并保存成功才计一次，失败释放暂占次数；本地上传不消耗链接导入次数。导入成功后继续分析，会另行计算分析费用。",
         ] },
       ],
@@ -303,7 +303,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         ], example: { label: "Both formats work", text: "Video URL:\nhttps://www.bilibili.com/video/BV11mFLziEyP/\n\nShare message:\nMy reference video https://www.bilibili.com/video/BV11mFLziEyP/" } },
         { title: "Check access, limits, and allowance", paragraphs: [
           "The video must still exist and be accessible. Private, deleted, region-restricted, or permission-protected videos may fail to import. A share link does not carry your login session from the original platform.",
-          "The paid analysis workflow currently supports up to 60 seconds, 100MB, and 20 shots. Trim a longer reference in your own editor before uploading it.",
+          "Paid analysis has no source-duration or shot-count cap. Files must be within 100MB. After splitting, select all or some shots and check the credits before starting. Free trials remain limited to a single complete shot within 10 seconds.",
           "Only an import that is parsed and saved successfully consumes an included import. Failed imports release the reserved slot. Local uploads use no link imports. Analysis after a successful import is billed separately.",
         ] },
       ],

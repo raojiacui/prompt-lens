@@ -52,13 +52,24 @@ describe("V6 commercial pricing", () => {
     expect(quoteAnalysis({ ...input, payer: "byok" }).credits).toBe(0);
     expect(() => quoteAnalysis({ ...input, payer: "byok", automaticSplit: true })).toThrow();
   });
-  it("rejects empty, duplicate, overlapping, out-of-bounds and over-limit scenes", () => {
+  it("prices long videos and more than twenty shots without changing rates", () => {
+    expect(quoteAnalysis(analysis(90, 30)).credits).toBe(81);
+    expect(quoteAnalysis(analysis(90, 30, "pro")).credits).toBe(120);
+    const input = analysis(600, 100);
+    expect(quoteAnalysis(input).credits).toBe(440);
+    expect(quoteAnalysis({ ...input, model: "pro" }).credits).toBe(600);
+    const selected = { ...input, scenes: input.scenes.slice(0, 5) };
+    expect(quoteAnalysis(selected).credits).toBe(117);
+    expect(settleAnalysis(input, selected.scenes.map(s => s.id), true)).toBe(117);
+    expect(quoteAnalysis({ ...input, payer: "byok_split" }).credits).toBe(100);
+    expect(quoteAnalysis({ ...analysis(600, 1), automaticSplit: false }).credits).toBe(241);
+    expect(quoteAnalysis({ ...analysis(600, 1), automaticSplit: false, payer: "byok" }).credits).toBe(0);
+  });
+  it("rejects empty, duplicate, overlapping and out-of-bounds scenes", () => {
     const input = analysis(2, 1);
     for (const scenes of [[], [input.scenes[0], input.scenes[0]], [{ id: "x", startUs: 0, endUs: 3e6 }], [{ id: "x", startUs: -1, endUs: 1e6 }]]) {
       expect(() => quoteAnalysis({ ...input, scenes })).toThrow();
     }
-    expect(() => quoteAnalysis(analysis(90, 10))).toThrow();
-    expect(() => quoteAnalysis(analysis(42, 21))).toThrow();
     expect(() => settleAnalysis(input, ["missing"], true)).toThrow();
     expect(() => settleAnalysis(input, ["0", "0"], true)).toThrow();
     expect(() => settleAnalysis(input, ["0"], false)).toThrow();

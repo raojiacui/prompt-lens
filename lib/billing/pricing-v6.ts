@@ -35,7 +35,6 @@ function validateAnalysis(input: AnalysisPriceInput) {
   integer(input.sourceDurationUs, 1);
   if (!["platform", "byok", "byok_split"].includes(input.payer)) throw new Error("Invalid payer");
   if (!["flash", "pro"].includes(input.model)) throw new Error("Invalid analysis model");
-  if (input.sourceDurationUs > 60_000_000 || input.scenes.length > 20) throw new Error("Analysis launch limit exceeded");
   if (!input.scenes.length) throw new Error("Select at least one scene");
   if (input.payer === "byok" && input.automaticSplit) throw new Error("Automatic split requires paid service");
   if (input.payer === "byok_split" && !input.automaticSplit) throw new Error("Split payer requires automatic split");
