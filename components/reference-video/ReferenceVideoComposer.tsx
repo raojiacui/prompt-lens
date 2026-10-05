@@ -81,7 +81,7 @@ const aspectRatioOptions: Array<{
 
 const qualityOptions: Quality[] = ["480P", "720P", "1080P", "4K"];
 const outputCountOptions: OutputCount[] = ["1", "2", "3", "4"];
-const autoBalancedModelId = "__auto_balanced";
+const defaultGenerationModelId = "wan/2-6-text-to-video";
 const minGeneratedVideoDuration = 4;
 const maxUploadedReferenceImages = 9;
 const maxUploadedReferenceVideos = 1;
@@ -354,11 +354,11 @@ export function ReferenceVideoComposer({
   const previewUrlsRef = useRef<Set<string>>(new Set());
 
   const [prompt, setPrompt] = useState(initialPrompt || "");
-  const [model, setModel] = useState<ModelId>(autoBalancedModelId);
+  const [model, setModel] = useState<ModelId>(defaultGenerationModelId);
   const [models, setModels] = useState(fallbackModels);
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [quality, setQuality] = useState<Quality>("720P");
-  const [duration, setDuration] = useState<Duration>("8s");
+  const [duration, setDuration] = useState<Duration>("5s");
   const [durationDraft, setDurationDraft] = useState("8");
   const [outputCount, setOutputCount] = useState<OutputCount>("1");
   const [isFormatOpen, setIsFormatOpen] = useState(false);
@@ -414,10 +414,7 @@ export function ReferenceVideoComposer({
   const [variants, setVariants] = useState<GenerationVariant[]>(initialVariants);
   const [sceneReferenceImageUrl, setSceneReferenceImageUrl] = useState(hiddenReferenceImageUrl || "");
 
-  const selectedModelConfig =
-    model === autoBalancedModelId
-      ? models.find((modelOption) => modelOption.id === "bytedance/seedance-2") ?? models[0]
-      : models.find((modelOption) => modelOption.id === model) ?? models[0];
+  const selectedModelConfig = models.find((modelOption) => modelOption.id === model) ?? models[0];
   const supportedAspectRatioOptions = aspectRatioOptions.filter(
     (option) =>
       option.value === "auto" ||
@@ -503,7 +500,7 @@ export function ReferenceVideoComposer({
     return () => { active = false; video.onloadedmetadata = null; video.removeAttribute("src"); video.load(); };
   }, [referenceUrl]);
   const creditPreview = generationCreditPreview({
-    model: model === autoBalancedModelId ? undefined : model, resolution: quality,
+    model, resolution: quality,
     duration: durationSeconds, quantity: Number(outputCount),
     hasImages: readyReplacementAssets.length > 0 || Boolean(sceneReferenceImageUrl), hasVideo: Boolean(referenceUrl),
     imageCount: readyReplacementAssets.length || (sceneReferenceImageUrl ? 1 : 0),
@@ -552,7 +549,7 @@ export function ReferenceVideoComposer({
         if (!cancelled && registryModels.length) {
           setModels(registryModels);
           if (initialModel && registryModels.some((item: { id: ModelId }) => item.id === initialModel)) setModel(initialModel);
-          else if (!initialModel) setModel(autoBalancedModelId);
+          else setModel(current => registryModels.some((item: { id: ModelId }) => item.id === current) ? current : defaultGenerationModelId);
         }
       } catch {
         if (!cancelled) setModels(fallbackModels);
@@ -825,7 +822,7 @@ export function ReferenceVideoComposer({
           duration: Duration;
           outputCount: OutputCount;
         }>;
-        if (!initialModel && parsed.model) setModel(parsed.model);
+        if (!initialModel && parsed.model && parsed.model !== "__auto_balanced" && parsed.model !== "auto") setModel(parsed.model);
         if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
         if (parsed.quality) setQuality(parsed.quality);
         if (parsed.duration) setDuration(parsed.duration);
@@ -846,7 +843,7 @@ export function ReferenceVideoComposer({
   }, [hiddenReferenceImageUrl]);
 
   useEffect(() => {
-    if (initialModel) setModel(initialModel);
+    if (initialModel && initialModel !== "auto" && initialModel !== "__auto_balanced") setModel(initialModel);
   }, [initialModel]);
 
   useEffect(() => {
@@ -1117,7 +1114,7 @@ export function ReferenceVideoComposer({
       ? Math.max(1, Math.min(4, requestedOutputCount))
       : 1;
     if (commercialEnabled && generationPayer === "platform") {
-      setCommercialRequest({ quantity: variantCount, request: { userPrompt: promptWithInlineReferences, replacementAssets, hiddenReferenceImageUrl, referenceVideoUrl: readyReferenceVideoAsset?.url, aspectRatio, model: model === autoBalancedModelId ? undefined : model, duration: durationSeconds, quality, ...workflowContext } });
+      setCommercialRequest({ quantity: variantCount, request: { userPrompt: promptWithInlineReferences, replacementAssets, hiddenReferenceImageUrl, referenceVideoUrl: readyReferenceVideoAsset?.url, aspectRatio, model, duration: durationSeconds, quality, ...workflowContext } });
       return;
     }
     const queuedVariants: GenerationVariant[] = Array.from(
@@ -1155,7 +1152,7 @@ export function ReferenceVideoComposer({
             ...(commercialEnabled ? { payer: "byok" } : {}),
             userPrompt: promptWithInlineReferences,
             prompt: [
-              `Selected public model: ${model === autoBalancedModelId ? "Auto · Balanced" : model}.`,
+              `Selected public model: ${model}.`,
               `Quality: ${quality}. Duration: ${duration}.`,
               variantCount > 1
                 ? `Generate variation ${index + 1} of ${variantCount}. Use a distinct composition, motion path, timing, or camera interpretation while preserving the same subject and user direction.`
@@ -1178,7 +1175,7 @@ export function ReferenceVideoComposer({
                 }
               : undefined,
             aspectRatio,
-            model: model === autoBalancedModelId ? undefined : model,
+            model,
             duration,
             quality,
             projectId: workflowContext.projectId,
@@ -1262,7 +1259,7 @@ export function ReferenceVideoComposer({
   function persistSettings() {
     window.localStorage.setItem(
       `reference-settings-${storageKey}`,
-      JSON.stringify({ model: model === autoBalancedModelId ? undefined : model, aspectRatio, quality, duration, outputCount }),
+      JSON.stringify({ model, aspectRatio, quality, duration, outputCount }),
     );
     window.localStorage.setItem(`reference-prompt-${storageKey}`, prompt);
     window.localStorage.setItem(
@@ -1524,7 +1521,6 @@ export function ReferenceVideoComposer({
                     }
                     className="h-10 w-full min-w-0 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
                   >
-                    <option value={autoBalancedModelId}>{zh ? "自动选择 · 均衡" : "Auto · Balanced"}</option>
                     {models.map((item) => (
                       <option key={item.id} value={item.id}>
                         {item.label}

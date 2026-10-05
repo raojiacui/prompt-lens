@@ -318,7 +318,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [selectedSceneVersionIndexes, setSelectedSceneVersionIndexes] = useState<Record<string, number>>({});
   const [copiedSceneVersionId, setCopiedSceneVersionId] = useState("");
   const [analysisModels, setAnalysisModels] = useState<ModelOption[]>([]);
-  const [analysisModelValue, setAnalysisModelValue] = useState("auto");
+  const [analysisModelValue, setAnalysisModelValue] = useState("analysis-gemini-3-8-flash");
   const [analysisTaskId, setAnalysisTaskId] = useState("");
   const [analysisOutputLanguage, setAnalysisOutputLanguage] = useState<"zh" | "en">(locale === "en" ? "en" : "zh");
   const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
@@ -420,11 +420,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
   function analysisSelectionPayload() {
     if (creditStatus?.mode === "trial") {
-      return { modelMode: "auto" as ModelMode, modelId: undefined, modelPriority, outputLanguage: analysisOutputLanguage };
+      return { modelMode: "manual" as ModelMode, modelId: "analysis-gemini-3-8-flash", modelPriority, outputLanguage: analysisOutputLanguage };
     }
-    const manualModelId = analysisModelValue === "auto" ? "" : analysisModelValue;
+    const manualModelId = analysisModelValue;
     return {
-      modelMode: manualModelId ? "manual" as ModelMode : "auto" as ModelMode,
+      modelMode: "manual" as ModelMode,
       modelId: manualModelId || undefined,
       modelPriority,
       outputLanguage: analysisOutputLanguage,
@@ -432,11 +432,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }
 
   function rewriteSelectionPayload() {
-    const manualModelId = analysisModelValue === "auto" ? "" : analysisModelValue;
+    const manualModelId = analysisModelValue;
     return {
-      modelMode: manualModelId ? "manual" as ModelMode : "auto" as ModelMode,
+      modelMode: "manual" as ModelMode,
       modelId: manualModelId || undefined,
-      modelPriority: manualModelId ? modelPriority : "best_quality" as ModelPriority,
+      modelPriority,
       outputLanguage: analysisOutputLanguage,
     };
   }
@@ -1172,7 +1172,6 @@ function ModelSelector({
         disabled={disabled}
         className="h-11 w-full rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring"
       >
-        <option value="auto">{ui.autoModel}</option>
         {models.map((model) => (
           <option key={model.id} value={model.id}>
             {model.displayName}{model.experimental ? ` · ${ui.experimental}` : ""}

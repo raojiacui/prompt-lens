@@ -23,7 +23,12 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       } else if (path.startsWith("/api/commercial/tasks/")) body = { state: "running" };
       await route.fulfill({ json: body });
     });
+    await page.addInitScript(() => localStorage.setItem("reference-settings-prompt-lens-video-gen", JSON.stringify({ model: "__auto_balanced", duration: "5s" })));
+    await page.goto("/dashboard?tab=video-gen&videoGenPrompt=A%20cinematic%20cloud%20palace");
+    await expect(page.locator("select").filter({ has: page.locator('option[value="wan/2-6-text-to-video"]') })).toHaveValue("wan/2-6-text-to-video");
+    await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
     await page.goto("/dashboard?tab=video-gen&model=veo3_lite&duration=8&videoGenPrompt=A%20cinematic%20cloud%20palace");
+    await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
     await expect(page.locator("option").filter({ hasText: /HappyHorse|Grok|Kling Omni Transformation/i })).toHaveCount(0);
     await page.getByLabel(locale === "zh" ? "费用来源" : "Payment source").selectOption("platform");
     const generate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 20 积分/ : /Generate Video.*Est. 20 credits/i });
