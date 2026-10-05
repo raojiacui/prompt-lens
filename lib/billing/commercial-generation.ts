@@ -3,6 +3,7 @@ import { db, commercialTasks, commercialWallets, mediaCleanupJobs, projects, sce
 import { randomUUID } from "node:crypto";
 import { copyR2Object } from "@/lib/cloudflare/r2";
 import { getModelById } from "@/lib/ai/model-registry";
+import { buildKIEVeoPayload, isKIEVeoModel } from "@/lib/ai/adapters/kie-video";
 import { getPlatformKieApiKey } from "./platform-access";
 import { generationKeyFingerprint } from "./generation-key";
 import { estimateGeneration } from "./pricing-v6";
@@ -34,7 +35,11 @@ export function buildCommercialGenerationPayload(body: Record<string, unknown>, 
   if (aspect && !entry.aspectRatios?.includes(aspect)) throw new Error("PAID_GENERATION_ASPECT_UNSUPPORTED");
   const input: GenerationSnapshot["payload"]["input"] = { prompt, resolution, nsfw_checker: true };
   if (video && (!Number.isSafeInteger(probedReferenceSeconds) || probedReferenceSeconds! <= 0)) throw new Error("REFERENCE_VIDEO_PROBE_REQUIRED");
-  if (model.startsWith("wan/2-6-")) {
+  if (isKIEVeoModel(model)) {
+    if (video || !entry.resolutionOptions?.includes(resolution)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
+    const veo = buildKIEVeoPayload({ modelId: model, prompt, duration, resolution, aspectRatio: aspect }, images);
+    Object.assign(input, { duration, aspect_ratio: aspect || "16:9", generation_type: veo.generationType, ...(images.length ? { image_urls: images } : {}) });
+  } else if (model.startsWith("wan/2-6-")) {
     if (![5, 10, 15].includes(duration) || !["720p", "1080p"].includes(resolution)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
     const expected = video ? "wan/2-6-video-to-video" : images.length ? "wan/2-6-image-to-video" : "wan/2-6-text-to-video";
     if (model !== expected || images.length > 1 || (video && images.length)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
@@ -126,7 +131,13 @@ export async function executeCommercialGeneration(task: typeof commercialTasks.$
   const key = getPlatformKieApiKey();
   if (!key || generationKeyFingerprint(key) !== input.keyFingerprint) { await settleGeneration(task, "failed"); return; }
   const base = (process.env.KIE_AI_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
-  const response = await fetch(`${base}/api/v1/jobs/createTask`, { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify(input.payload), signal: AbortSignal.timeout(20000) });
+  const veo = isKIEVeoModel(input.payload.model);
+  const payload = veo ? buildKIEVeoPayload({
+    modelId: input.payload.model, prompt: input.payload.input.prompt,
+    duration: Number(input.payload.input.duration), resolution: input.payload.input.resolution,
+    aspectRatio: String(input.payload.input.aspect_ratio || "16:9"),
+  }, input.payload.input.image_urls as string[] | undefined) : input.payload;
+  const response = await fetch(`${base}${veo ? "/api/v1/veo/generate" : "/api/v1/jobs/createTask"}`, { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(20000) });
   const data = await response.json();
   // Explicit rejection is terminal; transport errors and malformed acceptance remain under review.
   if ([400, 401, 402, 403, 422, 429, 433].includes(Number(data.code))) { await settleGeneration(task, "failed"); return; }

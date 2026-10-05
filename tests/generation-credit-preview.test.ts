@@ -12,6 +12,9 @@ describe("Generation button credit previews", () => {
     ["kling-3.0/video", "720P", 5, 1, 40],
     ["kling-2.6/text-to-video", "1080P", 5, 1, 30],
     ["grok-imagine/text-to-video", "720P", 6, 1, 15],
+    ["veo3_lite", "720P", 4, 1, 20],
+    ["veo3_fast", "1080P", 8, 2, 70],
+    ["veo3", "1080P", 6, 1, 130],
   ] as const)("updates %s %s %is x%i", (model, resolution, duration, quantity, total) => {
     expect(generationCreditPreview({ ...base, model, resolution, duration, quantity })).toMatchObject({ state: "priced", total });
   });

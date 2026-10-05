@@ -21,7 +21,7 @@ const VIDEO_MODELS = [...listModels("video_generation"), ...listModels("video_ed
   id: model.kieModelId,
   category: model.category,
   supportedAspectRatios: model.aspectRatios || ["16:9"],
-  supportedDurations: model.maxDuration ? durationRange(model.maxDuration) : model.category === "video_edit" ? [0] : durationRange(10),
+  supportedDurations: model.durationOptions || (model.maxDuration ? durationRange(model.maxDuration) : model.category === "video_edit" ? [0] : durationRange(10)),
 }));
 
 function isWanVideoEditModel(modelId: string) {

@@ -170,6 +170,36 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await expect(confirmCommercialTask(userId, quote.id)).rejects.toThrow("QUOTE_EXPIRED");
     expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
   });
+  it.each(["success", "fail"] as const)("submits paid Veo to its verified endpoint and settles %s once", async (state) => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_API_KEY", "test-key");
+    const quote = await quoteCommercialGeneration(userId, { model: "veo-lite", userPrompt: "A cinematic cloud palace", duration: 8, quality: "1080p", aspectRatio: "9:16" });
+    expect(quote).toMatchObject({ credits: 20, model: "veo3_lite", duration: 8, resolution: "1080p" });
+    await expect(confirmCommercialTask(randomUUID(), quote.id)).rejects.toThrow("TASK_NOT_FOUND");
+    await confirmCommercialTask(userId, quote.id);
+    await confirmCommercialTask(userId, quote.id);
+    expect(await balance()).toMatchObject({ credits: 180, heldCredits: 20 });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { taskId: "veo-paid-task" } })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { taskId: "veo-paid-task", successFlag: state === "success" ? 1 : 2, response: { resultUrls: ["https://example.com/veo.mp4"] } } })));
+    vi.stubGlobal("fetch", fetchMock);
+    await runCommercialTask(quote.id);
+    await runCommercialTask(quote.id);
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.kie.ai/api/v1/veo/generate");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({ model: "veo3_lite", duration: 8, resolution: "1080p", aspectRatio: "9:16", generationType: "TEXT_2_VIDEO", enableFallback: false });
+    await reconcileCommercialGeneration(quote.id);
+    await reconcileCommercialGeneration(quote.id);
+    expect(String(fetchMock.mock.calls[1][0])).toContain("/api/v1/veo/record-info");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(await balance()).toMatchObject({ credits: state === "success" ? 180 : 200, heldCredits: 0 });
+  });
+  it("rejects unsupported paid Veo settings before quoting", async () => {
+    vi.stubEnv("KIE_API_KEY", "test-key");
+    for (const override of [{ duration: 5 }, { quality: "480p" }, { model: "veo-quality", quality: "4k" }, { referenceVideoUrl: "https://example.com/video.mp4" }]) {
+      expect(() => buildCommercialGenerationPayload({ model: "veo-fast", userPrompt: "A cinematic cloud palace", duration: 8, quality: "720p", ...override }, 5)).toThrow();
+    }
+  });
   it.each(["success", "fail"] as const)("quotes reference duration on the server and settles %s once", async (state) => {
     await grant(650, 60);
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true"); vi.stubEnv("KIE_API_KEY", "test-key");

@@ -27,6 +27,7 @@ export interface ModelRegistryEntry {
   enabled: boolean;
   capabilities: ModelCapability[];
   maxDuration?: number;
+  durationOptions?: number[];
   aspectRatios?: string[];
   resolutionOptions?: string[];
   speedLevel: 1 | 2 | 3 | 4 | 5;
@@ -134,7 +135,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
   },
   {
     id: "veo-fast",
-    displayName: "Veo Fast",
+    displayName: "Veo 3.1 Fast",
     family: "Veo",
     category: "video_generation",
     provider: "kie",
@@ -142,11 +143,46 @@ export const modelRegistry: ModelRegistryEntry[] = [
     enabled: true,
     capabilities: ["text", "image", "reference_image"],
     maxDuration: 8,
+    durationOptions: [4, 6, 8],
     aspectRatios: ["16:9", "9:16"],
-    resolutionOptions: ["720p", "1080p"],
+    resolutionOptions: ["720p", "1080p", "4k"],
     speedLevel: 4,
     qualityLevel: 4,
     costLevel: 4,
+  },
+  {
+    id: "veo-lite",
+    displayName: "Veo 3.1 Lite",
+    family: "Veo",
+    category: "video_generation",
+    provider: "kie",
+    kieModelId: "veo3_lite",
+    enabled: true,
+    capabilities: ["text", "image", "reference_image"],
+    maxDuration: 8,
+    durationOptions: [4, 6, 8],
+    aspectRatios: ["16:9", "9:16"],
+    resolutionOptions: ["720p", "1080p", "4k"],
+    speedLevel: 5,
+    qualityLevel: 3,
+    costLevel: 2,
+  },
+  {
+    id: "veo-quality",
+    displayName: "Veo 3.1 Quality",
+    family: "Veo",
+    category: "video_generation",
+    provider: "kie",
+    kieModelId: "veo3",
+    enabled: true,
+    capabilities: ["text", "image", "reference_image"],
+    maxDuration: 8,
+    durationOptions: [4, 6, 8],
+    aspectRatios: ["16:9", "9:16"],
+    resolutionOptions: ["720p", "1080p"],
+    speedLevel: 2,
+    qualityLevel: 5,
+    costLevel: 5,
   },
   {
     id: "seedance-2-balanced",

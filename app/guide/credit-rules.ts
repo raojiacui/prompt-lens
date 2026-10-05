@@ -75,6 +75,19 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "Kling audio and silent prices are listed separately. Use the audio configuration available on the current page.",
     ], table: { columns: [zh ? "模型" : "Model", zh ? "画质" : "Quality", zh ? "声音配置" : "Audio", ...durationColumns], rows: ordinary.map(([name, model, resolution, audio]) => [name, resolution, audio ? (zh ? "有声" : "On") : (model.startsWith("kling") ? (zh ? "无声" : "Off") : (zh ? "模型默认" : "Model default")), ...[5, 10, 15].map(s => price(model, resolution, s, audio))]) } },
     { title: zh ? "Grok 文字生成" : "Grok text generation", table: { columns: [zh ? "画质" : "Quality", zh ? "6 秒" : "6 sec", zh ? "10 秒" : "10 sec"], rows: [["720p", price("grok-imagine/text-to-video", "720p", 6), price("grok-imagine/text-to-video", "720p", 10)]] } },
+    { title: zh ? "Veo 3.1 生成积分表（每条）" : "Veo 3.1 generation credits (per output)", paragraphs: zh ? [
+      "文字生成、单图生成、首尾两张图片生成支持 4、6、8 秒；同一档位、画质按条收费，这三个时长扣相同积分。每条视频带模型默认音轨，部分内容可能不输出声音。",
+      "三张素材图片参考仅 Lite、Fast 支持，且固定 8 秒，同档位画质的费用与下表一致。Veo 不支持在这里上传参考视频。",
+      "Quality 4K 仍未开放，因为供应商价目字段不一致。表中“-”表示不可用，不代表免费。多条生成扣费以按钮显示的总积分为准。",
+    ] : [
+      "Text, single-image, and first/last-frame generation support 4, 6, and 8 seconds. Each output is charged a flat price for its tier and resolution, so all three durations cost the same. Audio is model-default and may be absent for some content.",
+      "Three-image material reference is available in Lite and Fast only, at 8 seconds, for the same listed credits. Uploaded reference videos are not supported by Veo.",
+      "Quality 4K remains unavailable because provider price fields disagree. A dash means unavailable, not free. Batch totals appear on the generation button.",
+    ], table: { columns: [zh ? "模型" : "Model", "720p", "1080p", "4K"], rows: [
+      ["Veo 3.1 Lite", ...["720p", "1080p", "4k"].map(r => price("veo3_lite", r, 8))],
+      ["Veo 3.1 Fast", ...["720p", "1080p", "4k"].map(r => price("veo3_fast", r, 8))],
+      ["Veo 3.1 Quality", ...["720p", "1080p", "4k"].map(r => price("veo3", r, 8))],
+    ] } },
     { title: zh ? "参考视频生成（输入视频为 5 秒）" : "Reference generation (5-second input)", paragraphs: zh ? [
       "下表为参考视频 5 秒时，生成一条视频所需的积分；列标题为输出视频时长。其他参考时长以页面显示的积分为准。",
     ] : [
@@ -92,13 +105,13 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "一个镜头成功生成一个新的 AI 改写版本，消耗 1 次套餐改写额度、0 额外平台积分；失败不计次。一次处理多个镜头按成功的新版本数量计次。改写次数与通用积分不可互换。",
       "成功导入一个视频链接消耗 1 次链接导入额度、0 额外平台积分；失败不计次。手动上传本地文件不消耗导入次数。分析、拆镜单独收费。",
       "自带 Key 的手动分析、生成、改写不扣平台推理积分，模型费用从自己的 KIE 账户扣。自动拆镜仍扣平台积分，链接导入仍需要对应额度。“0 平台积分”不表示 KIE 免费。",
-      "Veo 的公开价格已核对，但当前接口与计费参数尚未完成适配，暂不支持平台积分支付。音频分析、独立视频剪辑仍待开放。",
+      "Veo 已接入平台积分支付，支持组合和费用见上表。音频分析、独立视频剪辑仍待开放。",
     ] : [
       "Generate up to four outputs at once. Wan 720p, 5 seconds costs 40 credits for one output, 80 for two, and 160 for four. For other settings and quantities, use the total shown on the generation button. Generating again is a new paid task.",
       "A successful new AI script version of one shot consumes one included rewrite and no extra credits. Failures do not count; multiple shots consume one allowance per successful new version. Rewrite allowances and credits are separate.",
       "A successful video-link import uses one import allowance and no extra platform credits. Failed imports do not count. Local file uploads do not use import allowances. Splitting and analysis are charged separately.",
       "Manual analysis, generation, and rewriting with your own key charge your KIE account, not platform inference credits. Automatic splitting still uses platform credits, and link imports still need their allowance. Zero platform credits does not mean free KIE usage.",
-      "Veo public prices have been checked, but API and billing parameter integration is not complete, so platform credits are not yet supported. Audio analysis and standalone Video editing remain Coming soon.",
+      "Veo supports platform credits for the configurations listed above. Audio analysis and standalone Video editing remain Coming soon.",
     ] },
   ];
 }

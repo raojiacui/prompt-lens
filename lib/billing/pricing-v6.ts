@@ -104,7 +104,16 @@ export function estimateGeneration(input: GenerationPriceInput) {
   const reference = input.referenceVideoSeconds;
   if (reference !== undefined) integer(reference, 1);
   let microUsdPerSecond = 0;
+  let flatMicroUsd = 0;
   const { modelId, resolution, audio } = input;
+  if (["veo3_lite", "veo3_fast", "veo3"].includes(modelId) && [4, 6, 8].includes(seconds) && reference === undefined) {
+    const rates: Record<string, Record<string, number>> = {
+      veo3_lite: { "720p": 150000, "1080p": 175000, "4k": 750000 },
+      veo3_fast: { "720p": 300000, "1080p": 325000, "4k": 900000 },
+      veo3: { "720p": 1250000, "1080p": 1275000 },
+    };
+    flatMicroUsd = rates[modelId][resolution] || 0;
+  }
   if (modelId === "grok-imagine/text-to-video" && resolution === "720p" && [6, 10].includes(seconds) && reference === undefined && !audio) microUsdPerSecond = 22500;
   if (["wan/2-6-text-to-video", "wan/2-6-image-to-video", "wan/2-6-video-to-video"].includes(modelId) && [5, 10, 15].includes(seconds)) {
     if (resolution === "720p") microUsdPerSecond = 70000;
@@ -134,12 +143,12 @@ export function estimateGeneration(input: GenerationPriceInput) {
   }
   const wan1080 = ["wan/2-6-text-to-video", "wan/2-6-image-to-video", "wan/2-6-video-to-video"].includes(modelId) && resolution === "1080p"
     ? ({ 5: 522500, 10: 1047500, 15: 1575000 } as Record<number, number>)[seconds] : undefined;
-  if (!microUsdPerSecond && !wan1080) throw new Error("MODEL_PRICE_UNVERIFIED");
+  if (!microUsdPerSecond && !wan1080 && !flatMicroUsd) throw new Error("MODEL_PRICE_UNVERIFIED");
   const billInputVideo = modelId.startsWith("bytedance/seedance-2");
-  const microUsd = wan1080 ? BigInt(wan1080) : BigInt(microUsdPerSecond) * (BigInt(seconds) + BigInt(billInputVideo ? reference ?? 0 : 0));
+  const microUsd = flatMicroUsd ? BigInt(flatMicroUsd) : wan1080 ? BigInt(wan1080) : BigInt(microUsdPerSecond) * (BigInt(seconds) + BigInt(billInputVideo ? reference ?? 0 : 0));
   // Convert the buffered CNY budget at the cheapest actual package rate, rounding to five credits.
   const budgetMicroCny = microUsd * 9n + 150000n;
   const credits = 5 * ceilRatio(budgetMicroCny * BigInt(generationCreditBasis.credits), BigInt(generationCreditBasis.priceCents) * 10000n * 5n);
   if (!Number.isSafeInteger(credits)) throw new Error("Generation price overflow");
-  return { version: GENERATION_PRICING_VERSION, credits, microUsd: Number(microUsd), adapterVerified: false as const };
+  return { version: flatMicroUsd ? "2026-10-05-veo-v1" : GENERATION_PRICING_VERSION, credits, microUsd: Number(microUsd), adapterVerified: false as const };
 }

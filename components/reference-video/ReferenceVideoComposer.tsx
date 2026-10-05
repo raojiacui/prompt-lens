@@ -26,6 +26,7 @@ type RegistryVideoModel = {
   kieModelId?: string;
   displayName?: string;
   maxDuration?: number;
+  durationOptions?: number[];
   aspectRatios?: string[];
   category?: string;
   capabilities?: string[];
@@ -122,7 +123,7 @@ const fallbackModels: Array<{
   {
     id: "veo3_fast",
     label: "Veo 3.1 Fast",
-    supportedDurations: durationRange(minGeneratedVideoDuration, 8),
+    supportedDurations: ["4s", "6s", "8s"],
     supportedAspectRatios: ["16:9", "9:16"],
   },
   {
@@ -469,6 +470,12 @@ export function ReferenceVideoComposer({
   const uploadedReferenceVideoCount = assets.filter(
     (asset) => asset.type.startsWith("video/") && asset.status !== "failed",
   ).length;
+  useEffect(() => {
+    if (model !== "veo3" && !model.startsWith("veo3_")) return;
+    if (quality === "480P" || (model === "veo3" && quality === "4K")) setQuality("720P");
+    const allowed = readyReplacementAssets.length > 2 ? ["8s"] : ["4s", "6s", "8s"];
+    if (!allowed.includes(duration)) setDuration("8s");
+  }, [model, quality, duration, readyReplacementAssets.length]);
   const hasUploadingAssets = assets.some((asset) => asset.status === "uploading");
   const mentionableAssets = readyReplacementAssets;
   const generationMode = readyReferenceVideoAsset
@@ -511,6 +518,7 @@ export function ReferenceVideoComposer({
     model: model === autoBalancedModelId ? undefined : model, resolution: quality,
     duration: durationSeconds, quantity: Number(outputCount),
     hasImages: readyReplacementAssets.length > 0 || Boolean(sceneReferenceImageUrl), hasVideo: Boolean(referenceUrl),
+    imageCount: readyReplacementAssets.length || (sceneReferenceImageUrl ? 1 : 0),
     referenceSeconds: referenceTiming?.url === referenceUrl ? referenceTiming?.seconds : undefined,
   });
   const generationCostLabel = !commercialEnabled || generationPayer === "byok"
@@ -546,7 +554,7 @@ export function ReferenceVideoComposer({
                 id: item.kieModelId as ModelId,
                 label: item.displayName || item.kieModelId,
                 supportedDurations: item.maxDuration
-                    ? durationRange(minGeneratedVideoDuration, item.maxDuration)
+                    ? item.durationOptions?.map(seconds => `${seconds}s` as Duration) || durationRange(minGeneratedVideoDuration, item.maxDuration)
                     : item.category === "video_edit"
                       ? ["0s" as Duration]
                       : durationRange(minGeneratedVideoDuration, 10),
@@ -1586,7 +1594,7 @@ export function ReferenceVideoComposer({
                             Resolution
                           </p>
                           <div className="grid grid-cols-4 gap-1.5 rounded-xl bg-muted/50 p-1.5">
-                            {qualityOptions.map((option) => (
+                            {qualityOptions.filter(option => model === "veo3" ? ["720P", "1080P"].includes(option) : model.startsWith("veo3_") ? option !== "480P" : true).map((option) => (
                               <button
                                 key={option}
                                 type="button"

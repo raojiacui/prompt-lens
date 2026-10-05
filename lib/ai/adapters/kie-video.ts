@@ -79,7 +79,7 @@ function requireKIEApiKey(apiKey?: string) {
 }
 
 export function isKIEVeoModel(modelId: string): boolean {
-  return modelId.startsWith("veo3_");
+  return modelId === "veo3" || modelId.startsWith("veo3_");
 }
 
 function isKIESeedance2Model(modelId: string): boolean {
@@ -119,14 +119,24 @@ export function buildKIEVeoPayload(
   imageUrls?: string[],
 ): Record<string, unknown> {
   const refs = imageUrls?.filter(Boolean) || [];
+  const duration = input.duration ?? 8;
+  const resolution = input.resolution?.toLowerCase() || "720p";
+  if (!["veo3", "veo3_fast", "veo3_lite"].includes(input.modelId) ||
+      ![4, 6, 8].includes(duration) || !["720p", "1080p", "4k"].includes(resolution) ||
+      refs.length > (input.modelId === "veo3" ? 2 : 3) ||
+      (refs.length > 2 && duration !== 8) || input.referenceVideoUrl) {
+    throw new Error("VEO_CONFIGURATION_UNSUPPORTED");
+  }
   return {
     prompt: input.prompt,
     model: input.modelId,
     callBackUrl: input.webhookUrl,
-    aspect_ratio: normalizeKIEVeoAspectRatio(input.aspectRatio),
+    aspectRatio: normalizeKIEVeoAspectRatio(input.aspectRatio),
+    resolution,
+    duration,
     enableTranslation: true,
     enableFallback: false,
-    generationType: refs.length ? "REFERENCE_2_VIDEO" : "TEXT_2_VIDEO",
+    generationType: refs.length > 2 ? "REFERENCE_2_VIDEO" : refs.length ? "FIRST_AND_LAST_FRAMES_2_VIDEO" : "TEXT_2_VIDEO",
     ...(refs.length ? { imageUrls: refs } : {}),
   };
 }

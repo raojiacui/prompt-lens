@@ -135,7 +135,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "先确认费用来源", paragraphs: [
           "使用自己的 KIE Key：打开设置，填写并保存 Key，确认你的 KIE 账户有余额。保存成功后回到视频生成，模型费用由该账户承担，不消耗平台推理积分。",
           "如果页面显示「平台积分」选项，可以选择已开放的付费模型与参数组合，先获取报价，再确认生成。界面有某个模型，不代表它的每一种参数都已支持平台积分付款。",
-          "三个套餐共用通用积分钱包，已核价的文字、图片、参考视频生成与视频编辑均可使用。Wan、Seedance、Kling、Grok、HappyHorse 按各自支持的素材与参数报价，并非所有模型都支持所有参数。Veo 的公开价格已核对，但当前接口与计费参数尚未完成适配，暂不支持平台积分提交；可选择其他已核价模型。图生视频构图还会受到源图片比例影响。",
+          "三个套餐共用通用积分钱包，已核价的文字、图片、参考视频生成与视频编辑均可使用。Wan、Seedance、Kling、Grok、HappyHorse、Veo 按各自支持的素材与参数报价，并非所有模型都支持所有参数。Veo 支持文字、图片及素材图片参考，不支持上传参考视频；Quality 4K 暂不开放。完整扣费见积分表。图生视频构图还会受到源图片比例影响。",
           "免费分析次数不用于生成视频。没有自己的有效 Key，也没有可用的积分生成条件时，需要先补齐再提交。",
         ] },
         { title: "从提示词到一条成片", steps: [
@@ -383,7 +383,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "Check your payment source first", paragraphs: [
           "For your own KIE key, open Settings, enter and save the key, and check your KIE balance. Return to generation after saving. Model calls use that account rather than platform inference credits.",
           "If Platform credits is available, select a supported paid model and parameter combination, get a quote, and confirm it. A model appearing in the selector does not mean every configuration supports platform billing.",
-          "All three packages share one credit wallet. Priced text, image, reference-video and video-editing configurations can use it. Wan, Seedance, Kling, Grok and HappyHorse have different supported inputs and settings. Veo public prices have been checked, but API and billing parameter integration is not complete; choose another priced model for platform billing. Source-image framing also affects image-to-video output.",
+          "All three packages share one credit wallet. Priced text, image, reference-video and video-editing configurations can use it. Wan, Seedance, Kling, Grok, HappyHorse and Veo have different supported inputs and settings. Veo supports text, images, and material-image references, not uploaded reference videos. Quality 4K is unavailable. See the credit table for charges. Source-image framing also affects image-to-video output.",
           "Free analysis attempts cannot be used for video generation. You need a valid funded key or an eligible platform-credit generation option before submitting.",
         ] },
         { title: "Generate your first clip", steps: [
