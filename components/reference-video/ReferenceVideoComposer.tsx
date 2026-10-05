@@ -1296,7 +1296,7 @@ export function ReferenceVideoComposer({
         refreshWalletBalance();
       }} />}
       <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
-        {commercialEnabled && <label className="flex flex-wrap items-center gap-3 text-sm">{zh ? "费用来源" : "Payment source"}<select value={generationPayer} disabled={isRunning} onChange={(e) => { setGenerationPayer(e.target.value); }} className="min-h-10 rounded-lg border border-border bg-background px-3"><option value="byok">{zh ? "自己的 KIE Key" : "My KIE key"}</option><option value="platform">{zh ? "平台积分" : "Platform credits"}</option></select><a href="/billing" className="underline">{zh ? "余额与订单" : "Balance and orders"}</a></label>}
+        {commercialEnabled && <label className="flex flex-wrap items-center gap-3 text-sm">{zh ? "费用来源" : "Payment source"}<select value={generationPayer} disabled={isRunning} onChange={(e) => { setGenerationPayer(e.target.value); }} className="min-h-10 rounded-lg border border-border bg-background px-3"><option value="byok">{zh ? "自己的 KIE Key" : "My KIE key"}</option><option value="platform">{zh ? "平台积分" : "Platform credits"}</option></select></label>}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
