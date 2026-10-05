@@ -86,10 +86,6 @@ function isKIESeedance2Model(modelId: string): boolean {
   return modelId.startsWith("bytedance/seedance-2");
 }
 
-function isKIESoraModel(modelId: string): boolean {
-  return modelId.startsWith("sora-2/");
-}
-
 function isKIEImageModel(
   input: VideoGenerationInput,
   imageUrls: string[],
@@ -139,6 +135,7 @@ export function buildKIEJobPayload(
   input: VideoGenerationInput,
   imageUrls: string[] = [],
 ): Record<string, unknown> {
+  if (input.modelId.startsWith("sora-")) throw new Error("MODEL_UNAVAILABLE");
   const inputPayload: Record<string, unknown> = {
     prompt: input.prompt,
     duration: String(input.duration ?? 5),
@@ -173,8 +170,6 @@ export function buildKIEJobPayload(
   if (imageUrls.length) {
     if (isKIESeedance2Model(input.modelId)) {
       inputPayload.reference_image_urls = imageUrls.slice(0, 9);
-    } else if (isKIESoraModel(input.modelId)) {
-      inputPayload.image_url = imageUrls[0];
     } else {
       inputPayload.image_urls = imageUrls;
     }
