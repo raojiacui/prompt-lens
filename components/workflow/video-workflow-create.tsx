@@ -88,7 +88,6 @@ type CreditStatus = {
 };
 
 const MAX_ANALYSIS_VIDEO_SECONDS = 10;
-const VIDEO_DURATION_TOLERANCE_SECONDS = 0.75;
 const linkedPlatformLabels: Record<LinkedMediaPlatform, string> = {
   tiktok: "TikTok",
   douyin: "抖音",
@@ -217,15 +216,6 @@ function getVideoDuration(file: File) {
     video.src = url;
   });
 }
-function canUseLongVideo(status: CreditStatus | null) {
-  return status?.mode === "admin" || status?.trial.isAdmin || status?.capabilities?.videoAnalysis?.canUseLongVideo === true;
-}
-
-function shortVideoLimitSeconds(status: CreditStatus | null) {
-  const caps = status?.capabilities?.videoAnalysis;
-  return (caps?.shortVideoMaxSeconds ?? MAX_ANALYSIS_VIDEO_SECONDS) + (caps?.durationToleranceSeconds ?? VIDEO_DURATION_TOLERANCE_SECONDS);
-}
-
 function sceneStatusLabel(locale: string, scene?: Scene, sceneVersion?: SceneVersion) {
   const provider = sceneVersion?.metadata?.analysisProvider;
   if (scene?.status === "completed") return locale === "en" ? "Analyzed" : "已分析";
@@ -343,12 +333,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
-  const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en" } | null>(null);
+  const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean } | null>(null);
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
   const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
   const rewriteBusyRef = useRef(false);
   const modelPriority: ModelPriority = "balanced";
-  const canUploadLongVideo = creditStatus?.commercialConsumptionEnabled || canUseLongVideo(creditStatus);
   const linkedPlatform = detectLinkedPlatform(sourceUrl);
 
   useEffect(() => {
@@ -516,7 +505,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   async function handleFile(nextFile: File) {
     const type = nextFile.type.startsWith("video/") ? "video" : nextFile.type.startsWith("image/") ? "image" : null;
     if (!type) {
-      setError("请上传视频或图片进行分析。免费体验和未付费账号仅支持 10 秒以内完整镜头片段。");
+      setError(locale === "en" ? "Upload an image or one complete video shot up to 10 seconds." : "请上传图片或 10 秒以内的完整单镜头片段。");
       return;
     }
 
@@ -528,13 +517,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     if (type === "video") {
       try {
         duration = await getVideoDuration(nextFile);
-        const shortLimit = shortVideoLimitSeconds(creditStatus);
-        if (duration > shortLimit) {
-          const latestStatus = await loadCreditStatus() || creditStatus;
-          if (!latestStatus?.commercialConsumptionEnabled && !canUseLongVideo(latestStatus)) {
-            setError(`免费体验和未付费账号仅支持 ${MAX_ANALYSIS_VIDEO_SECONDS} 秒以内的视频（也就是一个完整的镜头片段）。当前文件读取到约 ${duration.toFixed(1)} 秒；升级后可上传长视频自动拆镜分析。`);
-            return;
-          }
+        if (!Number.isFinite(duration) || duration <= 0 || duration > MAX_ANALYSIS_VIDEO_SECONDS) {
+          setError(locale === "en" ? "File uploads support one complete shot up to 10 seconds. Use a video link for longer videos and shot splitting." : "上传文件只支持 10 秒以内的完整单镜头片段。长视频请使用粘贴链接入口进行拆镜分析。");
+          return;
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : "无法读取视频时长，请换一个视频文件。");
@@ -651,8 +636,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         body: JSON.stringify({ title: preparedTitle }),
       });
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
-      if (requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", longVideo: !(prepared.duration && prepared.duration <= 10.75), trialRemaining: latestStatus?.trial.remaining || 0 })) {
-        setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage });
+      if (isLinkedMedia || requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", longVideo: !(prepared.duration && prepared.duration <= 10), trialRemaining: latestStatus?.trial.remaining || 0 })) {
+        setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage, automaticSplit: isLinkedMedia });
         setAnalysisProgress(null);
         return;
       }
@@ -667,7 +652,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       const breakdownRes = await fetch(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaUrl: prepared.url, mediaName: prepared.filename, storageKey: prepared.key, mediaType: prepared.mediaType, mediaDuration: prepared.duration, singleShot: Boolean(prepared.duration && prepared.duration <= MAX_ANALYSIS_VIDEO_SECONDS + VIDEO_DURATION_TOLERANCE_SECONDS), ...analysisSelectionPayload() }),
+        body: JSON.stringify({ mediaUrl: prepared.url, mediaName: prepared.filename, storageKey: prepared.key, mediaType: prepared.mediaType, mediaDuration: prepared.duration, singleShot: Boolean(prepared.duration && prepared.duration <= MAX_ANALYSIS_VIDEO_SECONDS), ...analysisSelectionPayload() }),
       });
       const breakdownData = await readJsonResponse(breakdownRes, "Breakdown failed");
       if (!breakdownData.taskId) throw new Error("Analysis task was not created");
@@ -838,9 +823,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                 ) : null}
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-lg bg-background text-center hover:bg-accent">
                   <FileUp className="h-6 w-6 text-muted-foreground" />
-                  <span className="font-semibold">{preview ? (locale === "en" ? "Replace file" : "更换文件") : canUploadLongVideo ? (locale === "en" ? "Choose a video or image" : "选择视频或图片") : (locale === "en" ? "Choose a video up to 10s, or an image" : "选择 10 秒以内的视频或图片")}</span>
+                  <span className="font-semibold">{preview ? (locale === "en" ? "Replace file" : "更换文件") : (locale === "en" ? "Choose a single shot up to 10s, or an image" : "选择 10 秒以内的单镜头片段或图片")}</span>
                 </button>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{creditStatus?.commercialConsumptionEnabled && canUploadLongVideo ? (locale === "zh" ? "付费分析不限视频时长，文件最大 100MB。可选择镜头分析，确认积分报价后开始。" : "Paid analysis has no source-duration cap. Files up to 100MB. Select shots and confirm the credit quote to start.") : canUploadLongVideo ? (locale === "en" ? "Long-video automatic shot splitting is available." : "已解锁长视频自动拆镜分析。") : (locale === "en" ? "Free accounts can analyze one complete shot up to 10 seconds." : "免费体验和未付费账号仅支持 10 秒以内完整镜头片段。")}</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{locale === "en" ? "Video file uploads only support one complete shot up to 10 seconds, without splitting. Multiple shots may reduce analysis quality. Video files up to 100MB; use a video link for long-video shot analysis." : "上传视频文件只支持 10 秒以内的完整单镜头片段，不拆镜。包含多个镜头可能影响分析效果，请自行确认素材。视频文件最大 100MB；长视频请粘贴链接进行拆镜分析。"}</p>
               </>
             ) : (
               <div className="rounded-lg bg-background p-3">

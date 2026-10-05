@@ -8,7 +8,7 @@ import * as schema from "@/lib/db/schema";
 const isolated = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return isolated.db; } }));
 vi.mock("@/lib/workflow/scene-analysis", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/workflow/scene-analysis")>(), rewriteSceneBlueprint: vi.fn(), analyzeSceneBlueprint: vi.fn() }));
-vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: vi.fn(async () => "owned-upload"), commercialMediaRequest: vi.fn() }));
+vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: vi.fn(async () => "owned-upload"), isOwnedLinkedVideo: vi.fn(async () => false), commercialMediaRequest: vi.fn() }));
 vi.mock("@/lib/cloudflare/r2", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/cloudflare/r2")>(), copyR2Object: vi.fn(async () => "https://example.com/frozen-video.mp4") }));
 vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/payments/alipay")>(),
@@ -18,7 +18,7 @@ vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
   queryAlipayRefund: vi.fn(),
 }));
 import { rewriteSceneBlueprint, analyzeSceneBlueprint } from "@/lib/workflow/scene-analysis";
-import { assertOwnedUploadedVideo, commercialMediaRequest } from "@/lib/billing/commercial-media";
+import { assertOwnedUploadedVideo, isOwnedLinkedVideo, commercialMediaRequest } from "@/lib/billing/commercial-media";
 import { copyR2Object } from "@/lib/cloudflare/r2";
 import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnalysisRetry, quotedAnalysisModel, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
@@ -334,6 +334,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
     const [project] = await testDb.insert(schema.projects).values({ userId, title: "Commercial analysis" }).returning();
     const intervals = [{ id: "1", startUs: 0, endUs: 2000000 }, { id: "2", startUs: 2000000, endUs: 10000000 }];
+    vi.mocked(isOwnedLinkedVideo).mockResolvedValueOnce(true);
     vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 10000000, bytes: 500, metadata: { duration: 10 }, scenes: intervals });
     const preview = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/source.mp4", mediaName: "source.mp4", automaticSplit: true });
     const quote = await quoteCommercialAnalysis(userId, { preparationId: preview.id, sceneIds: ["1", "2"], payer: "platform", model: "flash", outputLanguage: "zh" });
@@ -495,6 +496,29 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await reviewCommercialRefund(userId, request.id, "reject", "Customer contacted and reviewed");
     await expect(updateCommercialRefundRequest(userId, row.id, "New reason", "contact")).rejects.toThrow("REFUND_ALREADY_REVIEWED");
     expect(refundAlipayTrade).not.toHaveBeenCalled();
+  });
+
+  it("rejects long local uploads and prevents switching the trusted source mode", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Upload boundary" }).returning();
+    const input = { projectId: project.id, mediaUrl: "https://example.com/local.mp4", mediaName: "local", automaticSplit: false };
+    await expect(prepareCommercialAnalysis(userId, { ...input, automaticSplit: true })).rejects.toThrow("INVALID_ANALYSIS_SOURCE_MODE");
+    vi.mocked(isOwnedLinkedVideo).mockResolvedValueOnce(true);
+    await expect(prepareCommercialAnalysis(userId, input)).rejects.toThrow("INVALID_ANALYSIS_SOURCE_MODE");
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ durationUs: 10_000_001 });
+    await expect(prepareCommercialAnalysis(userId, input)).rejects.toThrow("UPLOAD_VIDEO_TOO_LONG");
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+  });
+
+  it("allows long linked video splitting without the local upload duration limit", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Long link" }).returning();
+    vi.mocked(isOwnedLinkedVideo).mockResolvedValueOnce(true);
+    const scenes = Array.from({ length: 30 }, (_, i) => ({ id: String(i + 1), startUs: i * 6_000_000, endUs: (i + 1) * 6_000_000 }));
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 180_000_000, bytes: 500, metadata: {}, scenes });
+    const preparation = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/linked.mp4", mediaName: "linked", automaticSplit: true });
+    expect(preparation.scenes).toHaveLength(30);
+    expect(preparation.durationUs).toBe(180_000_000);
   });
   it("refunds an untouched purchase once and never re-submits the gateway request", async () => {
     const row = await paidOrder();

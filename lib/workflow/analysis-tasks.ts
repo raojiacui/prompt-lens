@@ -63,7 +63,7 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
       if (!project || project.status !== "draft") throw new Error("PROJECT_NOT_READY");
       const input: Input = { projectId, mediaUrl, mediaType, mediaName: typeof body.mediaName === "string" ? body.mediaName : undefined,
         mode: entitlement.mode, modelId, outputLanguage: body.outputLanguage === "en" ? "en" : "zh",
-        longVideoAllowed: entitlement.capabilities.videoAnalysis.canUseLongVideo,
+        longVideoAllowed: false,
         keySource: access.source === "user" ? "user" : "platform", keyFingerprint: generationKeyFingerprint(access.apiKey!), trialReservationId: reservation };
       const result: Progress = { phase: "prepare", cursor: 0, successful: 0, failed: 0, heldCredits: 0, projectId };
       const [task] = await tx.insert(commercialTasks).values({ id, userId, kind: "workflow_analysis", state: "queued", input, result, expiresAt: new Date(Date.now() + 24 * 3600_000) }).returning();
@@ -134,7 +134,7 @@ export async function runAnalysisTask(id: string) {
       } else {
         const preview = await commercialMediaRequest<MediaPreview>(input.mediaUrl, { mode: "preview", automaticSplit: input.longVideoAllowed });
         if (!Number.isSafeInteger(preview.durationUs) || preview.durationUs <= 0 || !Number.isSafeInteger(preview.bytes) || preview.bytes <= 0 || preview.bytes > 100 * 1024 * 1024 || !preview.scenes?.length) throw new Error("视频信息无效或文件超过 100MB。");
-        if (!input.longVideoAllowed && preview.durationUs > 10_750_000) throw new Error("当前账号仅支持 10 秒以内视频，请使用付费拆镜流程。");
+        if (!input.longVideoAllowed && preview.durationUs > 10_000_000) throw new Error("上传文件只支持 10 秒以内的完整单镜头片段，长视频请粘贴链接进行拆镜分析。");
         progress = { ...progress, phase: "assets", preview };
       }
       await saveCheckpoint(task, progress);

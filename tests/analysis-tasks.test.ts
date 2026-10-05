@@ -94,6 +94,8 @@ describe("durable analysis", () => {
     const scenes = [0, 1].map(i => ({ sceneIndex: i + 1, startTime: i * 10, endTime: (i + 1) * 10, duration: 10, keyframeUrls: ["https://r2.example/frame.png"] }));
     mocks.probe.mockResolvedValueOnce({ durationUs: 20_000_000, bytes: 500, sourceHash: "a".repeat(64), scenes: scenes.map((_, i) => ({ id: String(i + 1), startUs: i * 10_000_000, endUs: (i + 1) * 10_000_000 })) }).mockResolvedValueOnce({ scenes, metadata: { duration: 20 } });
     const queued = await enqueueAnalysis(userId, projectId, { mediaType: "video", mediaUrl: "https://r2.example/a.mp4", mediaDuration: 20 });
+    // Historical queued tasks retain their previously granted long-video access.
+    await client.query("UPDATE commercial_tasks SET input = jsonb_set(input, '{longVideoAllowed}', 'true') WHERE id = $1", [queued.id]);
     for (let i = 0; i < 5; i++) await runAnalysisTask(queued.id);
     expect((await task(queued.id)).result).toMatchObject({ successful: 1, heldCredits: 5 });
     await client.query("UPDATE commercial_tasks SET state = 'running', updated_at = now() - interval '7 minutes' WHERE id = $1", [queued.id]);
@@ -113,16 +115,26 @@ describe("durable analysis", () => {
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
   });
 
-  it("prepares paid videos longer than a minute with more than twenty shots", async () => {
+  it("preserves historical queued long-video tasks", async () => {
     mocks.mode = "platform_credits";
     await testDb.insert(schema.userCredits).values({ userId, balance: 100 });
     const scenes = Array.from({ length: 30 }, (_, i) => ({ sceneIndex: i + 1, startTime: i * 6, endTime: (i + 1) * 6, duration: 6, keyframeUrls: ["https://r2.example/frame.png"] }));
     mocks.probe.mockResolvedValueOnce({ durationUs: 180_000_000, bytes: 500, sourceHash: "a".repeat(64), scenes: scenes.map((s, i) => ({ id: String(i + 1), startUs: s.startTime * 1e6, endUs: s.endTime * 1e6 })) }).mockResolvedValueOnce({ scenes, metadata: { duration: 180 } });
     const queued = await enqueueAnalysis(userId, projectId, { mediaType: "video", mediaUrl: "https://r2.example/a.mp4", mediaDuration: 180 });
+    await client.query("UPDATE commercial_tasks SET input = jsonb_set(input, '{longVideoAllowed}', 'true') WHERE id = $1", [queued.id]);
     await runAnalysisTask(queued.id);
     await runAnalysisTask(queued.id);
     expect((await task(queued.id)).result).toMatchObject({ phase: "transcription", heldCredits: 33 });
     expect((await testDb.select().from(schema.videoScenes)).filter(s => s.projectId === projectId)).toHaveLength(30);
+    expect(mocks.analyze).not.toHaveBeenCalled();
+  });
+
+  it.each(["trial", "byok", "platform_credits", "admin"])("rejects uploads above exactly ten seconds for %s", async mode => {
+    mocks.mode = mode;
+    mocks.probe.mockResolvedValue({ durationUs: 10_000_001, bytes: 500, scenes: [{ id: "1" }] });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "video", mediaDuration: 5, mediaUrl: "https://r2.example/a.mp4" });
+    expect((await drain(queued.id)).state).toBe("failed");
+    expect(mocks.probe).toHaveBeenCalledWith("https://r2.example/a.mp4", { mode: "preview", automaticSplit: false });
     expect(mocks.analyze).not.toHaveBeenCalled();
   });
 

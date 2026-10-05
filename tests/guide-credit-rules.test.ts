@@ -23,7 +23,7 @@ describe("Published credit rules", () => {
     expect(tables[2].columns).toHaveLength(3);
     expect(tables[2].columns[1]).toContain("Gemini 3.8 Flash");
     expect(tables[2].columns[2]).toContain("Gemini 2.5 Pro");
-    expect(tables[2].rows.map(r => r.slice(1))).toEqual([["2", "3"], ["3", "5"], ["5", "7"], ["7", "10"], ["13", "17"], ["25", "32"]]);
+    expect(tables[2].rows.map(r => r.slice(1))).toEqual([["2", "3"], ["3", "5"], ["5", "7"]]);
     expect(tables[2].columns.join(" ")).not.toMatch(/总积分|total/i);
   });
 });

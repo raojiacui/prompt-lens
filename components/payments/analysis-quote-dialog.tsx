@@ -6,10 +6,10 @@ import { X } from "lucide-react";
 import { quoteAnalysis, type SceneInterval } from "@/lib/billing/pricing-v6";
 import { listModels } from "@/lib/ai/model-registry";
 
-export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en" }; onClose: () => void; onComplete: (bundle: unknown) => void }) {
+export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean }; onClose: () => void; onComplete: (bundle: unknown) => void }) {
   const zh = useLocale() === "zh";
   const dialog = useRef<HTMLDialogElement>(null);
-  const [automaticSplit, setAutomaticSplit] = useState(true);
+  const automaticSplit = source.automaticSplit;
   const [payer, setPayer] = useState("platform");
   const [model, setModel] = useState("flash");
   const [byokModel, setByokModel] = useState("analysis-gemini-3-8-flash");
@@ -39,6 +39,7 @@ export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: {
   async function post(url: string, body: unknown) {
     const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await response.json();
+    if (!response.ok && data.code === "UPLOAD_VIDEO_TOO_LONG") throw new Error(zh ? "上传文件只支持 10 秒以内的完整单镜头片段。" : "File uploads support one complete shot up to 10 seconds.");
     if (!response.ok) throw new Error(data.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "可用积分不足，请先充值。" : "Not enough available credits. Please top up.") : data.code === "KIE_KEY_REQUIRED" ? (zh ? "请先配置所选来源的 KIE Key。" : "Configure the KIE key for this payment source first.") : (zh ? "暂时无法确认，请重试。任务结果不明确时，请勿重复提交。" : "Unable to confirm. Retry to check; do not resubmit an uncertain task."));
     return data;
   }
@@ -85,7 +86,7 @@ export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: {
       <fieldset disabled={busy || Boolean(quote)} className="mt-5 grid gap-4 sm:grid-cols-2">
         <label className="text-sm">{zh ? "费用来源" : "Payment source"}<select value={payer} onChange={(e) => setPayer(e.target.value)} className="mt-2 min-h-10 w-full rounded-lg border border-border bg-background px-2"><option value="platform">{zh ? "平台积分" : "Platform credits"}</option><option value="byok">{zh ? "自己的 KIE Key" : "My KIE key"}</option></select></label>
         <label className="text-sm">{zh ? "分析模型" : "Analysis model"}<select value={payer === "byok" ? byokModel : model} onChange={(e) => payer === "byok" ? setByokModel(e.target.value) : setModel(e.target.value)} className="mt-2 min-h-10 w-full rounded-lg border border-border bg-background px-2">{payer === "byok" ? listModels("analysis").filter(m => m.enabled).map(m => <option key={m.id} value={m.id}>{m.displayName}</option>) : <><option value="flash">Gemini 3.8 Flash</option><option value="pro">Gemini 2.5 Pro</option></>}</select></label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={automaticSplit} disabled={Boolean(preparation)} onChange={(e) => setAutomaticSplit(e.target.checked)} />{zh ? "自动拆镜" : "Automatic shot splitting"}</label>
+        <p className="text-sm">{automaticSplit ? (zh ? "链接视频：先拆镜，再选择镜头分析。" : "Linked video: split first, then select shots to analyze.") : (zh ? "上传文件：单镜头分析，不收拆镜费。" : "Uploaded file: single-shot analysis, no splitting fee.")}</p>
       </fieldset>
       {preparation && <div className="mt-5">
         <p className="mb-3 text-sm">{(preparation.durationUs / 1000000).toFixed(2)}s · {preparation.scenes.length} {zh ? "个镜头" : "shots"}</p>

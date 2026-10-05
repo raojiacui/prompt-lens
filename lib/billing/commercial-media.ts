@@ -12,6 +12,11 @@ export async function assertOwnedUploadedVideo(userId: string, mediaUrl: string,
   if (!upload) throw new Error("UPLOAD_NOT_OWNED");
   return key;
 }
+export async function isOwnedLinkedVideo(userId: string, mediaUrl: string) {
+  await assertOwnedUploadedVideo(userId, mediaUrl);
+  const [imported] = await db.select({ id: operationLogs.id }).from(operationLogs).where(and(eq(operationLogs.userId, userId), eq(operationLogs.action, "file.upload"), eq(operationLogs.resourceType, "video"), sql`${operationLogs.metadata}->>'url' = ${mediaUrl}`, sql`${operationLogs.metadata}->>'storageKey' = ${extractR2Key(mediaUrl)}`, sql`${operationLogs.metadata}->>'source' = 'linked-media'`, sql`${operationLogs.metadata}->>'phase' IN ('completed','server-upload')`)).limit(1);
+  return Boolean(imported);
+}
 export async function commercialMediaRequest<T>(mediaUrl: string, body: Record<string, unknown>): Promise<T> {
   const worker = process.env.FFMPEG_WORKER_URL?.replace(/\/$/, "");
   const secret = process.env.FFMPEG_WORKER_SECRET;

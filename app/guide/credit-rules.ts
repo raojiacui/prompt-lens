@@ -22,7 +22,7 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
     ["Kling 3", "kling-3.0/video", "1080p", false],
     ["Kling 3", "kling-3.0/video", "1080p", true],
   ];
-  const analysisRows = [1, 5, 10, 15, 30, 60].map(seconds => {
+  const analysisRows = [1, 5, 10].map(seconds => {
     const sourceDurationUs = seconds * 1e6;
     const scenes = [{ id: "single-shot", startUs: 0, endUs: sourceDurationUs }];
     const input = { payer: "platform" as const, sourceDurationUs, scenes, automaticSplit: false, paidSplitReusable: false };
@@ -62,14 +62,14 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "例如，一个 10 秒镜头：Gemini 3.8 Flash 扣 5 积分；Gemini 2.5 Pro 扣 7 积分。分析模型选择“自动选择·均衡”时，平台积分分析使用 Gemini 3.8 Flash。",
       "可以全选或只分析某几个镜头，未选中的镜头不收分析费。其他镜头时长、一次选择多个镜头时，以分析按钮和确认页的报价为准。",
       "部分镜头失败只收成功镜头的分析费用；平台分析全部失败不收本次拆镜和分析费用。失败重试不重复收已支付的拆镜费和成功镜头费用。自带 Key 的模型分析不扣平台积分，自动拆镜仍按原视频时长收费。",
-      "付费分析不限原视频时长和镜头数量，文件最大 100MB；其他组合以分析按钮及确认页显示的积分为准。",
+      "上传视频文件只支持 10 秒以内的完整单镜头片段，不拆镜；包含多个镜头可能影响分析效果，请自行确认素材。视频文件最大 100MB。粘贴链接导入的原视频不限时长，先拆镜，再选择镜头分析；其他镜头时长以分析按钮及确认页显示的积分为准。",
       "新账号的两次免费体验只用于符合条件的 10 秒以内单镜头分析，不适用于视频生成。试用用完后，不会自动继续使用平台 Key；需要购买额度或选择自己的 Key。",
     ] : [
       "Each number is the platform credit cost of successfully analyzing one shot with the named model. Splitting is not included; these are not full-video totals. Duration means the length of that individual shot, not the full source.",
       "One 10-second shot costs 5 credits with Gemini 3.8 Flash or 7 with Gemini 2.5 Pro. Automatic balanced selection uses Gemini 3.8 Flash for platform-credit analysis.",
       "Analyze all shots or a selected subset. Unselected shots incur no analysis fee. For other shot lengths or multiple selected shots, use the quote on the analysis button and confirmation page.",
       "Failed shots incur no analysis charge. If all platform analysis fails, neither splitting nor analysis is charged for that attempt. Retries do not charge paid splitting or successful shots again. Your own key pays model costs through KIE; automatic splitting still uses platform credits.",
-      "Paid analysis has no source-duration or shot-count cap. Files must be within 100MB. Check the analysis button and confirmation quote for other combinations.",
+      "Video file uploads support one complete shot up to 10 seconds without splitting, within 100MB. Multiple shots may reduce analysis quality; check your footage. Linked videos have no source-duration cap and are split before selecting shots for analysis. Other shot lengths are quoted on the analysis button and confirmation page.",
       "Two introductory trials apply only to eligible single-shot analysis within 10 seconds, not generation. After trials, purchase credits or explicitly use your own key; the platform key is not an automatic fallback.",
     ], table: { columns: zh ? ["单个镜头时长", "Gemini 3.8 Flash（积分/镜头）", "Gemini 2.5 Pro（积分/镜头）"] : ["Single-shot duration", "Gemini 3.8 Flash (credits/shot)", "Gemini 2.5 Pro (credits/shot)"], rows: analysisRows } },
     { title: zh ? "文字、图片生成积分表（每条）" : "Text and image generation (per output)", paragraphs: zh ? [

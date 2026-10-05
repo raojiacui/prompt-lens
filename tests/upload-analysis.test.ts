@@ -18,7 +18,7 @@ vi.mock("@/lib/cloudflare/r2", () => ({
 }));
 import { POST as requestUpload } from "@/app/api/upload/route";
 import { POST as completeUpload } from "@/app/api/upload/complete/route";
-import { assertOwnedUploadedVideo } from "@/lib/billing/commercial-media";
+import { assertOwnedUploadedVideo, isOwnedLinkedVideo } from "@/lib/billing/commercial-media";
 
 const client = new PGlite();
 const testDb = drizzle(client, { schema });
@@ -79,5 +79,15 @@ describe("upload to analysis boundary", () => {
     await expect(assertOwnedUploadedVideo(mocks.userId, url)).rejects.toThrow("UPLOAD_NOT_OWNED");
     await testDb.insert(schema.operationLogs).values({ userId: mocks.userId, action: "file.upload", resourceType: "video", metadata: { storageKey: key, url, phase: "server-upload" } });
     await expect(assertOwnedUploadedVideo(mocks.userId, url)).resolves.toBe(key);
+  });
+  it("identifies linked video imports only from the owner's completed server log", async () => {
+    const upload = await reserve();
+    await completeUpload(request(upload));
+    await expect(isOwnedLinkedVideo(mocks.userId, upload.url)).resolves.toBe(false);
+    const key = `uploads/${mocks.userId}/video/linked.mp4`;
+    const url = `https://media.example/${key}`;
+    await testDb.insert(schema.operationLogs).values({ userId: mocks.userId, action: "file.upload", resourceType: "video", metadata: { storageKey: key, url, phase: "server-upload", source: "linked-media" } });
+    await expect(isOwnedLinkedVideo(mocks.userId, url)).resolves.toBe(true);
+    await expect(isOwnedLinkedVideo(randomUUID(), url)).rejects.toThrow("UPLOAD_NOT_OWNED");
   });
 });
