@@ -18,6 +18,6 @@ describe("Published credit rules", () => {
     expect(tables[2].rows.find(r => r[0] === "Seedance Fast")?.[3]).toBe("65");
     expect(tables[4].rows.find(r => r[0] === "Seedance Fast")?.[3]).toBe("115");
     expect(tables[5].rows.find(r => r[0] === "Wan 2.7")?.[4]).toBe("-");
-    expect(tables[1].rows.map(r => r.slice(3))).toEqual([["5", "7"], ["7", "9"], ["23", "32"], ["54", "80"]]);
+    expect(tables[1].rows.map(r => r.slice(2))).toEqual([["0", "5", "7", "5", "7"], ["2", "5", "7", "7", "9"], ["5", "18", "27", "23", "32"], ["10", "44", "70", "54", "80"]]);
   });
 });
