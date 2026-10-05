@@ -29,9 +29,10 @@ function isWanVideoEditModel(modelId: string) {
 }
 
 function parseModel(value: unknown, options: { hasReferenceVideo: boolean; hasImages: boolean }): string {
-  if (typeof value === "string" && value.trim()) {
+  if (typeof value === "string" && value.trim() && value.trim() !== "auto") {
     const registryModel = getModelById(value.trim());
-    if (registryModel?.kieModelId) return registryModel.kieModelId;
+    if (registryModel?.enabled && ["video_generation", "video_edit"].includes(registryModel.category)) return registryModel.kieModelId;
+    throw new Error("MODEL_UNAVAILABLE");
   }
 
   const routed = routeModel({

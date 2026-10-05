@@ -127,22 +127,10 @@ const fallbackModels: Array<{
     supportedAspectRatios: ["16:9", "9:16"],
   },
   {
-    id: "grok-imagine/text-to-video",
-    label: "Grok Imagine",
-    supportedDurations: durationRange(minGeneratedVideoDuration, 10),
-    supportedAspectRatios: ["2:3", "3:2", "1:1", "16:9", "9:16"],
-  },
-  {
     id: "bytedance/seedance-2-mini",
     label: "Seedance 2.0 Mini",
     supportedDurations: durationRange(minGeneratedVideoDuration, 15),
     supportedAspectRatios: ["16:9", "4:3", "1:1", "3:4", "9:16"],
-  },
-  {
-    id: "grok-imagine-video-1-5-preview",
-    label: "Grok Imagine 1.5 Preview",
-    supportedDurations: durationRange(minGeneratedVideoDuration, 8),
-    supportedAspectRatios: ["16:9", "9:16"],
   },
   {
     id: "kling-2.6/text-to-video",

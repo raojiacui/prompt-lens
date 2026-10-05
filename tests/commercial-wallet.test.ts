@@ -159,7 +159,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const body = { userPrompt: "A cinematic cloud palace", duration: 5, quality: "720p", aspectRatio: "auto", referenceVideoUrl: "https://example.com/video.mp4", replacementAssets: [{ url: "https://example.com/image.jpg" }] };
     expect(buildCommercialGenerationPayload({ ...body, model: "seedance-2-fast" }, 5)).toMatchObject({ model: "bytedance/seedance-2-fast", input: { duration: 5, reference_video_urls: [body.referenceVideoUrl], reference_image_urls: [body.replacementAssets[0].url], generate_audio: false } });
     expect(buildCommercialGenerationPayload({ ...body, duration: 0, model: "wan-video-edit" }, 5)).toMatchObject({ input: { duration: 0, video_url: body.referenceVideoUrl, reference_image: body.replacementAssets[0].url } });
-    expect(buildCommercialGenerationPayload({ ...body, duration: 0, model: "kling-omni-transform" }, 5)).toMatchObject({ model: "kling-3.0-omni/transformation", input: { video_urls: [body.referenceVideoUrl], duration: "5" } });
+    expect(() => buildCommercialGenerationPayload({ ...body, duration: 0, model: "kling-omni-transform" }, 5)).toThrow("PAID_MODEL_NOT_VERIFIED");
     expect(() => buildCommercialGenerationPayload({ ...body, referenceVideoSeconds: 1, model: "seedance-2-fast" })).toThrow("REFERENCE_VIDEO_PROBE_REQUIRED");
   });
   it("rejects another owner's or expired quotes before reserving funds", async () => {
@@ -321,7 +321,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const [scene] = await testDb.insert(schema.videoScenes).values({ projectId: project.id, sceneIndex: 1, startTime: 0, endTime: 2, duration: 2 }).returning();
     const [original] = await testDb.insert(schema.sceneVersions).values({ projectId: project.id, projectVersionId: version.id, originalSceneId: scene.id, sceneIndex: 1, generationPrompt: "Original", duration: 2 }).returning();
     vi.mocked(rewriteSceneBlueprint).mockResolvedValue({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Rewritten" });
-    return { userId, projectId: project.id, sceneVersionId: original.id, instruction: "Change the main character", modelId: "analysis-gemini-2-5-pro", modelMode: "manual" as const, rewriteKeySource: "platform" as const, allowPlatformKeyForRewrite: true, commercialTaskKey: "rewrite:test" };
+    return { userId, projectId: project.id, sceneVersionId: original.id, instruction: "Change the main character", modelId: "analysis-gemini-3-8-flash", modelMode: "manual" as const, rewriteKeySource: "platform" as const, allowPlatformKeyForRewrite: true, commercialTaskKey: "rewrite:test" };
   }
   async function paidOrder() {
     const row = await order();
@@ -387,6 +387,8 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(quotedAnalysisModel({ payer: "platform", model: "flash", modelId: "analysis-gemini-2-5-pro" })).toBe("gemini-3-8-flash-openai");
     expect(quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "analysis-gemini-3-5-flash" })).toBe("gemini-3-5-flash-openai");
     expect(() => quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "nonexistent" })).toThrow();
+    expect(() => quotedAnalysisModel({ payer: "platform", model: "pro" })).toThrow();
+    expect(() => quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "analysis-gemini-2-5-pro" })).toThrow();
   });
 
   it("recovers a stopped paid analysis without repeating inference or retaining its charge", async () => {

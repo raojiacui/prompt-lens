@@ -24,6 +24,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       await route.fulfill({ json: body });
     });
     await page.goto("/dashboard?tab=video-gen&model=veo3_lite&duration=8&videoGenPrompt=A%20cinematic%20cloud%20palace");
+    await expect(page.locator("option").filter({ hasText: /HappyHorse|Grok|Kling Omni Transformation/i })).toHaveCount(0);
     await page.getByLabel(locale === "zh" ? "费用来源" : "Payment source").selectOption("platform");
     const generate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 20 积分/ : /Generate Video.*Est. 20 credits/i });
     await expect(generate).toBeVisible();
@@ -43,6 +44,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await expect.poll(() => confirmations).toBe(1);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
     await page.goto("/guide#credits");
+    await expect(page.getByRole("main")).not.toContainText(/Gemini 2\.5 Pro|HappyHorse|Grok|Kling Omni/i);
     await expect(page.getByRole("heading", { name: locale === "zh" ? "Veo 3.1 生成积分表（每条）" : "Veo 3.1 generation credits (per output)" })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   });

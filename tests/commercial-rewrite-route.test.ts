@@ -20,7 +20,7 @@ describe("Commercial rewrite payer contract", () => {
   it("binds included rewrites to the platform key and server-selected Pro", async () => {
     const response = await call({ payer: "included", modelId: "expensive-other", rewriteKeySource: "user" });
     expect(response.status).toBe(200);
-    expect(rewriteSceneVersion).toHaveBeenCalledWith(expect.objectContaining({ userId: "owner", rewriteKeySource: "platform", allowPlatformKeyForRewrite: true, modelId: "analysis-gemini-2-5-pro", commercialTaskKey: `rewrite:${requestId}` }));
+    expect(rewriteSceneVersion).toHaveBeenCalledWith(expect.objectContaining({ userId: "owner", rewriteKeySource: "platform", allowPlatformKeyForRewrite: true, modelId: "analysis-gemini-3-8-flash", commercialTaskKey: `rewrite:${requestId}` }));
     expect((await response.json()).billing).toEqual({ payer: "included", chargedCredits: 0, includedRewrites: 1 });
   });
   it("does not reserve platform allowance for explicit BYOK", async () => {

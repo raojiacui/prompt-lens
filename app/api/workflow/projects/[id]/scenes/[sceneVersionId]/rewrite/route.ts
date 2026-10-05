@@ -37,7 +37,7 @@ export async function POST(
         userId: session.user.id, projectId: id, sceneVersionId, instruction,
         currentPrompt: typeof body?.currentPrompt === "string" && body.currentPrompt.trim() ? body.currentPrompt.trim() : undefined,
         outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale,
-        modelMode: "manual", modelId: "analysis-gemini-2-5-pro", modelPriority: "best_quality",
+        modelMode: "manual", modelId: "analysis-gemini-3-8-flash", modelPriority: "balanced",
         rewriteKeySource: payer === "included" ? "platform" : "user",
         allowPlatformKeyForRewrite: payer === "included",
         commercialTaskKey: payer === "included" ? `rewrite:${requestId}` : undefined,

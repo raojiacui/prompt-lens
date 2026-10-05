@@ -13,6 +13,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       await route.fulfill({ json: body });
     });
     await page.goto("/dashboard?tab=analyze");
+    await expect(page.locator("option").filter({ hasText: /Gemini 2\.5 Pro/i })).toHaveCount(0);
     await expect(page.getByText(locale === "zh" ? "选择 10 秒以内的单镜头片段或图片" : "Choose a single shot up to 10s, or an image", { exact: true })).toBeVisible();
     await expect(page.getByText(locale === "zh" ? /上传视频文件只支持 10 秒以内的完整单镜头片段，不拆镜/ : /Video file uploads only support one complete shot up to 10 seconds, without splitting/)).toBeVisible();
     await expect(page.getByText(locale === "zh" ? /付费分析不限视频时长/ : /Paid analysis has no source-duration cap/)).toHaveCount(0);

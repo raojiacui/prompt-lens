@@ -146,6 +146,7 @@ export function buildKIEJobPayload(
   imageUrls: string[] = [],
 ): Record<string, unknown> {
   if (input.modelId.startsWith("sora-")) throw new Error("MODEL_UNAVAILABLE");
+  if (input.modelId.startsWith("grok-imagine") || ["happyhorse/video-edit", "kling-omni/transformation", "kling-3.0-omni/transformation"].includes(input.modelId)) throw new Error("MODEL_UNAVAILABLE");
   const inputPayload: Record<string, unknown> = {
     prompt: input.prompt,
     duration: String(input.duration ?? 5),

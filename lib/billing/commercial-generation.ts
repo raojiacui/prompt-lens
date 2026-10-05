@@ -52,20 +52,9 @@ export function buildCommercialGenerationPayload(body: Record<string, unknown>, 
     if (video || images.length > (model === "kling-3.0/video" ? 2 : 0) || (model === "kling-2.6/text-to-video" ? ![5, 10].includes(duration) || resolution !== "1080p" : duration < 3 || duration > 15 || !["720p", "1080p"].includes(resolution))) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
     Object.assign(input, { duration: String(duration), aspect_ratio: aspect || "16:9", sound: body.generateAudio === true, ...(model === "kling-3.0/video" ? { mode: resolution === "1080p" ? "pro" : "std", multi_shots: false } : {}), ...(images.length ? { image_urls: images } : {}) });
     delete input.resolution;
-  } else if (model === "grok-imagine/text-to-video") {
-    if (video || images.length || ![6, 10].includes(duration) || resolution !== "720p") throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
-    Object.assign(input, { duration: String(duration), aspect_ratio: aspect || "16:9" });
   } else if (model === "wan/2-7-videoedit") {
     if (!video || images.length > 1 || probedReferenceSeconds! < 2 || probedReferenceSeconds! > 10 || (duration !== 0 && (duration < 2 || duration > probedReferenceSeconds!)) || !["720p", "1080p"].includes(resolution)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
     Object.assign(input, { duration, video_url: video, audio_setting: "auto", prompt_extend: true, watermark: false, ...(aspect ? { aspect_ratio: aspect } : {}), ...(images.length ? { reference_image: images[0] } : {}) });
-  } else if (model === "happyhorse/video-edit") {
-    if (!video || duration !== 0 || probedReferenceSeconds! < 3 || probedReferenceSeconds! > 60 || images.length > 5 || !["720p", "1080p"].includes(resolution)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
-    Object.assign(input, { video_url: video, audio_setting: "auto", ...(images.length ? { "reference_image ": images } : {}) });
-  } else if (model === "kling-omni/transformation") {
-    if (!video || probedReferenceSeconds! < 3 || probedReferenceSeconds! > 16 || prompt.length > 3072 || images.length > 4 || (images.length && duration !== 0 && (duration < 3 || duration > 15)) || !["720p", "1080p"].includes(resolution)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
-    if (!images.length && aspect) throw new Error("PAID_GENERATION_ASPECT_UNSUPPORTED");
-    Object.assign(input, { video_urls: [video], audio: body.generateAudio === true, aspect_ratio: aspect || "auto", ...(images.length ? { image_urls: images, duration: String(duration || probedReferenceSeconds) } : {}) });
-    return { model: "kling-3.0-omni/transformation", input };
   } else throw new Error("MODEL_PRICE_UNVERIFIED");
   return { model, input };
 }
