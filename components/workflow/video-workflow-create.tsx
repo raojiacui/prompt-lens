@@ -6,6 +6,7 @@ import { AnalysisQuoteDialog } from "@/components/payments/analysis-quote-dialog
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
+import { listModels } from "@/lib/ai/model-registry";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { VideoOverview } from "@/components/workflow/video-overview";
 import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
@@ -46,6 +47,7 @@ type Bundle = {
 };
 
 type ModelOption = { id: string; displayName: string; family: string; provider: string; kieModelId: string; enabled: boolean; experimental?: boolean };
+const analysisModels: ModelOption[] = listModels("analysis").filter(model => model.enabled);
 type ModelMode = "auto" | "manual";
 type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
 type AnalysisProgressPhase = "upload" | "project" | "analysis" | "complete";
@@ -317,7 +319,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [rewriteDrafts, setRewriteDrafts] = useState<Record<string, string>>({});
   const [selectedSceneVersionIndexes, setSelectedSceneVersionIndexes] = useState<Record<string, number>>({});
   const [copiedSceneVersionId, setCopiedSceneVersionId] = useState("");
-  const [analysisModels, setAnalysisModels] = useState<ModelOption[]>([]);
   const [analysisModelValue, setAnalysisModelValue] = useState("analysis-gemini-3-8-flash");
   const [analysisTaskId, setAnalysisTaskId] = useState("");
   const [analysisOutputLanguage, setAnalysisOutputLanguage] = useState<"zh" | "en">(locale === "en" ? "en" : "zh");
@@ -344,7 +345,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     const cached = cachedProjects();
     if (cached.length) setProjects(cached);
     void loadProjects();
-    void loadModels();
     void loadCreditStatus();
 
     return () => {
@@ -411,13 +411,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       return null;
     }
   }
-  async function loadModels() {
-    const response = await fetch("/api/models?category=analysis");
-    const data = await response.json();
-    const nextAnalysisModels = Array.isArray(data.models) ? data.models.filter((model: ModelOption) => model.enabled) : [];
-    setAnalysisModels(nextAnalysisModels);
-  }
-
   function analysisSelectionPayload() {
     if (creditStatus?.mode === "trial") {
       return { modelMode: "manual" as ModelMode, modelId: "analysis-gemini-3-8-flash", modelPriority, outputLanguage: analysisOutputLanguage };
