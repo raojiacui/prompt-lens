@@ -55,7 +55,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
     fetch(existingOrderId ? `/api/payments/orders/${existingOrderId}?snapshot=1` : "/api/payments/checkout", existingOrderId ? { cache: "no-store", signal: controller.signal } : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ packageId: pack.id, provider: "alipay", method: "alipay", requestId }), signal: controller.signal })
       .then(async (response) => {
         const data = await response.json();
-        if (!response.ok) throw new Error(data.code === "CHECKOUT_NOT_OPEN" ? (zh ? "收款暂未开放" : "Checkout is not open yet") : (zh ? "暂时无法确认订单，请重试查询。" : "Unable to confirm the order. Retry to check."));
+        if (!response.ok) throw new Error(data.code === "CHECKOUT_NOT_OPEN" ? (zh ? "支付暂不可用，请稍后重试或联系客服。" : "Payment is temporarily unavailable. Try again later or contact support.") : (zh ? "暂时无法确认订单，请重试查询。" : "Unable to confirm the order. Retry to check."));
         if (!data.orderId || !Number.isFinite(Date.parse(data.expiresAt)) || !Number.isSafeInteger(data.amountCents) || data.amountCents < 1
           || !Number.isSafeInteger(data.credits) || data.credits < 0 || !Number.isSafeInteger(data.rewrites) || data.rewrites < 0) throw new Error(zh ? "订单信息不完整" : "Incomplete order information");
         // A purchase click may restore an expired idempotency key. Start a fresh

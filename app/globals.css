@@ -98,39 +98,6 @@
     --radius: 0.625rem;
   }
 
-  /* 暗色模式 */
-  [data-theme="dark"] {
-    --color-bg-base: #141413;
-    --color-bg-raised: #1C1B1A;
-    --color-bg-inverted: #F5F3EC;
-
-    --color-text-primary: #F5F3EC;
-    --color-text-secondary: #A8A49C;
-    --color-text-muted: #6B6860;
-
-    --color-border-subtle: #2C2A27;
-    --color-border-default: #3C3A37;
-
-    --background: 0 0% 8%;
-    --foreground: 0 0% 95%;
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 17 45% 56%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 0 0% 12%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 17 45% 56%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 4 65% 53%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 18%;
-    --input: 0 0% 18%;
-    --ring: 17 45% 56%;
-  }
 }
 
 @layer base {

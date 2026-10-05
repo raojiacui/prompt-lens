@@ -1,5 +1,28 @@
 import { test, expect } from "@playwright/test";
 
+test("payment loading and unavailable states do not claim plans are unopened", async ({ page, context }) => {
+  await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
+  let release!: () => void;
+  const waiting = new Promise<void>(resolve => { release = resolve; });
+  await page.route("**/api/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.includes("/auth/get-session")) return route.fulfill({ json: { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } } });
+    if (path === "/api/payments/checkout") {
+      await waiting;
+      return route.fulfill({ json: { enabled: false } });
+    }
+    return route.fulfill({ json: {} });
+  });
+  await page.goto("/#pricing");
+  const pricing = page.locator("#pricing");
+  await expect(pricing.getByRole("button", { name: "正在加载支付…", exact: true }).first()).toBeDisabled();
+  await expect(pricing).not.toContainText("即将开放");
+  release();
+  await expect(pricing.getByRole("button", { name: "支付暂不可用", exact: true }).first()).toBeDisabled();
+  await expect(pricing).toContainText("请稍后重试或联系客服");
+  await expect(pricing).not.toContainText("即将开放");
+});
+
 for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
   test(`Alipay checkout ${locale} ${width}`, async ({ page, context }) => {
     await page.setViewportSize({ width, height: 1000 });
@@ -70,10 +93,12 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
 }
 
 test("checkout remains unavailable when its readiness endpoint fails", async ({ page }) => {
+  await page.route("**/api/auth/get-session**", route => route.fulfill({ json: { user: { id: "test", email: "test@example.com" }, session: { id: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } } }));
   await page.route("**/api/payments/checkout", (route) => route.abort());
   await page.goto("/#pricing");
   const buttons = page.locator("#pricing article button");
   await expect(buttons).toHaveCount(3);
+  await expect(buttons.first()).toHaveText(/Payment unavailable|支付暂不可用/);
   for (const button of await buttons.all()) await expect(button).toBeDisabled();
 });
 

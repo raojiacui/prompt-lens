@@ -533,7 +533,6 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* 悬浮聊天助手 */}
     </div>
   );
 }
