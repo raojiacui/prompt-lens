@@ -26,6 +26,16 @@ Thumbs.db
 *.log
 npm-debug.log*
 
+# Local assistant instructions
+[Cc][Ll][Aa][Uu][Dd][Ee].[Mm][Dd]
+[Aa][Gg][Ee][Nn][Tt].[Mm][Dd]
+[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]
+
+# Local tool caches
+.cache/
+.pytest_cache/
+.turbo/
+
 # Test
 coverage/
 playwright-report/
@@ -49,6 +59,10 @@ __pycache__/
 dashboard-*.png
 demo.gif
 tmp/
+screenshots/
+public/remotion/landing-ad/preview-frame-*.png
+public/remotion/landing-ad/prompt-lens-core-workflow-frame-*.png
+docs/reference/gamma-agent-composer-reference.png
 
 # Local Remotion drafts and recording references
 public/remotion/landing-ad/analysis-shot-*.jpg
