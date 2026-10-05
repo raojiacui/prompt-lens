@@ -188,6 +188,7 @@ export async function commercialAnalysisBundle(task: typeof commercialTasks.$inf
 
 export async function quoteCommercialAnalysisRetry(userId: string, parentId: string) {
   const parent = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, parentId), eq(commercialTasks.userId, userId), eq(commercialTasks.kind, "analysis")) });
+  if ((parent?.result as Record<string, unknown> | undefined)?.retentionExpired) throw new Error("PROJECT_CONTENT_EXPIRED");
   if (!parent || !["completed", "failed"].includes(parent.state)) throw new Error("ANALYSIS_NOT_SETTLED");
   const source = parent.input as AnalysisInput;
   const result = parent.result as { assets?: FfmpegBreakdownResult; successfulSceneIds?: string[]; totalChargedCredits?: number; nextTaskId?: string };

@@ -1,10 +1,10 @@
 import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
-import { db, mediaCleanupJobs, projectAssets, referenceVideos, sceneVersions, videoScenes } from "@/lib/db";
+import { commercialTasks, db, mediaCleanupJobs, projectAssets, referenceVideos, sceneVersions, videoGeneration, videoScenes, workflowJobs } from "@/lib/db";
 import { deleteFromR2, getR2PublicUrl } from "@/lib/cloudflare/r2";
 
 async function hasLiveReference(key: string) {
   const url = getR2PublicUrl(key);
-  const [references, scenes, versions, assets] = await Promise.all([
+  const [references, scenes, versions, assets, tasks, generations, jobs] = await Promise.all([
     db.select({ id: referenceVideos.id }).from(referenceVideos).where(or(
       eq(referenceVideos.storageKey, key), inArray(referenceVideos.sourceUrl, [url, key]),
       sql`${referenceVideos.metadata}->>'audioPreviewUrl' IN (${url}, ${key})`,
@@ -16,8 +16,20 @@ async function hasLiveReference(key: string) {
     )).limit(1),
     db.select({ id: sceneVersions.id }).from(sceneVersions).where(inArray(sceneVersions.generatedVideoUrl, [url, key])).limit(1),
     db.select({ id: projectAssets.id }).from(projectAssets).where(or(eq(projectAssets.storageKey, key), inArray(projectAssets.url, [url, key]))).limit(1),
+    db.select({ id: commercialTasks.id }).from(commercialTasks).where(and(
+      sql`(${commercialTasks.state} in ('queued','running','review') or (${commercialTasks.state} = 'quoted' and ${commercialTasks.expiresAt} > now()))`,
+      sql`(strpos(${commercialTasks.input}::text, ${JSON.stringify(url)}) > 0 or strpos(${commercialTasks.input}::text, ${JSON.stringify(key)}) > 0
+        or strpos(${commercialTasks.result}::text, ${JSON.stringify(url)}) > 0 or strpos(${commercialTasks.result}::text, ${JSON.stringify(key)}) > 0)`,
+    )).limit(1),
+    db.select({ id: videoGeneration.id }).from(videoGeneration).where(and(
+      inArray(videoGeneration.status, ["pending", "queued", "processing", "running"]),
+      sql`(strpos(${videoGeneration.rawResponse}::text, ${JSON.stringify(url)}) > 0 or strpos(${videoGeneration.rawResponse}::text, ${JSON.stringify(key)}) > 0)`,
+    )).limit(1),
+    db.select({ id: workflowJobs.id }).from(workflowJobs).where(and(inArray(workflowJobs.status, ["queued", "processing"]),
+      sql`(strpos(${workflowJobs.input}::text, ${JSON.stringify(url)}) > 0 or strpos(${workflowJobs.input}::text, ${JSON.stringify(key)}) > 0)`,
+    )).limit(1),
   ]);
-  return Boolean(references.length || scenes.length || versions.length || assets.length);
+  return Boolean(references.length || scenes.length || versions.length || assets.length || tasks.length || generations.length || jobs.length);
 }
 
 export async function processMediaCleanupJobs(limit = 10, onlyKeys?: string[]) {

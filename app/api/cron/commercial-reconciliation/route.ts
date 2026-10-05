@@ -9,6 +9,7 @@ import { commercialConsumptionEnabled, recoverCommercialAnalysisTasks } from "@/
 import { runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { processMediaCleanupJobs } from "@/lib/workflow/media-cleanup";
+import { expireProjectMedia } from "@/lib/workflow/media-retention";
 
 export const maxDuration = 300;
 export async function GET(request: NextRequest) {
@@ -34,6 +35,7 @@ export async function GET(request: NextRequest) {
   )).orderBy(asc(commercialTasks.updatedAt)).limit(1);
   if (queued?.kind === "workflow_analysis") await runAnalysisTask(queued.id);
   else if (queued && commercialConsumptionEnabled()) await runCommercialTask(queued.id);
+  const retention = await expireProjectMedia(10);
   await processMediaCleanupJobs(10);
-  return NextResponse.json({ checked }, { headers: { "Cache-Control": "no-store" } });
+  return NextResponse.json({ checked, retention }, { headers: { "Cache-Control": "no-store" } });
 }

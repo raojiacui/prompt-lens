@@ -771,6 +771,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         <LiveCreditBalanceLink status={creditStatus} locale={locale} />
       </div>
       <p className="max-w-5xl text-lg leading-relaxed text-muted-foreground">{locale === "en" ? "Capture the subjects, action, camera movement and lighting of your reference in detailed recreation prompts." : "提取原视频的画面、人物、动作、运镜与光影细节，整合为可直接用于生成的复刻提示词。"}</p>
+      {Boolean(bundle?.project.metadata?.retentionExpiredAt) && <p role="status" className="text-sm text-muted-foreground">{locale === "en" ? "This project's media and analysis prompts expired after 7 days and have been cleared. Generated videos remain in generation history, subject to provider link availability." : "此项目的素材和分析提示词已满 7 天，内容已清理。生成视频仍可在生成历史中查看，链接有效期由服务商决定。"}</p>}
 
       <div className="grid gap-4 xl:h-[calc(100vh-8rem)] xl:min-h-[680px] xl:grid-cols-[0.68fr_1.32fr]">
         <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:min-h-0 xl:flex-col xl:overflow-hidden">

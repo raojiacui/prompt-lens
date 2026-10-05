@@ -213,7 +213,7 @@ function addR2KeysFromJsonArray(keys: Set<string>, value: unknown) {
   value.forEach((item) => addR2Key(keys, item));
 }
 
-async function collectProjectR2Keys(projectId: string, tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) {
+export async function collectProjectR2Keys(projectId: string, tx: Parameters<Parameters<typeof db.transaction>[0]>[0], includeGenerated = true) {
   const keys = new Set<string>();
   const [refs, scenes, sceneVersionRows, assets] = await Promise.all([
     tx.query.referenceVideos.findMany({ where: eq(referenceVideos.projectId, projectId) }),
@@ -234,9 +234,10 @@ async function collectProjectR2Keys(projectId: string, tx: Parameters<Parameters
     addR2Key(keys, scene.audioUrl);
   });
   sceneVersionRows.forEach((sceneVersion) => {
-    addR2Key(keys, sceneVersion.generatedVideoUrl);
+    if (includeGenerated) addR2Key(keys, sceneVersion.generatedVideoUrl);
   });
   assets.forEach((asset) => {
+    if (!includeGenerated && ["generated_video", "final_video"].includes(asset.type)) return;
     addR2Key(keys, asset.storageKey);
     addR2Key(keys, asset.url);
   });

@@ -357,7 +357,7 @@
     "trialTitle": "Free trial",
     "trialDesc": "Each new account can analyze two single-shot videos under 10 seconds for free using the platform KIE Gemini 3.8 Flash, without spending user credits. To continue or choose another model, add your own KIE API key or purchase a video analysis package.",
     "storageTitle": "Download and retention",
-    "storageDesc": "Download, copy, and use video generation results, analysis outputs, and other generated content promptly. History is kept for up to 7 days and may be cleaned after that."
+    "storageDesc": "Project source videos, shot clips, keyframes, and analysis prompts are kept for 7 days after the project's latest analysis or rewrite content, then removed by scheduled cleanup. Active tasks postpone cleanup. Download files and copy prompts promptly. Generated videos use provider-hosted links; their validity is determined by the provider. Order, credit, and refund records are not affected."
   },
   "admin": {
     "title": "Admin Panel",
