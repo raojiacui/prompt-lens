@@ -92,7 +92,7 @@ export type GenerationPriceInput = {
   referenceVideoSeconds?: number;
 };
 
-export const GENERATION_PRICING_VERSION = "2026-10-05-generation-v4";
+export const GENERATION_PRICING_VERSION = "2026-10-05-generation-v5";
 
 const generationCreditBasis = COMMERCIAL_PACKAGES.reduce((lowest, pack) =>
   BigInt(pack.priceCents) * BigInt(lowest.credits) < BigInt(lowest.priceCents) * BigInt(pack.credits) ? pack : lowest
@@ -118,7 +118,7 @@ export function estimateGeneration(input: GenerationPriceInput) {
   if (["wan/2-6-text-to-video", "wan/2-6-image-to-video", "wan/2-6-video-to-video"].includes(modelId) && [5, 10, 15].includes(seconds)) {
     if (resolution === "720p") microUsdPerSecond = 70000;
   }
-  if (modelId === "kling-2.6/text-to-video" && resolution === "1080p" && [5, 10].includes(seconds) && reference === undefined) microUsdPerSecond = audio ? 110000 : 55000;
+  if (["kling-2.6/text-to-video", "kling-2.6/image-to-video"].includes(modelId) && resolution === "1080p" && [5, 10].includes(seconds) && reference === undefined) microUsdPerSecond = audio ? 110000 : 55000;
   if (modelId === "kling-3.0/video" && ["720p", "1080p"].includes(resolution) && seconds >= 3 && seconds <= 15 && reference === undefined) {
     microUsdPerSecond = resolution === "720p" ? (audio ? 100000 : 70000) : (audio ? 135000 : 90000);
   }
@@ -127,12 +127,17 @@ export function estimateGeneration(input: GenerationPriceInput) {
       microUsdPerSecond = resolution === "480p" ? (reference === undefined ? 19000 : 12000) : resolution === "720p" ? (reference === undefined ? 41000 : 25000) : 0;
     }
     if (modelId === "bytedance/seedance-2-fast" && resolution === "720p") microUsdPerSecond = reference === undefined ? 124000 : 75000;
+    if (modelId === "bytedance/seedance-2-fast" && resolution === "480p") microUsdPerSecond = reference === undefined ? 59000 : 34000;
     if (modelId === "bytedance/seedance-2") {
       microUsdPerSecond = resolution === "720p" ? (reference === undefined ? 205000 : 125000)
         : resolution === "1080p" ? (reference === undefined ? 510000 : 310000) : 0;
     }
   }
   if (modelId === "wan/2-7-videoedit" && reference !== undefined && seconds <= reference && seconds >= 2 && seconds <= 10) {
+    microUsdPerSecond = resolution === "720p" ? 80000 : resolution === "1080p" ? 120000 : 0;
+  }
+  if ((["wan/2-7-text-to-video", "wan/2-7-image-to-video"].includes(modelId) && reference === undefined && seconds >= 2 && seconds <= 15) ||
+      (modelId === "wan/2-7-r2v" && reference !== undefined && seconds >= 2 && seconds <= 10)) {
     microUsdPerSecond = resolution === "720p" ? 80000 : resolution === "1080p" ? 120000 : 0;
   }
   if (modelId === "happyhorse/video-edit" && reference !== undefined && seconds === reference && seconds >= 3 && seconds <= 60) {

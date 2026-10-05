@@ -6,6 +6,8 @@
  */
 
 import { uploadToR2 } from "@/lib/cloudflare/r2";
+import { getModelById } from "../model-registry";
+import { buildMarketGenerationPayload } from "../generation-payload";
 
 export type VideoGenerationInput = {
   prompt: string;
@@ -147,6 +149,9 @@ export function buildKIEJobPayload(
 ): Record<string, unknown> {
   if (input.modelId.startsWith("sora-")) throw new Error("MODEL_UNAVAILABLE");
   if (input.modelId.startsWith("grok-imagine") || ["happyhorse/video-edit", "kling-omni/transformation", "kling-3.0-omni/transformation"].includes(input.modelId)) throw new Error("MODEL_UNAVAILABLE");
+  if (getModelById(input.modelId) && !isKIEVeoModel(input.modelId)) {
+    return buildMarketGenerationPayload(input, imageUrls);
+  }
   const inputPayload: Record<string, unknown> = {
     prompt: input.prompt,
     duration: String(input.duration ?? 5),
@@ -202,28 +207,7 @@ export function buildKIEWanVideoEditPayload(
     throw new Error("Wan 2.7 Video Edit requires a source video URL");
   }
 
-  const editInput: Record<string, unknown> = {
-    prompt: input.prompt,
-    video_url: referenceVideoUrl,
-    duration: 0,
-    audio_setting: "auto",
-    prompt_extend: true,
-    watermark: false,
-  };
-
-  if (referenceImageUrl) editInput.reference_image = referenceImageUrl;
-  if (input.negativePrompt) editInput.negative_prompt = input.negativePrompt;
-  if (input.resolution) editInput.resolution = input.resolution.toLowerCase();
-  if (input.aspectRatio && input.aspectRatio !== "auto") {
-    editInput.aspect_ratio = input.aspectRatio;
-  }
-  if (input.seed !== undefined) editInput.seed = input.seed;
-
-  return {
-    model: input.modelId,
-    input: editInput,
-    ...(input.webhookUrl ? { callBackUrl: input.webhookUrl } : {}),
-  };
+  return buildMarketGenerationPayload({ ...input, duration: input.duration ?? 0, referenceVideoUrl }, referenceImageUrl ? [referenceImageUrl] : []);
 }
 
 export function mapKIEVeoSuccessFlag(

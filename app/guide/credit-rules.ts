@@ -10,9 +10,12 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
   const ordinary: [string, string, string, boolean][] = [
     ["Wan 2.6", "wan/2-6-text-to-video", "720p", false],
     ["Wan 2.6", "wan/2-6-text-to-video", "1080p", false],
+    ["Wan 2.7", "wan/2-7-text-to-video", "720p", false],
+    ["Wan 2.7", "wan/2-7-text-to-video", "1080p", false],
     ["Seedance Mini", "bytedance/seedance-2-mini", "480p", false],
     ["Seedance Mini", "bytedance/seedance-2-mini", "720p", false],
     ["Seedance Fast", "bytedance/seedance-2-fast", "720p", false],
+    ["Seedance Fast", "bytedance/seedance-2-fast", "480p", false],
     ["Seedance 2", "bytedance/seedance-2", "720p", false],
     ["Seedance 2", "bytedance/seedance-2", "1080p", false],
     ["Kling 2.6", "kling-2.6/text-to-video", "1080p", false],
@@ -33,10 +36,13 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
     ["Seedance Mini", "bytedance/seedance-2-mini", "480p"],
     ["Seedance Mini", "bytedance/seedance-2-mini", "720p"],
     ["Seedance Fast", "bytedance/seedance-2-fast", "720p"],
+    ["Seedance Fast", "bytedance/seedance-2-fast", "480p"],
     ["Seedance 2", "bytedance/seedance-2", "720p"],
     ["Seedance 2", "bytedance/seedance-2", "1080p"],
     ["Wan 2.6", "wan/2-6-video-to-video", "720p"],
     ["Wan 2.6", "wan/2-6-video-to-video", "1080p"],
+    ["Wan 2.7", "wan/2-7-r2v", "720p"],
+    ["Wan 2.7", "wan/2-7-r2v", "1080p"],
   ];
   const editing: [string, string, string][] = [
     ["Wan 2.7", "wan/2-7-videoedit", "720p"], ["Wan 2.7", "wan/2-7-videoedit", "1080p"],
@@ -71,12 +77,12 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "Two introductory trials apply only to eligible single-shot analysis within 10 seconds, not generation. After trials, purchase credits or explicitly use your own key; the platform key is not an automatic fallback.",
     ], table: { columns: zh ? ["单个镜头时长", "Gemini 3.8 Flash（积分/镜头）"] : ["Single-shot duration", "Gemini 3.8 Flash (credits/shot)"], rows: analysisRows } },
     { title: zh ? "文字、图片生成积分表（每条）" : "Text and image generation (per output)", paragraphs: zh ? [
-      "下表每个数字都是生成一条视频的积分。Wan 文生、单图生成同配置价格相同；Seedance 文字和图片参考使用同一档价格；Kling 2.6 此处为文字生成，Kling 3 支持文字和图片。素材数量、比例等仍需符合模型限制。",
-      "Wan 支持 5、10、15 秒；Seedance 支持 4–15 秒；Kling 2.6 支持 5、10 秒；Kling 3 支持 3–15 秒。表中“-”表示当前未支持该组合，不代表免费。其他支持时长的积分会显示在生成按钮与确认报价中。",
+      "下表每个数字都是生成一条视频的积分。Wan 2.6、Wan 2.7、Kling 2.6 的文字与图片生成同配置价格相同；Seedance 文字和图片参考使用同一档价格。素材数量、比例等仍需符合模型限制。",
+      "Wan 2.6 支持 5、10、15 秒；Wan 2.7 文字与图片生成支持 2–15 秒，参考视频生成支持 2–10 秒；Seedance 支持 4–15 秒，Fast 和 Mini 仅支持 480p、720p；Kling 2.6 支持 5、10 秒，仅支持 1080p；Kling 3 支持 3–15 秒。表中“-”表示当前未支持该组合，不代表免费。其他支持时长的积分会显示在生成按钮与确认报价中。",
       "Kling 有声与无声价格分别列出；以当前页面可选的声音配置为准。",
     ] : [
-      "Each number is the price of one output. Wan text and single-image modes share these rates. Seedance text and image references share their tier. Kling 2.6 here is text-only; Kling 3 supports text and images. Input and aspect-ratio limits still apply.",
-      "Wan supports 5/10/15 seconds; Seedance 4–15; Kling 2.6 5/10; Kling 3 3–15. A dash means unsupported, not free. Other supported durations are priced on the generation button and confirmation quote.",
+      "Each number is the price of one output. Wan 2.6, Wan 2.7 and Kling 2.6 text and image modes share these rates. Seedance text and image references share their tier. Input and aspect-ratio limits still apply.",
+      "Wan 2.6 supports 5/10/15 seconds; Wan 2.7 text and image 2–15, video reference 2–10; Seedance 4–15, with Fast and Mini limited to 480p/720p; Kling 2.6 5/10 at 1080p only; Kling 3 3–15. A dash means unsupported, not free. Other supported durations are priced on the generation button and confirmation quote.",
       "Kling audio and silent prices are listed separately. Use the audio configuration available on the current page.",
     ], table: { columns: [zh ? "模型" : "Model", zh ? "画质" : "Quality", zh ? "声音配置" : "Audio", ...durationColumns], rows: ordinary.map(([name, model, resolution, audio]) => [name, resolution, audio ? (zh ? "有声" : "On") : (model.startsWith("kling") ? (zh ? "无声" : "Off") : (zh ? "模型默认" : "Model default")), ...generationDurations.map(s => price(model, resolution, s, audio))]) } },
     { title: zh ? "Veo 3.1 生成积分表（每条）" : "Veo 3.1 generation credits (per output)", paragraphs: zh ? [
@@ -94,8 +100,10 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
     ] } },
     { title: zh ? "参考视频生成（输入视频为 5 秒）" : "Reference generation (5-second input)", paragraphs: zh ? [
       "下表为参考视频 5 秒时，生成一条视频所需的积分；列标题为输出视频时长。其他参考时长以页面显示的积分为准。",
+      "Wan 2.6 和 Wan 2.7 的参考视频生成按输出时长收费，同一输出配置不会因输入视频更长而增加积分。Seedance 的参考视频生成费用会随输入视频时长变化。选择模型系列后，系统根据文字、图片、视频素材使用对应接口，不需要另选文生或图生型号。视频编辑需单独选择 Wan 2.7 Video Edit。",
     ] : [
       "The table shows credits per output with a five-second reference video. Column headings are output durations. For other reference durations, use the credits shown on the page.",
+      "Wan 2.6 and Wan 2.7 reference generation charge by output length, not input length. Seedance reference prices also depend on input length. The selected model family uses text, image or video endpoints based on your materials. Editing an existing video requires Wan 2.7 Video Edit.",
     ], table: { columns: [zh ? "模型" : "Model", zh ? "画质" : "Quality", ...durationColumns], rows: referenceModels.map(([name, model, resolution]) => [name, resolution, ...generationDurations.map(s => price(model, resolution, s, false, 5))]) } },
     { title: zh ? "视频编辑（按输出时长）" : "Video editing (output duration)", paragraphs: zh ? [
       "这里指视频生成中的编辑模型，不是待开放的独立“视频剪辑”工具。下表为输入与输出等长、无额外音频选项时，每条视频所需的积分；其他配置以页面显示的积分为准。",

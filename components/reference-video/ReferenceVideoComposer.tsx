@@ -15,23 +15,15 @@ import { useLocale, useTranslations } from "next-intl";
 import { localizedStatus } from "@/lib/workflow/interface-copy";
 import { GenerationQuoteDialog } from "@/components/payments/generation-quote-dialog";
 import { generationCreditPreview } from "@/lib/billing/generation-credit-preview";
-import { getModelById } from "@/lib/ai/model-registry";
+import { getModelById, type ModelRegistryEntry } from "@/lib/ai/model-registry";
+import { generationChoiceId, generationChoices, generationDisplayName, resolveGenerationModel } from "@/lib/ai/generation-models";
 import { refreshWalletBalance } from "@/lib/billing/use-wallet-balance";
 import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
 import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 type ModelId = string;
-type RegistryVideoModel = {
-  enabled?: boolean;
-  kieModelId?: string;
-  displayName?: string;
-  maxDuration?: number;
-  durationOptions?: number[];
-  aspectRatios?: string[];
-  category?: string;
-  capabilities?: string[];
-};
+
 type AspectRatio =
   | "auto"
   | "16:9"
@@ -83,7 +75,7 @@ const aspectRatioOptions: Array<{
 const qualityOptions: Quality[] = ["480P", "720P", "1080P", "4K"];
 const outputCountOptions: OutputCount[] = ["1", "2", "3", "4"];
 const defaultGenerationModelId = "bytedance/seedance-2-mini";
-const minGeneratedVideoDuration = 4;
+
 const maxUploadedReferenceImages = 9;
 const maxUploadedReferenceVideos = 1;
 const minKieReferenceImageAspectRatio = 0.4;
@@ -91,61 +83,15 @@ const maxKieReferenceImageAspectRatio = 2.5;
 const minKieReferenceImageDimension = 300;
 const maxKieReferenceImageDimension = 6000;
 
-function durationRange(minSeconds: number, maxSeconds: number) {
-  const min = Math.max(1, Math.round(minSeconds));
-  const max = Math.max(min, Math.round(maxSeconds));
-  return Array.from({ length: max - min + 1 }, (_, index) => `${min + index}s` as Duration);
+function generationOption(entry: ModelRegistryEntry) {
+  return {
+    id: entry.kieModelId,
+    label: generationDisplayName(entry.kieModelId),
+    supportedDurations: (entry.durationOptions || [0]).map(s => `${s}s` as Duration),
+    supportedAspectRatios: (entry.aspectRatios || ["16:9"]) as Exclude<AspectRatio, "auto">[],
+  };
 }
-
-const fallbackModels: Array<{
-  id: ModelId;
-  label: string;
-  supportedDurations: Duration[];
-  supportedAspectRatios: Exclude<AspectRatio, "auto">[];
-}> = [
-  {
-    id: "wan/2-7-videoedit",
-    label: "Wan 2.7 Video Edit",
-    supportedDurations: ["0s"],
-    supportedAspectRatios: ["16:9", "9:16", "4:3", "3:4", "1:1"],
-  },
-  {
-    id: "bytedance/seedance-2",
-    label: "Seedance 2.0",
-    supportedDurations: durationRange(minGeneratedVideoDuration, 10),
-    supportedAspectRatios: ["16:9", "4:3", "1:1", "3:4", "9:16"],
-  },
-  {
-    id: "bytedance/seedance-2-fast",
-    label: "Seedance 2.0 Fast",
-    supportedDurations: durationRange(minGeneratedVideoDuration, 10),
-    supportedAspectRatios: ["16:9", "4:3", "1:1", "3:4", "9:16"],
-  },
-  {
-    id: "veo3_fast",
-    label: "Veo 3.1 Fast",
-    supportedDurations: ["4s", "6s", "8s"],
-    supportedAspectRatios: ["16:9", "9:16"],
-  },
-  {
-    id: "bytedance/seedance-2-mini",
-    label: "Seedance 2.0 Mini",
-    supportedDurations: durationRange(minGeneratedVideoDuration, 15),
-    supportedAspectRatios: ["16:9", "4:3", "1:1", "3:4", "9:16"],
-  },
-  {
-    id: "kling-2.6/text-to-video",
-    label: "Kling 2.6",
-    supportedDurations: durationRange(minGeneratedVideoDuration, 10),
-    supportedAspectRatios: ["16:9", "9:16", "1:1"],
-  },
-  {
-    id: "kling-3.0/video",
-    label: "Kling 3.0",
-    supportedDurations: durationRange(minGeneratedVideoDuration, 15),
-    supportedAspectRatios: ["16:9", "9:16", "1:1"],
-  },
-];
+const models = generationChoices().map(generationOption);
 
 const initialVariants: GenerationVariant[] = [
   {
@@ -356,7 +302,7 @@ export function ReferenceVideoComposer({
 
   const [prompt, setPrompt] = useState(initialPrompt || "");
   const [model, setModel] = useState<ModelId>(defaultGenerationModelId);
-  const [models, setModels] = useState(fallbackModels);
+
   const [aspectRatio, setAspectRatio] = useState<AspectRatio>("16:9");
   const [quality, setQuality] = useState<Quality>("720P");
   const [duration, setDuration] = useState<Duration>("5s");
@@ -415,8 +361,19 @@ export function ReferenceVideoComposer({
   const [variants, setVariants] = useState<GenerationVariant[]>(initialVariants);
   const [sceneReferenceImageUrl, setSceneReferenceImageUrl] = useState(hiddenReferenceImageUrl || "");
 
-  const selectedModelConfig = models.find((modelOption) => modelOption.id === model) ?? models[0];
-  const supportedQualityOptions = useMemo(() => qualityOptions.filter(option => getModelById(model)?.resolutionOptions?.includes(option.toLowerCase())), [model]);
+  const readyReplacementAssets = assets.filter(
+    (asset) => asset.status === "ready" && asset.type.startsWith("image/"),
+  );
+  const readyReferenceVideoAsset = assets.find(
+    (asset) => asset.status === "ready" && asset.type.startsWith("video/") && asset.url,
+  );
+  const resolvedModel = useMemo(() => {
+    try {
+      return resolveGenerationModel(model, { hasImages: readyReplacementAssets.length > 0 || Boolean(sceneReferenceImageUrl), hasVideo: Boolean(readyReferenceVideoAsset?.url) });
+    } catch { return undefined; }
+  }, [model, readyReplacementAssets.length, sceneReferenceImageUrl, readyReferenceVideoAsset?.url]);
+  const selectedModelConfig = useMemo(() => generationOption(resolvedModel || getModelById(model)!), [resolvedModel, model]);
+  const supportedQualityOptions = useMemo(() => qualityOptions.filter(option => (resolvedModel || getModelById(model))?.resolutionOptions?.includes(option.toLowerCase())), [model, resolvedModel]);
   useEffect(() => {
     if (supportedQualityOptions.length && !supportedQualityOptions.includes(quality)) setQuality(supportedQualityOptions[0]);
     const durations = selectedModelConfig.supportedDurations;
@@ -450,12 +407,7 @@ export function ReferenceVideoComposer({
     sceneId: initialSceneId || undefined,
     projectVersionId: initialProjectVersionId || undefined,
   };
-  const readyReplacementAssets = assets.filter(
-    (asset) => asset.status === "ready" && asset.type.startsWith("image/"),
-  );
-  const readyReferenceVideoAsset = assets.find(
-    (asset) => asset.status === "ready" && asset.type.startsWith("video/") && asset.url,
-  );
+
   const uploadedReferenceImageCount = assets.filter(
     (asset) => asset.type.startsWith("image/") && asset.status !== "failed",
   ).length;
@@ -512,10 +464,12 @@ export function ReferenceVideoComposer({
     imageCount: readyReplacementAssets.length || (sceneReferenceImageUrl ? 1 : 0),
     referenceSeconds: referenceTiming?.url === referenceUrl ? referenceTiming?.seconds : undefined,
   });
-  const generationCostLabel = !commercialEnabled || generationPayer === "byok"
+  const generationCostLabel = !resolvedModel
+    ? (zh ? "当前模型不支持这些素材" : "Materials unsupported by this model")
+    : !commercialEnabled || generationPayer === "byok"
     ? (zh ? "0 平台积分 · 自带 Key" : "0 platform credits · own key")
     : creditPreview.state === "priced"
-      ? (zh ? `预计 ${creditPreview.total} 积分` : `Est. ${creditPreview.total} credits`)
+      ? (zh ? `预计 ${creditPreview.total} 积分` : `Est. ${creditPreview.total} credits`) + (model.startsWith("veo3") ? (zh ? " · 按条计费" : " · per video") : "")
       : creditPreview.state === "pending"
         ? (zh ? "积分待报价" : "Credits pending quote")
         : (zh ? "当前组合暂不支持平台积分" : "This combination does not support platform credits");
@@ -527,45 +481,7 @@ export function ReferenceVideoComposer({
   }, [durationSeconds]);
 
 
-  useEffect(() => {
-    let cancelled = false;
-    async function loadModelRegistry() {
-      try {
-        const response = await fetch("/api/models");
-        const data = await response.json();
-        const registryModels = Array.isArray(data.models)
-          ? data.models
-              .filter(
-                (item: RegistryVideoModel) =>
-                  item.enabled &&
-                  item.kieModelId &&
-                  (item.category === "video_generation" || item.category === "video_edit"),
-              )
-              .map((item: RegistryVideoModel) => ({
-                id: item.kieModelId as ModelId,
-                label: item.displayName || item.kieModelId,
-                supportedDurations: item.maxDuration
-                    ? item.durationOptions?.map(seconds => `${seconds}s` as Duration) || durationRange(minGeneratedVideoDuration, item.maxDuration)
-                    : item.category === "video_edit"
-                      ? ["0s" as Duration]
-                      : durationRange(minGeneratedVideoDuration, 10),
-                supportedAspectRatios: (item.aspectRatios || ["16:9"]) as Exclude<AspectRatio, "auto">[],
-              }))
-          : [];
-        if (!cancelled && registryModels.length) {
-          setModels(registryModels);
-          if (initialModel && registryModels.some((item: { id: ModelId }) => item.id === initialModel)) setModel(initialModel);
-          else setModel(current => registryModels.some((item: { id: ModelId }) => item.id === current) ? current : defaultGenerationModelId);
-        }
-      } catch {
-        if (!cancelled) setModels(fallbackModels);
-      }
-    }
-    void loadModelRegistry();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+
   useEffect(
     () => () => {
       previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
@@ -828,7 +744,7 @@ export function ReferenceVideoComposer({
           duration: Duration;
           outputCount: OutputCount;
         }>;
-        if (!initialModel && parsed.model && parsed.model !== "__auto_balanced" && parsed.model !== "auto") setModel(parsed.model);
+        if (!initialModel && parsed.model) setModel(models.some(item => item.id === generationChoiceId(parsed.model!)) ? generationChoiceId(parsed.model) : defaultGenerationModelId);
         if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
         if (parsed.quality) setQuality(parsed.quality);
         if (parsed.duration) setDuration(parsed.duration);
@@ -849,7 +765,7 @@ export function ReferenceVideoComposer({
   }, [hiddenReferenceImageUrl]);
 
   useEffect(() => {
-    if (initialModel && initialModel !== "auto" && initialModel !== "__auto_balanced") setModel(initialModel);
+    if (initialModel) setModel(models.some(item => item.id === generationChoiceId(initialModel)) ? generationChoiceId(initialModel) : defaultGenerationModelId);
   }, [initialModel]);
 
   useEffect(() => {
@@ -1702,7 +1618,7 @@ export function ReferenceVideoComposer({
               <button
                 type="button"
                 onClick={() => void createVideo()}
-                disabled={isRunning}
+                disabled={isRunning || !resolvedModel || (commercialEnabled && generationPayer === "platform" && creditPreview.state === "unavailable")}
                 className="mt-auto flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#D97757] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <WandSparkles className="h-5 w-5" />

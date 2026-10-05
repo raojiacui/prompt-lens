@@ -89,7 +89,7 @@ describe("V6 commercial pricing", () => {
     ["bytedance/seedance-2-fast", "720p", 7, false, 68],
   ] as const)("estimates %s %s %is", (modelId, resolution, durationSeconds, audio, expected) => {
     const quote = estimateGeneration({ modelId, resolution, durationSeconds, audio });
-    expect(quote).toMatchObject({ credits: expected, adapterVerified: false, version: "2026-10-05-generation-v4" });
+    expect(quote).toMatchObject({ credits: expected, adapterVerified: false, version: "2026-10-05-generation-v5" });
     const budgetMicroCny = BigInt(quote.microUsd) * 7n + 150000n;
     for (const pack of COMMERCIAL_PACKAGES) {
       expect(BigInt(quote.credits) * BigInt(pack.priceCents) * 10000n >= budgetMicroCny * BigInt(pack.credits)).toBe(true);

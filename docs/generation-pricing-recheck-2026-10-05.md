@@ -1,12 +1,22 @@
 # Generation Pricing Recheck 2026-10-05
 
-Current version: `2026-10-05-generation-v4`. Supersedes the conversion policy in the 2026-10-04 audit and Veo v1 audit. Historical confirmed quotes and task snapshots are not repriced.
+Current version: `2026-10-05-generation-v5`. Supersedes the conversion policy in the 2026-10-04 audit and Veo v1 audit. Historical confirmed quotes and task snapshots are not repriced.
 
 ## Evidence
 
 Read [KIE official pricing](https://kie.ai/zh-CN/pricing) and its public `POST https://api.kie.ai/client/v1/model-pricing/page`: six pages, 524 records. No authentication or paid inference used. Existing supported Mini, Fast, Seedance 2, Wan 2.6/2.7, Kling 2.6/3 and Veo rates match the published USD amounts. KIE points are not platform wallet credits.
 
 Veo is explicitly billed per video, not per second. 4/6/8 seconds retain the same cost within a tier and resolution. Wan 2.6 has explicit 5/10/15-second tiers. Seedance reference video bills input plus output seconds. Wan editing bills output seconds only.
+
+Official OpenAPI sources rechecked for material routing:
+- [Seedance Fast](https://docs.kie.ai/market/bytedance/seedance-2-fast): 4-15 seconds, 480p/720p only. 480p USD 0.059/sec (reference USD 0.034/sec). No advertised 1080p endpoint.
+- [Kling 2.6 image](https://docs.kie.ai/market/kling/image-to-video): 5/10 seconds at 1080p; same USD 0.275/0.55 silent and 0.55/1.10 sound as text.
+- [Wan 2.7 text](https://docs.kie.ai/market/wan/2-7-text-to-video): 2-15 seconds, `ratio` field.
+- [Wan 2.7 image](https://docs.kie.ai/market/wan/2-7-image-to-video): 2-15 seconds, `first_frame_url` / optional `last_frame_url`.
+- [Wan 2.7 reference](https://docs.kie.ai/market/wan/2-7-r2v): 2-10 output seconds, `reference_video` / `reference_image` arrays.
+- [Wan 2.7 edit](https://docs.kie.ai/market/wan/2-7-videoedit): 2-10 input seconds; `video_url`, optional singular `reference_image`, duration 0 retains original length.
+
+All four Wan 2.7 endpoints publish USD 0.08/sec at 720p and 0.12/sec at 1080p, charging output seconds only. Their five-second prices are 32/47 wallet credits; ten-second prices are 63/93. Model-family selection is independent of material modality. Editing remains a separate user intent.
 
 ## Approved Conversion Policy
 

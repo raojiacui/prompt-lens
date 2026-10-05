@@ -5,6 +5,7 @@ import { createKieVeoGeneration, getKieVeoGenerationStatus, kieErrorResponse } f
 import { db, projects, sceneVersions, videoGeneration, workflowJobs } from "@/lib/db";
 import { generationKeyFingerprint, resolveGenerationStatusKey } from "@/lib/billing/generation-key";
 import { getModelById, listModels, routeModel } from "@/lib/ai/model-registry";
+import { resolveGenerationModel } from "@/lib/ai/generation-models";
 import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
 
 export const runtime = "nodejs";
@@ -31,7 +32,7 @@ function isWanVideoEditModel(modelId: string) {
 function parseModel(value: unknown, options: { hasReferenceVideo: boolean; hasImages: boolean }): string {
   if (typeof value === "string" && value.trim() && value.trim() !== "auto") {
     const registryModel = getModelById(value.trim());
-    if (registryModel?.enabled && ["video_generation", "video_edit"].includes(registryModel.category)) return registryModel.kieModelId;
+    if (registryModel?.enabled && ["video_generation", "video_edit"].includes(registryModel.category)) return resolveGenerationModel(registryModel.kieModelId, { hasImages: options.hasImages, hasVideo: options.hasReferenceVideo }).kieModelId;
     throw new Error("MODEL_UNAVAILABLE");
   }
 
@@ -44,7 +45,7 @@ function parseModel(value: unknown, options: { hasReferenceVideo: boolean; hasIm
         ? ["text", "reference_image"]
         : ["text"],
   });
-  return routed?.kieModelId || "veo3_fast";
+  return resolveGenerationModel(routed?.kieModelId || "bytedance/seedance-2-mini", { hasImages: options.hasImages, hasVideo: options.hasReferenceVideo }).kieModelId;
 }
 
 function parseAspectRatio(value: unknown, modelId: string): string | undefined {
@@ -64,8 +65,9 @@ function parseDuration(value: unknown, modelId: string): number {
     const n = Number.parseInt(value, 10);
     if (Number.isFinite(n)) parsed = n;
   }
-  const requested = Math.round(parsed ?? supported[0] ?? 5);
-  return supported.reduce((closest, candidate) => Math.abs(candidate - requested) < Math.abs(closest - requested) ? candidate : closest, supported[0] ?? 5);
+  const requested = parsed ?? supported[0] ?? 5;
+  if (!supported.includes(requested)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
+  return requested;
 }
 
 function optionalUuid(value: unknown) {
@@ -169,7 +171,7 @@ export async function POST(request: Request) {
 
     const keyAccess = await resolveKieApiKeyForFeature(auth.user.id, { allowPaidPlatformKey: false });
     if (!keyAccess.apiKey || (body?.payer === "byok" && keyAccess.source !== "user")) {
-      return NextResponse.json({ error: "视频生成需要先在设置里配置你自己的 KIE API Key。平台不再提供视频生成额度。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
+      return NextResponse.json({ error: "使用自己的 Key 生成视频，需要先在设置里配置 KIE API Key。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
     }
 
 

@@ -3,6 +3,8 @@ import { db, commercialTasks, commercialWallets, mediaCleanupJobs, projects, sce
 import { randomUUID } from "node:crypto";
 import { copyR2Object } from "@/lib/cloudflare/r2";
 import { getModelById } from "@/lib/ai/model-registry";
+import { resolveGenerationModel } from "@/lib/ai/generation-models";
+import { buildMarketGenerationPayload } from "@/lib/ai/generation-payload";
 import { buildKIEVeoPayload, isKIEVeoModel } from "@/lib/ai/adapters/kie-video";
 import { getPlatformKieApiKey } from "./platform-access";
 import { generationKeyFingerprint } from "./generation-key";
@@ -26,37 +28,23 @@ export function buildCommercialGenerationPayload(body: Record<string, unknown>, 
   const requested = typeof body.model === "string" ? body.model : "";
   const registry = requested && requested !== "auto" ? getModelById(requested) : undefined;
   if (requested && requested !== "auto" && (!registry?.enabled || !["video_generation", "video_edit"].includes(registry.category))) throw new Error("PAID_MODEL_NOT_VERIFIED");
-  const model = registry?.kieModelId || (video ? "bytedance/seedance-2-fast" : images.length ? "wan/2-6-image-to-video" : "wan/2-6-text-to-video");
+  const selected = registry?.kieModelId || (video ? "bytedance/seedance-2-fast" : images.length ? "wan/2-6-image-to-video" : "wan/2-6-text-to-video");
+  const entry = resolveGenerationModel(selected, { hasImages: images.length > 0, hasVideo: Boolean(video) });
+  const model = entry.kieModelId;
   const duration = Number(body.duration);
   const resolution = typeof body.quality === "string" ? body.quality.toLowerCase() : "720p";
   if (prompt.length < 3 || prompt.length > 5000 || !Number.isSafeInteger(duration)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
   const aspect = typeof body.aspectRatio === "string" && body.aspectRatio !== "auto" ? body.aspectRatio : undefined;
-  const entry = registry || getModelById(model)!;
   if (aspect && !entry.aspectRatios?.includes(aspect)) throw new Error("PAID_GENERATION_ASPECT_UNSUPPORTED");
-  const input: GenerationSnapshot["payload"]["input"] = { prompt, resolution, nsfw_checker: true };
   if (video && (!Number.isSafeInteger(probedReferenceSeconds) || probedReferenceSeconds! <= 0)) throw new Error("REFERENCE_VIDEO_PROBE_REQUIRED");
+  if (video && model.startsWith("bytedance/seedance-2") && (probedReferenceSeconds! < 2 || probedReferenceSeconds! > 15)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
+  if (model === "wan/2-7-videoedit" && (probedReferenceSeconds! < 2 || probedReferenceSeconds! > 10 || (duration !== 0 && duration > probedReferenceSeconds!))) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
   if (isKIEVeoModel(model)) {
-    if (video || !entry.resolutionOptions?.includes(resolution)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
     const veo = buildKIEVeoPayload({ modelId: model, prompt, duration, resolution, aspectRatio: aspect }, images);
-    Object.assign(input, { duration, aspect_ratio: aspect || "16:9", generation_type: veo.generationType, ...(images.length ? { image_urls: images } : {}) });
-  } else if (model.startsWith("wan/2-6-")) {
-    if (![5, 10, 15].includes(duration) || !["720p", "1080p"].includes(resolution)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
-    const expected = video ? "wan/2-6-video-to-video" : images.length ? "wan/2-6-image-to-video" : "wan/2-6-text-to-video";
-    if (model !== expected || images.length > 1 || (video && images.length)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
-    Object.assign(input, { duration: String(duration), multi_shots: false, ...(images.length ? { image_urls: images } : {}), ...(video ? { video_urls: [video] } : {}) });
-    if (aspect && !images.length) input.aspect_ratio = aspect;
-  } else if (model.startsWith("bytedance/seedance-2")) {
-    if (duration < 4 || duration > 15 || prompt.length < 3 || (video && (probedReferenceSeconds! < 2 || probedReferenceSeconds! > 15))) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
-    Object.assign(input, { duration, aspect_ratio: aspect || "adaptive", generate_audio: body.generateAudio === true, ...(images.length ? { reference_image_urls: images } : {}), ...(video ? { reference_video_urls: [video] } : {}) });
-  } else if (model === "kling-3.0/video" || model === "kling-2.6/text-to-video") {
-    if (video || images.length > (model === "kling-3.0/video" ? 2 : 0) || (model === "kling-2.6/text-to-video" ? ![5, 10].includes(duration) || resolution !== "1080p" : duration < 3 || duration > 15 || !["720p", "1080p"].includes(resolution))) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
-    Object.assign(input, { duration: String(duration), aspect_ratio: aspect || "16:9", sound: body.generateAudio === true, ...(model === "kling-3.0/video" ? { mode: resolution === "1080p" ? "pro" : "std", multi_shots: false } : {}), ...(images.length ? { image_urls: images } : {}) });
-    delete input.resolution;
-  } else if (model === "wan/2-7-videoedit") {
-    if (!video || images.length > 1 || probedReferenceSeconds! < 2 || probedReferenceSeconds! > 10 || (duration !== 0 && (duration < 2 || duration > probedReferenceSeconds!)) || !["720p", "1080p"].includes(resolution)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
-    Object.assign(input, { duration, video_url: video, audio_setting: "auto", prompt_extend: true, watermark: false, ...(aspect ? { aspect_ratio: aspect } : {}), ...(images.length ? { reference_image: images[0] } : {}) });
-  } else throw new Error("MODEL_PRICE_UNVERIFIED");
-  return { model, input };
+    if (!entry.resolutionOptions?.includes(resolution)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
+    return { model, input: { prompt, resolution, duration, aspect_ratio: aspect || "16:9", generation_type: veo.generationType, ...(images.length ? { image_urls: images } : {}) } };
+  }
+  return buildMarketGenerationPayload({ modelId: model, prompt, duration, resolution, aspectRatio: aspect, referenceVideoUrl: video, generateAudio: body.generateAudio === true }, images);
 }
 
 export async function quoteCommercialGeneration(userId: string, body: Record<string, unknown>) {

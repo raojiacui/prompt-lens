@@ -170,6 +170,24 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await expect(confirmCommercialTask(userId, quote.id)).rejects.toThrow("QUOTE_EXPIRED");
     expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
   });
+
+  it("resolves paid model-family requests to official image and video endpoints", () => {
+    const base = { userPrompt: "A cinematic cloud palace", duration: 5, quality: "1080p" };
+    const image = "https://example.com/image.jpg";
+    const video = "https://example.com/video.mp4";
+    expect(buildCommercialGenerationPayload({ ...base, model: "kling-2.6/text-to-video", replacementAssets: [{ url: image }] })).toMatchObject({
+      model: "kling-2.6/image-to-video", input: { image_urls: [image], duration: "5" },
+    });
+    expect(buildCommercialGenerationPayload({ ...base, model: "wan/2-6-text-to-video", referenceVideoUrl: video }, 5)).toMatchObject({
+      model: "wan/2-6-video-to-video", input: { video_urls: [video] },
+    });
+    expect(buildCommercialGenerationPayload({ ...base, model: "wan/2-7-text-to-video", replacementAssets: [{ url: image }] })).toMatchObject({
+      model: "wan/2-7-image-to-video", input: { first_frame_url: image },
+    });
+    expect(buildCommercialGenerationPayload({ ...base, model: "wan/2-7-text-to-video", referenceVideoUrl: video, replacementAssets: [{ url: image }] }, 5)).toMatchObject({
+      model: "wan/2-7-r2v", input: { reference_video: [video], reference_image: [image] },
+    });
+  });
   it.each(["success", "fail"] as const)("submits paid Veo to its verified endpoint and settles %s once", async (state) => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
@@ -231,6 +249,41 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await expect(quoteCommercialGeneration(userId, input)).rejects.toThrow("INSUFFICIENT_COMMERCIAL_BALANCE");
     expect(commercialMediaRequest).not.toHaveBeenCalled();
     expect(copyR2Object).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["kling-2.6/text-to-video", "image", "kling-2.6/image-to-video", "1080p", 23],
+    ["wan/2-6-text-to-video", "video", "wan/2-6-video-to-video", "720p", 29],
+    ["wan/2-7-text-to-video", "text", "wan/2-7-text-to-video", "720p", 32],
+    ["wan/2-7-text-to-video", "image", "wan/2-7-image-to-video", "720p", 32],
+    ["wan/2-7-text-to-video", "video", "wan/2-7-r2v", "1080p", 47],
+    ["wan/2-7-videoedit", "video", "wan/2-7-videoedit", "720p", 32],
+  ] as const)("%s %s reserves its quote and releases failed output charges", async (model, materials, providerModel, quality, credits) => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true"); vi.stubEnv("KIE_API_KEY", "test-key");
+    vi.mocked(commercialMediaRequest).mockResolvedValue({ durationUs: 5_000_000 });
+    const quote = await quoteCommercialGeneration(userId, {
+      model, quality, duration: model === "wan/2-7-videoedit" ? 0 : 5, userPrompt: "A cinematic cloud palace",
+      ...(materials === "image" ? { replacementAssets: [{ url: "https://example.com/image.jpg" }] } : {}),
+      ...(materials === "video" ? { referenceVideoUrl: "https://example.com/video.mp4" } : {}),
+    });
+    expect(quote).toMatchObject({ credits, model: providerModel });
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+    await confirmCommercialTask(userId, quote.id);
+    await confirmCommercialTask(userId, quote.id);
+    expect(await balance()).toMatchObject({ credits: 200 - credits, heldCredits: credits });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { taskId: "material-task" } })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { taskId: "material-task", state: "fail" } })));
+    vi.stubGlobal("fetch", fetchMock);
+    await runCommercialTask(quote.id);
+    await runCommercialTask(quote.id);
+    expect(fetchMock.mock.calls[0][0]).toBe("https://api.kie.ai/api/v1/jobs/createTask");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).model).toBe(providerModel);
+    await reconcileCommercialGeneration(quote.id);
+    await reconcileCommercialGeneration(quote.id);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
   });
   it("does not create a billable quote when the reference snapshot fails", async () => {
     await grant(); vi.stubEnv("KIE_API_KEY", "test-key");
