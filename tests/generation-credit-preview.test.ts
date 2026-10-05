@@ -9,6 +9,7 @@ describe("Generation button credit previews", () => {
     ["bytedance/seedance-2-fast", "720P", 5, 4, 260],
     ["bytedance/seedance-2", "720P", 10, 1, 205],
     ["bytedance/seedance-2-mini", "480P", 5, 1, 15],
+    ["bytedance/seedance-2-mini", "720P", 5, 1, 25],
     ["kling-3.0/video", "720P", 5, 1, 40],
     ["kling-2.6/text-to-video", "1080P", 5, 1, 30],
     ["veo3_lite", "720P", 4, 1, 20],

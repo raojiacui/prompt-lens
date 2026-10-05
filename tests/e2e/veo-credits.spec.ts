@@ -15,18 +15,30 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, commercial: { credits: 650, rewrites: 60 } };
       else if (path === "/api/commercial/generation") {
         quoteRequests++;
-        expect(route.request().postDataJSON()).toMatchObject({ model: "veo3_fast", duration: 8, quality: "720P" });
-        body = { id: "veo-quote", credits: 35, model: "veo3_fast", duration: 8, resolution: "720p" };
+        const request = route.request().postDataJSON();
+        expect(request).toMatchObject({ model: "veo3_fast", duration: 8 });
+        expect(request.quality).toMatch(/^(720P|1080P)$/);
+        body = { id: "veo-quote", credits: 35, model: "veo3_fast", duration: 8, resolution: request.quality.toLowerCase() };
       } else if (path === "/api/commercial/confirm") {
         confirmations++;
         body = { tasks: [{ id: "veo-quote", state: "queued" }] };
       } else if (path.startsWith("/api/commercial/tasks/")) body = { state: "running" };
       await route.fulfill({ json: body });
     });
-    await page.addInitScript(() => localStorage.setItem("reference-settings-prompt-lens-video-gen", JSON.stringify({ model: "__auto_balanced", duration: "5s" })));
+    await page.addInitScript(() => localStorage.setItem("reference-settings-prompt-lens-video-gen", JSON.stringify({ model: "__auto_balanced", duration: "0s", quality: "1080P" })));
     await page.goto("/dashboard?tab=video-gen&videoGenPrompt=A%20cinematic%20cloud%20palace");
     await expect(page.locator("select").filter({ has: page.locator('option[value="bytedance/seedance-2-mini"]') })).toHaveValue("bytedance/seedance-2-mini");
     await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
+    await page.getByLabel(locale === "zh" ? "费用来源" : "Payment source").selectOption("platform");
+    const miniGenerate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 15 积分/ : /Generate Video.*Est. 15 credits/i });
+    await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 25 积分/ : /Generate Video.*Est. 25 credits/i })).toBeVisible();
+    await page.getByRole("button", { name: /720P.*5/ }).click();
+    await expect(page.getByRole("button", { name: "1080P", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "4K", exact: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "480P", exact: true }).click();
+    await expect(miniGenerate).toBeVisible();
+    await page.getByRole("button", { name: "720P", exact: true }).click();
+    await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 25 积分/ : /Generate Video.*Est. 25 credits/i })).toBeVisible();
     await page.goto("/dashboard?tab=video-gen&model=veo3_lite&duration=8&videoGenPrompt=A%20cinematic%20cloud%20palace");
     await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
     await expect(page.locator("option").filter({ hasText: /HappyHorse|Grok|Kling Omni Transformation/i })).toHaveCount(0);

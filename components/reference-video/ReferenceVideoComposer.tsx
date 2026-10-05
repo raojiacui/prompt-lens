@@ -15,10 +15,11 @@ import { useLocale, useTranslations } from "next-intl";
 import { localizedStatus } from "@/lib/workflow/interface-copy";
 import { GenerationQuoteDialog } from "@/components/payments/generation-quote-dialog";
 import { generationCreditPreview } from "@/lib/billing/generation-credit-preview";
+import { getModelById } from "@/lib/ai/model-registry";
 import { refreshWalletBalance } from "@/lib/billing/use-wallet-balance";
 import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
 import type { KeyboardEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type ModelId = string;
 type RegistryVideoModel = {
@@ -415,6 +416,12 @@ export function ReferenceVideoComposer({
   const [sceneReferenceImageUrl, setSceneReferenceImageUrl] = useState(hiddenReferenceImageUrl || "");
 
   const selectedModelConfig = models.find((modelOption) => modelOption.id === model) ?? models[0];
+  const supportedQualityOptions = useMemo(() => qualityOptions.filter(option => getModelById(model)?.resolutionOptions?.includes(option.toLowerCase())), [model]);
+  useEffect(() => {
+    if (supportedQualityOptions.length && !supportedQualityOptions.includes(quality)) setQuality(supportedQualityOptions[0]);
+    const durations = selectedModelConfig.supportedDurations;
+    if (!durations.includes(duration)) setDuration(durations[0]);
+  }, [supportedQualityOptions, selectedModelConfig.supportedDurations, quality, duration]);
   const supportedAspectRatioOptions = aspectRatioOptions.filter(
     (option) =>
       option.value === "auto" ||
@@ -457,10 +464,9 @@ export function ReferenceVideoComposer({
   ).length;
   useEffect(() => {
     if (model !== "veo3" && !model.startsWith("veo3_")) return;
-    if (quality === "480P" || (model === "veo3" && quality === "4K")) setQuality("720P");
     const allowed = readyReplacementAssets.length > 2 ? ["8s"] : ["4s", "6s", "8s"];
     if (!allowed.includes(duration)) setDuration("8s");
-  }, [model, quality, duration, readyReplacementAssets.length]);
+  }, [model, duration, readyReplacementAssets.length]);
   const hasUploadingAssets = assets.some((asset) => asset.status === "uploading");
   const mentionableAssets = readyReplacementAssets;
   const generationMode = readyReferenceVideoAsset
@@ -512,7 +518,7 @@ export function ReferenceVideoComposer({
       ? (zh ? `预计 ${creditPreview.total} 积分` : `Est. ${creditPreview.total} credits`)
       : creditPreview.state === "pending"
         ? (zh ? "积分待报价" : "Credits pending quote")
-        : (zh ? "当前配置暂未核价" : "Configuration not priced");
+        : (zh ? "当前组合暂不支持平台积分" : "This combination does not support platform credits");
   const durationLabel = duration === "0s" ? "Original" : duration;
   const formatSummary = `${aspectRatio} | ${quality} | ${zh ? (duration === "0s" ? "原视频时长" : `${durationSeconds} 秒`) : durationLabel} | ${zh ? `${outputCount} 条视频` : `${outputCount} Variation${outputCount === "1" ? "" : "s"}`}`;
 
@@ -1577,8 +1583,8 @@ export function ReferenceVideoComposer({
                           <p className="mb-1.5 text-xs font-medium text-muted-foreground">
                             Resolution
                           </p>
-                          <div className="grid grid-cols-4 gap-1.5 rounded-xl bg-muted/50 p-1.5">
-                            {qualityOptions.filter(option => model === "veo3" ? ["720P", "1080P"].includes(option) : model.startsWith("veo3_") ? option !== "480P" : true).map((option) => (
+                          <div className="grid grid-flow-col auto-cols-fr gap-1.5 rounded-xl bg-muted/50 p-1.5">
+                            {supportedQualityOptions.map((option) => (
                               <button
                                 key={option}
                                 type="button"
