@@ -15,6 +15,5 @@ export function commercialReadiness() {
     migrationAccepted: process.env.COMMERCIAL_MIGRATION_ACCEPTED === "0019",
     livePaymentAccepted: process.env.COMMERCIAL_PAYMENT_ACCEPTANCE === PRICING_VERSION,
     liveModelAccepted: process.env.COMMERCIAL_MODEL_ACCEPTANCE === PRICING_VERSION,
-    salesRequested: process.env.COMMERCIAL_SALES_ENABLED === "true",
   };
 }

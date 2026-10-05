@@ -23,9 +23,3 @@ COMMERCIAL_MIGRATION_ACCEPTED=
 COMMERCIAL_SCHEDULER_ACCEPTED=false
 COMMERCIAL_PAYMENT_ACCEPTANCE=
 COMMERCIAL_MODEL_ACCEPTANCE=
-COMMERCIAL_SALES_ENABLED=false
-
-# Explicitly authorized real payment tests for named accounts only.
-# Requires infrastructure checks, does not enable public sales.
-COMMERCIAL_ACCEPTANCE_ENABLED=false
-COMMERCIAL_ACCEPTANCE_USER_IDS=

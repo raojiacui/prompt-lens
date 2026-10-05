@@ -1,26 +1,22 @@
 import { test, expect } from "@playwright/test";
 
-test("payment loading and unavailable states do not claim plans are unopened", async ({ page, context }) => {
+test("signed-in purchases do not wait for a launch readiness request", async ({ page, context }) => {
   await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
-  let release!: () => void;
-  const waiting = new Promise<void>(resolve => { release = resolve; });
+  let readinessRequests = 0;
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
     if (path.includes("/auth/get-session")) return route.fulfill({ json: { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } } });
-    if (path === "/api/payments/checkout") {
-      await waiting;
+    if (path === "/api/payments/checkout" && route.request().method() === "GET") {
+      readinessRequests++;
       return route.fulfill({ json: { enabled: false } });
     }
     return route.fulfill({ json: {} });
   });
   await page.goto("/#pricing");
   const pricing = page.locator("#pricing");
-  await expect(pricing.getByRole("button", { name: "正在加载支付…", exact: true }).first()).toBeDisabled();
-  await expect(pricing).not.toContainText("即将开放");
-  release();
-  await expect(pricing.getByRole("button", { name: "支付暂不可用", exact: true }).first()).toBeDisabled();
-  await expect(pricing).toContainText("请稍后重试或联系客服");
-  await expect(pricing).not.toContainText("即将开放");
+  await expect(pricing.getByRole("button", { name: "支付宝购买", exact: true }).first()).toBeEnabled();
+  await expect(pricing).not.toContainText("支付暂不可用");
+  expect(readinessRequests).toBe(0);
 });
 
 for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
@@ -92,14 +88,13 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
   });
 }
 
-test("checkout remains unavailable when its readiness endpoint fails", async ({ page }) => {
+test("actual order failures are reported inside the checkout dialog", async ({ page, context }) => {
+  await context.addCookies([{ name: "NEXT_LOCALE", value: "en", domain: "localhost", path: "/" }]);
   await page.route("**/api/auth/get-session**", route => route.fulfill({ json: { user: { id: "test", email: "test@example.com" }, session: { id: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } } }));
-  await page.route("**/api/payments/checkout", (route) => route.abort());
+  await page.route("**/api/payments/checkout", route => route.fulfill({ status: 502, json: { code: "CHECKOUT_STATUS_UNKNOWN" } }));
   await page.goto("/#pricing");
-  const buttons = page.locator("#pricing article button");
-  await expect(buttons).toHaveCount(3);
-  await expect(buttons.first()).toHaveText(/Payment unavailable|支付暂不可用/);
-  for (const button of await buttons.all()) await expect(button).toBeDisabled();
+  await page.locator("#pricing").getByRole("button", { name: "Buy with Alipay" }).first().click();
+  await expect(page.getByRole("dialog").getByRole("alert")).toHaveText("Unable to confirm the order. Retry to check.");
 });
 
 test("network retry reuses the request and expiry does not imply failed payment", async ({ page, context }) => {

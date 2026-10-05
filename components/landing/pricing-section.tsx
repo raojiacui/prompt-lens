@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { Check } from "lucide-react";
 import { COMMERCIAL_PACKAGES } from "@/lib/billing/pricing-v6";
@@ -12,20 +12,10 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
   const zh = useLocale() === "zh";
   const { data: session } = useSession();
   const authenticated = isAuthenticated || Boolean(session?.user);
-  const [enabled, setEnabled] = useState<boolean | null>(null);
   const [selected, setSelected] = useState<(typeof COMMERCIAL_PACKAGES)[number] | null>(null);
   const requestIds = useRef<Record<string, string>>({});
   const [checkoutAttempt, setCheckoutAttempt] = useState(0);
   const [previousOrderUnconfirmed, setPreviousOrderUnconfirmed] = useState(false);
-  useEffect(() => {
-    const controller = new AbortController();
-    setEnabled(null);
-    fetch("/api/payments/checkout", { cache: "no-store", signal: controller.signal })
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => setEnabled(data?.enabled === true))
-      .catch(() => { if (!controller.signal.aborted) setEnabled(false); });
-    return () => controller.abort();
-  }, [authenticated, session?.user.id]);
   const settings = authenticated ? "/dashboard?tab=settings" : "/login?next=%2Fdashboard%3Ftab%3Dsettings";
   return (
     <section id="pricing" className="bg-[#F7F1E8] py-16 md:py-24">
@@ -33,7 +23,6 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
         <div className="mb-10 text-center">
           <h2 className="font-serif-display text-3xl text-[var(--color-text-primary)] md:text-4xl">{zh ? "按创作需要，灵活充值" : "Credits for your next creation"}</h2>
           <p className="mt-4 text-[var(--color-text-secondary)]">{zh ? "一次购买，按需使用。不自动续费。" : "One-time purchase. Pay as you create. No auto-renewal."}</p>
-          {enabled === false && authenticated && <p className="mt-3 text-sm text-[var(--color-text-secondary)]">{zh ? "支付暂不可用，请稍后重试或联系客服。" : "Payment is temporarily unavailable. Try again later or contact support."}</p>}
         </div>
         <div className="grid gap-5 md:grid-cols-3">
           {COMMERCIAL_PACKAGES.map((pack, index) => (
@@ -50,7 +39,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
                   zh ? "自带 Key 也可购买套餐，套餐积分可用于自动拆镜服务" : "You can buy a package with your own API key and use its credits for automatic shot splitting",
                 ].map((line) => <li key={line} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[#4C7055]" /><span>{line}</span></li>)}
               </ul>
-              <button type="button" disabled={authenticated && enabled !== true} onClick={() => {
+              <button type="button" onClick={() => {
                 if (!authenticated) { window.location.href = "/login?next=%2F%23pricing"; return; }
                 const storageKey = `promptlens:checkout:${session?.user.id || "current"}:${pack.id}`;
                 try { requestIds.current[pack.id] ??= localStorage.getItem(storageKey) || crypto.randomUUID(); localStorage.setItem(storageKey, requestIds.current[pack.id]); }
@@ -58,7 +47,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
                 setPreviousOrderUnconfirmed(false);
                 setSelected(pack);
               }} className="mt-auto min-h-11 rounded-lg bg-[#241915] px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50">
-                {!authenticated ? (zh ? "登录后购买" : "Sign in to buy") : enabled === null ? (zh ? "正在加载支付…" : "Loading payment…") : enabled ? (zh ? "支付宝购买" : "Buy with Alipay") : (zh ? "支付暂不可用" : "Payment unavailable")}
+                {authenticated ? (zh ? "支付宝购买" : "Buy with Alipay") : (zh ? "登录后购买" : "Sign in to buy")}
               </button>
             </article>
           ))}
