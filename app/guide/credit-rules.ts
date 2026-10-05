@@ -1,4 +1,4 @@
-import { COMMERCIAL_PACKAGES, estimateGeneration, quoteAnalysis } from "@/lib/billing/pricing-v6";
+import { COMMERCIAL_PACKAGES, estimateGeneration, quoteAnalysis, splitCredits } from "@/lib/billing/pricing-v6";
 import type { GuideTopic } from "./content";
 
 function price(modelId: string, resolution: string, durationSeconds: number, audio = false, referenceVideoSeconds?: number) {
@@ -22,13 +22,13 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
     ["Kling 3", "kling-3.0/video", "1080p", false],
     ["Kling 3", "kling-3.0/video", "1080p", true],
   ];
-  const analysisRows = [[10, 1, false], [10, 1, true], [30, 6, true], [60, 20, true]].map(([seconds, count, split]) => {
-    const sourceDurationUs = Number(seconds) * 1e6;
-    const scenes = Array.from({ length: Number(count) }, (_, i) => ({ id: String(i), startUs: i * sourceDurationUs / Number(count), endUs: (i + 1) * sourceDurationUs / Number(count) }));
-    const input = { payer: "platform" as const, sourceDurationUs, scenes, automaticSplit: Boolean(split), paidSplitReusable: false };
+  const analysisRows = [1, 5, 10, 15, 30, 60].map(seconds => {
+    const sourceDurationUs = seconds * 1e6;
+    const scenes = [{ id: "single-shot", startUs: 0, endUs: sourceDurationUs }];
+    const input = { payer: "platform" as const, sourceDurationUs, scenes, automaticSplit: false, paidSplitReusable: false };
     const flash = quoteAnalysis({ ...input, model: "flash" });
     const pro = quoteAnalysis({ ...input, model: "pro" });
-    return [String(seconds), String(count), String(flash.splitCredits), String(flash.analysisCredits), String(pro.analysisCredits), String(flash.credits), String(pro.credits)];
+    return [zh ? `${seconds} 秒` : `${seconds} sec`, String(flash.analysisCredits), String(pro.analysisCredits)];
   });
   const referenceModels: [string, string, string][] = [
     ["Seedance Mini", "bytedance/seedance-2-mini", "480p"],
@@ -50,21 +50,28 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       columns: zh ? ["套餐", "价格", "通用积分", "改写次数", "链接导入次数"] : ["Package", "CNY", "Credits", "Rewrites", "Link imports"],
       rows: COMMERCIAL_PACKAGES.map((p, i) => [zh ? p.name : ["Starter", "Creator", "Volume"][i], (p.priceCents / 100).toFixed(2), String(p.credits), String(p.rewrites), String(p.linkImports)]),
     } },
-    { title: zh ? "拆镜和分析每次怎么扣" : "Splitting and analysis charges", paragraphs: zh ? [
-      "自动拆镜：5 秒扣 1 积分，10 秒扣 2，30 秒扣 5，60 秒扣 10。已支付且可复用的拆镜结果不重复收费。",
-      "Flash 对应 Gemini 3.8 Flash；Pro 对应 Gemini 2.5 Pro。下表分别列出拆镜积分、分析积分和最终总积分。手动上传完整单镜头不收拆镜费；相同时长的镜头数量不同，分析积分也会不同。",
-      "下表为全部镜头分析成功时的费用。可以全选或只分析部分镜头；分析费仅针对选中的镜头，首次自动拆镜费仍按原视频完整时长收取。例如 60 秒视频只选一个 10 秒镜头：首次拆镜并分析，Flash 共 15 积分、Pro 共 17 积分；复用已付拆镜结果，则分别扣 5、7 积分。",
+    { title: zh ? "自动拆镜费用（不含模型分析）" : "Automatic splitting (analysis not included)", paragraphs: zh ? [
+      "自动拆镜按原视频完整时长收费，与选用哪个分析模型、拆出多少个镜头无关。下表仅列拆镜费用，不包含任何镜头分析费。",
+      "不使用自动拆镜、直接分析上传的完整单镜头文件：拆镜费为 0。使用自动拆镜处理 10 秒视频：拆镜费为 2 积分。这是两种操作，不是同一种操作有两个价格。已支付且可复用的拆镜结果不重复收费。",
+    ] : [
+      "Automatic splitting is priced by full source duration, independent of the analysis model or resulting shot count. This table includes splitting only, not shot analysis.",
+      "Analyzing a complete single-shot upload without automatic splitting has no splitting fee. Automatically splitting a 10-second source costs 2 credits. These are different operations, not two prices for the same operation. Reusable splitting that was already paid is not charged again.",
+    ], table: { columns: zh ? ["原视频时长", "自动拆镜积分"] : ["Source duration", "Splitting credits"], rows: [5, 10, 30, 60].map(seconds => [zh ? `${seconds} 秒` : `${seconds} sec`, String(splitCredits(seconds * 1e6))]) } },
+    { title: zh ? "分析一个镜头扣多少积分" : "Analysis credits for one shot", paragraphs: zh ? [
+      "下表每个数字都是用对应模型成功分析一个镜头所需的平台积分，不含拆镜费，不是整条视频的合计费用。镜头时长指这一个镜头自身的时长，不是原视频时长。",
+      "例如，一个 10 秒镜头：Gemini 3.8 Flash 扣 5 积分；Gemini 2.5 Pro 扣 7 积分。分析模型选择“自动选择·均衡”时，平台积分分析使用 Gemini 3.8 Flash。",
+      "可以全选或只分析某几个镜头，未选中的镜头不收分析费。其他镜头时长、一次选择多个镜头时，以分析按钮和确认页的报价为准。",
       "部分镜头失败只收成功镜头的分析费用；平台分析全部失败不收本次拆镜和分析费用。失败重试不重复收已支付的拆镜费和成功镜头费用。自带 Key 的模型分析不扣平台积分，自动拆镜仍按原视频时长收费。",
       "付费分析不限原视频时长和镜头数量，文件最大 100MB；其他组合以分析按钮及确认页显示的积分为准。",
       "新账号的两次免费体验只用于符合条件的 10 秒以内单镜头分析，不适用于视频生成。试用用完后，不会自动继续使用平台 Key；需要购买额度或选择自己的 Key。",
     ] : [
-      "Automatic splitting costs 1 credit for 5 seconds, 2 for 10 seconds, 5 for 30 seconds, and 10 for 60 seconds. Reusable splitting that was already paid is not charged again.",
-      "Flash uses Gemini 3.8 Flash; Pro uses Gemini 2.5 Pro. The table separates splitting, analysis, and total credits. Manual full-file single-shot analysis has no splitting fee. Different shot counts can have different prices at the same duration.",
-      "These prices assume all selected shots succeed. Select all shots or a subset: analysis charges cover only selected shots, while initial splitting covers the full source. For a 60-second source with one selected 10-second shot, initial splitting and analysis cost 15 Flash credits or 17 Pro credits; reusing paid splitting costs 5 or 7.",
+      "Each number is the platform credit cost of successfully analyzing one shot with the named model. Splitting is not included; these are not full-video totals. Duration means the length of that individual shot, not the full source.",
+      "One 10-second shot costs 5 credits with Gemini 3.8 Flash or 7 with Gemini 2.5 Pro. Automatic balanced selection uses Gemini 3.8 Flash for platform-credit analysis.",
+      "Analyze all shots or a selected subset. Unselected shots incur no analysis fee. For other shot lengths or multiple selected shots, use the quote on the analysis button and confirmation page.",
       "Failed shots incur no analysis charge. If all platform analysis fails, neither splitting nor analysis is charged for that attempt. Retries do not charge paid splitting or successful shots again. Your own key pays model costs through KIE; automatic splitting still uses platform credits.",
       "Paid analysis has no source-duration or shot-count cap. Files must be within 100MB. Check the analysis button and confirmation quote for other combinations.",
       "Two introductory trials apply only to eligible single-shot analysis within 10 seconds, not generation. After trials, purchase credits or explicitly use your own key; the platform key is not an automatic fallback.",
-    ], table: { columns: zh ? ["分析秒数", "镜头数", "拆镜积分", "Flash 分析积分", "Pro 分析积分", "Flash 总积分", "Pro 总积分"] : ["Analyzed seconds", "Shots", "Split credits", "Flash analysis", "Pro analysis", "Flash total", "Pro total"], rows: analysisRows } },
+    ], table: { columns: zh ? ["单个镜头时长", "Gemini 3.8 Flash（积分/镜头）", "Gemini 2.5 Pro（积分/镜头）"] : ["Single-shot duration", "Gemini 3.8 Flash (credits/shot)", "Gemini 2.5 Pro (credits/shot)"], rows: analysisRows } },
     { title: zh ? "文字、图片生成积分表（每条）" : "Text and image generation (per output)", paragraphs: zh ? [
       "下表每个数字都是生成一条视频的积分。Wan 文生、单图生成同配置价格相同；Seedance 文字和图片参考使用同一档价格；Kling 2.6 此处为文字生成，Kling 3 支持文字和图片。素材数量、比例等仍需符合模型限制。",
       "Wan 支持 5、10、15 秒；Seedance 支持 4–15 秒；Kling 2.6 支持 5、10 秒；Kling 3 支持 3–15 秒。表中“-”表示当前未支持该组合，不代表免费。其他支持时长的积分会显示在生成按钮与确认报价中。",
