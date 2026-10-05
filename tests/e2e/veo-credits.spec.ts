@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { modelRegistry } from "../../lib/ai/model-registry";
+import { estimateGeneration } from "../../lib/billing/pricing-v6";
 
 for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
   test(`Veo credits and confirmation ${locale} ${width}`, async ({ page, context }) => {
@@ -18,7 +19,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
         const request = route.request().postDataJSON();
         expect(request).toMatchObject({ model: "veo3_fast", duration: 8 });
         expect(request.quality).toMatch(/^(720P|1080P)$/);
-        body = { id: "veo-quote", credits: 35, model: "veo3_fast", duration: 8, resolution: request.quality.toLowerCase() };
+        body = { id: "veo-quote", credits: estimateGeneration({ modelId: "veo3_fast", durationSeconds: 8, resolution: request.quality.toLowerCase(), audio: false }).credits, model: "veo3_fast", duration: 8, resolution: request.quality.toLowerCase() };
       } else if (path === "/api/commercial/confirm") {
         confirmations++;
         body = { tasks: [{ id: "veo-quote", state: "queued" }] };
@@ -30,30 +31,36 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await expect(page.locator("select").filter({ has: page.locator('option[value="bytedance/seedance-2-mini"]') })).toHaveValue("bytedance/seedance-2-mini");
     await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
     await page.getByLabel(locale === "zh" ? "费用来源" : "Payment source").selectOption("platform");
-    const miniGenerate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 15 积分/ : /Generate Video.*Est. 15 credits/i });
-    await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 25 积分/ : /Generate Video.*Est. 25 credits/i })).toBeVisible();
+    const miniGenerate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 10 积分/ : /Generate Video.*Est. 10 credits/i });
+    await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 19 积分/ : /Generate Video.*Est. 19 credits/i })).toBeVisible();
     await page.getByRole("button", { name: /720P.*5/ }).click();
     await expect(page.getByRole("button", { name: "1080P", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "4K", exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "480P", exact: true }).click();
     await expect(miniGenerate).toBeVisible();
+    const length = page.getByRole("textbox", { name: "Video length in seconds" });
+    for (const [seconds, credits] of [[4, 8], [8, 14], [10, 17], [5, 10]]) {
+      await length.fill(String(seconds));
+      await length.press("Enter");
+      await expect(page.getByRole("button", { name: new RegExp(locale === "zh" ? `生成视频.*预计 ${credits} 积分` : `Generate Video.*Est. ${credits} credits`, "i") })).toBeVisible();
+    }
     await page.getByRole("button", { name: "720P", exact: true }).click();
-    await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 25 积分/ : /Generate Video.*Est. 25 credits/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 19 积分/ : /Generate Video.*Est. 19 credits/i })).toBeVisible();
     await page.goto("/dashboard?tab=video-gen&model=veo3_lite&duration=8&videoGenPrompt=A%20cinematic%20cloud%20palace");
     await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
     await expect(page.locator("option").filter({ hasText: /HappyHorse|Grok|Kling Omni Transformation/i })).toHaveCount(0);
     await page.getByLabel(locale === "zh" ? "费用来源" : "Payment source").selectOption("platform");
-    const generate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 20 积分/ : /Generate Video.*Est. 20 credits/i });
+    const generate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 (14|16) 积分/ : /Generate Video.*Est. (14|16) credits/i });
     await expect(generate).toBeVisible();
     const models = page.locator("select").filter({ has: page.locator('option[value="veo3_lite"]') });
     await models.selectOption("veo3_fast");
-    const fast = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 35 积分/ : /Generate Video.*Est. 35 credits/i });
+    const fast = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 (26|28) 积分/ : /Generate Video.*Est. (26|28) credits/i });
     await expect(fast).toBeVisible();
     expect(quoteRequests).toBe(0);
     await fast.click();
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("button", { name: locale === "zh" ? "获取报价" : "Get quote" }).click();
-    await expect(dialog.getByText(locale === "zh" ? "35 积分" : "35 credits", { exact: true }).first()).toBeVisible();
+    await expect(dialog.getByText(locale === "zh" ? /^(26|28) 积分$/ : /^(26|28) credits$/).first()).toBeVisible();
     expect(quoteRequests).toBe(1);
     expect(confirmations).toBe(0);
     await page.screenshot({ path: `test-results/veo-${locale}-${width}.png` });

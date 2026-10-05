@@ -1,5 +1,7 @@
 # Veo 3.1 官方价格核对
 
+> 供应商裸价证据保留；下文的平台积分为历史 v1 报价。当前已去掉 20% 缓冲并精确到 1 积分，见 `generation-pricing-recheck-2026-10-05.md` 和页面积分表。
+
 核对日期：2026-10-05。来源：[KIE 官方价格页](https://kie.ai/pricing)及其公开接口 `POST https://api.kie.ai/client/v1/model-pricing/page`。读取六页公开记录，不携带密钥，不发起生成任务。
 
 ## 每条视频价格

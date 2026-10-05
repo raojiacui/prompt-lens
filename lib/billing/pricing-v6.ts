@@ -92,7 +92,7 @@ export type GenerationPriceInput = {
   referenceVideoSeconds?: number;
 };
 
-export const GENERATION_PRICING_VERSION = "2026-10-04-generation-v2";
+export const GENERATION_PRICING_VERSION = "2026-10-05-generation-v3";
 
 const generationCreditBasis = COMMERCIAL_PACKAGES.reduce((lowest, pack) =>
   BigInt(pack.priceCents) * BigInt(lowest.credits) < BigInt(lowest.priceCents) * BigInt(pack.credits) ? pack : lowest
@@ -146,9 +146,9 @@ export function estimateGeneration(input: GenerationPriceInput) {
   if (!microUsdPerSecond && !wan1080 && !flatMicroUsd) throw new Error("MODEL_PRICE_UNVERIFIED");
   const billInputVideo = modelId.startsWith("bytedance/seedance-2");
   const microUsd = flatMicroUsd ? BigInt(flatMicroUsd) : wan1080 ? BigInt(wan1080) : BigInt(microUsdPerSecond) * (BigInt(seconds) + BigInt(billInputVideo ? reference ?? 0 : 0));
-  // Convert the buffered CNY budget at the cheapest actual package rate, rounding to five credits.
-  const budgetMicroCny = microUsd * 9n + 150000n;
-  const credits = 5 * ceilRatio(budgetMicroCny * BigInt(generationCreditBasis.credits), BigInt(generationCreditBasis.priceCents) * 10000n * 5n);
+  // Fixed settlement budget: CNY 7.50/USD plus CNY 0.15 per output, no percentage buffer.
+  const budgetMicroCny = microUsd * 15n / 2n + 150000n;
+  const credits = ceilRatio(budgetMicroCny * BigInt(generationCreditBasis.credits), BigInt(generationCreditBasis.priceCents) * 10000n);
   if (!Number.isSafeInteger(credits)) throw new Error("Generation price overflow");
-  return { version: flatMicroUsd ? "2026-10-05-veo-v1" : GENERATION_PRICING_VERSION, credits, microUsd: Number(microUsd), adapterVerified: false as const };
+  return { version: GENERATION_PRICING_VERSION, credits, microUsd: Number(microUsd), adapterVerified: false as const };
 }

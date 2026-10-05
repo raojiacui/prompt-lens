@@ -41,7 +41,8 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
   const editing: [string, string, string][] = [
     ["Wan 2.7", "wan/2-7-videoedit", "720p"], ["Wan 2.7", "wan/2-7-videoedit", "1080p"],
   ];
-  const durationColumns = zh ? ["5 秒", "10 秒", "15 秒"] : ["5 sec", "10 sec", "15 sec"];
+  const generationDurations = [4, 5, 6, 8, 10, 15];
+  const durationColumns = generationDurations.map(s => zh ? `${s} 秒` : `${s} sec`);
   return [
     { title: zh ? "套餐包含哪些额度" : "Package allowances", paragraphs: [zh ? "三个套餐的通用积分适用于同一套已开放功能，不按套餐锁定模型。表内积分均为平台积分，不是 KIE 点数。金额为人民币；每次使用仍需足够可用余额。" : "All packages use the same wallet and supported features. These are Prompt Lens credits, not KIE credits. Prices are in CNY; each task needs sufficient available credits."], table: {
       columns: zh ? ["套餐", "价格", "通用积分", "改写次数", "链接导入次数"] : ["Package", "CNY", "Credits", "Rewrites", "Link imports"],
@@ -77,7 +78,7 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "Each number is the price of one output. Wan text and single-image modes share these rates. Seedance text and image references share their tier. Kling 2.6 here is text-only; Kling 3 supports text and images. Input and aspect-ratio limits still apply.",
       "Wan supports 5/10/15 seconds; Seedance 4–15; Kling 2.6 5/10; Kling 3 3–15. A dash means unsupported, not free. Other supported durations are priced on the generation button and confirmation quote.",
       "Kling audio and silent prices are listed separately. Use the audio configuration available on the current page.",
-    ], table: { columns: [zh ? "模型" : "Model", zh ? "画质" : "Quality", zh ? "声音配置" : "Audio", ...durationColumns], rows: ordinary.map(([name, model, resolution, audio]) => [name, resolution, audio ? (zh ? "有声" : "On") : (model.startsWith("kling") ? (zh ? "无声" : "Off") : (zh ? "模型默认" : "Model default")), ...[5, 10, 15].map(s => price(model, resolution, s, audio))]) } },
+    ], table: { columns: [zh ? "模型" : "Model", zh ? "画质" : "Quality", zh ? "声音配置" : "Audio", ...durationColumns], rows: ordinary.map(([name, model, resolution, audio]) => [name, resolution, audio ? (zh ? "有声" : "On") : (model.startsWith("kling") ? (zh ? "无声" : "Off") : (zh ? "模型默认" : "Model default")), ...generationDurations.map(s => price(model, resolution, s, audio))]) } },
     { title: zh ? "Veo 3.1 生成积分表（每条）" : "Veo 3.1 generation credits (per output)", paragraphs: zh ? [
       "文字生成、单图生成、首尾两张图片生成支持 4、6、8 秒；同一档位、画质按条收费，这三个时长扣相同积分。每条视频带模型默认音轨，部分内容可能不输出声音。",
       "三张素材图片参考仅 Lite、Fast 支持，且固定 8 秒，同档位画质的费用与下表一致。Veo 不支持在这里上传参考视频。",
@@ -95,7 +96,7 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "下表为参考视频 5 秒时，生成一条视频所需的积分；列标题为输出视频时长。其他参考时长以页面显示的积分为准。",
     ] : [
       "The table shows credits per output with a five-second reference video. Column headings are output durations. For other reference durations, use the credits shown on the page.",
-    ], table: { columns: [zh ? "模型" : "Model", zh ? "画质" : "Quality", ...durationColumns], rows: referenceModels.map(([name, model, resolution]) => [name, resolution, ...[5, 10, 15].map(s => price(model, resolution, s, false, 5))]) } },
+    ], table: { columns: [zh ? "模型" : "Model", zh ? "画质" : "Quality", ...durationColumns], rows: referenceModels.map(([name, model, resolution]) => [name, resolution, ...generationDurations.map(s => price(model, resolution, s, false, 5))]) } },
     { title: zh ? "视频编辑（按输出时长）" : "Video editing (output duration)", paragraphs: zh ? [
       "这里指视频生成中的编辑模型，不是待开放的独立“视频剪辑”工具。下表为输入与输出等长、无额外音频选项时，每条视频所需的积分；其他配置以页面显示的积分为准。",
       "Wan 2.7 支持 2–10 秒，输出时长不得超过输入视频时长。",
@@ -104,13 +105,13 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "Wan 2.7 supports 2–10 seconds; output duration cannot exceed the input-video duration.",
     ], table: { columns: [zh ? "模型" : "Model", zh ? "画质" : "Quality", ...[5, 10, 15, 30, 60].map(s => zh ? `${s} 秒` : `${s} sec`)], rows: editing.map(([name, model, resolution]) => [name, resolution, ...[5, 10, 15, 30, 60].map(s => price(model, resolution, s, false, s))]) } },
     { title: zh ? "条数、改写、导入与自己的 Key" : "Batch size, rewrites, imports, and your key", paragraphs: zh ? [
-      "一次最多生成 4 条视频。例如 Wan 720p、5 秒：1 条扣 40 积分，2 条扣 80，4 条扣 160。其他配置和条数以生成按钮显示的总积分为准；重新生成需再次付费。",
+      "一次最多生成 4 条视频。例如 Wan 720p、5 秒：1 条扣 30 积分，2 条扣 60，4 条扣 120。其他配置和条数以生成按钮显示的总积分为准；重新生成需再次付费。",
       "一个镜头成功生成一个新的 AI 改写版本，消耗 1 次套餐改写额度、0 额外平台积分；失败不计次。一次处理多个镜头按成功的新版本数量计次。改写次数与通用积分不可互换。",
       "成功导入一个视频链接消耗 1 次链接导入额度、0 额外平台积分；失败不计次。手动上传本地文件不消耗导入次数。分析、拆镜单独收费。",
       "自带 Key 的手动分析、生成、改写不扣平台推理积分，模型费用从自己的 KIE 账户扣。自动拆镜仍扣平台积分，链接导入仍需要对应额度。“0 平台积分”不表示 KIE 免费。",
       "Veo 已接入平台积分支付，支持组合和费用见上表。音频分析、独立视频剪辑仍待开放。",
     ] : [
-      "Generate up to four outputs at once. Wan 720p, 5 seconds costs 40 credits for one output, 80 for two, and 160 for four. For other settings and quantities, use the total shown on the generation button. Generating again is a new paid task.",
+      "Generate up to four outputs at once. Wan 720p, 5 seconds costs 30 credits for one output, 60 for two, and 120 for four. For other settings and quantities, use the total shown on the generation button. Generating again is a new paid task.",
       "A successful new AI script version of one shot consumes one included rewrite and no extra credits. Failures do not count; multiple shots consume one allowance per successful new version. Rewrite allowances and credits are separate.",
       "A successful video-link import uses one import allowance and no extra platform credits. Failed imports do not count. Local file uploads do not use import allowances. Splitting and analysis are charged separately.",
       "Manual analysis, generation, and rewriting with your own key charge your KIE account, not platform inference credits. Automatic splitting still uses platform credits, and link imports still need their allowance. Zero platform credits does not mean free KIE usage.",

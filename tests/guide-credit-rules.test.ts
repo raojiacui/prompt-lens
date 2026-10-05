@@ -14,10 +14,10 @@ describe("Published credit rules", () => {
     expect(tables).toHaveLength(7);
     for (const table of tables) for (const row of table.rows) expect(row).toHaveLength(table.columns.length);
     expect(tables[0].rows.map(r => r.slice(1))).toEqual([["21.90", "200", "20", "12"], ["63.90", "650", "60", "30"], ["139.00", "1500", "150", "61"]]);
-    expect(tables[3].rows.find(r => r[0] === "Wan 2.6" && r[1] === "720p")?.[3]).toBe("40");
-    expect(tables[3].rows.find(r => r[0] === "Seedance Fast")?.[3]).toBe("65");
-    expect(tables[4].rows).toEqual([["Veo 3.1 Lite", "20", "20", "75"], ["Veo 3.1 Fast", "35", "35", "90"], ["Veo 3.1 Quality", "125", "130", "-"]]);
-    expect(tables[5].rows.find(r => r[0] === "Seedance Fast")?.[3]).toBe("115");
+    expect(tables[3].rows.find(r => r[0] === "Wan 2.6" && r[1] === "720p")?.[4]).toBe("30");
+    expect(tables[3].rows.find(r => r[0] === "Seedance Fast")?.[4]).toBe("52");
+    expect(tables[4].rows).toEqual([["Veo 3.1 Lite", "14", "16", "63"], ["Veo 3.1 Fast", "26", "28", "75"], ["Veo 3.1 Quality", "103", "105", "-"]]);
+    expect(tables[5].rows.find(r => r[0] === "Seedance Fast")?.[6]).toBe("93");
     expect(tables[6].rows.find(r => r[0] === "Wan 2.7")?.[4]).toBe("-");
     expect(tables[1].rows.map(r => r[1])).toEqual(["1", "2", "5", "10"]);
     expect(tables[2].columns).toHaveLength(2);
