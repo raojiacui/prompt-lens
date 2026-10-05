@@ -81,7 +81,7 @@ const aspectRatioOptions: Array<{
 
 const qualityOptions: Quality[] = ["480P", "720P", "1080P", "4K"];
 const outputCountOptions: OutputCount[] = ["1", "2", "3", "4"];
-const defaultGenerationModelId = "wan/2-6-text-to-video";
+const defaultGenerationModelId = "bytedance/seedance-2-mini";
 const minGeneratedVideoDuration = 4;
 const maxUploadedReferenceImages = 9;
 const maxUploadedReferenceVideos = 1;

@@ -25,7 +25,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     });
     await page.addInitScript(() => localStorage.setItem("reference-settings-prompt-lens-video-gen", JSON.stringify({ model: "__auto_balanced", duration: "5s" })));
     await page.goto("/dashboard?tab=video-gen&videoGenPrompt=A%20cinematic%20cloud%20palace");
-    await expect(page.locator("select").filter({ has: page.locator('option[value="wan/2-6-text-to-video"]') })).toHaveValue("wan/2-6-text-to-video");
+    await expect(page.locator("select").filter({ has: page.locator('option[value="bytedance/seedance-2-mini"]') })).toHaveValue("bytedance/seedance-2-mini");
     await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
     await page.goto("/dashboard?tab=video-gen&model=veo3_lite&duration=8&videoGenPrompt=A%20cinematic%20cloud%20palace");
     await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
