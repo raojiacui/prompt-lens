@@ -1,6 +1,6 @@
 # Generation Pricing Recheck 2026-10-05
 
-Current version: `2026-10-05-generation-v3`. Supersedes the conversion policy in the 2026-10-04 audit and Veo v1 audit. Historical confirmed quotes and task snapshots are not repriced.
+Current version: `2026-10-05-generation-v4`. Supersedes the conversion policy in the 2026-10-04 audit and Veo v1 audit. Historical confirmed quotes and task snapshots are not repriced.
 
 ## Evidence
 
@@ -10,23 +10,23 @@ Veo is explicitly billed per video, not per second. 4/6/8 seconds retain the sam
 
 ## Approved Conversion Policy
 
-The user explicitly removed the 20% buffer, keeping CNY 0.15 per output. Keep the existing fixed CNY 7.50/USD settlement budget; this is NOT a current market exchange-rate claim. Use the cheapest package unit price (CNY 139 / 1500 credits), round upward to one wallet credit, not five. Keep package allowances unchanged. This budget is not a guarantee of net profit or actual payment settlement cost.
+The user explicitly removed the 20% buffer, keeping CNY 0.15 per output. The user explicitly approved a fixed CNY 7.00/USD conversion after rejecting the previous CNY 7.50 assumption; this is NOT a current market exchange-rate claim. Use the cheapest package unit price (CNY 139 / 1500 credits), round upward to one wallet credit, not five. Keep package allowances unchanged. This budget is not a guarantee of net profit or actual payment settlement cost.
 
 ## Current Per-Output Credits
 
 | Model | Resolution | USD per second | 4 sec | 5 sec | 6 sec | 8 sec | 10 sec | 15 sec |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Mini | 480p | 0.019 | 8 | 10 | 11 | 14 | 17 | 25 |
-| Mini | 720p | 0.041 | 15 | 19 | 22 | 29 | 35 | 52 |
-| Fast | 720p | 0.124 | 42 | 52 | 62 | 82 | 102 | 153 |
-| Seedance 2 | 720p | 0.205 | 68 | 85 | 102 | 135 | 168 | 251 |
-| Seedance 2 | 1080p | 0.510 | 167 | 209 | 250 | 332 | 415 | 621 |
-| Kling 3 silent | 720p | 0.070 | 25 | 30 | 36 | 47 | 59 | 87 |
-| Kling 3 audio | 720p | 0.100 | 34 | 43 | 51 | 67 | 83 | 124 |
-| Kling 3 silent | 1080p | 0.090 | 31 | 39 | 46 | 60 | 75 | 111 |
-| Kling 3 audio | 1080p | 0.135 | 46 | 57 | 68 | 90 | 111 | 166 |
+| Mini | 480p | 0.019 | 8 | 9 | 11 | 14 | 16 | 24 |
+| Mini | 720p | 0.041 | 15 | 18 | 21 | 27 | 33 | 49 |
+| Fast | 720p | 0.124 | 40 | 49 | 58 | 77 | 96 | 143 |
+| Seedance 2 | 720p | 0.205 | 64 | 80 | 95 | 126 | 157 | 234 |
+| Seedance 2 | 1080p | 0.510 | 156 | 195 | 233 | 310 | 387 | 580 |
+| Kling 3 silent | 720p | 0.070 | 23 | 29 | 34 | 44 | 55 | 81 |
+| Kling 3 audio | 720p | 0.100 | 32 | 40 | 47 | 63 | 78 | 115 |
+| Kling 3 silent | 1080p | 0.090 | 29 | 36 | 43 | 57 | 70 | 104 |
+| Kling 3 audio | 1080p | 0.135 | 43 | 53 | 63 | 84 | 104 | 155 |
 
-Other supported combinations are generated from the same function in the user guide, preview button and server quote. The guide contains results only, not this calculation. Seedance 2 1080p 5 seconds costs USD 2.55 upstream; the resulting 209 platform credits are not a mistaken one-to-one copy of KIE points.
+Other supported combinations are generated from the same function in the user guide, preview button and server quote. The guide contains results only, not this calculation. Seedance 2 1080p 5 seconds costs USD 2.55 upstream; the resulting 195 platform credits are not a mistaken one-to-one copy of KIE points.
 
 ## Verification Boundary
 

@@ -105,13 +105,13 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "Wan 2.7 supports 2–10 seconds; output duration cannot exceed the input-video duration.",
     ], table: { columns: [zh ? "模型" : "Model", zh ? "画质" : "Quality", ...[5, 10, 15, 30, 60].map(s => zh ? `${s} 秒` : `${s} sec`)], rows: editing.map(([name, model, resolution]) => [name, resolution, ...[5, 10, 15, 30, 60].map(s => price(model, resolution, s, false, s))]) } },
     { title: zh ? "条数、改写、导入与自己的 Key" : "Batch size, rewrites, imports, and your key", paragraphs: zh ? [
-      "一次最多生成 4 条视频。例如 Wan 720p、5 秒：1 条扣 30 积分，2 条扣 60，4 条扣 120。其他配置和条数以生成按钮显示的总积分为准；重新生成需再次付费。",
+      "一次最多生成 4 条视频。例如 Wan 720p、5 秒：1 条扣 29 积分，2 条扣 58，4 条扣 116。其他配置和条数以生成按钮显示的总积分为准；重新生成需再次付费。",
       "一个镜头成功生成一个新的 AI 改写版本，消耗 1 次套餐改写额度、0 额外平台积分；失败不计次。一次处理多个镜头按成功的新版本数量计次。改写次数与通用积分不可互换。",
       "成功导入一个视频链接消耗 1 次链接导入额度、0 额外平台积分；失败不计次。手动上传本地文件不消耗导入次数。分析、拆镜单独收费。",
       "自带 Key 的手动分析、生成、改写不扣平台推理积分，模型费用从自己的 KIE 账户扣。自动拆镜仍扣平台积分，链接导入仍需要对应额度。“0 平台积分”不表示 KIE 免费。",
       "Veo 已接入平台积分支付，支持组合和费用见上表。音频分析、独立视频剪辑仍待开放。",
     ] : [
-      "Generate up to four outputs at once. Wan 720p, 5 seconds costs 30 credits for one output, 60 for two, and 120 for four. For other settings and quantities, use the total shown on the generation button. Generating again is a new paid task.",
+      "Generate up to four outputs at once. Wan 720p, 5 seconds costs 29 credits for one output, 58 for two, and 116 for four. For other settings and quantities, use the total shown on the generation button. Generating again is a new paid task.",
       "A successful new AI script version of one shot consumes one included rewrite and no extra credits. Failures do not count; multiple shots consume one allowance per successful new version. Rewrite allowances and credits are separate.",
       "A successful video-link import uses one import allowance and no extra platform credits. Failed imports do not count. Local file uploads do not use import allowances. Splitting and analysis are charged separately.",
       "Manual analysis, generation, and rewriting with your own key charge your KIE account, not platform inference credits. Automatic splitting still uses platform credits, and link imports still need their allowance. Zero platform credits does not mean free KIE usage.",

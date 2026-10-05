@@ -4,9 +4,9 @@ import { buildKIEVeoPayload, isKIEVeoModel } from "@/lib/ai/adapters/kie-video";
 
 describe("Veo verified billing configuration", () => {
   it.each([
-    ["veo3_lite", "720p", 14, 150000], ["veo3_lite", "1080p", 16, 175000], ["veo3_lite", "4k", 63, 750000],
-    ["veo3_fast", "720p", 26, 300000], ["veo3_fast", "1080p", 28, 325000], ["veo3_fast", "4k", 75, 900000],
-    ["veo3", "720p", 103, 1250000], ["veo3", "1080p", 105, 1275000],
+    ["veo3_lite", "720p", 13, 150000], ["veo3_lite", "1080p", 15, 175000], ["veo3_lite", "4k", 59, 750000],
+    ["veo3_fast", "720p", 25, 300000], ["veo3_fast", "1080p", 27, 325000], ["veo3_fast", "4k", 70, 900000],
+    ["veo3", "720p", 97, 1250000], ["veo3", "1080p", 98, 1275000],
   ] as const)("prices %s %s per output", (modelId, resolution, credits, microUsd) => {
     for (const durationSeconds of [4, 6, 8]) {
       expect(estimateGeneration({ modelId, resolution, durationSeconds, audio: false })).toMatchObject({ credits, microUsd, version: GENERATION_PRICING_VERSION });

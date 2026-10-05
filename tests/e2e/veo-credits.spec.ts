@@ -31,36 +31,36 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await expect(page.locator("select").filter({ has: page.locator('option[value="bytedance/seedance-2-mini"]') })).toHaveValue("bytedance/seedance-2-mini");
     await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
     await page.getByLabel(locale === "zh" ? "费用来源" : "Payment source").selectOption("platform");
-    const miniGenerate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 10 积分/ : /Generate Video.*Est. 10 credits/i });
-    await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 19 积分/ : /Generate Video.*Est. 19 credits/i })).toBeVisible();
+    const miniGenerate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 9 积分/ : /Generate Video.*Est. 9 credits/i });
+    await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 18 积分/ : /Generate Video.*Est. 18 credits/i })).toBeVisible();
     await page.getByRole("button", { name: /720P.*5/ }).click();
     await expect(page.getByRole("button", { name: "1080P", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "4K", exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "480P", exact: true }).click();
     await expect(miniGenerate).toBeVisible();
     const length = page.getByRole("textbox", { name: "Video length in seconds" });
-    for (const [seconds, credits] of [[4, 8], [8, 14], [10, 17], [5, 10]]) {
+    for (const [seconds, credits] of [[4, 8], [8, 14], [10, 16], [5, 9]]) {
       await length.fill(String(seconds));
       await length.press("Enter");
       await expect(page.getByRole("button", { name: new RegExp(locale === "zh" ? `生成视频.*预计 ${credits} 积分` : `Generate Video.*Est. ${credits} credits`, "i") })).toBeVisible();
     }
     await page.getByRole("button", { name: "720P", exact: true }).click();
-    await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 19 积分/ : /Generate Video.*Est. 19 credits/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 18 积分/ : /Generate Video.*Est. 18 credits/i })).toBeVisible();
     await page.goto("/dashboard?tab=video-gen&model=veo3_lite&duration=8&videoGenPrompt=A%20cinematic%20cloud%20palace");
     await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
     await expect(page.locator("option").filter({ hasText: /HappyHorse|Grok|Kling Omni Transformation/i })).toHaveCount(0);
     await page.getByLabel(locale === "zh" ? "费用来源" : "Payment source").selectOption("platform");
-    const generate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 (14|16) 积分/ : /Generate Video.*Est. (14|16) credits/i });
+    const generate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 (13|15) 积分/ : /Generate Video.*Est. (13|15) credits/i });
     await expect(generate).toBeVisible();
     const models = page.locator("select").filter({ has: page.locator('option[value="veo3_lite"]') });
     await models.selectOption("veo3_fast");
-    const fast = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 (26|28) 积分/ : /Generate Video.*Est. (26|28) credits/i });
+    const fast = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 (25|27) 积分/ : /Generate Video.*Est. (25|27) credits/i });
     await expect(fast).toBeVisible();
     expect(quoteRequests).toBe(0);
     await fast.click();
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("button", { name: locale === "zh" ? "获取报价" : "Get quote" }).click();
-    await expect(dialog.getByText(locale === "zh" ? /^(26|28) 积分$/ : /^(26|28) credits$/).first()).toBeVisible();
+    await expect(dialog.getByText(locale === "zh" ? /^(25|27) 积分$/ : /^(25|27) credits$/).first()).toBeVisible();
     expect(quoteRequests).toBe(1);
     expect(confirmations).toBe(0);
     await page.screenshot({ path: `test-results/veo-${locale}-${width}.png` });

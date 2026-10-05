@@ -18,22 +18,22 @@ describe("KIE price recheck 2026-10-05", () => {
     expect(results.map(r => r.microUsd)).toEqual([4, 5, 6, 8, 10].map(s => s * Number(rate)));
     expect(new Set(results.map(r => r.credits)).size).toBe(results.length);
     for (const result of results) {
-      expect(result.credits).toBe(Math.ceil((result.microUsd / 1e6 * 7.5 + 0.15) / (139 / 1500)));
+      expect(result.credits).toBe(Math.ceil((result.microUsd / 1e6 * 7 + 0.15) / (139 / 1500)));
       expect(result.version).toBe(GENERATION_PRICING_VERSION);
     }
   });
   it("does not confuse KIE points with wallet credits", () => {
-    expect(quote("bytedance/seedance-2-mini", "480p", 5)).toMatchObject({ microUsd: 95000, credits: 10 });
-    expect(quote("bytedance/seedance-2", "1080p", 5)).toMatchObject({ microUsd: 2550000, credits: 209 });
+    expect(quote("bytedance/seedance-2-mini", "480p", 5)).toMatchObject({ microUsd: 95000, credits: 9 });
+    expect(quote("bytedance/seedance-2", "1080p", 5)).toMatchObject({ microUsd: 2550000, credits: 195 });
   });
   it("keeps official flat Veo prices for 4, 6 and 8 seconds", () => {
-    expect([4, 6, 8].map(s => quote("veo3_lite", "720p", s).credits)).toEqual([14, 14, 14]);
+    expect([4, 6, 8].map(s => quote("veo3_lite", "720p", s).credits)).toEqual([13, 13, 13]);
   });
   it("uses exact Wan duration tiers rather than one flat output fee", () => {
     expect([5, 10, 15].map(s => quote("wan/2-6-text-to-video", "1080p", s).microUsd)).toEqual([522500, 1047500, 1575000]);
   });
   it("includes input duration only for Seedance reference video", () => {
-    expect(quote("bytedance/seedance-2-fast", "720p", 10, 5)).toMatchObject({ microUsd: 1125000, credits: 93 });
+    expect(quote("bytedance/seedance-2-fast", "720p", 10, 5)).toMatchObject({ microUsd: 1125000, credits: 87 });
     expect(quote("wan/2-6-video-to-video", "720p", 10, 5).microUsd).toBe(700000);
   });
 });

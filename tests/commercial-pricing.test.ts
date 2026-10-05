@@ -76,21 +76,21 @@ describe("V6 commercial pricing", () => {
     expect(() => retryAnalysisCredits(input, ["0"], [])).toThrow();
   });
   it.each([
-    ["grok-imagine/text-to-video", "720p", 6, false, 13],
-    ["grok-imagine/text-to-video", "720p", 10, false, 20],
-    ["bytedance/seedance-2-mini", "480p", 5, false, 10],
-    ["bytedance/seedance-2-mini", "720p", 10, false, 35],
-    ["wan/2-6-text-to-video", "720p", 5, false, 30],
-    ["kling-2.6/text-to-video", "1080p", 10, true, 91],
-    ["kling-3.0/video", "1080p", 5, true, 57],
-    ["bytedance/seedance-2-fast", "720p", 5, true, 52],
-    ["bytedance/seedance-2", "1080p", 10, true, 415],
-    ["wan/2-6-image-to-video", "1080p", 5, false, 44],
-    ["bytedance/seedance-2-fast", "720p", 7, false, 72],
+    ["grok-imagine/text-to-video", "720p", 6, false, 12],
+    ["grok-imagine/text-to-video", "720p", 10, false, 19],
+    ["bytedance/seedance-2-mini", "480p", 5, false, 9],
+    ["bytedance/seedance-2-mini", "720p", 10, false, 33],
+    ["wan/2-6-text-to-video", "720p", 5, false, 29],
+    ["kling-2.6/text-to-video", "1080p", 10, true, 85],
+    ["kling-3.0/video", "1080p", 5, true, 53],
+    ["bytedance/seedance-2-fast", "720p", 5, true, 49],
+    ["bytedance/seedance-2", "1080p", 10, true, 387],
+    ["wan/2-6-image-to-video", "1080p", 5, false, 42],
+    ["bytedance/seedance-2-fast", "720p", 7, false, 68],
   ] as const)("estimates %s %s %is", (modelId, resolution, durationSeconds, audio, expected) => {
     const quote = estimateGeneration({ modelId, resolution, durationSeconds, audio });
-    expect(quote).toMatchObject({ credits: expected, adapterVerified: false, version: "2026-10-05-generation-v3" });
-    const budgetMicroCny = BigInt(quote.microUsd) * 15n / 2n + 150000n;
+    expect(quote).toMatchObject({ credits: expected, adapterVerified: false, version: "2026-10-05-generation-v4" });
+    const budgetMicroCny = BigInt(quote.microUsd) * 7n + 150000n;
     for (const pack of COMMERCIAL_PACKAGES) {
       expect(BigInt(quote.credits) * BigInt(pack.priceCents) * 10000n >= budgetMicroCny * BigInt(pack.credits)).toBe(true);
     }
@@ -98,17 +98,17 @@ describe("V6 commercial pricing", () => {
     expect(BigInt(quote.credits - 1) * BigInt(cheapest.priceCents) * 10000n < budgetMicroCny * BigInt(cheapest.credits)).toBe(true);
   });
   it("includes reference video duration and rejects unpriced combinations", () => {
-    expect(estimateGeneration({ modelId: "bytedance/seedance-2-fast", resolution: "720p", durationSeconds: 10, audio: true, referenceVideoSeconds: 5 }).credits).toBe(93);
+    expect(estimateGeneration({ modelId: "bytedance/seedance-2-fast", resolution: "720p", durationSeconds: 10, audio: true, referenceVideoSeconds: 5 }).credits).toBe(87);
     for (const modelId of ["veo3_fast", "sora-2/text-to-video", "unknown"]) {
       expect(() => estimateGeneration({ modelId, resolution: "720p", durationSeconds: 10, audio: false })).toThrow("MODEL_PRICE_UNVERIFIED");
     }
     expect(() => estimateGeneration({ modelId: "bytedance/seedance-2-fast", resolution: "1080p", durationSeconds: 10, audio: true })).toThrow();
   });
   it("bills output-only video editing separately from Seedance input-plus-output", () => {
-    expect(estimateGeneration({ modelId: "wan/2-7-videoedit", resolution: "720p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false })).toMatchObject({ credits: 34, microUsd: 400000 });
-    expect(estimateGeneration({ modelId: "wan/2-7-videoedit", resolution: "1080p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false }).credits).toBe(51);
-    expect(estimateGeneration({ modelId: "happyhorse/video-edit", resolution: "720p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false }).credits).toBe(59);
-    expect(estimateGeneration({ modelId: "kling-3.0-omni/transformation", resolution: "720p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false })).toMatchObject({ microUsd: 500000, credits: 43 });
+    expect(estimateGeneration({ modelId: "wan/2-7-videoedit", resolution: "720p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false })).toMatchObject({ credits: 32, microUsd: 400000 });
+    expect(estimateGeneration({ modelId: "wan/2-7-videoedit", resolution: "1080p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false }).credits).toBe(47);
+    expect(estimateGeneration({ modelId: "happyhorse/video-edit", resolution: "720p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false }).credits).toBe(55);
+    expect(estimateGeneration({ modelId: "kling-3.0-omni/transformation", resolution: "720p", durationSeconds: 5, referenceVideoSeconds: 5, audio: false })).toMatchObject({ microUsd: 500000, credits: 40 });
     expect(() => estimateGeneration({ modelId: "wan/2-7-videoedit", resolution: "720p", durationSeconds: 12, referenceVideoSeconds: 12, audio: false })).toThrow();
   });
 });

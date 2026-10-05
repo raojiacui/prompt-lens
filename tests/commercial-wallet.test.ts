@@ -175,11 +175,11 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     vi.stubEnv("KIE_API_KEY", "test-key");
     const quote = await quoteCommercialGeneration(userId, { model: "veo-lite", userPrompt: "A cinematic cloud palace", duration: 8, quality: "1080p", aspectRatio: "9:16" });
-    expect(quote).toMatchObject({ credits: 16, model: "veo3_lite", duration: 8, resolution: "1080p" });
+    expect(quote).toMatchObject({ credits: 15, model: "veo3_lite", duration: 8, resolution: "1080p" });
     await expect(confirmCommercialTask(randomUUID(), quote.id)).rejects.toThrow("TASK_NOT_FOUND");
     await confirmCommercialTask(userId, quote.id);
     await confirmCommercialTask(userId, quote.id);
-    expect(await balance()).toMatchObject({ credits: 184, heldCredits: 16 });
+    expect(await balance()).toMatchObject({ credits: 185, heldCredits: 15 });
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { taskId: "veo-paid-task" } })))
       .mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { taskId: "veo-paid-task", successFlag: state === "success" ? 1 : 2, response: { resultUrls: ["https://example.com/veo.mp4"] } } })));
@@ -192,7 +192,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await reconcileCommercialGeneration(quote.id);
     expect(String(fetchMock.mock.calls[1][0])).toContain("/api/v1/veo/record-info");
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(await balance()).toMatchObject({ credits: state === "success" ? 184 : 200, heldCredits: 0 });
+    expect(await balance()).toMatchObject({ credits: state === "success" ? 185 : 200, heldCredits: 0 });
   });
   it("rejects unsupported paid Veo settings before quoting", async () => {
     vi.stubEnv("KIE_API_KEY", "test-key");
@@ -205,14 +205,14 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true"); vi.stubEnv("KIE_API_KEY", "test-key");
     vi.mocked(commercialMediaRequest).mockResolvedValue({ durationUs: 5_000_000 });
     const quote = await quoteCommercialGeneration(userId, { model: "seedance-2-fast", userPrompt: "Follow the reference motion in a new city", referenceVideoUrl: "https://example.com/video.mp4", referenceVideoSeconds: 1, duration: 10, quality: "720p" });
-    expect(quote).toMatchObject({ credits: 93, referenceVideoSeconds: 5, duration: 10 });
+    expect(quote).toMatchObject({ credits: 87, referenceVideoSeconds: 5, duration: 10 });
     expect(assertOwnedUploadedVideo).toHaveBeenCalledWith(userId, "https://example.com/video.mp4");
     expect(copyR2Object).toHaveBeenCalledWith("owned-upload", expect.stringContaining(`generation-input/${userId}/`));
     expect(commercialMediaRequest).toHaveBeenCalledWith("https://example.com/frozen-video.mp4", { mode: "preview", automaticSplit: false });
     expect(await testDb.select().from(schema.mediaCleanupJobs)).toHaveLength(1);
     await confirmCommercialTask(userId, quote.id);
     await confirmCommercialTask(userId, quote.id);
-    expect(await balance()).toMatchObject({ credits: 557, heldCredits: 93 });
+    expect(await balance()).toMatchObject({ credits: 563, heldCredits: 87 });
     const fetchMock = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { taskId: "reference-task" } }))).mockResolvedValueOnce(new Response(JSON.stringify({ code: 200, data: { taskId: "reference-task", state, resultJson: JSON.stringify({ resultUrls: ["https://example.com/output.mp4"] }) } })));
     vi.stubGlobal("fetch", fetchMock);
     await runCommercialTask(quote.id);
@@ -221,7 +221,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await reconcileCommercialGeneration(quote.id);
     await reconcileCommercialGeneration(quote.id);
     expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(await balance()).toMatchObject({ credits: state === "success" ? 557 : 650, heldCredits: 0 });
+    expect(await balance()).toMatchObject({ credits: state === "success" ? 563 : 650, heldCredits: 0 });
   });
   it("does not probe another user's video or an unfunded wallet", async () => {
     vi.stubEnv("KIE_API_KEY", "test-key");
@@ -367,7 +367,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
     const quote = await quoteCommercialGeneration(userId, { userPrompt: "A new cinematic scene", model: "wan/2-6-text-to-video", duration: 5, quality: "720p" });
-    expect(quote.credits).toBe(30);
+    expect(quote.credits).toBe(29);
     await confirmCommercialTask(userId, quote.id);
     const fetchMock = vi.fn(async (_url: unknown, options?: RequestInit) => options?.method === "POST"
       ? Response.json({ code: 200, data: { taskId: "provider-task-1" } })
@@ -375,10 +375,10 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.stubGlobal("fetch", fetchMock);
     await runCommercialTask(quote.id);
     await runCommercialTask(quote.id);
-    expect(await balance()).toMatchObject({ credits: 170, heldCredits: 30 });
+    expect(await balance()).toMatchObject({ credits: 171, heldCredits: 29 });
     await reconcileCommercialGeneration(quote.id);
     await reconcileCommercialGeneration(quote.id);
-    expect(await balance()).toMatchObject({ credits: 170, heldCredits: 0 });
+    expect(await balance()).toMatchObject({ credits: 171, heldCredits: 0 });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect((await testDb.select().from(schema.videoGeneration))[0]).toMatchObject({ status: "completed", videoUrl: "https://example.com/result.mp4" });
   });
@@ -456,7 +456,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect((await testDb.select().from(schema.commercialTasks)).every(t => t.state === "failed")).toBe(true);
   });
   it("reserves a multi-output batch atomically or starts none", async () => {
-    await grant(59, 20);
+    await grant(57, 20);
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
     const a = await quoteCommercialGeneration(userId, { userPrompt: "A cinematic scene", duration: 5, quality: "720p" });
@@ -465,7 +465,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
       await confirmCommercialTaskInTransaction(tx as unknown as Parameters<typeof confirmCommercialTaskInTransaction>[0], userId, a.id);
       await confirmCommercialTaskInTransaction(tx as unknown as Parameters<typeof confirmCommercialTaskInTransaction>[0], userId, b.id);
     })).rejects.toThrow("INSUFFICIENT_COMMERCIAL_BALANCE");
-    expect(await balance()).toMatchObject({ credits: 59, heldCredits: 0 });
+    expect(await balance()).toMatchObject({ credits: 57, heldCredits: 0 });
     expect((await testDb.select().from(schema.commercialTasks)).every((t) => t.state === "quoted")).toBe(true);
   });
   it("releases a rejected generation but retains an unknown submission without retrying it", async () => {
@@ -484,7 +484,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await runCommercialTask(uncertain.id);
     await runCommercialTask(uncertain.id);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(await balance()).toMatchObject({ credits: 170, heldCredits: 30 });
+    expect(await balance()).toMatchObject({ credits: 171, heldCredits: 29 });
   });
   it("edits a pending ticket without another wallet hold and rejects edits by other users or after review", async () => {
     const row = await paidOrder();
