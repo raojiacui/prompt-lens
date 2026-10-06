@@ -66,11 +66,8 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
     await page.screenshot({ path: `test-results/checkout-${locale}-${width}.png` });
     paid = true;
-    await dialog.getByRole("button", { name: locale === "zh" ? "我已付款，查询到账" : "I have paid, check payment" }).click();
-    const checking = dialog.getByRole("button", { name: locale === "zh" ? "正在查询到账…" : "Checking payment…" });
-    await expect(checking).toBeDisabled();
-    await expect(checking).toHaveAttribute("aria-busy", "true");
-    await expect(dialog.getByText(locale === "zh" ? "支付成功，积分已到账" : "Payment successful. Credits added.", { exact: true })).toBeVisible();
+    await expect(dialog.getByText(locale === "zh" ? "支付成功，积分已到账" : "Payment successful. Credits added.", { exact: true })).toBeVisible({ timeout: 10000 });
+    await page.screenshot({ path: `test-results/checkout-paid-${locale}-${width}.png` });
     await expect(dialog.locator("iframe")).toHaveCount(0);
     await expect(dialog).not.toContainText(locale === "zh" ? "付款码有效时间" : "Payment code expires in");
     await expect(dialog.getByRole("link", { name: locale === "zh" ? "查看余额与订单" : "Balance and orders" })).toHaveAttribute("href", "/billing");
@@ -85,6 +82,60 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await dialog.getByRole("button", { name: locale === "zh" ? "关闭" : "Close", exact: true }).click();
     await pricing.scrollIntoViewIfNeeded();
     await pricing.screenshot({ path: `test-results/pricing-${locale}-${width}.png` });
+  });
+}
+
+for (const scenario of ["slow-query", "return-to-page", "late-confirmation"]) {
+  test(`automatically confirms payment: ${scenario}`, async ({ page, context }) => {
+    await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
+    if (scenario === "late-confirmation") await page.clock.install();
+    await page.addInitScript(() => {
+      window.addEventListener("wallet-balance-changed", () => {
+        const root = document.documentElement;
+        root.dataset.walletRefreshes = String(Number(root.dataset.walletRefreshes || 0) + 1);
+      });
+    });
+    let paid = false;
+    let snapshots = 0;
+    let queries = 0;
+    const checkout = {
+      orderId: "11111111-1111-4111-8111-111111111111", amountCents: 2190, credits: 200, rewrites: 20,
+      status: "pending", expiresAt: new Date(Date.now() + (scenario === "late-confirmation" ? -1200000 : 300000)).toISOString(),
+      qrImageUrl: null, mobilePaymentUrl: null,
+    };
+    await page.route("**/api/**", async route => {
+      const url = new URL(route.request().url());
+      if (url.pathname.includes("/auth/get-session")) return route.fulfill({ json: { user: { id: "test", email: "test@example.com" }, session: { id: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } } });
+      if (url.pathname === "/api/payments/checkout") return route.fulfill({ json: checkout });
+      if (url.pathname === `/api/payments/orders/${checkout.orderId}`) {
+        if (url.searchParams.get("snapshot") === "1") snapshots++;
+        else {
+          queries++;
+          // Hold the provider query while its webhook commits the paid order.
+          if (scenario === "slow-query") return;
+        }
+        return route.fulfill({ json: { ...checkout, status: paid ? "paid" : "pending" } });
+      }
+      return route.fulfill({ json: {} });
+    });
+    await page.goto("/#pricing");
+    await page.getByRole("button", { name: "支付宝购买" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await expect.poll(() => queries).toBeGreaterThan(0);
+    await expect(dialog.getByText("支付成功，积分已到账", { exact: true })).toHaveCount(0);
+    if (scenario === "late-confirmation") {
+      await page.clock.fastForward(180000);
+      await expect.poll(() => snapshots).toBeGreaterThan(1);
+    }
+    paid = true;
+    if (scenario === "return-to-page") await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    if (scenario === "late-confirmation") await page.clock.fastForward(4000);
+    await expect(dialog.getByText("支付成功，积分已到账", { exact: true })).toBeVisible({ timeout: scenario === "return-to-page" ? 2000 : 8000 });
+    await expect.poll(() => page.evaluate(() => document.documentElement.dataset.walletRefreshes)).toBe("1");
+    await expect(dialog.getByRole("button", { name: "我已付款，查询到账" })).toHaveCount(0);
+    await page.waitForTimeout(500);
+    expect(await page.evaluate(() => document.documentElement.dataset.walletRefreshes)).toBe("1");
+    await dialog.getByRole("button", { name: "完成", exact: true }).click();
   });
 }
 

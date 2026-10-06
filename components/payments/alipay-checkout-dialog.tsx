@@ -75,35 +75,79 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
     if (!checkout || checkout.status !== "pending") return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
-    const stopAt = Math.max(Date.now() + 120000, Date.parse(checkout.expiresAt) + 120000);
-    const poll = async () => {
+    let snapshotInFlight = false;
+    let reconciliationInFlight = false;
+    let terminal = false;
+    let lastReconciliation = 0;
+    const active = () => !controller.signal.aborted && !terminal;
+    const applyStatus = (data: Checkout & { paymentIssue?: string }, requestedManually = false) => {
+      if (!["pending", "paid", "failed", "refunded", "cancelled"].includes(data.status)) throw new Error("invalid status");
+      if (!active()) return;
+      terminal = data.status !== "pending";
+      if (requestedManually) setCheckMessage(data.status === "pending" && !data.paymentIssue
+        ? (zh ? "本次查询尚未确认到账，将继续自动核对。如已付款，请勿重复支付。" : "This check has not confirmed payment yet. We will keep checking automatically; do not pay again.") : "");
+      setError(data.paymentIssue === "ALIPAY_SIGNATURE_INVALID"
+        ? (zh ? "支付宝到账校验异常，请联系客服核对。如已付款，请勿重复支付。" : "Payment verification needs support. If you paid, do not pay again.")
+        : data.paymentIssue ? (zh ? "到账确认暂未完成，正在重试。已付款请勿重复支付。" : "Payment confirmation is delayed. Retrying; do not pay again.") : "");
+      setCheckout(current => current ? (current.status !== "pending" && data.status === "pending" ? current : {
+        ...current, status: data.status, cancellationRequested: data.cancellationRequested,
+        qrImageUrl: data.paymentIssue ? null : data.qrImageUrl ?? null,
+        mobilePaymentUrl: data.paymentIssue ? null : data.mobilePaymentUrl ?? null,
+        paymentUrl: data.paymentIssue ? null : data.paymentUrl ?? null,
+      }) : null);
+      if (terminal) { setChecking(false); setCheckMessage(""); }
+    };
+    const reconcile = async () => {
+      if (!active() || reconciliationInFlight || (!manualCheck.current && Date.now() - lastReconciliation < 15000)) return;
+      reconciliationInFlight = true;
+      lastReconciliation = Date.now();
       const requestedManually = manualCheck.current;
       manualCheck.current = false;
       try {
         const response = await fetch(`/api/payments/orders/${checkout.orderId}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]) });
         if (!response.ok) throw new Error("status unavailable");
-        const data = await response.json();
-        if (!["pending", "paid", "failed", "refunded", "cancelled"].includes(data.status)) throw new Error("invalid status");
-        if (!controller.signal.aborted) {
-          if (requestedManually) setCheckMessage(data.status === "pending" && !data.paymentIssue
-            ? (zh ? "本次查询尚未确认到账，将继续自动核对。如已付款，请勿重复支付。" : "This check has not confirmed payment yet. We will keep checking automatically; do not pay again.") : "");
-          setError(data.paymentIssue === "ALIPAY_SIGNATURE_INVALID"
-            ? (zh ? "支付宝到账校验异常，请联系客服核对。如已付款，请勿重复支付。" : "Payment verification needs support. If you paid, do not pay again.")
-            : data.paymentIssue ? (zh ? "到账确认暂未完成，正在重试。已付款请勿重复支付。" : "Payment confirmation is delayed. Retrying; do not pay again.") : "");
-          setCheckout((current) => current ? (current.status !== "pending" && data.status === "pending" ? current : { ...current, status: data.status,
-            cancellationRequested: data.cancellationRequested, qrImageUrl: data.paymentIssue ? null : data.qrImageUrl ?? null, mobilePaymentUrl: data.paymentIssue ? null : data.mobilePaymentUrl ?? null, paymentUrl: data.paymentIssue ? null : data.paymentUrl ?? null }) : null);
-        }
-        if (data.status !== "pending") return;
+        applyStatus(await response.json(), requestedManually);
       } catch {
-        if (!controller.signal.aborted) { setCheckMessage(""); setError(zh ? "暂时无法查询到账状态，请勿重复付款。" : "Payment status is unavailable. Do not pay again."); }
+        if (active()) { setCheckMessage(""); setError(zh ? "到账确认暂未完成，正在自动重试。已付款请勿重复支付。" : "Payment confirmation is delayed. Retrying automatically; do not pay again."); }
       } finally {
+        reconciliationInFlight = false;
         if (!controller.signal.aborted) setChecking(false);
       }
-      if (!controller.signal.aborted && Date.now() < stopAt) timer = setTimeout(poll, 5000);
-      else if (!controller.signal.aborted) setError(zh ? "到账仍待确认，请保留订单号并稍后查询。" : "Payment is still unconfirmed. Keep your order ID and check later.");
     };
+    // Read committed payment/credit status independently of a slow provider query.
+    const poll = async () => {
+      if (!active() || snapshotInFlight) return;
+      clearTimeout(timer);
+      if (document.visibilityState === "hidden") {
+        timer = setTimeout(poll, 10000);
+        return;
+      }
+      snapshotInFlight = true;
+      try {
+        const response = await fetch(`/api/payments/orders/${checkout.orderId}?snapshot=1`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(5000)]) });
+        if (!response.ok) throw new Error("status unavailable");
+        applyStatus(await response.json());
+      } catch {
+        if (active()) { setCheckMessage(""); setError(zh ? "暂时无法查询到账状态，请勿重复付款。" : "Payment status is unavailable. Do not pay again."); }
+      } finally {
+        snapshotInFlight = false;
+        if (active()) {
+          void reconcile();
+          timer = setTimeout(poll, 3000);
+        }
+      }
+    };
+    const resume = () => { if (document.visibilityState === "visible") { lastReconciliation = 0; void poll(); } };
+    window.addEventListener("focus", resume);
+    window.addEventListener("online", resume);
+    document.addEventListener("visibilitychange", resume);
     timer = setTimeout(poll, 0);
-    return () => { controller.abort(); clearTimeout(timer); };
+    return () => {
+      controller.abort(); clearTimeout(timer);
+      window.removeEventListener("focus", resume);
+      window.removeEventListener("online", resume);
+      document.removeEventListener("visibilitychange", resume);
+    };
   }, [checkout?.orderId, checkout?.status, attempt, zh]);
   useEffect(() => {
     if (checkout?.status === "paid" && !paidNotified.current) { paidNotified.current = true; refreshWalletBalance(); onPaidRef.current(); }
