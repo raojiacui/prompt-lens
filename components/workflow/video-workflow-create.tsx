@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
-import { AnalysisQuoteDialog } from "@/components/payments/analysis-quote-dialog";
+import { AnalysisQuotePanel } from "@/components/payments/analysis-quote-panel";
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
@@ -665,6 +665,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       if (isLinkedMedia || (prepared.mediaType === "video" && latestStatus?.commercialConsumptionEnabled && latestStatus.mode !== "trial" && analysisPayer === "platform") || requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", longVideo: !(prepared.duration && prepared.duration <= 10), trialRemaining: latestStatus?.trial.remaining || 0 })) {
         setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage, automaticSplit: isLinkedMedia, payer: analysisPayer, modelId: analysisModelValue });
         setAnalysisProgress(null);
+        setProgress("");
         return;
       }
 
@@ -774,7 +775,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }
   return (
     <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
-      {commercialSource && <AnalysisQuoteDialog source={commercialSource} onClose={() => setCommercialSource(null)} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); void loadCreditStatus(); void loadProjects({ force: true }); }} />}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-4xl font-semibold tracking-tight">{locale === "en" ? "Video analysis" : "视频分析"}</h1>
@@ -895,7 +895,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
               value={creditStatus?.mode === "trial" ? "analysis-gemini-3-8-flash" : analysisModelValue}
               models={analysisModels}
               onChange={setAnalysisModelValue}
-              disabled={creditStatus?.mode === "trial"}
+              disabled={creditStatus?.mode === "trial" || loading || Boolean(commercialSource) || Boolean(analysisTaskId)}
             />
             <LanguageSelector
               value={analysisOutputLanguage}
@@ -907,7 +907,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           <button
             type="button"
             onClick={() => void startBreakdown()}
-            disabled={loading || (mediaInputMode === "upload" ? !file : !linkedPlatform)}
+            disabled={loading || Boolean(commercialSource) || Boolean(analysisTaskId) || (mediaInputMode === "upload" ? !file : !linkedPlatform)}
             className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-lg bg-[#D97757] px-2 py-1 text-sm font-semibold leading-tight text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5 shrink-0" />}
@@ -959,7 +959,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
         <div className="relative min-h-0">
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
-          {!bundle ? (
+          {commercialSource ? <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onClose={() => { setCommercialSource(null); setProgress(""); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} /> : !bundle ? (
             loading && analysisProgress ? (
               <AnalysisProgressPanel progress={analysisProgress} />
             ) : (

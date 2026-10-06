@@ -1,18 +1,18 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
-import Link from "next/link";
 import { X } from "lucide-react";
 import { quoteAnalysis, type SceneInterval } from "@/lib/billing/pricing-v6";
 import { listModels } from "@/lib/ai/model-registry";
 
-export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string }; onClose: () => void; onComplete: (bundle: unknown) => void }) {
+export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string }; onClose: () => void; onComplete: (bundle: unknown) => void }) {
   const zh = useLocale() === "zh";
-  const dialog = useRef<HTMLDialogElement>(null);
   const automaticSplit = source.automaticSplit;
   const payer = source.payer ?? "platform";
-  const [model, setModel] = useState("flash");
-  const [byokModel, setByokModel] = useState(source.modelId || "analysis-gemini-3-8-flash");
+  const model = "flash";
+  const byokModel = source.modelId || "analysis-gemini-3-8-flash";
+  const selectedModelId = payer === "byok" ? byokModel : "analysis-gemini-3-8-flash";
+  const modelName = listModels("analysis").find(item => item.id === selectedModelId)?.displayName || selectedModelId;
   const [preparation, setPreparation] = useState<{ id: string; scenes: SceneInterval[]; durationUs: number } | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [quote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number } | null>(null);
@@ -35,7 +35,6 @@ export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: {
   useEffect(() => {
     if (selectAll.current) selectAll.current.indeterminate = selectedScenes.length > 0 && !allSelected;
   }, [selectedScenes.length, allSelected]);
-  useEffect(() => { dialog.current?.showModal(); }, []);
   async function post(url: string, body: unknown) {
     const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await response.json();
@@ -79,14 +78,12 @@ export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: {
     void poll();
     return () => { controller.abort(); clearTimeout(timer); };
   }, [taskId, state, zh]);
-  return <dialog ref={dialog} onCancel={onClose} aria-labelledby="analysis-quote-title" className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-lg border border-border bg-background p-6 text-foreground backdrop:bg-black/50">
-    <header className="flex justify-between gap-4"><h2 id="analysis-quote-title" className="text-xl font-semibold">{zh ? "确认分析费用" : "Confirm analysis cost"}</h2><button onClick={onClose} aria-label={zh ? "关闭" : "Close"} className="flex h-8 w-8 items-center justify-center"><X size={18} /></button></header>
+  return <section aria-labelledby="analysis-quote-title" className="min-h-0 flex-1 overflow-y-auto p-1 text-foreground">
+    <header className="flex items-start justify-between gap-4"><h2 id="analysis-quote-title" className="text-xl font-semibold">{zh ? "镜头选择与费用" : "Shots and analysis cost"}</h2>{!taskId && <button disabled={busy} onClick={onClose} title={zh ? "返回素材选择" : "Back to reference"} aria-label={zh ? "返回素材选择" : "Back to reference"} className="flex h-8 w-8 shrink-0 items-center justify-center disabled:opacity-50"><X size={18} /></button>}</header>
     <p className="mt-3 truncate text-sm text-muted-foreground">{source.mediaName}</p>
     {!taskId && <>
-      <fieldset disabled={busy || Boolean(quote)} className="mt-5 grid gap-4 sm:grid-cols-2">
-        <label className="text-sm">{zh ? "分析模型" : "Analysis model"}<select value={payer === "byok" ? byokModel : model} onChange={(e) => payer === "byok" ? setByokModel(e.target.value) : setModel(e.target.value)} className="mt-2 min-h-10 w-full rounded-lg border border-border bg-background px-2">{payer === "byok" ? listModels("analysis").filter(m => m.enabled).map(m => <option key={m.id} value={m.id}>{m.displayName}</option>) : <option value="flash">Gemini 3.8 Flash</option>}</select></label>
-        <p className="text-sm">{automaticSplit ? (zh ? "链接视频：先拆镜，再选择镜头分析。" : "Linked video: split first, then select shots to analyze.") : (zh ? "上传文件：单镜头分析，不收拆镜费。" : "Uploaded file: single-shot analysis, no splitting fee.")}</p>
-      </fieldset>
+      <p className="mt-3 text-sm text-muted-foreground">{modelName} · {payer === "platform" ? (zh ? "平台积分" : "Platform credits") : (zh ? "自带 Key" : "Own key")}</p>
+      <p className="mt-3 text-sm">{automaticSplit ? (zh ? "链接视频：先拆镜，再选择镜头分析。" : "Linked video: split first, then select shots to analyze.") : (zh ? "上传文件：单镜头分析，不收拆镜费。" : "Uploaded file: single-shot analysis, no splitting fee.")}</p>
       {preparation && <div className="mt-5">
         <p className="mb-3 text-sm">{(preparation.durationUs / 1000000).toFixed(2)}s · {preparation.scenes.length} {zh ? "个镜头" : "shots"}</p>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
@@ -99,12 +96,11 @@ export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: {
       </div>}
       {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。确认后预留，按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Reserved on confirmation, settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
       <div className="mt-5 flex gap-3">
-        <button disabled={busy || Boolean(preparation && !selected.length)} onClick={() => void next()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-2 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "处理中…" : "Working…") : !preparation ? (zh ? "读取视频信息" : "Inspect video") : !quote ? (zh ? "获取报价" : "Get quote") : (zh ? "确认并开始" : "Confirm and start")}</button>
+        <button disabled={busy || Boolean(preparation && !selected.length)} onClick={() => void next()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "处理中…" : "Working…") : !preparation ? (zh ? "读取视频信息" : "Inspect video") : !quote ? (zh ? "获取报价" : "Get quote") : (zh ? `确认并分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`)}</button>
       </div>
       {quote && <button disabled={busy} onClick={() => setQuote(null)} className="mt-3 min-h-10 px-3 text-sm underline">{zh ? "调整选择" : "Adjust selection"}</button>}
     </>}
     {taskId && <p role="status" className="mt-6">{state === "review" ? (zh ? "任务结果需要核对，额度保持预留，不会重复扣款。" : "This task needs review. Credits remain reserved and will not be charged twice.") : (zh ? "任务已保存，正在处理。" : "Task saved and processing.")}</p>}
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
-    <Link href="/billing" className="mt-5 inline-block text-sm underline">{zh ? "余额与任务记录" : "Balance and task history"}</Link>
-  </dialog>;
+  </section>;
 }
