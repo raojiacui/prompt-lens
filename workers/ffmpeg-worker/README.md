@@ -46,6 +46,8 @@ Response:
 
 `/ingest-media` receives media URLs already resolved by the app's video-link provider, downloads them, optionally merges a separate audio stream, uploads the resulting MP4 to R2, and returns the stored media URL for the analysis flow. It accepts optional `videoHeaders` and `audioHeaders` for public media-host headers such as `Referer`.
 
+Separate video and audio streams download concurrently. Uploads stream from disk rather than buffering the entire file in memory. Media ingest downloads and uploads are canceled on client disconnect or after 210 seconds, before the app's 240-second timeout. Stage logs identify download, merge, inspection and upload durations without logging temporary media URLs or secrets. Network throughput still depends on the media host and worker region.
+
 Supported pasted-link platforms:
 
 - TikTok

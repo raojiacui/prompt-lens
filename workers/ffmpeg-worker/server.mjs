@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
-import { createWriteStream } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { createReadStream, createWriteStream } from "node:fs";
+import { mkdir, mkdtemp, rm, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { pipeline } from "node:stream/promises";
@@ -8,6 +8,7 @@ import { Transform } from "node:stream";
 import { spawn } from "node:child_process";
 import { randomUUID, createHash } from "node:crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { downloadStreamsInParallel } from "./parallel-download.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
 const WORKER_SECRET = process.env.WORKER_SECRET || process.env.FFMPEG_WORKER_SECRET || "";
@@ -108,8 +109,9 @@ function mediaHeaders(value) {
   return headers;
 }
 
-async function download(url, target, maxBytes = Number.POSITIVE_INFINITY, headers) {
-  const response = await fetch(url, { headers: mediaHeaders(headers), signal: AbortSignal.timeout(10 * 60 * 1000) });
+async function download(url, target, maxBytes = Number.POSITIVE_INFINITY, headers, parentSignal) {
+  const signal = parentSignal ? AbortSignal.any([parentSignal, AbortSignal.timeout(10 * 60 * 1000)]) : AbortSignal.timeout(10 * 60 * 1000);
+  const response = await fetch(url, { headers: mediaHeaders(headers), signal });
   if (!response.ok || !response.body) throw new Error(`Download failed: ${response.status}`);
   let bytes = 0;
   const limiter = new Transform({ transform(chunk, _encoding, callback) {
@@ -117,7 +119,7 @@ async function download(url, target, maxBytes = Number.POSITIVE_INFINITY, header
     if (bytes > maxBytes) return callback(new Error("Media exceeds the linked-media size limit"));
     callback(null, chunk);
   } });
-  await pipeline(response.body, limiter, createWriteStream(target));
+  await pipeline(response.body, limiter, createWriteStream(target), { signal });
 }
 function parseRemoteMediaUrl(url) {
   let parsed;
@@ -141,16 +143,21 @@ function parseRemoteMediaUrl(url) {
   return parsed;
 }
 
-async function ingestMediaToLocalFile({ videoUrl, audioUrl, videoHeaders, audioHeaders }, workDir) {
+async function ingestMediaToLocalFile({ videoUrl, audioUrl, videoHeaders, audioHeaders }, workDir, signal, reportStage) {
   parseRemoteMediaUrl(videoUrl);
   if (audioUrl) parseRemoteMediaUrl(audioUrl);
   const downloadedVideoPath = path.join(workDir, "source-video");
-  await download(videoUrl, downloadedVideoPath, MAX_RESOLVE_BYTES, videoHeaders);
+  const audioPath = path.join(workDir, "source-audio");
+  reportStage("download");
+  await downloadStreamsInParallel(
+    (downloadSignal) => download(videoUrl, downloadedVideoPath, MAX_RESOLVE_BYTES, videoHeaders, downloadSignal),
+    audioUrl ? (downloadSignal) => download(audioUrl, audioPath, MAX_RESOLVE_BYTES, audioHeaders, downloadSignal) : undefined,
+    signal,
+  );
   let inputPath = downloadedVideoPath;
   if (audioUrl) {
-    const audioPath = path.join(workDir, "source-audio");
     const muxedPath = path.join(workDir, "resolved-video.mp4");
-    await download(audioUrl, audioPath, MAX_RESOLVE_BYTES, audioHeaders);
+    reportStage("merge");
     await run(FFMPEG_PATH, [
       "-y", "-hide_banner",
       "-i", downloadedVideoPath,
@@ -163,6 +170,7 @@ async function ingestMediaToLocalFile({ videoUrl, audioUrl, videoHeaders, audioH
     ]);
     inputPath = muxedPath;
   }
+  reportStage("inspect");
   const metadata = await probeVideo(inputPath);
   if (!metadata.duration || metadata.duration <= 0) throw new Error("Unable to determine resolved video duration");
   if (metadata.duration > MAX_RESOLVE_SECONDS) {
@@ -297,9 +305,14 @@ function buildBoundaries(cuts, duration) {
   return expanded;
 }
 
-async function uploadFile(localPath, key, contentType) {
-  const body = await readFile(localPath);
-  await s3.send(new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, Body: body, ContentType: contentType }));
+async function uploadFile(localPath, key, contentType, signal) {
+  const { size } = await stat(localPath);
+  const body = createReadStream(localPath);
+  try {
+    await s3.send(new PutObjectCommand({ Bucket: R2_BUCKET, Key: key, Body: body, ContentType: contentType, ContentLength: size }), { abortSignal: signal });
+  } finally {
+    body.destroy();
+  }
   return `${R2_PUBLIC_URL}/${key}`;
 }
 
@@ -413,11 +426,19 @@ async function handleIngestMedia(req, res) {
   }
 
   const workDir = await mkdtemp(path.join(tmpdir(), "prompt-lens-resolve-"));
+  const controller = new AbortController();
+  const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(210000)]);
+  const onDisconnect = () => { if (!res.writableEnded) controller.abort(); };
+  res.once("close", onDisconnect);
+  const startedAt = Date.now();
+  const reportStage = (stage) => console.info("Linked media stage", { stage, elapsedMs: Date.now() - startedAt });
   try {
     await mkdir(workDir, { recursive: true });
-    const { inputPath, metadata } = await ingestMediaToLocalFile(body, workDir);
+    const { inputPath, metadata } = await ingestMediaToLocalFile(body, workDir, signal, reportStage);
     const key = `linked-media/${body.platform}/${randomUUID()}.mp4`;
-    const mediaUrl = await uploadFile(inputPath, key, "video/mp4");
+    reportStage("upload");
+    const mediaUrl = await uploadFile(inputPath, key, "video/mp4", signal);
+    reportStage("complete");
     return json(res, 200, {
       mediaUrl,
       storageKey: key,
@@ -427,6 +448,7 @@ async function handleIngestMedia(req, res) {
       filename: typeof body.filename === "string" ? body.filename : `${body.platform}-linked-video.mp4`,
     });
   } finally {
+    res.off("close", onDisconnect);
     await rm(workDir, { recursive: true, force: true }).catch(() => undefined);
   }
 }

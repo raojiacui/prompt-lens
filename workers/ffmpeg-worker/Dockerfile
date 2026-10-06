@@ -9,6 +9,7 @@ WORKDIR /app
 COPY workers/ffmpeg-worker/package.json ./package.json
 RUN npm install --omit=dev
 COPY workers/ffmpeg-worker/server.mjs ./server.mjs
+COPY workers/ffmpeg-worker/parallel-download.mjs ./parallel-download.mjs
 COPY workers/ffmpeg-worker/scene-detect.py ./scene-detect.py
 
 ENV PORT=8080
