@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { expireProjectMedia } from "@/lib/workflow/media-retention";
 import { processMediaCleanupJobs } from "@/lib/workflow/media-cleanup";
+import { expireGenerationHistory } from "@/lib/workflow/generation-retention";
 
 export const maxDuration = 300;
 export async function GET(request: NextRequest) {
@@ -13,5 +14,6 @@ export async function GET(request: NextRequest) {
   const dryRun = request.nextUrl.searchParams.get("dryRun") === "1";
   const retention = await expireProjectMedia(10, dryRun);
   const deletedFiles = dryRun ? 0 : await processMediaCleanupJobs(50);
-  return NextResponse.json({ ...retention, deletedFiles, dryRun }, { headers: { "Cache-Control": "no-store" } });
+  const generation = dryRun ? { expiredGenerations: 0 } : await expireGenerationHistory();
+  return NextResponse.json({ ...retention, ...generation, deletedFiles, dryRun }, { headers: { "Cache-Control": "no-store" } });
 }

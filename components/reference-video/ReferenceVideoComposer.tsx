@@ -19,6 +19,7 @@ import { getModelById, type ModelRegistryEntry } from "@/lib/ai/model-registry";
 import { generationChoiceId, generationChoices, generationDisplayName, resolveGenerationModel } from "@/lib/ai/generation-models";
 import { refreshWalletBalance } from "@/lib/billing/use-wallet-balance";
 import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
+import { GenerationHistory } from "./generation-history";
 import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -1689,6 +1690,7 @@ export function ReferenceVideoComposer({
           </div>
         </div>
       </div>
+      <div className="mx-auto max-w-[1680px] px-4 pb-8 lg:px-6"><GenerationHistory refreshKey={variants.map(variant => `${variant.providerTaskId}:${variant.status}`).join("|")} /></div>
     </main>
   );
 }

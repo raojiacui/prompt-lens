@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-const mocks = vi.hoisted(() => ({ expire: vi.fn(), cleanup: vi.fn() }));
+const mocks = vi.hoisted(() => ({ expire: vi.fn(), cleanup: vi.fn(), generation: vi.fn() }));
 vi.mock("@/lib/workflow/media-retention", () => ({ expireProjectMedia: mocks.expire }));
 vi.mock("@/lib/workflow/media-cleanup", () => ({ processMediaCleanupJobs: mocks.cleanup }));
+vi.mock("@/lib/workflow/generation-retention", () => ({ expireGenerationHistory: mocks.generation }));
 import { GET } from "@/app/api/cron/media-retention/route";
 
 describe("protected retention scheduler", () => {
@@ -21,9 +22,12 @@ describe("protected retention scheduler", () => {
     await GET(new NextRequest("http://localhost/api/cron/media-retention?dryRun=1", { headers }));
     expect(mocks.expire).toHaveBeenCalledWith(10, true);
     expect(mocks.cleanup).not.toHaveBeenCalled();
+    expect(mocks.generation).not.toHaveBeenCalled();
     mocks.cleanup.mockResolvedValue(3);
+    mocks.generation.mockResolvedValue({ expiredGenerations: 1 });
     await GET(new NextRequest("http://localhost/api/cron/media-retention", { headers }));
     expect(mocks.expire).toHaveBeenCalledWith(10, false);
     expect(mocks.cleanup).toHaveBeenCalledWith(50);
+    expect(mocks.generation).toHaveBeenCalledOnce();
   });
 });

@@ -251,7 +251,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       id: "help", title: "常见问题与退款",
       summary: "先根据当前卡住的步骤排查。反馈问题时附上项目、任务或订单编号，能更快定位。",
       topics: [
-        { title: "素材和提示词保存多久", paragraphs: ["项目原视频、镜头片段、关键帧和分析提示词在项目最近一次分析或改写内容生成后保留 7 天，到期由定时任务清理；处理中任务会暂缓清理。请及时下载素材并复制提示词。生成视频使用服务商链接，有效期由服务商决定。订单、积分和退款记录不会因素材到期被删除。"] },
+        { title: "素材和提示词保存多久", paragraphs: ["项目原视频、镜头片段、关键帧和分析提示词在项目最近一次分析或改写内容生成后保留 7 天，到期由定时任务清理；处理中任务会暂缓清理。请及时下载素材并复制提示词。视频生成页面下方的「生成历史」可查看平台积分和自带 Key 的任务。线上生成记录从创建起保留 7 天，处理中任务暂缓清理，请及时下载结果；视频本身使用服务商链接，有效期由服务商决定。本地测试历史不自动清理。订单、积分和退款记录不会因素材到期被删除。"] },
         { title: "链接无法导入", paragraphs: ["先在原平台确认视频仍可访问，再复制具体视频的分享链接，每次只粘贴一个。确认剩余导入次数，以及时长和大小是否符合限制。仍失败时，可以把你已有的本地文件上传；这一步不消耗链接导入次数。"] },
         { title: "提示 Key 无效或余额不足", paragraphs: ["先确认本次选择的是平台积分还是自己的 Key。平台积分不足，到套餐页充值；KIE 余额不足，到 KIE 账户处理。Key 无效时，在设置中重新保存有效的 Key，再检查账户权限和余额。不要把 Key 当作提示词粘贴。"] },
         { title: "任务很久没有变化，或刷新后看不到结果", paragraphs: ["先从「我的项目」重新打开项目，付费任务也可以从「余额与订单」查看任务状态。页面暂时无法查询，不一定表示后台任务失败。先保留任务编号并联系客服核对，避免重复提交造成多次调用。"] },
@@ -499,7 +499,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       id: "help", title: "Troubleshooting and refunds",
       summary: "Start with the step that failed. Include a project, task, or order ID when asking for help.",
       topics: [
-        { title: "How long are media and prompts kept?", paragraphs: ["Project source videos, shot clips, keyframes, and analysis prompts are kept for 7 days after the project's latest analysis or rewrite content, then removed by scheduled cleanup. Active tasks postpone cleanup. Download media and copy prompts promptly. Generated videos use provider-hosted links with provider-controlled validity. Order, credit, and refund records are not removed when project content expires."] },
+        { title: "How long are media and prompts kept?", paragraphs: ["Project source videos, shot clips, keyframes, and analysis prompts are kept for 7 days after the project's latest analysis or rewrite content, then removed by scheduled cleanup. Active tasks postpone cleanup. Download media and copy prompts promptly. Generation history below the video generation workspace includes platform-credit and own-key tasks. Production generation records are kept for 7 days from creation; active tasks postpone cleanup. Download results promptly. Video links are hosted by the provider with provider-controlled validity. Local testing history is not automatically cleared. Order, credit, and refund records are not removed when project content expires."] },
         { title: "A link will not import", paragraphs: ["Check that the original video is accessible, copy its specific share link, and paste only one video at a time. Check your remaining imports and the file limits. If it still fails, upload a local copy you already have; local uploads do not use link imports."] },
         { title: "Invalid key or insufficient balance", paragraphs: ["Check whether the task uses platform credits or your KIE key. Top up the corresponding account. For an invalid key, save a valid replacement in Settings and check its permissions and provider balance. Never paste a key into a prompt."] },
         { title: "Progress is stuck or results disappeared after refresh", paragraphs: ["Reopen the reference in My projects. Paid tasks are also listed in Balance and orders. A temporary status-query error does not necessarily mean the underlying task failed. Keep the task ID and ask support to check before submitting another request."] },
