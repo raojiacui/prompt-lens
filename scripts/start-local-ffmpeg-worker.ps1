@@ -77,6 +77,8 @@ try {
   if (-not $env:WORKER_SECRET -and $env:FFMPEG_WORKER_SECRET) {
     $env:WORKER_SECRET = $env:FFMPEG_WORKER_SECRET
   }
+  # Local media tests must not trigger reconciliation against the production site.
+  $env:COMMERCIAL_RECONCILIATION_BASE_URL = ""
   if (-not $env:PORT) {
     $env:PORT = [string]$Port
   }

@@ -112,4 +112,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-w
 
 The script loads .env.local, derives R2_ENDPOINT from R2_ACCOUNT_ID when needed, and serves http://localhost:8080.
 
+Set `FFMPEG_WORKER_URL=http://localhost:8080` in `.env.local` to use the local worker instead of a deployed version. The local startup script disables the commercial reconciliation scheduler, even if production scheduler settings exist in `.env.local`.
+
 The Dockerfile installs `scenedetect-headless` for `/breakdown`. Social-platform extraction is handled by the configured provider in the main app; this worker never receives the provider API key.
