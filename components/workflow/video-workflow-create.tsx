@@ -320,6 +320,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [selectedSceneVersionIndexes, setSelectedSceneVersionIndexes] = useState<Record<string, number>>({});
   const [copiedSceneVersionId, setCopiedSceneVersionId] = useState("");
   const [analysisModelValue, setAnalysisModelValue] = useState("analysis-gemini-3-8-flash");
+  const [analysisPayer, setAnalysisPayer] = useState<"platform" | "byok">("platform");
   const [analysisTaskId, setAnalysisTaskId] = useState("");
   const [analysisOutputLanguage, setAnalysisOutputLanguage] = useState<"zh" | "en">(locale === "en" ? "en" : "zh");
   const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
@@ -334,7 +335,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
-  const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean } | null>(null);
+  const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer: "platform" | "byok"; modelId: string } | null>(null);
+  const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && creditStatus.mode !== "trial" && (mediaInputMode === "link" || mediaType !== "image"));
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
   const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
   const rewriteBusyRef = useRef(false);
@@ -590,6 +592,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     });
     try {
       const latestStatus = await loadCreditStatus() || creditStatus;
+      if (selectedMediaType === "video" && latestStatus?.commercialConsumptionEnabled && latestStatus.mode !== "trial" && analysisPayer === "byok" && !latestStatus.hasUserKieKey) {
+        throw new Error(locale === "en" ? "Configure your own KIE Key in Settings first." : "请先在设置中配置自己的 KIE Key。");
+      }
       if (isLinkedMedia && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.linkImports?.remaining ?? 0) < 1)) {
         throw new Error(locale === "en" ? "No included link parsing attempts remain. Top up or upload a file." : "套餐链接解析次数不足，请充值或改用本地文件上传。");
       }
@@ -629,8 +634,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         body: JSON.stringify({ title: preparedTitle }),
       });
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
-      if (isLinkedMedia || requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", longVideo: !(prepared.duration && prepared.duration <= 10), trialRemaining: latestStatus?.trial.remaining || 0 })) {
-        setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage, automaticSplit: isLinkedMedia });
+      if (isLinkedMedia || (prepared.mediaType === "video" && latestStatus?.commercialConsumptionEnabled && latestStatus.mode !== "trial" && analysisPayer === "platform") || requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", longVideo: !(prepared.duration && prepared.duration <= 10), trialRemaining: latestStatus?.trial.remaining || 0 })) {
+        setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage, automaticSplit: isLinkedMedia, payer: analysisPayer, modelId: analysisModelValue });
         setAnalysisProgress(null);
         return;
       }
@@ -870,15 +875,18 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
             />
           </div>
 
+          <div data-testid="analysis-action-row" className={cn("mt-4 grid items-stretch gap-2", showAnalysisPayer ? "grid-cols-[minmax(0,1fr)_7rem] sm:grid-cols-[minmax(0,1fr)_8rem]" : "grid-cols-1")}>
           <button
             type="button"
             onClick={() => void startBreakdown()}
             disabled={loading || (mediaInputMode === "upload" ? !file : !linkedPlatform)}
-            className="mt-4 flex h-11 w-full items-center justify-center gap-3 rounded-xl bg-[#D97757] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
+            className="flex min-h-14 min-w-0 items-center justify-center gap-2 rounded-lg bg-[#D97757] px-2 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5" />}
+            {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5 shrink-0" />}
             {loading ? (locale === "en" ? "Preparing..." : "正在处理...") : mediaInputMode === "link" ? (locale === "en" ? "Import video · counts on success" : "导入视频 · 成功计次") : mediaType === "image" ? (locale === "en" ? "Analyze image" : "分析图片") : (locale === "en" ? "Analyze video" : "分析视频")}
           </button>
+          {showAnalysisPayer && <select aria-label={locale === "en" ? "Payment source" : "费用来源"} title={locale === "en" ? "Payment source" : "费用来源"} value={analysisPayer} disabled={loading || Boolean(commercialSource) || Boolean(analysisTaskId)} onChange={event => setAnalysisPayer(event.target.value === "byok" ? "byok" : "platform")} className="min-h-14 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{locale === "en" ? "Credits" : "平台积分"}</option><option value="byok">{locale === "en" ? "Own key" : "自带 Key"}</option></select>}
+          </div>
 
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}
           {error ? <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}

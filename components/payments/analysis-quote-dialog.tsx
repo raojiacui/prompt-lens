@@ -6,13 +6,13 @@ import { X } from "lucide-react";
 import { quoteAnalysis, type SceneInterval } from "@/lib/billing/pricing-v6";
 import { listModels } from "@/lib/ai/model-registry";
 
-export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean }; onClose: () => void; onComplete: (bundle: unknown) => void }) {
+export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string }; onClose: () => void; onComplete: (bundle: unknown) => void }) {
   const zh = useLocale() === "zh";
   const dialog = useRef<HTMLDialogElement>(null);
   const automaticSplit = source.automaticSplit;
-  const [payer, setPayer] = useState("platform");
+  const payer = source.payer ?? "platform";
   const [model, setModel] = useState("flash");
-  const [byokModel, setByokModel] = useState("analysis-gemini-3-8-flash");
+  const [byokModel, setByokModel] = useState(source.modelId || "analysis-gemini-3-8-flash");
   const [preparation, setPreparation] = useState<{ id: string; scenes: SceneInterval[]; durationUs: number } | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [quote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number } | null>(null);
@@ -98,9 +98,8 @@ export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: {
         {estimatedCredits !== null && !quote && <p className="mt-3 text-sm">{zh ? `预计 ${estimatedCredits} 积分` : `Estimated ${estimatedCredits} credits`}</p>}
       </div>}
       {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。确认后预留，按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Reserved on confirmation, settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
-      <div data-testid="analysis-action-row" className="mt-5 grid grid-cols-[minmax(0,1fr)_7rem] items-stretch gap-2 sm:grid-cols-[minmax(0,1fr)_8rem]">
+      <div className="mt-5 flex gap-3">
         <button disabled={busy || Boolean(preparation && !selected.length)} onClick={() => void next()} className="min-h-14 min-w-0 rounded-lg bg-foreground px-2 py-2 text-sm font-semibold text-background disabled:opacity-50">{busy ? (zh ? "处理中…" : "Working…") : !preparation ? (zh ? "读取视频信息" : "Inspect video") : !quote ? (zh ? "获取报价" : "Get quote") : (zh ? "确认并开始" : "Confirm and start")}</button>
-        <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} disabled={busy || Boolean(quote)} value={payer} onChange={(e) => setPayer(e.target.value)} className="min-h-14 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>
       </div>
       {quote && <button disabled={busy} onClick={() => setQuote(null)} className="mt-3 min-h-10 px-3 text-sm underline">{zh ? "调整选择" : "Adjust selection"}</button>}
     </>}
