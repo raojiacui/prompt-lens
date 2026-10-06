@@ -258,7 +258,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "为什么不是完全一样的视频", paragraphs: ["分析提取的是可见细节和镜头描述，生成模型仍会重新创作画面。先核对提示词和参考素材，固定模型、比例与时长，每次修改少量细节比较结果。复刻不等于逐帧复制。"] },
         { title: "不想付款了，怎么取消", paragraphs: ["未付款订单可以主动点击「取消本次付款」。15 分钟内未完成支付的订单会进入超时关闭处理；如果已经付款，系统会先核对到账。已经付过款时不要继续扫描旧码，也不要靠再次下单来解决到账延迟。"] },
         { title: "如何申请退款", steps: [
-          "打开「余额与订单」，找到已付款的购买记录，点击「申请退款」。",
+          "从首页底部的客服区域点击「填写退款工单」，在表单中选择已付款的订单。",
           "填写退款原因以及联系邮箱或微信号，提交申请。已有使用或处理中任务的订单，请直接联系客服核对。",
           `添加客服微信 ${SUPPORT_WECHAT}，发送订单号并说明情况。提交表单后仍需客服审核同意，才会办理退款。`,
           "审核期间，对应套餐权益暂停使用；申请未通过会恢复。退款处理后，同时查看网站状态和支付宝退款记录。",
@@ -506,7 +506,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "The result does not exactly match the reference", paragraphs: ["Analysis describes visible details; generation creates a new image sequence. Review the prompt and reference, keep the model, ratio, and duration fixed, and compare small changes. Recreation is not frame-by-frame copying."] },
         { title: "Cancel an unpaid order", paragraphs: ["Use Cancel this payment for an unpaid order. Orders unpaid after 15 minutes enter timeout closure; completed payments are checked before closure. If you already paid, do not scan an old code or create another purchase to resolve a confirmation delay."] },
         { title: "Request a refund", steps: [
-          "Open Balance and orders, locate the paid purchase, and select Request refund.",
+          "Select Submit a refund ticket in the support section at the bottom of the home page, then choose your paid order in the form.",
           "Enter a reason and contact email or WeChat ID, then submit. Contact support directly for packages with usage or pending tasks.",
           `Add WeChat support at ${SUPPORT_WECHAT} and provide the order ID and reason. Submitting the form does not issue a refund; support approval is required.`,
           "Benefits for the package are paused during review and restored if the request is declined. After processing, check both the site status and Alipay refund record.",

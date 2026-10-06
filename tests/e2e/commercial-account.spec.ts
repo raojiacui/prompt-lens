@@ -10,6 +10,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await page.route("**/api/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
       let body: unknown = {};
+      if (path === "/api/auth/get-session") return route.fulfill({ json: { user: { id: "customer", name: "Customer", email: "customer@example.com" }, session: { id: "session", userId: "customer", expiresAt: "2099-01-01T00:00:00.000Z" } } });
       if (path === "/api/payments/account") body = {
         wallet: { credits: requested ? 0 : 200, rewrites: requested ? 0 : 20, heldCredits: 0, heldRewrites: 0, frozen: false },
         orders: [{ id, packageId: "v6_trial_200", packageName: "Starter", amountCents: 1990, status: "paid", createdAt: new Date().toISOString() }],
@@ -25,7 +26,9 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await page.goto("/billing");
     await expect(page.getByRole("heading", { name: locale === "zh" ? "余额与订单" : "Balance and orders" })).toBeVisible();
     await page.reload();
-    await page.getByRole("button", { name: locale === "zh" ? "申请退款" : "Request refund" }).click();
+    await expect(page.getByRole("button", { name: locale === "zh" ? "申请退款" : "Request refund", exact: true })).toHaveCount(0);
+    await page.goto("/billing#refund-request");
+    await page.locator("#refund-request select").selectOption(id);
     expect(requested).toBe(false);
     const form = page.getByRole("form", { name: locale === "zh" ? "退款申请表单" : "Refund request form" });
     const submit = page.getByRole("button", { name: locale === "zh" ? "提交申请，等待客服审核" : "Submit for support review" });
@@ -36,6 +39,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await submit.click();
     await expect(page.getByText(locale === "zh" ? "等待客服审核" : "Awaiting support review", { exact: true })).toBeVisible();
     await expect(page.getByText(/13117177652/).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: locale === "zh" ? "查看工单" : "View ticket", exact: true })).toBeVisible();
     expect(checkoutPosts).toBe(0);
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow).toBe(false);

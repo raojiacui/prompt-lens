@@ -86,7 +86,7 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
           <div className="min-w-0"><p className="font-medium">{order.packageName} · ¥{(order.amountCents / 100).toFixed(2)}</p><p className="mt-1 text-sm text-muted-foreground">{new Date(order.createdAt).toLocaleString(zh ? "zh-CN" : "en-US")}</p><p className="mt-1 break-all text-xs text-muted-foreground">{order.id}</p></div>
           <div className="flex flex-wrap items-center gap-3 text-sm"><span>{status(refundInfo?.state || order.status)}</span>
             {order.status === "pending" && <button className="min-h-10 rounded-lg border border-border px-3" onClick={() => setSelected(order)}>{zh ? "查看订单" : "View order"}</button>}
-            {(order.status === "paid" || refundInfo) && <button disabled={busy} className="min-h-10 rounded-lg border border-border px-3" onClick={() => openRefund(order)}>{refundInfo ? (zh ? "查看工单" : "View ticket") : (zh ? "申请退款" : "Request refund")}</button>}
+            {refundInfo && <button disabled={busy} className="min-h-10 rounded-lg border border-border px-3" onClick={() => openRefund(order)}>{zh ? "查看工单" : "View ticket"}</button>}
           </div>
         </div>;
       })}
