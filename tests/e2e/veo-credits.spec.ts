@@ -17,7 +17,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       else if (path === "/api/commercial/generation") {
         quoteRequests++;
         const request = route.request().postDataJSON();
-        expect(request).toMatchObject({ model: "veo3_fast", duration: 8 });
+        expect(request).toMatchObject({ model: "veo3_fast", duration: 8, aspectRatio: "16:9" });
         expect(request.quality).toMatch(/^(720P|1080P)$/);
         body = { id: "veo-quote", credits: estimateGeneration({ modelId: "veo3_fast", durationSeconds: 8, resolution: request.quality.toLowerCase(), audio: false }).credits, model: "veo3_fast", duration: 8, resolution: request.quality.toLowerCase() };
       } else if (path === "/api/commercial/confirm") {
@@ -26,7 +26,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       } else if (path.startsWith("/api/commercial/tasks/")) body = { state: "running" };
       await route.fulfill({ json: body });
     });
-    await page.addInitScript(() => localStorage.setItem("reference-settings-prompt-lens-video-gen", JSON.stringify({ model: "__auto_balanced", duration: "0s", quality: "1080P" })));
+    await page.addInitScript(() => localStorage.setItem("reference-settings-prompt-lens-video-gen", JSON.stringify({ model: "__auto_balanced", aspectRatio: "auto", duration: "0s", quality: "1080P" })));
     await page.goto("/dashboard?tab=video-gen&videoGenPrompt=A%20cinematic%20cloud%20palace");
     await expect(page.locator("select").filter({ has: page.locator('option[value="bytedance/seedance-2-mini"]') })).toHaveValue("bytedance/seedance-2-mini");
     await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
@@ -34,6 +34,10 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     const miniGenerate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 9 积分/ : /Generate Video.*Est. 9 credits/i });
     await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 18 积分/ : /Generate Video.*Est. 18 credits/i })).toBeVisible();
     await page.getByRole("button", { name: /720P.*5/ }).click();
+    await expect(page.getByRole("button", { name: "Auto", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "16:9", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "9:16", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /auto.*720P/i })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "1080P", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "4K", exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: "480P", exact: true }).click();

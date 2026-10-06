@@ -25,7 +25,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 type ModelId = string;
 
 type AspectRatio =
-  | "auto"
   | "16:9"
   | "9:16"
   | "1:1"
@@ -62,7 +61,6 @@ const aspectRatioOptions: Array<{
   label: string;
   shape: string;
 }> = [
-  { value: "auto", label: "Auto", shape: "h-2 w-5" },
   { value: "16:9", label: "16:9", shape: "h-2.5 w-7" },
   { value: "9:16", label: "9:16", shape: "h-7 w-2.5" },
   { value: "1:1", label: "1:1", shape: "h-6 w-6" },
@@ -88,7 +86,7 @@ function generationOption(entry: ModelRegistryEntry) {
     id: entry.kieModelId,
     label: generationDisplayName(entry.kieModelId),
     supportedDurations: (entry.durationOptions || [0]).map(s => `${s}s` as Duration),
-    supportedAspectRatios: (entry.aspectRatios || ["16:9"]) as Exclude<AspectRatio, "auto">[],
+    supportedAspectRatios: (entry.aspectRatios || ["16:9"]) as AspectRatio[],
   };
 }
 const models = generationChoices().map(generationOption);
@@ -381,7 +379,6 @@ export function ReferenceVideoComposer({
   }, [supportedQualityOptions, selectedModelConfig.supportedDurations, quality, duration]);
   const supportedAspectRatioOptions = aspectRatioOptions.filter(
     (option) =>
-      option.value === "auto" ||
       selectedModelConfig.supportedAspectRatios.includes(option.value),
   );
   const supportedDurationSeconds = selectedModelConfig.supportedDurations
@@ -745,7 +742,7 @@ export function ReferenceVideoComposer({
           outputCount: OutputCount;
         }>;
         if (!initialModel && parsed.model) setModel(models.some(item => item.id === generationChoiceId(parsed.model!)) ? generationChoiceId(parsed.model) : defaultGenerationModelId);
-        if (parsed.aspectRatio) setAspectRatio(parsed.aspectRatio);
+        if (aspectRatioOptions.some(option => option.value === parsed.aspectRatio)) setAspectRatio(parsed.aspectRatio!);
         if (parsed.quality) setQuality(parsed.quality);
         if (parsed.duration) setDuration(parsed.duration);
         if (parsed.outputCount) setOutputCount(parsed.outputCount);
@@ -775,7 +772,6 @@ export function ReferenceVideoComposer({
   }, [initialDuration]);
 
   useEffect(() => {
-    if (aspectRatio === "auto") return;
     if (selectedModelConfig.supportedAspectRatios.includes(aspectRatio)) return;
     setAspectRatio(selectedModelConfig.supportedAspectRatios[0] ?? "16:9");
   }, [aspectRatio, selectedModelConfig]);

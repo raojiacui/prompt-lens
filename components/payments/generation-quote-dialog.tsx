@@ -24,7 +24,7 @@ export function GenerationQuoteDialog({ request, quantity, onClose, onConfirmed 
               MODEL_PRICE_UNVERIFIED: ["该型号的官方价格或接口仍待核实，暂不能用平台积分提交。请换一个已核价模型。", "This model's price or API is not verified yet. Choose a priced model."],
               PAID_MODEL_NOT_VERIFIED: ["请选择有效的视频生成或编辑模型。", "Choose an available video generation or editing model."],
               PAID_GENERATION_CONFIGURATION_UNSUPPORTED: ["当前模型不支持这组素材、时长或画质，请调整参数后重新报价。", "This model does not support these inputs, duration or quality. Adjust the settings and quote again."],
-              PAID_GENERATION_ASPECT_UNSUPPORTED: ["当前模型不支持所选比例，请选择自动或模型支持的比例。", "Choose Auto or an aspect ratio supported by this model."],
+              PAID_GENERATION_ASPECT_UNSUPPORTED: ["当前模型不支持所选比例，请选择模型支持的比例。", "Choose an aspect ratio supported by this model."],
               UPLOAD_NOT_OWNED: ["请使用当前账户上传的参考视频。", "Use a reference video uploaded by your account."],
               INSUFFICIENT_COMMERCIAL_BALANCE: ["积分不足或账户暂不可使用，未启动生成。", "Insufficient credits or an unavailable wallet. No generation started."],
               PREVIEW_RATE_LIMIT: ["参考视频报价过于频繁，请稍后再试。", "Too many reference-video quotes. Try again later."],
