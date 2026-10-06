@@ -12,15 +12,14 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     const singleCredits = quoteAnalysis({ ...pricing, scenes: scenes.slice(0, 1) }).credits;
     let confirmations = 0;
     let quoteRequest: Record<string, unknown> | undefined;
-    await page.route("https://example.com/upload", (r) => r.fulfill({ status: 200, headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "PUT, OPTIONS", "Access-Control-Allow-Headers": "*" }, body: "" }));
     await page.route("**/api/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
       let body: unknown = {};
       if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
-      else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, mode: "platform_credits", trial: { limit: 2, remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 } };
+      else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, mode: "platform_credits", trial: { limit: 2, remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 }, linkImports: { remaining: 10 } };
       else if (path === "/api/models") body = { models: [] };
       else if (path === "/api/workflow/projects") body = route.request().method() === "POST" ? { project: { id: projectId } } : { projects: [] };
-      else if (path === "/api/upload") body = { presignedUrl: "https://example.com/upload", publicUrl: "https://example.com/video.mp4", key: "uploaded", mediaType: "video" };
+      else if (path === "/api/media/resolve-link") body = { mediaUrl: "https://example.com/video.mp4", filename: "linked-video.mp4", mediaType: "video", platform: "douyin", duration: seconds, metadata: { duration: seconds } };
       else if (path === "/api/commercial/analysis") {
         const data = route.request().postDataJSON();
         if (data.action === "prepare") body = { id: "preview", durationUs: pricing.sourceDurationUs, scenes };
@@ -32,10 +31,20 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
       await route.fulfill({ json: body });
     });
     await page.goto("/dashboard?tab=analyze");
-    await page.locator('input[type="file"]').first().setInputFiles("public/remotion/remix-flow/rewrite-before.mp4");
-    await page.getByRole("button", { name: locale === "zh" ? "分析视频" : "Analyze video", exact: true }).click();
+    await page.getByRole("tab", { name: locale === "zh" ? "粘贴链接" : "Paste link" }).click();
+    await page.getByLabel(locale === "zh" ? "视频链接" : "Video link", { exact: true }).fill("https://v.douyin.com/test/");
+    await page.getByRole("button", { name: locale === "zh" ? "导入视频 · 成功计次" : "Import video · counts on success", exact: true }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
+    const actionRow = dialog.getByTestId("analysis-action-row");
+    const actionBox = await actionRow.getByRole("button").boundingBox();
+    const sourceBox = await actionRow.getByRole("combobox").boundingBox();
+    expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(sourceBox!.x);
+    expect(Math.abs(actionBox!.y - sourceBox!.y)).toBeLessThan(2);
+    await actionRow.getByRole("combobox").selectOption("byok");
+    await expect(dialog.getByRole("combobox", { name: locale === "zh" ? "分析模型" : "Analysis model" })).toHaveValue("analysis-gemini-3-8-flash");
+    await actionRow.getByRole("combobox").selectOption("platform");
+    await actionRow.screenshot({ path: `test-results/analysis-action-row-${locale}-${width}-${seconds}s.png` });
     await dialog.getByRole("button", { name: locale === "zh" ? "读取视频信息" : "Inspect video" }).click();
     await expect(dialog.getByText(`${seconds.toFixed(2)}s · ${scenes.length} ${locale === "zh" ? "个镜头" : "shots"}`, { exact: true })).toBeVisible();
     expect(confirmations).toBe(0);
@@ -55,6 +64,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     await expect(dialog.getByText(locale === "zh" ? `${singleCredits} 积分` : `${singleCredits} credits`, { exact: true })).toBeVisible();
     expect(quoteRequest).toMatchObject({ sceneIds: ["1"] });
     await expect(first).toBeDisabled();
+    await expect(actionRow.getByRole("combobox")).toBeDisabled();
     await dialog.getByRole("button", { name: locale === "zh" ? "调整选择" : "Adjust selection" }).click();
     await all.check();
     await expect(first).toBeChecked();

@@ -1200,7 +1200,6 @@ export function ReferenceVideoComposer({
         refreshWalletBalance();
       }} />}
       <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
-        {commercialEnabled && <label className="flex flex-wrap items-center gap-3 text-sm">{zh ? "费用来源" : "Payment source"}<select value={generationPayer} disabled={isRunning} onChange={(e) => { setGenerationPayer(e.target.value); }} className="min-h-10 rounded-lg border border-border bg-background px-3"><option value="byok">{zh ? "自己的 KIE Key" : "My KIE key"}</option><option value="platform">{zh ? "平台积分" : "Platform credits"}</option></select></label>}
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">
@@ -1612,18 +1611,21 @@ export function ReferenceVideoComposer({
                 </p>
               ) : null}
 
+              <div data-testid="generation-action-row" className={`mt-auto grid items-stretch gap-2 ${commercialEnabled ? "grid-cols-[minmax(0,1fr)_7rem] sm:grid-cols-[minmax(0,1fr)_8rem]" : "grid-cols-1"}`}>
               <button
                 type="button"
                 onClick={() => void createVideo()}
                 disabled={isRunning || !resolvedModel || (commercialEnabled && generationPayer === "platform" && creditPreview.state === "unavailable")}
-                className="mt-auto flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#D97757] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex min-h-14 min-w-0 items-center justify-center gap-2 rounded-lg bg-[#D97757] px-2 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <WandSparkles className="h-5 w-5" />
-                <span className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">{isRunning
+                <WandSparkles className="h-5 w-5 shrink-0" />
+                <span className="flex min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-1 [overflow-wrap:anywhere]">{isRunning
                   ? t("create.preparing") || "Preparing..."
                   : t("create.button") || "Generate Video"}
                 {!isRunning && <span aria-live="polite">· {generationCostLabel}</span>}</span>
               </button>
+              {commercialEnabled && <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-14 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>}
+              </div>
             </div>
           </section>
 

@@ -31,6 +31,16 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await expect(page.locator("select").filter({ has: page.locator('option[value="bytedance/seedance-2-mini"]') })).toHaveValue("bytedance/seedance-2-mini");
     await expect(page.locator('option[value="__auto_balanced"]')).toHaveCount(0);
     await page.getByLabel(locale === "zh" ? "费用来源" : "Payment source").selectOption("platform");
+    const actionRow = page.getByTestId("generation-action-row");
+    const actionBox = await actionRow.getByRole("button").boundingBox();
+    const sourceBox = await actionRow.getByRole("combobox").boundingBox();
+    expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(sourceBox!.x);
+    expect(Math.abs(actionBox!.y - sourceBox!.y)).toBeLessThan(2);
+    expect(await actionRow.evaluate(row => row.scrollWidth > row.clientWidth)).toBe(false);
+    await actionRow.getByRole("combobox").selectOption("byok");
+    await expect(actionRow.getByRole("button")).toContainText(locale === "zh" ? "0 平台积分" : "0 platform credits");
+    await actionRow.getByRole("combobox").selectOption("platform");
+    await actionRow.screenshot({ path: `test-results/generation-action-row-${locale}-${width}.png` });
     const miniGenerate = page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 9 积分/ : /Generate Video.*Est. 9 credits/i });
     await expect(page.getByRole("button", { name: locale === "zh" ? /生成视频.*预计 18 积分/ : /Generate Video.*Est. 18 credits/i })).toBeVisible();
     await page.getByRole("button", { name: /720P.*5/ }).click();
