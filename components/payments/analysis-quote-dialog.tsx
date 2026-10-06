@@ -99,7 +99,7 @@ export function AnalysisQuoteDialog({ source, onClose, onComplete }: { source: {
       </div>}
       {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。确认后预留，按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Reserved on confirmation, settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
       <div className="mt-5 flex gap-3">
-        <button disabled={busy || Boolean(preparation && !selected.length)} onClick={() => void next()} className="min-h-14 min-w-0 rounded-lg bg-foreground px-2 py-2 text-sm font-semibold text-background disabled:opacity-50">{busy ? (zh ? "处理中…" : "Working…") : !preparation ? (zh ? "读取视频信息" : "Inspect video") : !quote ? (zh ? "获取报价" : "Get quote") : (zh ? "确认并开始" : "Confirm and start")}</button>
+        <button disabled={busy || Boolean(preparation && !selected.length)} onClick={() => void next()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-2 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "处理中…" : "Working…") : !preparation ? (zh ? "读取视频信息" : "Inspect video") : !quote ? (zh ? "获取报价" : "Get quote") : (zh ? "确认并开始" : "Confirm and start")}</button>
       </div>
       {quote && <button disabled={busy} onClick={() => setQuote(null)} className="mt-3 min-h-10 px-3 text-sm underline">{zh ? "调整选择" : "Adjust selection"}</button>}
     </>}

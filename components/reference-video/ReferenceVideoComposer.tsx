@@ -1616,15 +1616,15 @@ export function ReferenceVideoComposer({
                 type="button"
                 onClick={() => void createVideo()}
                 disabled={isRunning || !resolvedModel || (commercialEnabled && generationPayer === "platform" && creditPreview.state === "unavailable")}
-                className="flex min-h-14 min-w-0 items-center justify-center gap-2 rounded-lg bg-[#D97757] px-2 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-lg bg-[#D97757] px-2 py-1 text-sm font-semibold leading-tight text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <WandSparkles className="h-5 w-5 shrink-0" />
-                <span className="flex min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-1 [overflow-wrap:anywhere]">{isRunning
+                <span className="flex min-w-0 flex-wrap items-center justify-center gap-x-2 [overflow-wrap:anywhere]">{isRunning
                   ? t("create.preparing") || "Preparing..."
                   : t("create.button") || "Generate Video"}
                 {!isRunning && <span aria-live="polite">· {generationCostLabel}</span>}</span>
               </button>
-              {commercialEnabled && <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-14 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>}
+              {commercialEnabled && <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>}
               </div>
             </div>
           </section>

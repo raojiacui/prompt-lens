@@ -38,6 +38,8 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     const sourceBox = await actionRow.getByRole("combobox").boundingBox();
     expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(sourceBox!.x);
     expect(Math.abs(actionBox!.y - sourceBox!.y)).toBeLessThan(2);
+    expect(actionBox!.height).toBeLessThanOrEqual(44);
+    expect(sourceBox!.height).toBe(actionBox!.height);
     await actionRow.getByRole("combobox").selectOption("byok");
     await actionRow.getByRole("combobox").selectOption("platform");
     if (pricing.payer === "byok_split") await actionRow.getByRole("combobox").selectOption("byok");

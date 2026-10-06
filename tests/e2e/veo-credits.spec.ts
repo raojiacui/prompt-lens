@@ -36,6 +36,8 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     const sourceBox = await actionRow.getByRole("combobox").boundingBox();
     expect(actionBox!.x + actionBox!.width).toBeLessThanOrEqual(sourceBox!.x);
     expect(Math.abs(actionBox!.y - sourceBox!.y)).toBeLessThan(2);
+    expect(actionBox!.height).toBeLessThanOrEqual(44);
+    expect(sourceBox!.height).toBe(actionBox!.height);
     expect(await actionRow.evaluate(row => row.scrollWidth > row.clientWidth)).toBe(false);
     await actionRow.getByRole("combobox").selectOption("byok");
     await expect(actionRow.getByRole("button")).toContainText(locale === "zh" ? "0 平台积分" : "0 platform credits");
