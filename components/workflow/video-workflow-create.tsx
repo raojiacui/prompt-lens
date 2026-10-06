@@ -12,6 +12,7 @@ import { VideoOverview } from "@/components/workflow/video-overview";
 import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
 import { workspaceCopyFor, localizedStatus, localizedVersionLabel } from "@/lib/workflow/interface-copy";
 import { extractVideoLink } from "@/lib/media-resolver/video-link-input";
+import { LinkImportError, readLinkImportResponse, type LinkImportStage } from "@/lib/media-resolver/import-progress";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,6 +57,8 @@ type AnalysisProgressState = {
   percent: number;
   label: string;
   detail: string;
+  indeterminate?: boolean;
+  startedAt?: number;
 };
 type MediaInputMode = "upload" | "link";
 type LinkedMediaPlatform = "tiktok" | "douyin" | "bilibili";
@@ -236,6 +239,13 @@ function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }
   const zh = useLocale() !== "en";
   const stepLabels = zh ? ["上传素材", "创建项目", "拆镜分析", "生成提示词"] : ["Upload reference", "Create project", "Analyze shots", "Prepare prompts"];
   const currentStepIndex = Math.max(0, analysisProgressSteps.findIndex((step) => step.phase === progress.phase));
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (!progress.startedAt) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [progress.startedAt]);
+  const elapsed = Math.max(0, Math.floor((now - (progress.startedAt || now)) / 1000));
 
   return (
     <div className="flex min-h-[520px] flex-col justify-center">
@@ -244,14 +254,15 @@ function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }
           <div className="min-w-0">
             <p className="text-sm font-semibold text-[#D97757]">{zh ? "分析进度" : "Analysis progress"}</p>
             <h2 className="mt-2 text-2xl font-semibold text-foreground">{progress.label}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{progress.detail}</p>
+            <p aria-live="polite" className="mt-2 text-sm leading-relaxed text-muted-foreground">{progress.detail}</p>
+            {progress.startedAt ? <p className="mt-2 text-xs text-muted-foreground">{zh ? `已等待 ${elapsed} 秒` : `Elapsed ${elapsed}s`}{elapsed >= 30 ? (zh ? " · 请勿重复提交" : " · Do not submit again") : ""}</p> : null}
           </div>
           <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#D97757]/10 text-xl font-semibold text-[#D97757]">
-            {progress.percent}%
+            {progress.indeterminate ? <Spinner size="sm" /> : `${progress.percent}%`}
           </div>
         </div>
 
-        <div className="mt-6">
+        {!progress.indeterminate ? <div className="mt-6">
           <div className="h-3 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-[#D97757] shadow-[0_0_18px_rgba(217,119,87,0.35)] transition-all duration-500"
@@ -262,7 +273,7 @@ function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }
             <span>0%</span>
             <span>100%</span>
           </div>
-        </div>
+        </div> : null}
 
         <div className="mt-6 grid gap-3 sm:grid-cols-4">
           {analysisProgressSteps.map((step, index) => {
@@ -282,7 +293,7 @@ function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }
                   </span>
                   {isDone ? <Check className="h-4 w-4 text-[#D97757]" /> : isActive ? <Spinner size="sm" /> : null}
                 </div>
-                <p className="mt-2 font-mono text-xs text-muted-foreground">{step.percent}%</p>
+                <p className="mt-2 text-xs text-muted-foreground">{progress.indeterminate ? (isActive ? (zh ? "处理中" : "In progress") : (zh ? "等待中" : "Waiting")) : `${step.percent}%`}</p>
               </div>
             );
           })}
@@ -555,24 +566,39 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   async function resolveLinkedMedia(): Promise<PreparedMedia> {
     const url = extractVideoLink(sourceUrl);
     if (linkImportRequestRef.current?.url !== url) linkImportRequestRef.current = { url, id: crypto.randomUUID() };
-    const response = await fetch("/api/media/resolve-link", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url, requestId: linkImportRequestRef.current.id }),
-    });
-    if (!response.ok) {
-      const failure = await response.clone().json().catch(() => null);
-      if (failure?.code === "LINK_IMPORT_RETRY_NEW_REQUEST" || failure?.code === "LINK_IMPORT_FAILED" || failure?.code === "LINK_RESOLVER_NOT_CONFIGURED") linkImportRequestRef.current = null;
+    const startedAt = Date.now();
+    const reportStage = (stage: LinkImportStage) => {
+      const messages = {
+        "checking-worker": locale === "en" ? ["Connecting media service", "Checking download service availability"] : ["连接媒体服务", "正在检查下载服务是否就绪"],
+        resolving: locale === "en" ? ["Resolving video link", "Requesting video and audio addresses"] : ["解析视频链接", "正在获取视频和音频下载地址"],
+        saving: locale === "en" ? ["Downloading and saving video", "Downloading media, merging audio and saving the file"] : ["下载并保存视频", "正在下载素材、合并音视频并保存到存储桶"],
+      };
+      const [label, detail] = messages[stage];
+      setProgress(label);
+      setAnalysisProgress({ phase: "upload", percent: 0, label, detail, indeterminate: true, startedAt });
+    };
+    reportStage("checking-worker");
+    let data: Record<string, unknown>;
+    try {
+      const response = await fetch("/api/media/resolve-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
+        body: JSON.stringify({ url, requestId: linkImportRequestRef.current.id }),
+      });
+      data = await readLinkImportResponse(response, reportStage);
+    } catch (error) {
+      if (error instanceof LinkImportError && ["LINK_IMPORT_RETRY_NEW_REQUEST", "LINK_IMPORT_FAILED", "LINK_RESOLVER_NOT_CONFIGURED"].includes(error.code || "")) linkImportRequestRef.current = null;
+      throw error;
     }
-    const data = await readJsonResponse(response, locale === "en" ? "Link resolution failed" : "视频链接解析失败");
+    if (typeof data.mediaUrl !== "string") throw new Error(locale === "en" ? "Invalid imported media" : "导入结果无效");
     return {
       url: data.mediaUrl,
-      filename: data.filename || `${data.platform || "linked"}-video.mp4`,
-      key: data.storageKey,
+      filename: typeof data.filename === "string" ? data.filename : `${data.platform || "linked"}-video.mp4`,
+      key: typeof data.storageKey === "string" ? data.storageKey : undefined,
       mediaType: "video",
       duration: typeof data.duration === "number" ? data.duration : null,
       title: typeof data.title === "string" ? data.title : undefined,
-      platform: data.platform,
+      platform: data.platform as LinkedMediaPlatform,
     };
   }
 
@@ -587,6 +613,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     setAnalysisProgress({
       phase: "upload",
       percent: 5,
+      indeterminate: isLinkedMedia,
+      startedAt: isLinkedMedia ? Date.now() : undefined,
       label: locale === "en" ? (isLinkedMedia ? "Import video" : "Upload reference") : (isLinkedMedia ? "读取视频链接" : "上传素材"),
       detail: locale === "en" ? "Preparing your reference for analysis." : (isLinkedMedia ? `正在读取 ${linkedPlatformLabels[linkedPlatform!]} 视频并保存素材` : `正在上传${mediaLabel}到存储服务`),
     });

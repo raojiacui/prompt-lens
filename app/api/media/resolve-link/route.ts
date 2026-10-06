@@ -9,6 +9,7 @@ import { checkLinkedMediaWorker, ingestLinkedMediaWithWorker } from "@/lib/ffmpe
 import { resolveLinkedMedia } from "@/lib/media-resolver";
 import { sourcePlatform } from "@/lib/media-resolver/source-platform";
 import { extractVideoLink } from "@/lib/media-resolver/video-link-input";
+import type { LinkImportStage } from "@/lib/media-resolver/import-progress";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 
 export const runtime = "nodejs";
@@ -21,6 +22,36 @@ function statusForError(message: string) {
 }
 
 export async function POST(request: NextRequest) {
+  if (!request.headers.get("accept")?.includes("application/x-ndjson")) return handleImport(request);
+  const encoder = new TextEncoder();
+  let disconnected = false;
+  const stream = new ReadableStream({
+    async start(controller) {
+      const send = (event: Record<string, unknown>) => {
+        if (!disconnected) controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
+      };
+      const heartbeat = setInterval(() => send({ type: "heartbeat" }), 10000);
+      try {
+        const response = await handleImport(request, (stage) => send({ type: "stage", stage }));
+        const data = await response.json();
+        send(response.ok ? { type: "result", data } : { type: "error", ...data });
+      } catch {
+        send({ type: "error", error: "视频链接导入连接中断，请勿连续重复提交。" });
+      } finally {
+        clearInterval(heartbeat);
+        if (!disconnected) controller.close();
+      }
+    },
+    cancel() { disconnected = true; },
+  });
+  return new Response(stream, { headers: {
+    "Content-Type": "application/x-ndjson; charset=utf-8",
+    "Cache-Control": "private, no-store, no-transform",
+    "X-Accel-Buffering": "no",
+  } });
+}
+
+async function handleImport(request: NextRequest, reportStage: (stage: LinkImportStage) => void = () => undefined) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (request.headers.get("origin") !== new URL(request.url).origin) {
@@ -75,9 +106,18 @@ export async function POST(request: NextRequest) {
 
     let result: Record<string, unknown>;
     try {
+      const startedAt = Date.now();
+      const stage = (value: LinkImportStage) => {
+        console.info("Link import stage", { requestId, stage: value, elapsedMs: Date.now() - startedAt });
+        reportStage(value);
+      };
+      stage("checking-worker");
       await checkLinkedMediaWorker();
+      stage("resolving");
       const source = await resolveLinkedMedia(url, session.user.id);
+      stage("saving");
       const stored = await ingestLinkedMediaWithWorker(source);
+      console.info("Link import stored", { requestId, elapsedMs: Date.now() - startedAt });
       const duration = stored.metadata.duration ?? source.duration;
       result = {
         mediaUrl: stored.mediaUrl,

@@ -1,5 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
+import { readLinkImportResponse } from "@/lib/media-resolver/import-progress";
 
 const mocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -36,10 +37,10 @@ import { POST } from "@/app/api/media/resolve-link/route";
 const requestId = "6813e04d-c905-4fa6-a11c-ea35bbd42f0a";
 const originalConsumptionEnabled = process.env.COMMERCIAL_CONSUMPTION_ENABLED;
 
-function request(url = "https://www.bilibili.com/video/BV1sW4y197cE/", origin = "http://localhost") {
+function request(url = "https://www.bilibili.com/video/BV1sW4y197cE/", origin = "http://localhost", accept = "application/json") {
   return new NextRequest("http://localhost/api/media/resolve-link", {
     method: "POST",
-    headers: { origin, "Content-Type": "application/json" },
+    headers: { origin, "Content-Type": "application/json", accept },
     body: JSON.stringify({ url, requestId }),
   });
 }
@@ -100,6 +101,26 @@ describe("linked media resolver route", () => {
     expect(response.status).toBe(200);
     expect(mocks.resolveLinkedMedia).toHaveBeenCalledWith(url, "owner");
     expect(mocks.insertValues).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ sourceUrl: url }) }));
+  });
+
+  it("streams actual stages while the provider is still working", async () => {
+    let finish!: (source: unknown) => void;
+    mocks.resolveLinkedMedia.mockReturnValue(new Promise((resolve) => { finish = resolve; }));
+    const response = await POST(request(undefined, undefined, "application/x-ndjson"));
+    const stages: string[] = [];
+    const result = readLinkImportResponse(response, (stage) => stages.push(stage));
+    await vi.waitFor(() => expect(stages).toEqual(["checking-worker", "resolving"]));
+    expect(mocks.ingestLinkedMedia).not.toHaveBeenCalled();
+    finish({ platform: "bilibili", videoUrl: "https://provider.example/video" });
+    expect(await result).toMatchObject({ mediaUrl: "https://media.example/linked-video.mp4" });
+    expect(stages).toEqual(["checking-worker", "resolving", "saving"]);
+  });
+
+  it("streams failures without calling the paid provider when readiness fails", async () => {
+    mocks.checkWorker.mockRejectedValue(new Error("Worker unavailable"));
+    const response = await POST(request(undefined, undefined, "application/x-ndjson"));
+    await expect(readLinkImportResponse(response, () => undefined)).rejects.toThrow("Worker unavailable");
+    expect(mocks.resolveLinkedMedia).not.toHaveBeenCalled();
   });
 
   it("rejects multiple links before reserving allowance or calling the provider", async () => {
