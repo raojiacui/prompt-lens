@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   checkRateLimit: vi.fn(),
   resolveLinkedMedia: vi.fn(),
   ingestLinkedMedia: vi.fn(),
+  checkWorker: vi.fn(),
   insertValues: vi.fn(),
   reserve: vi.fn(),
   settle: vi.fn(),
@@ -16,7 +17,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.getSession } } }));
 vi.mock("@/lib/utils/rate-limit", () => ({ checkRateLimit: mocks.checkRateLimit }));
 vi.mock("@/lib/media-resolver", () => ({ resolveLinkedMedia: mocks.resolveLinkedMedia }));
-vi.mock("@/lib/ffmpeg-worker/client", () => ({ ingestLinkedMediaWithWorker: mocks.ingestLinkedMedia }));
+vi.mock("@/lib/ffmpeg-worker/client", () => ({ ingestLinkedMediaWithWorker: mocks.ingestLinkedMedia, checkLinkedMediaWorker: mocks.checkWorker }));
 vi.mock("@/lib/billing/commercial-wallet", () => ({
   reserveCommercialTask: mocks.reserve,
   settleCommercialTask: mocks.settle,
@@ -68,6 +69,7 @@ describe("linked media resolver route", () => {
       filename: "bilibili-linked-video.mp4",
       metadata: { duration: 42, width: 1920, height: 1080 },
     });
+    mocks.checkWorker.mockReset().mockResolvedValue(undefined);
     mocks.insertValues.mockReset().mockResolvedValue(undefined);
     mocks.reserve.mockReset().mockResolvedValue({ created: true, reservation: { state: "held" } });
     mocks.settle.mockReset().mockResolvedValue(undefined);
@@ -96,7 +98,7 @@ describe("linked media resolver route", () => {
     const url = "https://www.bilibili.com/video/BV11mFLziEyP/?share_source=copy_web";
     const response = await POST(request(`【参考视频标题】 ${url}`));
     expect(response.status).toBe(200);
-    expect(mocks.resolveLinkedMedia).toHaveBeenCalledWith(url);
+    expect(mocks.resolveLinkedMedia).toHaveBeenCalledWith(url, "owner");
     expect(mocks.insertValues).toHaveBeenCalledWith(expect.objectContaining({ metadata: expect.objectContaining({ sourceUrl: url }) }));
   });
 
@@ -167,12 +169,25 @@ describe("linked media resolver route", () => {
     expect(response.status).toBe(409);
     expect(mocks.resolveLinkedMedia).not.toHaveBeenCalled();
   });
-  it("does not re-submit a failed request and explains that no allowance was spent", async () => {
+  it("does not re-submit a failed request and distinguishes platform allowance from provider costs", async () => {
     mocks.reserve.mockResolvedValue({ created: false, reservation: { state: "settled", settledCredits: 0 } });
     const response = await POST(request());
     expect(response.status).toBe(409);
-    expect(await response.json()).toMatchObject({ code: "LINK_IMPORT_RETRY_NEW_REQUEST", error: "此前导入失败，未消耗积分或解析次数，请重新发起。" });
+    expect(await response.json()).toMatchObject({ code: "LINK_IMPORT_RETRY_NEW_REQUEST", error: "此前导入未完成，未扣平台积分或套餐导入次数；服务商解析额度可能已消耗，请勿连续重复提交。" });
     expect(mocks.resolveLinkedMedia).not.toHaveBeenCalled();
+  });
+
+  it("checks worker readiness before calling the paid provider", async () => {
+    expect((await POST(request())).status).toBe(200);
+    expect(mocks.checkWorker.mock.invocationCallOrder[0]).toBeLessThan(mocks.resolveLinkedMedia.mock.invocationCallOrder[0]);
+  });
+
+  it("does not spend a provider call when worker readiness fails", async () => {
+    mocks.checkWorker.mockRejectedValue(new Error("媒体入库服务暂时无法连接，本次尚未调用收费解析接口，请稍后重试。"));
+    expect((await POST(request())).status).toBe(502);
+    expect(mocks.resolveLinkedMedia).not.toHaveBeenCalled();
+    expect(mocks.ingestLinkedMedia).not.toHaveBeenCalled();
+    expect(mocks.settle).toHaveBeenCalledWith({ userId: "owner", taskKey: `link-import:${requestId}`, credits: 0, rewrites: 0 });
   });
 
   it("releases held credits when storing the resolved video fails", async () => {

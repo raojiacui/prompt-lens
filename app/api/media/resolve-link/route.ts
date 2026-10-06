@@ -5,7 +5,7 @@ import { auth } from "@/lib/auth";
 import { db, operationLogs } from "@/lib/db";
 import { LINK_IMPORT_CREDITS, LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
 import { reserveCommercialTask, settleCommercialTaskInTransaction, settleCommercialTask } from "@/lib/billing/commercial-wallet";
-import { ingestLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
+import { checkLinkedMediaWorker, ingestLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
 import { resolveLinkedMedia } from "@/lib/media-resolver";
 import { sourcePlatform } from "@/lib/media-resolver/source-platform";
 import { extractVideoLink } from "@/lib/media-resolver/video-link-input";
@@ -70,12 +70,13 @@ export async function POST(request: NextRequest) {
       ));
       const result = (previous?.metadata as Record<string, unknown> | undefined)?.linkImportResult;
       if (result) return NextResponse.json(result);
-      return NextResponse.json({ code: "LINK_IMPORT_RETRY_NEW_REQUEST", error: "此前导入失败，未消耗积分或解析次数，请重新发起。" }, { status: 409 });
+      return NextResponse.json({ code: "LINK_IMPORT_RETRY_NEW_REQUEST", error: "此前导入未完成，未扣平台积分或套餐导入次数；服务商解析额度可能已消耗，请勿连续重复提交。" }, { status: 409 });
     }
 
     let result: Record<string, unknown>;
     try {
-      const source = await resolveLinkedMedia(url);
+      await checkLinkedMediaWorker();
+      const source = await resolveLinkedMedia(url, session.user.id);
       const stored = await ingestLinkedMediaWithWorker(source);
       const duration = stored.metadata.duration ?? source.duration;
       result = {

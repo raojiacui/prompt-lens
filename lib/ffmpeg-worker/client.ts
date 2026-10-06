@@ -34,10 +34,35 @@ export interface FfmpegBreakdownResult {
   scenes: FfmpegSceneAsset[];
 }
 
-const workerUrl = process.env.FFMPEG_WORKER_URL?.replace(/\/$/, "");
-const workerSecret = process.env.FFMPEG_WORKER_SECRET;
+function workerConfiguration() {
+  const workerUrl = process.env.FFMPEG_WORKER_URL?.replace(/\/$/, "");
+  const workerSecret = process.env.FFMPEG_WORKER_SECRET;
+  if (!workerUrl) throw new Error("媒体入库服务未配置：请设置 FFMPEG_WORKER_URL。");
+  if (!workerSecret) throw new Error("媒体入库服务未配置：请设置 FFMPEG_WORKER_SECRET。");
+  return { workerUrl, workerSecret };
+}
 
-
+export async function checkLinkedMediaWorker() {
+  const { workerUrl, workerSecret } = workerConfiguration();
+  let response: Response;
+  try {
+    // An empty request validates authentication and storage configuration without downloading or uploading media.
+    response = await fetch(`${workerUrl}/ingest-media`, {
+      method: "POST",
+      signal: AbortSignal.timeout(25000),
+      headers: { Authorization: `Bearer ${workerSecret}`, "Content-Type": "application/json" },
+      body: "{}",
+      cache: "no-store",
+    });
+  } catch {
+    throw new Error("媒体入库服务暂时无法连接，本次尚未调用收费解析接口，请稍后重试。");
+  }
+  if (response.status === 401 || response.status === 403) throw new Error("媒体入库服务鉴权失败，本次尚未调用收费解析接口。");
+  const payload = await response.json().catch(() => null);
+  if (response.status !== 400 || payload?.error !== "Missing videoUrl") {
+    throw new Error("媒体入库服务暂未就绪，本次尚未调用收费解析接口。");
+  }
+}
 
 export async function ingestLinkedMediaWithWorker(source: {
   platform: LinkedMediaResolveResult["platform"];
@@ -47,8 +72,7 @@ export async function ingestLinkedMediaWithWorker(source: {
   audioHeaders?: Record<string, string>;
   filename?: string;
 }): Promise<LinkedMediaResolveResult> {
-  if (!workerUrl) throw new Error("媒体入库服务未配置：请设置 FFMPEG_WORKER_URL。");
-  if (!workerSecret) throw new Error("媒体入库服务未配置：请设置 FFMPEG_WORKER_SECRET。");
+  const { workerUrl, workerSecret } = workerConfiguration();
 
   let response: Response;
   try {
@@ -62,8 +86,11 @@ export async function ingestLinkedMediaWithWorker(source: {
       body: JSON.stringify(source),
     });
   } catch (error) {
+    if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) {
+      throw new Error("媒体下载或入库处理超过四分钟，尚未确认导入成功；这不是密钥未配置。请勿连续重复提交。");
+    }
     const reason = error instanceof Error ? error.message : "network request failed";
-    throw new Error(`媒体入库服务连接失败：${reason}。请检查 FFMPEG_WORKER_URL/FFMPEG_WORKER_SECRET 配置。`);
+    throw new Error(`媒体入库服务连接中断：${reason}。请勿连续重复提交。`);
   }
 
   const payload = await response.json().catch(() => null);
