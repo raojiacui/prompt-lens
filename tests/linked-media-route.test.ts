@@ -136,7 +136,7 @@ describe("linked media resolver route", () => {
   });
 
   it("returns a service error when the provider key is not configured", async () => {
-    mocks.resolveLinkedMedia.mockRejectedValue(new Error("链接解析服务未配置：请设置 LEAPERONE_API_KEY"));
+    mocks.resolveLinkedMedia.mockRejectedValue(new Error("链接解析服务未配置：请设置 EASYDOWN_API_KEY"));
     const response = await POST(request());
     expect(response.status).toBe(503);
     expect(await response.json()).toEqual({ code: "LINK_RESOLVER_NOT_CONFIGURED", error: "视频链接解析服务尚未启用。" });

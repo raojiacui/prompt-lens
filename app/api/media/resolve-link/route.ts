@@ -7,7 +7,7 @@ import { LINK_IMPORT_CREDITS, LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/
 import { reserveCommercialTask, settleCommercialTaskInTransaction, settleCommercialTask } from "@/lib/billing/commercial-wallet";
 import { ingestLinkedMediaWithWorker } from "@/lib/ffmpeg-worker/client";
 import { resolveLinkedMedia } from "@/lib/media-resolver";
-import { sourcePlatform } from "@/lib/media-resolver/leaperone";
+import { sourcePlatform } from "@/lib/media-resolver/source-platform";
 import { extractVideoLink } from "@/lib/media-resolver/video-link-input";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { resolveLinkedMediaWithEasyDown, selectEasyDownMedia } from "@/lib/media-resolver/easydown";
+import { resolveLinkedMedia } from "@/lib/media-resolver";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -8,6 +9,15 @@ afterEach(() => {
 });
 
 describe("EasyDown linked media resolver", () => {
+  it("requires the EasyDown key at the public resolver entry point", async () => {
+    delete process.env.EASYDOWN_API_KEY;
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(resolveLinkedMedia("https://www.bilibili.com/video/demo")).rejects.toThrow("请设置 EASYDOWN_API_KEY");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("prefers a video with audio and carries public download headers", () => {
     const result = selectEasyDownMedia({
       status: 200,
@@ -47,7 +57,7 @@ describe("EasyDown linked media resolver", () => {
     }), { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await resolveLinkedMediaWithEasyDown("https://v.douyin.com/example/");
+    const result = await resolveLinkedMedia("https://v.douyin.com/example/");
 
     expect(result.platform).toBe("douyin");
     expect(fetchMock).toHaveBeenCalledWith("https://resolver.example/api/v1/parse", expect.objectContaining({
@@ -59,6 +69,15 @@ describe("EasyDown linked media resolver", () => {
 
   it("rejects an empty success response", () => {
     expect(() => selectEasyDownMedia({ status: 200, data: { videos: [] } }, "tiktok")).toThrow("没有返回可下载");
+  });
+
+  it("rejects unsupported hosts before calling the provider", async () => {
+    process.env.EASYDOWN_API_KEY = "test-token";
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(resolveLinkedMedia("https://example.com/video.mp4")).rejects.toThrow("目前仅支持");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("rejects YouTube without spending a provider call", async () => {

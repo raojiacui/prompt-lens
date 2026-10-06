@@ -1,6 +1,8 @@
 # 视频链接解析服务验收记录（2026-09-27）
 
-## LEAPERone 实测
+## LEAPERone 历史实测（已停用）
+
+2026-10-06：已删除该服务的接口实现、配置示例和回退逻辑。以下仅保留历史验收事实，不代表当前服务配置。
 
 使用账号 API Key 和服务商文档列出的公开视频测试，不记录密钥或临时媒体 URL：
 
@@ -15,7 +17,7 @@
 
 ## EasyDown 实测
 
-EasyDown 适配器按其[统一解析接口](https://docs.easydown.org/en/api/common)接入；设置 `EASYDOWN_API_KEY` 后优先使用 EasyDown。未设置时仍使用 LEAPERone。媒体流的公开下载请求头会传给 FFmpeg Worker，API Token 不会传给 Worker。
+EasyDown 适配器按其[统一解析接口](https://docs.easydown.org/en/api/common)接入，现为唯一的视频链接解析服务；必须设置 `EASYDOWN_API_KEY`，未配置时明确报错。媒体流的公开下载请求头会传给 FFmpeg Worker，API Token 不会传给 Worker。
 
 使用账号 Token 对三个公开视频各调用一次统一解析接口，未记录密钥或临时媒体 URL：
 

@@ -1,4 +1,4 @@
-import { sourcePlatform, type LinkedMediaPlatform, type ResolvedLinkedMediaSource } from "./leaperone";
+import { sourcePlatform, type LinkedMediaPlatform, type ResolvedLinkedMediaSource } from "./source-platform";
 
 interface EasyDownStream {
   url?: unknown;
