@@ -1,13 +1,10 @@
-.git
-.next
-node_modules
-public
-coverage
-playwright-report
-test-results
-*.log
-*.mp4
-*.gif
-*.png
-*.jpg
-*.jpeg
+# The worker image only needs these files; never upload local secrets or caches.
+*
+!workers/
+workers/*
+!workers/ffmpeg-worker/
+workers/ffmpeg-worker/*
+!workers/ffmpeg-worker/Dockerfile
+!workers/ffmpeg-worker/package.json
+!workers/ffmpeg-worker/server.mjs
+!workers/ffmpeg-worker/scene-detect.py
