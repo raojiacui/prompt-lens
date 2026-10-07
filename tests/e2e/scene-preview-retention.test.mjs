@@ -19,7 +19,7 @@ test("shot previews keep their player, frame and position when scrolled away", a
       import {SceneVideoPreview} from './components/workflow/scene-video-preview';
       createRoot(document.getElementById('root')).render(<div id="scroll">
         {Array.from({length: 8}, (_, index) => <article key={index}>
-          <SceneVideoPreview mediaUrl="https://preview.test/video.mp4" startUs={1000000} endUs={5000000} label={'Shot '+index} zh={false} onPlay={() => {}} />
+          <SceneVideoPreview mediaUrl="https://preview.test/video.mp4" startUs={1000000} endUs={11000000} label={'Shot '+index} zh={false} onPlay={() => {}} />
         </article>)}
       </div>);
     `, resolveDir: process.cwd(), loader: "tsx" },
@@ -72,6 +72,17 @@ test("shot previews keep their player, frame and position when scrolled away", a
         return [...context.getImageData(0, 0, 32, 18).data].filter((v, i) => i % 4 !== 3 && v > 20).length;
       });
       assert.ok(pixels > 100, "retained video frame must not be blank");
+      await first.getByRole("button", { name: "Play", exact: true }).click();
+      await page.waitForFunction(() => window.savedPlayer.currentTime >= 8, null, { timeout: 15000 });
+      assert.equal(await page.evaluate(() => window.savedPlayer.paused), false, "playback must continue past two or three seconds");
+      assert.equal(await page.evaluate(() => window.savedPlayer.preload), "auto");
+      await page.evaluate(() => window.savedPlayer.dispatchEvent(new Event("waiting")));
+      await first.getByRole("status", { name: "Buffering video" }).waitFor();
+      assert.equal(await page.evaluate(() => window.savedPlayer.paused), false, "buffering must not pause playback");
+      await page.evaluate(() => window.savedPlayer.dispatchEvent(new Event("playing")));
+      await first.getByRole("status", { name: "Buffering video" }).waitFor({ state: "hidden" });
+      await first.getByRole("button", { name: "Pause", exact: true }).click();
+      await page.waitForFunction(() => window.savedPlayer.preload === "metadata");
       await page.screenshot({ path: path.join(output, `preview-${viewport.width}.png`) });
       await page.close();
     }

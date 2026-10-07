@@ -24,6 +24,7 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Param
   const [activated, setActivated] = useState(false);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const [muted, setMuted] = useState(true);
   const [position, setPosition] = useState(0);
   const [failed, setFailed] = useState(false);
@@ -40,6 +41,7 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Param
       if (!entry.isIntersecting) {
         video.current?.pause();
         setPlaying(false);
+        setBuffering(false);
       }
     });
     if (container.current) {
@@ -78,8 +80,10 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Param
       element.currentTime = start;
       setPosition(0);
     }
+    element.preload = "auto";
+    setBuffering(element.readyState < 3);
     try { await element.play(); }
-    catch { setPlaying(false); }
+    catch { setPlaying(false); setBuffering(false); }
   }
 
   const playLabel = playing ? (zh ? "暂停" : "Pause") : position >= duration ? (zh ? "重播" : "Replay") : (zh ? "播放" : "Play");
@@ -88,7 +92,7 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Param
       key={attempt}
       ref={video}
       src={`${mediaUrl.split("#")[0]}#t=${start},${end}`}
-      preload="metadata"
+      preload={playing ? "auto" : "metadata"}
       playsInline
       muted={muted}
       aria-label={label}
@@ -105,14 +109,18 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Param
         }
       }}
       onPlay={(event) => { setPlaying(true); onPlay(event.currentTarget); }}
+      onWaiting={() => setBuffering(true)}
+      onPlaying={() => setBuffering(false)}
+      onCanPlay={() => setBuffering(false)}
       onPause={(event) => {
         setPlaying(false);
+        setBuffering(false);
         if (event.currentTarget.currentTime >= end - 0.05) setPosition(duration);
       }}
-      onEnded={() => { setPlaying(false); setPosition(duration); }}
-      onError={() => { setFailed(true); setReady(false); setPlaying(false); }}
+      onEnded={() => { setPlaying(false); setBuffering(false); setPosition(duration); }}
+      onError={() => { setFailed(true); setReady(false); setPlaying(false); setBuffering(false); }}
     />}
-    {!ready && !failed && <div role="status" aria-label={zh ? "加载镜头画面" : "Loading shot preview"} className="absolute inset-0 flex items-center justify-center"><Loader2 className="animate-spin" size={24} /></div>}
+    {(!ready || buffering) && !failed && <div role="status" aria-label={ready ? (zh ? "视频缓冲中" : "Buffering video") : (zh ? "加载镜头画面" : "Loading shot preview")} className="pointer-events-none absolute inset-0 flex items-center justify-center"><Loader2 className="animate-spin" size={24} /></div>}
     {failed && <div role="alert" className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black px-3 text-center text-sm">
       <span>{zh ? "镜头预览加载失败" : "Shot preview could not load"}</span>
       <button type="button" className="flex min-h-9 items-center gap-2 px-3 underline" onClick={() => { setFailed(false); setReady(false); setAttempt(value => value + 1); }}><RotateCcw size={16} />{zh ? "重试" : "Retry"}</button>
