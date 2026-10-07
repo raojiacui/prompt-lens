@@ -81,7 +81,8 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     await expect(panel.getByRole("link")).toHaveCount(0);
     await expect(actionRow.getByRole("button")).toBeDisabled();
     await expect(panel.getByRole("combobox", { name: locale === "zh" ? "费用来源" : "Payment source" })).toHaveCount(0);
-    await panel.getByRole("button", { name: locale === "zh" ? "读取视频信息" : "Inspect video" }).click();
+    await expect(panel.getByRole("button", { name: locale === "zh" ? "读取视频信息" : "Inspect video" })).toHaveCount(0);
+    await expect(panel.getByRole("button", { name: locale === "zh" ? "获取报价" : "Get quote" })).toHaveCount(0);
     await expect(panel.getByText(`${seconds.toFixed(2)}s · ${scenes.length} ${locale === "zh" ? "个镜头" : "shots"}`, { exact: true })).toBeVisible();
     expect(confirmations).toBe(0);
     const all = panel.getByRole("checkbox", { name: locale === "zh" ? "全选" : "Select all", exact: true });
@@ -133,24 +134,21 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
       await expect.poll(() => secondCard.locator("video").evaluate((video: HTMLVideoElement) => video.readyState)).toBeGreaterThanOrEqual(2);
     }
     await expect(all).toBeChecked();
-    await expect(panel.getByText(locale === "zh" ? `预计 ${totalCredits} 积分` : `Estimated ${totalCredits} credits`, { exact: true })).toBeVisible();
+    await expect(panel.getByText(locale === "zh" ? `${totalCredits} 积分` : `${totalCredits} credits`, { exact: true })).toBeVisible();
     await all.uncheck();
     await expect(first).not.toBeChecked();
     await expect(second).not.toBeChecked();
-    await expect(panel.getByRole("button", { name: locale === "zh" ? "获取报价" : "Get quote" })).toBeDisabled();
+    await expect(panel.getByRole("button", { name: locale === "zh" ? "确认分析" : "Confirm analysis", exact: true })).toBeDisabled();
     await first.check();
     await expect(all).toBeChecked({ indeterminate: true });
-    await expect(panel.getByText(locale === "zh" ? `预计 ${singleCredits} 积分` : `Estimated ${singleCredits} credits`, { exact: true })).toBeVisible();
-    await panel.getByRole("button", { name: locale === "zh" ? "获取报价" : "Get quote" }).click();
     await expect(panel.getByText(locale === "zh" ? `${singleCredits} 积分` : `${singleCredits} credits`, { exact: true })).toBeVisible();
     expect(quoteRequest).toMatchObject({ sceneIds: ["1"] });
-    await expect(first).toBeDisabled();
+    await expect(first).toBeEnabled();
     await expect(actionRow.getByRole("combobox")).toBeDisabled();
-    await panel.getByRole("button", { name: locale === "zh" ? "调整选择" : "Adjust selection" }).click();
+    await expect(panel.getByRole("button", { name: locale === "zh" ? "调整选择" : "Adjust selection" })).toHaveCount(0);
     await all.check();
     await expect(first).toBeChecked();
     await expect(second).toBeChecked();
-    await panel.getByRole("button", { name: locale === "zh" ? "获取报价" : "Get quote" }).click();
     await expect(panel.getByText(locale === "zh" ? `${totalCredits} 积分` : `${totalCredits} credits`, { exact: true })).toBeVisible();
     expect(quoteRequest).toMatchObject({ payer: pricing.payer, sceneIds: scenes.map(s => s.id) });
     if (pricing.payer === "byok_split") expect(quoteRequest).toMatchObject({ modelId: "analysis-gemini-3-8-flash" });
@@ -158,7 +156,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     const box = await panel.boundingBox();
     expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.x + box!.width).toBeLessThanOrEqual(width);
     await panel.screenshot({ path: `test-results/analysis-quote-${locale}-${width}-${seconds}s.png` });
-    await panel.getByRole("button", { name: locale === "zh" ? `确认并分析 · ${totalCredits} 积分` : `Confirm analysis · ${totalCredits} credits` }).click();
+    await panel.getByRole("button", { name: locale === "zh" ? `确认分析 · ${totalCredits} 积分` : `Confirm analysis · ${totalCredits} credits` }).click();
     await expect.poll(() => confirmations).toBe(1);
     const progress = panel.getByTestId("analysis-task-progress");
     await expect(progress.getByRole("progressbar")).toHaveAttribute("aria-valuenow", String(20 + Math.floor(70 / scenes.length)));

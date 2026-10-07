@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { X } from "lucide-react";
-import { quoteAnalysis, type SceneInterval } from "@/lib/billing/pricing-v6";
+import { type SceneInterval } from "@/lib/billing/pricing-v6";
 import { listModels } from "@/lib/ai/model-registry";
 import { SceneVideoPreview } from "@/components/workflow/scene-video-preview";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
@@ -23,24 +23,25 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
   const [downloading, setDownloading] = useState(false);
   const downloadController = useRef<AbortController | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
-  const [quote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number } | null>(null);
+  const [quote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number; expiresAt?: string } | null>(null);
   const [taskId, setTaskId] = useState("");
   const [state, setState] = useState("");
   const [taskProgress, setTaskProgress] = useState({ phase: "preparing", total: 0, finished: 0, startedAt: 0 });
   const [busy, setBusy] = useState(false);
+  const [preparing, setPreparing] = useState(true);
+  const [quoting, setQuoting] = useState(false);
+  const [refresh, setRefresh] = useState(0);
+  const [confirmationStarted, setConfirmationStarted] = useState(false);
+  const preparationRequest = useRef<Promise<AnalysisPreparation> | null>(null);
   const [error, setError] = useState("");
   const completed = useRef(false);
   const selectAll = useRef<HTMLInputElement>(null);
   const playingPreview = useRef<HTMLVideoElement | null>(null);
   const selectedScenes = preparation?.scenes.filter(scene => selected.includes(scene.id)) || [];
   const allSelected = Boolean(preparation && selectedScenes.length === preparation.scenes.length);
-  const selectionLocked = busy || downloading || Boolean(quote);
+  const selectionLocked = busy || downloading || confirmationStarted;
   const selectedSeconds = selectedScenes.reduce((total, scene) => total + scene.endUs - scene.startUs, 0) / 1000000;
-  const estimatedCredits = preparation && selectedScenes.length ? quoteAnalysis({
-    payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok",
-    model: model as "flash" | "pro", sourceDurationUs: preparation.durationUs,
-    scenes: selectedScenes, automaticSplit, paidSplitReusable: false,
-  }).credits : null;
+  const selectionKey = JSON.stringify(selected);
   const onCompleteRef = useRef(onComplete); onCompleteRef.current = onComplete;
   useEffect(() => {
     if (selectAll.current) selectAll.current.indeterminate = selectedScenes.length > 0 && !allSelected;
@@ -62,21 +63,51 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
       return await fetch(`/api/commercial/analysis/${preparation.id}/shots/${encodeURIComponent(sceneId)}`, { method: "POST", cache: "no-store", signal: controller.signal });
     } finally { if (!controller.signal.aborted) setDownloading(false); }
   }
-  async function next() {
-    if (busy) return;
+  useEffect(() => {
+    if (preparation) return;
+    let cancelled = false;
+    setPreparing(true);
+    if (!preparationRequest.current) preparationRequest.current = post("/api/commercial/analysis", { action: "prepare", ...source, automaticSplit });
+    void preparationRequest.current.then(data => {
+      if (cancelled) return;
+      setPreparation(data); setSelected(data.scenes.map(scene => scene.id)); setError("");
+    }).catch(e => {
+      if (!cancelled) { preparationRequest.current = null; setError(e instanceof Error ? e.message : "Error"); }
+    }).finally(() => { if (!cancelled) setPreparing(false); });
+    return () => { cancelled = true; };
+  }, [refresh]);
+  useEffect(() => {
+    if (!preparation || taskId || confirmationStarted) return;
+    let cancelled = false;
+    setQuote(null);
+    if (!selected.length) { setQuoting(false); return; }
+    setQuoting(true); setError("");
+    const timer = setTimeout(() => {
+      void post("/api/commercial/analysis", { action: "quote", preparationId: preparation.id, sceneIds: selected, payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok", model, modelId: payer === "byok" ? byokModel : undefined, outputLanguage: source.outputLanguage })
+        .then(data => { if (!cancelled) setQuote(data); })
+        .catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : "Error"); })
+        .finally(() => { if (!cancelled) setQuoting(false); });
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [preparation, selectionKey, refresh, taskId, confirmationStarted, payer, byokModel, automaticSplit, source.outputLanguage]);
+  function changeSelection(ids: string[]) {
+    setQuote(null); setQuoting(ids.length > 0); setSelected(ids);
+  }
+  useEffect(() => {
+    if (!quote || taskId || confirmationStarted) return;
+    const remaining = quote.expiresAt ? Date.parse(quote.expiresAt) - Date.now() - 30000 : 9 * 60000;
+    const timer = setTimeout(() => { setQuote(null); setQuoting(true); setRefresh(value => value + 1); }, Math.max(1000, remaining));
+    return () => clearTimeout(timer);
+  }, [quote, taskId, confirmationStarted]);
+  async function confirmAnalysis() {
+    if (busy || quoting || !quote) return;
+    setConfirmationStarted(true);
     setBusy(true); setError("");
     try {
-      if (!preparation) {
-        const data = await post("/api/commercial/analysis", { action: "prepare", ...source, automaticSplit });
-        setPreparation(data); setSelected(data.scenes.map((s: SceneInterval) => s.id));
-      } else if (!quote) {
-        setQuote(await post("/api/commercial/analysis", { action: "quote", preparationId: preparation.id, sceneIds: selected, payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok", model, modelId: payer === "byok" ? byokModel : undefined, outputLanguage: source.outputLanguage }));
-      } else {
         // Keep the same server quote ID even when the confirmation response is lost.
         const data = await post(`/api/commercial/tasks/${quote.id}`, {});
         setTaskProgress({ phase: "preparing", total: selectedScenes.length, finished: 0, startedAt: Date.now() });
         setTaskId(data.id); setState(data.state);
-      }
     } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
     finally { setBusy(false); }
   }
@@ -110,7 +141,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
       {preparation && <div className="mt-5">
         <p className="mb-3 text-sm">{(preparation.durationUs / 1000000).toFixed(2)}s · {preparation.scenes.length} {zh ? "个镜头" : "shots"}</p>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-          <label className="flex min-h-11 items-center gap-2"><input ref={selectAll} type="checkbox" checked={allSelected} disabled={selectionLocked} onChange={e => setSelected(e.target.checked ? preparation.scenes.map(scene => scene.id) : [])} />{zh ? "全选" : "Select all"}</label>
+          <label className="flex min-h-11 items-center gap-2"><input ref={selectAll} type="checkbox" checked={allSelected} disabled={selectionLocked} onChange={e => changeSelection(e.target.checked ? preparation.scenes.map(scene => scene.id) : [])} />{zh ? "全选" : "Select all"}</label>
           <span role="status" className="text-muted-foreground">{zh ? `已选 ${selectedScenes.length}/${preparation.scenes.length} 个镜头 · ${selectedSeconds.toFixed(2)} 秒` : `${selectedScenes.length}/${preparation.scenes.length} shots selected · ${selectedSeconds.toFixed(2)} sec`}</span>
         </div>
         <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-2">{preparation.scenes.map((scene, index) => <article key={scene.id} aria-label={zh ? `镜头 ${index + 1}` : `Shot ${index + 1}`} className="rounded-lg border border-border bg-background p-3 sm:p-4">
@@ -118,7 +149,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex flex-wrap items-center gap-2">
               <label className="flex min-h-9 cursor-pointer items-center gap-2">
-                <input type="checkbox" className="h-4 w-4 shrink-0 accent-primary" aria-label={zh ? `镜头 ${index + 1}` : `Shot ${index + 1}`} checked={selected.includes(scene.id)} disabled={selectionLocked} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, scene.id] : ids.filter((id) => id !== scene.id))} />
+                <input type="checkbox" className="h-4 w-4 shrink-0 accent-primary" aria-label={zh ? `镜头 ${index + 1}` : `Shot ${index + 1}`} checked={selected.includes(scene.id)} disabled={selectionLocked} onChange={(e) => changeSelection(e.target.checked ? [...selected, scene.id] : selected.filter((id) => id !== scene.id))} />
                 <h3 className="text-base font-semibold">{zh ? "镜头" : "Shot"} {String(index + 1).padStart(2, "0")}</h3>
               </label>
               <span className="text-xs text-muted-foreground">{zh ? "待分析" : "Not analyzed"}</span>
@@ -133,13 +164,12 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
           }} />
         </article>)}</div>
         {!selectedScenes.length && <p className="mt-2 text-sm text-muted-foreground">{zh ? "请至少选择一个镜头。" : "Select at least one shot."}</p>}
-        {estimatedCredits !== null && !quote && <p className="mt-3 text-sm">{zh ? `预计 ${estimatedCredits} 积分` : `Estimated ${estimatedCredits} credits`}</p>}
       </div>}
-      {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。确认后预留，按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Reserved on confirmation, settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
+      {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
       <div className="mt-5 flex gap-3">
-        <button disabled={busy || downloading || Boolean(preparation && !selected.length)} onClick={() => void next()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "处理中…" : "Working…") : !preparation ? (zh ? "读取视频信息" : "Inspect video") : !quote ? (zh ? "获取报价" : "Get quote") : (zh ? `确认并分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`)}</button>
+        <button disabled={busy || downloading || preparing || quoting || !quote} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : (zh ? "确认分析" : "Confirm analysis")}</button>
       </div>
-      {quote && <button disabled={busy} onClick={() => setQuote(null)} className="mt-3 min-h-10 px-3 text-sm underline">{zh ? "调整选择" : "Adjust selection"}</button>}
+      {error && !confirmationStarted && <button disabled={preparing || quoting} onClick={() => setRefresh(value => value + 1)} className="mt-3 min-h-9 text-sm underline">{zh ? "重试" : "Retry"}</button>}
     </>}
     {taskId && <AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} />}
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}

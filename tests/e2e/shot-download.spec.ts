@@ -56,7 +56,6 @@ for (const width of [1440, 390]) test(`download split shot without billing ${wid
   await page.getByLabel("视频链接", { exact: true }).fill("https://v.douyin.com/test/");
   await page.getByTestId("analysis-action-row").getByRole("button").click();
   const panel = page.getByRole("region", { name: "镜头选择与费用" });
-  await panel.getByRole("button", { name: "读取视频信息" }).click();
   const card = panel.getByRole("article", { name: "镜头 2", exact: true });
   const downloadEvent = page.waitForEvent("download");
   await card.getByRole("button", { name: "下载镜头" }).click();
@@ -89,8 +88,7 @@ for (const width of [1440, 390]) test(`download split shot without billing ${wid
   await card.getByRole("button", { name: "下载镜头", exact: true }).click();
   await secondDownload;
   expect(confirmations).toBe(0);
-  await panel.getByRole("button", { name: "获取报价" }).click();
-  await expect(panel.getByText("拆镜 2 + 分析 6。确认后预留，按成功结果结算。", { exact: true })).toBeVisible();
+  await expect(panel.getByText("拆镜 2 + 分析 6。按成功结果结算。", { exact: true })).toBeVisible();
   await card.screenshot({ path: `test-results/download-shot-${width}.png` });
 
 });
