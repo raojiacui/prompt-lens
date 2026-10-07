@@ -15,9 +15,13 @@ export function SceneVideoPreview({ mediaUrl, startUs, endUs, label, zh, onPlay 
   zh: boolean;
   onPlay: (video: HTMLVideoElement) => void;
 }) {
+  return <SceneVideoPlayer key={`${mediaUrl}:${startUs}:${endUs}`} mediaUrl={mediaUrl} startUs={startUs} endUs={endUs} label={label} zh={zh} onPlay={onPlay} />;
+}
+
+function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Parameters<typeof SceneVideoPreview>[0]) {
   const container = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [activated, setActivated] = useState(false);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
@@ -30,16 +34,19 @@ export function SceneVideoPreview({ mediaUrl, startUs, endUs, label, zh, onPlay 
 
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
-      setVisible(entry.isIntersecting);
+      if (entry.isIntersecting) setActivated(true);
+    }, { rootMargin: "160px 0px" });
+    const visibilityObserver = new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting) {
         video.current?.pause();
-        setReady(false);
         setPlaying(false);
-        setPosition(0);
       }
     });
-    if (container.current) observer.observe(container.current);
-    return () => observer.disconnect();
+    if (container.current) {
+      observer.observe(container.current);
+      visibilityObserver.observe(container.current);
+    }
+    return () => { observer.disconnect(); visibilityObserver.disconnect(); };
   }, []);
 
   // Preview the detected interval from the stored source without creating another paid task.
@@ -77,7 +84,7 @@ export function SceneVideoPreview({ mediaUrl, startUs, endUs, label, zh, onPlay 
 
   const playLabel = playing ? (zh ? "暂停" : "Pause") : position >= duration ? (zh ? "重播" : "Replay") : (zh ? "播放" : "Play");
   return <div ref={container} role="group" aria-label={label} className="relative aspect-video w-full overflow-hidden rounded-lg bg-black text-white">
-    {visible && <video
+    {activated && <video
       key={attempt}
       ref={video}
       src={`${mediaUrl.split("#")[0]}#t=${start},${end}`}
