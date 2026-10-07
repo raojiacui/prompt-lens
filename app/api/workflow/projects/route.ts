@@ -5,34 +5,42 @@ import { db, projects } from "@/lib/db";
 import { desc, eq } from "drizzle-orm";
 
 export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const requestedLimit = Number.parseInt(request.nextUrl.searchParams.get("limit") || "20", 10);
-  const limit = Number.isFinite(requestedLimit)
-    ? Math.max(1, Math.min(50, requestedLimit))
-    : 20;
-  const rows = await db
-    .select({
-      id: projects.id,
-      title: projects.title,
-      status: projects.status,
-      activeVersionId: projects.activeVersionId,
-      updatedAt: projects.updatedAt,
-      createdAt: projects.createdAt,
-    })
-    .from(projects)
-    .where(eq(projects.userId, session.user.id))
-    .orderBy(desc(projects.updatedAt))
-    .limit(limit);
-  return NextResponse.json(
-    { projects: rows },
-    {
-      headers: {
-        "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+    const requestedLimit = Number.parseInt(request.nextUrl.searchParams.get("limit") || "20", 10);
+    const limit = Number.isFinite(requestedLimit)
+      ? Math.max(1, Math.min(50, requestedLimit))
+      : 20;
+    const rows = await db
+      .select({
+        id: projects.id,
+        title: projects.title,
+        status: projects.status,
+        activeVersionId: projects.activeVersionId,
+        updatedAt: projects.updatedAt,
+        createdAt: projects.createdAt,
+      })
+      .from(projects)
+      .where(eq(projects.userId, session.user.id))
+      .orderBy(desc(projects.updatedAt))
+      .limit(limit);
+    return NextResponse.json(
+      { projects: rows },
+      {
+        headers: {
+          "Cache-Control": "private, max-age=30, stale-while-revalidate=120",
+        },
       },
-    },
-  );
+    );
+  } catch (error) {
+    console.error("Workflow project list error:", error);
+    return NextResponse.json({ code: "PROJECTS_UNAVAILABLE" }, {
+      status: 503,
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
 }
 
 function workflowProjectErrorMessage(error: unknown) {

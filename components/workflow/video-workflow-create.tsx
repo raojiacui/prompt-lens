@@ -7,6 +7,7 @@ import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
+import { fetchProjectList } from "@/lib/workflow/project-list-client";
 import { listModels } from "@/lib/ai/model-registry";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { VideoOverview } from "@/components/workflow/video-overview";
@@ -18,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Check, ChevronLeft, ChevronRight, Copy, FileUp, Link2, Play, Trash2, Video, WandSparkles, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, FileUp, Link2, Play, RefreshCw, Trash2, Video, WandSparkles, X } from "lucide-react";
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
@@ -325,6 +326,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [projectsLoading, setProjectsLoading] = useState(false);
+  const [projectsError, setProjectsError] = useState("");
   const [isDraggingUpload, setIsDraggingUpload] = useState(false);
   const [rewritingSceneId, setRewritingSceneId] = useState("");
   const [sceneDrafts, setSceneDrafts] = useState<Record<string, string>>({});
@@ -394,19 +396,13 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
   async function loadProjects(options: { force?: boolean } = {}) {
     setProjectsLoading(true);
+    setProjectsError("");
     try {
-      const response = await fetch("/api/workflow/projects?limit=20", {
-        cache: options.force ? "no-store" : "default",
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok) throw new Error(data?.error || "Failed to load projects");
-      const nextProjects = Array.isArray(data?.projects) ? data.projects : [];
+      const nextProjects = await fetchProjectList<Project>(Boolean(options.force), locale !== "en");
       setProjects(nextProjects);
       cacheProjects(nextProjects);
     } catch (err) {
-      if (!projects.length) {
-        setError(err instanceof Error ? err.message : "Failed to load projects");
-      }
+      setProjectsError(err instanceof Error ? err.message : (locale === "en" ? "Projects are temporarily unavailable." : "项目列表暂时无法加载。"));
     } finally {
       setProjectsLoading(false);
     }
@@ -923,8 +919,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           <div className="mt-6 min-h-0 border-t border-border pt-4 xl:flex-1 xl:overflow-y-auto xl:pr-1">
             <div className="flex items-center justify-between gap-3">
               <h2 className="font-semibold">{ui.projects}</h2>
-              {projectsLoading ? <Spinner size="sm" /> : null}
+              {projectsLoading ? <Spinner size="sm" /> : <button type="button" onClick={() => void loadProjects({ force: true })} aria-label={locale === "en" ? "Refresh projects" : "刷新项目列表"} title={locale === "en" ? "Refresh projects" : "刷新项目列表"} className="flex h-8 w-8 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"><RefreshCw size={16} /></button>}
             </div>
+            {projectsError && <p role="alert" className="mt-2 text-sm text-destructive">{projectsError}</p>}
             <div className="mt-3 grid gap-2">
               {projects.map((project) => (
                 <div key={project.id} className={cn("group flex items-center justify-between rounded-xl border px-3 py-2 text-sm hover:border-primary/50", bundle?.project.id === project.id ? "border-primary bg-primary/10" : "border-border bg-background")}>
@@ -953,7 +950,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                   </button>
                 </div>
               ))}
-              {!projects.length ? <p className="text-sm text-muted-foreground">{ui.noProjects}</p> : null}
+              {!projects.length && !projectsLoading && !projectsError ? <p className="text-sm text-muted-foreground">{ui.noProjects}</p> : null}
             </div>
           </div>
         </section>
