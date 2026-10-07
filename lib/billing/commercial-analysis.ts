@@ -12,9 +12,10 @@ import { getProjectBundle } from "@/lib/workflow/service";
 import { analyzeSceneBlueprint, buildFallbackSceneBlueprint } from "@/lib/workflow/scene-analysis";
 import { settleCommercialTaskInTransaction } from "./commercial-wallet";
 import { resolveModelSelection } from "@/lib/ai/model-registry";
+import { executeCommercialSplit, findPaidSplit, type PreparedAnalysisSource } from "./commercial-split";
 
 export function commercialConsumptionEnabled() { return process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true"; }
-type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
+export type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; splitOnly?: boolean; preparationId?: string; preparedAssets?: FfmpegBreakdownResult; modelId?: string; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
 
 export function quotedAnalysisModel(input: { payer: string; model: string; modelId?: string }) {
   const modelId = input.payer === "platform"
@@ -50,7 +51,9 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
   if (!/^[0-9a-f]{64}$/.test(preview.sourceHash) || !Number.isSafeInteger(preview.bytes) || preview.bytes <= 0 || preview.bytes > 100 * 1024 * 1024) throw new Error("INVALID_MEDIA_PROBE");
   const [task] = await db.update(commercialTasks).set({ state: "quoted", input: { ...input, preview }, updatedAt: new Date() }).where(and(eq(commercialTasks.id, preparation.id), eq(commercialTasks.state, "running"), sql`${commercialTasks.expiresAt} > now()`)).returning();
   if (!task) throw new Error("PREVIEW_EXPIRED");
-  return { id: task.id, durationUs: preview.durationUs, scenes: preview.scenes };
+  const paid = await findPaidSplit(userId, { ...input, preview });
+  const paidAssets = (paid?.result as { assets?: FfmpegBreakdownResult } | undefined)?.assets;
+  return { id: task.id, durationUs: preview.durationUs, scenes: preview.scenes, paidSplitReusable: Boolean(paid), splitClips: paidAssets?.scenes.map((scene, index) => ({ id: preview.scenes[index].id, clipUrl: scene.clipUrl })) };
   } catch (error) {
     await db.update(commercialTasks).set({ state: "failed", result: { code: "MEDIA_PREPARATION_FAILED" }, updatedAt: new Date() }).where(and(eq(commercialTasks.id, preparation.id), eq(commercialTasks.state, "running")));
     throw error;
@@ -60,20 +63,24 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
 export async function quoteCommercialAnalysis(userId: string, input: { preparationId: string; sceneIds: string[]; payer: string; model: string; modelId?: string; outputLanguage: string }) {
   const preparation = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, input.preparationId), eq(commercialTasks.userId, userId), eq(commercialTasks.kind, "analysis_preview"), eq(commercialTasks.state, "quoted")) });
   if (!preparation || preparation.expiresAt.getTime() < Date.now()) throw new Error("QUOTE_EXPIRED");
-  const source = preparation.input as { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; automaticSplit: boolean };
+  const source = preparation.input as PreparedAnalysisSource;
+  const paidSplit = await findPaidSplit(userId, source);
   if (!Array.isArray(input.sceneIds) || new Set(input.sceneIds).size !== input.sceneIds.length || input.sceneIds.some((id) => !source.preview.scenes.some((s) => s.id === id))) throw new Error("INVALID_SCENE_SELECTION");
-  const pricing: AnalysisPriceInput = { payer: input.payer as AnalysisPriceInput["payer"], model: input.model as AnalysisPriceInput["model"], sourceDurationUs: source.preview.durationUs, automaticSplit: source.automaticSplit, paidSplitReusable: false, scenes: source.preview.scenes.filter((s) => input.sceneIds.includes(s.id)) };
+  const pricing: AnalysisPriceInput = { payer: input.payer as AnalysisPriceInput["payer"], model: input.model as AnalysisPriceInput["model"], sourceDurationUs: source.preview.durationUs, automaticSplit: source.automaticSplit, paidSplitReusable: Boolean(paidSplit), scenes: source.preview.scenes.filter((s) => input.sceneIds.includes(s.id)) };
   const quote = quoteAnalysis(pricing);
   const apiKey = pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(userId);
   if (!apiKey) throw new Error("KIE_KEY_REQUIRED");
   const modelId = quotedAnalysisModel(input);
-  const snapshot: AnalysisInput = { ...source, pricing, modelId, pricingVersion: PRICING_VERSION, outputLanguage: input.outputLanguage === "zh" ? "zh" : "en", keyFingerprint: generationKeyFingerprint(apiKey) };
+  const allAssets = (paidSplit?.result as { assets?: FfmpegBreakdownResult } | undefined)?.assets;
+  const preparedAssets = allAssets ? { ...allAssets, scenes: pricing.scenes.map(scene => allAssets.scenes[source.preview.scenes.findIndex(item => item.id === scene.id)]) } : undefined;
+  const snapshot: AnalysisInput = { ...source, preparationId: preparation.id, preparedAssets, pricing, modelId, pricingVersion: PRICING_VERSION, outputLanguage: input.outputLanguage === "zh" ? "zh" : "en", keyFingerprint: generationKeyFingerprint(apiKey) };
   const [task] = await db.insert(commercialTasks).values({ userId, kind: "analysis", input: snapshot, credits: quote.credits, expiresAt: new Date(Date.now() + 600000) }).returning();
   return { id: task.id, ...quote, modelId, payer: pricing.payer, expiresAt: task.expiresAt };
 }
 
 export async function executeCommercialAnalysis(task: typeof commercialTasks.$inferSelect) {
   const input = task.input as AnalysisInput;
+  if (input.splitOnly) return executeCommercialSplit(task);
   const progress = task.result as { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; finishedSceneIds?: string[]; successfulSceneIds?: string[]; splitDelivered?: boolean };
   const finished = progress.finishedSceneIds || [];
   const successes = progress.successfulSceneIds || input.retry?.previousSuccess || [];
@@ -110,7 +117,7 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
   if (!progress.assets) {
     // Asset extraction and inference are separate checkpoints, each bounded to one server invocation.
     let assets: FfmpegBreakdownResult;
-    try { assets = await commercialMediaRequest<FfmpegBreakdownResult>(input.mediaUrl, { mode: "assets", sourceHash: input.preview.sourceHash, scenes: input.pricing.scenes }); }
+    try { assets = input.preparedAssets || await commercialMediaRequest<FfmpegBreakdownResult>(input.mediaUrl, { mode: "assets", sourceHash: input.preview.sourceHash, scenes: input.pricing.scenes }); }
     catch { await finishCommercialAnalysis(task, [], false, "failed"); return; }
     if (assets.scenes.length !== input.pricing.scenes.length || assets.scenes.some((s, index) => Math.abs(s.startTime * 1000000 - input.pricing.scenes[index].startUs) > 1000 || Math.abs(s.endTime * 1000000 - input.pricing.scenes[index].endUs) > 1000)) throw new Error("SPLIT_ASSET_MISMATCH");
     await db.transaction(async (tx) => {
@@ -152,7 +159,7 @@ async function finishCommercialAnalysis(task: typeof commercialTasks.$inferSelec
     await lockAnalysisExecution(tx, task);
     await settleCommercialTaskInTransaction(tx, { userId: task.userId, taskKey: `commercial:${task.id}`, credits, rewrites: 0 });
     await tx.update(commercialTasks).set({ state, result: sql`${commercialTasks.result} || ${JSON.stringify({ successfulSceneIds: success, totalChargedCredits, chargedCredits: credits, projectId: input.projectId })}::jsonb`, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
-    await tx.update(projects).set({ status: success.length ? "ready" : "failed", metadata: sql`${projects.metadata} || ${JSON.stringify({ failedSceneCount: input.pricing.scenes.length - success.length, partialAnalysis: success.length > 0 && success.length < input.pricing.scenes.length })}::jsonb`, updatedAt: new Date() }).where(eq(projects.id, input.projectId));
+    await tx.update(projects).set({ status: input.splitOnly ? "draft" : success.length ? "ready" : "failed", metadata: sql`${projects.metadata} || ${JSON.stringify({ failedSceneCount: input.pricing.scenes.length - success.length, partialAnalysis: success.length > 0 && success.length < input.pricing.scenes.length })}::jsonb`, updatedAt: new Date() }).where(eq(projects.id, input.projectId));
   };
   if (transaction) await finish(transaction);
   else await db.transaction(finish);

@@ -2,11 +2,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { X } from "lucide-react";
-import { quoteAnalysis, type SceneInterval } from "@/lib/billing/pricing-v6";
+import { quoteAnalysis, splitCredits, type SceneInterval } from "@/lib/billing/pricing-v6";
 import { listModels } from "@/lib/ai/model-registry";
 import { SceneVideoPreview } from "@/components/workflow/scene-video-preview";
+import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
+import { refreshWalletBalance } from "@/lib/billing/use-wallet-balance";
 
-export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string }; onClose: () => void; onComplete: (bundle: unknown) => void }) {
+type AnalysisPreparation = { id: string; scenes: SceneInterval[]; durationUs: number; paidSplitReusable?: boolean; splitClips?: { id: string; clipUrl: string }[] };
+export type AnalysisQuoteSource = { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string; preparation?: AnalysisPreparation };
+
+export function AnalysisQuotePanel({ source, onClose, onComplete, onSplitComplete }: { source: AnalysisQuoteSource; onClose: () => void; onComplete: (bundle: unknown) => void; onSplitComplete?: () => void }) {
   const zh = useLocale() === "zh";
   const automaticSplit = source.automaticSplit;
   const payer = source.payer ?? "platform";
@@ -14,8 +19,10 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: { 
   const byokModel = source.modelId || "analysis-gemini-3-8-flash";
   const selectedModelId = payer === "byok" ? byokModel : "analysis-gemini-3-8-flash";
   const modelName = listModels("analysis").find(item => item.id === selectedModelId)?.displayName || selectedModelId;
-  const [preparation, setPreparation] = useState<{ id: string; scenes: SceneInterval[]; durationUs: number } | null>(null);
-  const [selected, setSelected] = useState<string[]>([]);
+  const [preparation, setPreparation] = useState<AnalysisPreparation | null>(source.preparation || null);
+  const [downloading, setDownloading] = useState(false);
+  const downloadController = useRef<AbortController | null>(null);
+  const [selected, setSelected] = useState<string[]>(source.preparation?.scenes.map(scene => scene.id) || []);
   const [quote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number } | null>(null);
   const [taskId, setTaskId] = useState("");
   const [state, setState] = useState("");
@@ -26,23 +33,54 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: { 
   const playingPreview = useRef<HTMLVideoElement | null>(null);
   const selectedScenes = preparation?.scenes.filter(scene => selected.includes(scene.id)) || [];
   const allSelected = Boolean(preparation && selectedScenes.length === preparation.scenes.length);
-  const selectionLocked = busy || Boolean(quote);
+  const selectionLocked = busy || downloading || Boolean(quote);
   const selectedSeconds = selectedScenes.reduce((total, scene) => total + scene.endUs - scene.startUs, 0) / 1000000;
   const estimatedCredits = preparation && selectedScenes.length ? quoteAnalysis({
     payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok",
     model: model as "flash" | "pro", sourceDurationUs: preparation.durationUs,
-    scenes: selectedScenes, automaticSplit, paidSplitReusable: false,
+    scenes: selectedScenes, automaticSplit, paidSplitReusable: Boolean(preparation.paidSplitReusable),
   }).credits : null;
   const onCompleteRef = useRef(onComplete); onCompleteRef.current = onComplete;
   useEffect(() => {
     if (selectAll.current) selectAll.current.indeterminate = selectedScenes.length > 0 && !allSelected;
   }, [selectedScenes.length, allSelected]);
-  async function post(url: string, body: unknown) {
-    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  useEffect(() => () => downloadController.current?.abort(), []);
+  async function post(url: string, body: unknown, signal?: AbortSignal) {
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
     const data = await response.json();
     if (!response.ok && data.code === "UPLOAD_VIDEO_TOO_LONG") throw new Error(zh ? "上传文件只支持 10 秒以内的完整单镜头片段。" : "File uploads support one complete shot up to 10 seconds.");
+    if (!response.ok && data.code === "ANALYSIS_QUOTE_CHANGED") { setQuote(null); throw new Error(zh ? "拆镜已完成，请重新获取分析报价，不会重复收拆镜费。" : "Splitting is complete. Get a new analysis quote without another splitting fee."); }
     if (!response.ok) throw new Error(data.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "可用积分不足，请先充值。" : "Not enough available credits. Please top up.") : data.code === "KIE_KEY_REQUIRED" ? (zh ? "请先配置所选来源的 KIE Key。" : "Configure the KIE key for this payment source first.") : (zh ? "暂时无法确认，请重试。任务结果不明确时，请勿重复提交。" : "Unable to confirm. Retry to check; do not resubmit an uncertain task."));
     return data;
+  }
+  async function downloadShot(sceneId: string) {
+    if (!preparation) throw new Error(zh ? "请先读取视频信息。" : "Inspect the video first.");
+    const controller = new AbortController();
+    downloadController.current = controller;
+    setDownloading(true); setQuote(null);
+    try {
+      if (automaticSplit) {
+        const split = await post("/api/commercial/analysis", { action: "split", preparationId: preparation.id }, controller.signal);
+        if (split.state === "quoted") await post(`/api/commercial/tasks/${split.id}`, {}, controller.signal);
+        const deadline = Date.now() + 300000;
+        while (true) {
+          const response = await fetch(`/api/commercial/tasks/${split.id}`, { cache: "no-store", signal: controller.signal });
+          if (!response.ok) throw new Error(zh ? "暂时无法查询拆镜状态，请稍后重试。" : "Unable to check splitting. Please retry shortly.");
+          const result = await response.json();
+          if (result.state === "completed") {
+            setPreparation(current => current ? { ...current, paidSplitReusable: true, splitClips: result.splitClips } : current);
+            refreshWalletBalance();
+            if (!preparation.paidSplitReusable) onSplitComplete?.();
+            break;
+          }
+          if (result.state === "failed") throw new Error(zh ? "拆镜失败，积分已退回，可重试。" : "Splitting failed. Reserved credits were refunded; retry is available.");
+          if (result.state === "review" || Date.now() > deadline) throw new Error(zh ? "拆镜结果仍在确认，任务已保存，请稍后重试查询。" : "Splitting is still being checked. The task is saved; retry to check shortly.");
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          controller.signal.throwIfAborted();
+        }
+      }
+      return await fetch(`/api/commercial/analysis/${preparation.id}/shots/${encodeURIComponent(sceneId)}`, { cache: "no-store", signal: controller.signal });
+    } finally { if (!controller.signal.aborted) setDownloading(false); }
   }
   async function next() {
     if (busy) return;
@@ -94,16 +132,19 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: { 
         </div>
         <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-2">{preparation.scenes.map((scene, index) => <article key={scene.id} aria-label={zh ? `镜头 ${index + 1}` : `Shot ${index + 1}`} className="rounded-lg border border-border bg-background p-3 sm:p-4">
           <div className="mb-3">
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
               <label className="flex min-h-9 cursor-pointer items-center gap-2">
                 <input type="checkbox" className="h-4 w-4 shrink-0 accent-primary" aria-label={zh ? `镜头 ${index + 1}` : `Shot ${index + 1}`} checked={selected.includes(scene.id)} disabled={selectionLocked} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, scene.id] : ids.filter((id) => id !== scene.id))} />
                 <h3 className="text-base font-semibold">{zh ? "镜头" : "Shot"} {String(index + 1).padStart(2, "0")}</h3>
               </label>
               <span className="text-xs text-muted-foreground">{zh ? "待分析" : "Not analyzed"}</span>
+              </div>
+              <ShotDownloadButton zh={zh} sceneIndex={index + 1} disabled={busy || downloading} splitCredits={automaticSplit && !preparation.paidSplitReusable ? splitCredits(preparation.durationUs) : 0} onDownload={() => downloadShot(scene.id)} />
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{(scene.startUs / 1000000).toFixed(2)}–{(scene.endUs / 1000000).toFixed(2)}s · {((scene.endUs - scene.startUs) / 1000000).toFixed(2)}s</p>
           </div>
-          <SceneVideoPreview mediaUrl={source.mediaUrl} startUs={scene.startUs} endUs={scene.endUs} label={zh ? `镜头 ${index + 1} 预览` : `Shot ${index + 1} preview`} zh={zh} onPlay={(video) => {
+          <SceneVideoPreview key={preparation.splitClips?.find(item => item.id === scene.id)?.clipUrl || source.mediaUrl} mediaUrl={preparation.splitClips?.find(item => item.id === scene.id)?.clipUrl || source.mediaUrl} startUs={preparation.splitClips?.some(item => item.id === scene.id) ? 0 : scene.startUs} endUs={preparation.splitClips?.some(item => item.id === scene.id) ? scene.endUs - scene.startUs : scene.endUs} label={zh ? `镜头 ${index + 1} 预览` : `Shot ${index + 1} preview`} zh={zh} onPlay={(video) => {
             if (playingPreview.current !== video) playingPreview.current?.pause();
             playingPreview.current = video;
           }} />
@@ -113,7 +154,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: { 
       </div>}
       {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。确认后预留，按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Reserved on confirmation, settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
       <div className="mt-5 flex gap-3">
-        <button disabled={busy || Boolean(preparation && !selected.length)} onClick={() => void next()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "处理中…" : "Working…") : !preparation ? (zh ? "读取视频信息" : "Inspect video") : !quote ? (zh ? "获取报价" : "Get quote") : (zh ? `确认并分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`)}</button>
+        <button disabled={busy || downloading || Boolean(preparation && !selected.length)} onClick={() => void next()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "处理中…" : "Working…") : !preparation ? (zh ? "读取视频信息" : "Inspect video") : !quote ? (zh ? "获取报价" : "Get quote") : (zh ? `确认并分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`)}</button>
       </div>
       {quote && <button disabled={busy} onClick={() => setQuote(null)} className="mt-3 min-h-10 px-3 text-sm underline">{zh ? "调整选择" : "Adjust selection"}</button>}
     </>}

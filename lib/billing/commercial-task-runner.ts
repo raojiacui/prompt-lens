@@ -5,6 +5,7 @@ import { db, commercialTasks, projects } from "@/lib/db";
 import { reserveCommercialTaskInTransaction } from "./commercial-wallet";
 import { commercialConsumptionEnabled, executeCommercialAnalysis } from "./commercial-analysis";
 import { executeCommercialGeneration } from "./commercial-generation";
+import { findPaidSplit, type PreparedAnalysisSource } from "./commercial-split";
 
 export async function confirmCommercialTask(userId: string, taskId: string) {
   if (!commercialConsumptionEnabled()) throw new Error("COMMERCIAL_NOT_ENABLED");
@@ -24,7 +25,7 @@ export async function confirmCommercialTaskInTransaction(tx: Parameters<Paramete
       }
     }
     if (task.kind === "analysis") {
-      const input = task.input as { projectId: string; retry?: { parentId: string } };
+      const input = task.input as PreparedAnalysisSource & { splitOnly?: boolean; preparationId?: string; pricing: { paidSplitReusable: boolean }; retry?: { parentId: string } };
       if (input.retry) {
         const [parent] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, input.retry.parentId), eq(commercialTasks.userId, userId))).for("update");
         if (!parent || !["completed", "failed"].includes(parent.state) || (parent.result as Record<string, unknown>).nextTaskId) throw new Error("USE_LATEST_RETRY_TASK");
@@ -32,7 +33,8 @@ export async function confirmCommercialTaskInTransaction(tx: Parameters<Paramete
       }
       const [project] = await tx.select().from(projects).where(and(eq(projects.id, input.projectId), eq(projects.userId, userId))).for("update");
       if (!project || (input.retry ? !["ready", "failed"].includes(project.status) : project.status !== "draft")) throw new Error("PROJECT_NOT_READY");
-      await tx.update(projects).set({ status: "analyzing", metadata: sql`${projects.metadata} || ${JSON.stringify({ analysisTaskId: task.id, analysisTaskKind: "analysis" })}::jsonb`, updatedAt: new Date() }).where(eq(projects.id, project.id));
+      if (!input.retry && !input.pricing.paidSplitReusable && await findPaidSplit(userId, input, tx)) throw new Error("ANALYSIS_QUOTE_CHANGED");
+      await tx.update(projects).set({ status: "analyzing", metadata: sql`${projects.metadata} || ${JSON.stringify({ analysisTaskId: task.id, analysisTaskKind: "analysis", ...(input.splitOnly ? { splitPreparationId: input.preparationId } : {}) })}::jsonb`, updatedAt: new Date() }).where(eq(projects.id, project.id));
     }
     await reserveCommercialTaskInTransaction(tx, { userId, taskKey: `commercial:${task.id}`, credits: task.credits, rewrites: 0, quote: task.input as Record<string, unknown> });
     const [queued] = await tx.update(commercialTasks).set({ state: "queued", updatedAt: new Date() }).where(eq(commercialTasks.id, task.id)).returning();
