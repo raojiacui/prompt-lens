@@ -1,5 +1,19 @@
 import { test, expect } from "@playwright/test";
 import { quoteAnalysis } from "../../lib/billing/pricing-v6";
+import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
+import { mkdir, readFile } from "node:fs/promises";
+import { dirname } from "node:path";
+
+let previewVideo: Buffer;
+test.beforeAll(async ({}, testInfo) => {
+  const file = testInfo.outputPath("shot-preview.mp4");
+  await mkdir(dirname(file), { recursive: true });
+  const ffmpeg = createRequire(import.meta.url)("@ffmpeg-installer/ffmpeg").path;
+  execFileSync(ffmpeg, ["-y", "-f", "lavfi", "-i", "testsrc2=size=320x180:rate=10", "-t", "180", "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-movflags", "+faststart", file], { stdio: "ignore" });
+  previewVideo = await readFile(file);
+});
+
 for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const seconds of [10, 180]) {
   test(`analysis quote and confirmation ${locale} ${width} ${seconds}s`, async ({ page, context }) => {
     await page.setViewportSize({ width, height: 1000 });
@@ -12,6 +26,17 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     const singleCredits = quoteAnalysis({ ...pricing, scenes: scenes.slice(0, 1) }).credits;
     let confirmations = 0;
     let quoteRequest: Record<string, unknown> | undefined;
+    let failPreview = false;
+    await page.route("**/video.mp4*", async route => {
+      if (failPreview) { await route.fulfill({ status: 503 }); return; }
+      const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range || "");
+      const start = range ? Number(range[1]) : 0;
+      const end = range?.[2] ? Math.min(Number(range[2]), previewVideo.length - 1) : previewVideo.length - 1;
+      await route.fulfill({ status: range ? 206 : 200, contentType: "video/mp4", headers: {
+        "Accept-Ranges": "bytes", "Access-Control-Allow-Origin": "*",
+        ...(range ? { "Content-Range": `bytes ${start}-${end}/${previewVideo.length}` } : {}),
+      }, body: previewVideo.subarray(start, end + 1) });
+    });
     await page.route("**/api/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
       let body: unknown = {};
@@ -19,7 +44,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
       else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, mode: "byok", hasUserKieKey: true, trial: { limit: 2, remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 }, linkImports: { remaining: 10 } };
       else if (path === "/api/models") body = { models: [] };
       else if (path === "/api/workflow/projects") body = route.request().method() === "POST" ? { project: { id: projectId } } : { projects: [] };
-      else if (path === "/api/media/resolve-link") body = { mediaUrl: "https://example.com/video.mp4", filename: "linked-video.mp4", mediaType: "video", platform: "douyin", duration: seconds, metadata: { duration: seconds } };
+      else if (path === "/api/media/resolve-link") body = { mediaUrl: "http://localhost:3000/fixtures/video.mp4", filename: "linked-video.mp4", mediaType: "video", platform: "douyin", duration: seconds, metadata: { duration: seconds } };
       else if (path === "/api/commercial/analysis") {
         const data = route.request().postDataJSON();
         if (data.action === "prepare") body = { id: "preview", durationUs: pricing.sourceDurationUs, scenes };
@@ -58,6 +83,51 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     const all = panel.getByRole("checkbox", { name: locale === "zh" ? "全选" : "Select all", exact: true });
     const first = panel.getByRole("checkbox", { name: locale === "zh" ? "镜头 1" : "Shot 1", exact: true });
     const second = panel.getByRole("checkbox", { name: locale === "zh" ? "镜头 2" : "Shot 2", exact: true });
+    const cards = panel.getByRole("article");
+    await expect(cards).toHaveCount(scenes.length);
+    const firstCard = cards.first();
+    await firstCard.scrollIntoViewIfNeeded();
+    const firstVideo = firstCard.locator("video");
+    await expect.poll(() => firstVideo.evaluate((video: HTMLVideoElement) => video.readyState)).toBeGreaterThanOrEqual(2);
+    const checkboxBox = await first.boundingBox();
+    const headingBox = await firstCard.getByRole("heading").boundingBox();
+    expect(checkboxBox!.x + checkboxBox!.width).toBeLessThanOrEqual(headingBox!.x);
+    const sliderBox = await firstCard.getByRole("slider").boundingBox();
+    expect(sliderBox!.width).toBeGreaterThan((await firstCard.boundingBox())!.width / 2);
+    const framePixels = await firstVideo.evaluate((video: HTMLVideoElement) => {
+      const canvas = document.createElement("canvas"); canvas.width = 32; canvas.height = 18;
+      const ctx = canvas.getContext("2d")!; ctx.drawImage(video, 0, 0, 32, 18);
+      return Array.from(ctx.getImageData(0, 0, 32, 18).data).filter((value, index) => index % 4 !== 3 && value > 40).length;
+    });
+    expect(framePixels).toBeGreaterThan(100);
+    await firstCard.screenshot({ path: `test-results/shot-card-${locale}-${width}-${seconds}s.png` });
+    await firstCard.getByRole("button", { name: locale === "zh" ? "播放" : "Play", exact: true }).click();
+    await expect.poll(() => firstVideo.evaluate((video: HTMLVideoElement) => video.currentTime)).toBeGreaterThan(0.1);
+    await firstVideo.evaluate((video: HTMLVideoElement, end: number) => { video.currentTime = end - 0.15; }, scenes[0].endUs / 1000000);
+    await expect.poll(() => firstVideo.evaluate((video: HTMLVideoElement) => video.paused)).toBe(true);
+    expect(await firstVideo.evaluate((video: HTMLVideoElement) => video.currentTime)).toBeLessThanOrEqual(scenes[0].endUs / 1000000);
+    await firstCard.getByRole("button", { name: locale === "zh" ? "重播" : "Replay", exact: true }).click();
+    await expect.poll(() => firstVideo.evaluate((video: HTMLVideoElement) => video.currentTime)).toBeLessThan(1);
+    await firstCard.getByRole("button", { name: locale === "zh" ? "暂停" : "Pause", exact: true }).click();
+    const secondCard = cards.nth(1);
+    await secondCard.scrollIntoViewIfNeeded();
+    const secondVideo = secondCard.locator("video");
+    await expect.poll(() => secondVideo.evaluate((video: HTMLVideoElement) => video.readyState)).toBeGreaterThanOrEqual(2);
+    await expect.poll(() => secondVideo.evaluate((video: HTMLVideoElement) => video.currentTime)).toBeGreaterThanOrEqual(scenes[1].startUs / 1000000);
+    expect(await secondCard.getByRole("slider").getAttribute("max")).toBe(String((scenes[1].endUs - scenes[1].startUs) / 1000000));
+    await secondVideo.evaluate((video: HTMLVideoElement) => { video.currentTime = 0; });
+    await expect.poll(() => secondVideo.evaluate((video: HTMLVideoElement) => video.currentTime)).toBeGreaterThanOrEqual(scenes[1].startUs / 1000000);
+    expect(confirmations).toBe(0);
+    if (seconds === 180) expect(await panel.locator("video").count()).toBeLessThan(scenes.length);
+    if (seconds === 10) {
+      failPreview = true;
+      await secondVideo.evaluate((video: HTMLVideoElement) => { video.src = `${video.src.split("#")[0]}?failure=1`; });
+      await expect(secondCard.getByRole("alert")).toBeVisible();
+      failPreview = false;
+      await secondCard.getByRole("button", { name: locale === "zh" ? "重试" : "Retry", exact: true }).click();
+      await expect(secondCard.getByRole("alert")).toHaveCount(0);
+      await expect.poll(() => secondCard.locator("video").evaluate((video: HTMLVideoElement) => video.readyState)).toBeGreaterThanOrEqual(2);
+    }
     await expect(all).toBeChecked();
     await expect(panel.getByText(locale === "zh" ? `预计 ${totalCredits} 积分` : `Estimated ${totalCredits} credits`, { exact: true })).toBeVisible();
     await all.uncheck();

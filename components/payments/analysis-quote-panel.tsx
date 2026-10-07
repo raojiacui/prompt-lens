@@ -4,6 +4,7 @@ import { useLocale } from "next-intl";
 import { X } from "lucide-react";
 import { quoteAnalysis, type SceneInterval } from "@/lib/billing/pricing-v6";
 import { listModels } from "@/lib/ai/model-registry";
+import { SceneVideoPreview } from "@/components/workflow/scene-video-preview";
 
 export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string }; onClose: () => void; onComplete: (bundle: unknown) => void }) {
   const zh = useLocale() === "zh";
@@ -22,6 +23,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: { 
   const [error, setError] = useState("");
   const completed = useRef(false);
   const selectAll = useRef<HTMLInputElement>(null);
+  const playingPreview = useRef<HTMLVideoElement | null>(null);
   const selectedScenes = preparation?.scenes.filter(scene => selected.includes(scene.id)) || [];
   const allSelected = Boolean(preparation && selectedScenes.length === preparation.scenes.length);
   const selectionLocked = busy || Boolean(quote);
@@ -90,7 +92,22 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: { 
           <label className="flex min-h-11 items-center gap-2"><input ref={selectAll} type="checkbox" checked={allSelected} disabled={selectionLocked} onChange={e => setSelected(e.target.checked ? preparation.scenes.map(scene => scene.id) : [])} />{zh ? "全选" : "Select all"}</label>
           <span role="status" className="text-muted-foreground">{zh ? `已选 ${selectedScenes.length}/${preparation.scenes.length} 个镜头 · ${selectedSeconds.toFixed(2)} 秒` : `${selectedScenes.length}/${preparation.scenes.length} shots selected · ${selectedSeconds.toFixed(2)} sec`}</span>
         </div>
-        <div className="max-h-52 overflow-auto border-y border-border">{preparation.scenes.map((scene, index) => <label key={scene.id} className="flex min-h-11 items-center justify-between gap-3 border-b border-border py-2 text-sm"><span className="flex shrink-0 items-center gap-2"><input type="checkbox" aria-label={zh ? `镜头 ${index + 1}` : `Shot ${index + 1}`} checked={selected.includes(scene.id)} disabled={selectionLocked} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, scene.id] : ids.filter((id) => id !== scene.id))} />{zh ? "镜头" : "Shot"} {index + 1}</span><span className="text-right">{(scene.startUs / 1000000).toFixed(2)}–{(scene.endUs / 1000000).toFixed(2)}s · {((scene.endUs - scene.startUs) / 1000000).toFixed(2)}s</span></label>)}</div>
+        <div className="max-h-[60vh] space-y-4 overflow-y-auto pr-2">{preparation.scenes.map((scene, index) => <article key={scene.id} aria-label={zh ? `镜头 ${index + 1}` : `Shot ${index + 1}`} className="rounded-lg border border-border bg-background p-3 sm:p-4">
+          <div className="mb-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex min-h-9 cursor-pointer items-center gap-2">
+                <input type="checkbox" className="h-4 w-4 shrink-0 accent-primary" aria-label={zh ? `镜头 ${index + 1}` : `Shot ${index + 1}`} checked={selected.includes(scene.id)} disabled={selectionLocked} onChange={(e) => setSelected((ids) => e.target.checked ? [...ids, scene.id] : ids.filter((id) => id !== scene.id))} />
+                <h3 className="text-base font-semibold">{zh ? "镜头" : "Shot"} {String(index + 1).padStart(2, "0")}</h3>
+              </label>
+              <span className="text-xs text-muted-foreground">{zh ? "待分析" : "Not analyzed"}</span>
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">{(scene.startUs / 1000000).toFixed(2)}–{(scene.endUs / 1000000).toFixed(2)}s · {((scene.endUs - scene.startUs) / 1000000).toFixed(2)}s</p>
+          </div>
+          <SceneVideoPreview mediaUrl={source.mediaUrl} startUs={scene.startUs} endUs={scene.endUs} label={zh ? `镜头 ${index + 1} 预览` : `Shot ${index + 1} preview`} zh={zh} onPlay={(video) => {
+            if (playingPreview.current !== video) playingPreview.current?.pause();
+            playingPreview.current = video;
+          }} />
+        </article>)}</div>
         {!selectedScenes.length && <p className="mt-2 text-sm text-muted-foreground">{zh ? "请至少选择一个镜头。" : "Select at least one shot."}</p>}
         {estimatedCredits !== null && !quote && <p className="mt-3 text-sm">{zh ? `预计 ${estimatedCredits} 积分` : `Estimated ${estimatedCredits} credits`}</p>}
       </div>}

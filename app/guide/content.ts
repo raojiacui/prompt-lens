@@ -70,7 +70,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "在页面内选择镜头与确认费用", steps: [
           "在主按钮右侧选择「费用来源」：使用平台积分，或使用自己的 KIE Key。自带 Key 时，自动拆镜仍使用平台积分。",
           "在素材区域选择分析模型。导入后直接在右侧「镜头选择与费用」继续，不会弹出费用窗口。上传文件按一个完整镜头分析，不拆镜；链接视频先拆镜，再勾选需要分析的镜头。",
-          "点击「读取视频信息」，查看总时长以及每个镜头的起止时间。勾选这次真正需要分析的镜头。",
+          "点击「读取视频信息」，查看拆镜后的镜头卡片和起止时间。每张卡片都可以预览对应镜头的画面，在「镜头 01」等标题左侧勾选需要分析的镜头，也可以全选。未选中的镜头不会送去分析，不收分析费。",
           "点击「获取报价」，核对总积分和「拆镜 + 分析」的明细。想修改选择时点击「调整选择」。",
           "确认无误后点击「确认并分析」，按钮显示本次所需积分。此时额度先预留，任务结束后按成功结果结算。",
         ] },
@@ -318,7 +318,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "Select shots and review costs on the page", steps: [
           "Choose Payment source beside the main button: Platform credits or My KIE key. Automatic splitting still uses platform credits when you bring your own key.",
           "Select an analysis model in the reference area. After import, continue in Shots and analysis cost on the right without a modal. Uploaded files are analyzed as one complete shot without splitting. Linked videos are split first, then you select shots to analyze.",
-          "Select Inspect video. Review the duration and shot timestamps, then select the shots you need.",
+          "Select Inspect video to see the shot cards and timestamps. Preview each shot, then use the checkbox to the left of its title or Select all. Unselected shots are not sent for analysis and incur no analysis fee.",
           "Select Get quote and check the total and the splitting and analysis amounts. Use Adjust selection to revise the choices.",
           "Choose Confirm analysis; the button shows the required credits. Credits are reserved first, then settled against successful results.",
         ] },
