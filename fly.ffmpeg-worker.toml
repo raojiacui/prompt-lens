@@ -19,7 +19,6 @@ kill_timeout = "30s"
 [env]
   PORT = "8080"
   SCENE_THRESHOLD = "0.32"
-  MAX_SCENE_SECONDS = "8"
   MIN_SCENE_SECONDS = "0.6"
   PYSCENEDETECT_ENABLED = "true"
   PYSCENEDETECT_DETECTOR = "adaptive"

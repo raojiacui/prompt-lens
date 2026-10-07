@@ -8,4 +8,5 @@ workers/ffmpeg-worker/*
 !workers/ffmpeg-worker/package.json
 !workers/ffmpeg-worker/server.mjs
 !workers/ffmpeg-worker/parallel-download.mjs
+!workers/ffmpeg-worker/scene-segments.mjs
 !workers/ffmpeg-worker/scene-detect.py
