@@ -19,7 +19,7 @@ test("shot previews keep their player, frame and position when scrolled away", a
       import {SceneVideoPreview} from './components/workflow/scene-video-preview';
       createRoot(document.getElementById('root')).render(<div id="scroll">
         {Array.from({length: 8}, (_, index) => <article key={index}>
-          <SceneVideoPreview mediaUrl="https://preview.test/video.mp4" startUs={1000000} endUs={11000000} label={'Shot '+index} zh={false} onPlay={() => {}} />
+          <SceneVideoPreview mediaUrl="https://preview.test/video.mp4" clipRequestUrl={'https://preview.test/shot/'+index} startUs={1000000} endUs={11000000} label={'Shot '+index} zh={false} onPlay={() => {}} />
         </article>)}
       </div>);
     `, resolveDir: process.cwd(), loader: "tsx" },
@@ -31,6 +31,15 @@ test("shot previews keep their player, frame and position when scrolled away", a
       const page = await browser.newPage({ viewport });
       await page.route("https://preview.test/", route => route.fulfill({ contentType: "text/html", body: "<html></html>" }));
       await page.goto("https://preview.test/");
+      let clipRequests = 0;
+      let releaseClip;
+      const clipGate = new Promise(resolve => { releaseClip = resolve; });
+      await page.route("https://preview.test/shot/*", async route => {
+        clipRequests += 1;
+        assert.equal(route.request().method(), "POST");
+        await clipGate;
+        await route.fulfill({ contentType: "video/mp4", body: bytes }).catch(() => undefined);
+      });
       await page.route("https://preview.test/video.mp4", async (route) => {
         const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range || "");
         const start = range ? Number(range[1]) : 0;
@@ -57,7 +66,15 @@ test("shot previews keep their player, frame and position when scrolled away", a
       });
       await page.waitForFunction(() => !window.savedPlayer.seeking);
       await first.getByRole("button", { name: "Play", exact: true }).click();
+      await first.getByRole("status", { name: "Buffering video" }).waitFor();
+      assert.equal(await page.evaluate(() => window.savedPlayer.paused), true, "remote source must not play before its independent clip has downloaded");
+      await first.getByRole("button", { name: "Pause", exact: true }).click();
+      await first.getByRole("status", { name: "Buffering video" }).waitFor({ state: "hidden" });
+      releaseClip();
+      await first.getByRole("button", { name: "Play", exact: true }).click();
       await page.waitForFunction(() => !window.savedPlayer.paused);
+      assert.ok(await page.evaluate(() => window.savedPlayer.src.startsWith("blob:")), "playback must use the complete cached clip, not a range in the remote source");
+      const requestsAfterLoading = clipRequests;
       await page.evaluate(() => { document.getElementById("scroll").scrollTop = 1500; });
       await page.waitForFunction(() => window.savedPlayer.paused);
       const position = await page.evaluate(() => window.savedPlayer.currentTime);
@@ -83,6 +100,7 @@ test("shot previews keep their player, frame and position when scrolled away", a
       await first.getByRole("status", { name: "Buffering video" }).waitFor({ state: "hidden" });
       await first.getByRole("button", { name: "Pause", exact: true }).click();
       await page.waitForFunction(() => window.savedPlayer.preload === "metadata");
+      assert.equal(clipRequests, requestsAfterLoading, "returning to a loaded shot must reuse its local clip");
       await page.screenshot({ path: path.join(output, `preview-${viewport.width}.png`) });
       await page.close();
     }

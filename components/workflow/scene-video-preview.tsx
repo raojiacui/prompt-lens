@@ -7,31 +7,59 @@ function timeLabel(seconds: number) {
   return `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(1).padStart(4, "0")}`;
 }
 
-export function SceneVideoPreview({ mediaUrl, startUs, endUs, label, zh, onPlay }: {
+function waitForClip(element: HTMLVideoElement, url: string, signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const deadline = Date.now() + 45000;
+    let timer: ReturnType<typeof setTimeout>;
+    const finish = (error?: Error) => {
+      clearTimeout(timer);
+      signal.removeEventListener("abort", abort);
+      if (error) reject(error); else resolve();
+    };
+    const abort = () => finish(new DOMException("Playback cancelled", "AbortError"));
+    const check = () => {
+      if (signal.aborted) { abort(); return; }
+      if (element.error || Date.now() >= deadline) { finish(new Error("Shot buffering failed")); return; }
+      if (element.src === url && !element.seeking && element.readyState >= 2) { finish(); return; }
+      timer = setTimeout(check, 200);
+    };
+    signal.addEventListener("abort", abort, { once: true });
+    check();
+  });
+}
+
+export function SceneVideoPreview({ mediaUrl, startUs, endUs, label, zh, onPlay, clipRequestUrl }: {
   mediaUrl: string;
   startUs: number;
   endUs: number;
   label: string;
   zh: boolean;
   onPlay: (video: HTMLVideoElement) => void;
+  clipRequestUrl?: string;
 }) {
-  return <SceneVideoPlayer key={`${mediaUrl}:${startUs}:${endUs}`} mediaUrl={mediaUrl} startUs={startUs} endUs={endUs} label={label} zh={zh} onPlay={onPlay} />;
+  return <SceneVideoPlayer key={`${mediaUrl}:${startUs}:${endUs}:${clipRequestUrl}`} mediaUrl={mediaUrl} startUs={startUs} endUs={endUs} label={label} zh={zh} onPlay={onPlay} clipRequestUrl={clipRequestUrl} />;
 }
 
-function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Parameters<typeof SceneVideoPreview>[0]) {
+function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay, clipRequestUrl }: Parameters<typeof SceneVideoPreview>[0]) {
   const container = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
+  const preparation = useRef<AbortController | null>(null);
+  const cachedClip = useRef<string | null>(null);
+  const [clipUrl, setClipUrl] = useState<string | null>(null);
   const [activated, setActivated] = useState(false);
   const [ready, setReady] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [preparing, setPreparing] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [muted, setMuted] = useState(true);
   const [position, setPosition] = useState(0);
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const start = startUs / 1000000;
-  const end = endUs / 1000000;
-  const duration = end - start;
+  const duration = (endUs - startUs) / 1000000;
+  const start = clipUrl ? 0 : startUs / 1000000;
+  const end = start + duration;
+
+  useEffect(() => () => { if (cachedClip.current) URL.revokeObjectURL(cachedClip.current); }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => {
@@ -39,6 +67,7 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Param
     }, { rootMargin: "160px 0px" });
     const visibilityObserver = new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting) {
+        preparation.current?.abort();
         video.current?.pause();
         setPlaying(false);
         setBuffering(false);
@@ -48,10 +77,10 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Param
       observer.observe(container.current);
       visibilityObserver.observe(container.current);
     }
-    return () => { observer.disconnect(); visibilityObserver.disconnect(); };
+    return () => { observer.disconnect(); visibilityObserver.disconnect(); preparation.current?.abort(); };
   }, []);
 
-  // Preview the detected interval from the stored source without creating another paid task.
+  // Source frames provide the initial preview; cached clips use their own zero-based timeline.
   // Frame-by-frame bounds also prevent seeking/playback from leaking into the next shot.
   useEffect(() => {
     if (!playing) return;
@@ -75,24 +104,50 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Param
   async function togglePlayback() {
     const element = video.current;
     if (!element || !ready) return;
+    if (preparation.current) { preparation.current.abort(); return; }
     if (!element.paused) { element.pause(); return; }
     if (position >= duration || element.currentTime >= end - 0.05) {
       element.currentTime = start;
       setPosition(0);
     }
     element.preload = "auto";
-    setBuffering(element.readyState < 3);
-    try { await element.play(); }
-    catch { setPlaying(false); setBuffering(false); }
+    const controller = new AbortController();
+    preparation.current = controller;
+    setPreparing(true);
+    setBuffering(true);
+    try {
+      if (clipRequestUrl && !cachedClip.current) {
+        const response = await fetch(clipRequestUrl, { method: "POST", cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(180000)]) });
+        if (!response.ok || !response.headers.get("content-type")?.startsWith("video/")) throw new Error("Shot clip unavailable");
+        const blob = await response.blob();
+        if (controller.signal.aborted) return;
+        if (!blob.size) throw new Error("Empty shot clip");
+        const url = URL.createObjectURL(blob);
+        cachedClip.current = url;
+        setClipUrl(url);
+        setPosition(0);
+        await waitForClip(element, url, controller.signal);
+      }
+      if (!controller.signal.aborted) await element.play();
+    } catch {
+      if (!controller.signal.aborted) { setFailed(true); setReady(false); }
+      setPlaying(false);
+    } finally {
+      if (preparation.current === controller) {
+        preparation.current = null;
+        setPreparing(false);
+        setBuffering(false);
+      }
+    }
   }
 
-  const playLabel = playing ? (zh ? "暂停" : "Pause") : position >= duration ? (zh ? "重播" : "Replay") : (zh ? "播放" : "Play");
+  const playLabel = playing || preparing ? (zh ? "暂停" : "Pause") : position >= duration ? (zh ? "重播" : "Replay") : (zh ? "播放" : "Play");
   return <div ref={container} role="group" aria-label={label} className="relative aspect-video w-full overflow-hidden rounded-lg bg-black text-white">
     {activated && <video
       key={attempt}
       ref={video}
-      src={`${mediaUrl.split("#")[0]}#t=${start},${end}`}
-      preload={playing ? "auto" : "metadata"}
+      src={clipUrl || `${mediaUrl.split("#")[0]}#t=${start},${end}`}
+      preload={playing || preparing ? "auto" : "metadata"}
       playsInline
       muted={muted}
       aria-label={label}
@@ -111,7 +166,7 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Param
       onPlay={(event) => { setPlaying(true); onPlay(event.currentTarget); }}
       onWaiting={() => setBuffering(true)}
       onPlaying={() => setBuffering(false)}
-      onCanPlay={() => setBuffering(false)}
+      onCanPlay={() => { if (!preparation.current) setBuffering(false); }}
       onPause={(event) => {
         setPlaying(false);
         setBuffering(false);
@@ -126,7 +181,7 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay }: Param
       <button type="button" className="flex min-h-9 items-center gap-2 px-3 underline" onClick={() => { setFailed(false); setReady(false); setAttempt(value => value + 1); }}><RotateCcw size={16} />{zh ? "重试" : "Retry"}</button>
     </div>}
     {!failed && <div className="absolute inset-x-0 bottom-0 flex flex-wrap items-center gap-x-1 bg-black/75 px-2 pb-2 pt-1">
-      <button type="button" disabled={!ready} onClick={() => void togglePlayback()} aria-label={playLabel} title={playLabel} className="flex h-9 w-9 shrink-0 items-center justify-center disabled:opacity-50">{playing ? <Pause size={18} /> : <Play size={18} />}</button>
+      <button type="button" disabled={!ready} onClick={() => void togglePlayback()} aria-label={playLabel} title={playLabel} className="flex h-9 w-9 shrink-0 items-center justify-center disabled:opacity-50">{playing || preparing ? <Pause size={18} /> : <Play size={18} />}</button>
       <span className="min-w-0 flex-1 text-xs tabular-nums">{timeLabel(position)} / {timeLabel(duration)}</span>
       <input type="range" aria-label={zh ? "镜头播放进度" : "Shot playback position"} min={0} max={duration} step={0.01} value={position} disabled={!ready} className="order-last h-3 w-full min-w-0 accent-white" onChange={(event) => {
         const value = Number(event.target.value);

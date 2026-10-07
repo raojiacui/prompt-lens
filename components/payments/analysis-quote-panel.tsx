@@ -122,7 +122,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{(scene.startUs / 1000000).toFixed(2)}–{(scene.endUs / 1000000).toFixed(2)}s · {((scene.endUs - scene.startUs) / 1000000).toFixed(2)}s</p>
           </div>
-          <SceneVideoPreview mediaUrl={source.mediaUrl} startUs={scene.startUs} endUs={scene.endUs} label={zh ? `镜头 ${index + 1} 预览` : `Shot ${index + 1} preview`} zh={zh} onPlay={(video) => {
+          <SceneVideoPreview mediaUrl={source.mediaUrl} startUs={scene.startUs} endUs={scene.endUs} clipRequestUrl={automaticSplit ? `/api/commercial/analysis/${preparation.id}/shots/${encodeURIComponent(scene.id)}` : undefined} label={zh ? `镜头 ${index + 1} 预览` : `Shot ${index + 1} preview`} zh={zh} onPlay={(video) => {
             if (playingPreview.current !== video) playingPreview.current?.pause();
             playingPreview.current = video;
           }} />
