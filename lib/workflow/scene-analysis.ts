@@ -193,16 +193,21 @@ export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason = "A
 }
 
 function normalizeBlueprint(raw: Record<string, unknown>, fallback: SceneBlueprintDraft, provider: string, language?: "zh" | "en"): SceneBlueprintDraft {
-  if (!raw || !text(raw.generationPrompt) || !raw.visual || typeof raw.visual !== "object" || Array.isArray(raw.visual) || !raw.story || typeof raw.story !== "object" || Array.isArray(raw.story)) {
-    throw new Error("KIE returned an incomplete scene analysis");
-  }
+  // Some valid chat responses express the story as a summary instead of an object.
+  const story = typeof raw?.story === "string" && raw.story.trim() ? { summary: raw.story.trim() } : safeObject(raw?.story);
+  const invalidFields = [
+    !text(raw?.generationPrompt) ? "generationPrompt" : null,
+    !raw?.visual || typeof raw.visual !== "object" || Array.isArray(raw.visual) || !Object.keys(raw.visual).length ? "visual" : null,
+    !Object.keys(story).length ? "story" : null,
+  ].filter(Boolean);
+  if (invalidFields.length) throw new Error(`KIE returned an incomplete scene analysis: invalid fields ${invalidFields.join(", ")}`);
   const rawGenerationPrompt = text(raw.generationPrompt, fallback.generationPrompt);
   const generationPrompt = outputLanguage(language) === "zh" && looksMostlyEnglish(rawGenerationPrompt)
-    ? composeChineseGenerationPrompt(raw, fallback)
+    ? composeChineseGenerationPrompt({ ...raw, story }, fallback)
     : rawGenerationPrompt;
 
   return {
-    story: { ...fallback.story, ...safeObject(raw.story) },
+    story: { ...fallback.story, ...story },
     visual: { ...fallback.visual, ...safeObject(raw.visual) },
     dialogue: safeArray(raw.dialogue).length ? safeArray(raw.dialogue) : fallback.dialogue,
     narration: safeArray(raw.narration).length ? safeArray(raw.narration) : fallback.narration,
@@ -234,6 +239,7 @@ export async function analyzeSceneBlueprint(params: {
         "For music and editing, only describe observable or inferable style, rhythm, or basic techniques. Do not claim exact BGM title, software operations, masks, keyframes, or effects unless there is clear visual/audio evidence.",
         "Do not invent brand names or dialogue unless visible/audible evidence supports it. If something is uncertain, say unknown rather than hallucinating.",
         "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. transition must include editing.pacing and editing.techniques.",
+        'Field types: story must be an object such as {"summary":"..."}, not a string. visual, audio, transition and metadata must be objects. dialogue, narration and subtitle must be arrays (use [] when absent). generationPrompt must be a non-empty string.',
         "generationPrompt must be a long, directly usable text-to-video prompt. Put visual reconstruction first; put dialogue/audio/editing constraints after the visual description and mark uncertain items as possible/unknown. generationPrompt must use the selected output language, not English unless outputLanguage is English.",
         outputLanguageInstruction(params.outputLanguage),
       ].join(" "),
@@ -287,6 +293,7 @@ export async function analyzeImageBlueprint(params: {
         "Be concrete and exhaustive about the visible image: objects, characters, wardrobe, expressions, pose, props, background layers, camera language, lighting, color, composition, style, texture, and any motion implied by the still frame.",
         "Do not invent brand names, dialogue, audio, music, or editing techniques. There is no audio, dialogue, or video editing in a static image.",
         "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. dialogue, narration, and subtitle must be empty arrays. audio must only note that no audio is available. transition.editing.pacing must be 'None' and transition.editing.techniques must be an empty array.",
+        'Field types: story must be an object such as {"summary":"..."}, not a string. visual, audio, transition and metadata must be objects. generationPrompt must be a non-empty string.',
         "generationPrompt must be a long, directly usable text-to-image/video prompt focused entirely on visual reconstruction. Mark uncertain visual details as possible/unknown. generationPrompt must use the selected output language, not English unless outputLanguage is English.",
         outputLanguageInstruction(params.outputLanguage),
       ].join(" "),
