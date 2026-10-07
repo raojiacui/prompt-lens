@@ -39,6 +39,10 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     });
     await page.route("**/api/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
+      if (path.startsWith("/api/commercial/analysis/preview/shots/")) {
+        await route.fulfill({ contentType: "video/mp4", body: previewVideo });
+        return;
+      }
       let body: unknown = {};
       if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
       else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, mode: "byok", hasUserKieKey: true, trial: { limit: 2, remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 }, linkImports: { remaining: 10 } };
@@ -51,7 +55,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
         else { quoteRequest = data; body = { id: taskId, ...quoteAnalysis({ ...pricing, scenes: scenes.filter(s => data.sceneIds.includes(s.id)) }) }; }
       } else if (path === `/api/commercial/tasks/${taskId}`) {
         if (route.request().method() === "POST") confirmations++;
-        body = { id: taskId, state: "running", credits: 8 };
+        body = { id: taskId, state: "running", phase: "analyzing", totalScenes: scenes.length, completedScenes: 1, credits: 8 };
       }
       await route.fulfill({ json: body });
     });
@@ -156,5 +160,10 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     await panel.screenshot({ path: `test-results/analysis-quote-${locale}-${width}-${seconds}s.png` });
     await panel.getByRole("button", { name: locale === "zh" ? `确认并分析 · ${totalCredits} 积分` : `Confirm analysis · ${totalCredits} credits` }).click();
     await expect.poll(() => confirmations).toBe(1);
+    const progress = panel.getByTestId("analysis-task-progress");
+    await expect(progress.getByRole("progressbar")).toHaveAttribute("aria-valuenow", String(20 + Math.floor(70 / scenes.length)));
+    await expect(progress).toContainText(locale === "zh" ? `已处理 1/${scenes.length} 个镜头` : `1/${scenes.length} shots processed`);
+    await expect(progress).toContainText(locale === "zh" ? "参考估计" : "approximate");
+    await progress.screenshot({ path: `test-results/analysis-progress-${locale}-${width}-${seconds}s.png` });
   });
 }

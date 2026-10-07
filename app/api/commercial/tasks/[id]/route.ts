@@ -52,5 +52,6 @@ export async function GET(request: NextRequest, { params }: Context) {
   const totalScenes = task.kind === "workflow_analysis" ? (result.assets as { scenes?: unknown[] } | undefined)?.scenes?.length || 0 : input.pricing?.scenes.length || 0;
   const completedScenes = task.kind === "workflow_analysis" ? Number(result.cursor || 0) : Array.isArray(result.finishedSceneIds) ? result.finishedSceneIds.length : 0;
   const partial = task.kind === "workflow_analysis" ? Boolean(result.partial) : success > 0 && success < totalScenes;
-  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error }, { headers: { "Cache-Control": "private, no-store" } });
+  const phase = task.kind === "analysis" ? !result.assets ? "preparing" : completedScenes < totalScenes ? "analyzing" : "saving" : undefined;
+  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error }, { headers: { "Cache-Control": "private, no-store" } });
 }

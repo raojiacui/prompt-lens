@@ -6,6 +6,7 @@ import { quoteAnalysis, type SceneInterval } from "@/lib/billing/pricing-v6";
 import { listModels } from "@/lib/ai/model-registry";
 import { SceneVideoPreview } from "@/components/workflow/scene-video-preview";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
+import { AnalysisTaskProgress } from "./analysis-task-progress";
 
 type AnalysisPreparation = { id: string; scenes: SceneInterval[]; durationUs: number };
 type AnalysisQuoteSource = { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string };
@@ -25,6 +26,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
   const [quote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number } | null>(null);
   const [taskId, setTaskId] = useState("");
   const [state, setState] = useState("");
+  const [taskProgress, setTaskProgress] = useState({ phase: "preparing", total: 0, finished: 0, startedAt: 0 });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const completed = useRef(false);
@@ -72,22 +74,25 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
       } else {
         // Keep the same server quote ID even when the confirmation response is lost.
         const data = await post(`/api/commercial/tasks/${quote.id}`, {});
+        setTaskProgress({ phase: "preparing", total: selectedScenes.length, finished: 0, startedAt: Date.now() });
         setTaskId(data.id); setState(data.state);
       }
     } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
     finally { setBusy(false); }
   }
   useEffect(() => {
-    if (!taskId || completed.current || state === "review") return;
+    if (!taskId || completed.current) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     async function poll() {
       try {
-        const response = await fetch(`/api/commercial/tasks/${taskId}`, { cache: "no-store", signal: controller.signal });
+        const response = await fetch(`/api/commercial/tasks/${taskId}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
         if (!response.ok) throw new Error();
         const data = await response.json();
         if (controller.signal.aborted) return;
         setState(data.state);
+        setError("");
+        setTaskProgress(previous => ({ ...previous, phase: data.phase || previous.phase, total: data.totalScenes ?? previous.total, finished: data.completedScenes ?? previous.finished }));
         if (["completed", "failed"].includes(data.state) && data.bundle && !completed.current) { completed.current = true; onCompleteRef.current(data.bundle); }
         if (["completed", "failed", "review"].includes(data.state)) return;
       } catch { if (!controller.signal.aborted) setError(zh ? "查询暂时中断，任务仍保留在账户中。" : "Status temporarily unavailable. Your task remains in your account."); }
@@ -95,7 +100,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
     }
     void poll();
     return () => { controller.abort(); clearTimeout(timer); };
-  }, [taskId, state, zh]);
+  }, [taskId, zh]);
   return <section aria-labelledby="analysis-quote-title" className="min-h-0 flex-1 overflow-y-auto p-1 text-foreground">
     <header className="flex items-start justify-between gap-4"><h2 id="analysis-quote-title" className="text-xl font-semibold">{zh ? "镜头选择与费用" : "Shots and analysis cost"}</h2>{!taskId && <button disabled={busy} onClick={onClose} title={zh ? "返回素材选择" : "Back to reference"} aria-label={zh ? "返回素材选择" : "Back to reference"} className="flex h-8 w-8 shrink-0 items-center justify-center disabled:opacity-50"><X size={18} /></button>}</header>
     <p className="mt-3 truncate text-sm text-muted-foreground">{source.mediaName}</p>
@@ -136,7 +141,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
       </div>
       {quote && <button disabled={busy} onClick={() => setQuote(null)} className="mt-3 min-h-10 px-3 text-sm underline">{zh ? "调整选择" : "Adjust selection"}</button>}
     </>}
-    {taskId && <p role="status" className="mt-6">{state === "review" ? (zh ? "任务结果需要核对，额度保持预留，不会重复扣款。" : "This task needs review. Credits remain reserved and will not be charged twice.") : (zh ? "任务已保存，正在处理。" : "Task saved and processing.")}</p>}
+    {taskId && <AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} />}
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
   </section>;
 }
