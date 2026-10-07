@@ -9,6 +9,7 @@ import { spawn } from "node:child_process";
 import { randomUUID, createHash } from "node:crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { downloadStreamsInParallel } from "./parallel-download.mjs";
+import { splitLongScenes } from "./scene-segments.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
 const WORKER_SECRET = process.env.WORKER_SECRET || process.env.FFMPEG_WORKER_SECRET || "";
@@ -19,7 +20,6 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
 const R2_BUCKET = process.env.R2_BUCKET_NAME || process.env.R2_BUCKET;
 const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL || "").replace(/\/$/, "");
 const SCENE_THRESHOLD = process.env.SCENE_THRESHOLD || "0.32";
-const MAX_SCENE_SECONDS = Number(process.env.MAX_SCENE_SECONDS || 8);
 const MIN_SCENE_SECONDS = Number(process.env.MIN_SCENE_SECONDS || 0.6);
 const FFMPEG_PATH = process.env.FFMPEG_PATH || "ffmpeg";
 const FFPROBE_PATH = process.env.FFPROBE_PATH || "ffprobe";
@@ -289,24 +289,9 @@ function buildBoundaries(cuts, duration) {
     normalized.push({ start, end });
   }
 
-  const expanded = [];
-  normalized.forEach((scene, sceneIndex) => {
-    const durationSeconds = scene.end - scene.start;
-    const shotGroupId = `shot-${String(sceneIndex + 1).padStart(3, "0")}`;
-    if (durationSeconds <= MAX_SCENE_SECONDS) {
-      expanded.push({ ...scene, shotGroupId });
-      return;
-    }
-    let cursor = scene.start;
-    let segmentIndex = 0;
-    while (cursor < scene.end - 0.05) {
-      const end = Math.min(cursor + MAX_SCENE_SECONDS, scene.end);
-      expanded.push({ start: cursor, end, shotGroupId: `${shotGroupId}.${String(segmentIndex + 1).padStart(2, "0")}` });
-      cursor = end;
-      segmentIndex += 1;
-    }
-  });
-  return expanded;
+  return splitLongScenes(normalized.map((scene, index) => ({
+    ...scene, shotGroupId: `shot-${String(index + 1).padStart(3, "0")}`,
+  })));
 }
 
 async function uploadFile(localPath, key, contentType, signal) {
@@ -513,9 +498,10 @@ async function handleCommercialMedia(req, res) {
     if (!metadata.width || !Number.isSafeInteger(durationUs) || durationUs <= 0) throw new Error("Invalid video duration");
     if (body.mode === "preview") {
       const detection = body.automaticSplit === true ? await detectSceneCutsWithFallback(inputPath, metadata) : { cuts: [] };
-      // Real detected shots, without the legacy worker's arbitrary eight-second chunks.
       const cuts = [0, ...new Set(detection.cuts.map((n) => Math.round(n * 1000000)).filter((n) => n > 0 && n < durationUs)), durationUs].sort((a, b) => a - b);
-      const scenes = cuts.slice(0, -1).map((startUs, index) => ({ id: String(index + 1), startUs, endUs: cuts[index + 1] }));
+      const detectedScenes = cuts.slice(0, -1).map((startUs, index) => ({ start: startUs / 1000000, end: cuts[index + 1] / 1000000 }));
+      const intervals = body.automaticSplit === true ? splitLongScenes(detectedScenes, sourceHash) : detectedScenes;
+      const scenes = intervals.map((scene, index) => ({ id: String(index + 1), startUs: Math.round(scene.start * 1000000), endUs: Math.round(scene.end * 1000000) }));
       return json(res, 200, { sourceHash, durationUs, bytes, metadata: { ...metadata, sceneDetection: body.automaticSplit === true ? { provider: detection.provider, detector: detection.detector } : null }, scenes });
     }
     if (body.sourceHash !== sourceHash) throw new Error("Source changed after quote");

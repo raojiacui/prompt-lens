@@ -87,7 +87,6 @@ R2_SECRET_ACCESS_KEY=
 R2_BUCKET=
 R2_PUBLIC_URL=
 SCENE_THRESHOLD=0.32
-MAX_SCENE_SECONDS=8
 MIN_SCENE_SECONDS=0.6
 PYSCENEDETECT_ENABLED=true
 PYSCENEDETECT_DETECTOR=adaptive
@@ -126,6 +125,17 @@ The adaptive detector uses `PYSCENEDETECT_ADAPTIVE_THRESHOLD` (default 3),
 `PYSCENEDETECT_THRESHOLD` (default 27) only applies to the content detector.
 Commercial preview metadata includes `sceneDetection.provider` and
 `sceneDetection.detector` so fallback results can be distinguished from PySceneDetect.
+
+Both automatic-split paths preserve detected intervals up to 15 seconds. Longer
+intervals are subdivided into seeded, variable-length segments targeting 8-10
+seconds, with continuous coverage and no short tail. When that range cannot cover
+the interval exactly, segment lengths vary around the nearest feasible average
+and remain below 15 seconds. Commercial previews use the source hash as the seed;
+quoted intervals are persisted and reused for asset extraction, not randomized
+again. Upload previews with `automaticSplit=false` are unchanged. This is a
+duration safeguard for analysis, not an improvement in detected shot accuracy.
+
+Run the segment regression checks with `node --test tests/scene-segments.test.mjs`.
 
 For local evaluation, install `scenedetect-headless` in an isolated Python environment
 and run from the repository root:
