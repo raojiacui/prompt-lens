@@ -45,13 +45,12 @@ export async function GET(request: NextRequest, { params }: Context) {
     task = (await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) }))!;
   }
   const result = task.result as Record<string, unknown>;
-  const input = task.input as { projectId?: string; splitOnly?: boolean; preview?: { scenes: { id: string }[] }; pricing?: { scenes: unknown[] } };
-  const splitClips = input.splitOnly && task.state === "completed" ? (result.assets as { scenes?: { clipUrl: string }[] } | undefined)?.scenes?.map((scene, index) => ({ id: input.preview?.scenes[index].id, clipUrl: scene.clipUrl })) : undefined;
+  const input = task.input as { pricing?: { scenes: unknown[] } };
   const success = Array.isArray(result.successfulSceneIds) ? result.successfulSceneIds.length : 0;
-  const retryAvailable = !input.splitOnly && task.kind === "analysis" && ["completed", "failed"].includes(task.state) && !result.nextTaskId && Boolean(result.assets) && success < (input.pricing?.scenes.length || 0);
-  const bundle = !input.splitOnly && ["analysis", "workflow_analysis"].includes(task.kind) && ["completed", "failed"].includes(task.state) ? await commercialAnalysisBundle(task) : undefined;
+  const retryAvailable = task.kind === "analysis" && ["completed", "failed"].includes(task.state) && !result.nextTaskId && Boolean(result.assets) && success < (input.pricing?.scenes.length || 0);
+  const bundle = ["analysis", "workflow_analysis"].includes(task.kind) && ["completed", "failed"].includes(task.state) ? await commercialAnalysisBundle(task) : undefined;
   const totalScenes = task.kind === "workflow_analysis" ? (result.assets as { scenes?: unknown[] } | undefined)?.scenes?.length || 0 : input.pricing?.scenes.length || 0;
-  const completedScenes = input.splitOnly && task.state === "completed" ? totalScenes : task.kind === "workflow_analysis" ? Number(result.cursor || 0) : Array.isArray(result.finishedSceneIds) ? result.finishedSceneIds.length : 0;
+  const completedScenes = task.kind === "workflow_analysis" ? Number(result.cursor || 0) : Array.isArray(result.finishedSceneIds) ? result.finishedSceneIds.length : 0;
   const partial = task.kind === "workflow_analysis" ? Boolean(result.partial) : success > 0 && success < totalScenes;
-  return NextResponse.json({ id: task.id, kind: task.kind, splitOnly: Boolean(input.splitOnly), state: task.state, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId || input.projectId, bundle, videoUrl: result.videoUrl, splitClips, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error }, { headers: { "Cache-Control": "private, no-store" } });
 }

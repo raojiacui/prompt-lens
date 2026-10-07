@@ -2,16 +2,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { X } from "lucide-react";
-import { quoteAnalysis, splitCredits, type SceneInterval } from "@/lib/billing/pricing-v6";
+import { quoteAnalysis, type SceneInterval } from "@/lib/billing/pricing-v6";
 import { listModels } from "@/lib/ai/model-registry";
 import { SceneVideoPreview } from "@/components/workflow/scene-video-preview";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
-import { refreshWalletBalance } from "@/lib/billing/use-wallet-balance";
 
-type AnalysisPreparation = { id: string; scenes: SceneInterval[]; durationUs: number; paidSplitReusable?: boolean; splitClips?: { id: string; clipUrl: string }[] };
-export type AnalysisQuoteSource = { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string; preparation?: AnalysisPreparation };
+type AnalysisPreparation = { id: string; scenes: SceneInterval[]; durationUs: number };
+type AnalysisQuoteSource = { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string };
 
-export function AnalysisQuotePanel({ source, onClose, onComplete, onSplitComplete }: { source: AnalysisQuoteSource; onClose: () => void; onComplete: (bundle: unknown) => void; onSplitComplete?: () => void }) {
+export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: AnalysisQuoteSource; onClose: () => void; onComplete: (bundle: unknown) => void }) {
   const zh = useLocale() === "zh";
   const automaticSplit = source.automaticSplit;
   const payer = source.payer ?? "platform";
@@ -19,10 +18,10 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onSplitComplet
   const byokModel = source.modelId || "analysis-gemini-3-8-flash";
   const selectedModelId = payer === "byok" ? byokModel : "analysis-gemini-3-8-flash";
   const modelName = listModels("analysis").find(item => item.id === selectedModelId)?.displayName || selectedModelId;
-  const [preparation, setPreparation] = useState<AnalysisPreparation | null>(source.preparation || null);
+  const [preparation, setPreparation] = useState<AnalysisPreparation | null>(null);
   const [downloading, setDownloading] = useState(false);
   const downloadController = useRef<AbortController | null>(null);
-  const [selected, setSelected] = useState<string[]>(source.preparation?.scenes.map(scene => scene.id) || []);
+  const [selected, setSelected] = useState<string[]>([]);
   const [quote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number } | null>(null);
   const [taskId, setTaskId] = useState("");
   const [state, setState] = useState("");
@@ -38,18 +37,17 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onSplitComplet
   const estimatedCredits = preparation && selectedScenes.length ? quoteAnalysis({
     payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok",
     model: model as "flash" | "pro", sourceDurationUs: preparation.durationUs,
-    scenes: selectedScenes, automaticSplit, paidSplitReusable: Boolean(preparation.paidSplitReusable),
+    scenes: selectedScenes, automaticSplit, paidSplitReusable: false,
   }).credits : null;
   const onCompleteRef = useRef(onComplete); onCompleteRef.current = onComplete;
   useEffect(() => {
     if (selectAll.current) selectAll.current.indeterminate = selectedScenes.length > 0 && !allSelected;
   }, [selectedScenes.length, allSelected]);
   useEffect(() => () => downloadController.current?.abort(), []);
-  async function post(url: string, body: unknown, signal?: AbortSignal) {
-    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal });
+  async function post(url: string, body: unknown) {
+    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     const data = await response.json();
     if (!response.ok && data.code === "UPLOAD_VIDEO_TOO_LONG") throw new Error(zh ? "上传文件只支持 10 秒以内的完整单镜头片段。" : "File uploads support one complete shot up to 10 seconds.");
-    if (!response.ok && data.code === "ANALYSIS_QUOTE_CHANGED") { setQuote(null); throw new Error(zh ? "拆镜已完成，请重新获取分析报价，不会重复收拆镜费。" : "Splitting is complete. Get a new analysis quote without another splitting fee."); }
     if (!response.ok) throw new Error(data.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "可用积分不足，请先充值。" : "Not enough available credits. Please top up.") : data.code === "KIE_KEY_REQUIRED" ? (zh ? "请先配置所选来源的 KIE Key。" : "Configure the KIE key for this payment source first.") : (zh ? "暂时无法确认，请重试。任务结果不明确时，请勿重复提交。" : "Unable to confirm. Retry to check; do not resubmit an uncertain task."));
     return data;
   }
@@ -57,29 +55,9 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onSplitComplet
     if (!preparation) throw new Error(zh ? "请先读取视频信息。" : "Inspect the video first.");
     const controller = new AbortController();
     downloadController.current = controller;
-    setDownloading(true); setQuote(null);
+    setDownloading(true);
     try {
-      if (automaticSplit) {
-        const split = await post("/api/commercial/analysis", { action: "split", preparationId: preparation.id }, controller.signal);
-        if (split.state === "quoted") await post(`/api/commercial/tasks/${split.id}`, {}, controller.signal);
-        const deadline = Date.now() + 300000;
-        while (true) {
-          const response = await fetch(`/api/commercial/tasks/${split.id}`, { cache: "no-store", signal: controller.signal });
-          if (!response.ok) throw new Error(zh ? "暂时无法查询拆镜状态，请稍后重试。" : "Unable to check splitting. Please retry shortly.");
-          const result = await response.json();
-          if (result.state === "completed") {
-            setPreparation(current => current ? { ...current, paidSplitReusable: true, splitClips: result.splitClips } : current);
-            refreshWalletBalance();
-            if (!preparation.paidSplitReusable) onSplitComplete?.();
-            break;
-          }
-          if (result.state === "failed") throw new Error(zh ? "拆镜失败，积分已退回，可重试。" : "Splitting failed. Reserved credits were refunded; retry is available.");
-          if (result.state === "review" || Date.now() > deadline) throw new Error(zh ? "拆镜结果仍在确认，任务已保存，请稍后重试查询。" : "Splitting is still being checked. The task is saved; retry to check shortly.");
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          controller.signal.throwIfAborted();
-        }
-      }
-      return await fetch(`/api/commercial/analysis/${preparation.id}/shots/${encodeURIComponent(sceneId)}`, { cache: "no-store", signal: controller.signal });
+      return await fetch(`/api/commercial/analysis/${preparation.id}/shots/${encodeURIComponent(sceneId)}`, { method: "POST", cache: "no-store", signal: controller.signal });
     } finally { if (!controller.signal.aborted) setDownloading(false); }
   }
   async function next() {
@@ -140,11 +118,11 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onSplitComplet
               </label>
               <span className="text-xs text-muted-foreground">{zh ? "待分析" : "Not analyzed"}</span>
               </div>
-              <ShotDownloadButton zh={zh} sceneIndex={index + 1} disabled={busy || downloading} splitCredits={automaticSplit && !preparation.paidSplitReusable ? splitCredits(preparation.durationUs) : 0} onDownload={() => downloadShot(scene.id)} />
+              <ShotDownloadButton zh={zh} sceneIndex={index + 1} disabled={busy || downloading} onDownload={() => downloadShot(scene.id)} />
             </div>
             <p className="mt-1 text-sm text-muted-foreground">{(scene.startUs / 1000000).toFixed(2)}–{(scene.endUs / 1000000).toFixed(2)}s · {((scene.endUs - scene.startUs) / 1000000).toFixed(2)}s</p>
           </div>
-          <SceneVideoPreview key={preparation.splitClips?.find(item => item.id === scene.id)?.clipUrl || source.mediaUrl} mediaUrl={preparation.splitClips?.find(item => item.id === scene.id)?.clipUrl || source.mediaUrl} startUs={preparation.splitClips?.some(item => item.id === scene.id) ? 0 : scene.startUs} endUs={preparation.splitClips?.some(item => item.id === scene.id) ? scene.endUs - scene.startUs : scene.endUs} label={zh ? `镜头 ${index + 1} 预览` : `Shot ${index + 1} preview`} zh={zh} onPlay={(video) => {
+          <SceneVideoPreview mediaUrl={source.mediaUrl} startUs={scene.startUs} endUs={scene.endUs} label={zh ? `镜头 ${index + 1} 预览` : `Shot ${index + 1} preview`} zh={zh} onPlay={(video) => {
             if (playingPreview.current !== video) playingPreview.current?.pause();
             playingPreview.current = video;
           }} />

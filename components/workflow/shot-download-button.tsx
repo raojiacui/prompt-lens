@@ -3,12 +3,12 @@ import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export function ShotDownloadButton({ zh, sceneIndex, url, onDownload, disabled, splitCredits = 0 }: {
-  zh: boolean; sceneIndex: number; url?: string; onDownload?: () => Promise<Response>; disabled?: boolean; splitCredits?: number;
+export function ShotDownloadButton({ zh, sceneIndex, url, onDownload, disabled }: {
+  zh: boolean; sceneIndex: number; url?: string; onDownload?: () => Promise<Response>; disabled?: boolean;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const label = splitCredits ? (zh ? `拆镜并下载 · ${splitCredits} 积分` : `Split and download · ${splitCredits} credits`) : (zh ? "下载镜头" : "Download shot");
+  const label = zh ? "下载镜头" : "Download shot";
   async function download() {
     setBusy(true); setError("");
     try {

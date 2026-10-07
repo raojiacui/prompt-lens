@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { commercialConsumptionEnabled, prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnalysisRetry } from "@/lib/billing/commercial-analysis";
-import { quoteCommercialSplit } from "@/lib/billing/commercial-split";
 
 export const maxDuration = 300;
 export async function POST(request: NextRequest) {
@@ -12,7 +11,6 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   try {
     if (body?.action === "retry" && typeof body.taskId === "string") return NextResponse.json(await quoteCommercialAnalysisRetry(session.user.id, body.taskId));
-    if (body?.action === "split" && typeof body.preparationId === "string") return NextResponse.json(await quoteCommercialSplit(session.user.id, body.preparationId));
     if (body?.action === "prepare" && typeof body.projectId === "string" && typeof body.mediaUrl === "string") {
       return NextResponse.json(await prepareCommercialAnalysis(session.user.id, { projectId: body.projectId, mediaUrl: body.mediaUrl, mediaName: String(body.mediaName || "Video").slice(0, 200), automaticSplit: body.automaticSplit === true }));
     }

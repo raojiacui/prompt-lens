@@ -21,7 +21,6 @@ import { rewriteSceneBlueprint, analyzeSceneBlueprint } from "@/lib/workflow/sce
 import { assertOwnedUploadedVideo, isOwnedLinkedVideo, commercialMediaRequest } from "@/lib/billing/commercial-media";
 import { copyR2Object } from "@/lib/cloudflare/r2";
 import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnalysisRetry, quotedAnalysisModel, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
-import { quoteCommercialSplit } from "@/lib/billing/commercial-split";
 import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
@@ -552,66 +551,6 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await reviewCommercialRefund(userId, request.id, "reject", "Customer contacted and reviewed");
     await expect(updateCommercialRefundRequest(userId, row.id, "New reason", "contact")).rejects.toThrow("REFUND_ALREADY_REVIEWED");
     expect(refundAlipayTrade).not.toHaveBeenCalled();
-  });
-  async function linkedSplitPreparation() {
-    await grant();
-    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
-    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Download split shots" }).returning();
-    const scenes = [{ id: "1", startUs: 0, endUs: 2000000 }, { id: "2", startUs: 2000000, endUs: 10000000 }];
-    vi.mocked(isOwnedLinkedVideo).mockResolvedValueOnce(true);
-    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "b".repeat(64), durationUs: 10000000, bytes: 500, metadata: { duration: 10 }, scenes });
-    const preparation = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/source.mp4", mediaName: "source.mp4", automaticSplit: true });
-    const assets = { metadata: { duration: 10 }, scenes: scenes.map((scene, index) => ({ sceneIndex: index + 1, startTime: scene.startUs / 1e6, endTime: scene.endUs / 1e6, duration: (scene.endUs - scene.startUs) / 1e6, clipUrl: `https://example.com/shot-${index + 1}.mp4`, keyframeUrls: [`https://example.com/frame-${index + 1}.jpg`] })) };
-    return { project, preparation, assets };
-  }
-  it("exports all split shots once without a model key and reuses them for selected analysis", async () => {
-    const { project, preparation, assets } = await linkedSplitPreparation();
-    const split = await quoteCommercialSplit(userId, preparation.id);
-    expect(split.credits).toBe(2);
-    expect((await quoteCommercialSplit(userId, preparation.id)).id).toBe(split.id);
-    await confirmCommercialTask(userId, split.id);
-    await confirmCommercialTask(userId, split.id);
-    vi.mocked(commercialMediaRequest).mockResolvedValueOnce(assets);
-    await drain(split.id);
-    await runCommercialTask(split.id);
-    expect(await balance()).toMatchObject({ credits: 198, heldCredits: 0 });
-    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
-    expect(await quoteCommercialSplit(userId, preparation.id)).toMatchObject({ id: split.id, credits: 0, splitDelivered: true });
-    expect(await testDb.select().from(schema.projectAssets)).toHaveLength(5);
-    expect((await testDb.select().from(schema.projects)).find(row => row.id === project.id)?.status).toBe("draft");
-    expect((await testDb.select().from(schema.projects)).find(row => row.id === project.id)?.metadata).toMatchObject({ splitPreparationId: preparation.id });
-    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
-    const analysis = await quoteCommercialAnalysis(userId, { preparationId: preparation.id, sceneIds: ["2"], payer: "platform", model: "flash", outputLanguage: "zh" });
-    expect(analysis).toMatchObject({ credits: 5, splitCredits: 0, analysisCredits: 5 });
-    await confirmCommercialTask(userId, analysis.id);
-    vi.mocked(analyzeSceneBlueprint).mockResolvedValue({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Selected shot", metadata: { analysisProvider: "kie" } });
-    await drain(analysis.id);
-    expect(commercialMediaRequest).toHaveBeenCalledTimes(2);
-    expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(analyzeSceneBlueprint).mock.calls[0][0].scene.clipUrl).toBe(assets.scenes[1].clipUrl);
-    expect(await balance()).toMatchObject({ credits: 193, heldCredits: 0 });
-  });
-  it("refunds failed splitting and allows a new download attempt", async () => {
-    const { preparation } = await linkedSplitPreparation();
-    const split = await quoteCommercialSplit(userId, preparation.id);
-    await confirmCommercialTask(userId, split.id);
-    vi.mocked(commercialMediaRequest).mockRejectedValueOnce(new Error("worker unavailable"));
-    await drain(split.id);
-    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
-    expect((await testDb.select().from(schema.commercialTasks)).find(row => row.id === split.id)?.state).toBe("failed");
-    expect((await quoteCommercialSplit(userId, preparation.id)).id).not.toBe(split.id);
-    expect(await testDb.select().from(schema.projectAssets)).toHaveLength(0);
-  });
-  it("rejects an old combined quote after splitting was paid separately", async () => {
-    const { preparation, assets } = await linkedSplitPreparation();
-    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
-    const oldQuote = await quoteCommercialAnalysis(userId, { preparationId: preparation.id, sceneIds: ["1"], payer: "platform", model: "flash", outputLanguage: "zh" });
-    const split = await quoteCommercialSplit(userId, preparation.id);
-    await confirmCommercialTask(userId, split.id);
-    vi.mocked(commercialMediaRequest).mockResolvedValueOnce(assets);
-    await drain(split.id);
-    await expect(confirmCommercialTask(userId, oldQuote.id)).rejects.toThrow("ANALYSIS_QUOTE_CHANGED");
-    expect(await balance()).toMatchObject({ credits: 198, heldCredits: 0 });
   });
 
   it("rejects long local uploads and prevents switching the trusted source mode", async () => {

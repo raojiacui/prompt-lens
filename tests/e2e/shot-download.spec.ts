@@ -16,7 +16,7 @@ test.beforeAll(async ({}, info) => {
   sourceVideo = await readFile(source); shotVideo = await readFile(shot);
 });
 
-for (const width of [1440, 390]) test(`download split shot and reuse splitting fee ${width}`, async ({ page, context }) => {
+for (const width of [1440, 390]) test(`download split shot without billing ${width}`, async ({ page, context }) => {
   await page.setViewportSize({ width, height: 1000 });
   await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
   const projectId = "11111111-1111-4111-8111-111111111111";
@@ -24,7 +24,7 @@ for (const width of [1440, 390]) test(`download split shot and reuse splitting f
   const splitId = "33333333-3333-4333-8333-333333333333";
   const scenes = [{ id: "1", startUs: 0, endUs: 2000000 }, { id: "2", startUs: 2000000, endUs: 10000000 }];
   let confirmations = 0;
-  let paid = false;
+
   await page.route("**/fixtures/*.mp4*", async route => {
     const bytes = route.request().url().includes("source.mp4") ? sourceVideo : shotVideo;
     const range = /bytes=(\d+)-(\d*)/.exec(route.request().headers().range || "");
@@ -36,24 +36,17 @@ for (const width of [1440, 390]) test(`download split shot and reuse splitting f
     const path = new URL(route.request().url()).pathname;
     let body: unknown = {};
     if (path.includes("/auth/get-session")) body = { user: { id: "test", name: "Test", email: "test@example.com" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
-    else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, mode: "byok", hasUserKieKey: false, trial: { remaining: 0 }, commercial: { enabled: true, credits: paid ? 198 : 200, rewrites: 20 }, linkImports: { remaining: 10 } };
+    else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, mode: "byok", hasUserKieKey: false, trial: { remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 }, linkImports: { remaining: 10 } };
     else if (path === "/api/models") body = { models: [] };
-    else if (path === "/api/workflow/projects") body = route.request().method() === "POST" ? { project: { id: projectId } } : { projects: paid ? [{ id: projectId, title: "Saved split project", status: "draft", updatedAt: new Date().toISOString() }] : [] };
-    else if (path === `/api/workflow/projects/${projectId}`) body = {
-      project: { id: projectId, title: "Saved split project", status: "draft", metadata: {} }, versions: [], scenes: [], sceneVersions: [], allSceneVersions: [],
-      splitSource: { projectId, mediaUrl: "http://localhost:3000/fixtures/source.mp4", mediaName: "source.mp4", automaticSplit: true, preparation: { id: preparationId, durationUs: 10000000, scenes, paidSplitReusable: true, splitClips: [{ id: "2", clipUrl: "http://localhost:3000/fixtures/shot.mp4" }] } },
-    };
+    else if (path === "/api/workflow/projects") body = route.request().method() === "POST" ? { project: { id: projectId } } : { projects: [] };
+
     else if (path === "/api/media/resolve-link") body = { mediaUrl: "http://localhost:3000/fixtures/source.mp4", filename: "source.mp4", mediaType: "video", platform: "douyin", duration: 10 };
     else if (path === "/api/commercial/analysis") {
       const input = route.request().postDataJSON();
       if (input.action === "prepare") body = { id: preparationId, durationUs: 10000000, scenes };
-      else if (input.action === "split") body = { id: splitId, state: paid ? "completed" : "quoted", credits: paid ? 0 : 2 };
-      else body = { id: "quote", credits: 6, splitCredits: 0, analysisCredits: 6 };
-    } else if (path === `/api/commercial/tasks/${splitId}`) {
-      if (route.request().method() === "POST") { confirmations++; paid = true; }
-      body = { id: splitId, state: "completed", chargedCredits: 2, splitClips: [{ id: "2", clipUrl: "http://localhost:3000/fixtures/shot.mp4" }] };
-    } else if (path === `/api/commercial/analysis/${preparationId}/shots/2`) {
-      expect(paid).toBe(true);
+      else body = { id: "quote", credits: 8, splitCredits: 2, analysisCredits: 6 };
+    } else if (path.startsWith("/api/commercial/tasks/")) { confirmations++; body = {}; } else if (path === `/api/commercial/analysis/${preparationId}/shots/2`) {
+      expect(route.request().method()).toBe("POST");
       await route.fulfill({ contentType: "video/mp4", headers: { "Content-Disposition": 'attachment; filename="shot-02.mp4"' }, body: shotVideo }); return;
     }
     await route.fulfill({ json: body });
@@ -66,7 +59,7 @@ for (const width of [1440, 390]) test(`download split shot and reuse splitting f
   await panel.getByRole("button", { name: "读取视频信息" }).click();
   const card = panel.getByRole("article", { name: "镜头 2", exact: true });
   const downloadEvent = page.waitForEvent("download");
-  await card.getByRole("button", { name: "拆镜并下载 · 2 积分" }).click();
+  await card.getByRole("button", { name: "下载镜头" }).click();
   const download = await downloadEvent;
   expect(download.suggestedFilename()).toBe("shot-02.mp4");
   const bytes = await readFile((await download.path())!);
@@ -90,20 +83,14 @@ for (const width of [1440, 390]) test(`download split shot and reuse splitting f
   expect(media.duration).toBeCloseTo(8, 1);
   expect(media.pixels[2]).toBeGreaterThan(200);
   expect(media.pixels[0]).toBeLessThan(20);
-  expect(confirmations).toBe(1);
+  expect(confirmations).toBe(0);
   await expect(card.getByRole("button", { name: "下载镜头", exact: true })).toBeVisible();
   const secondDownload = page.waitForEvent("download");
   await card.getByRole("button", { name: "下载镜头", exact: true }).click();
   await secondDownload;
-  expect(confirmations).toBe(1);
+  expect(confirmations).toBe(0);
   await panel.getByRole("button", { name: "获取报价" }).click();
-  await expect(panel.getByText("拆镜 0 + 分析 6。确认后预留，按成功结果结算。", { exact: true })).toBeVisible();
+  await expect(panel.getByText("拆镜 2 + 分析 6。确认后预留，按成功结果结算。", { exact: true })).toBeVisible();
   await card.screenshot({ path: `test-results/download-shot-${width}.png` });
-  await page.reload();
-  await page.getByRole("button", { name: /Saved split project/ }).click();
-  const reopened = page.getByRole("region", { name: "镜头选择与费用" }).getByRole("article", { name: "镜头 2", exact: true });
-  const resumedDownload = page.waitForEvent("download");
-  await reopened.getByRole("button", { name: "下载镜头", exact: true }).click();
-  await resumedDownload;
-  expect(confirmations).toBe(1);
+
 });

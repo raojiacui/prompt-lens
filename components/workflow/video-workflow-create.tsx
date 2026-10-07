@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
-import { AnalysisQuotePanel, type AnalysisQuoteSource } from "@/components/payments/analysis-quote-panel";
+import { AnalysisQuotePanel } from "@/components/payments/analysis-quote-panel";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
@@ -347,7 +347,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
-  const [commercialSource, setCommercialSource] = useState<AnalysisQuoteSource | null>(null);
+  const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer: "platform" | "byok"; modelId: string } | null>(null);
   const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && creditStatus.mode !== "trial" && (mediaInputMode === "link" || mediaType !== "image"));
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
   const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
@@ -464,7 +464,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       return;
     }
     setBundle(data);
-    setCommercialSource(data.splitSource ? { ...data.splitSource, payer: analysisPayer, modelId: analysisModelValue, outputLanguage: analysisOutputLanguage } : null);
     setAnalysisTaskId(data.project?.status === "analyzing" && typeof data.project?.metadata?.analysisTaskId === "string" ? data.project.metadata.analysisTaskId : "");
     setLoading(data.project?.status === "analyzing" && typeof data.project?.metadata?.analysisTaskId === "string");
   }
@@ -485,13 +484,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         }
         setError("");
         if (["completed", "failed"].includes(data.state)) {
-          if (data.splitOnly) {
-            setAnalysisTaskId(""); setLoading(false); setAnalysisProgress(null); setProgress("");
-            await loadProject(data.projectId);
-            if (data.state === "failed") setError(locale === "zh" ? "拆镜失败，积分已退回，可重试。" : "Splitting failed. Reserved credits were refunded; retry is available.");
-            void loadProjects({ force: true }); void loadCreditStatus();
-            return;
-          }
           if (data.bundle) setBundle(data.bundle);
           setError(data.state === "failed" ? data.error || "分析失败，请检查 Key 后重试。" : data.partial ? "部分镜头分析失败，成功结果已保留，仅结算成功镜头。" : "");
           setAnalysisTaskId(""); setLoading(false); setAnalysisProgress(null);
@@ -500,7 +492,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           return;
         }
         const detail = data.totalScenes ? `已处理 ${data.completedScenes}/${data.totalScenes} 个镜头` : "正在准备素材";
-        setAnalysisProgress(data.splitOnly ? { phase: "analysis", percent: 0, indeterminate: true, label: locale === "zh" ? "正在拆镜" : "Splitting shots", detail: locale === "zh" ? "正在保存独立镜头片段" : "Saving independent shot clips" } : { phase: "analysis", percent: data.totalScenes ? 65 + Math.round(data.completedScenes / data.totalScenes * 30) : 60, label: "AI 分析", detail });
+        setAnalysisProgress({ phase: "analysis", percent: data.totalScenes ? 65 + Math.round(data.completedScenes / data.totalScenes * 30) : 60, label: "AI 分析", detail });
       } catch (error) {
         if (controller.signal.aborted) return;
         setError(error instanceof Error ? error.message : "查询暂时中断，正在重新连接。");
@@ -968,7 +960,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
         <div className="relative min-h-0">
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
-          {commercialSource ? <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onClose={() => { setCommercialSource(null); setProgress(""); }} onSplitComplete={() => { void loadCreditStatus(); void loadProjects({ force: true }); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} /> : !bundle ? (
+          {commercialSource ? <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onClose={() => { setCommercialSource(null); setProgress(""); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} /> : !bundle ? (
             loading && analysisProgress ? (
               <AnalysisProgressPanel progress={analysisProgress} />
             ) : (
@@ -1013,7 +1005,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                           {scene?.error ? <p className="mt-1 max-w-3xl text-xs text-amber-700">{scene.error}</p> : null}
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {projectMediaType === "video" && scene?.clipUrl && <ShotDownloadButton zh={locale === "zh"} sceneIndex={sceneVersion.sceneIndex} url={`/api/workflow/projects/${bundle.project.id}/shots/${scene.id}/download`} />}
                           <Button
                             size="sm"
                             variant="outline"
@@ -1035,6 +1026,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                           >
                             <Video className="mr-2 h-4 w-4" />{ui.recreate}
                           </Button>
+                          {projectMediaType === "video" && scene?.clipUrl && <ShotDownloadButton zh={locale !== "en"} sceneIndex={scene.sceneIndex} url={`/api/workflow/projects/${bundle.project.id}/shots/${scene.id}/download`} />}
                         </div>
                       </div>
 
