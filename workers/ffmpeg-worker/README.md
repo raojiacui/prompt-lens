@@ -145,3 +145,51 @@ one video is not independent-video validation or model training.
 These commands read the source files without uploading them or changing runtime
 defaults. Keep sample videos, marked projects, environments, and generated reports
 outside feature commits; the repository's `tmp/` directory is ignored.
+
+### Neural detector comparison (offline only)
+
+`scripts/neural-scene-benchmark.py` loads upstream TransNet V2, AutoShot, or
+OmniShotCut architectures with an explicitly supplied checkpoint. Install CPU
+PyTorch, torchvision, numpy, OpenCV, einops, huggingface-hub, and ffmpeg-python
+in an isolated environment, with FFmpeg on PATH. Clone the upstream repositories
+outside tracked source. No model or dependency is added to the deployed worker.
+
+```powershell
+python scripts/neural-scene-benchmark.py --model transnet --project path/to/markers.mlt --repo tmp/models/TransNetV2 --checkpoint path/to/weights.pth --output tmp/scene-evaluation/transnet.json --baseline tmp/scene-evaluation/report.json
+python scripts/neural-scene-benchmark.py --model autoshot --project path/to/markers.mlt --repo tmp/models/AutoShot --checkpoint path/to/ckpt_0_200_0.pth --output tmp/scene-evaluation/autoshot.json --baseline tmp/scene-evaluation/report.json
+python scripts/neural-scene-benchmark.py --model omni --project path/to/markers.mlt --repo tmp/models/OmniShotCut --checkpoint path/to/OmniShotCut_ckpt.pth --output tmp/scene-evaluation/omni.json --baseline tmp/scene-evaluation/report.json
+python tests/neural-scene-benchmark.test.py
+```
+
+Checkpoints are loaded with `weights_only=True` and strict architecture matching;
+OmniShotCut additionally allows its saved `argparse.Namespace`. Strict matching
+does not establish checkpoint provenance: record the source URL and immutable
+revision separately, especially for community-converted or mirrored weights.
+Reports record the architecture Git revision and checkpoint SHA-256. Do not use
+an unreviewed repository with executable model code.
+
+TransNet V2 and AutoShot use upstream 100-frame RGB windows at 48x27 resolution,
+25-frame edge padding, stride 50, and center 50-frame outputs. Both point and
+transition-span prediction heads are evaluated. Consecutive threshold-positive
+frames become one midpoint cut; the first result is the default point head
+(TransNet V2 threshold 0.5, AutoShot 0.296). Threshold selection uses only the
+first two thirds; keep the last third and additional videos for validation.
+
+The OmniShotCut adapter runs CPU tensors with the upstream validation transform,
+window decoder, and 10-frame overlap. Its complete checkpoint replaces backbone
+weights, so downloading a separate ImageNet checkpoint is disabled. Results
+include raw labeled boundaries, general-shot starts, and an experimental
+transition-midpoint interpretation excluding padding. These interpretations are
+not interchangeable with interval-based scores in the paper.
+
+An optional baseline report enables a **cached simulation**: retain first-pass
+cuts, and add candidates only inside shots longer than 15 seconds, at least
+0.6 seconds from existing cuts. This neither forces 15-second cuts nor measures
+cropped second-pass latency. `consensus_cuts` permits one vote per model and
+requires two agreeing models; ensemble experiments must use thresholds fixed
+before evaluating held-out data.
+
+TransVLM's official inference requires Python 3.12 and CUDA. It is not supported
+by this CPU benchmark. Do not substitute published scores for a local test or
+silently rent GPU resources. Source videos and annotations stay local; all
+weights, frame caches, and generated reports belong in ignored directories.
