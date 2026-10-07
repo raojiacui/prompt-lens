@@ -6,12 +6,14 @@ import sys
 from scenedetect import AdaptiveDetector, ContentDetector, detect
 
 
-def build_detector(name, threshold, adaptive_threshold, min_scene_len):
+def build_detector(name, threshold, adaptive_threshold, min_scene_len, min_content_val=15.0, window_width=2):
     if name == "content":
         return ContentDetector(threshold=threshold, min_scene_len=min_scene_len)
     return AdaptiveDetector(
         adaptive_threshold=adaptive_threshold,
         min_scene_len=min_scene_len,
+        min_content_val=min_content_val,
+        window_width=window_width,
     )
 
 
@@ -21,6 +23,8 @@ def main():
     parser.add_argument("--detector", choices=["adaptive", "content"], default="adaptive")
     parser.add_argument("--threshold", type=float, default=27.0)
     parser.add_argument("--adaptive-threshold", type=float, default=3.0)
+    parser.add_argument("--min-content-val", type=float, default=15.0)
+    parser.add_argument("--window-width", type=int, default=2)
     parser.add_argument("--min-scene-seconds", type=float, default=0.6)
     parser.add_argument("--fps", type=float, default=30.0)
     args = parser.parse_args()
@@ -31,6 +35,8 @@ def main():
         args.threshold,
         args.adaptive_threshold,
         min_scene_len,
+        args.min_content_val,
+        args.window_width,
     )
 
     scenes = detect(args.input, detector)
@@ -38,6 +44,8 @@ def main():
         "detector": args.detector,
         "threshold": args.threshold,
         "adaptiveThreshold": args.adaptive_threshold,
+        "minContentVal": args.min_content_val,
+        "windowWidth": args.window_width,
         "minSceneLenFrames": min_scene_len,
         "scenes": [
             {

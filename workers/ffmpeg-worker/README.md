@@ -117,3 +117,31 @@ The script loads .env.local, derives R2_ENDPOINT from R2_ACCOUNT_ID when needed,
 Set `FFMPEG_WORKER_URL=http://localhost:8080` in `.env.local` to use the local worker instead of a deployed version. The local startup script disables the commercial reconciliation scheduler, even if production scheduler settings exist in `.env.local`.
 
 The Dockerfile installs `scenedetect-headless` for `/breakdown`. Social-platform extraction is handled by the configured provider in the main app; this worker never receives the provider API key.
+
+## Scene detection evaluation
+
+The adaptive detector uses `PYSCENEDETECT_ADAPTIVE_THRESHOLD` (default 3),
+`PYSCENEDETECT_MIN_CONTENT_VAL` (default 15), and
+`PYSCENEDETECT_WINDOW_WIDTH` (default 2). The regular
+`PYSCENEDETECT_THRESHOLD` (default 27) only applies to the content detector.
+Commercial preview metadata includes `sceneDetection.provider` and
+`sceneDetection.detector` so fallback results can be distinguished from PySceneDetect.
+
+For local evaluation, install `scenedetect-headless` in an isolated Python environment
+and run from the repository root:
+
+```powershell
+python scripts/scene-detection-benchmark.py --project path/to/markers.mlt --output tmp/scene-evaluation/report.json
+python scripts/scene-detection-benchmark.py --project path/to/markers.mlt --output tmp/scene-evaluation/refinement.json --suite refinement
+python tests/scene-detection-benchmark.test.py
+```
+
+The Shotcut project must contain one untrimmed, normal-speed video at timeline zero
+with point markers. The video resource is resolved relative to the project file.
+Each detection can match at most one marker, within 0.5 seconds by default.
+The report includes missed and extra cuts, signed timing offsets, and a temporal
+holdout (last third) excluded from parameter selection. A temporal holdout from
+one video is not independent-video validation or model training.
+These commands read the source files without uploading them or changing runtime
+defaults. Keep sample videos, marked projects, environments, and generated reports
+outside feature commits; the repository's `tmp/` directory is ignored.

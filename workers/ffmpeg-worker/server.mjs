@@ -31,6 +31,8 @@ const PYSCENEDETECT_DETECTOR = ["adaptive", "content"].includes(process.env.PYSC
   : "adaptive";
 const PYSCENEDETECT_THRESHOLD = Number(process.env.PYSCENEDETECT_THRESHOLD || 27);
 const PYSCENEDETECT_ADAPTIVE_THRESHOLD = Number(process.env.PYSCENEDETECT_ADAPTIVE_THRESHOLD || 3);
+const PYSCENEDETECT_MIN_CONTENT_VAL = Number(process.env.PYSCENEDETECT_MIN_CONTENT_VAL || 15);
+const PYSCENEDETECT_WINDOW_WIDTH = Number(process.env.PYSCENEDETECT_WINDOW_WIDTH || 2);
 const MAX_RESOLVE_SECONDS = Number(process.env.MAX_RESOLVE_SECONDS || 600);
 const MAX_RESOLVE_BYTES = Number(process.env.MAX_RESOLVE_BYTES || 1024 * 1024 * 1024);
 const MUSIC_RECOGNITION_PREVIEW_SECONDS = Number(process.env.MUSIC_RECOGNITION_PREVIEW_SECONDS || 12);
@@ -244,6 +246,8 @@ async function detectSceneCutsWithPySceneDetect(inputPath, metadata) {
       "--detector", PYSCENEDETECT_DETECTOR,
       "--threshold", String(PYSCENEDETECT_THRESHOLD),
       "--adaptive-threshold", String(PYSCENEDETECT_ADAPTIVE_THRESHOLD),
+      "--min-content-val", String(PYSCENEDETECT_MIN_CONTENT_VAL),
+      "--window-width", String(PYSCENEDETECT_WINDOW_WIDTH),
       "--min-scene-seconds", String(MIN_SCENE_SECONDS),
       "--fps", String(metadata.fps || 30),
     ]);
@@ -512,7 +516,7 @@ async function handleCommercialMedia(req, res) {
       // Real detected shots, without the legacy worker's arbitrary eight-second chunks.
       const cuts = [0, ...new Set(detection.cuts.map((n) => Math.round(n * 1000000)).filter((n) => n > 0 && n < durationUs)), durationUs].sort((a, b) => a - b);
       const scenes = cuts.slice(0, -1).map((startUs, index) => ({ id: String(index + 1), startUs, endUs: cuts[index + 1] }));
-      return json(res, 200, { sourceHash, durationUs, bytes, metadata, scenes });
+      return json(res, 200, { sourceHash, durationUs, bytes, metadata: { ...metadata, sceneDetection: body.automaticSplit === true ? { provider: detection.provider, detector: detection.detector } : null }, scenes });
     }
     if (body.sourceHash !== sourceHash) throw new Error("Source changed after quote");
     if (!Array.isArray(body.scenes) || !body.scenes.length) throw new Error("Invalid scene selection");
