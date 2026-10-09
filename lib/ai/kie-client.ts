@@ -19,15 +19,27 @@ export async function requestKieChat(input: {
   if (!/^[a-zA-Z0-9._-]+$/.test(input.modelId)) throw new KieRequestError("Invalid KIE chat model");
   const baseUrl = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
   // Do not retry inference automatically: a lost response may already have been billed.
-  const response = await fetch(`${baseUrl}/${input.modelId}/v1/chat/completions`, {
-    method: "POST",
-    signal: AbortSignal.timeout(input.timeoutMs ?? 90000),
-    headers: { Authorization: `Bearer ${input.apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ messages: input.messages }),
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout>;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new KieRequestError("KIE_ANALYSIS_TIMEOUT: model response exceeded the request deadline"));
+      controller.abort();
+    }, input.timeoutMs ?? 90000);
   });
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) throw new KieRequestError(payload?.error?.message || payload?.msg || `KIE API error (${response.status})`, response.status);
-  const text = getKieResponseText(payload);
-  if (!text) throw new KieRequestError("KIE API returned an empty result", response.status);
-  return text;
+  try {
+    // Bound both connection and body reading even if a fetch wrapper ignores abort.
+    return await Promise.race([deadline, (async () => {
+      const response = await fetch(`${baseUrl}/${input.modelId}/v1/chat/completions`, {
+        method: "POST", cache: "no-store", signal: controller.signal,
+        headers: { Authorization: `Bearer ${input.apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: input.messages }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || (payload?.code != null && Number(payload.code) !== 200)) throw new KieRequestError(payload?.error?.message || payload?.msg || `KIE API error (${response.status})`, response.status);
+      const text = getKieResponseText(payload);
+      if (!text) throw new KieRequestError("KIE API returned an empty result", response.status);
+      return text;
+    })()]);
+  } finally { clearTimeout(timer!); }
 }

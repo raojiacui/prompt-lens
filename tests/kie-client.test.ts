@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { requestKieChat } from "@/lib/ai/kie-client";
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("KIE transport", () => {
   const input = { apiKey: "test", modelId: "gemini-3-8-flash-openai", messages: [{ role: "user", content: "test" }] };
   it("uses the model-specific endpoint and normalizes the response", async () => {
@@ -19,5 +19,20 @@ describe("KIE transport", () => {
   it("rejects successful HTTP responses with no analysis text", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("{}")));
     await expect(requestKieChat(input)).rejects.toThrow("empty result");
+  });
+  it.each(["connection", "body"])("bounds a stalled %s without repeating inference", async stage => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn(async () => stage === "connection" ? await new Promise<Response>(() => {}) : { ok: true, status: 200, json: () => new Promise(() => {}) });
+    vi.stubGlobal("fetch", fetchMock);
+    const request = requestKieChat({ ...input, timeoutMs: 100 });
+    const rejected = expect(request).rejects.toThrow("KIE_ANALYSIS_TIMEOUT");
+    await vi.advanceTimersByTimeAsync(101);
+    await rejected;
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+  it("recognizes a provider error inside an HTTP 200 response", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ code: 500, msg: "upstream unavailable" }))));
+    await expect(requestKieChat(input)).rejects.toThrow("upstream unavailable");
   });
 });

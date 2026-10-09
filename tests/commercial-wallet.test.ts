@@ -462,6 +462,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
     expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
     expect((await testDb.select().from(schema.sceneVersions))[0].generationPrompt).toBe("");
+    expect((await testDb.select().from(schema.sceneVersions))[0].metadata).toMatchObject({ failureCode: "ANALYSIS_INTERRUPTED" });
     expect((await testDb.select().from(schema.projects))[0].status).toBe("failed");
     expect((await quoteCommercialAnalysisRetry(userId, quote.id)).credits).toBe(quote.credits);
   });
@@ -490,6 +491,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.mocked(analyzeSceneBlueprint).mockImplementationOnce(() => { started(); return new Promise(resolve => { deliver = resolve; }); });
     const running = runCommercialTask(taskId);
     await entered;
+    expect((await testDb.select().from(schema.commercialTasks)).find(t => t.id === taskId)?.result).toMatchObject({ executionPhase: "model_request", activeSceneId: "1" });
     await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '7 minutes' WHERE id = $1", [taskId]);
     await recoverCommercialAnalysisTasks();
     deliver({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Late result", metadata: { analysisProvider: "kie" } });
