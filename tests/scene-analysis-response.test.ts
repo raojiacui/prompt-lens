@@ -27,7 +27,7 @@ describe("scene analysis response compatibility", () => {
     expect(result.generationPrompt).toContain("牛仔猫");
     expect(result.metadata?.analysisProvider).toBe("kie");
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(fetchMock.mock.calls[0][1]!.body as string).messages[0].content).toContain("story must be an object");
+    expect(JSON.parse(fetchMock.mock.calls[0][1]!.body as string).systemInstruction.parts[0].text).toContain("story must be an object");
   });
   it("keeps structured story fields and server timing", async () => {
     mock({ ...response, story: { summary: response.story, beat: "停留" } });

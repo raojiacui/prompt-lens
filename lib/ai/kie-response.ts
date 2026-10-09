@@ -12,9 +12,9 @@ export function getKieResponseText(payload: unknown): string | null {
   }
   const candidates = data.candidates;
   if (Array.isArray(candidates)) {
-    const parts = (candidates[0] as { content?: { parts?: Array<{ text?: unknown }> } } | undefined)?.content?.parts;
+    const parts = (candidates[0] as { content?: { parts?: Array<{ text?: unknown; thought?: boolean }> } } | undefined)?.content?.parts;
     if (Array.isArray(parts)) {
-      const text = parts.map((part) => typeof part.text === "string" ? part.text : "").join("");
+      const text = parts.map((part) => !part.thought && typeof part.text === "string" ? part.text : "").join("");
       if (text.trim()) return text;
     }
   }
