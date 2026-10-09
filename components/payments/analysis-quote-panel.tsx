@@ -49,9 +49,20 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
   useEffect(() => () => downloadController.current?.abort(), []);
   async function post(url: string, body: unknown) {
     const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const data = await response.json();
+    const data = await response.json().catch(() => null);
+    const action = (body as { action?: string })?.action;
+    const invalidResponse = () => new Error(url.includes("/tasks/")
+      ? (zh ? "确认分析的响应中断，提交结果尚未确认。再次点击会核对同一任务，不会新建任务。" : "Confirmation response was interrupted. Retry to check the same task; no new task will be created.")
+      : action === "prepare"
+        ? (zh ? "读取视频信息时服务返回不完整，请重试。" : "The video inspection response was incomplete. Please retry.")
+        : (zh ? "费用报价响应不完整，请重试，尚未开始分析。" : "The cost response was incomplete. Please retry; analysis has not started."));
+    if (!data || typeof data !== "object" || Array.isArray(data)) throw invalidResponse();
     if (!response.ok && data.code === "UPLOAD_VIDEO_TOO_LONG") throw new Error(zh ? "上传文件只支持 10 秒以内的完整单镜头片段。" : "File uploads support one complete shot up to 10 seconds.");
     if (!response.ok) throw new Error(data.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "可用积分不足，请先充值。" : "Not enough available credits. Please top up.") : data.code === "KIE_KEY_REQUIRED" ? (zh ? "请先配置所选来源的 KIE Key。" : "Configure the KIE key for this payment source first.") : (zh ? "暂时无法确认，请重试。任务结果不明确时，请勿重复提交。" : "Unable to confirm. Retry to check; do not resubmit an uncertain task."));
+    if (typeof data.id !== "string" || !data.id) throw invalidResponse();
+    if (action === "prepare" && (!Array.isArray(data.scenes) || !data.scenes.length || !Number.isSafeInteger(data.durationUs) || data.durationUs <= 0)) throw invalidResponse();
+    if (action === "quote" && (![data.credits, data.splitCredits, data.analysisCredits].every(value => Number.isSafeInteger(value) && value >= 0))) throw invalidResponse();
+    if (url.includes("/tasks/") && typeof data.state !== "string") throw invalidResponse();
     return data;
   }
   async function downloadShot(sceneId: string) {
@@ -133,7 +144,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
     return () => { controller.abort(); clearTimeout(timer); };
   }, [taskId, zh]);
   return <section aria-labelledby="analysis-quote-title" className="min-h-0 flex-1 overflow-y-auto p-1 text-foreground">
-    <header className="flex items-start justify-between gap-4"><h2 id="analysis-quote-title" className="text-xl font-semibold">{zh ? "镜头选择与费用" : "Shots and analysis cost"}</h2>{!taskId && <button disabled={busy} onClick={onClose} title={zh ? "返回素材选择" : "Back to reference"} aria-label={zh ? "返回素材选择" : "Back to reference"} className="flex h-8 w-8 shrink-0 items-center justify-center disabled:opacity-50"><X size={18} /></button>}</header>
+    <header className="flex items-start justify-between gap-4"><h2 id="analysis-quote-title" className="text-xl font-semibold">{zh ? "镜头选择与费用" : "Shots and analysis cost"}</h2>{!taskId && <button disabled={busy || confirmationStarted} onClick={onClose} title={zh ? "返回素材选择" : "Back to reference"} aria-label={zh ? "返回素材选择" : "Back to reference"} className="flex h-8 w-8 shrink-0 items-center justify-center disabled:opacity-50"><X size={18} /></button>}</header>
     <p className="mt-3 truncate text-sm text-muted-foreground">{source.mediaName}</p>
     {!taskId && <>
       <p className="mt-3 text-sm text-muted-foreground">{modelName} · {payer === "platform" ? (zh ? "平台积分" : "Platform credits") : (zh ? "自带 Key" : "Own key")}</p>

@@ -25,6 +25,10 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     const totalCredits = quoteAnalysis(pricing).credits;
     const singleCredits = quoteAnalysis({ ...pricing, scenes: scenes.slice(0, 1) }).credits;
     let confirmations = 0;
+    const interruptedResponses = locale === "zh" && width === 390 && seconds === 10;
+    let prepareRequests = 0;
+    let quoteRequests = 0;
+    const confirmedIds: string[] = [];
     let quoteRequest: Record<string, unknown> | undefined;
     let failPreview = false;
     await page.route("**/video.mp4*", async route => {
@@ -51,10 +55,21 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
       else if (path === "/api/media/resolve-link") body = { mediaUrl: "http://localhost:3000/fixtures/video.mp4", filename: "linked-video.mp4", mediaType: "video", platform: "douyin", duration: seconds, metadata: { duration: seconds } };
       else if (path === "/api/commercial/analysis") {
         const data = route.request().postDataJSON();
+        if (data.action === "prepare") {
+          prepareRequests++;
+          if (interruptedResponses && prepareRequests === 1) { await route.fulfill({ status: 200, body: "" }); return; }
+        } else {
+          quoteRequests++;
+          if (interruptedResponses && quoteRequests === 1) { await route.fulfill({ status: 200, contentType: "application/json", body: '{"id":' }); return; }
+        }
         if (data.action === "prepare") body = { id: "preview", durationUs: pricing.sourceDurationUs, scenes };
         else { quoteRequest = data; body = { id: taskId, ...quoteAnalysis({ ...pricing, scenes: scenes.filter(s => data.sceneIds.includes(s.id)) }) }; }
       } else if (path === `/api/commercial/tasks/${taskId}`) {
-        if (route.request().method() === "POST") confirmations++;
+        if (route.request().method() === "POST") {
+          confirmations++;
+          confirmedIds.push(path.split("/").pop()!);
+          if (interruptedResponses && confirmations === 1) { await route.fulfill({ status: 200, body: "" }); return; }
+        }
         body = { id: taskId, state: "running", phase: "analyzing", totalScenes: scenes.length, completedScenes: 1, credits: 8 };
       }
       await route.fulfill({ json: body });
@@ -76,6 +91,13 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     await actionRow.getByRole("button").click();
     const panel = page.getByRole("region", { name: locale === "zh" ? "镜头选择与费用" : "Shots and analysis cost" });
     await expect(panel).toBeVisible();
+    if (interruptedResponses) {
+      await expect(panel.getByRole("alert")).toContainText("读取视频信息时服务返回不完整");
+      await panel.getByRole("button", { name: "重试", exact: true }).click();
+      await expect(panel.getByRole("alert")).toContainText("费用报价响应不完整");
+      expect(confirmations).toBe(0);
+      await panel.getByRole("button", { name: "重试", exact: true }).click();
+    }
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(panel.getByRole("combobox")).toHaveCount(0);
     await expect(panel.getByRole("link")).toHaveCount(0);
@@ -157,7 +179,16 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.x + box!.width).toBeLessThanOrEqual(width);
     await panel.screenshot({ path: `test-results/analysis-quote-${locale}-${width}-${seconds}s.png` });
     await panel.getByRole("button", { name: locale === "zh" ? `确认分析 · ${totalCredits} 积分` : `Confirm analysis · ${totalCredits} credits` }).click();
-    await expect.poll(() => confirmations).toBe(1);
+    if (interruptedResponses) {
+      await expect(panel.getByRole("alert")).toContainText("确认分析的响应中断");
+      await expect(first).toBeDisabled();
+      await expect(panel.getByRole("button", { name: "返回素材选择" })).toBeDisabled();
+      const quotesBeforeRetry = quoteRequests;
+      await panel.getByRole("button", { name: `确认分析 · ${totalCredits} 积分` }).click();
+      await expect.poll(() => confirmations).toBe(2);
+      expect(confirmedIds).toEqual([taskId, taskId]);
+      expect(quoteRequests).toBe(quotesBeforeRetry);
+    } else await expect.poll(() => confirmations).toBe(1);
     const progress = panel.getByTestId("analysis-task-progress");
     await expect(progress.getByRole("progressbar")).toHaveAttribute("aria-valuenow", String(20 + Math.floor(70 / scenes.length)));
     await expect(progress).toContainText(locale === "zh" ? `已处理 1/${scenes.length} 个镜头` : `1/${scenes.length} shots processed`);
