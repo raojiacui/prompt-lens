@@ -4,17 +4,17 @@ import { requestKieChat } from "@/lib/ai/kie-client";
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("KIE transport", () => {
   const input = { apiKey: "test", modelId: "gemini-3-8-flash-openai", messages: [{ role: "user", content: "test" }] };
-  it("uses the native Gemini 3.8 endpoint and normalizes the response", async () => {
+  it.each(["3-5", "3-6", "3-7", "3-8"])("uses the native Gemini %s endpoint and normalizes the response", async version => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "answer" }] } }] })));
     vi.stubGlobal("fetch", fetchMock);
-    expect(await requestKieChat(input)).toBe("answer");
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/gemini/v1/models/gemini-3-8-flash:streamGenerateContent"), expect.objectContaining({ body: JSON.stringify({ stream: true, contents: [{ role: "user", parts: [{ text: "test" }] }] }) }));
+    expect(await requestKieChat({ ...input, modelId: `gemini-${version}-flash-openai` })).toBe("answer");
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/gemini/v1/models/gemini-${version}-flash:streamGenerateContent`), expect.objectContaining({ body: JSON.stringify({ stream: true, contents: [{ role: "user", parts: [{ text: "test" }] }] }) }));
   });
   it("keeps other models on their documented compatibility endpoints", async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: "answer" } }] })));
     vi.stubGlobal("fetch", fetchMock);
-    expect(await requestKieChat({ ...input, modelId: "gemini-2.5-flash" })).toBe("answer");
-    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/gemini-2.5-flash/v1/chat/completions"), expect.objectContaining({ body: JSON.stringify({ messages: input.messages }) }));
+    expect(await requestKieChat({ ...input, modelId: "gpt-5-2" })).toBe("answer");
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/gpt-5-2/v1/chat/completions"), expect.objectContaining({ body: JSON.stringify({ messages: input.messages }) }));
   });
   it("converts image and system messages and joins streamed answer chunks without thoughts", async () => {
     const events = [

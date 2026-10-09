@@ -146,7 +146,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     category: "analysis",
     provider: "kie",
     kieModelId: "gemini-2.5-flash",
-    enabled: true,
+    enabled: false,
     capabilities: ["text", "image", "video"],
     speedLevel: 5,
     qualityLevel: 4,

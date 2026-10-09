@@ -70,9 +70,10 @@ export async function requestKieChat(input: {
   if (!input.apiKey) throw new KieRequestError("KIE API Key is not configured");
   if (!/^[a-zA-Z0-9._-]+$/.test(input.modelId)) throw new KieRequestError("Invalid KIE chat model");
   const baseUrl = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
-  // Use the working native 3.8 route instead of its failing compatibility route.
-  const nativeGemini = input.modelId === "gemini-3-8-flash-openai" || input.modelId === "gemini-3-8-flash";
-  const endpoint = nativeGemini ? "/gemini/v1/models/gemini-3-8-flash:streamGenerateContent" : `/${input.modelId}/v1/chat/completions`;
+  // Preserve stored model IDs while using the documented native Gemini protocol.
+  const nativeGemini = /^gemini-3-[5678]-flash(?:-openai)?$/.test(input.modelId);
+  const nativeModelId = input.modelId.replace(/-openai$/, "");
+  const endpoint = nativeGemini ? `/gemini/v1/models/${nativeModelId}:streamGenerateContent` : `/${input.modelId}/v1/chat/completions`;
   const body = nativeGemini ? nativeGeminiBody(input.messages) : { messages: input.messages };
   // Do not retry inference automatically: a lost response may already have been billed.
   const controller = new AbortController();
