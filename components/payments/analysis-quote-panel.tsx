@@ -54,8 +54,8 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
     const invalidResponse = () => new Error(url.includes("/tasks/")
       ? (zh ? "确认分析的响应中断，提交结果尚未确认。再次点击会核对同一任务，不会新建任务。" : "Confirmation response was interrupted. Retry to check the same task; no new task will be created.")
       : action === "prepare"
-        ? (zh ? "读取视频信息时服务返回不完整，请重试。" : "The video inspection response was incomplete. Please retry.")
-        : (zh ? "费用报价响应不完整，请重试，尚未开始分析。" : "The cost response was incomplete. Please retry; analysis has not started."));
+        ? (zh ? "读取视频信息时服务返回不完整。" : "The video inspection response was incomplete.")
+        : (zh ? "费用报价响应不完整，尚未开始分析。" : "The cost response was incomplete; analysis has not started."));
     if (!data || typeof data !== "object" || Array.isArray(data)) throw invalidResponse();
     if (!response.ok && data.code === "UPLOAD_VIDEO_TOO_LONG") throw new Error(zh ? "上传文件只支持 10 秒以内的完整单镜头片段。" : "File uploads support one complete shot up to 10 seconds.");
     if (!response.ok) throw new Error(data.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "可用积分不足，请先充值。" : "Not enough available credits. Please top up.") : data.code === "KIE_KEY_REQUIRED" ? (zh ? "请先配置所选来源的 KIE Key。" : "Configure the KIE key for this payment source first.") : (zh ? "暂时无法确认，请重试。任务结果不明确时，请勿重复提交。" : "Unable to confirm. Retry to check; do not resubmit an uncertain task."));
@@ -180,7 +180,6 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
       <div className="mt-5 flex gap-3">
         <button disabled={busy || downloading || preparing || quoting || !quote} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : (zh ? "确认分析" : "Confirm analysis")}</button>
       </div>
-      {error && !confirmationStarted && <button disabled={preparing || quoting} onClick={() => setRefresh(value => value + 1)} className="mt-3 min-h-9 text-sm underline">{zh ? "重试" : "Retry"}</button>}
     </>}
     {taskId && <AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} />}
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
