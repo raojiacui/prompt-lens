@@ -10,6 +10,7 @@ import { randomUUID, createHash } from "node:crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { downloadStreamsInParallel } from "./parallel-download.mjs";
 import { splitLongScenes } from "./scene-segments.mjs";
+import { fetchMedia } from "./media-fetch.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
 const WORKER_SECRET = process.env.WORKER_SECRET || process.env.FFMPEG_WORKER_SECRET || "";
@@ -113,7 +114,7 @@ function mediaHeaders(value) {
 
 async function download(url, target, maxBytes = Number.POSITIVE_INFINITY, headers, parentSignal) {
   const signal = parentSignal ? AbortSignal.any([parentSignal, AbortSignal.timeout(10 * 60 * 1000)]) : AbortSignal.timeout(10 * 60 * 1000);
-  const response = await fetch(url, { headers: mediaHeaders(headers), signal });
+  const response = await fetchMedia(url, { headers: mediaHeaders(headers), signal });
   if (!response.ok || !response.body) throw new Error(`Download failed: ${response.status}`);
   let bytes = 0;
   const limiter = new Transform({ transform(chunk, _encoding, callback) {
