@@ -4,6 +4,11 @@ import { buildKIEJobPayload } from "@/lib/ai/adapters/kie-video";
 import { buildCommercialGenerationPayload } from "@/lib/billing/commercial-generation";
 
 describe("removed model choices", () => {
+  it.each(["analysis-gemini-2-5-flash", "gemini-2.5-flash"])("removes %s from analysis choices and routing", modelId => {
+    expect(getModelById(modelId)).toBeUndefined();
+    expect(listModels("analysis").some(model => model.id === modelId || model.kieModelId === modelId)).toBe(false);
+    expect(() => resolveModelSelection("analysis", { mode: "manual", modelId })).toThrow();
+  });
   it.each(["analysis-gemini-2-5-pro", "gemini-2.5-pro", "grok-imagine-text-video", "grok-imagine/text-to-video", "grok-imagine-video-1-5-preview", "happyhorse-video-edit", "happyhorse/video-edit", "kling-omni-transform", "kling-omni/transformation", "kling-3.0-omni/transformation"])("excludes %s from the catalog and manual routing", modelId => {
     expect(getModelById(modelId)).toBeUndefined();
     expect(() => resolveModelSelection("analysis", { mode: "manual", modelId })).toThrow();
