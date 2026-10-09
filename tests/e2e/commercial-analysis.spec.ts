@@ -26,6 +26,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     const singleCredits = quoteAnalysis({ ...pricing, scenes: scenes.slice(0, 1) }).credits;
     let confirmations = 0;
     const interruptedResponses = locale === "zh" && width === 390 && seconds === 10;
+    const exhaustedQuoteRetries = locale === "zh" && width === 1440 && seconds === 10;
     let quoteRequests = 0;
     const confirmedIds: string[] = [];
     let quoteRequest: Record<string, unknown> | undefined;
@@ -57,6 +58,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
         if (data.action !== "prepare") {
           quoteRequests++;
           if (interruptedResponses && quoteRequests === 1) { await route.fulfill({ status: 200, contentType: "application/json", body: '{"id":' }); return; }
+          if (exhaustedQuoteRetries && quoteRequests <= 3) { await route.fulfill({ status: 503, json: { code: "ANALYSIS_QUOTE_UNAVAILABLE" } }); return; }
         }
         if (data.action === "prepare") body = { id: "preview", durationUs: pricing.sourceDurationUs, scenes };
         else { quoteRequest = data; body = { id: taskId, ...quoteAnalysis({ ...pricing, scenes: scenes.filter(s => data.sceneIds.includes(s.id)) }) }; }
@@ -88,11 +90,19 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     const panel = page.getByRole("region", { name: locale === "zh" ? "镜头选择与费用" : "Shots and analysis cost" });
     await expect(panel).toBeVisible();
     if (interruptedResponses) {
-      await expect(panel.getByRole("alert")).toContainText("费用报价响应不完整");
+      await expect.poll(() => quoteRequests).toBe(2);
       expect(confirmations).toBe(0);
       await expect(panel.getByRole("button", { name: "重试", exact: true })).toHaveCount(0);
-      await panel.getByRole("checkbox", { name: "全选", exact: true }).uncheck();
-      await panel.getByRole("checkbox", { name: "全选", exact: true }).check();
+      await expect(panel.getByRole("alert")).toHaveCount(0);
+    }
+    if (exhaustedQuoteRetries) {
+      const refreshCost = panel.getByRole("button", { name: "重新获取费用", exact: true });
+      await expect(refreshCost).toBeEnabled();
+      expect(quoteRequests).toBe(3);
+      expect(confirmations).toBe(0);
+      await refreshCost.click();
+      await expect.poll(() => quoteRequests).toBe(4);
+      expect(confirmations).toBe(0);
     }
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(panel.getByRole("combobox")).toHaveCount(0);

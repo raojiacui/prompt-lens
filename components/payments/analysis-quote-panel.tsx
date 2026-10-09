@@ -9,6 +9,10 @@ import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
 import { AnalysisTaskProgress } from "./analysis-task-progress";
 
 type AnalysisPreparation = { id: string; scenes: SceneInterval[]; durationUs: number };
+
+class AnalysisRequestError extends Error {
+  constructor(message: string, readonly code?: string, readonly retryable = false, readonly rejected = false) { super(message); }
+}
 type AnalysisQuoteSource = { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string };
 
 export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: AnalysisQuoteSource; onClose: () => void; onComplete: (bundle: unknown) => void }) {
@@ -48,17 +52,20 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
   }, [selectedScenes.length, allSelected]);
   useEffect(() => () => downloadController.current?.abort(), []);
   async function post(url: string, body: unknown) {
-    const response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const data = await response.json().catch(() => null);
     const action = (body as { action?: string })?.action;
-    const invalidResponse = () => new Error(url.includes("/tasks/")
+    const invalidResponse = () => new AnalysisRequestError(url.includes("/tasks/")
       ? (zh ? "确认分析的响应中断，提交结果尚未确认。再次点击会核对同一任务，不会新建任务。" : "Confirmation response was interrupted. Retry to check the same task; no new task will be created.")
       : action === "prepare"
         ? (zh ? "读取视频信息时服务返回不完整。" : "The video inspection response was incomplete.")
-        : (zh ? "费用报价响应不完整，尚未开始分析。" : "The cost response was incomplete; analysis has not started."));
+        : (zh ? "费用报价响应不完整，尚未开始分析。" : "The cost response was incomplete; analysis has not started."), undefined, true);
+    let response: Response;
+    try {
+      response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(action === "prepare" ? 270000 : 30000) });
+    } catch { throw invalidResponse(); }
+    const data = await response.json().catch(() => null);
     if (!data || typeof data !== "object" || Array.isArray(data)) throw invalidResponse();
     if (!response.ok && data.code === "UPLOAD_VIDEO_TOO_LONG") throw new Error(zh ? "上传文件只支持 10 秒以内的完整单镜头片段。" : "File uploads support one complete shot up to 10 seconds.");
-    if (!response.ok) throw new Error(data.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "可用积分不足，请先充值。" : "Not enough available credits. Please top up.") : data.code === "KIE_KEY_REQUIRED" ? (zh ? "请先配置所选来源的 KIE Key。" : "Configure the KIE key for this payment source first.") : (zh ? "暂时无法确认，请重试。任务结果不明确时，请勿重复提交。" : "Unable to confirm. Retry to check; do not resubmit an uncertain task."));
+    if (!response.ok) throw new AnalysisRequestError(data.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "可用积分不足，请先充值。" : "Not enough available credits. Please top up.") : data.code === "KIE_KEY_REQUIRED" ? (zh ? "请先配置所选来源的 KIE Key。" : "Configure the KIE key for this payment source first.") : data.code === "QUOTE_EXPIRED" ? (zh ? "报价已过期，请重新获取费用。" : "This quote has expired. Refresh the cost.") : (zh ? "请求暂未完成，尚未确认的任务不会自动重复提交。" : "The request did not complete. Unconfirmed tasks will not be resubmitted automatically."), data.code, response.status >= 500, response.status >= 400 && response.status < 500);
     if (typeof data.id !== "string" || !data.id) throw invalidResponse();
     if (action === "prepare" && (!Array.isArray(data.scenes) || !data.scenes.length || !Number.isSafeInteger(data.durationUs) || data.durationUs <= 0)) throw invalidResponse();
     if (action === "quote" && (![data.credits, data.splitCredits, data.analysisCredits].every(value => Number.isSafeInteger(value) && value >= 0))) throw invalidResponse();
@@ -93,14 +100,27 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
     setQuote(null);
     if (!selected.length) { setQuoting(false); return; }
     setQuoting(true); setError("");
-    const timer = setTimeout(() => {
-      void post("/api/commercial/analysis", { action: "quote", preparationId: preparation.id, sceneIds: selected, payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok", model, modelId: payer === "byok" ? byokModel : undefined, outputLanguage: source.outputLanguage })
-        .then(data => { if (!cancelled) setQuote(data); })
-        .catch(e => { if (!cancelled) setError(e instanceof Error ? e.message : "Error"); })
-        .finally(() => { if (!cancelled) setQuoting(false); });
-    }, 300);
+    let timer: ReturnType<typeof setTimeout>;
+    async function loadQuote(attempt = 0) {
+      try {
+        const data = await post("/api/commercial/analysis", { action: "quote", preparationId: preparation!.id, sceneIds: selected, payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok", model, modelId: payer === "byok" ? byokModel : undefined, outputLanguage: source.outputLanguage });
+        if (!cancelled) { setQuote(data); setQuoting(false); }
+      } catch (e) {
+        if (cancelled) return;
+        // Only recover unpaid quotes; never retry model inference here.
+        if (e instanceof AnalysisRequestError && e.retryable && attempt < 2) {
+          timer = setTimeout(() => void loadQuote(attempt + 1), 1000 * (attempt + 1));
+          return;
+        }
+        setError(e instanceof Error ? e.message : "Error"); setQuoting(false);
+        if (e instanceof AnalysisRequestError && e.code === "QUOTE_EXPIRED") {
+          preparationRequest.current = null; setPreparation(null);
+        }
+      }
+    }
+    timer = setTimeout(() => void loadQuote(), 300);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [preparation, selectionKey, refresh, taskId, confirmationStarted, payer, byokModel, automaticSplit, source.outputLanguage]);
+  }, [preparation, selectionKey, refresh, taskId, payer, byokModel, automaticSplit, source.outputLanguage]);
   function changeSelection(ids: string[]) {
     setQuote(null); setQuoting(ids.length > 0); setSelected(ids);
   }
@@ -111,7 +131,8 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
     return () => clearTimeout(timer);
   }, [quote, taskId, confirmationStarted]);
   async function confirmAnalysis() {
-    if (busy || quoting || !quote) return;
+    if (busy || preparing || quoting) return;
+    if (!quote) { setError(""); setRefresh(value => value + 1); return; }
     setConfirmationStarted(true);
     setBusy(true); setError("");
     try {
@@ -119,7 +140,13 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
         const data = await post(`/api/commercial/tasks/${quote.id}`, {});
         setTaskProgress({ phase: "preparing", total: selectedScenes.length, finished: 0, startedAt: Date.now() });
         setTaskId(data.id); setState(data.state);
-    } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Error");
+      if (e instanceof AnalysisRequestError && e.rejected) {
+        setConfirmationStarted(false);
+        if (e.code === "QUOTE_EXPIRED") { setQuote(null); setRefresh(value => value + 1); }
+      }
+    }
     finally { setBusy(false); }
   }
   useEffect(() => {
@@ -178,7 +205,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
       </div>}
       {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
       <div className="mt-5 flex gap-3">
-        <button disabled={busy || downloading || preparing || quoting || !quote} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : (zh ? "确认分析" : "Confirm analysis")}</button>
+        <button disabled={busy || downloading || preparing || quoting || (!quote && (!error || (preparation !== null && !selected.length)))} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : error ? (preparation ? (zh ? "重新获取费用" : "Refresh cost") : (zh ? "重新读取视频" : "Inspect video again")) : (zh ? "确认分析" : "Confirm analysis")}</button>
       </div>
     </>}
     {taskId && <AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} />}
