@@ -20,6 +20,14 @@ function mock(value: unknown) {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("scene analysis response compatibility", () => {
+  it("preserves the underlying connection failure without another inference request", async () => {
+    const cause = Object.assign(new Error("connect timeout"), { code: "UND_ERR_CONNECT_TIMEOUT" });
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed", { cause }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await analyzeSceneBlueprint(input);
+    expect(result.metadata).toMatchObject({ analysisProvider: "fallback", analysisError: { name: "TypeError", message: "fetch failed", cause: { code: "UND_ERR_CONNECT_TIMEOUT" } } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("retains a real prompt when the model returns story as a string", async () => {
     const fetchMock = mock(response);
     const result = await analyzeSceneBlueprint(input);

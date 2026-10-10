@@ -6,6 +6,7 @@ import { requestKieChat } from "@/lib/ai/kie-client";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
 import { buildRecreationPrompt } from "./recreation-prompt";
+import { taskErrorDetails } from "@/lib/billing/task-diagnostics";
 
 export interface SceneBlueprintDraft {
   story: Record<string, unknown>;
@@ -265,7 +266,8 @@ export async function analyzeSceneBlueprint(params: {
     const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider, outputLanguage(params.outputLanguage));
     return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority } };
   } catch (error) {
-    return buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "Scene analysis failed", params.context.audio, outputLanguage(params.outputLanguage));
+    const fallback = buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "Scene analysis failed", params.context.audio, outputLanguage(params.outputLanguage));
+    return { ...fallback, metadata: { ...fallback.metadata, analysisError: taskErrorDetails(error) } };
   }
 }
 
