@@ -325,6 +325,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [analysisPayer, setAnalysisPayer] = useState<"platform" | "byok">("platform");
   const [analysisQuoteLocked, setAnalysisQuoteLocked] = useState(false);
   const [analysisTaskId, setAnalysisTaskId] = useState("");
+  const [retryingSceneId, setRetryingSceneId] = useState("");
+  const [retryQuote, setRetryQuote] = useState<{ id: string; sceneVersionId: string; projectId: string; credits: number; expiresAt: string } | null>(null);
+  const retryBusy = useRef(false);
+  const retriedScene = useRef("");
+  const [retryConfirmationPending, setRetryConfirmationPending] = useState(false);
   const [analysisOutputLanguage, setAnalysisOutputLanguage] = useState<"zh" | "en">(locale === "en" ? "en" : "zh");
   const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
 
@@ -449,6 +454,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     return data;
   }
   async function loadProject(projectId: string) {
+    if (retryBusy.current || retryConfirmationPending || analysisTaskId) return;
     setError("");
     const response = await fetch(`/api/workflow/projects/${projectId}`);
     const data = await response.json();
@@ -478,6 +484,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         setError("");
         if (data.bundle) setBundle(data.bundle);
         if (["completed", "failed"].includes(data.state)) {
+          if (retriedScene.current) {
+            const sceneId = retriedScene.current;
+            setSceneDrafts(current => { const next = { ...current }; delete next[sceneId]; return next; });
+            retriedScene.current = "";
+          }
           setError(data.state === "failed" ? data.error || "分析失败，请检查 Key 后重试。" : data.partial ? "部分镜头分析失败，成功结果已保留，仅结算成功镜头。" : "");
           setAnalysisTaskId(""); setLoading(false); setAnalysisProgress(null);
           setProgress(data.state === "completed" ? "分析完成" : "分析失败");
@@ -592,6 +603,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }
 
   async function startBreakdown() {
+    if (retryBusy.current || retryConfirmationPending || analysisTaskId) return;
     const isLinkedMedia = mediaInputMode === "link";
     const automaticSplit = isLinkedMedia || (mediaType === "video" && uploadAnalysisMode === "split");
     if ((!isLinkedMedia && (!file || !mediaType)) || (isLinkedMedia && (!sourceUrl.trim() || !linkedPlatform))) return;
@@ -760,6 +772,37 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     }
   }
 
+  async function retryFailedScene(scene: SceneVersion) {
+    if (!bundle || retryBusy.current || commercialSource || analysisTaskId || loading) return;
+    if (retryConfirmationPending && (retryQuote?.sceneVersionId !== scene.id || retryQuote.projectId !== bundle.project.id)) return;
+    const parentId = bundle.project.metadata?.analysisTaskId;
+    if (typeof parentId !== "string") return;
+    retryBusy.current = true;
+    setRetryingSceneId(scene.id); setError("");
+    try {
+      if (!retryQuote || retryQuote.sceneVersionId !== scene.id || retryQuote.projectId !== bundle.project.id) {
+        const response = await fetch("/api/commercial/analysis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "retry", taskId: parentId, sceneVersionId: scene.id }) });
+        const data = await readJsonResponse(response, locale === "en" ? "Unable to quote this shot." : "暂时无法获取此镜头的重试费用。");
+        if (!data || typeof data.id !== "string" || !Number.isSafeInteger(data.credits) || data.credits < 0) throw new Error(locale === "en" ? "Incomplete retry quote." : "重试报价不完整，尚未提交分析。");
+        setRetryQuote({ ...data, sceneVersionId: scene.id, projectId: bundle.project.id });
+        return;
+      }
+      setRetryConfirmationPending(true);
+      const response = await fetch(`/api/commercial/tasks/${retryQuote.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.id || !data?.state) {
+        if (data?.code === "QUOTE_EXPIRED") setRetryQuote(null);
+        if (["QUOTE_EXPIRED", "INSUFFICIENT_COMMERCIAL_BALANCE"].includes(data?.code)) setRetryConfirmationPending(false);
+        throw new Error(data?.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (locale === "en" ? "Not enough credits." : "可用积分不足。") : (locale === "en" ? "Confirmation is uncertain. Retry this same quote." : "提交状态尚未确认，请用当前报价再次确认，避免重复提交。"));
+      }
+      retriedScene.current = scene.id;
+      setRetryConfirmationPending(false);
+      setAnalysisTaskId(data.id); setRetryQuote(null);
+      setAnalysisProgress({ phase: "analysis", percent: 60, label: locale === "en" ? "Retrying shot" : "正在重试镜头", detail: `${locale === "en" ? "Shot" : "镜头"} ${scene.sceneIndex}` });
+    } catch (error) { setError(error instanceof Error ? error.message : "Retry failed"); }
+    finally { retryBusy.current = false; setRetryingSceneId(""); }
+  }
+
   async function copySceneAnalysis(scene: SceneVersion) {
     const text = sceneDrafts[scene.id] ?? buildRecreationPrompt(scene);
     await navigator.clipboard.writeText(text);
@@ -910,7 +953,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           <button
             type="button"
             onClick={() => void startBreakdown()}
-            disabled={loading || Boolean(commercialSource) || Boolean(analysisTaskId) || (mediaInputMode === "upload" ? !file : !linkedPlatform)}
+            disabled={loading || Boolean(commercialSource) || Boolean(analysisTaskId) || Boolean(retryingSceneId) || retryConfirmationPending || (mediaInputMode === "upload" ? !file : !linkedPlatform)}
             className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-lg bg-[#D97757] px-2 py-1 text-sm font-semibold leading-tight text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
           >
             {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5 shrink-0" />}
@@ -920,7 +963,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           </div>
 
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}
-          {error ? <p className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
+          {error ? <p role="alert" className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p> : null}
 
           <div className="mt-6 min-h-0 border-t border-border pt-4 xl:flex-1 xl:overflow-y-auto xl:pr-1">
             <div className="flex items-center justify-between gap-3">
@@ -931,13 +974,14 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
             <div className="mt-3 grid gap-2">
               {projects.map((project) => (
                 <div key={project.id} className={cn("group flex items-center justify-between rounded-xl border px-3 py-2 text-sm hover:border-primary/50", bundle?.project.id === project.id ? "border-primary bg-primary/10" : "border-border bg-background")}>
-                  <button type="button" onClick={() => void loadProject(project.id)} className="min-w-0 flex-1 text-left">
+                  <button type="button" disabled={Boolean(retryingSceneId || analysisTaskId) || retryConfirmationPending} onClick={() => void loadProject(project.id)} className="min-w-0 flex-1 text-left">
                     <span className="block truncate font-medium">{project.title}</span>
                     <span className="text-xs text-muted-foreground">{localizedStatus(project.status, locale)}</span>
                   </button>
                   <button
                     type="button"
                     aria-label={ui.deleteProject}
+                    disabled={Boolean(retryingSceneId || analysisTaskId) || retryConfirmationPending}
                     onClick={() => {
                       if (!confirm(ui.confirmDelete)) return;
                       void (async () => {
@@ -1011,6 +1055,10 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                           {scene?.error ? <p className="mt-1 max-w-3xl text-xs text-amber-700">{scene.error}</p> : null}
                         </div>
                         <div className="flex flex-wrap gap-2">
+                          {needsReview && bundle.project.metadata?.analysisTaskKind === "analysis" && <Button size="sm" variant="outline" disabled={Boolean(commercialSource || analysisTaskId || loading || retryingSceneId || !bundle.project.metadata?.analysisTaskId || (retryConfirmationPending && retryQuote?.sceneVersionId !== sceneVersion.id))} onClick={() => void retryFailedScene(sceneVersion)}>
+                            <RefreshCw className={cn("mr-2 h-4 w-4", retryingSceneId === sceneVersion.id && "animate-spin")} />
+                            {retryingSceneId === sceneVersion.id ? (locale === "en" ? "Submitting…" : "处理中…") : retryQuote?.sceneVersionId === sceneVersion.id && retryQuote.projectId === bundle.project.id ? (locale === "en" ? `Confirm retry · ${retryQuote.credits} credits` : `确认重试 · ${retryQuote.credits} 积分`) : (locale === "en" ? "Retry" : "重试")}
+                          </Button>}
                           <Button
                             size="sm"
                             variant="outline"

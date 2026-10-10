@@ -207,7 +207,7 @@ export async function commercialAnalysisBundle(task: typeof commercialTasks.$inf
   return getProjectBundle((task.input as AnalysisInput).projectId, task.userId);
 }
 
-export async function quoteCommercialAnalysisRetry(userId: string, parentId: string) {
+export async function quoteCommercialAnalysisRetry(userId: string, parentId: string, sceneVersionId?: string) {
   const parent = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, parentId), eq(commercialTasks.userId, userId), eq(commercialTasks.kind, "analysis")) });
   if ((parent?.result as Record<string, unknown> | undefined)?.retentionExpired) throw new Error("PROJECT_CONTENT_EXPIRED");
   if (!parent || !["completed", "failed"].includes(parent.state)) throw new Error("ANALYSIS_NOT_SETTLED");
@@ -216,19 +216,25 @@ export async function quoteCommercialAnalysisRetry(userId: string, parentId: str
   if (result.nextTaskId) throw new Error("USE_LATEST_RETRY_TASK");
   if (!result.assets || !Number.isSafeInteger(result.totalChargedCredits)) throw new Error("SPLIT_ASSETS_NOT_AVAILABLE");
   const previousSuccess = result.successfulSceneIds || [];
-  const remaining = source.pricing.scenes.filter((s) => !previousSuccess.includes(s.id));
+  let remaining = source.pricing.scenes.filter((s) => !previousSuccess.includes(s.id));
   if (!remaining.length) throw new Error("NO_FAILED_SCENES");
   const bundle = await getProjectBundle(source.projectId, userId);
   if (!bundle) throw new Error("PROJECT_NOT_FOUND");
+  if (sceneVersionId) {
+    const selected = bundle.sceneVersions.find(version => version.id === sceneVersionId);
+    if (!selected || (selected.metadata as Record<string, unknown>)?.analysisProvider !== "fallback") throw new Error("SCENE_ALREADY_CHANGED");
+    remaining = remaining.filter(scene => source.pricing.scenes.findIndex(item => item.id === scene.id) + 1 === selected.sceneIndex);
+    if (!remaining.length) throw new Error("NO_FAILED_SCENES");
+  }
   const sceneVersions = remaining.map((scene) => {
     const index = source.pricing.scenes.findIndex((s) => s.id === scene.id) + 1;
-    const version = bundle.allSceneVersions.find((s) => s.sceneIndex === index && (s.metadata as Record<string, unknown>)?.analysisProvider === "fallback");
+    const version = bundle.sceneVersions.find((s) => s.sceneIndex === index && (s.metadata as Record<string, unknown>)?.analysisProvider === "fallback");
     if (!version) throw new Error("SCENE_ALREADY_CHANGED");
     return { id: scene.id, sceneVersionId: version.id };
   });
   const apiKey = source.pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(userId);
   if (!apiKey) throw new Error("KIE_KEY_REQUIRED");
-  const credits = settleAnalysis(source.pricing, source.pricing.scenes.map((s) => s.id), true) - result.totalChargedCredits!;
+  const credits = settleAnalysis(source.pricing, [...previousSuccess, ...remaining.map(scene => scene.id)], true) - result.totalChargedCredits!;
   const snapshot: AnalysisInput = { ...source, keyFingerprint: generationKeyFingerprint(apiKey), retry: { parentId, previousSuccess, previousCharged: result.totalChargedCredits!, sceneVersions } };
   const [task] = await db.insert(commercialTasks).values({ userId, kind: "analysis", input: snapshot, credits, result: { assets: result.assets, splitDelivered: source.pricing.automaticSplit }, expiresAt: new Date(Date.now() + 600000) }).returning();
   return { id: task.id, credits, sceneCount: remaining.length, expiresAt: task.expiresAt };

@@ -10,7 +10,10 @@ export async function POST(request: NextRequest) {
   if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   if (!commercialConsumptionEnabled()) return NextResponse.json({ code: "COMMERCIAL_NOT_ENABLED" }, { status: 503 });
   const body = await request.json().catch(() => null);
-    if (body?.action === "retry" && typeof body.taskId === "string") return NextResponse.json(await quoteCommercialAnalysisRetry(session.user.id, body.taskId));
+    if (body?.action === "retry" && typeof body.taskId === "string") {
+      if (body.sceneVersionId !== undefined && typeof body.sceneVersionId !== "string") return NextResponse.json({ code: "INVALID_REQUEST" }, { status: 400 });
+      return NextResponse.json(await quoteCommercialAnalysisRetry(session.user.id, body.taskId, body.sceneVersionId));
+    }
     if (body?.action === "prepare" && typeof body.projectId === "string" && typeof body.mediaUrl === "string") {
       return NextResponse.json(await prepareCommercialAnalysis(session.user.id, { projectId: body.projectId, mediaUrl: body.mediaUrl, mediaName: String(body.mediaName || "Video").slice(0, 200), automaticSplit: body.automaticSplit === true }));
     }

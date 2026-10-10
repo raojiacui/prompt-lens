@@ -38,6 +38,11 @@ it("does not load a project before any scene is processed", async () => {
   expect((await (await call()).json()).bundle).toBeUndefined();
   expect(mocks.bundle).not.toHaveBeenCalled();
 });
+it("reports single-shot retry progress separately from cumulative project successes", async () => {
+  const task = await mocks.find();
+  mocks.find.mockResolvedValue({ ...task, state: "completed", input: { pricing: { scenes: [1, 2, 3] }, retry: { sceneVersions: ["2"] } }, result: { finishedSceneIds: ["2"], successfulSceneIds: ["1", "2"] } });
+  expect(await (await call()).json()).toMatchObject({ totalScenes: 1, completedScenes: 1, partial: true });
+});
 it("keeps returning terminal failed results even without completed scenes", async () => {
   const task = await mocks.find();
   mocks.find.mockResolvedValue({ ...task, state: "failed", result: {} });

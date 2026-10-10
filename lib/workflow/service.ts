@@ -1,13 +1,11 @@
 import { db, commercialTasks, mediaCleanupJobs, projectAssets, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
 import { reserveCommercialTask, settleCommercialTask, settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
-import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import { extractR2Key } from "@/lib/cloudflare/r2";
 import { processMediaCleanupJobs } from "./media-cleanup";
 import { routeModel } from "@/lib/ai/model-registry";
 import type { BackgroundMusicRecognition } from "@/lib/workflow/music-recognition";
 import {
-  analyzeSceneBlueprint,
   buildStructuredVideoOverview,
   remixSceneBlueprint,
   rewriteSceneBlueprint,
@@ -29,21 +27,6 @@ function sceneVersionToBlueprint(scene: typeof sceneVersions.$inferSelect): Scen
     transition: scene.transition as Record<string, unknown>,
     generationPrompt: scene.generationPrompt,
     metadata: scene.metadata as Record<string, unknown>,
-  };
-}
-
-function sceneAssetFromRecords(scene: typeof videoScenes.$inferSelect): FfmpegSceneAsset {
-  return {
-    sceneIndex: scene.sceneIndex,
-    startTime: scene.startTime,
-    endTime: scene.endTime,
-    duration: scene.duration,
-    shotGroupId: scene.shotGroupId || undefined,
-    clipUrl: scene.clipUrl || undefined,
-    keyframeUrls: Array.isArray(scene.keyframeUrls) ? scene.keyframeUrls as string[] : [],
-    audioUrl: scene.audioUrl || undefined,
-    transitionIn: scene.transitionIn || undefined,
-    transitionOut: scene.transitionOut || undefined,
   };
 }
 
@@ -439,73 +422,6 @@ export async function rewriteSceneVersion(params: {
   });
 }
 
-export async function retrySceneAnalysis(params: {
-  userId: string;
-  projectId: string;
-  sceneVersionId: string;
-} & AiModelSelection) {
-  const project = await getProjectForUser(params.projectId, params.userId);
-  if (!project) throw new Error("Project not found");
-
-  const sceneVersion = await db.query.sceneVersions.findFirst({
-    where: and(eq(sceneVersions.id, params.sceneVersionId), eq(sceneVersions.projectId, params.projectId)),
-  });
-  if (!sceneVersion) throw new Error("Scene version not found");
-
-  const videoScene = await db.query.videoScenes.findFirst({
-    where: and(eq(videoScenes.id, sceneVersion.originalSceneId), eq(videoScenes.projectId, params.projectId)),
-  });
-  if (!videoScene) throw new Error("Original scene not found");
-
-  const [job] = await db.insert(workflowJobs).values({
-    projectId: params.projectId,
-    sceneId: videoScene.id,
-    type: "ANALYZE_SCENE",
-    status: "processing",
-    input: { retrySceneVersionId: params.sceneVersionId, modelMode: params.modelMode || "auto", modelId: params.modelId, modelPriority: params.modelPriority || "balanced" },
-  }).returning();
-
-  const asset = sceneAssetFromRecords(videoScene);
-  const blueprint = await analyzeSceneBlueprint({
-    userId: params.userId,
-    scene: asset,
-    context: { sceneCount: 1, projectTitle: project.title },
-    analysisKeySource: params.analysisKeySource,
-    analysisApiKey: params.analysisApiKey,
-    modelMode: params.modelMode,
-    modelId: params.modelId,
-    modelPriority: params.modelPriority,
-    outputLanguage: params.outputLanguage,
-    allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis,
-    forceFreeTrialKie: params.forceFreeTrialKie,
-  });
-  const usedFallback = blueprint.metadata?.analysisProvider === "fallback";
-  if (params.forceFreeTrialKie && usedFallback) {
-    throw new Error(String(blueprint.metadata?.fallbackReason || "Trial analysis failed"));
-  }
-
-  const [updated] = await db
-    .update(sceneVersions)
-    .set({
-      story: blueprint.story,
-      visual: blueprint.visual,
-      dialogue: blueprint.dialogue,
-      narration: blueprint.narration,
-      subtitle: blueprint.subtitle,
-      audio: blueprint.audio,
-      transition: blueprint.transition,
-      generationPrompt: blueprint.generationPrompt,
-      metadata: { ...(blueprint.metadata || {}), retryOfSceneVersionId: params.sceneVersionId },
-      updatedAt: new Date(),
-    })
-    .where(eq(sceneVersions.id, sceneVersion.id))
-    .returning();
-
-  await db.update(videoScenes).set({ status: usedFallback ? "failed" : "completed", error: usedFallback ? String(blueprint.metadata?.fallbackReason || "AI analysis fallback used") : null, updatedAt: new Date() }).where(eq(videoScenes.id, videoScene.id));
-  await db.update(workflowJobs).set({ status: usedFallback ? "failed" : "completed", error: usedFallback ? String(blueprint.metadata?.fallbackReason || "AI analysis fallback used") : null, output: { provider: blueprint.metadata?.analysisProvider || "unknown" }, completedAt: new Date(), updatedAt: new Date() }).where(eq(workflowJobs.id, job.id));
-
-  return updated;
-}
 
 export async function getGenerationModelForScene(duration?: number, aspectRatio?: string) {
   return routeModel({
