@@ -451,7 +451,8 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
       expect(log).toHaveBeenCalledWith("commercial.task.failed", expect.objectContaining({ phase: "saving_result" }));
       expect(task.result).toMatchObject({ pendingResult: { sceneId: "4", blueprint: { generationPrompt: "Fourth model result" } } });
       transaction.mockRestore();
-      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '31 minutes' WHERE id = $1", [quote.id]);
+      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '61 seconds' WHERE id = $1", [quote.id]);
+      await recoverCommercialAnalysisTasks();
       await recoverCommercialAnalysisTasks();
       await runCommercialTask(quote.id);
       expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(4);
@@ -469,7 +470,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
       const retrySave = vi.spyOn(testDb, "transaction").mockRejectedValueOnce(new Error("Retry save interrupted"));
       try { await runCommercialTask(retry.id); } finally { retrySave.mockRestore(); }
       expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(12);
-      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '31 minutes' WHERE id = $1", [retry.id]);
+      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '61 seconds' WHERE id = $1", [retry.id]);
       await recoverCommercialAnalysisTasks();
       await drain(retry.id);
       expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(12);

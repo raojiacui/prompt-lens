@@ -44,6 +44,12 @@ it.each([[7, false], [29, false], [31, true]])("uses the shared thirty-minute in
   await call();
   expect(mocks.recover).toHaveBeenCalledTimes(shouldRecover ? 1 : 0);
 });
+it.each([[30, false], [61, true]])("recovers a durable save checkpoint after %s seconds without waiting for inference timeout", async (seconds, shouldRecover) => {
+  const task = await mocks.find();
+  mocks.find.mockResolvedValue({ ...task, updatedAt: new Date(Date.now() - Number(seconds) * 1000), result: { ...task.result, pendingResult: { sceneId: "2", blueprint: {} } } });
+  await call();
+  expect(mocks.recover).toHaveBeenCalledTimes(shouldRecover ? 1 : 0);
+});
 it("reports single-shot retry progress separately from cumulative project successes", async () => {
   const task = await mocks.find();
   mocks.find.mockResolvedValue({ ...task, state: "completed", input: { pricing: { scenes: [1, 2, 3] }, retry: { sceneVersions: ["2"] } }, result: { finishedSceneIds: ["2"], successfulSceneIds: ["1", "2"] } });
