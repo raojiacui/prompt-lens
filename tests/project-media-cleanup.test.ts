@@ -5,7 +5,8 @@ import { drizzle } from "drizzle-orm/pglite";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
 
-const mocks = vi.hoisted(() => ({ db: null as unknown, remove: vi.fn() }));
+const mocks = vi.hoisted(() => ({ db: null as unknown, remove: vi.fn(), publicMedia: vi.fn() }));
+vi.mock("@/lib/samples/public-workflow-samples", () => ({ hasPublicSampleMedia: mocks.publicMedia }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return mocks.db; } }));
 vi.mock("@/lib/cloudflare/r2", () => ({
   extractR2Key: (url: string) => url.startsWith("https://media.example/") ? url.slice("https://media.example/".length) : null,
@@ -47,6 +48,7 @@ describe("project R2 media cleanup", () => {
     userId = randomUUID();
     await testDb.insert(schema.user).values({ id: userId, email: `${userId}@example.com` });
     mocks.remove.mockReset().mockResolvedValue(undefined);
+    mocks.publicMedia.mockReset().mockReturnValue(false);
   });
   afterAll(async () => { await client.close(); });
 
@@ -81,6 +83,15 @@ describe("project R2 media cleanup", () => {
     await testDb.insert(schema.videoScenes).values({ projectId: other.id, sceneIndex: 1, startTime: 0, endTime: 1, duration: 1, keyframeUrls: [`https://media.example/${key}`] });
     expect((await deleteProjectForUser(projectId, userId)).deletedR2Objects).toBe(0);
     expect(mocks.remove).not.toHaveBeenCalled();
+  });
+
+  it("preserves published sample media after its private project is deleted", async () => {
+    const key = `uploads/${userId}/video/sample.mp4`;
+    const projectId = await projectWithSource(key);
+    mocks.publicMedia.mockImplementation(url => url === `https://media.example/${key}`);
+    expect((await deleteProjectForUser(projectId, userId)).deletedR2Objects).toBe(0);
+    expect(mocks.remove).not.toHaveBeenCalled();
+    expect(mocks.publicMedia).toHaveBeenCalledWith(`https://media.example/${key}`);
   });
 
   it("expires seven-day content without deleting balances or provider-hosted results", async () => {

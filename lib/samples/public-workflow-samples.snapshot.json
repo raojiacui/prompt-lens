@@ -6554,5 +6554,1650 @@
         "createdAt": "2026-08-25T13:26:48.606Z"
       }
     ]
+  },
+  {
+    "project": {
+      "id": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+      "title": "猫咪牛仔",
+      "description": null,
+      "status": "ready",
+      "activeVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+      "metadata": {
+        "partialAnalysis": false,
+        "failedSceneCount": 0
+      },
+      "createdAt": "2026-10-10T14:32:04.116Z",
+      "updatedAt": "2026-10-10T15:01:55.433Z"
+    },
+    "versions": [
+      {
+        "id": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "parentVersionId": null,
+        "versionNumber": 0,
+        "kind": "original",
+        "label": "原始版本",
+        "remixPrompt": null,
+        "overview": {
+          "sceneCount": 11
+        },
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:34:39.686Z"
+      }
+    ],
+    "scenes": [
+      {
+        "id": "faa06abe-c110-4ca4-8e77-f288adea8fa3",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 1,
+        "shotGroupId": null,
+        "startTime": 0,
+        "endTime": 3.625,
+        "duration": 3.625,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:35:22.101Z"
+      },
+      {
+        "id": "5ef00b5f-3a07-4a03-9212-8d3209d56780",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 2,
+        "shotGroupId": null,
+        "startTime": 3.625,
+        "endTime": 5.958,
+        "duration": 2.333,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/002/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/002/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/002/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/002/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/002/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T15:01:44.212Z"
+      },
+      {
+        "id": "aebb3ead-757c-4857-b925-b60d22c09fd2",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 3,
+        "shotGroupId": null,
+        "startTime": 5.958,
+        "endTime": 8.042,
+        "duration": 2.084,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/003/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/003/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/003/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/003/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/003/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:54:10.737Z"
+      },
+      {
+        "id": "a057d03c-432b-4b8c-9f5c-93169ab615f1",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 4,
+        "shotGroupId": null,
+        "startTime": 8.042,
+        "endTime": 10.292,
+        "duration": 2.25,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/004/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/004/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/004/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/004/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/004/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:54:53.427Z"
+      },
+      {
+        "id": "ee1cd341-94a6-4af9-bda4-4f079e2ab4ce",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 5,
+        "shotGroupId": null,
+        "startTime": 10.292,
+        "endTime": 12.5,
+        "duration": 2.208,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/005/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/005/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/005/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/005/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/005/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:55:35.456Z"
+      },
+      {
+        "id": "20b097ba-1faf-4335-836e-4c8b0ce21f38",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 6,
+        "shotGroupId": null,
+        "startTime": 12.5,
+        "endTime": 14.708,
+        "duration": 2.208,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/006/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/006/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/006/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/006/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/006/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:56:15.276Z"
+      },
+      {
+        "id": "7fa531a0-c3cd-49ce-9120-5a819b342f8d",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 7,
+        "shotGroupId": null,
+        "startTime": 14.708,
+        "endTime": 17.083,
+        "duration": 2.375,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/007/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/007/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/007/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/007/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/007/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:56:50.140Z"
+      },
+      {
+        "id": "35e70b5b-3226-477d-9411-a647f4f3a484",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 8,
+        "shotGroupId": null,
+        "startTime": 17.083,
+        "endTime": 19.125,
+        "duration": 2.042,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/008/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/008/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/008/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/008/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/008/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:57:22.865Z"
+      },
+      {
+        "id": "9b04a527-ddad-4e36-8c0a-7a56f79d5fa9",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 9,
+        "shotGroupId": null,
+        "startTime": 19.125,
+        "endTime": 21.375,
+        "duration": 2.25,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/009/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/009/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/009/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/009/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/009/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:57:54.315Z"
+      },
+      {
+        "id": "865e2ebe-73c3-46d6-a685-d18068de2d1a",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 10,
+        "shotGroupId": null,
+        "startTime": 21.375,
+        "endTime": 23.542,
+        "duration": 2.167,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/010/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/010/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/010/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/010/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/010/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:58:33.089Z"
+      },
+      {
+        "id": "5faf0570-0bc3-45a1-8997-c994b0eb93f4",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "referenceVideoId": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "sceneIndex": 11,
+        "shotGroupId": null,
+        "startTime": 23.542,
+        "endTime": 27.209,
+        "duration": 3.667,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/011/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/011/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/011/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/011/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a89ae0e5-4924-4485-91a2-f88c36fb5870/scenes/011/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z",
+        "updatedAt": "2026-10-10T14:59:10.574Z"
+      }
+    ],
+    "sceneVersions": [
+      {
+        "id": "278643b2-f31b-4c82-adbb-379a541c9502",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "faa06abe-c110-4ca4-8e77-f288adea8fa3",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 3.625,
+          "summary": "一只拟人化的虎斑猫牛仔慵懒地倚靠在车厢窗边，神态从容，随后缓缓抬爪轻扶牛仔帽檐。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖黄、复古棕与暗墨绿色调，胶片颗粒质感。",
+          "style": "真人电影级写实CG质感，毛发与衣物皮革纹理清晰可见。",
+          "action": "猫咪斜靠在座椅靠背上，目光望向车厢上方，动作舒缓，随后抬起右前爪轻扶帽檐。",
+          "camera": "中近景，微低角度仰拍，浅景深对焦在猫咪面部，伴随极微弱的镜头手持呼吸感。",
+          "motion": "爪部平稳缓慢抬起，胡须与眼神随动作微动，整体节奏舒缓。",
+          "subject": "拟人化虎斑猫牛仔",
+          "lighting": "电影感低调暖光，顶部弱侧光勾勒出猫咪面部轮廓及皮革反光，明暗对比较强。",
+          "characters": "一只逼真写实的虎斑猫，绿眼睛，佩戴棕色皮质牛仔帽，身穿棕色流苏皮夹克、浅色衬衫并系着宽皮带。",
+          "composition": "主体位于画面中心偏左，右侧留有车窗与延伸空间，形成对角线倚靠构图。",
+          "environment": "复古列车或地铁车厢内部，背景带有车窗与金属车壁结构，窗外有模糊的光影掠过。",
+          "sceneDescription": "昏暗且具电影质感的列车车厢内，一只身着复古牛仔装的虎斑猫斜倚在窗边座椅上，眼神望向斜上方，随后从容抬起右爪扶向帽檐。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "老旧车厢运行的低频隆隆声，伴随轻微皮革摩擦细节（推测）。"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓稳定",
+            "techniques": "硬切进入，单镜头持续慢速叙事"
+          }
+        },
+        "generationPrompt": "电影质感中近景，一只拟人化的虎斑猫牛仔慵懒斜倚在复古车厢窗边。它头戴棕色宽檐牛仔帽，身穿带流苏的做旧棕色皮夹克和浅色衬衫。猫咪绿眼睛深邃，凝视斜上方，动作缓慢地抬起毛茸茸的爪子轻扶帽檐。车厢光线昏暗，暖黄色侧光勾勒细腻毛发与皮革纹理，微低角度仰拍，逼真写实，画面具有浓郁的西部复古胶片感。\n\n画面与环境: 昏暗且具电影质感的列车车厢内，一只身着复古牛仔装的虎斑猫斜倚在窗边座椅上，眼神望向斜上方，随后从容抬起右爪扶向帽檐。；拟人化虎斑猫牛仔；复古列车或地铁车厢内部，背景带有车窗与金属车壁结构，窗外有模糊的光影掠过。\n\n人物与动作: 一只逼真写实的虎斑猫，绿眼睛，佩戴棕色皮质牛仔帽，身穿棕色流苏皮夹克、浅色衬衫并系着宽皮带。；猫咪斜靠在座椅靠背上，目光望向车厢上方，动作舒缓，随后抬起右前爪轻扶帽檐。；爪部平稳缓慢抬起，胡须与眼神随动作微动，整体节奏舒缓。\n\n镜头与构图: 中近景，微低角度仰拍，浅景深对焦在猫咪面部，伴随极微弱的镜头手持呼吸感。；主体位于画面中心偏左，右侧留有车窗与延伸空间，形成对角线倚靠构图。\n\n光影与质感: 电影感低调暖光，顶部弱侧光勾勒出猫咪面部轮廓及皮革反光，明暗对比较强。；暖黄、复古棕与暗墨绿色调，胶片颗粒质感。；真人电影级写实CG质感，毛发与衣物皮革纹理清晰可见。\n\n声音: soundStyle: 老旧车厢运行的低频隆隆声，伴随轻微皮革摩擦细节（推测）。\n\n节奏与转场: editing: pacing: 舒缓稳定; techniques: 硬切进入，单镜头持续慢速叙事",
+        "duration": 3.625,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:35:20.203Z",
+        "updatedAt": "2026-10-10T14:35:20.203Z"
+      },
+      {
+        "id": "a73fb19a-ed1b-4860-8b7d-73d37a57072c",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "5ef00b5f-3a07-4a03-9212-8d3209d56780",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 5.958,
+          "summary": "身披华美法衣的拟人化灵鼠神色庄重，合十闭目躬身行礼。",
+          "startTime": 3.625,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "暖红锦缎与冷青护甲对比，整体色调偏暗调暖金。",
+          "style": "东方奇幻高精CG电影质感，毛发与织物纹理写实细腻。",
+          "action": "双手合十立于胸前，黑亮双眼缓缓闭合，随之上半身与头部低垂行礼。",
+          "camera": "中景，平视微仰，浅景深虚化背景，随低头动作有极轻微下移。",
+          "motion": "闭眼至鞠躬动作缓慢连贯，极具沉静仪式感。",
+          "subject": "拟人化白灰毛发灵鼠，生有圆耳与黑色利爪，佩戴金属额饰。",
+          "lighting": "低照度环境光，侧逆光勾勒毛发边缘，暗部层次细腻柔和。",
+          "characters": "灵鼠着朱红配暗青刺绣锦袍与肩甲，神情恭敬虔诚。",
+          "composition": "主体位于画面右侧，左侧留出虚化的建筑与光斑，层次分明。",
+          "environment": "古建殿宇或庭院虚焦背景，伴有昏暗微光与暖色散景斑点。",
+          "sceneDescription": "昏暗古典殿宇背景下，身穿朱红与青绿华服的灵鼠角色双手合十，随后缓缓闭目、低头躬身施礼。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "foley": "细微的布料衣袍摩擦声（推测）",
+          "music": "庄重平缓的东方玄幻配乐风格（推测）",
+          "ambientSound": "沉静幽深的殿堂氛围底噪"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉稳缓慢",
+            "techniques": "前后硬切（hard_cut）"
+          }
+        },
+        "generationPrompt": "电影级东方奇幻三维渲染，写实中景。一只拟人化的灵鼠仙人身着精致朱红与青铜色刺绣长袍及肩甲，头戴金属额饰。它站在昏暗殿宇前，尖爪双手在胸前合十。起初它目光凝视，随后缓缓闭合双眼，恭敬地垂头躬身行礼。浅景深镜头，背景为模糊古建与暖色微光光斑，侧逆光柔和照亮细腻毛发，氛围肃穆庄严。\n\n画面与环境: 昏暗古典殿宇背景下，身穿朱红与青绿华服的灵鼠角色双手合十，随后缓缓闭目、低头躬身施礼。；拟人化白灰毛发灵鼠，生有圆耳与黑色利爪，佩戴金属额饰。；古建殿宇或庭院虚焦背景，伴有昏暗微光与暖色散景斑点。\n\n人物与动作: 灵鼠着朱红配暗青刺绣锦袍与肩甲，神情恭敬虔诚。；双手合十立于胸前，黑亮双眼缓缓闭合，随之上半身与头部低垂行礼。；闭眼至鞠躬动作缓慢连贯，极具沉静仪式感。\n\n镜头与构图: 中景，平视微仰，浅景深虚化背景，随低头动作有极轻微下移。；主体位于画面右侧，左侧留出虚化的建筑与光斑，层次分明。\n\n光影与质感: 低照度环境光，侧逆光勾勒毛发边缘，暗部层次细腻柔和。；暖红锦缎与冷青护甲对比，整体色调偏暗调暖金。；东方奇幻高精CG电影质感，毛发与织物纹理写实细腻。\n\n声音: ambientSound: 沉静幽深的殿堂氛围底噪; foley: 细微的布料衣袍摩擦声（推测）; music: 庄重平缓的东方玄幻配乐风格（推测）\n\n节奏与转场: editing: pacing: 沉稳缓慢; techniques: 前后硬切（hard_cut）",
+        "duration": 2.333,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:53:23.441Z",
+        "updatedAt": "2026-10-10T15:01:43.481Z"
+      },
+      {
+        "id": "92f5958e-7e4e-449b-9c4e-b578e33f153f",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "aebb3ead-757c-4857-b925-b60d22c09fd2",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 8.042,
+          "summary": "鸟首机械生物在幽暗的实验室里倾倒绿色药剂。",
+          "startTime": 5.958,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "暗绿、灰褐色调为主，点缀药液的鲜绿色与灯管微光。",
+          "style": "暗黑生化朋克，具象写实且带复古诡异质感。",
+          "action": "机械手缓缓倾斜手中的玻璃试剂瓶，将绿色液体精准注入下方的烧杯中。",
+          "camera": "中景，平视固定镜头，浅景深聚焦于操作主体与药液。",
+          "motion": "主体动作缓慢平稳，机械手关节微动，液体连续流下。",
+          "subject": "具有长喙鹤形头颅与机械手指的仿生人形，身披残旧实验袍。",
+          "lighting": "冷绿基调的低照度布光，后方带有微弱暖色管灯轮廓光。",
+          "characters": [
+            {
+              "name": "鸟首生物",
+              "pose": "站立微俯身，双手握持药瓶倾倒。",
+              "appearance": "苍白的长喙鸟头，细长机械关节手指，磨损发黄的白大褂。",
+              "expression": "无表情/冷酷"
+            }
+          ],
+          "composition": "前景虚化陈列玻璃器皿，主体居中偏右，后景低饱和暗调营造纵深感。",
+          "environment": "杂乱阴暗的生化实验室，桌上陈列玻璃试剂瓶与烧杯，后景有一盏水平暖光灯管和昏暗架子。",
+          "sceneDescription": "昏暗阴冷的实验室内，一个长喙鸟首、机械躯干的人形生物身着脏旧白大褂，正在操作台前将绿色药液倾倒入烧杯。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "幽闭阴森的低频嗡鸣",
+          "soundStyle": "低沉的实验室机械杂音或微弱液体倾倒流动声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢平稳",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "中景，电影质感，暗黑生化朋克风格。在幽暗杂乱的旧实验室内，一个白鹤头颅、长鸟喙的机械生物身穿污浊破旧的白色实验大褂。其精细的机械骨骼手正稳稳倾斜小玻璃药瓶，将鲜绿色液体缓缓倒入桌面的透明烧杯中。前景摆放着虚焦的玻璃器皿，背景为昏暗模糊的墙面和一根暖黄色荧光灯管。整体色调偏向阴沉的橄榄绿与冷灰，固定机位，浅景深，逼真写实，光影神秘诡异。\n\n画面与环境: 昏暗阴冷的实验室内，一个长喙鸟首、机械躯干的人形生物身着脏旧白大褂，正在操作台前将绿色药液倾倒入烧杯。；具有长喙鹤形头颅与机械手指的仿生人形，身披残旧实验袍。；杂乱阴暗的生化实验室，桌上陈列玻璃试剂瓶与烧杯，后景有一盏水平暖光灯管和昏暗架子。\n\n人物与动作: name: 鸟首生物; appearance: 苍白的长喙鸟头，细长机械关节手指，磨损发黄的白大褂。; expression: 无表情/冷酷; pose: 站立微俯身，双手握持药瓶倾倒。；机械手缓缓倾斜手中的玻璃试剂瓶，将绿色液体精准注入下方的烧杯中。；主体动作缓慢平稳，机械手关节微动，液体连续流下。\n\n镜头与构图: 中景，平视固定镜头，浅景深聚焦于操作主体与药液。；前景虚化陈列玻璃器皿，主体居中偏右，后景低饱和暗调营造纵深感。\n\n光影与质感: 冷绿基调的低照度布光，后方带有微弱暖色管灯轮廓光。；暗绿、灰褐色调为主，点缀药液的鲜绿色与灯管微光。；暗黑生化朋克，具象写实且带复古诡异质感。\n\n声音: soundStyle: 低沉的实验室机械杂音或微弱液体倾倒流动声; ambient: 幽闭阴森的低频嗡鸣\n\n节奏与转场: editing: pacing: 缓慢平稳; techniques: 硬切",
+        "duration": 2.084,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:54:07.002Z",
+        "updatedAt": "2026-10-10T14:54:07.002Z"
+      },
+      {
+        "id": "2b52c1aa-776c-4b4a-b6d9-9dd90dc93421",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "a057d03c-432b-4b8c-9f5c-93169ab615f1",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 10.292,
+          "summary": "高架桥下的昏暗工业场景中，一位白虎兽人武士手握长刀，动作利落地调整刀刃准备迎战。",
+          "startTime": 8.042,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "偏暗绿色调的低饱和工业风，搭配角色深褐与白色毛发形成对比。",
+          "style": "电影质感，写实科幻奇幻生物风格，毛发与布料质感真实。",
+          "action": [
+            "白虎武士将右手搭在长刀刀柄上。",
+            "快速挥动并调整长刀朝向，完成拔刀准备姿态。"
+          ],
+          "camera": {
+            "angle": "平视微仰",
+            "focus": "聚焦于白虎武士面部与手部武器",
+            "speed": "平稳",
+            "lensFeel": "电影级中焦浅景深",
+            "movement": "轻微手持微晃，保持居中锁定",
+            "shotSize": "中景"
+          },
+          "motion": "角色拔刀动作干脆利落，背景保持静止。",
+          "subject": "拟人化白虎武士，面部毛发黑白条纹分明，体格强壮，目光凶狠专注。",
+          "lighting": "冷色调顶光与微弱的环境漫射光，背景有黄色与青绿色的暖色散景光点。",
+          "characters": [
+            {
+              "pose": "略微前倾，双手握持长刀刀柄与刀鞘。",
+              "identity": "白虎武士",
+              "wardrobe": "做旧破损的深红褐色长袍、单侧粗糙肩甲、布质绑手。",
+              "appearance": "白底黑纹虎头，毛发浓密，身形魁梧结实，胸肌裸露。",
+              "expression": "严肃低沉，带着杀气与警惕。"
+            }
+          ],
+          "composition": {
+            "depth": "浅景深，层次分明",
+            "layers": "前景模糊废墟散落物，中景白虎武士，后景混凝土高架桥与虚化光斑",
+            "framing": "主体居中构图"
+          },
+          "environment": "高架桥底或废弃工业区，上方为厚重的混凝土桥梁结构，远景有模糊的街灯与阴影。",
+          "sceneDescription": "混凝土立交桥下的阴暗空地，背景点缀着模糊暖黄与青色光斑。画面中央为一位拟人化白虎武士，身着残破暗红僧袍与肩甲，正低头握持武士刀拔刀或收刀。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉紧张的氛围底噪，伴随金属刀具抽动的利落摩擦声。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "pacing": "沉稳蓄势",
+          "techniques": "硬切接入与切出"
+        },
+        "generationPrompt": "电影质感中景，高架立交桥下阴暗潮湿的城市废墟。画面中央伫立着一位体格威猛的拟人化白虎武士，身穿陈旧磨损的暗红褐色武士袍，肩覆粗糙护甲，胸膛微露。他目光凶悍低沉，双手熟练握持武士刀拔出备战。背景是昏暗的混凝土桥梁与虚化的暖黄青绿街灯光斑。电影级冷绿调色彩，写实毛发细节，浅景深，微仰手持镜头。\n\n画面与环境: 混凝土立交桥下的阴暗空地，背景点缀着模糊暖黄与青色光斑。画面中央为一位拟人化白虎武士，身着残破暗红僧袍与肩甲，正低头握持武士刀拔刀或收刀。；拟人化白虎武士，面部毛发黑白条纹分明，体格强壮，目光凶狠专注。；高架桥底或废弃工业区，上方为厚重的混凝土桥梁结构，远景有模糊的街灯与阴影。\n\n人物与动作: identity: 白虎武士; appearance: 白底黑纹虎头，毛发浓密，身形魁梧结实，胸肌裸露。; wardrobe: 做旧破损的深红褐色长袍、单侧粗糙肩甲、布质绑手。; expression: 严肃低沉，带着杀气与警惕。; pose: 略微前倾，双手握持长刀刀柄与刀鞘。；白虎武士将右手搭在长刀刀柄上。; 快速挥动并调整长刀朝向，完成拔刀准备姿态。；角色拔刀动作干脆利落，背景保持静止。\n\n镜头与构图: shotSize: 中景; angle: 平视微仰; lensFeel: 电影级中焦浅景深; movement: 轻微手持微晃，保持居中锁定; focus: 聚焦于白虎武士面部与手部武器; speed: 平稳；framing: 主体居中构图; layers: 前景模糊废墟散落物，中景白虎武士，后景混凝土高架桥与虚化光斑; depth: 浅景深，层次分明\n\n光影与质感: 冷色调顶光与微弱的环境漫射光，背景有黄色与青绿色的暖色散景光点。；偏暗绿色调的低饱和工业风，搭配角色深褐与白色毛发形成对比。；电影质感，写实科幻奇幻生物风格，毛发与布料质感真实。\n\n声音: soundStyle: 低沉紧张的氛围底噪，伴随金属刀具抽动的利落摩擦声。\n\n节奏与转场: pacing: 沉稳蓄势; techniques: 硬切接入与切出",
+        "duration": 2.25,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:54:50.922Z",
+        "updatedAt": "2026-10-10T14:54:50.922Z"
+      },
+      {
+        "id": "26557b60-0785-4dab-9a4c-a15b8d252ffb",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "ee1cd341-94a6-4af9-bda4-4f079e2ab4ce",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 12.5,
+          "summary": "神秘的鳄鱼人角色在昏暗室内抽烟，缓缓吐出浓重白烟。",
+          "startTime": 10.292,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "暗绿、墨黑与昏黄色调，局部呈现橙红火光与灰白烟雾。",
+          "style": "暗黑奇幻、写实电影质感、怪物特效化妆风格。",
+          "action": "鳄鱼人将香烟从吻部移开并抬起右手，口中随即吐出一大股翻滚的白烟，烟雾在身前扩散。",
+          "camera": "中景，微仰角拍摄，焦点锁定在鳄鱼人头部与香烟，浅景深。",
+          "motion": "手部抬起的微幅动作与口鼻吐出烟雾的自然流体扩散。",
+          "subject": "拟人化鳄鱼人，具有粗糙坚硬的灰绿鳞片、尖锐牙齿，头戴小礼帽，脖挂骨齿串饰，身着做旧深色大衣。",
+          "lighting": "低调暗光照明，暖光从背景勾勒边缘，香烟暗红火光照亮指尖，面部处于阴影之中。",
+          "characters": "一名具有冷峻威严气质的爬行动物类人生物。",
+          "composition": "角色居中偏左占据画面主体，前景略带台面暗影，背景杂物层层虚化延伸空间感。",
+          "environment": "阴暗杂乱的巫师工坊或地下酒馆，后景置物架上摆满各式药瓶与杂物，伴随昏黄微弱的灯火点缀。",
+          "sceneDescription": "昏暗凌乱的密室内，一名拟人化的鳄鱼人头戴深色礼帽、身披粗糙深色外袍，指间捏着带有微红火光的香烟，正从长吻中吐出厚重烟雾。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的室内环境杂音，伴随微弱的吐气声及烟草燃烧的细微声响。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉稳",
+            "techniques": "硬切进出"
+          }
+        },
+        "generationPrompt": "电影质感中景，微仰拍。一个拟人化的鳄鱼怪物坐在昏暗破旧的室内，头部呈现写实且粗糙的爬行动物鳞片，头上戴着一顶微小的深色软呢帽，身披破旧大衣和骨质串珠。它利爪般的手指夹着一根带有橙红火光的香烟，微张布满尖牙的长嘴吐出一大团浓厚卷曲的白色烟雾。背景是堆满瓶瓶罐罐的杂乱阴暗工坊，昏黄弱光照明，墨绿调暗部，强烈的电影暗黑氛围，极其逼真的鳞片与流体烟雾物理质感。\n\n画面与环境: 昏暗凌乱的密室内，一名拟人化的鳄鱼人头戴深色礼帽、身披粗糙深色外袍，指间捏着带有微红火光的香烟，正从长吻中吐出厚重烟雾。；拟人化鳄鱼人，具有粗糙坚硬的灰绿鳞片、尖锐牙齿，头戴小礼帽，脖挂骨齿串饰，身着做旧深色大衣。；阴暗杂乱的巫师工坊或地下酒馆，后景置物架上摆满各式药瓶与杂物，伴随昏黄微弱的灯火点缀。\n\n人物与动作: 一名具有冷峻威严气质的爬行动物类人生物。；鳄鱼人将香烟从吻部移开并抬起右手，口中随即吐出一大股翻滚的白烟，烟雾在身前扩散。；手部抬起的微幅动作与口鼻吐出烟雾的自然流体扩散。\n\n镜头与构图: 中景，微仰角拍摄，焦点锁定在鳄鱼人头部与香烟，浅景深。；角色居中偏左占据画面主体，前景略带台面暗影，背景杂物层层虚化延伸空间感。\n\n光影与质感: 低调暗光照明，暖光从背景勾勒边缘，香烟暗红火光照亮指尖，面部处于阴影之中。；暗绿、墨黑与昏黄色调，局部呈现橙红火光与灰白烟雾。；暗黑奇幻、写实电影质感、怪物特效化妆风格。\n\n声音: soundStyle: 低沉压抑的室内环境杂音，伴随微弱的吐气声及烟草燃烧的细微声响。\n\n节奏与转场: editing: pacing: 缓慢沉稳; techniques: 硬切进出",
+        "duration": 2.208,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:55:33.533Z",
+        "updatedAt": "2026-10-10T14:55:33.533Z"
+      },
+      {
+        "id": "a7c0a859-3a20-4f20-8aa8-3108c3d32aa4",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "20b097ba-1faf-4335-836e-4c8b0ce21f38",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 14.708,
+          "summary": "神秘的公鸡头人形角色在昏暗的轮盘赌桌前阴郁伫立。",
+          "startTime": 12.5,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "暗绿、泥褐与暗红为主的污浊复古色调，对比鲜明且饱和度偏低。",
+          "style": "暗黑奇幻、写实电影质感、粗粝纹理。",
+          "action": "角色几乎保持静止，仅有微弱的呼吸起伏与头部细微转向。",
+          "camera": "中景胸像，平视拍摄，浅景深使背景轮盘柔和虚化，镜头几乎静止。",
+          "motion": "极其缓慢的生理呼吸微动，整体气氛凝固。",
+          "subject": "逼真的拟人化公鸡生物，具备真实的鸟类头部特征与人类躯干。",
+          "lighting": "低调弱光，微弱顶光勾勒羽毛与衣领边缘，面部大部处于深阴影中。",
+          "characters": "一位拥有公鸡头部的人形角色，羽毛呈暗红与褐色，身穿做旧深色皮革外套、内搭浅色衣物并佩戴金属圆环配饰，姿态沉稳压迫。",
+          "composition": "主体居中偏左占据前景核心，右后侧放置轮盘赌具营造景深与空间关系。",
+          "environment": "地下赌场或昏暗酒吧，光线微弱浑浊，右后方置有木质轮盘赌装置。",
+          "sceneDescription": "昏暗压抑的室内空间，公鸡头颅的人形生物静止站立于前景，背景隐约可见一张模糊的轮盘赌桌。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉的压抑环境低频嗡鸣或微弱室内杂音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉稳凝重",
+            "techniques": "前后硬切"
+          }
+        },
+        "generationPrompt": "电影质感中景特写，暗黑奇幻风格。画面中心为一个拟人化公鸡头角色，羽毛暗红凌乱，长喙下垂，身穿粗糙厚重的深色做旧皮革风衣与浅色衬衫，颈戴金属项圈。背景是极度虚化的昏暗赌场轮盘桌。微弱顶光投射，大部分面部掩映在浓厚阴影中，墨绿与焦褐色调，逼真羽毛与皮革质感，微弱呼吸动态，浅景深电影画面。\n\n画面与环境: 昏暗压抑的室内空间，公鸡头颅的人形生物静止站立于前景，背景隐约可见一张模糊的轮盘赌桌。；逼真的拟人化公鸡生物，具备真实的鸟类头部特征与人类躯干。；地下赌场或昏暗酒吧，光线微弱浑浊，右后方置有木质轮盘赌装置。\n\n人物与动作: 一位拥有公鸡头部的人形角色，羽毛呈暗红与褐色，身穿做旧深色皮革外套、内搭浅色衣物并佩戴金属圆环配饰，姿态沉稳压迫。；角色几乎保持静止，仅有微弱的呼吸起伏与头部细微转向。；极其缓慢的生理呼吸微动，整体气氛凝固。\n\n镜头与构图: 中景胸像，平视拍摄，浅景深使背景轮盘柔和虚化，镜头几乎静止。；主体居中偏左占据前景核心，右后侧放置轮盘赌具营造景深与空间关系。\n\n光影与质感: 低调弱光，微弱顶光勾勒羽毛与衣领边缘，面部大部处于深阴影中。；暗绿、泥褐与暗红为主的污浊复古色调，对比鲜明且饱和度偏低。；暗黑奇幻、写实电影质感、粗粝纹理。\n\n声音: soundStyle: 低沉的压抑环境低频嗡鸣或微弱室内杂音。\n\n节奏与转场: editing: pacing: 沉稳凝重; techniques: 前后硬切",
+        "duration": 2.208,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:56:13.768Z",
+        "updatedAt": "2026-10-10T14:56:13.768Z"
+      },
+      {
+        "id": "d4bd08b6-d676-4940-9f6b-9bb7f799868b",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "7fa531a0-c3cd-49ce-9120-5a819b342f8d",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 17.083,
+          "summary": "一名身穿深色皮衣的拟人化熊猫角色静坐在高楼窗边的真皮扶手椅上，凝视着窗外雨雾笼罩的城市天际线。",
+          "startTime": 14.708,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "暗沉的绿灰冷色调与阴霾黄灰色天光融合，低饱和度，具有新黑色电影质感。",
+          "style": "电影级超写实奇幻现实主义，强调毛发与皮革纹理细节。",
+          "action": [
+            "镜头起始于椅背正后方，遮挡住角色面部。",
+            "镜头向右前方缓缓平移滑动，椅背移出中心，露出熊猫角色的侧脸与身躯。",
+            "熊猫角色保持静止坐姿，目光深沉地凝望窗外阴雨城市。"
+          ],
+          "camera": {
+            "angle": "平视微仰角",
+            "focus": "焦点锁定在熊猫角色的面部及皮革质感上",
+            "speed": "平稳缓慢",
+            "lensFeel": "电影级浅景深中焦镜头，主体锐利，窗外背景柔和虚化",
+            "movement": "平滑的半环绕平移运镜 (Orbit/Pan Right)",
+            "shotSize": "中景 (Medium Shot)"
+          },
+          "motion": "镜头平滑向右推进滑移，角色自身微弱呼吸感起伏，窗外雨雾静止或缓慢流动。",
+          "subject": "头部为逼真大熊猫特征的拟人化男性角色，黑白毛发质感清晰，神态沉稳冷峻，身体为强壮的人形结构。",
+          "lighting": "低调冷调电影光，自然侧逆漫射光穿过窗户勾勒角色轮廓，室内阴影深沉浓郁。",
+          "characters": [
+            {
+              "pose": "倚靠在皮革高背椅扶手旁，身体微侧，头部略微转向窗户方向。",
+              "identity": "熊猫人/黑帮首领风格角色",
+              "wardrobe": "质感粗粝的黑色皮质夹克风衣，内搭深色马甲与衬衫，手戴暗色皮手套与金属戒指饰品。",
+              "appearance": "逼真的大熊猫面部与头部，黑白相间毛发，黑色圆耳，深邃双眼；身形魁梧的男性体魄。",
+              "expression": "冷峻、若有所思、威严沉静。"
+            }
+          ],
+          "composition": "左侧近景为深色皮革高背椅与熊猫角色构筑主体，右侧为大面积落地窗与纵深雾气城市背景，形成明暗与虚实对比。",
+          "environment": "高层豪华办公室或公寓内部，紧邻巨大落地玻璃窗，窗上有细微雨滴滑落；室外是阴雨蒙蒙、高楼林立的现代都市全景。",
+          "sceneDescription": "高层室内昏暗房间，一把复古棕黑色高背皮椅背对或侧对镜头。镜头从椅背后方平滑环绕运镜，显露出坐在椅上的写实熊猫人。熊猫人身着深色质感皮夹克与马甲，转头望向巨大的落地玻璃窗。窗外是下着雨、笼罩在阴暗雾气中的现代高楼摩天大厦群。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的环境氛围音，窗外隐约的雨声与低频弦乐背景（推断）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉稳",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "电影级中景，阴郁的新黑色电影风格。镜头从一张复古深色高背皮革扶手椅后方缓慢向右平移环绕，显露出一名长着写实大熊猫头部的拟人化角色。他身穿纹理丰富的黑色皮质夹克与深色马甲，双手戴暗色皮手套，神情冷峻深沉地倚坐着。他身旁是巨大的落地玻璃窗，窗上挂着微细雨水，窗外是雾霾与阴雨笼罩下的现代摩天大楼天际线。低调冷绿色调照明，窗外漫射冷光勾勒毛发边缘，浅景深，高细节质感，缓慢稳定的镜头运动。\n\n画面与环境: 高层室内昏暗房间，一把复古棕黑色高背皮椅背对或侧对镜头。镜头从椅背后方平滑环绕运镜，显露出坐在椅上的写实熊猫人。熊猫人身着深色质感皮夹克与马甲，转头望向巨大的落地玻璃窗。窗外是下着雨、笼罩在阴暗雾气中的现代高楼摩天大厦群。；头部为逼真大熊猫特征的拟人化男性角色，黑白毛发质感清晰，神态沉稳冷峻，身体为强壮的人形结构。；高层豪华办公室或公寓内部，紧邻巨大落地玻璃窗，窗上有细微雨滴滑落；室外是阴雨蒙蒙、高楼林立的现代都市全景。\n\n人物与动作: identity: 熊猫人/黑帮首领风格角色; appearance: 逼真的大熊猫面部与头部，黑白相间毛发，黑色圆耳，深邃双眼；身形魁梧的男性体魄。; wardrobe: 质感粗粝的黑色皮质夹克风衣，内搭深色马甲与衬衫，手戴暗色皮手套与金属戒指饰品。; expression: 冷峻、若有所思、威严沉静。; pose: 倚靠在皮革高背椅扶手旁，身体微侧，头部略微转向窗户方向。；镜头起始于椅背正后方，遮挡住角色面部。; 镜头向右前方缓缓平移滑动，椅背移出中心，露出熊猫角色的侧脸与身躯。; 熊猫角色保持静止坐姿，目光深沉地凝望窗外阴雨城市。；镜头平滑向右推进滑移，角色自身微弱呼吸感起伏，窗外雨雾静止或缓慢流动。\n\n镜头与构图: shotSize: 中景 (Medium Shot); angle: 平视微仰角; lensFeel: 电影级浅景深中焦镜头，主体锐利，窗外背景柔和虚化; movement: 平滑的半环绕平移运镜 (Orbit/Pan Right); focus: 焦点锁定在熊猫角色的面部及皮革质感上; speed: 平稳缓慢；左侧近景为深色皮革高背椅与熊猫角色构筑主体，右侧为大面积落地窗与纵深雾气城市背景，形成明暗与虚实对比。\n\n光影与质感: 低调冷调电影光，自然侧逆漫射光穿过窗户勾勒角色轮廓，室内阴影深沉浓郁。；暗沉的绿灰冷色调与阴霾黄灰色天光融合，低饱和度，具有新黑色电影质感。；电影级超写实奇幻现实主义，强调毛发与皮革纹理细节。\n\n声音: soundStyle: 低沉压抑的环境氛围音，窗外隐约的雨声与低频弦乐背景（推断）。\n\n节奏与转场: editing: pacing: 缓慢沉稳; techniques: 硬切入，硬切出",
+        "duration": 2.375,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:56:47.661Z",
+        "updatedAt": "2026-10-10T14:56:47.661Z"
+      },
+      {
+        "id": "09e4bfaf-6ca7-448f-9185-f8ff983c718e",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "35e70b5b-3226-477d-9411-a647f4f3a484",
+        "sceneIndex": 8,
+        "story": {
+          "endTime": 19.125,
+          "summary": "一只体型臃肿、神情凶悍的拟人化蟾蜍暴徒靠坐着，伸手拉扯颈间的金链。",
+          "startTime": 17.083,
+          "sceneIndex": 8
+        },
+        "visual": {
+          "color": {
+            "grading": "低饱和度、高对比度的工业暗色调",
+            "palette": "墨绿色、皮衣深黑、肚皮苍白、金链暗黄"
+          },
+          "style": "暗黑奇幻、拟人化生物朋克写实风",
+          "action": [
+            {
+              "order": 1,
+              "description": "蟾蜍头目靠坐着，左手由前下方抬起，抓住脖子上的粗金项链并向前拉扯摆弄。"
+            }
+          ],
+          "camera": {
+            "angle": "微俯视角度",
+            "focus": "聚焦于蟾蜍的面部及胸前金链",
+            "speed": "平稳静止",
+            "lensFeel": "中焦电影镜头，浅景深",
+            "movement": "镜头固定或极为缓慢的推镜头",
+            "shotSize": "中景特写"
+          },
+          "motion": "人物手部微动拉扯项链，整体躯干沉稳静止",
+          "subject": "拟人化巨型蟾蜍黑帮头目，面部粗糙多瘤，带有凶狠的黄色眼睛，身型肥硕。",
+          "lighting": {
+            "mood": "压抑、阴冷、写实罪恶感",
+            "type": "暗调冷光配合顶部微弱主光",
+            "direction": "左上方侧顶光"
+          },
+          "characters": [
+            {
+              "pose": "向后斜倚坐着，左手抬起握住并摆弄胸前的金链。",
+              "identity": "蟾蜍兽人头目",
+              "wardrobe": "敞开的黑色机车皮夹克，多根粗金项链，镶嵌饰品腰带，粗大戒指。",
+              "appearance": "粗糙带疣的深灰绿色蟾蜍皮肤，黄色爬行动物眼，无发，凸肚胖体。",
+              "expression": "冷峻、凶狠且带有威胁意味的低沉神态。"
+            }
+          ],
+          "composition": {
+            "depth": "浅景深，背景强烈虚化",
+            "midground": "占据画面核心的蟾蜍头目及其躯干动作",
+            "background": "暗调模糊的杂乱背景",
+            "foreground": "虚化的前景空间",
+            "subjectPlacement": "偏向画面中左侧"
+          },
+          "environment": "阴暗脏乱的地下室或朋克废墟，背景可见模糊的杂物架和零散金属物件。",
+          "sceneDescription": "阴暗杂乱的室内环境中，一只巨大的拟人化蟾蜍生物身穿黑色皮夹克，敞怀露出灰白色肚腩，手戴戒指，正在拉扯粗金项链。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "foley": "金属链条轻微摩擦与皮革摩擦声",
+          "ambient": "昏暗室内的低沉机械嗡鸣",
+          "soundStyle": "低沉环境底噪，可能伴随金属项链轻微摩擦声与沉重呼吸声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢凝重",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "暗黑奇幻写实风格，中景特写。一只身材肥硕凶狠的拟人化蟾蜍暴徒靠坐着，皮肤粗糙布满疙瘩，长着黄色竖瞳。他敞怀穿着带有柳钉的黑色机车皮夹克，裸露灰白肚皮，粗糙的手戴着戒指拉扯胸前的粗金项链。背景是昏暗杂乱的工业废墟，浅景深。冷峻侧顶光，低饱和暗绿色调，电影质感质地逼真。\n\n画面与环境: 阴暗杂乱的室内环境中，一只巨大的拟人化蟾蜍生物身穿黑色皮夹克，敞怀露出灰白色肚腩，手戴戒指，正在拉扯粗金项链。；拟人化巨型蟾蜍黑帮头目，面部粗糙多瘤，带有凶狠的黄色眼睛，身型肥硕。；阴暗脏乱的地下室或朋克废墟，背景可见模糊的杂物架和零散金属物件。\n\n人物与动作: identity: 蟾蜍兽人头目; appearance: 粗糙带疣的深灰绿色蟾蜍皮肤，黄色爬行动物眼，无发，凸肚胖体。; wardrobe: 敞开的黑色机车皮夹克，多根粗金项链，镶嵌饰品腰带，粗大戒指。; expression: 冷峻、凶狠且带有威胁意味的低沉神态。; pose: 向后斜倚坐着，左手抬起握住并摆弄胸前的金链。；order: 1; description: 蟾蜍头目靠坐着，左手由前下方抬起，抓住脖子上的粗金项链并向前拉扯摆弄。；人物手部微动拉扯项链，整体躯干沉稳静止\n\n镜头与构图: shotSize: 中景特写; angle: 微俯视角度; lensFeel: 中焦电影镜头，浅景深; movement: 镜头固定或极为缓慢的推镜头; focus: 聚焦于蟾蜍的面部及胸前金链; speed: 平稳静止；foreground: 虚化的前景空间; midground: 占据画面核心的蟾蜍头目及其躯干动作; background: 暗调模糊的杂乱背景; subjectPlacement: 偏向画面中左侧; depth: 浅景深，背景强烈虚化\n\n光影与质感: type: 暗调冷光配合顶部微弱主光; direction: 左上方侧顶光; mood: 压抑、阴冷、写实罪恶感；palette: 墨绿色、皮衣深黑、肚皮苍白、金链暗黄; grading: 低饱和度、高对比度的工业暗色调；暗黑奇幻、拟人化生物朋克写实风\n\n声音: soundStyle: 低沉环境底噪，可能伴随金属项链轻微摩擦声与沉重呼吸声; ambient: 昏暗室内的低沉机械嗡鸣; foley: 金属链条轻微摩擦与皮革摩擦声\n\n节奏与转场: editing: pacing: 缓慢凝重; techniques: 硬切入，硬切出",
+        "duration": 2.042,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:57:20.443Z",
+        "updatedAt": "2026-10-10T14:57:20.443Z"
+      },
+      {
+        "id": "8d400d85-6736-4621-853b-0c3c8f5312c7",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "9b04a527-ddad-4e36-8c0a-7a56f79d5fa9",
+        "sceneIndex": 9,
+        "story": {
+          "endTime": 21.375,
+          "summary": "斗牛犬兽人帮派头目坐在昏暗的茶室中，傲慢地仰起头审视四周。",
+          "startTime": 19.125,
+          "sceneIndex": 9
+        },
+        "visual": {
+          "color": "墨绿色与暗青调为主，点缀暖黄与暗红霓虹光，袍服呈深绛红。",
+          "style": "暗黑奇幻写实风格，带有赛博东方质感与细腻皮肤纹理。",
+          "action": "头目初始正坐平视，随后昂起头颅微扬下巴，最后略微收回，维持睥睨全场的坐姿。",
+          "camera": "中景，正视微仰角度，浅景深固定镜头，焦点锁定在斗牛犬头目躯干与面部。",
+          "motion": "主体头部微幅上扬后微收，背景轻微光影流动，镜头近乎静止。",
+          "subject": "拟人化斗牛犬黑帮头目，体格魁梧，神情威严傲慢。",
+          "lighting": "冷绿基底环境光搭配点状暖黄灯笼光，暗部深邃，主体肌肉有高光勾勒。",
+          "characters": "斗牛犬兽人，褶皱犬脸，露出精壮胸腹肌，戴粗金项链与徽章，身穿暗红宽松长袍。",
+          "composition": "中心对称构图，前景虚化茶具茶壶，中景主体端坐，背景层叠延伸。",
+          "environment": "昏暗赛博朋克茶馆室内，背景有木格栅、模糊闲客，挂有暖黄灯笼与红色霓虹灯字。",
+          "sceneDescription": "昏暗中式赛博风格茶室内，强壮的拟人化斗牛犬头目身着敞怀暗红僧袍靠坐大椅上。前景为茶几茶具，背景有朦胧灯笼与红色霓虹汉字。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "低沉环境低鸣伴随微弱市井杂音与厚重压迫感的悬疑音效。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢凝重",
+            "techniques": "前后均为硬切"
+          }
+        },
+        "generationPrompt": "电影质感中景，一位体格魁梧的拟人化斗牛犬黑帮老大端坐于中式交椅上，袒露强壮的胸腹肌，佩戴粗大金链与肩饰金牌，身裹暗绛红色敞怀长袍。前景桌面摆放精致陶制茶壶茶杯，背景为烟雾缭绕的昏暗东方赛博茶馆，带有发光红字霓虹与暖黄灯笼。斗牛犬头目缓缓昂起头傲慢审视，深色调墨绿与暗影交织，冷峻写实，浅景深固定机位。\n\n画面与环境: 昏暗中式赛博风格茶室内，强壮的拟人化斗牛犬头目身着敞怀暗红僧袍靠坐大椅上。前景为茶几茶具，背景有朦胧灯笼与红色霓虹汉字。；拟人化斗牛犬黑帮头目，体格魁梧，神情威严傲慢。；昏暗赛博朋克茶馆室内，背景有木格栅、模糊闲客，挂有暖黄灯笼与红色霓虹灯字。\n\n人物与动作: 斗牛犬兽人，褶皱犬脸，露出精壮胸腹肌，戴粗金项链与徽章，身穿暗红宽松长袍。；头目初始正坐平视，随后昂起头颅微扬下巴，最后略微收回，维持睥睨全场的坐姿。；主体头部微幅上扬后微收，背景轻微光影流动，镜头近乎静止。\n\n镜头与构图: 中景，正视微仰角度，浅景深固定镜头，焦点锁定在斗牛犬头目躯干与面部。；中心对称构图，前景虚化茶具茶壶，中景主体端坐，背景层叠延伸。\n\n光影与质感: 冷绿基底环境光搭配点状暖黄灯笼光，暗部深邃，主体肌肉有高光勾勒。；墨绿色与暗青调为主，点缀暖黄与暗红霓虹光，袍服呈深绛红。；暗黑奇幻写实风格，带有赛博东方质感与细腻皮肤纹理。\n\n声音: style: 低沉环境低鸣伴随微弱市井杂音与厚重压迫感的悬疑音效。\n\n节奏与转场: editing: pacing: 缓慢凝重; techniques: 前后均为硬切",
+        "duration": 2.25,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:57:52.712Z",
+        "updatedAt": "2026-10-10T14:57:52.712Z"
+      },
+      {
+        "id": "3b5c91ca-49c9-4c3a-a2ce-6cc87d9a3bfc",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "865e2ebe-73c3-46d6-a685-d18068de2d1a",
+        "sceneIndex": 10,
+        "story": {
+          "endTime": 23.542,
+          "summary": "负伤的狐狸剑客手握长剑，在昏暗潮湿的丛林中低姿潜伏，警惕戒备。",
+          "startTime": 21.375,
+          "sceneIndex": 10
+        },
+        "visual": {
+          "color": "暗墨绿、泥褐色与冷黑为主，低饱和度电影调色。",
+          "style": "写实奇幻电影质感，逼真的动物毛发与衣物织物细节。",
+          "action": "狐狸剑客压低身体潜伏，右手紧扣剑柄，头部保持微幅戒备性转动，目光锐利。",
+          "camera": "中近景，微低角度仰拍，浅景深虚化背景，轻微向前缓慢推进。",
+          "motion": "微幅平缓的呼吸起伏与头部微动，整体姿态紧绷静止。",
+          "subject": "拟人化狐狸剑客",
+          "lighting": "冷调暗光环境，微弱顶部漫射光照亮狐狸额面毛发与刀柄边缘。",
+          "characters": "棕黄色毛发的狐狸面容，额头带有暗红色血迹伤口，眼神凌厉，身穿深色带有金色织金暗纹的古代武袍。",
+          "composition": "剑客头部位于中心偏左上方，持剑手部横亘前景偏右，形成前后纵深。",
+          "environment": "阴暗潮湿的原始丛林，背景为虚化的深绿植被与交错树影。",
+          "sceneDescription": "幽暗密林中，一只身着暗色古装的拟人狐狸剑客手握出鞘长剑，俯身警惕注视侧前方，额部带有血迹。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "description": "幽暗密林的微弱风声与低频紧张环境氛围音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢紧绷",
+            "techniques": "前后硬切"
+          }
+        },
+        "generationPrompt": "电影写实质感，中近景微低角度。一只拟人化的狐狸剑客压低身躯潜伏在幽暗潮湿的丛林中。狐狸毛发纤毫毕现且略带湿意，额头有一道干涸的暗红血痕，黄色眼眸警惕注视右侧。身穿古朴破旧的深色暗金纹武士长袍，右手稳固横握一把长剑刀柄。背景为大光圈虚化的深绿丛林枝叶，微弱冷调天光在毛发边缘勾勒出微光。阴郁冷峻色调，高对比度，悬疑肃杀氛围。\n\n画面与环境: 幽暗密林中，一只身着暗色古装的拟人狐狸剑客手握出鞘长剑，俯身警惕注视侧前方，额部带有血迹。；拟人化狐狸剑客；阴暗潮湿的原始丛林，背景为虚化的深绿植被与交错树影。\n\n人物与动作: 棕黄色毛发的狐狸面容，额头带有暗红色血迹伤口，眼神凌厉，身穿深色带有金色织金暗纹的古代武袍。；狐狸剑客压低身体潜伏，右手紧扣剑柄，头部保持微幅戒备性转动，目光锐利。；微幅平缓的呼吸起伏与头部微动，整体姿态紧绷静止。\n\n镜头与构图: 中近景，微低角度仰拍，浅景深虚化背景，轻微向前缓慢推进。；剑客头部位于中心偏左上方，持剑手部横亘前景偏右，形成前后纵深。\n\n光影与质感: 冷调暗光环境，微弱顶部漫射光照亮狐狸额面毛发与刀柄边缘。；暗墨绿、泥褐色与冷黑为主，低饱和度电影调色。；写实奇幻电影质感，逼真的动物毛发与衣物织物细节。\n\n声音: description: 幽暗密林的微弱风声与低频紧张环境氛围音。\n\n节奏与转场: editing: pacing: 缓慢紧绷; techniques: 前后硬切",
+        "duration": 2.167,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:58:31.201Z",
+        "updatedAt": "2026-10-10T14:58:31.201Z"
+      },
+      {
+        "id": "1e497a37-068b-40d1-86a5-b1414374d6db",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "5faf0570-0bc3-45a1-8997-c994b0eb93f4",
+        "sceneIndex": 11,
+        "story": {
+          "endTime": 27.209,
+          "summary": "昏暗酒吧吧台前，戴着宽檐帽的狼人举起酒杯仰头饮酒，随后画面渐隐入黑。",
+          "startTime": 23.542,
+          "sceneIndex": 11
+        },
+        "visual": {
+          "color": "暗黄褐色调，深棕与阴影深黑结合。",
+          "style": "电影写实暗黑哥特风。",
+          "action": [
+            {
+              "order": 1,
+              "description": "狼人靠在吧台前，握着盛有琥珀色液体的雕花玻璃杯。"
+            },
+            {
+              "order": 2,
+              "description": "抬起酒杯送至吻部仰头饮尽。"
+            },
+            {
+              "order": 3,
+              "description": "画面逐渐变暗直至黑屏全黑。"
+            }
+          ],
+          "camera": {
+            "angle": "平视微侧",
+            "focus": "焦点锁定在狼人侧脸与手中的酒杯",
+            "speed": "平稳慢速",
+            "lensFeel": "中焦浅景深电影镜头",
+            "movement": "固定机位，轻微手持微动",
+            "shotSize": "中景侧面特写"
+          },
+          "motion": "饮酒动作平缓连贯，随后渐隐变黑。",
+          "subject": "狼人酒客，拟人化狼头造型，灰褐色毛发，头戴宽檐软呢帽，身穿深蓝色或黑色大衣，毛茸茸的爪子搭在吧台上。",
+          "lighting": "低调侧光与逆光轮廓，暖暗色调，昏黄局部光突出毛发质感。",
+          "characters": [
+            {
+              "pose": "右臂撑在吧台上，左手持酒杯饮酒。",
+              "identity": "狼人",
+              "wardrobe": "深色宽檐礼帽、深蓝或深灰粗呢外套。",
+              "appearance": "野兽面孔覆盖灰褐色毛发，长吻部，身穿深色厚重外套与衬衫，手部为兽爪毛发。",
+              "expression": "沉郁、冷漠。"
+            }
+          ],
+          "composition": {
+            "midground": "右侧居中的狼人及其手臂动作",
+            "background": "虚焦的酒馆杂乱暖黄灯光与阴影",
+            "foreground": "吧台左侧的透明酒瓶与空杯"
+          },
+          "environment": "低照明度的复古西部或维多利亚风酒吧，台面为反光木质长条吧台，背景可见模糊暖光散景与酒瓶影子。",
+          "sceneDescription": "昏暗复古酒吧内，一位身穿深色风衣、头戴宽檐帽的狼人靠坐在木质吧台前，拿起玻璃威士忌杯送入口中饮下，背景微弱散景灯光闪烁，尾段淡入全黑。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "speech": "无对白",
+          "ambientMusic": "低沉压抑的配乐尾声或环境氛围音",
+          "soundEffects": "环境酒吧低沉杂音、玻璃轻微碰触与液体吞咽声（可能）"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "pacing": "沉稳缓慢",
+          "techniques": {
+            "in": "硬切",
+            "out": "黑屏渐隐"
+          }
+        },
+        "generationPrompt": "电影质感，侧面中景。昏暗复古酒馆内，一位逼真的拟人化狼人头戴深色宽檐牛仔帽，身穿深色粗呢大衣，坐在反光的木质吧台前。他毛茸茸的爪子端起一杯琥珀色威士忌，仰头送至狼吻饮下。前景有玻璃酒瓶虚影，背景是昏暗温暖的光斑与深沉阴影。低调侧光勾勒出灰褐色毛发细节，整体色调呈阴暗泛黄的油画质感，动作缓慢，随后画面渐变全黑。\n\n画面与环境: 昏暗复古酒吧内，一位身穿深色风衣、头戴宽檐帽的狼人靠坐在木质吧台前，拿起玻璃威士忌杯送入口中饮下，背景微弱散景灯光闪烁，尾段淡入全黑。；狼人酒客，拟人化狼头造型，灰褐色毛发，头戴宽檐软呢帽，身穿深蓝色或黑色大衣，毛茸茸的爪子搭在吧台上。；低照明度的复古西部或维多利亚风酒吧，台面为反光木质长条吧台，背景可见模糊暖光散景与酒瓶影子。\n\n人物与动作: identity: 狼人; appearance: 野兽面孔覆盖灰褐色毛发，长吻部，身穿深色厚重外套与衬衫，手部为兽爪毛发。; wardrobe: 深色宽檐礼帽、深蓝或深灰粗呢外套。; expression: 沉郁、冷漠。; pose: 右臂撑在吧台上，左手持酒杯饮酒。；order: 1; description: 狼人靠在吧台前，握着盛有琥珀色液体的雕花玻璃杯。; order: 2; description: 抬起酒杯送至吻部仰头饮尽。; order: 3; description: 画面逐渐变暗直至黑屏全黑。；饮酒动作平缓连贯，随后渐隐变黑。\n\n镜头与构图: shotSize: 中景侧面特写; angle: 平视微侧; lensFeel: 中焦浅景深电影镜头; movement: 固定机位，轻微手持微动; focus: 焦点锁定在狼人侧脸与手中的酒杯; speed: 平稳慢速；foreground: 吧台左侧的透明酒瓶与空杯; midground: 右侧居中的狼人及其手臂动作; background: 虚焦的酒馆杂乱暖黄灯光与阴影\n\n光影与质感: 低调侧光与逆光轮廓，暖暗色调，昏黄局部光突出毛发质感。；暗黄褐色调，深棕与阴影深黑结合。；电影写实暗黑哥特风。\n\n声音: speech: 无对白; soundEffects: 环境酒吧低沉杂音、玻璃轻微碰触与液体吞咽声（可能）; ambientMusic: 低沉压抑的配乐尾声或环境氛围音\n\n节奏与转场: pacing: 沉稳缓慢; techniques: in: 硬切; out: 黑屏渐隐",
+        "duration": 3.667,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:59:07.729Z",
+        "updatedAt": "2026-10-10T14:59:07.729Z"
+      }
+    ],
+    "referenceVideos": [
+      {
+        "id": "7e77dca9-cfb5-481f-a0f8-4e08c6ddcbc8",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "sourceUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/87066363-c919-4c68-8ea7-53b176adf9ef/video/b820b3b6-b8f6-4b7d-9ebc-8ba8c1c5d49b-98dbda782b986a1452deb45fb8bc2ebc.mp4",
+        "fileName": "98dbda782b986a1452deb45fb8bc2ebc.mp4",
+        "mimeType": null,
+        "duration": 27,
+        "metadata": {},
+        "createdAt": "2026-10-10T14:34:39.686Z"
+      }
+    ],
+    "activeVersion": {
+      "id": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+      "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+      "parentVersionId": null,
+      "versionNumber": 0,
+      "kind": "original",
+      "label": "原始版本",
+      "remixPrompt": null,
+      "overview": {
+        "sceneCount": 11
+      },
+      "metadata": {},
+      "createdAt": "2026-10-10T14:34:39.686Z",
+      "updatedAt": "2026-10-10T14:34:39.686Z"
+    },
+    "allSceneVersions": [
+      {
+        "id": "278643b2-f31b-4c82-adbb-379a541c9502",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "faa06abe-c110-4ca4-8e77-f288adea8fa3",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 3.625,
+          "summary": "一只拟人化的虎斑猫牛仔慵懒地倚靠在车厢窗边，神态从容，随后缓缓抬爪轻扶牛仔帽檐。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖黄、复古棕与暗墨绿色调，胶片颗粒质感。",
+          "style": "真人电影级写实CG质感，毛发与衣物皮革纹理清晰可见。",
+          "action": "猫咪斜靠在座椅靠背上，目光望向车厢上方，动作舒缓，随后抬起右前爪轻扶帽檐。",
+          "camera": "中近景，微低角度仰拍，浅景深对焦在猫咪面部，伴随极微弱的镜头手持呼吸感。",
+          "motion": "爪部平稳缓慢抬起，胡须与眼神随动作微动，整体节奏舒缓。",
+          "subject": "拟人化虎斑猫牛仔",
+          "lighting": "电影感低调暖光，顶部弱侧光勾勒出猫咪面部轮廓及皮革反光，明暗对比较强。",
+          "characters": "一只逼真写实的虎斑猫，绿眼睛，佩戴棕色皮质牛仔帽，身穿棕色流苏皮夹克、浅色衬衫并系着宽皮带。",
+          "composition": "主体位于画面中心偏左，右侧留有车窗与延伸空间，形成对角线倚靠构图。",
+          "environment": "复古列车或地铁车厢内部，背景带有车窗与金属车壁结构，窗外有模糊的光影掠过。",
+          "sceneDescription": "昏暗且具电影质感的列车车厢内，一只身着复古牛仔装的虎斑猫斜倚在窗边座椅上，眼神望向斜上方，随后从容抬起右爪扶向帽檐。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "老旧车厢运行的低频隆隆声，伴随轻微皮革摩擦细节（推测）。"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓稳定",
+            "techniques": "硬切进入，单镜头持续慢速叙事"
+          }
+        },
+        "generationPrompt": "电影质感中近景，一只拟人化的虎斑猫牛仔慵懒斜倚在复古车厢窗边。它头戴棕色宽檐牛仔帽，身穿带流苏的做旧棕色皮夹克和浅色衬衫。猫咪绿眼睛深邃，凝视斜上方，动作缓慢地抬起毛茸茸的爪子轻扶帽檐。车厢光线昏暗，暖黄色侧光勾勒细腻毛发与皮革纹理，微低角度仰拍，逼真写实，画面具有浓郁的西部复古胶片感。\n\n画面与环境: 昏暗且具电影质感的列车车厢内，一只身着复古牛仔装的虎斑猫斜倚在窗边座椅上，眼神望向斜上方，随后从容抬起右爪扶向帽檐。；拟人化虎斑猫牛仔；复古列车或地铁车厢内部，背景带有车窗与金属车壁结构，窗外有模糊的光影掠过。\n\n人物与动作: 一只逼真写实的虎斑猫，绿眼睛，佩戴棕色皮质牛仔帽，身穿棕色流苏皮夹克、浅色衬衫并系着宽皮带。；猫咪斜靠在座椅靠背上，目光望向车厢上方，动作舒缓，随后抬起右前爪轻扶帽檐。；爪部平稳缓慢抬起，胡须与眼神随动作微动，整体节奏舒缓。\n\n镜头与构图: 中近景，微低角度仰拍，浅景深对焦在猫咪面部，伴随极微弱的镜头手持呼吸感。；主体位于画面中心偏左，右侧留有车窗与延伸空间，形成对角线倚靠构图。\n\n光影与质感: 电影感低调暖光，顶部弱侧光勾勒出猫咪面部轮廓及皮革反光，明暗对比较强。；暖黄、复古棕与暗墨绿色调，胶片颗粒质感。；真人电影级写实CG质感，毛发与衣物皮革纹理清晰可见。\n\n声音: soundStyle: 老旧车厢运行的低频隆隆声，伴随轻微皮革摩擦细节（推测）。\n\n节奏与转场: editing: pacing: 舒缓稳定; techniques: 硬切进入，单镜头持续慢速叙事",
+        "duration": 3.625,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:35:20.203Z",
+        "updatedAt": "2026-10-10T14:35:20.203Z"
+      },
+      {
+        "id": "a73fb19a-ed1b-4860-8b7d-73d37a57072c",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "5ef00b5f-3a07-4a03-9212-8d3209d56780",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 5.958,
+          "summary": "身披华美法衣的拟人化灵鼠神色庄重，合十闭目躬身行礼。",
+          "startTime": 3.625,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "暖红锦缎与冷青护甲对比，整体色调偏暗调暖金。",
+          "style": "东方奇幻高精CG电影质感，毛发与织物纹理写实细腻。",
+          "action": "双手合十立于胸前，黑亮双眼缓缓闭合，随之上半身与头部低垂行礼。",
+          "camera": "中景，平视微仰，浅景深虚化背景，随低头动作有极轻微下移。",
+          "motion": "闭眼至鞠躬动作缓慢连贯，极具沉静仪式感。",
+          "subject": "拟人化白灰毛发灵鼠，生有圆耳与黑色利爪，佩戴金属额饰。",
+          "lighting": "低照度环境光，侧逆光勾勒毛发边缘，暗部层次细腻柔和。",
+          "characters": "灵鼠着朱红配暗青刺绣锦袍与肩甲，神情恭敬虔诚。",
+          "composition": "主体位于画面右侧，左侧留出虚化的建筑与光斑，层次分明。",
+          "environment": "古建殿宇或庭院虚焦背景，伴有昏暗微光与暖色散景斑点。",
+          "sceneDescription": "昏暗古典殿宇背景下，身穿朱红与青绿华服的灵鼠角色双手合十，随后缓缓闭目、低头躬身施礼。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "foley": "细微的布料衣袍摩擦声（推测）",
+          "music": "庄重平缓的东方玄幻配乐风格（推测）",
+          "ambientSound": "沉静幽深的殿堂氛围底噪"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉稳缓慢",
+            "techniques": "前后硬切（hard_cut）"
+          }
+        },
+        "generationPrompt": "电影级东方奇幻三维渲染，写实中景。一只拟人化的灵鼠仙人身着精致朱红与青铜色刺绣长袍及肩甲，头戴金属额饰。它站在昏暗殿宇前，尖爪双手在胸前合十。起初它目光凝视，随后缓缓闭合双眼，恭敬地垂头躬身行礼。浅景深镜头，背景为模糊古建与暖色微光光斑，侧逆光柔和照亮细腻毛发，氛围肃穆庄严。\n\n画面与环境: 昏暗古典殿宇背景下，身穿朱红与青绿华服的灵鼠角色双手合十，随后缓缓闭目、低头躬身施礼。；拟人化白灰毛发灵鼠，生有圆耳与黑色利爪，佩戴金属额饰。；古建殿宇或庭院虚焦背景，伴有昏暗微光与暖色散景斑点。\n\n人物与动作: 灵鼠着朱红配暗青刺绣锦袍与肩甲，神情恭敬虔诚。；双手合十立于胸前，黑亮双眼缓缓闭合，随之上半身与头部低垂行礼。；闭眼至鞠躬动作缓慢连贯，极具沉静仪式感。\n\n镜头与构图: 中景，平视微仰，浅景深虚化背景，随低头动作有极轻微下移。；主体位于画面右侧，左侧留出虚化的建筑与光斑，层次分明。\n\n光影与质感: 低照度环境光，侧逆光勾勒毛发边缘，暗部层次细腻柔和。；暖红锦缎与冷青护甲对比，整体色调偏暗调暖金。；东方奇幻高精CG电影质感，毛发与织物纹理写实细腻。\n\n声音: ambientSound: 沉静幽深的殿堂氛围底噪; foley: 细微的布料衣袍摩擦声（推测）; music: 庄重平缓的东方玄幻配乐风格（推测）\n\n节奏与转场: editing: pacing: 沉稳缓慢; techniques: 前后硬切（hard_cut）",
+        "duration": 2.333,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:53:23.441Z",
+        "updatedAt": "2026-10-10T15:01:43.481Z"
+      },
+      {
+        "id": "92f5958e-7e4e-449b-9c4e-b578e33f153f",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "aebb3ead-757c-4857-b925-b60d22c09fd2",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 8.042,
+          "summary": "鸟首机械生物在幽暗的实验室里倾倒绿色药剂。",
+          "startTime": 5.958,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "暗绿、灰褐色调为主，点缀药液的鲜绿色与灯管微光。",
+          "style": "暗黑生化朋克，具象写实且带复古诡异质感。",
+          "action": "机械手缓缓倾斜手中的玻璃试剂瓶，将绿色液体精准注入下方的烧杯中。",
+          "camera": "中景，平视固定镜头，浅景深聚焦于操作主体与药液。",
+          "motion": "主体动作缓慢平稳，机械手关节微动，液体连续流下。",
+          "subject": "具有长喙鹤形头颅与机械手指的仿生人形，身披残旧实验袍。",
+          "lighting": "冷绿基调的低照度布光，后方带有微弱暖色管灯轮廓光。",
+          "characters": [
+            {
+              "name": "鸟首生物",
+              "pose": "站立微俯身，双手握持药瓶倾倒。",
+              "appearance": "苍白的长喙鸟头，细长机械关节手指，磨损发黄的白大褂。",
+              "expression": "无表情/冷酷"
+            }
+          ],
+          "composition": "前景虚化陈列玻璃器皿，主体居中偏右，后景低饱和暗调营造纵深感。",
+          "environment": "杂乱阴暗的生化实验室，桌上陈列玻璃试剂瓶与烧杯，后景有一盏水平暖光灯管和昏暗架子。",
+          "sceneDescription": "昏暗阴冷的实验室内，一个长喙鸟首、机械躯干的人形生物身着脏旧白大褂，正在操作台前将绿色药液倾倒入烧杯。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "幽闭阴森的低频嗡鸣",
+          "soundStyle": "低沉的实验室机械杂音或微弱液体倾倒流动声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢平稳",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "中景，电影质感，暗黑生化朋克风格。在幽暗杂乱的旧实验室内，一个白鹤头颅、长鸟喙的机械生物身穿污浊破旧的白色实验大褂。其精细的机械骨骼手正稳稳倾斜小玻璃药瓶，将鲜绿色液体缓缓倒入桌面的透明烧杯中。前景摆放着虚焦的玻璃器皿，背景为昏暗模糊的墙面和一根暖黄色荧光灯管。整体色调偏向阴沉的橄榄绿与冷灰，固定机位，浅景深，逼真写实，光影神秘诡异。\n\n画面与环境: 昏暗阴冷的实验室内，一个长喙鸟首、机械躯干的人形生物身着脏旧白大褂，正在操作台前将绿色药液倾倒入烧杯。；具有长喙鹤形头颅与机械手指的仿生人形，身披残旧实验袍。；杂乱阴暗的生化实验室，桌上陈列玻璃试剂瓶与烧杯，后景有一盏水平暖光灯管和昏暗架子。\n\n人物与动作: name: 鸟首生物; appearance: 苍白的长喙鸟头，细长机械关节手指，磨损发黄的白大褂。; expression: 无表情/冷酷; pose: 站立微俯身，双手握持药瓶倾倒。；机械手缓缓倾斜手中的玻璃试剂瓶，将绿色液体精准注入下方的烧杯中。；主体动作缓慢平稳，机械手关节微动，液体连续流下。\n\n镜头与构图: 中景，平视固定镜头，浅景深聚焦于操作主体与药液。；前景虚化陈列玻璃器皿，主体居中偏右，后景低饱和暗调营造纵深感。\n\n光影与质感: 冷绿基调的低照度布光，后方带有微弱暖色管灯轮廓光。；暗绿、灰褐色调为主，点缀药液的鲜绿色与灯管微光。；暗黑生化朋克，具象写实且带复古诡异质感。\n\n声音: soundStyle: 低沉的实验室机械杂音或微弱液体倾倒流动声; ambient: 幽闭阴森的低频嗡鸣\n\n节奏与转场: editing: pacing: 缓慢平稳; techniques: 硬切",
+        "duration": 2.084,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:54:07.002Z",
+        "updatedAt": "2026-10-10T14:54:07.002Z"
+      },
+      {
+        "id": "2b52c1aa-776c-4b4a-b6d9-9dd90dc93421",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "a057d03c-432b-4b8c-9f5c-93169ab615f1",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 10.292,
+          "summary": "高架桥下的昏暗工业场景中，一位白虎兽人武士手握长刀，动作利落地调整刀刃准备迎战。",
+          "startTime": 8.042,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "偏暗绿色调的低饱和工业风，搭配角色深褐与白色毛发形成对比。",
+          "style": "电影质感，写实科幻奇幻生物风格，毛发与布料质感真实。",
+          "action": [
+            "白虎武士将右手搭在长刀刀柄上。",
+            "快速挥动并调整长刀朝向，完成拔刀准备姿态。"
+          ],
+          "camera": {
+            "angle": "平视微仰",
+            "focus": "聚焦于白虎武士面部与手部武器",
+            "speed": "平稳",
+            "lensFeel": "电影级中焦浅景深",
+            "movement": "轻微手持微晃，保持居中锁定",
+            "shotSize": "中景"
+          },
+          "motion": "角色拔刀动作干脆利落，背景保持静止。",
+          "subject": "拟人化白虎武士，面部毛发黑白条纹分明，体格强壮，目光凶狠专注。",
+          "lighting": "冷色调顶光与微弱的环境漫射光，背景有黄色与青绿色的暖色散景光点。",
+          "characters": [
+            {
+              "pose": "略微前倾，双手握持长刀刀柄与刀鞘。",
+              "identity": "白虎武士",
+              "wardrobe": "做旧破损的深红褐色长袍、单侧粗糙肩甲、布质绑手。",
+              "appearance": "白底黑纹虎头，毛发浓密，身形魁梧结实，胸肌裸露。",
+              "expression": "严肃低沉，带着杀气与警惕。"
+            }
+          ],
+          "composition": {
+            "depth": "浅景深，层次分明",
+            "layers": "前景模糊废墟散落物，中景白虎武士，后景混凝土高架桥与虚化光斑",
+            "framing": "主体居中构图"
+          },
+          "environment": "高架桥底或废弃工业区，上方为厚重的混凝土桥梁结构，远景有模糊的街灯与阴影。",
+          "sceneDescription": "混凝土立交桥下的阴暗空地，背景点缀着模糊暖黄与青色光斑。画面中央为一位拟人化白虎武士，身着残破暗红僧袍与肩甲，正低头握持武士刀拔刀或收刀。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉紧张的氛围底噪，伴随金属刀具抽动的利落摩擦声。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "pacing": "沉稳蓄势",
+          "techniques": "硬切接入与切出"
+        },
+        "generationPrompt": "电影质感中景，高架立交桥下阴暗潮湿的城市废墟。画面中央伫立着一位体格威猛的拟人化白虎武士，身穿陈旧磨损的暗红褐色武士袍，肩覆粗糙护甲，胸膛微露。他目光凶悍低沉，双手熟练握持武士刀拔出备战。背景是昏暗的混凝土桥梁与虚化的暖黄青绿街灯光斑。电影级冷绿调色彩，写实毛发细节，浅景深，微仰手持镜头。\n\n画面与环境: 混凝土立交桥下的阴暗空地，背景点缀着模糊暖黄与青色光斑。画面中央为一位拟人化白虎武士，身着残破暗红僧袍与肩甲，正低头握持武士刀拔刀或收刀。；拟人化白虎武士，面部毛发黑白条纹分明，体格强壮，目光凶狠专注。；高架桥底或废弃工业区，上方为厚重的混凝土桥梁结构，远景有模糊的街灯与阴影。\n\n人物与动作: identity: 白虎武士; appearance: 白底黑纹虎头，毛发浓密，身形魁梧结实，胸肌裸露。; wardrobe: 做旧破损的深红褐色长袍、单侧粗糙肩甲、布质绑手。; expression: 严肃低沉，带着杀气与警惕。; pose: 略微前倾，双手握持长刀刀柄与刀鞘。；白虎武士将右手搭在长刀刀柄上。; 快速挥动并调整长刀朝向，完成拔刀准备姿态。；角色拔刀动作干脆利落，背景保持静止。\n\n镜头与构图: shotSize: 中景; angle: 平视微仰; lensFeel: 电影级中焦浅景深; movement: 轻微手持微晃，保持居中锁定; focus: 聚焦于白虎武士面部与手部武器; speed: 平稳；framing: 主体居中构图; layers: 前景模糊废墟散落物，中景白虎武士，后景混凝土高架桥与虚化光斑; depth: 浅景深，层次分明\n\n光影与质感: 冷色调顶光与微弱的环境漫射光，背景有黄色与青绿色的暖色散景光点。；偏暗绿色调的低饱和工业风，搭配角色深褐与白色毛发形成对比。；电影质感，写实科幻奇幻生物风格，毛发与布料质感真实。\n\n声音: soundStyle: 低沉紧张的氛围底噪，伴随金属刀具抽动的利落摩擦声。\n\n节奏与转场: pacing: 沉稳蓄势; techniques: 硬切接入与切出",
+        "duration": 2.25,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:54:50.922Z",
+        "updatedAt": "2026-10-10T14:54:50.922Z"
+      },
+      {
+        "id": "26557b60-0785-4dab-9a4c-a15b8d252ffb",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "ee1cd341-94a6-4af9-bda4-4f079e2ab4ce",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 12.5,
+          "summary": "神秘的鳄鱼人角色在昏暗室内抽烟，缓缓吐出浓重白烟。",
+          "startTime": 10.292,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "暗绿、墨黑与昏黄色调，局部呈现橙红火光与灰白烟雾。",
+          "style": "暗黑奇幻、写实电影质感、怪物特效化妆风格。",
+          "action": "鳄鱼人将香烟从吻部移开并抬起右手，口中随即吐出一大股翻滚的白烟，烟雾在身前扩散。",
+          "camera": "中景，微仰角拍摄，焦点锁定在鳄鱼人头部与香烟，浅景深。",
+          "motion": "手部抬起的微幅动作与口鼻吐出烟雾的自然流体扩散。",
+          "subject": "拟人化鳄鱼人，具有粗糙坚硬的灰绿鳞片、尖锐牙齿，头戴小礼帽，脖挂骨齿串饰，身着做旧深色大衣。",
+          "lighting": "低调暗光照明，暖光从背景勾勒边缘，香烟暗红火光照亮指尖，面部处于阴影之中。",
+          "characters": "一名具有冷峻威严气质的爬行动物类人生物。",
+          "composition": "角色居中偏左占据画面主体，前景略带台面暗影，背景杂物层层虚化延伸空间感。",
+          "environment": "阴暗杂乱的巫师工坊或地下酒馆，后景置物架上摆满各式药瓶与杂物，伴随昏黄微弱的灯火点缀。",
+          "sceneDescription": "昏暗凌乱的密室内，一名拟人化的鳄鱼人头戴深色礼帽、身披粗糙深色外袍，指间捏着带有微红火光的香烟，正从长吻中吐出厚重烟雾。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的室内环境杂音，伴随微弱的吐气声及烟草燃烧的细微声响。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉稳",
+            "techniques": "硬切进出"
+          }
+        },
+        "generationPrompt": "电影质感中景，微仰拍。一个拟人化的鳄鱼怪物坐在昏暗破旧的室内，头部呈现写实且粗糙的爬行动物鳞片，头上戴着一顶微小的深色软呢帽，身披破旧大衣和骨质串珠。它利爪般的手指夹着一根带有橙红火光的香烟，微张布满尖牙的长嘴吐出一大团浓厚卷曲的白色烟雾。背景是堆满瓶瓶罐罐的杂乱阴暗工坊，昏黄弱光照明，墨绿调暗部，强烈的电影暗黑氛围，极其逼真的鳞片与流体烟雾物理质感。\n\n画面与环境: 昏暗凌乱的密室内，一名拟人化的鳄鱼人头戴深色礼帽、身披粗糙深色外袍，指间捏着带有微红火光的香烟，正从长吻中吐出厚重烟雾。；拟人化鳄鱼人，具有粗糙坚硬的灰绿鳞片、尖锐牙齿，头戴小礼帽，脖挂骨齿串饰，身着做旧深色大衣。；阴暗杂乱的巫师工坊或地下酒馆，后景置物架上摆满各式药瓶与杂物，伴随昏黄微弱的灯火点缀。\n\n人物与动作: 一名具有冷峻威严气质的爬行动物类人生物。；鳄鱼人将香烟从吻部移开并抬起右手，口中随即吐出一大股翻滚的白烟，烟雾在身前扩散。；手部抬起的微幅动作与口鼻吐出烟雾的自然流体扩散。\n\n镜头与构图: 中景，微仰角拍摄，焦点锁定在鳄鱼人头部与香烟，浅景深。；角色居中偏左占据画面主体，前景略带台面暗影，背景杂物层层虚化延伸空间感。\n\n光影与质感: 低调暗光照明，暖光从背景勾勒边缘，香烟暗红火光照亮指尖，面部处于阴影之中。；暗绿、墨黑与昏黄色调，局部呈现橙红火光与灰白烟雾。；暗黑奇幻、写实电影质感、怪物特效化妆风格。\n\n声音: soundStyle: 低沉压抑的室内环境杂音，伴随微弱的吐气声及烟草燃烧的细微声响。\n\n节奏与转场: editing: pacing: 缓慢沉稳; techniques: 硬切进出",
+        "duration": 2.208,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:55:33.533Z",
+        "updatedAt": "2026-10-10T14:55:33.533Z"
+      },
+      {
+        "id": "a7c0a859-3a20-4f20-8aa8-3108c3d32aa4",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "20b097ba-1faf-4335-836e-4c8b0ce21f38",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 14.708,
+          "summary": "神秘的公鸡头人形角色在昏暗的轮盘赌桌前阴郁伫立。",
+          "startTime": 12.5,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "暗绿、泥褐与暗红为主的污浊复古色调，对比鲜明且饱和度偏低。",
+          "style": "暗黑奇幻、写实电影质感、粗粝纹理。",
+          "action": "角色几乎保持静止，仅有微弱的呼吸起伏与头部细微转向。",
+          "camera": "中景胸像，平视拍摄，浅景深使背景轮盘柔和虚化，镜头几乎静止。",
+          "motion": "极其缓慢的生理呼吸微动，整体气氛凝固。",
+          "subject": "逼真的拟人化公鸡生物，具备真实的鸟类头部特征与人类躯干。",
+          "lighting": "低调弱光，微弱顶光勾勒羽毛与衣领边缘，面部大部处于深阴影中。",
+          "characters": "一位拥有公鸡头部的人形角色，羽毛呈暗红与褐色，身穿做旧深色皮革外套、内搭浅色衣物并佩戴金属圆环配饰，姿态沉稳压迫。",
+          "composition": "主体居中偏左占据前景核心，右后侧放置轮盘赌具营造景深与空间关系。",
+          "environment": "地下赌场或昏暗酒吧，光线微弱浑浊，右后方置有木质轮盘赌装置。",
+          "sceneDescription": "昏暗压抑的室内空间，公鸡头颅的人形生物静止站立于前景，背景隐约可见一张模糊的轮盘赌桌。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉的压抑环境低频嗡鸣或微弱室内杂音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉稳凝重",
+            "techniques": "前后硬切"
+          }
+        },
+        "generationPrompt": "电影质感中景特写，暗黑奇幻风格。画面中心为一个拟人化公鸡头角色，羽毛暗红凌乱，长喙下垂，身穿粗糙厚重的深色做旧皮革风衣与浅色衬衫，颈戴金属项圈。背景是极度虚化的昏暗赌场轮盘桌。微弱顶光投射，大部分面部掩映在浓厚阴影中，墨绿与焦褐色调，逼真羽毛与皮革质感，微弱呼吸动态，浅景深电影画面。\n\n画面与环境: 昏暗压抑的室内空间，公鸡头颅的人形生物静止站立于前景，背景隐约可见一张模糊的轮盘赌桌。；逼真的拟人化公鸡生物，具备真实的鸟类头部特征与人类躯干。；地下赌场或昏暗酒吧，光线微弱浑浊，右后方置有木质轮盘赌装置。\n\n人物与动作: 一位拥有公鸡头部的人形角色，羽毛呈暗红与褐色，身穿做旧深色皮革外套、内搭浅色衣物并佩戴金属圆环配饰，姿态沉稳压迫。；角色几乎保持静止，仅有微弱的呼吸起伏与头部细微转向。；极其缓慢的生理呼吸微动，整体气氛凝固。\n\n镜头与构图: 中景胸像，平视拍摄，浅景深使背景轮盘柔和虚化，镜头几乎静止。；主体居中偏左占据前景核心，右后侧放置轮盘赌具营造景深与空间关系。\n\n光影与质感: 低调弱光，微弱顶光勾勒羽毛与衣领边缘，面部大部处于深阴影中。；暗绿、泥褐与暗红为主的污浊复古色调，对比鲜明且饱和度偏低。；暗黑奇幻、写实电影质感、粗粝纹理。\n\n声音: soundStyle: 低沉的压抑环境低频嗡鸣或微弱室内杂音。\n\n节奏与转场: editing: pacing: 沉稳凝重; techniques: 前后硬切",
+        "duration": 2.208,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:56:13.768Z",
+        "updatedAt": "2026-10-10T14:56:13.768Z"
+      },
+      {
+        "id": "d4bd08b6-d676-4940-9f6b-9bb7f799868b",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "7fa531a0-c3cd-49ce-9120-5a819b342f8d",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 17.083,
+          "summary": "一名身穿深色皮衣的拟人化熊猫角色静坐在高楼窗边的真皮扶手椅上，凝视着窗外雨雾笼罩的城市天际线。",
+          "startTime": 14.708,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "暗沉的绿灰冷色调与阴霾黄灰色天光融合，低饱和度，具有新黑色电影质感。",
+          "style": "电影级超写实奇幻现实主义，强调毛发与皮革纹理细节。",
+          "action": [
+            "镜头起始于椅背正后方，遮挡住角色面部。",
+            "镜头向右前方缓缓平移滑动，椅背移出中心，露出熊猫角色的侧脸与身躯。",
+            "熊猫角色保持静止坐姿，目光深沉地凝望窗外阴雨城市。"
+          ],
+          "camera": {
+            "angle": "平视微仰角",
+            "focus": "焦点锁定在熊猫角色的面部及皮革质感上",
+            "speed": "平稳缓慢",
+            "lensFeel": "电影级浅景深中焦镜头，主体锐利，窗外背景柔和虚化",
+            "movement": "平滑的半环绕平移运镜 (Orbit/Pan Right)",
+            "shotSize": "中景 (Medium Shot)"
+          },
+          "motion": "镜头平滑向右推进滑移，角色自身微弱呼吸感起伏，窗外雨雾静止或缓慢流动。",
+          "subject": "头部为逼真大熊猫特征的拟人化男性角色，黑白毛发质感清晰，神态沉稳冷峻，身体为强壮的人形结构。",
+          "lighting": "低调冷调电影光，自然侧逆漫射光穿过窗户勾勒角色轮廓，室内阴影深沉浓郁。",
+          "characters": [
+            {
+              "pose": "倚靠在皮革高背椅扶手旁，身体微侧，头部略微转向窗户方向。",
+              "identity": "熊猫人/黑帮首领风格角色",
+              "wardrobe": "质感粗粝的黑色皮质夹克风衣，内搭深色马甲与衬衫，手戴暗色皮手套与金属戒指饰品。",
+              "appearance": "逼真的大熊猫面部与头部，黑白相间毛发，黑色圆耳，深邃双眼；身形魁梧的男性体魄。",
+              "expression": "冷峻、若有所思、威严沉静。"
+            }
+          ],
+          "composition": "左侧近景为深色皮革高背椅与熊猫角色构筑主体，右侧为大面积落地窗与纵深雾气城市背景，形成明暗与虚实对比。",
+          "environment": "高层豪华办公室或公寓内部，紧邻巨大落地玻璃窗，窗上有细微雨滴滑落；室外是阴雨蒙蒙、高楼林立的现代都市全景。",
+          "sceneDescription": "高层室内昏暗房间，一把复古棕黑色高背皮椅背对或侧对镜头。镜头从椅背后方平滑环绕运镜，显露出坐在椅上的写实熊猫人。熊猫人身着深色质感皮夹克与马甲，转头望向巨大的落地玻璃窗。窗外是下着雨、笼罩在阴暗雾气中的现代高楼摩天大厦群。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的环境氛围音，窗外隐约的雨声与低频弦乐背景（推断）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉稳",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "电影级中景，阴郁的新黑色电影风格。镜头从一张复古深色高背皮革扶手椅后方缓慢向右平移环绕，显露出一名长着写实大熊猫头部的拟人化角色。他身穿纹理丰富的黑色皮质夹克与深色马甲，双手戴暗色皮手套，神情冷峻深沉地倚坐着。他身旁是巨大的落地玻璃窗，窗上挂着微细雨水，窗外是雾霾与阴雨笼罩下的现代摩天大楼天际线。低调冷绿色调照明，窗外漫射冷光勾勒毛发边缘，浅景深，高细节质感，缓慢稳定的镜头运动。\n\n画面与环境: 高层室内昏暗房间，一把复古棕黑色高背皮椅背对或侧对镜头。镜头从椅背后方平滑环绕运镜，显露出坐在椅上的写实熊猫人。熊猫人身着深色质感皮夹克与马甲，转头望向巨大的落地玻璃窗。窗外是下着雨、笼罩在阴暗雾气中的现代高楼摩天大厦群。；头部为逼真大熊猫特征的拟人化男性角色，黑白毛发质感清晰，神态沉稳冷峻，身体为强壮的人形结构。；高层豪华办公室或公寓内部，紧邻巨大落地玻璃窗，窗上有细微雨滴滑落；室外是阴雨蒙蒙、高楼林立的现代都市全景。\n\n人物与动作: identity: 熊猫人/黑帮首领风格角色; appearance: 逼真的大熊猫面部与头部，黑白相间毛发，黑色圆耳，深邃双眼；身形魁梧的男性体魄。; wardrobe: 质感粗粝的黑色皮质夹克风衣，内搭深色马甲与衬衫，手戴暗色皮手套与金属戒指饰品。; expression: 冷峻、若有所思、威严沉静。; pose: 倚靠在皮革高背椅扶手旁，身体微侧，头部略微转向窗户方向。；镜头起始于椅背正后方，遮挡住角色面部。; 镜头向右前方缓缓平移滑动，椅背移出中心，露出熊猫角色的侧脸与身躯。; 熊猫角色保持静止坐姿，目光深沉地凝望窗外阴雨城市。；镜头平滑向右推进滑移，角色自身微弱呼吸感起伏，窗外雨雾静止或缓慢流动。\n\n镜头与构图: shotSize: 中景 (Medium Shot); angle: 平视微仰角; lensFeel: 电影级浅景深中焦镜头，主体锐利，窗外背景柔和虚化; movement: 平滑的半环绕平移运镜 (Orbit/Pan Right); focus: 焦点锁定在熊猫角色的面部及皮革质感上; speed: 平稳缓慢；左侧近景为深色皮革高背椅与熊猫角色构筑主体，右侧为大面积落地窗与纵深雾气城市背景，形成明暗与虚实对比。\n\n光影与质感: 低调冷调电影光，自然侧逆漫射光穿过窗户勾勒角色轮廓，室内阴影深沉浓郁。；暗沉的绿灰冷色调与阴霾黄灰色天光融合，低饱和度，具有新黑色电影质感。；电影级超写实奇幻现实主义，强调毛发与皮革纹理细节。\n\n声音: soundStyle: 低沉压抑的环境氛围音，窗外隐约的雨声与低频弦乐背景（推断）。\n\n节奏与转场: editing: pacing: 缓慢沉稳; techniques: 硬切入，硬切出",
+        "duration": 2.375,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:56:47.661Z",
+        "updatedAt": "2026-10-10T14:56:47.661Z"
+      },
+      {
+        "id": "09e4bfaf-6ca7-448f-9185-f8ff983c718e",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "35e70b5b-3226-477d-9411-a647f4f3a484",
+        "sceneIndex": 8,
+        "story": {
+          "endTime": 19.125,
+          "summary": "一只体型臃肿、神情凶悍的拟人化蟾蜍暴徒靠坐着，伸手拉扯颈间的金链。",
+          "startTime": 17.083,
+          "sceneIndex": 8
+        },
+        "visual": {
+          "color": {
+            "grading": "低饱和度、高对比度的工业暗色调",
+            "palette": "墨绿色、皮衣深黑、肚皮苍白、金链暗黄"
+          },
+          "style": "暗黑奇幻、拟人化生物朋克写实风",
+          "action": [
+            {
+              "order": 1,
+              "description": "蟾蜍头目靠坐着，左手由前下方抬起，抓住脖子上的粗金项链并向前拉扯摆弄。"
+            }
+          ],
+          "camera": {
+            "angle": "微俯视角度",
+            "focus": "聚焦于蟾蜍的面部及胸前金链",
+            "speed": "平稳静止",
+            "lensFeel": "中焦电影镜头，浅景深",
+            "movement": "镜头固定或极为缓慢的推镜头",
+            "shotSize": "中景特写"
+          },
+          "motion": "人物手部微动拉扯项链，整体躯干沉稳静止",
+          "subject": "拟人化巨型蟾蜍黑帮头目，面部粗糙多瘤，带有凶狠的黄色眼睛，身型肥硕。",
+          "lighting": {
+            "mood": "压抑、阴冷、写实罪恶感",
+            "type": "暗调冷光配合顶部微弱主光",
+            "direction": "左上方侧顶光"
+          },
+          "characters": [
+            {
+              "pose": "向后斜倚坐着，左手抬起握住并摆弄胸前的金链。",
+              "identity": "蟾蜍兽人头目",
+              "wardrobe": "敞开的黑色机车皮夹克，多根粗金项链，镶嵌饰品腰带，粗大戒指。",
+              "appearance": "粗糙带疣的深灰绿色蟾蜍皮肤，黄色爬行动物眼，无发，凸肚胖体。",
+              "expression": "冷峻、凶狠且带有威胁意味的低沉神态。"
+            }
+          ],
+          "composition": {
+            "depth": "浅景深，背景强烈虚化",
+            "midground": "占据画面核心的蟾蜍头目及其躯干动作",
+            "background": "暗调模糊的杂乱背景",
+            "foreground": "虚化的前景空间",
+            "subjectPlacement": "偏向画面中左侧"
+          },
+          "environment": "阴暗脏乱的地下室或朋克废墟，背景可见模糊的杂物架和零散金属物件。",
+          "sceneDescription": "阴暗杂乱的室内环境中，一只巨大的拟人化蟾蜍生物身穿黑色皮夹克，敞怀露出灰白色肚腩，手戴戒指，正在拉扯粗金项链。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "foley": "金属链条轻微摩擦与皮革摩擦声",
+          "ambient": "昏暗室内的低沉机械嗡鸣",
+          "soundStyle": "低沉环境底噪，可能伴随金属项链轻微摩擦声与沉重呼吸声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢凝重",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "暗黑奇幻写实风格，中景特写。一只身材肥硕凶狠的拟人化蟾蜍暴徒靠坐着，皮肤粗糙布满疙瘩，长着黄色竖瞳。他敞怀穿着带有柳钉的黑色机车皮夹克，裸露灰白肚皮，粗糙的手戴着戒指拉扯胸前的粗金项链。背景是昏暗杂乱的工业废墟，浅景深。冷峻侧顶光，低饱和暗绿色调，电影质感质地逼真。\n\n画面与环境: 阴暗杂乱的室内环境中，一只巨大的拟人化蟾蜍生物身穿黑色皮夹克，敞怀露出灰白色肚腩，手戴戒指，正在拉扯粗金项链。；拟人化巨型蟾蜍黑帮头目，面部粗糙多瘤，带有凶狠的黄色眼睛，身型肥硕。；阴暗脏乱的地下室或朋克废墟，背景可见模糊的杂物架和零散金属物件。\n\n人物与动作: identity: 蟾蜍兽人头目; appearance: 粗糙带疣的深灰绿色蟾蜍皮肤，黄色爬行动物眼，无发，凸肚胖体。; wardrobe: 敞开的黑色机车皮夹克，多根粗金项链，镶嵌饰品腰带，粗大戒指。; expression: 冷峻、凶狠且带有威胁意味的低沉神态。; pose: 向后斜倚坐着，左手抬起握住并摆弄胸前的金链。；order: 1; description: 蟾蜍头目靠坐着，左手由前下方抬起，抓住脖子上的粗金项链并向前拉扯摆弄。；人物手部微动拉扯项链，整体躯干沉稳静止\n\n镜头与构图: shotSize: 中景特写; angle: 微俯视角度; lensFeel: 中焦电影镜头，浅景深; movement: 镜头固定或极为缓慢的推镜头; focus: 聚焦于蟾蜍的面部及胸前金链; speed: 平稳静止；foreground: 虚化的前景空间; midground: 占据画面核心的蟾蜍头目及其躯干动作; background: 暗调模糊的杂乱背景; subjectPlacement: 偏向画面中左侧; depth: 浅景深，背景强烈虚化\n\n光影与质感: type: 暗调冷光配合顶部微弱主光; direction: 左上方侧顶光; mood: 压抑、阴冷、写实罪恶感；palette: 墨绿色、皮衣深黑、肚皮苍白、金链暗黄; grading: 低饱和度、高对比度的工业暗色调；暗黑奇幻、拟人化生物朋克写实风\n\n声音: soundStyle: 低沉环境底噪，可能伴随金属项链轻微摩擦声与沉重呼吸声; ambient: 昏暗室内的低沉机械嗡鸣; foley: 金属链条轻微摩擦与皮革摩擦声\n\n节奏与转场: editing: pacing: 缓慢凝重; techniques: 硬切入，硬切出",
+        "duration": 2.042,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:57:20.443Z",
+        "updatedAt": "2026-10-10T14:57:20.443Z"
+      },
+      {
+        "id": "8d400d85-6736-4621-853b-0c3c8f5312c7",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "9b04a527-ddad-4e36-8c0a-7a56f79d5fa9",
+        "sceneIndex": 9,
+        "story": {
+          "endTime": 21.375,
+          "summary": "斗牛犬兽人帮派头目坐在昏暗的茶室中，傲慢地仰起头审视四周。",
+          "startTime": 19.125,
+          "sceneIndex": 9
+        },
+        "visual": {
+          "color": "墨绿色与暗青调为主，点缀暖黄与暗红霓虹光，袍服呈深绛红。",
+          "style": "暗黑奇幻写实风格，带有赛博东方质感与细腻皮肤纹理。",
+          "action": "头目初始正坐平视，随后昂起头颅微扬下巴，最后略微收回，维持睥睨全场的坐姿。",
+          "camera": "中景，正视微仰角度，浅景深固定镜头，焦点锁定在斗牛犬头目躯干与面部。",
+          "motion": "主体头部微幅上扬后微收，背景轻微光影流动，镜头近乎静止。",
+          "subject": "拟人化斗牛犬黑帮头目，体格魁梧，神情威严傲慢。",
+          "lighting": "冷绿基底环境光搭配点状暖黄灯笼光，暗部深邃，主体肌肉有高光勾勒。",
+          "characters": "斗牛犬兽人，褶皱犬脸，露出精壮胸腹肌，戴粗金项链与徽章，身穿暗红宽松长袍。",
+          "composition": "中心对称构图，前景虚化茶具茶壶，中景主体端坐，背景层叠延伸。",
+          "environment": "昏暗赛博朋克茶馆室内，背景有木格栅、模糊闲客，挂有暖黄灯笼与红色霓虹灯字。",
+          "sceneDescription": "昏暗中式赛博风格茶室内，强壮的拟人化斗牛犬头目身着敞怀暗红僧袍靠坐大椅上。前景为茶几茶具，背景有朦胧灯笼与红色霓虹汉字。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "低沉环境低鸣伴随微弱市井杂音与厚重压迫感的悬疑音效。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢凝重",
+            "techniques": "前后均为硬切"
+          }
+        },
+        "generationPrompt": "电影质感中景，一位体格魁梧的拟人化斗牛犬黑帮老大端坐于中式交椅上，袒露强壮的胸腹肌，佩戴粗大金链与肩饰金牌，身裹暗绛红色敞怀长袍。前景桌面摆放精致陶制茶壶茶杯，背景为烟雾缭绕的昏暗东方赛博茶馆，带有发光红字霓虹与暖黄灯笼。斗牛犬头目缓缓昂起头傲慢审视，深色调墨绿与暗影交织，冷峻写实，浅景深固定机位。\n\n画面与环境: 昏暗中式赛博风格茶室内，强壮的拟人化斗牛犬头目身着敞怀暗红僧袍靠坐大椅上。前景为茶几茶具，背景有朦胧灯笼与红色霓虹汉字。；拟人化斗牛犬黑帮头目，体格魁梧，神情威严傲慢。；昏暗赛博朋克茶馆室内，背景有木格栅、模糊闲客，挂有暖黄灯笼与红色霓虹灯字。\n\n人物与动作: 斗牛犬兽人，褶皱犬脸，露出精壮胸腹肌，戴粗金项链与徽章，身穿暗红宽松长袍。；头目初始正坐平视，随后昂起头颅微扬下巴，最后略微收回，维持睥睨全场的坐姿。；主体头部微幅上扬后微收，背景轻微光影流动，镜头近乎静止。\n\n镜头与构图: 中景，正视微仰角度，浅景深固定镜头，焦点锁定在斗牛犬头目躯干与面部。；中心对称构图，前景虚化茶具茶壶，中景主体端坐，背景层叠延伸。\n\n光影与质感: 冷绿基底环境光搭配点状暖黄灯笼光，暗部深邃，主体肌肉有高光勾勒。；墨绿色与暗青调为主，点缀暖黄与暗红霓虹光，袍服呈深绛红。；暗黑奇幻写实风格，带有赛博东方质感与细腻皮肤纹理。\n\n声音: style: 低沉环境低鸣伴随微弱市井杂音与厚重压迫感的悬疑音效。\n\n节奏与转场: editing: pacing: 缓慢凝重; techniques: 前后均为硬切",
+        "duration": 2.25,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:57:52.712Z",
+        "updatedAt": "2026-10-10T14:57:52.712Z"
+      },
+      {
+        "id": "3b5c91ca-49c9-4c3a-a2ce-6cc87d9a3bfc",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "865e2ebe-73c3-46d6-a685-d18068de2d1a",
+        "sceneIndex": 10,
+        "story": {
+          "endTime": 23.542,
+          "summary": "负伤的狐狸剑客手握长剑，在昏暗潮湿的丛林中低姿潜伏，警惕戒备。",
+          "startTime": 21.375,
+          "sceneIndex": 10
+        },
+        "visual": {
+          "color": "暗墨绿、泥褐色与冷黑为主，低饱和度电影调色。",
+          "style": "写实奇幻电影质感，逼真的动物毛发与衣物织物细节。",
+          "action": "狐狸剑客压低身体潜伏，右手紧扣剑柄，头部保持微幅戒备性转动，目光锐利。",
+          "camera": "中近景，微低角度仰拍，浅景深虚化背景，轻微向前缓慢推进。",
+          "motion": "微幅平缓的呼吸起伏与头部微动，整体姿态紧绷静止。",
+          "subject": "拟人化狐狸剑客",
+          "lighting": "冷调暗光环境，微弱顶部漫射光照亮狐狸额面毛发与刀柄边缘。",
+          "characters": "棕黄色毛发的狐狸面容，额头带有暗红色血迹伤口，眼神凌厉，身穿深色带有金色织金暗纹的古代武袍。",
+          "composition": "剑客头部位于中心偏左上方，持剑手部横亘前景偏右，形成前后纵深。",
+          "environment": "阴暗潮湿的原始丛林，背景为虚化的深绿植被与交错树影。",
+          "sceneDescription": "幽暗密林中，一只身着暗色古装的拟人狐狸剑客手握出鞘长剑，俯身警惕注视侧前方，额部带有血迹。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "description": "幽暗密林的微弱风声与低频紧张环境氛围音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢紧绷",
+            "techniques": "前后硬切"
+          }
+        },
+        "generationPrompt": "电影写实质感，中近景微低角度。一只拟人化的狐狸剑客压低身躯潜伏在幽暗潮湿的丛林中。狐狸毛发纤毫毕现且略带湿意，额头有一道干涸的暗红血痕，黄色眼眸警惕注视右侧。身穿古朴破旧的深色暗金纹武士长袍，右手稳固横握一把长剑刀柄。背景为大光圈虚化的深绿丛林枝叶，微弱冷调天光在毛发边缘勾勒出微光。阴郁冷峻色调，高对比度，悬疑肃杀氛围。\n\n画面与环境: 幽暗密林中，一只身着暗色古装的拟人狐狸剑客手握出鞘长剑，俯身警惕注视侧前方，额部带有血迹。；拟人化狐狸剑客；阴暗潮湿的原始丛林，背景为虚化的深绿植被与交错树影。\n\n人物与动作: 棕黄色毛发的狐狸面容，额头带有暗红色血迹伤口，眼神凌厉，身穿深色带有金色织金暗纹的古代武袍。；狐狸剑客压低身体潜伏，右手紧扣剑柄，头部保持微幅戒备性转动，目光锐利。；微幅平缓的呼吸起伏与头部微动，整体姿态紧绷静止。\n\n镜头与构图: 中近景，微低角度仰拍，浅景深虚化背景，轻微向前缓慢推进。；剑客头部位于中心偏左上方，持剑手部横亘前景偏右，形成前后纵深。\n\n光影与质感: 冷调暗光环境，微弱顶部漫射光照亮狐狸额面毛发与刀柄边缘。；暗墨绿、泥褐色与冷黑为主，低饱和度电影调色。；写实奇幻电影质感，逼真的动物毛发与衣物织物细节。\n\n声音: description: 幽暗密林的微弱风声与低频紧张环境氛围音。\n\n节奏与转场: editing: pacing: 缓慢紧绷; techniques: 前后硬切",
+        "duration": 2.167,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:58:31.201Z",
+        "updatedAt": "2026-10-10T14:58:31.201Z"
+      },
+      {
+        "id": "1e497a37-068b-40d1-86a5-b1414374d6db",
+        "projectId": "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+        "projectVersionId": "9c7f18df-bac7-48a0-89fd-3b6ebefebd0a",
+        "originalSceneId": "5faf0570-0bc3-45a1-8997-c994b0eb93f4",
+        "sceneIndex": 11,
+        "story": {
+          "endTime": 27.209,
+          "summary": "昏暗酒吧吧台前，戴着宽檐帽的狼人举起酒杯仰头饮酒，随后画面渐隐入黑。",
+          "startTime": 23.542,
+          "sceneIndex": 11
+        },
+        "visual": {
+          "color": "暗黄褐色调，深棕与阴影深黑结合。",
+          "style": "电影写实暗黑哥特风。",
+          "action": [
+            {
+              "order": 1,
+              "description": "狼人靠在吧台前，握着盛有琥珀色液体的雕花玻璃杯。"
+            },
+            {
+              "order": 2,
+              "description": "抬起酒杯送至吻部仰头饮尽。"
+            },
+            {
+              "order": 3,
+              "description": "画面逐渐变暗直至黑屏全黑。"
+            }
+          ],
+          "camera": {
+            "angle": "平视微侧",
+            "focus": "焦点锁定在狼人侧脸与手中的酒杯",
+            "speed": "平稳慢速",
+            "lensFeel": "中焦浅景深电影镜头",
+            "movement": "固定机位，轻微手持微动",
+            "shotSize": "中景侧面特写"
+          },
+          "motion": "饮酒动作平缓连贯，随后渐隐变黑。",
+          "subject": "狼人酒客，拟人化狼头造型，灰褐色毛发，头戴宽檐软呢帽，身穿深蓝色或黑色大衣，毛茸茸的爪子搭在吧台上。",
+          "lighting": "低调侧光与逆光轮廓，暖暗色调，昏黄局部光突出毛发质感。",
+          "characters": [
+            {
+              "pose": "右臂撑在吧台上，左手持酒杯饮酒。",
+              "identity": "狼人",
+              "wardrobe": "深色宽檐礼帽、深蓝或深灰粗呢外套。",
+              "appearance": "野兽面孔覆盖灰褐色毛发，长吻部，身穿深色厚重外套与衬衫，手部为兽爪毛发。",
+              "expression": "沉郁、冷漠。"
+            }
+          ],
+          "composition": {
+            "midground": "右侧居中的狼人及其手臂动作",
+            "background": "虚焦的酒馆杂乱暖黄灯光与阴影",
+            "foreground": "吧台左侧的透明酒瓶与空杯"
+          },
+          "environment": "低照明度的复古西部或维多利亚风酒吧，台面为反光木质长条吧台，背景可见模糊暖光散景与酒瓶影子。",
+          "sceneDescription": "昏暗复古酒吧内，一位身穿深色风衣、头戴宽檐帽的狼人靠坐在木质吧台前，拿起玻璃威士忌杯送入口中饮下，背景微弱散景灯光闪烁，尾段淡入全黑。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "speech": "无对白",
+          "ambientMusic": "低沉压抑的配乐尾声或环境氛围音",
+          "soundEffects": "环境酒吧低沉杂音、玻璃轻微碰触与液体吞咽声（可能）"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "pacing": "沉稳缓慢",
+          "techniques": {
+            "in": "硬切",
+            "out": "黑屏渐隐"
+          }
+        },
+        "generationPrompt": "电影质感，侧面中景。昏暗复古酒馆内，一位逼真的拟人化狼人头戴深色宽檐牛仔帽，身穿深色粗呢大衣，坐在反光的木质吧台前。他毛茸茸的爪子端起一杯琥珀色威士忌，仰头送至狼吻饮下。前景有玻璃酒瓶虚影，背景是昏暗温暖的光斑与深沉阴影。低调侧光勾勒出灰褐色毛发细节，整体色调呈阴暗泛黄的油画质感，动作缓慢，随后画面渐变全黑。\n\n画面与环境: 昏暗复古酒吧内，一位身穿深色风衣、头戴宽檐帽的狼人靠坐在木质吧台前，拿起玻璃威士忌杯送入口中饮下，背景微弱散景灯光闪烁，尾段淡入全黑。；狼人酒客，拟人化狼头造型，灰褐色毛发，头戴宽檐软呢帽，身穿深蓝色或黑色大衣，毛茸茸的爪子搭在吧台上。；低照明度的复古西部或维多利亚风酒吧，台面为反光木质长条吧台，背景可见模糊暖光散景与酒瓶影子。\n\n人物与动作: identity: 狼人; appearance: 野兽面孔覆盖灰褐色毛发，长吻部，身穿深色厚重外套与衬衫，手部为兽爪毛发。; wardrobe: 深色宽檐礼帽、深蓝或深灰粗呢外套。; expression: 沉郁、冷漠。; pose: 右臂撑在吧台上，左手持酒杯饮酒。；order: 1; description: 狼人靠在吧台前，握着盛有琥珀色液体的雕花玻璃杯。; order: 2; description: 抬起酒杯送至吻部仰头饮尽。; order: 3; description: 画面逐渐变暗直至黑屏全黑。；饮酒动作平缓连贯，随后渐隐变黑。\n\n镜头与构图: shotSize: 中景侧面特写; angle: 平视微侧; lensFeel: 中焦浅景深电影镜头; movement: 固定机位，轻微手持微动; focus: 焦点锁定在狼人侧脸与手中的酒杯; speed: 平稳慢速；foreground: 吧台左侧的透明酒瓶与空杯; midground: 右侧居中的狼人及其手臂动作; background: 虚焦的酒馆杂乱暖黄灯光与阴影\n\n光影与质感: 低调侧光与逆光轮廓，暖暗色调，昏黄局部光突出毛发质感。；暗黄褐色调，深棕与阴影深黑结合。；电影写实暗黑哥特风。\n\n声音: speech: 无对白; soundEffects: 环境酒吧低沉杂音、玻璃轻微碰触与液体吞咽声（可能）; ambientMusic: 低沉压抑的配乐尾声或环境氛围音\n\n节奏与转场: pacing: 沉稳缓慢; techniques: in: 硬切; out: 黑屏渐隐",
+        "duration": 3.667,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai"
+        },
+        "createdAt": "2026-10-10T14:59:07.729Z",
+        "updatedAt": "2026-10-10T14:59:07.729Z"
+      }
+    ]
   }
 ]

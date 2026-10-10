@@ -9,6 +9,10 @@ export const PUBLIC_WORKFLOW_SAMPLES = [
     id: "d1e67ba2-e212-4bd0-b012-7a9fc085ce9e",
     title: "天宫之约",
   },
+  {
+    id: "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
+    title: "猫咪牛仔",
+  },
 ] as const;
 
 type PublicProject = {
@@ -115,6 +119,15 @@ export type PublicWorkflowSample = {
 };
 
 const sampleBundles = snapshot as PublicWorkflowBundle[];
+const publicMediaUrls = new Set(sampleBundles.flatMap(bundle => [
+  ...bundle.referenceVideos.map(reference => reference.sourceUrl),
+  ...bundle.scenes.flatMap(scene => [scene.clipUrl, scene.audioUrl, ...scene.keyframeUrls]),
+  ...bundle.sceneVersions.map(scene => scene.generatedVideoUrl),
+]).filter((url): url is string => Boolean(url)));
+
+export function hasPublicSampleMedia(url: string) {
+  return publicMediaUrls.has(url);
+}
 const publicSampleIds: string[] = PUBLIC_WORKFLOW_SAMPLES.map((sample) => sample.id);
 const publicSampleTitleById = new Map<string, string>(PUBLIC_WORKFLOW_SAMPLES.map((sample) => [sample.id, sample.title]));
 const publicSampleOrderById = new Map<string, number>(PUBLIC_WORKFLOW_SAMPLES.map((sample, index) => [sample.id, index]));

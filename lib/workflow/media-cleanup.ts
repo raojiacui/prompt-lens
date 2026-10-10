@@ -1,9 +1,12 @@
 import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import { commercialTasks, db, mediaCleanupJobs, projectAssets, referenceVideos, sceneVersions, videoGeneration, videoScenes, workflowJobs } from "@/lib/db";
 import { deleteFromR2, getR2PublicUrl } from "@/lib/cloudflare/r2";
+import { hasPublicSampleMedia } from "@/lib/samples/public-workflow-samples";
 
 async function hasLiveReference(key: string) {
   const url = getR2PublicUrl(key);
+  // Public snapshots remain available after the original user's seven-day history expires.
+  if (hasPublicSampleMedia(url)) return true;
   const [references, scenes, versions, assets, tasks, generations, jobs] = await Promise.all([
     db.select({ id: referenceVideos.id }).from(referenceVideos).where(or(
       eq(referenceVideos.storageKey, key), inArray(referenceVideos.sourceUrl, [url, key]),
