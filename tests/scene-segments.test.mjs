@@ -1,6 +1,16 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { splitLongScenes } from "../workers/ffmpeg-worker/scene-segments.mjs";
+import { splitLongScenes, sampleSceneFrameTimes } from "../workers/ffmpeg-worker/scene-segments.mjs";
+
+test("samples three ordered frames within a whole long video without splitting it", () => {
+  assert.deepEqual(sampleSceneFrameTimes(0, 60), [6, 30, 54]);
+  assert.deepEqual(sampleSceneFrameTimes(30, 40), [31, 35, 39]);
+  const frames = sampleSceneFrameTimes(0, 0.01);
+  assert.equal(frames.length, 3);
+  assert.ok(frames.every(time => time >= 0 && time < 0.01));
+  assert.throws(() => sampleSceneFrameTimes(0, 0));
+  assert.throws(() => sampleSceneFrameTimes(-1, 60));
+});
 
 test("preserves scenes at or below fifteen seconds", () => {
   const scenes = [{ start: 0, end: 10 }, { start: 10, end: 25 }];

@@ -9,7 +9,7 @@ import { spawn } from "node:child_process";
 import { randomUUID, createHash } from "node:crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { downloadStreamsInParallel } from "./parallel-download.mjs";
-import { splitLongScenes } from "./scene-segments.mjs";
+import { splitLongScenes, sampleSceneFrameTimes } from "./scene-segments.mjs";
 import { fetchMedia } from "./media-fetch.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
@@ -316,7 +316,6 @@ async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, me
     const duration = Number((end - start).toFixed(3));
     const scenePrefix = `${projectKey}/scenes/${String(sceneIndex).padStart(3, "0")}`;
     const clipPath = path.join(workDir, `scene-${sceneIndex}.mp4`);
-    const framePath = path.join(workDir, `scene-${sceneIndex}-keyframe.jpg`);
     const audioPath = path.join(workDir, `scene-${sceneIndex}.m4a`);
 
     await run(FFMPEG_PATH, [
@@ -329,14 +328,12 @@ async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, me
       clipPath,
     ]);
 
-    await run(FFMPEG_PATH, [
-      "-y", "-hide_banner",
-      "-ss", String(start + Math.max(0.05, duration / 2)),
-      "-i", inputPath,
-      "-frames:v", "1",
-      "-q:v", "2",
-      framePath,
-    ]);
+    const keyframeUrls = [];
+    for (const [frameIndex, time] of sampleSceneFrameTimes(start, end).entries()) {
+      const framePath = path.join(workDir, `scene-${sceneIndex}-keyframe-${frameIndex}.jpg`);
+      await run(FFMPEG_PATH, ["-y", "-hide_banner", "-ss", String(time), "-i", inputPath, "-frames:v", "1", "-q:v", "2", framePath]);
+      keyframeUrls.push(await uploadFile(framePath, `${scenePrefix}/keyframe-${frameIndex}.jpg`, "image/jpeg"));
+    }
 
     let audioUrl;
     if (metadata.hasAudio) {
@@ -358,7 +355,6 @@ async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, me
     }
 
     const clipUrl = await uploadFile(clipPath, `${scenePrefix}/clip.mp4`, "video/mp4");
-    const keyframeUrl = await uploadFile(framePath, `${scenePrefix}/keyframe.jpg`, "image/jpeg");
 
     scenes.push({
       sceneIndex,
@@ -367,7 +363,7 @@ async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, me
       duration,
       shotGroupId: item.shotGroupId,
       clipUrl,
-      keyframeUrls: [keyframeUrl],
+      keyframeUrls,
       audioUrl,
       transitionIn: sceneIndex === 1 ? "start" : "hard_cut",
       transitionOut: sceneIndex === boundaries.length ? "end" : "hard_cut",

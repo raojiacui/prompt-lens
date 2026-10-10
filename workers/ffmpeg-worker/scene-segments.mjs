@@ -3,6 +3,11 @@ import { createHash } from "node:crypto";
 const SECOND = 1_000_000;
 const LIMIT = 15 * SECOND;
 
+export function sampleSceneFrameTimes(start, end) {
+  if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start) throw new Error("Invalid scene interval");
+  return [0.1, 0.5, 0.9].map(fraction => start + (end - start) * fraction);
+}
+
 export function splitLongScenes(scenes, seed = JSON.stringify(scenes)) {
   return scenes.flatMap((scene) => {
     const start = Math.round(scene.start * SECOND);
