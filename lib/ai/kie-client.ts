@@ -110,7 +110,7 @@ export async function requestKieChat(input: {
       console.warn("kie.analysis.timeout", { modelId: input.modelId, stage, elapsedMs: Date.now() - startedAt });
       reject(new KieRequestError(`KIE_ANALYSIS_TIMEOUT: ${stage} exceeded the request deadline`));
       controller.abort();
-    }, input.timeoutMs ?? DEFAULT_KIE_ANALYSIS_TIMEOUT_MS);
+    }, input.timeoutMs ?? 90_000);
   });
   try {
     // Bound both connection and body reading even if a fetch wrapper ignores abort.

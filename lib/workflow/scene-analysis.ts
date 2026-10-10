@@ -2,7 +2,7 @@ import { getUserKieApiKey } from "@/lib/byok/kie";
 import { getPlatformKieApiKey } from "@/lib/billing/platform-access";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import { FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/billing/video-analysis";
-import { requestKieChat } from "@/lib/ai/kie-client";
+import { DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, requestKieChat } from "@/lib/ai/kie-client";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
 import { buildRecreationPrompt } from "./recreation-prompt";
@@ -175,7 +175,7 @@ async function callAnalysisChatJson(params: {
     { role: "user", content: params.content },
   ];
 
-  const content = await requestKieChat({ apiKey, modelId: selected.modelId, messages });
+  const content = await requestKieChat({ apiKey, modelId: selected.modelId, messages, timeoutMs: DEFAULT_KIE_ANALYSIS_TIMEOUT_MS });
   return { json: parseJsonObject(content), ...selected };
 }
 

@@ -67,14 +67,14 @@ describe("KIE transport", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(vi.getTimerCount()).toBe(0);
   });
-  it("allows a slow analysis response within the default three-minute deadline", async () => {
+  it("allows a slow analysis response within the explicit three-minute deadline", async () => {
     vi.useFakeTimers();
     const fetchMock = vi.fn(async () => {
       await new Promise(resolve => setTimeout(resolve, 100_000));
       return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "answer" }] } }] }));
     });
     vi.stubGlobal("fetch", fetchMock);
-    const request = requestKieChat(input);
+    const request = requestKieChat({ ...input, timeoutMs: 180_000 });
     await vi.advanceTimersByTimeAsync(100_000);
     await expect(request).resolves.toBe("answer");
     expect(fetchMock).toHaveBeenCalledTimes(1);
