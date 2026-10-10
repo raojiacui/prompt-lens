@@ -1,9 +1,18 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { fetchMedia } from "../workers/ffmpeg-worker/media-fetch.mjs";
 
 const url = "https://media.example.com/video?private=secret";
 const failure = (code) => new TypeError("fetch failed", { cause: Object.assign(new Error(code), { code }) });
+
+test("worker image includes all explicitly copied source files", () => {
+  const dockerfile = readFileSync(new URL("../workers/ffmpeg-worker/Dockerfile", import.meta.url), "utf8");
+  const allowed = readFileSync(new URL("../.dockerignore", import.meta.url), "utf8").split(/\r?\n/);
+  for (const match of dockerfile.matchAll(/^COPY (workers\/ffmpeg-worker\/\S+) /gm)) {
+    assert.ok(allowed.includes(`!${match[1]}`), `${match[1]} must be included in the image`);
+  }
+});
 
 test("retries transient DNS errors using the same media URL", async () => {
   let calls = 0;
