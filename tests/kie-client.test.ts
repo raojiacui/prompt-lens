@@ -32,6 +32,16 @@ describe("KIE transport", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response('data: {"candidates":[{"content":{"parts":[{"text":"partial"}]}}]}\n\n', { headers: { "Content-Type": "text/event-stream" } })));
     await expect(requestKieChat(input)).rejects.toThrow("streaming response was interrupted");
   });
+  it("finishes at DONE even when the transport remains open", async () => {
+    const cancel = vi.fn();
+    const bytes = new TextEncoder().encode('data: {"candidates":[{"content":{"parts":[{"text":"完整结果"}]}}]}\r\n\r\ndata: [DONE]\r\n\r\n');
+    const body = new ReadableStream<Uint8Array>({ start(controller) { for (const byte of bytes) controller.enqueue(new Uint8Array([byte])); }, cancel });
+    const fetchMock = vi.fn(async () => new Response(body, { headers: { "Content-Type": "text/event-stream" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(requestKieChat({ ...input, timeoutMs: 100 })).resolves.toBe("完整结果");
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("preserves provider errors received inside a stream", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response('data: {"code":500,"msg":"provider error"}\n\ndata: [DONE]\n\n', { headers: { "Content-Type": "text/event-stream" } })));
     await expect(requestKieChat(input)).rejects.toThrow("provider error");
@@ -48,7 +58,7 @@ describe("KIE transport", () => {
   });
   it.each(["connection", "body"])("bounds a stalled %s without repeating inference", async stage => {
     vi.useFakeTimers();
-    const fetchMock = vi.fn(async () => stage === "connection" ? await new Promise<Response>(() => {}) : { ok: true, status: 200, headers: new Headers({ "Content-Type": "text/event-stream" }), text: () => new Promise(() => {}) });
+    const fetchMock = vi.fn(async () => stage === "connection" ? await new Promise<Response>(() => {}) : new Response(new ReadableStream({ start() {} }), { headers: { "Content-Type": "text/event-stream" } }));
     vi.stubGlobal("fetch", fetchMock);
     const request = requestKieChat({ ...input, timeoutMs: 100 });
     const rejected = expect(request).rejects.toThrow("KIE_ANALYSIS_TIMEOUT");
