@@ -5,6 +5,7 @@ import { db, commercialTasks, projects } from "@/lib/db";
 import { reserveCommercialTaskInTransaction } from "./commercial-wallet";
 import { commercialConsumptionEnabled, executeCommercialAnalysis } from "./commercial-analysis";
 import { executeCommercialGeneration } from "./commercial-generation";
+import { taskErrorDetails } from "./task-diagnostics";
 
 export async function confirmCommercialTask(userId: string, taskId: string) {
   if (!commercialConsumptionEnabled()) throw new Error("COMMERCIAL_NOT_ENABLED");
@@ -48,7 +49,15 @@ export async function runCommercialTask(taskId: string) {
     else throw new Error("MODEL_ADAPTER_NOT_READY");
   } catch (error) {
     if (error instanceof AnalysisExecutionLost) return;
+    const progress = task.result as Record<string, unknown>;
+    const diagnostic = { taskId: task.id, executionId: progress.executionId, phase: progress.executionPhase || "unknown", sceneId: progress.activeSceneId || null, failedAt: new Date().toISOString(), elapsedMs: typeof progress.phaseStartedAt === "string" ? Date.now() - Date.parse(progress.phaseStartedAt) : null, error: taskErrorDetails(error) };
+    console.error("commercial.task.failed", diagnostic);
     // Preserve funds and durable results for reconciliation. Never resubmit unknown inference.
-    await db.update(commercialTasks).set({ state: "review", result: sql`${commercialTasks.result} || '{"code":"TASK_REQUIRES_RECONCILIATION"}'::jsonb`, updatedAt: new Date() }).where(task.kind === "analysis" ? executionCondition(task) : and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, "running")));
+    try {
+      await db.update(commercialTasks).set({ state: "review", result: sql`${commercialTasks.result} || ${JSON.stringify({ code: "TASK_REQUIRES_RECONCILIATION", diagnostic })}::jsonb`, updatedAt: new Date() }).where(task.kind === "analysis" ? executionCondition(task) : and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, "running")));
+    } catch (saveError) {
+      console.error("commercial.task.diagnostic_save_failed", { taskId: task.id, error: taskErrorDetails(saveError) });
+      throw saveError;
+    }
   }
 }

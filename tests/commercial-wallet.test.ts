@@ -418,6 +418,39 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(commercialMediaRequest).toHaveBeenCalledTimes(2);
     await expect(quoteCommercialAnalysisRetry(userId, quote.id)).rejects.toThrow("USE_LATEST_RETRY_TASK");
   });
+  it("replays the eleven-shot failure checkpoints and records the save error without duplicate inference", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Save failure reproduction" }).returning();
+    const ends = [3625000, 5958000, 8042000, 10292000, 12500000, 14708000, 17083000, 19125000, 21375000, 23542000, 27209000];
+    const scenes = ends.map((endUs, index) => ({ id: String(index + 1), startUs: index ? ends[index - 1] : 0, endUs }));
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a5a8711fcde187fd617c90cd137fcf0f02d73e7bc3699686386b5e19513ca28c", durationUs: 27209000, bytes: 1140481, metadata: { duration: 27.209 }, scenes });
+    const preview = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/source.mp4", mediaName: "98dbda782b986a1452deb45fb8bc2ebc.mp4", automaticSplit: true });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preview.id, sceneIds: scenes.map(scene => scene.id), payer: "platform", model: "flash", outputLanguage: "zh" });
+    await confirmCommercialTask(userId, quote.id);
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: { duration: 27.209 }, scenes: scenes.map((scene, index) => ({ sceneIndex: index + 1, startTime: scene.startUs / 1e6, endTime: scene.endUs / 1e6, duration: (scene.endUs - scene.startUs) / 1e6, keyframeUrls: [1, 2, 3].map(frame => `https://example.com/frame-${frame}.jpg`) })) });
+    await runCommercialTask(quote.id);
+    vi.mocked(analyzeSceneBlueprint).mockResolvedValueOnce({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Complete model result", metadata: { analysisProvider: "kie" } });
+    vi.mocked(analyzeSceneBlueprint).mockRejectedValueOnce(new Error("KIE_ANALYSIS_TIMEOUT")).mockRejectedValueOnce(new Error("KIE_ANALYSIS_TIMEOUT"));
+    await runCommercialTask(quote.id);
+    await runCommercialTask(quote.id);
+    await runCommercialTask(quote.id);
+    vi.mocked(analyzeSceneBlueprint).mockResolvedValueOnce({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Fourth model result", metadata: { analysisProvider: "kie" } });
+    const cause = Object.assign(new Error("connection lost platform-test-key"), { code: "08006" });
+    const transaction = vi.spyOn(testDb, "transaction").mockRejectedValueOnce(new Error("Failed query: sensitive SQL", { cause }));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await runCommercialTask(quote.id);
+      const [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+      expect(task).toMatchObject({ state: "review", result: { finishedSceneIds: ["1", "2", "3"], successfulSceneIds: ["1"], diagnostic: { taskId: quote.id, phase: "saving_result", sceneId: "4", error: { cause: { code: "08006", message: "connection lost [REDACTED]" } } } } });
+      expect(JSON.stringify(task.result)).not.toContain("sensitive SQL");
+      await runCommercialTask(quote.id);
+      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(4);
+      expect((await balance()).heldCredits).toBe(quote.credits);
+      expect(log).toHaveBeenCalledWith("commercial.task.failed", expect.objectContaining({ phase: "saving_result" }));
+    } finally { transaction.mockRestore(); log.mockRestore(); }
+  });
   it("retries only the selected failed shot and leaves other failures for a later retry", async () => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");

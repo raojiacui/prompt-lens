@@ -12,6 +12,7 @@ import { getProjectBundle } from "@/lib/workflow/service";
 import { analyzeSceneBlueprint, buildFallbackSceneBlueprint } from "@/lib/workflow/scene-analysis";
 import { settleCommercialTaskInTransaction } from "./commercial-wallet";
 import { resolveModelSelection } from "@/lib/ai/model-registry";
+import { taskErrorDetails } from "./task-diagnostics";
 
 export function commercialConsumptionEnabled() { return process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true"; }
 type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
@@ -78,6 +79,9 @@ export async function quoteCommercialAnalysis(userId: string, input: { preparati
 async function recordAnalysisPhase(task: typeof commercialTasks.$inferSelect, phase: string, sceneId?: string) {
   const [current] = await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ executionPhase: phase, phaseStartedAt: new Date().toISOString(), activeSceneId: sceneId || null })}::jsonb`, updatedAt: new Date() }).where(executionCondition(task)).returning({ id: commercialTasks.id });
   if (!current) throw new AnalysisExecutionLost();
+  const previous = task.result as Record<string, unknown>;
+  console.info("commercial.analysis.phase", { taskId: task.id, sceneId: sceneId || null, phase, previousPhase: previous.executionPhase || null, elapsedMs: typeof previous.phaseStartedAt === "string" ? Date.now() - Date.parse(previous.phaseStartedAt) : null });
+  task.result = { ...previous, executionPhase: phase, activeSceneId: sceneId || null, phaseStartedAt: new Date().toISOString() };
 }
 
 export async function executeCommercialAnalysis(task: typeof commercialTasks.$inferSelect) {
@@ -107,8 +111,9 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
     let blueprint;
     await recordAnalysisPhase(task, "model_request", next);
     try { blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false }); }
-    catch { blueprint = buildFallbackSceneBlueprint(asset, "Analysis unavailable", undefined, input.outputLanguage); }
+    catch (error) { console.error("commercial.analysis.model_failed", { taskId: task.id, sceneId: next, error: taskErrorDetails(error) }); blueprint = buildFallbackSceneBlueprint(asset, "Analysis unavailable", undefined, input.outputLanguage); }
     const succeeded = blueprint.metadata?.analysisProvider === "kie";
+    if (!succeeded) console.error("commercial.analysis.fallback", { taskId: task.id, sceneId: next, error: taskErrorDetails(String(blueprint.metadata?.fallbackReason || "Analysis unavailable")) });
     await recordAnalysisPhase(task, "saving_result", next);
     await db.transaction(async (tx) => {
       await lockAnalysisExecution(tx, task);
@@ -147,8 +152,9 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
   let blueprint;
   await recordAnalysisPhase(task, "model_request", next);
   try { blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false }); }
-  catch { blueprint = buildFallbackSceneBlueprint(scene, "Analysis unavailable", undefined, input.outputLanguage); }
+  catch (error) { console.error("commercial.analysis.model_failed", { taskId: task.id, sceneId: next, error: taskErrorDetails(error) }); blueprint = buildFallbackSceneBlueprint(scene, "Analysis unavailable", undefined, input.outputLanguage); }
   const succeeded = blueprint.metadata?.analysisProvider === "kie";
+  if (!succeeded) console.error("commercial.analysis.fallback", { taskId: task.id, sceneId: next, error: taskErrorDetails(String(blueprint.metadata?.fallbackReason || "Analysis unavailable")) });
   await recordAnalysisPhase(task, "saving_result", next);
   await db.transaction(async (tx) => {
     await lockAnalysisExecution(tx, task);
