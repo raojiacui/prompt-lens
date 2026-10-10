@@ -9,6 +9,7 @@ const isolated = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return isolated.db; } }));
 vi.mock("@/lib/workflow/scene-analysis", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/workflow/scene-analysis")>(), rewriteSceneBlueprint: vi.fn(), analyzeSceneBlueprint: vi.fn() }));
 vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: vi.fn(async () => "owned-upload"), isOwnedLinkedVideo: vi.fn(async () => false), commercialMediaRequest: vi.fn() }));
+vi.mock("@/lib/byok/kie", () => ({ getUserKieApiKey: vi.fn(async () => null) }));
 vi.mock("@/lib/cloudflare/r2", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/cloudflare/r2")>(), copyR2Object: vi.fn(async () => "https://example.com/frozen-video.mp4") }));
 vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/payments/alipay")>(),
@@ -19,6 +20,7 @@ vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
 }));
 import { rewriteSceneBlueprint, analyzeSceneBlueprint } from "@/lib/workflow/scene-analysis";
 import { assertOwnedUploadedVideo, isOwnedLinkedVideo, commercialMediaRequest } from "@/lib/billing/commercial-media";
+import { getUserKieApiKey } from "@/lib/byok/kie";
 import { copyR2Object } from "@/lib/cloudflare/r2";
 import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnalysisRetry, quotedAnalysisModel, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
@@ -76,6 +78,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.mocked(rewriteSceneBlueprint).mockReset();
     vi.mocked(analyzeSceneBlueprint).mockReset();
     vi.mocked(commercialMediaRequest).mockReset();
+    vi.mocked(getUserKieApiKey).mockReset().mockResolvedValue(null);
     vi.mocked(copyR2Object).mockClear();
     await client.exec("TRUNCATE media_cleanup_jobs");
     vi.mocked(queryAlipayTrade).mockReset();
@@ -573,6 +576,12 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const preparation = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/local.mp4", mediaName: "local", automaticSplit: false });
     expect(preparation.durationUs).toBe(60_000_000);
     expect(preparation.scenes).toHaveLength(1);
+    vi.mocked(getUserKieApiKey).mockResolvedValue("own-test-key");
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preparation.id, sceneIds: ["1"], payer: "byok", model: "flash", outputLanguage: "zh" });
+    expect(quote).toMatchObject({ splitCredits: 0, analysisCredits: 0, credits: 0 });
+    await confirmCommercialTask(userId, quote.id);
+    expect(await balance()).toMatchObject({ credits: 0, heldCredits: 0 });
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
   });
 
   it("splits paid local uploads and quotes only the selected shots", async () => {

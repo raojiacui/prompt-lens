@@ -61,7 +61,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
           if (exhaustedQuoteRetries && quoteRequests <= 3) { await route.fulfill({ status: 503, json: { code: "ANALYSIS_QUOTE_UNAVAILABLE" } }); return; }
         }
         if (data.action === "prepare") body = { id: "preview", durationUs: pricing.sourceDurationUs, scenes };
-        else { quoteRequest = data; body = { id: taskId, ...quoteAnalysis({ ...pricing, scenes: scenes.filter(s => data.sceneIds.includes(s.id)) }) }; }
+        else { quoteRequest = data; body = { id: taskId, ...quoteAnalysis({ ...pricing, payer: data.payer, scenes: scenes.filter(s => data.sceneIds.includes(s.id)) }) }; }
       } else if (path === `/api/commercial/tasks/${taskId}`) {
         if (route.request().method() === "POST") {
           confirmations++;
@@ -105,10 +105,21 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
       expect(confirmations).toBe(0);
     }
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(panel.getByRole("combobox")).toHaveCount(0);
+    await expect(panel.getByRole("combobox")).toHaveCount(1);
     await expect(panel.getByRole("link")).toHaveCount(0);
     await expect(actionRow.getByRole("button")).toBeDisabled();
-    await expect(panel.getByRole("combobox", { name: locale === "zh" ? "费用来源" : "Payment source" })).toHaveCount(0);
+    const quotePayer = panel.getByRole("combobox", { name: locale === "zh" ? "费用来源" : "Payment source" });
+    await expect(quotePayer).toBeEnabled();
+    await quotePayer.selectOption(pricing.payer === "platform" ? "byok" : "platform");
+    await expect(actionRow.getByRole("combobox")).toHaveValue(pricing.payer === "platform" ? "byok" : "platform");
+    const changedPayer = pricing.payer === "platform" ? "byok_split" : "platform";
+    await expect.poll(() => quoteRequest?.payer).toBe(changedPayer);
+    const changedCredits = quoteAnalysis({ ...pricing, payer: changedPayer }).credits;
+    await expect(panel.getByText(locale === "zh" ? `${changedCredits} 积分` : `${changedCredits} credits`, { exact: true })).toBeVisible();
+    await actionRow.getByRole("combobox").selectOption(pricing.payer === "platform" ? "platform" : "byok");
+    await expect(quotePayer).toHaveValue(pricing.payer === "platform" ? "platform" : "byok");
+    await expect.poll(() => quoteRequest?.payer).toBe(pricing.payer);
+    expect(confirmations).toBe(0);
     await expect(panel.getByRole("button", { name: locale === "zh" ? "读取视频信息" : "Inspect video" })).toHaveCount(0);
     await expect(panel.getByRole("button", { name: locale === "zh" ? "获取报价" : "Get quote" })).toHaveCount(0);
     await expect(panel.getByText(`${seconds.toFixed(2)}s · ${scenes.length} ${locale === "zh" ? "个镜头" : "shots"}`, { exact: true })).toBeVisible();
@@ -172,7 +183,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     await expect(panel.getByText(locale === "zh" ? `${singleCredits} 积分` : `${singleCredits} credits`, { exact: true })).toBeVisible();
     expect(quoteRequest).toMatchObject({ sceneIds: ["1"] });
     await expect(first).toBeEnabled();
-    await expect(actionRow.getByRole("combobox")).toBeDisabled();
+    await expect(actionRow.getByRole("combobox")).toBeEnabled();
     await expect(panel.getByRole("button", { name: locale === "zh" ? "调整选择" : "Adjust selection" })).toHaveCount(0);
     await all.check();
     await expect(first).toBeChecked();
@@ -188,6 +199,8 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     if (interruptedResponses) {
       await expect(panel.getByRole("alert")).toContainText("确认分析的响应中断");
       await expect(first).toBeDisabled();
+      await expect(quotePayer).toBeDisabled();
+      await expect(actionRow.getByRole("combobox")).toBeDisabled();
       await expect(panel.getByRole("button", { name: "返回素材选择" })).toBeDisabled();
       const quotesBeforeRetry = quoteRequests;
       await panel.getByRole("button", { name: `确认分析 · ${totalCredits} 积分` }).click();

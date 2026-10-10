@@ -323,6 +323,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [copiedSceneVersionId, setCopiedSceneVersionId] = useState("");
   const [analysisModelValue, setAnalysisModelValue] = useState("analysis-gemini-3-8-flash");
   const [analysisPayer, setAnalysisPayer] = useState<"platform" | "byok">("platform");
+  const [analysisQuoteLocked, setAnalysisQuoteLocked] = useState(false);
   const [analysisTaskId, setAnalysisTaskId] = useState("");
   const [analysisOutputLanguage, setAnalysisOutputLanguage] = useState<"zh" | "en">(locale === "en" ? "en" : "zh");
   const [creditStatus, setCreditStatus] = useState<CreditStatus | null>(null);
@@ -345,6 +346,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const rewriteBusyRef = useRef(false);
   const modelPriority: ModelPriority = "balanced";
   const linkedPlatform = detectLinkedPlatform(sourceUrl);
+  function changeAnalysisPayer(payer: "platform" | "byok") {
+    if (analysisQuoteLocked || analysisTaskId) return;
+    setAnalysisPayer(payer);
+    setCommercialSource(source => source ? { ...source, payer } : null);
+  }
 
   useEffect(() => {
     const cached = cachedProjects();
@@ -907,7 +913,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
             {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5 shrink-0" />}
             {loading ? (locale === "en" ? "Preparing..." : "正在处理...") : mediaInputMode === "link" ? (locale === "en" ? "Import video · counts on success" : "导入视频 · 成功计次") : mediaType === "image" ? (locale === "en" ? "Analyze image" : "分析图片") : (locale === "en" ? "Analyze video" : "分析视频")}
           </button>
-          {showAnalysisPayer && <select aria-label={locale === "en" ? "Payment source" : "费用来源"} title={locale === "en" ? "Payment source" : "费用来源"} value={analysisPayer} disabled={loading || Boolean(commercialSource) || Boolean(analysisTaskId)} onChange={event => setAnalysisPayer(event.target.value === "byok" ? "byok" : "platform")} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{locale === "en" ? "Credits" : "平台积分"}</option><option value="byok">{locale === "en" ? "Own key" : "自带 Key"}</option></select>}
+          {showAnalysisPayer && <select aria-label={locale === "en" ? "Payment source" : "费用来源"} title={locale === "en" ? "Payment source" : "费用来源"} value={analysisPayer} disabled={loading || analysisQuoteLocked || Boolean(analysisTaskId)} onChange={event => changeAnalysisPayer(event.target.value === "byok" ? "byok" : "platform")} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{locale === "en" ? "Credits" : "平台积分"}</option><option value="byok">{locale === "en" ? "Own key" : "自带 Key"}</option></select>}
           </div>
 
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}
@@ -954,7 +960,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
         <div className="relative min-h-0">
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
-          {commercialSource ? <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onClose={() => { setCommercialSource(null); setProgress(""); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} /> : !bundle ? (
+          {commercialSource ? <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onPayerChange={changeAnalysisPayer} onLockChange={setAnalysisQuoteLocked} onClose={() => { setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} /> : !bundle ? (
             loading && analysisProgress ? (
               <AnalysisProgressPanel progress={analysisProgress} />
             ) : (

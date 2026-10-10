@@ -57,10 +57,10 @@ describe("durable analysis", () => {
   });
   afterAll(async () => { vi.unstubAllEnvs(); await client.close(); });
 
-  it("routes whole-video trial and BYOK directly, and splitting through a quote", () => {
+  it("keeps introductory trials direct and requires a quote for BYOK and splitting", () => {
     const input = { commercialEnabled: true, mediaType: "video" as const, trialRemaining: 2 };
     expect(requiresAnalysisQuote({ ...input, mode: "trial" })).toBe(false);
-    expect(requiresAnalysisQuote({ ...input, mode: "byok" })).toBe(false);
+    expect(requiresAnalysisQuote({ ...input, mode: "byok" })).toBe(true);
     expect(requiresAnalysisQuote({ ...input, mode: "trial", trialRemaining: 0 })).toBe(true);
     expect(requiresAnalysisQuote({ ...input, mode: "byok", automaticSplit: true })).toBe(true);
     expect(requiresAnalysisQuote({ ...input, mode: "trial", automaticSplit: true })).toBe(true);
