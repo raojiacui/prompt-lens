@@ -168,7 +168,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         setTaskProgress(previous => ({ ...previous, phase: data.phase || previous.phase, total: data.totalScenes ?? previous.total, finished: data.completedScenes ?? previous.finished }));
         if (data.bundle && !["completed", "failed"].includes(data.state)) onPartialRef.current?.(data.bundle);
         if (["completed", "failed"].includes(data.state) && data.bundle && !completed.current) { completed.current = true; onCompleteRef.current(data.bundle); }
-        if (["completed", "failed", "review"].includes(data.state)) return;
+        if (["completed", "failed"].includes(data.state) || (data.state === "review" && !data.saveRecoveryPending)) return;
       } catch { if (!controller.signal.aborted) setError(zh ? "查询暂时中断，任务仍保留在账户中。" : "Status temporarily unavailable. Your task remains in your account."); }
       if (!controller.signal.aborted) timer = setTimeout(poll, 4000);
     }
