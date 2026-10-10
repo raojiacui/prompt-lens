@@ -101,11 +101,31 @@ describe("durable analysis", () => {
     expect((await task(queued.id)).result).toMatchObject({ successful: 1, heldCredits: 5 });
     await client.query("UPDATE commercial_tasks SET state = 'running', updated_at = now() - interval '7 minutes' WHERE id = $1", [queued.id]);
     await recoverAnalysisTasks();
+    expect((await task(queued.id)).state).toBe("queued");
+    expect((await task(queued.id)).result).toMatchObject({ cursor: 2, successful: 1, failed: 1 });
+    await runAnalysisTask(queued.id);
     expect((await task(queued.id)).result).toMatchObject({ chargedCredits: 4, partial: true });
     expect((await testDb.select().from(schema.userCredits)).find(r => r.userId === userId)?.balance).toBe(16);
     await recoverAnalysisTasks();
     await runAnalysisTask(queued.id);
     expect(mocks.analyze).toHaveBeenCalledTimes(1);
+  });
+
+  it("continues later workflow shots after an uncertain model call", async () => {
+    mocks.mode = "platform_credits";
+    await testDb.insert(schema.userCredits).values({ userId, balance: 30 });
+    const scenes = [0, 1, 2].map(i => ({ sceneIndex: i + 1, startTime: i * 10, endTime: (i + 1) * 10, duration: 10, keyframeUrls: ["https://r2.example/frame.png"] }));
+    mocks.probe.mockResolvedValueOnce({ durationUs: 30_000_000, bytes: 500, sourceHash: "a".repeat(64), scenes: scenes.map((_, i) => ({ id: String(i + 1), startUs: i * 10_000_000, endUs: (i + 1) * 10_000_000 })) }).mockResolvedValueOnce({ scenes, metadata: { duration: 30 } });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "video", mediaUrl: "https://r2.example/a.mp4" });
+    await client.query("UPDATE commercial_tasks SET input = jsonb_set(input, '{longVideoAllowed}', 'true') WHERE id = $1", [queued.id]);
+    for (let i = 0; i < 5; i++) await runAnalysisTask(queued.id);
+    await client.query("UPDATE commercial_tasks SET state = 'running', updated_at = now() - interval '7 minutes' WHERE id = $1", [queued.id]);
+    await recoverAnalysisTasks();
+    expect((await task(queued.id)).result).toMatchObject({ cursor: 2, successful: 1, failed: 1 });
+    await drain(queued.id);
+    expect((await task(queued.id)).result).toMatchObject({ successful: 2, failed: 1, partial: true });
+    expect(mocks.analyze).toHaveBeenCalledTimes(2);
+    expect((await testDb.select().from(schema.sceneVersions)).filter(row => row.projectId === projectId).map(row => (row.metadata as Record<string, unknown>).analysisProvider)).toEqual(["kie", "fallback", "kie"]);
   });
 
   it("rejects invalid worker intervals before calling a trial model", async () => {
@@ -180,8 +200,9 @@ describe("durable analysis", () => {
     await recoverAnalysisTasks();
     deliver(blueprint);
     await running;
+    await runAnalysisTask(queued.id);
     expect((await task(queued.id)).state).toBe("failed");
-    expect((await testDb.select().from(schema.sceneVersions)).filter(row => row.projectId === projectId)).toHaveLength(0);
+    expect((await testDb.select().from(schema.sceneVersions)).filter(row => row.projectId === projectId)).toMatchObject([{ generationPrompt: "", metadata: { failureCode: "ANALYSIS_INTERRUPTED" } }]);
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
   });
 });

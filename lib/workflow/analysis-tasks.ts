@@ -223,7 +223,39 @@ export async function runAnalysisTask(id: string) {
 export async function recoverAnalysisTasks() {
   const abandoned = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "workflow_analysis"), sql`((${commercialTasks.state} = 'running' AND ${commercialTasks.updatedAt} < now() - ${LEASE_MS} * interval '1 millisecond') OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.expiresAt} < now()))`)).limit(20);
   for (const task of abandoned) {
-    // A synchronous KIE call has no queryable task ID; never automatically bill it twice.
-    await settleAnalysisTask(task, { ...task.result as Progress, error: "任务执行中断或过期，已保留完成的镜头并退回未交付额度。" }, true);
+    if (task.state === "queued") {
+      await settleAnalysisTask(task, { ...task.result as Progress, error: "任务已过期，已保留完成的镜头并退回未交付额度。" }, true);
+      continue;
+    }
+    let resumed = false;
+    await db.transaction(async (tx) => {
+      const [current] = await tx.select().from(commercialTasks).where(eq(commercialTasks.id, task.id)).for("update");
+      if (!current || current.state !== "running" || current.updatedAt.getTime() >= Date.now() - LEASE_MS) return;
+      const progress = current.result as Progress;
+      let next: Progress = progress;
+      if (progress.phase === "scenes" && progress.assets && progress.cursor < progress.assets.scenes.length && progress.versionId && progress.sceneIds?.[progress.cursor]) {
+        // The synchronous model call may have been billed. Record only that shot as
+        // uncertain, then continue the remaining shots without repeating inference.
+        const scene = progress.assets.scenes[progress.cursor];
+        const originalSceneId = progress.sceneIds[progress.cursor];
+        const reason = "该镜头分析中断，未能确认模型结果，请单独重试。";
+        const existing = await tx.query.sceneVersions.findFirst({ where: and(eq(sceneVersions.projectVersionId, progress.versionId), eq(sceneVersions.originalSceneId, originalSceneId)) });
+        if (!existing) {
+          const fallback = buildFallbackSceneBlueprint(scene, reason);
+          await tx.insert(sceneVersions).values({ projectId: (current.input as Input).projectId, projectVersionId: progress.versionId, originalSceneId, sceneIndex: scene.sceneIndex, duration: scene.duration, ...fallback, metadata: { ...fallback.metadata, failureCode: "ANALYSIS_INTERRUPTED" } });
+        }
+        await tx.update(videoScenes).set({ status: "failed", error: reason, updatedAt: new Date() }).where(eq(videoScenes.id, originalSceneId));
+        next = { ...progress, cursor: progress.cursor + 1, failed: progress.failed + 1, error: reason };
+      } else if (progress.phase === "transcription") {
+        next = { ...progress, phase: "music", transcriptionError: "转录任务中断，已继续画面分析。" };
+      } else if (progress.phase === "music") {
+        next = { ...progress, phase: "scenes" };
+      } else if (progress.phase === "scenes" && (!progress.assets || !progress.versionId)) {
+        next = { ...progress, phase: "settle", error: "分析素材检查点缺失。" };
+      }
+      await tx.update(commercialTasks).set({ state: "queued", result: next, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+      resumed = true;
+    });
+    if (resumed) await dispatchQueuedAnalysis(task.id);
   }
 }
