@@ -999,7 +999,7 @@ export function ReferenceVideoComposer({
     insertImageMention(assetId);
   }
 
-  async function submitGenerationJob() {
+  async function submitGenerationJob(confirmedByok = false) {
     if (hasUploadingAssets)
       return setError(t("errors.assetUploading") || "Asset uploading");
     if (!readyReferenceVideoAsset && !prompt.trim())
@@ -1032,7 +1032,7 @@ export function ReferenceVideoComposer({
     const variantCount = Number.isFinite(requestedOutputCount)
       ? Math.max(1, Math.min(4, requestedOutputCount))
       : 1;
-    if (commercialEnabled && generationPayer === "platform") {
+    if (commercialEnabled && !confirmedByok) {
       setCommercialRequest({ quantity: variantCount, request: { userPrompt: promptWithInlineReferences, replacementAssets, hiddenReferenceImageUrl, referenceVideoUrl: readyReferenceVideoAsset?.url, aspectRatio, model, duration: durationSeconds, quality, ...workflowContext } });
       return;
     }
@@ -1193,7 +1193,7 @@ export function ReferenceVideoComposer({
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
-      {commercialRequest && <GenerationQuoteDialog {...commercialRequest} onClose={() => setCommercialRequest(null)} onConfirmed={(ids) => {
+      {commercialRequest && <GenerationQuoteDialog {...commercialRequest} payer={generationPayer} onPayerChange={setGenerationPayer} onByokConfirmed={async () => { await submitGenerationJob(true); setCommercialRequest(null); }} onClose={() => setCommercialRequest(null)} onConfirmed={(ids) => {
         const next: GenerationVariant[] = ids.map((id, i) => ({ id: `variant-${i + 1}`, label: `Variation ${i + 1}`, status: "generating", progress: 10, providerTaskId: `commercial:${id}`, notes: zh ? "已预留积分" : "Credits reserved" }));
         setVariants(next); window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(next)); setCommercialRequest(null);
         setBalanceRefresh((value) => value + 1);
@@ -1624,7 +1624,7 @@ export function ReferenceVideoComposer({
                   : t("create.button") || "Generate Video"}
                 {!isRunning && <span aria-live="polite">· {generationCostLabel}</span>}</span>
               </button>
-              {commercialEnabled && <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>}
+              {commercialEnabled && <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning || Boolean(commercialRequest)} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>}
               </div>
             </div>
           </section>
