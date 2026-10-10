@@ -38,7 +38,7 @@ it("does not load a project before any scene is processed", async () => {
   expect((await (await call()).json()).bundle).toBeUndefined();
   expect(mocks.bundle).not.toHaveBeenCalled();
 });
-it.each([[7, false], [29, false], [31, true]])("uses the shared thirty-minute inactivity limit at %s minutes", async (minutes, shouldRecover) => {
+it.each([[5, false], [7, true], [31, true]])("uses the shared six-minute inactivity limit at %s minutes", async (minutes, shouldRecover) => {
   const task = await mocks.find();
   mocks.find.mockResolvedValue({ ...task, updatedAt: new Date(Date.now() - Number(minutes) * 60000) });
   await call();

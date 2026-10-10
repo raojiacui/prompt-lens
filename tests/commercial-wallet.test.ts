@@ -564,6 +564,31 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect((await testDb.select().from(schema.projects))[0].status).toBe("failed");
     expect((await quoteCommercialAnalysisRetry(userId, quote.id)).credits).toBe(quote.credits);
   });
+  it("continues later shots after one model request is interrupted", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Continue after interruption" }).returning();
+    const intervals = [1, 2, 3].map(index => ({ id: String(index), startUs: (index - 1) * 5_000_000, endUs: index * 5_000_000 }));
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 15_000_000, bytes: 500, metadata: {}, scenes: intervals });
+    const preview = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/a.mp4", mediaName: "a", automaticSplit: true });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preview.id, sceneIds: intervals.map(scene => scene.id), payer: "platform", model: "flash", outputLanguage: "zh" });
+    await confirmCommercialTask(userId, quote.id);
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: intervals.map((scene, index) => ({ sceneIndex: index + 1, startTime: scene.startUs / 1_000_000, endTime: scene.endUs / 1_000_000, duration: 5, keyframeUrls: [] })) });
+    await runCommercialTask(quote.id);
+    vi.mocked(analyzeSceneBlueprint).mockResolvedValue({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Analyzed", metadata: { analysisProvider: "kie" } });
+    await runCommercialTask(quote.id);
+    await client.query("UPDATE commercial_tasks SET state='running', result=result || '{\"executionPhase\":\"model_request\",\"activeSceneId\":\"2\"}'::jsonb, updated_at=now()-interval '7 minutes' WHERE id=$1", [quote.id]);
+    await recoverCommercialAnalysisTasks();
+    const [resumed] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+    expect(resumed).toMatchObject({ state: "queued", result: { finishedSceneIds: ["1", "2"], successfulSceneIds: ["1"] } });
+    await drain(quote.id);
+    expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(2);
+    const versions = await testDb.query.sceneVersions.findMany({ orderBy: [schema.sceneVersions.sceneIndex] });
+    expect(versions.map(version => (version.metadata as Record<string, unknown>).analysisProvider)).toEqual(["kie", "fallback", "kie"]);
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0]).toMatchObject({ state: "completed" });
+    expect((await balance()).heldCredits).toBe(0);
+  });
   it.each([false, true])("discards late paid analysis results after settlement (retry=%s)", async (retry) => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
@@ -590,7 +615,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const running = runCommercialTask(taskId);
     await entered;
     expect((await testDb.select().from(schema.commercialTasks)).find(t => t.id === taskId)?.result).toMatchObject({ executionPhase: "model_request", activeSceneId: "1" });
-    await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '7 minutes' WHERE id = $1", [taskId]);
+    await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '5 minutes' WHERE id = $1", [taskId]);
     await recoverCommercialAnalysisTasks();
     expect((await testDb.select().from(schema.commercialTasks)).find(t => t.id === taskId)?.state).toBe("running");
     await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '31 minutes' WHERE id = $1", [taskId]);

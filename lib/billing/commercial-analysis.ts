@@ -13,6 +13,7 @@ import { analyzeSceneBlueprint, buildFallbackSceneBlueprint, type SceneBlueprint
 import { settleCommercialTaskInTransaction } from "./commercial-wallet";
 import { resolveModelSelection } from "@/lib/ai/model-registry";
 import { taskErrorDetails } from "./task-diagnostics";
+import { dispatchQueuedAnalysis } from "@/lib/workflow/analysis-dispatch";
 
 export function commercialConsumptionEnabled() { return process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true"; }
 type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
@@ -194,6 +195,7 @@ export async function recoverCommercialAnalysisTasks() {
     OR (${commercialTasks.updatedAt} < ${saveCutoff} AND ${commercialTasks.result}->'pendingResult' IS NOT NULL AND ${commercialTasks.result}->'pendingResult' <> 'null'::jsonb)))
     OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.updatedAt} < now() - interval '24 hours'))`;
   const stale = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "analysis"), expired)).limit(10);
+  const resumed: string[] = [];
   for (const candidate of stale) {
     await db.transaction(async (tx) => {
     const [task] = await tx.update(commercialTasks).set({ state: "running", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionId: randomUUID() })}::jsonb`, updatedAt: new Date() }).where(and(eq(commercialTasks.id, candidate.id), expired)).returning();
@@ -201,30 +203,54 @@ export async function recoverCommercialAnalysisTasks() {
     const checkpoint = task.result as Record<string, unknown>;
     if (checkpoint.pendingResult) {
       await tx.update(commercialTasks).set({ state: "queued", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionPhase: "resuming_save", saveRecoveryCount: Number(checkpoint.saveRecoveryCount || 0) + 1 })}::jsonb`, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+      resumed.push(task.id);
       console.warn("commercial.analysis.resuming_save", { taskId: task.id, sceneId: checkpoint.activeSceneId });
       return;
     }
     const input = task.input as AnalysisInput;
-    const interruptedPhase = (task.result as Record<string, unknown>).executionPhase || "unknown";
+    const recordedPhase = (task.result as Record<string, unknown>).executionPhase;
+    const interruptedPhase = typeof recordedPhase === "string" ? recordedPhase : "unknown";
     const interruptedReason = input.outputLanguage === "zh" ? "分析任务中断，未能保存模型分析结果，请重试失败镜头。" : "Analysis interrupted before its result was saved. Retry the failed shot.";
-    const progress = task.result as { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; successfulSceneIds?: string[]; splitDelivered?: boolean };
+    const progress = task.result as { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; successfulSceneIds?: string[]; finishedSceneIds?: string[]; splitDelivered?: boolean; activeSceneId?: string };
     const successes = progress.successfulSceneIds || input.retry?.previousSuccess || [];
-    if (!input.retry && progress.assets && progress.versionId && progress.sceneRecords) {
-      for (let index = 0; index < input.pricing.scenes.length; index++) {
-        const scene = input.pricing.scenes[index];
-        if (successes.includes(scene.id)) continue;
-        const originalSceneId = progress.sceneRecords[scene.id];
+    const attempts = input.retry?.sceneVersions.map(scene => scene.id) || input.pricing.scenes.map(scene => scene.id);
+    const finished = progress.finishedSceneIds || [];
+    const next = attempts.find(id => !finished.includes(id));
+    const inferenceMayHaveStarted = !["resolving_access", "extracting_assets"].includes(interruptedPhase);
+    const interrupted = inferenceMayHaveStarted
+      ? progress.activeSceneId && !finished.includes(progress.activeSceneId) && attempts.includes(progress.activeSceneId) ? progress.activeSceneId : next
+      : null;
+    const canRecordInterrupted = Boolean(interrupted && progress.assets && (input.retry || (progress.versionId && progress.sceneRecords?.[interrupted])));
+    if (interrupted && canRecordInterrupted && progress.assets) {
+      const index = input.pricing.scenes.findIndex(scene => scene.id === interrupted);
+      const interval = input.pricing.scenes[index];
+      const fallback = buildFallbackSceneBlueprint(progress.assets.scenes[index], interruptedReason, undefined, input.outputLanguage);
+      const metadata = { ...fallback.metadata, failureCode: "ANALYSIS_INTERRUPTED", interruptedPhase };
+      if (input.retry) {
+        const retryScene = input.retry.sceneVersions.find(scene => scene.id === interrupted)!;
+        const [version] = await tx.select().from(sceneVersions).where(and(eq(sceneVersions.id, retryScene.sceneVersionId), eq(sceneVersions.projectId, input.projectId))).for("update");
+        if (!version) throw new Error("SCENE_NOT_FOUND");
+        await tx.update(sceneVersions).set({ ...fallback, metadata: { ...metadata, retryOfSceneVersionId: version.id }, updatedAt: new Date() }).where(eq(sceneVersions.id, version.id));
+        await tx.update(videoScenes).set({ status: "failed", error: interruptedReason, updatedAt: new Date() }).where(eq(videoScenes.id, version.originalSceneId));
+      } else if (progress.versionId && progress.sceneRecords?.[interrupted]) {
+        const originalSceneId = progress.sceneRecords[interrupted];
         const existing = await tx.query.sceneVersions.findFirst({ where: and(eq(sceneVersions.projectVersionId, progress.versionId), eq(sceneVersions.originalSceneId, originalSceneId)) });
-        if (!existing) {
-          const fallback = buildFallbackSceneBlueprint(progress.assets.scenes[index], interruptedReason);
-          await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId, originalSceneId, sceneIndex: index + 1, duration: (scene.endUs - scene.startUs) / 1_000_000, ...fallback, metadata: { ...fallback.metadata, failureCode: "ANALYSIS_INTERRUPTED", interruptedPhase } });
-        }
+        if (!existing) await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId, originalSceneId, sceneIndex: index + 1, duration: (interval.endUs - interval.startUs) / 1_000_000, ...fallback, metadata });
         await tx.update(videoScenes).set({ status: "failed", error: interruptedReason, updatedAt: new Date() }).where(eq(videoScenes.id, originalSceneId));
       }
     }
-    await finishCommercialAnalysis(task, successes, Boolean(progress.splitDelivered), successes.length > (input.retry?.previousSuccess.length || 0) ? "completed" : "failed", tx);
+    const nextFinished = canRecordInterrupted && interrupted ? [...finished, interrupted] : finished;
+    const more = attempts.some(id => !nextFinished.includes(id));
+    await tx.update(commercialTasks).set({ state: more ? "queued" : "running", result: { ...checkpoint, finishedSceneIds: nextFinished, interruptedSceneId: interrupted || null, interruptionPhase: interruptedPhase }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+    if (more) {
+      resumed.push(task.id);
+      console.warn("commercial.analysis.resuming_remaining", { taskId: task.id, interruptedSceneId: interrupted || null, remainingScenes: attempts.length - nextFinished.length });
+    } else {
+      await finishCommercialAnalysis(task, successes, Boolean(progress.splitDelivered), successes.length > (input.retry?.previousSuccess.length || 0) ? "completed" : "failed", tx);
+    }
     });
   }
+  for (const id of resumed) await dispatchQueuedAnalysis(id);
 }
 
 export async function commercialAnalysisBundle(task: typeof commercialTasks.$inferSelect) {

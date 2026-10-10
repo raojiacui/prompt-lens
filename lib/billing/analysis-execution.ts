@@ -4,7 +4,9 @@ import { commercialTasks, db } from "@/lib/db";
 type Task = typeof commercialTasks.$inferSelect;
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
-export const ANALYSIS_STALE_TIMEOUT_MS = 30 * 60_000;
+// The task routes are capped at five minutes, so a six-minute lease cannot
+// overtake a live invocation but recovers a terminated one promptly.
+export const ANALYSIS_STALE_TIMEOUT_MS = 6 * 60_000;
 export const ANALYSIS_SAVE_STALE_TIMEOUT_MS = 60_000;
 
 export function analysisNeedsRecovery(task: Task, now = Date.now()) {
