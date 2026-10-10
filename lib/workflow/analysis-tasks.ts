@@ -16,6 +16,7 @@ import { recognizeBackgroundMusic, type BackgroundMusicRecognition } from "./mus
 import { requiresAnalysisQuote } from "./analysis-routing";
 import { attachBackgroundMusicToBlueprint, deriveProjectTitle } from "./service";
 import { AnalysisExecutionLost, executionCondition, lockAnalysisExecution } from "@/lib/billing/analysis-execution";
+import { dispatchQueuedAnalysis } from "./analysis-dispatch";
 
 type Task = typeof commercialTasks.$inferSelect;
 type Input = {
@@ -116,7 +117,7 @@ async function settleAnalysisTask(task: Task, progress: Progress, recovering = f
   });
 }
 
-export async function runAnalysisTask(id: string) {
+async function runAnalysisTaskStep(id: string) {
   await recoverAnalysisTasks();
   const [task] = await db.update(commercialTasks).set({ state: "running", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionId: randomUUID() })}::jsonb`, updatedAt: new Date() }).where(and(eq(commercialTasks.id, id), eq(commercialTasks.kind, "workflow_analysis"), eq(commercialTasks.state, "queued"), sql`${commercialTasks.expiresAt} > now()`)).returning();
   if (!task) return;
@@ -212,6 +213,11 @@ export async function runAnalysisTask(id: string) {
       if (!(settlementError instanceof AnalysisExecutionLost)) throw settlementError;
     });
   }
+}
+
+export async function runAnalysisTask(id: string) {
+  try { await runAnalysisTaskStep(id); }
+  finally { await dispatchQueuedAnalysis(id); }
 }
 
 export async function recoverAnalysisTasks() {

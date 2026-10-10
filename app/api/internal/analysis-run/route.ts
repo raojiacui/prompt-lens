@@ -1,0 +1,22 @@
+import crypto from "node:crypto";
+import { after, NextRequest, NextResponse } from "next/server";
+import { and, eq } from "drizzle-orm";
+import { commercialTasks, db } from "@/lib/db";
+import { runCommercialTask } from "@/lib/billing/commercial-task-runner";
+import { runAnalysisTask } from "@/lib/workflow/analysis-tasks";
+
+export const maxDuration = 300;
+
+export async function POST(request: NextRequest) {
+  const expected = process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : "";
+  const provided = request.headers.get("authorization") || "";
+  if (!expected || Buffer.byteLength(expected) !== Buffer.byteLength(provided) || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(provided))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  const body = await request.json().catch(() => null);
+  if (typeof body?.taskId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.taskId)) return NextResponse.json({ error: "Invalid task" }, { status: 400 });
+  const task = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, body.taskId), eq(commercialTasks.state, "queued")) });
+  if (!task || !["analysis", "workflow_analysis"].includes(task.kind)) return NextResponse.json({ state: "not_queued" });
+  after(() => task.kind === "workflow_analysis" ? runAnalysisTask(task.id) : runCommercialTask(task.id));
+  return NextResponse.json({ state: "scheduled" });
+}

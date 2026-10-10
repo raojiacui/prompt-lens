@@ -6,6 +6,7 @@ import { reserveCommercialTaskInTransaction } from "./commercial-wallet";
 import { commercialConsumptionEnabled, executeCommercialAnalysis } from "./commercial-analysis";
 import { executeCommercialGeneration } from "./commercial-generation";
 import { taskErrorDetails } from "./task-diagnostics";
+import { dispatchQueuedAnalysis } from "@/lib/workflow/analysis-dispatch";
 
 export async function confirmCommercialTask(userId: string, taskId: string) {
   if (!commercialConsumptionEnabled()) throw new Error("COMMERCIAL_NOT_ENABLED");
@@ -59,5 +60,7 @@ export async function runCommercialTask(taskId: string) {
       console.error("commercial.task.diagnostic_save_failed", { taskId: task.id, error: taskErrorDetails(saveError) });
       throw saveError;
     }
+  } finally {
+    if (task.kind === "analysis") await dispatchQueuedAnalysis(task.id);
   }
 }
