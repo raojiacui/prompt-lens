@@ -15,7 +15,7 @@ class AnalysisRequestError extends Error {
 }
 type AnalysisQuoteSource = { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string };
 
-export function AnalysisQuotePanel({ source, onClose, onComplete, onPayerChange, onLockChange }: { source: AnalysisQuoteSource; onClose: () => void; onComplete: (bundle: unknown) => void; onPayerChange?: (payer: "platform" | "byok") => void; onLockChange?: (locked: boolean) => void }) {
+export function AnalysisQuotePanel({ source, onClose, onComplete, onLockChange }: { source: AnalysisQuoteSource; onClose: () => void; onComplete: (bundle: unknown) => void; onLockChange?: (locked: boolean) => void }) {
   const zh = useLocale() === "zh";
   const automaticSplit = source.automaticSplit;
   const payer = source.payer ?? "platform";
@@ -207,9 +207,8 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPayerChange,
         {!selectedScenes.length && <p className="mt-2 text-sm text-muted-foreground">{zh ? "请至少选择一个镜头。" : "Select at least one shot."}</p>}
       </div>}
       {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
-      <div className="mt-5 grid grid-cols-[minmax(0,1fr)_8rem] items-stretch gap-2">
+      <div className="mt-5 flex items-stretch">
         <button disabled={busy || downloading || preparing || quoting || (!quote && (!error || (preparation !== null && !selected.length)))} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : error ? (preparation ? (zh ? "重新获取费用" : "Refresh cost") : (zh ? "重新读取视频" : "Inspect video again")) : (zh ? "确认分析" : "Confirm analysis")}</button>
-        {onPayerChange && <select aria-label={zh ? "费用来源" : "Payment source"} value={payer} disabled={selectionLocked} onChange={event => onPayerChange(event.target.value === "byok" ? "byok" : "platform")} className="min-h-11 min-w-0 rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>}
       </div>
     </>}
     {taskId && <AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} />}

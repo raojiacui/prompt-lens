@@ -105,10 +105,10 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
       expect(confirmations).toBe(0);
     }
     await expect(page.getByRole("dialog")).toHaveCount(0);
-    await expect(panel.getByRole("combobox")).toHaveCount(1);
+    await expect(panel.getByRole("combobox")).toHaveCount(0);
     await expect(panel.getByRole("link")).toHaveCount(0);
     await expect(actionRow.getByRole("button")).toBeDisabled();
-    const quotePayer = panel.getByRole("combobox", { name: locale === "zh" ? "费用来源" : "Payment source" });
+    const quotePayer = actionRow.getByRole("combobox", { name: locale === "zh" ? "费用来源" : "Payment source" });
     await expect(quotePayer).toBeEnabled();
     await quotePayer.selectOption(pricing.payer === "platform" ? "byok" : "platform");
     await expect(actionRow.getByRole("combobox")).toHaveValue(pricing.payer === "platform" ? "byok" : "platform");

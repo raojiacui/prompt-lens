@@ -960,7 +960,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
         <div className="relative min-h-0">
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
-          {commercialSource ? <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onPayerChange={changeAnalysisPayer} onLockChange={setAnalysisQuoteLocked} onClose={() => { setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} /> : !bundle ? (
+          {commercialSource ? <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onLockChange={setAnalysisQuoteLocked} onClose={() => { setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} /> : !bundle ? (
             loading && analysisProgress ? (
               <AnalysisProgressPanel progress={analysisProgress} />
             ) : (
