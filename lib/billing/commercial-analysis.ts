@@ -1,6 +1,6 @@
 import { and, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
-import { AnalysisExecutionLost, executionCondition, lockAnalysisExecution } from "./analysis-execution";
+import { ANALYSIS_STALE_TIMEOUT_MS, AnalysisExecutionLost, executionCondition, lockAnalysisExecution } from "./analysis-execution";
 import { db, commercialLots, commercialTasks, projects, referenceVideos, projectVersions, videoScenes, sceneVersions } from "@/lib/db";
 import { isOwnedLinkedVideo, commercialMediaRequest, type MediaPreview } from "./commercial-media";
 import { quoteAnalysis, settleAnalysis, type AnalysisPriceInput, PRICING_VERSION } from "./pricing-v6";
@@ -188,7 +188,8 @@ async function finishCommercialAnalysis(task: typeof commercialTasks.$inferSelec
 
 export async function recoverCommercialAnalysisTasks() {
   await db.update(commercialTasks).set({ state: "failed", result: { code: "PREVIEW_EXPIRED" }, updatedAt: new Date() }).where(and(eq(commercialTasks.kind, "analysis_preview"), sql`${commercialTasks.state} IN ('running', 'quoted')`, sql`${commercialTasks.expiresAt} < now()`));
-  const expired = sql`((${commercialTasks.state} IN ('running', 'review') AND ${commercialTasks.updatedAt} < now() - interval '6 minutes') OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.updatedAt} < now() - interval '24 hours'))`;
+  const runningCutoff = new Date(Date.now() - ANALYSIS_STALE_TIMEOUT_MS);
+  const expired = sql`((${commercialTasks.state} IN ('running', 'review') AND ${commercialTasks.updatedAt} < ${runningCutoff}) OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.updatedAt} < now() - interval '24 hours'))`;
   const stale = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "analysis"), expired)).limit(10);
   for (const candidate of stale) {
     await db.transaction(async (tx) => {

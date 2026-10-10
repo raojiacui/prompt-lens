@@ -6,6 +6,7 @@ import { commercialAnalysisBundle, recoverCommercialAnalysisTasks } from "@/lib/
 import { confirmCommercialTask, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { recoverAnalysisTasks, runAnalysisTask } from "@/lib/workflow/analysis-tasks";
+import { ANALYSIS_STALE_TIMEOUT_MS } from "@/lib/billing/analysis-execution";
 
 export const maxDuration = 300;
 type Context = { params: Promise<{ id: string }> };
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest, { params }: Context) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ code: "INVALID_TASK" }, { status: 400 });
   let task = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) });
   if (!task) return NextResponse.json({ code: "TASK_NOT_FOUND" }, { status: 404 });
-  if (task.kind === "analysis" && ((["running", "review"].includes(task.state) && task.updatedAt.getTime() < Date.now() - 6 * 60000) || (task.state === "queued" && task.updatedAt.getTime() < Date.now() - 24 * 3600000))) {
+  if (task.kind === "analysis" && ((["running", "review"].includes(task.state) && task.updatedAt.getTime() < Date.now() - ANALYSIS_STALE_TIMEOUT_MS) || (task.state === "queued" && task.updatedAt.getTime() < Date.now() - 24 * 3600000))) {
     await recoverCommercialAnalysisTasks();
     task = (await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) }))!;
   }

@@ -4,6 +4,8 @@ import { commercialTasks, db } from "@/lib/db";
 type Task = typeof commercialTasks.$inferSelect;
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
+export const ANALYSIS_STALE_TIMEOUT_MS = 30 * 60_000;
+
 export class AnalysisExecutionLost extends Error {
   constructor() { super("ANALYSIS_EXECUTION_LOST"); }
 }

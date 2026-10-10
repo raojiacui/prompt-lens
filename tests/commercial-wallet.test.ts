@@ -451,7 +451,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
       expect(log).toHaveBeenCalledWith("commercial.task.failed", expect.objectContaining({ phase: "saving_result" }));
       expect(task.result).toMatchObject({ pendingResult: { sceneId: "4", blueprint: { generationPrompt: "Fourth model result" } } });
       transaction.mockRestore();
-      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '7 minutes' WHERE id = $1", [quote.id]);
+      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '31 minutes' WHERE id = $1", [quote.id]);
       await recoverCommercialAnalysisTasks();
       await runCommercialTask(quote.id);
       expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(4);
@@ -469,7 +469,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
       const retrySave = vi.spyOn(testDb, "transaction").mockRejectedValueOnce(new Error("Retry save interrupted"));
       try { await runCommercialTask(retry.id); } finally { retrySave.mockRestore(); }
       expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(12);
-      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '7 minutes' WHERE id = $1", [retry.id]);
+      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '31 minutes' WHERE id = $1", [retry.id]);
       await recoverCommercialAnalysisTasks();
       await drain(retry.id);
       expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(12);
@@ -553,7 +553,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await confirmCommercialTask(userId, quote.id);
     vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] });
     await runCommercialTask(quote.id);
-    await client.query("UPDATE commercial_tasks SET state = 'running', updated_at = now() - interval '7 minutes' WHERE id = $1", [quote.id]);
+    await client.query("UPDATE commercial_tasks SET state = 'running', updated_at = now() - interval '31 minutes' WHERE id = $1", [quote.id]);
     await recoverCommercialAnalysisTasks();
     await recoverCommercialAnalysisTasks();
     expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
@@ -590,6 +590,9 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await entered;
     expect((await testDb.select().from(schema.commercialTasks)).find(t => t.id === taskId)?.result).toMatchObject({ executionPhase: "model_request", activeSceneId: "1" });
     await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '7 minutes' WHERE id = $1", [taskId]);
+    await recoverCommercialAnalysisTasks();
+    expect((await testDb.select().from(schema.commercialTasks)).find(t => t.id === taskId)?.state).toBe("running");
+    await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '31 minutes' WHERE id = $1", [taskId]);
     await recoverCommercialAnalysisTasks();
     deliver({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Late result", metadata: { analysisProvider: "kie" } });
     await running;

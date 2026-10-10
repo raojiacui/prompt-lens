@@ -2,11 +2,11 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { PgDialect } from "drizzle-orm/pg-core";
 
-const mocks = vi.hoisted(() => ({ session: vi.fn(), find: vi.fn(), bundle: vi.fn(), after: vi.fn() }));
+const mocks = vi.hoisted(() => ({ session: vi.fn(), find: vi.fn(), bundle: vi.fn(), after: vi.fn(), recover: vi.fn() }));
 vi.mock("next/server", async importOriginal => ({ ...await importOriginal<typeof import("next/server")>(), after: mocks.after }));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { query: { commercialTasks: { findFirst: mocks.find } } } }));
-vi.mock("@/lib/billing/commercial-analysis", () => ({ commercialAnalysisBundle: mocks.bundle, recoverCommercialAnalysisTasks: vi.fn() }));
+vi.mock("@/lib/billing/commercial-analysis", () => ({ commercialAnalysisBundle: mocks.bundle, recoverCommercialAnalysisTasks: mocks.recover }));
 vi.mock("@/lib/billing/commercial-task-runner", () => ({ confirmCommercialTask: vi.fn(), runCommercialTask: vi.fn() }));
 vi.mock("@/lib/billing/commercial-generation", () => ({ reconcileCommercialGeneration: vi.fn() }));
 vi.mock("@/lib/workflow/analysis-tasks", () => ({ recoverAnalysisTasks: vi.fn(), runAnalysisTask: vi.fn() }));
@@ -37,6 +37,12 @@ it("does not load a project before any scene is processed", async () => {
   mocks.find.mockResolvedValue({ ...task, result: {} });
   expect((await (await call()).json()).bundle).toBeUndefined();
   expect(mocks.bundle).not.toHaveBeenCalled();
+});
+it.each([[7, false], [29, false], [31, true]])("uses the shared thirty-minute inactivity limit at %s minutes", async (minutes, shouldRecover) => {
+  const task = await mocks.find();
+  mocks.find.mockResolvedValue({ ...task, updatedAt: new Date(Date.now() - Number(minutes) * 60000) });
+  await call();
+  expect(mocks.recover).toHaveBeenCalledTimes(shouldRecover ? 1 : 0);
 });
 it("reports single-shot retry progress separately from cumulative project successes", async () => {
   const task = await mocks.find();
