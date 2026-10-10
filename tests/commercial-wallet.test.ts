@@ -449,6 +449,32 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
       expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(4);
       expect((await balance()).heldCredits).toBe(quote.credits);
       expect(log).toHaveBeenCalledWith("commercial.task.failed", expect.objectContaining({ phase: "saving_result" }));
+      expect(task.result).toMatchObject({ pendingResult: { sceneId: "4", blueprint: { generationPrompt: "Fourth model result" } } });
+      transaction.mockRestore();
+      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '7 minutes' WHERE id = $1", [quote.id]);
+      await recoverCommercialAnalysisTasks();
+      await runCommercialTask(quote.id);
+      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(4);
+      const [saved] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+      expect(saved).toMatchObject({ state: "queued", result: { pendingResult: null, successfulSceneIds: ["1", "4"], finishedSceneIds: ["1", "2", "3", "4"] } });
+      vi.mocked(analyzeSceneBlueprint).mockResolvedValue({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Remaining scene result", metadata: { analysisProvider: "kie" } });
+      await drain(quote.id);
+      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(11);
+      const [completed] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+      expect(completed).toMatchObject({ state: "completed", result: { finishedSceneIds: scenes.map(scene => scene.id) } });
+      expect((await balance()).heldCredits).toBe(0);
+      const failedVersion = (await testDb.select().from(schema.sceneVersions)).find(version => version.sceneIndex === 2)!;
+      const retry = await quoteCommercialAnalysisRetry(userId, quote.id, failedVersion.id);
+      await confirmCommercialTask(userId, retry.id);
+      const retrySave = vi.spyOn(testDb, "transaction").mockRejectedValueOnce(new Error("Retry save interrupted"));
+      try { await runCommercialTask(retry.id); } finally { retrySave.mockRestore(); }
+      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(12);
+      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '7 minutes' WHERE id = $1", [retry.id]);
+      await recoverCommercialAnalysisTasks();
+      await drain(retry.id);
+      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(12);
+      expect((await testDb.select().from(schema.sceneVersions)).find(version => version.id === failedVersion.id)?.generationPrompt).toBe("Remaining scene result");
+      expect((await balance()).heldCredits).toBe(0);
     } finally { transaction.mockRestore(); log.mockRestore(); }
   });
   it("retries only the selected failed shot and leaves other failures for a later retry", async () => {

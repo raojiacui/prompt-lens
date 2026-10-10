@@ -9,7 +9,7 @@ import { getPlatformKieApiKey } from "./platform-access";
 import { generationKeyFingerprint } from "./generation-key";
 import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import { getProjectBundle } from "@/lib/workflow/service";
-import { analyzeSceneBlueprint, buildFallbackSceneBlueprint } from "@/lib/workflow/scene-analysis";
+import { analyzeSceneBlueprint, buildFallbackSceneBlueprint, type SceneBlueprintDraft } from "@/lib/workflow/scene-analysis";
 import { settleCommercialTaskInTransaction } from "./commercial-wallet";
 import { resolveModelSelection } from "@/lib/ai/model-registry";
 import { taskErrorDetails } from "./task-diagnostics";
@@ -76,28 +76,30 @@ export async function quoteCommercialAnalysis(userId: string, input: { preparati
   return { id: task.id, ...quote, modelId, payer: pricing.payer, expiresAt: task.expiresAt };
 }
 
-async function recordAnalysisPhase(task: typeof commercialTasks.$inferSelect, phase: string, sceneId?: string) {
-  const [current] = await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ executionPhase: phase, phaseStartedAt: new Date().toISOString(), activeSceneId: sceneId || null })}::jsonb`, updatedAt: new Date() }).where(executionCondition(task)).returning({ id: commercialTasks.id });
+async function recordAnalysisPhase(task: typeof commercialTasks.$inferSelect, phase: string, sceneId?: string, checkpoint: Record<string, unknown> = {}) {
+  const marker = { ...checkpoint, executionPhase: phase, phaseStartedAt: new Date().toISOString(), activeSceneId: sceneId || null };
+  const [current] = await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify(marker)}::jsonb`, updatedAt: new Date() }).where(executionCondition(task)).returning({ id: commercialTasks.id });
   if (!current) throw new AnalysisExecutionLost();
   const previous = task.result as Record<string, unknown>;
   console.info("commercial.analysis.phase", { taskId: task.id, sceneId: sceneId || null, phase, previousPhase: previous.executionPhase || null, elapsedMs: typeof previous.phaseStartedAt === "string" ? Date.now() - Date.parse(previous.phaseStartedAt) : null });
-  task.result = { ...previous, executionPhase: phase, activeSceneId: sceneId || null, phaseStartedAt: new Date().toISOString() };
+  task.result = { ...previous, ...marker };
 }
 
 export async function executeCommercialAnalysis(task: typeof commercialTasks.$inferSelect) {
   const input = task.input as AnalysisInput;
-  const progress = task.result as { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; finishedSceneIds?: string[]; successfulSceneIds?: string[]; splitDelivered?: boolean };
+  const progress = task.result as { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; finishedSceneIds?: string[]; successfulSceneIds?: string[]; splitDelivered?: boolean; pendingResult?: { sceneId: string; blueprint: SceneBlueprintDraft } | null };
   const finished = progress.finishedSceneIds || [];
   const successes = progress.successfulSceneIds || input.retry?.previousSuccess || [];
   const attempts = input.retry?.sceneVersions.map((s) => s.id) || input.pricing.scenes.map((s) => s.id);
   const next = attempts.find((id) => !finished.includes(id));
+  if (progress.pendingResult && progress.pendingResult.sceneId !== next) throw new Error("ANALYSIS_CHECKPOINT_MISMATCH");
   if (!next) {
     await finishCommercialAnalysis(task, successes, Boolean(progress.splitDelivered), successes.length > (input.retry?.previousSuccess.length || 0) ? "completed" : "failed");
     return;
   }
   await recordAnalysisPhase(task, "resolving_access", next);
   const apiKey = input.pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(task.userId);
-  if (!apiKey || generationKeyFingerprint(apiKey) !== input.keyFingerprint) {
+  if (!progress.pendingResult && (!apiKey || generationKeyFingerprint(apiKey) !== input.keyFingerprint)) {
     await finishCommercialAnalysis(task, successes, Boolean(progress.splitDelivered), "failed");
     return;
   }
@@ -108,18 +110,21 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
     const index = input.pricing.scenes.findIndex(s => s.id === next);
     const asset = progress.assets?.scenes[index];
     if (!asset) throw new Error("ANALYSIS_CHECKPOINT_MISSING");
-    let blueprint;
-    await recordAnalysisPhase(task, "model_request", next);
-    try { blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false }); }
-    catch (error) { console.error("commercial.analysis.model_failed", { taskId: task.id, sceneId: next, error: taskErrorDetails(error) }); blueprint = buildFallbackSceneBlueprint(asset, "Analysis unavailable", undefined, input.outputLanguage); }
+    let blueprint = progress.pendingResult?.blueprint;
+    if (!blueprint) {
+      await recordAnalysisPhase(task, "model_request", next);
+      try { blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey || undefined, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false }); }
+      catch (error) { console.error("commercial.analysis.model_failed", { taskId: task.id, sceneId: next, error: taskErrorDetails(error) }); blueprint = buildFallbackSceneBlueprint(asset, "Analysis unavailable", undefined, input.outputLanguage); }
+    }
     const succeeded = blueprint.metadata?.analysisProvider === "kie";
     if (!succeeded) console.error("commercial.analysis.fallback", { taskId: task.id, sceneId: next, error: taskErrorDetails(String(blueprint.metadata?.fallbackReason || "Analysis unavailable")) });
-    await recordAnalysisPhase(task, "saving_result", next);
+    await recordAnalysisPhase(task, "saving_result", next, { pendingResult: { sceneId: next, blueprint } });
     await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT set_config('statement_timeout', '30s', true), set_config('lock_timeout', '10s', true), set_config('idle_in_transaction_session_timeout', '30s', true)`);
       await lockAnalysisExecution(tx, task);
       await tx.update(sceneVersions).set({ ...blueprint, metadata: { ...blueprint.metadata, retryOfSceneVersionId: version.id }, updatedAt: new Date() }).where(eq(sceneVersions.id, version.id));
       await tx.update(videoScenes).set({ status: succeeded ? "completed" : "failed", error: succeeded ? null : String(blueprint.metadata?.fallbackReason || "Analysis unavailable"), updatedAt: new Date() }).where(eq(videoScenes.id, version.originalSceneId));
-      await tx.update(commercialTasks).set({ state: "queued", result: { ...progress, successfulSceneIds: succeeded ? [...successes, next] : successes, finishedSceneIds: [...finished, next] }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+      await tx.update(commercialTasks).set({ state: "queued", result: { ...progress, pendingResult: null, successfulSceneIds: succeeded ? [...successes, next] : successes, finishedSceneIds: [...finished, next] }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
     });
     return;
   }
@@ -149,18 +154,21 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
   const index = input.pricing.scenes.findIndex((s) => s.id === next);
   const scene = progress.assets.scenes[index];
   if (!progress.versionId || !progress.sceneRecords?.[next]) throw new Error("ANALYSIS_CHECKPOINT_MISSING");
-  let blueprint;
-  await recordAnalysisPhase(task, "model_request", next);
-  try { blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false }); }
-  catch (error) { console.error("commercial.analysis.model_failed", { taskId: task.id, sceneId: next, error: taskErrorDetails(error) }); blueprint = buildFallbackSceneBlueprint(scene, "Analysis unavailable", undefined, input.outputLanguage); }
+  let blueprint = progress.pendingResult?.blueprint;
+  if (!blueprint) {
+    await recordAnalysisPhase(task, "model_request", next);
+    try { blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey || undefined, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false }); }
+    catch (error) { console.error("commercial.analysis.model_failed", { taskId: task.id, sceneId: next, error: taskErrorDetails(error) }); blueprint = buildFallbackSceneBlueprint(scene, "Analysis unavailable", undefined, input.outputLanguage); }
+  }
   const succeeded = blueprint.metadata?.analysisProvider === "kie";
   if (!succeeded) console.error("commercial.analysis.fallback", { taskId: task.id, sceneId: next, error: taskErrorDetails(String(blueprint.metadata?.fallbackReason || "Analysis unavailable")) });
-  await recordAnalysisPhase(task, "saving_result", next);
+  await recordAnalysisPhase(task, "saving_result", next, { pendingResult: { sceneId: next, blueprint } });
   await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT set_config('statement_timeout', '30s', true), set_config('lock_timeout', '10s', true), set_config('idle_in_transaction_session_timeout', '30s', true)`);
     await lockAnalysisExecution(tx, task);
     await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId!, originalSceneId: progress.sceneRecords![next], sceneIndex: index + 1, duration: (input.pricing.scenes[index].endUs - input.pricing.scenes[index].startUs) / 1000000, ...blueprint });
     await tx.update(videoScenes).set({ status: succeeded ? "completed" : "failed", error: succeeded ? null : String(blueprint.metadata?.fallbackReason || "Analysis unavailable"), updatedAt: new Date() }).where(eq(videoScenes.id, progress.sceneRecords![next]));
-    await tx.update(commercialTasks).set({ state: "queued", result: { ...progress, successfulSceneIds: succeeded ? [...successes, next] : successes, finishedSceneIds: [...finished, next] }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+    await tx.update(commercialTasks).set({ state: "queued", result: { ...progress, pendingResult: null, successfulSceneIds: succeeded ? [...successes, next] : successes, finishedSceneIds: [...finished, next] }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
   });
 }
 
@@ -186,6 +194,12 @@ export async function recoverCommercialAnalysisTasks() {
     await db.transaction(async (tx) => {
     const [task] = await tx.update(commercialTasks).set({ state: "running", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionId: randomUUID() })}::jsonb`, updatedAt: new Date() }).where(and(eq(commercialTasks.id, candidate.id), expired)).returning();
     if (!task) return;
+    const checkpoint = task.result as Record<string, unknown>;
+    if (checkpoint.pendingResult) {
+      await tx.update(commercialTasks).set({ state: "queued", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionPhase: "resuming_save", saveRecoveryCount: Number(checkpoint.saveRecoveryCount || 0) + 1 })}::jsonb`, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+      console.warn("commercial.analysis.resuming_save", { taskId: task.id, sceneId: checkpoint.activeSceneId });
+      return;
+    }
     const input = task.input as AnalysisInput;
     const interruptedPhase = (task.result as Record<string, unknown>).executionPhase || "unknown";
     const interruptedReason = input.outputLanguage === "zh" ? "分析任务中断，未能保存模型分析结果，请重试失败镜头。" : "Analysis interrupted before its result was saved. Retry the failed shot.";
