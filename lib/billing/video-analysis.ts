@@ -40,7 +40,7 @@ export class LongVideoAccessError extends Error {
   status = 402;
 
   constructor() {
-    super("长视频自动拆镜分析需要先购买积分包。免费体验和未付费账号仅支持 10 秒以内完整镜头片段。");
+    super("自动拆镜需要先购买平台积分。未付费账号可整段分析，建议上传完整单镜头片段。");
     this.name = "LongVideoAccessError";
   }
 }

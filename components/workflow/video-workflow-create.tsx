@@ -69,7 +69,6 @@ type PreparedMedia = {
   filename: string;
   key?: string;
   mediaType: "video" | "image";
-  duration: number | null;
   title?: string;
   platform?: LinkedMediaPlatform;
 };
@@ -82,19 +81,8 @@ type CreditStatus = {
   mode: "admin" | "byok" | "platform_credits" | "trial";
   hasPaidVideoAnalysis?: boolean;
   trial: { limit: number; used: number; remaining: number; isAdmin: boolean };
-  capabilities?: {
-    videoAnalysis?: {
-      shortVideoMaxSeconds: number;
-      durationToleranceSeconds: number;
-      canUseLongVideo: boolean;
-      longVideoRequiresPayment: boolean;
-      longVideoBaseCredits: number;
-      perSceneCredits: number;
-    };
-  };
 };
 
-const MAX_ANALYSIS_VIDEO_SECONDS = 10;
 const linkedPlatformLabels: Record<LinkedMediaPlatform, string> = {
   tiktok: "TikTok",
   douyin: "抖音",
@@ -315,11 +303,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [mediaInputMode, setMediaInputMode] = useState<MediaInputMode>("upload");
+  const [uploadAnalysisMode, setUploadAnalysisMode] = useState<"whole" | "split">("whole");
   const [sourceUrl, setSourceUrl] = useState("");
   const linkImportRequestRef = useRef<{ url: string; id: string } | null>(null);
   const [preview, setPreview] = useState("");
   const [mediaType, setMediaType] = useState<"video" | "image" | null>(null);
-  const [mediaDuration, setMediaDuration] = useState<number | null>(null);
   const [title, setTitle] = useState("Untitled video project");
   const [progress, setProgress] = useState("");
   const [analysisProgress, setAnalysisProgress] = useState<AnalysisProgressState | null>(null);
@@ -350,7 +338,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     };
   }, []);
   const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer: "platform" | "byok"; modelId: string } | null>(null);
-  const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && creditStatus.mode !== "trial" && (mediaInputMode === "link" || mediaType !== "image"));
+  const canSplitUpload = Boolean(creditStatus?.commercialConsumptionEnabled && (creditStatus.commercial?.credits ?? 0) > 0);
+  const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (canSplitUpload || creditStatus.hasUserKieKey || creditStatus.mode !== "trial") && (mediaInputMode === "link" || mediaType !== "image"));
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
   const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
   const rewriteBusyRef = useRef(false);
@@ -508,7 +497,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   async function handleFile(nextFile: File) {
     const type = nextFile.type.startsWith("video/") ? "video" : nextFile.type.startsWith("image/") ? "image" : null;
     if (!type) {
-      setError(locale === "en" ? "Upload an image or one complete video shot up to 10 seconds." : "请上传图片或 10 秒以内的完整单镜头片段。");
+      setError(locale === "en" ? "Upload a video or an image." : "请上传视频或图片。");
       return;
     }
 
@@ -516,12 +505,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       setError(locale === "zh" ? `文件须大于 0 字节且不超过 ${ANALYSIS_MAX_BYTES[type] / 1024 / 1024}MB。` : `File must be non-empty and no larger than ${ANALYSIS_MAX_BYTES[type] / 1024 / 1024}MB.`);
       return;
     }
-    let duration: number | null = null;
     if (type === "video") {
       try {
-        duration = await getVideoDuration(nextFile);
-        if (!Number.isFinite(duration) || duration <= 0 || duration > MAX_ANALYSIS_VIDEO_SECONDS) {
-          setError(locale === "en" ? "File uploads support one complete shot up to 10 seconds. Use a video link for longer videos and shot splitting." : "上传文件只支持 10 秒以内的完整单镜头片段。长视频请使用粘贴链接入口进行拆镜分析。");
+        const duration = await getVideoDuration(nextFile);
+        if (!Number.isFinite(duration) || duration <= 0) {
+          setError(locale === "en" ? "Cannot read the video duration. Try another video file." : "无法读取视频时长，请换一个视频文件。");
           return;
         }
       } catch (err) {
@@ -529,8 +517,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         return;
       }
     }
-
-    setMediaDuration(duration);
 
     if (preview) URL.revokeObjectURL(preview);
     setFile(nextFile);
@@ -546,7 +532,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     if (preview) URL.revokeObjectURL(preview);
     setFile(null);
     setMediaType(null);
-    setMediaDuration(null);
     setPreview("");
     setProgress("");
     setAnalysisProgress(null);
@@ -593,7 +578,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       filename: typeof data.filename === "string" ? data.filename : `${data.platform || "linked"}-video.mp4`,
       key: typeof data.storageKey === "string" ? data.storageKey : undefined,
       mediaType: "video",
-      duration: typeof data.duration === "number" ? data.duration : null,
       title: typeof data.title === "string" ? data.title : undefined,
       platform: data.platform as LinkedMediaPlatform,
     };
@@ -601,6 +585,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
   async function startBreakdown() {
     const isLinkedMedia = mediaInputMode === "link";
+    const automaticSplit = isLinkedMedia || (mediaType === "video" && uploadAnalysisMode === "split");
     if ((!isLinkedMedia && (!file || !mediaType)) || (isLinkedMedia && (!sourceUrl.trim() || !linkedPlatform))) return;
     setLoading(true);
     setError("");
@@ -617,7 +602,10 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     });
     try {
       const latestStatus = await loadCreditStatus() || creditStatus;
-      if (selectedMediaType === "video" && latestStatus?.commercialConsumptionEnabled && latestStatus.mode !== "trial" && analysisPayer === "byok" && !latestStatus.hasUserKieKey) {
+      if (automaticSplit && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.commercial?.credits ?? 0) <= 0)) {
+        throw new Error(locale === "en" ? "Shot splitting requires purchased credits. Top up or analyze the whole video." : "拆镜需要已购买的平台积分，请充值或选择整段分析。");
+      }
+      if (selectedMediaType === "video" && latestStatus?.commercialConsumptionEnabled && (automaticSplit || latestStatus.mode !== "trial") && analysisPayer === "byok" && !latestStatus.hasUserKieKey) {
         throw new Error(locale === "en" ? "Configure your own KIE Key in Settings first." : "请先在设置中配置自己的 KIE Key。");
       }
       if (isLinkedMedia && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.linkImports?.remaining ?? 0) < 1)) {
@@ -642,7 +630,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
             filename: upload.filename,
             key: upload.key,
             mediaType: upload.mediaType,
-            duration: mediaDuration,
           }));
       const preparedTitle = prepared.title?.trim() || title;
       if (prepared.title) setTitle(prepared.title);
@@ -659,8 +646,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         body: JSON.stringify({ title: preparedTitle }),
       });
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
-      if (isLinkedMedia || (prepared.mediaType === "video" && latestStatus?.commercialConsumptionEnabled && latestStatus.mode !== "trial" && analysisPayer === "platform") || requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", longVideo: !(prepared.duration && prepared.duration <= 10), trialRemaining: latestStatus?.trial.remaining || 0 })) {
-        setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage, automaticSplit: isLinkedMedia, payer: analysisPayer, modelId: analysisModelValue });
+      if (automaticSplit || (prepared.mediaType === "video" && latestStatus?.commercialConsumptionEnabled && ((latestStatus.commercial?.credits ?? 0) > 0 || latestStatus.mode !== "trial") && analysisPayer === "platform") || requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", automaticSplit, trialRemaining: latestStatus?.trial.remaining || 0 })) {
+        setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage, automaticSplit, payer: analysisPayer, modelId: analysisModelValue });
         setAnalysisProgress(null);
         setProgress("");
         return;
@@ -670,13 +657,13 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       setAnalysisProgress({
         phase: "analysis",
         percent: 68,
-        label: locale === "en" ? "Analyze reference" : (prepared.mediaType === "image" ? "图片分析" : "视频拆镜分析"),
-        detail: locale === "en" ? "Extracting visual details, camera movement and recreation prompts." : (prepared.mediaType === "image" ? "正在提取画面结构和复刻提示词" : "正在拆解镜头、画面、动作、光线和复刻提示词"),
+        label: locale === "en" ? "Analyze reference" : (prepared.mediaType === "image" ? "图片分析" : "视频分析"),
+        detail: locale === "en" ? "Extracting visual details, camera movement and recreation prompts." : (prepared.mediaType === "image" ? "正在提取画面结构和复刻提示词" : "正在提取画面、动作、光线和复刻提示词"),
       });
       const breakdownRes = await fetch(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaUrl: prepared.url, mediaName: prepared.filename, storageKey: prepared.key, mediaType: prepared.mediaType, mediaDuration: prepared.duration, singleShot: Boolean(prepared.duration && prepared.duration <= MAX_ANALYSIS_VIDEO_SECONDS), ...analysisSelectionPayload() }),
+        body: JSON.stringify({ mediaUrl: prepared.url, mediaName: prepared.filename, storageKey: prepared.key, mediaType: prepared.mediaType, ...analysisSelectionPayload() }),
       });
       const breakdownData = await readJsonResponse(breakdownRes, "Breakdown failed");
       if (!breakdownData.taskId) throw new Error("Analysis task was not created");
@@ -846,9 +833,19 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                 ) : null}
                 <button type="button" onClick={() => fileInputRef.current?.click()} className="flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-lg bg-background text-center hover:bg-accent">
                   <FileUp className="h-6 w-6 text-muted-foreground" />
-                  <span className="font-semibold">{preview ? (locale === "en" ? "Replace file" : "更换文件") : (locale === "en" ? "Choose a single shot up to 10s, or an image" : "选择 10 秒以内的单镜头片段或图片")}</span>
+                  <span className="font-semibold">{preview ? (locale === "en" ? "Replace file" : "更换文件") : (locale === "en" ? "Choose a video or image" : "选择视频或图片")}</span>
                 </button>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{locale === "en" ? "Video file uploads only support one complete shot up to 10 seconds, without splitting. Multiple shots may reduce analysis quality. Video files up to 100MB; use a video link for long-video shot analysis." : "上传视频文件只支持 10 秒以内的完整单镜头片段，不拆镜。包含多个镜头可能影响分析效果，请自行确认素材。视频文件最大 100MB；长视频请粘贴链接进行拆镜分析。"}</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{locale === "en" ? "Video files up to 100MB, with no duration limit." : "视频文件最大 100MB，不限制时长。"}</p>
+                {mediaType !== "image" && <>
+                  <fieldset className="mt-3" disabled={loading || Boolean(commercialSource) || Boolean(analysisTaskId)}>
+                    <legend className="mb-2 text-sm font-medium">{locale === "en" ? "Analysis mode" : "分析方式"}</legend>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="flex min-h-9 items-center gap-2 text-sm"><input type="radio" name="upload-analysis-mode" value="whole" checked={uploadAnalysisMode === "whole"} onChange={() => setUploadAnalysisMode("whole")} className="h-4 w-4 accent-primary" />{locale === "en" ? "Whole video" : "整段分析"}</label>
+                      <label className={cn("flex min-h-9 items-center gap-2 text-sm", !canSplitUpload && "text-muted-foreground")}><input type="radio" name="upload-analysis-mode" value="split" checked={uploadAnalysisMode === "split"} disabled={!canSplitUpload} onChange={() => setUploadAnalysisMode("split")} className="h-4 w-4 accent-primary" />{locale === "en" ? "Split shots" : "拆镜分析"}</label>
+                    </div>
+                  </fieldset>
+                  <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{uploadAnalysisMode === "split" ? (locale === "en" ? "Splitting uses platform credits. Choose shots to analyze after splitting." : "拆镜使用平台积分，拆分后可选择要分析的镜头。") : (locale === "en" ? "A complete single-shot clip is recommended. Analyzing a long video with multiple shots as a whole may reduce accuracy." : "建议上传完整单镜头片段；将一分钟等多镜头长视频整段分析，可能影响准确性。")}{!canSplitUpload && (locale === "en" ? " Shot splitting requires purchased platform credits; your own Key can be used for whole-video analysis." : " 拆镜需购买平台积分；配置自己的 Key 可直接整段分析。")}</p>
+                </>}
               </>
             ) : (
               <div className="rounded-lg bg-background p-3">

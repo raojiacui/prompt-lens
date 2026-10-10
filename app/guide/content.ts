@@ -32,7 +32,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "想换个创意时，在改写区域说明要保留什么、替换什么，再对照原版和改写版。",
         ] },
         { title: "选择适合你的使用方式", paragraphs: [
-          "先体验效果：符合条件的新账号可使用两次免费分析，视频限定 10 秒以内的单个完整镜头。免费分析不包含视频生成。",
+          "先体验效果：符合条件的新账号可使用两次免费整段分析，建议上传短的完整单镜头片段。免费分析不包含拆镜和视频生成。",
           "用平台积分：购买套餐后，按页面支持的范围使用自动拆镜、视频分析和已开放的积分生成组合；付费任务开始前会显示报价。",
           "用自己的 KIE Key：在设置中保存 Key，模型调用费用由你的 KIE 账户承担。你仍然可以购买套餐，用平台积分支付自动拆镜，并使用套餐包含的链接导入、改写额度。",
         ] },
@@ -46,7 +46,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       topics: [
         { title: "方式一：上传文件", steps: [
           "进入「视频分析」，选择「上传文件」，点击上传区域选择视频或图片。首次体验建议使用 MP4 短片。",
-          "确认预览中的素材正确；需要替换时点击「更换文件」。免费体验使用 10 秒以内的完整镜头。",
+          "确认预览中的素材正确；需要替换时点击「更换文件」。选择「整段分析」或「拆镜分析」，拆镜需要已购买的平台积分。",
           "选择「结果语言」，再开始分析。界面语言和结果语言是两个设置：使用中文界面，也可以生成英文提示词。",
         ] },
         { title: "方式二：粘贴链接", steps: [
@@ -56,7 +56,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         ], example: { label: "两种粘贴格式都可以", text: "直接粘贴网址：\nhttps://www.bilibili.com/video/BV11mFLziEyP/\n\n粘贴完整分享文本：\n【牌子】当世界过分“诚实”，我们要如何保持好奇与勇气 https://www.bilibili.com/video/BV11mFLziEyP/" } },
         { title: "导入前检查这三件事", paragraphs: [
           "视频是否公开且仍然存在：私密、已删除、需要额外权限或受地区限制的内容可能无法导入。分享链接不会把你在原平台的登录状态一并带过来。",
-          "上传视频文件只支持 10 秒以内的完整单镜头片段，视频文件最大 100MB，不拆镜。包含多个镜头可能影响分析效果，请自行确认素材。长视频请粘贴链接导入：原视频不限时长，先拆镜，再全选或只选部分镜头分析，开始前确认所需积分。",
+          "上传视频文件最大 100MB，不限制时长，可选择整段分析或使用已购买的平台积分拆镜。整段分析建议上传完整单镜头片段，将一分钟等多镜头长视频整段分析可能影响准确性。粘贴链接也可导入长视频，拆镜后选择全部或部分镜头分析，开始前确认所需积分。",
           "是否还有链接导入次数：只有链接解析并保存成功才计一次，失败释放暂占次数；本地上传不消耗链接导入次数。导入成功后继续分析，会另行计算分析费用。",
         ] },
       ],
@@ -69,7 +69,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       topics: [
         { title: "在页面内选择镜头与确认费用", steps: [
           "在主按钮右侧选择「费用来源」：使用平台积分，或使用自己的 KIE Key。自带 Key 时，自动拆镜仍使用平台积分。",
-          "在素材区域选择分析模型。导入后直接在右侧「镜头选择与费用」继续，不会弹出费用窗口。上传文件按一个完整镜头分析，不拆镜；链接视频先拆镜，再勾选需要分析的镜头。",
+          "在素材区域选择分析模型。导入后直接在右侧「镜头选择与费用」继续，不会弹出费用窗口。上传文件可选择整段分析或拆镜分析；拆镜后可勾选需要分析的镜头，链接视频也采用这个拆镜流程。",
           "点击「读取视频信息」，查看拆镜后的镜头卡片和起止时间。每张卡片都可以预览对应镜头的画面，在「镜头 01」等标题左侧勾选需要分析的镜头，也可以全选。未选中的镜头不会送去分析，不收分析费。",
           "点击镜头卡片上的「下载镜头」，可保存对应的独立视频片段。下载不扣积分，也不会启动分析任务；拆镜和分析仍按原有规则收费。镜头素材保留 7 天，请及时下载。",
           "点击「获取报价」，核对总积分和「拆镜 + 分析」的明细。想修改选择时点击「调整选择」。",
@@ -281,7 +281,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "To try a new idea, describe what to keep and what to change in the rewrite field, then compare versions.",
         ] },
         { title: "Choose how to pay for your workflow", paragraphs: [
-          "Try analysis first: eligible new accounts receive two free analyses. Trial videos must be one complete shot, up to 10 seconds. The analysis trial does not include video generation.",
+          "Try analysis first: eligible new accounts receive two free whole-video analyses. A short, complete single-shot clip is recommended. The trial does not include shot splitting or video generation.",
           "Use platform credits: buy a package for automatic shot splitting and the supported analysis and generation options. Paid tasks show a quote before you confirm.",
           "Bring your own KIE key: save it in Settings to pay model fees from your KIE account. You can still buy a package for shot splitting, included link imports, and rewrites.",
         ] },
@@ -295,7 +295,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       topics: [
         { title: "Upload a file", steps: [
           "Open Video analysis and choose Upload file. Select a video or image; a short MP4 is a useful first test.",
-          "Check the preview. Use Replace file to change the reference. For the trial, choose one continuous shot up to 10 seconds.",
+          "Check the preview. Use Replace file to change the reference. Choose Whole video or Split shots; splitting requires purchased platform credits.",
           "Choose the result language and start analysis. This is separate from the interface language: you can use a Chinese interface and request English prompts.",
         ] },
         { title: "Paste a video link", steps: [
@@ -305,7 +305,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         ], example: { label: "Both formats work", text: "Video URL:\nhttps://www.bilibili.com/video/BV11mFLziEyP/\n\nShare message:\nMy reference video https://www.bilibili.com/video/BV11mFLziEyP/" } },
         { title: "Check access, limits, and allowance", paragraphs: [
           "The video must still exist and be accessible. Private, deleted, region-restricted, or permission-protected videos may fail to import. A share link does not carry your login session from the original platform.",
-          "Video file uploads support one complete shot up to 10 seconds, within 100MB, without splitting. Multiple shots may reduce analysis quality; check your footage. Import long videos by link: source duration is not capped, and splitting comes before selecting all or some shots and confirming the credits.",
+          "Video files up to 100MB have no duration limit. Analyze the whole video or use purchased platform credits to split it. A complete single-shot clip is recommended for whole-video analysis; long videos with multiple shots may reduce accuracy. Links can also import long videos for splitting, shot selection and credit confirmation.",
           "Only an import that is parsed and saved successfully consumes an included import. Failed imports release the reserved slot. Local uploads use no link imports. Analysis after a successful import is billed separately.",
         ] },
       ],
@@ -318,7 +318,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       topics: [
         { title: "Select shots and review costs on the page", steps: [
           "Choose Payment source beside the main button: Platform credits or My KIE key. Automatic splitting still uses platform credits when you bring your own key.",
-          "Select an analysis model in the reference area. After import, continue in Shots and analysis cost on the right without a modal. Uploaded files are analyzed as one complete shot without splitting. Linked videos are split first, then you select shots to analyze.",
+          "Select an analysis model in the reference area. After import, continue in Shots and analysis cost on the right without a modal. Uploaded files can be analyzed as a whole or split before selecting shots. Linked videos use the same splitting and selection flow.",
           "Select Inspect video to see the shot cards and timestamps. Preview each shot, then use the checkbox to the left of its title or Select all. Unselected shots are not sent for analysis and incur no analysis fee.",
           "Download each independent video clip from its shot card. Downloading does not deduct credits or start analysis. Existing splitting and analysis charges are unchanged. Shot assets are retained for 7 days; download them in time.",
           "Select Get quote and check the total and the splitting and analysis amounts. Use Adjust selection to revise the choices.",

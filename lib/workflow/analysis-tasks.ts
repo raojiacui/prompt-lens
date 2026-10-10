@@ -45,11 +45,11 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
   const mediaType = body.mediaType === "image" ? "image" : "video";
   const mediaUrl = typeof body.mediaUrl === "string" ? body.mediaUrl : "";
   await assertOwnedUploadedVideo(userId, mediaUrl, mediaType);
-  const longVideo = mediaType === "video" && !(typeof body.mediaDuration === "number" && body.mediaDuration > 0 && body.mediaDuration <= 10.75);
+  if (body.automaticSplit === true) throw new Error("CONFIRMED_QUOTE_REQUIRED");
   const entitlement = process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true"
     ? await getWorkflowAnalysisEntitlement(userId)
     : await assertCanStartVideoAnalysis(userId, { longVideo: false });
-  if (requiresAnalysisQuote({ commercialEnabled: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true", mediaType, mode: entitlement.mode, longVideo, trialRemaining: entitlement.trial.remaining })) throw new Error("CONFIRMED_QUOTE_REQUIRED");
+  if (requiresAnalysisQuote({ commercialEnabled: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true", mediaType, mode: entitlement.mode, trialRemaining: entitlement.trial.remaining })) throw new Error("CONFIRMED_QUOTE_REQUIRED");
   const access = entitlement.mode === "trial" ? { apiKey: getPlatformKieApiKey(), source: "platform" } : await resolveKieApiKeyForFeature(userId, { requiredPackageScope: "video_analysis", allowPaidPlatformKey: entitlement.mode === "platform_credits" });
   if (!access.apiKey) throw new Error("KIE API Key is not configured");
   const selection = parseWorkflowModelSelection(body);
@@ -134,7 +134,6 @@ export async function runAnalysisTask(id: string) {
       } else {
         const preview = await commercialMediaRequest<MediaPreview>(input.mediaUrl, { mode: "preview", automaticSplit: input.longVideoAllowed });
         if (!Number.isSafeInteger(preview.durationUs) || preview.durationUs <= 0 || !Number.isSafeInteger(preview.bytes) || preview.bytes <= 0 || preview.bytes > 100 * 1024 * 1024 || !preview.scenes?.length) throw new Error("视频信息无效或文件超过 100MB。");
-        if (!input.longVideoAllowed && preview.durationUs > 10_000_000) throw new Error("上传文件只支持 10 秒以内的完整单镜头片段，长视频请粘贴链接进行拆镜分析。");
         progress = { ...progress, phase: "assets", preview };
       }
       await saveCheckpoint(task, progress);

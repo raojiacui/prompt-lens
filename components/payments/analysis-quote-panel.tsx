@@ -64,7 +64,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
     } catch { throw invalidResponse(); }
     const data = await response.json().catch(() => null);
     if (!data || typeof data !== "object" || Array.isArray(data)) throw invalidResponse();
-    if (!response.ok && data.code === "UPLOAD_VIDEO_TOO_LONG") throw new Error(zh ? "上传文件只支持 10 秒以内的完整单镜头片段。" : "File uploads support one complete shot up to 10 seconds.");
+    if (!response.ok && data.code === "SPLIT_PAYMENT_REQUIRED") throw new Error(zh ? "拆镜需要已购买的平台积分，请充值或选择整段分析。" : "Shot splitting requires purchased credits. Top up or analyze the whole video.");
     if (!response.ok) throw new AnalysisRequestError(data.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "可用积分不足，请先充值。" : "Not enough available credits. Please top up.") : data.code === "KIE_KEY_REQUIRED" ? (zh ? "请先配置所选来源的 KIE Key。" : "Configure the KIE key for this payment source first.") : data.code === "QUOTE_EXPIRED" ? (zh ? "报价已过期，请重新获取费用。" : "This quote has expired. Refresh the cost.") : (zh ? "请求暂未完成，尚未确认的任务不会自动重复提交。" : "The request did not complete. Unconfirmed tasks will not be resubmitted automatically."), data.code, response.status >= 500, response.status >= 400 && response.status < 500);
     if (typeof data.id !== "string" || !data.id) throw invalidResponse();
     if (action === "prepare" && (!Array.isArray(data.scenes) || !data.scenes.length || !Number.isSafeInteger(data.durationUs) || data.durationUs <= 0)) throw invalidResponse();
@@ -175,7 +175,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete }: { source: An
     <p className="mt-3 truncate text-sm text-muted-foreground">{source.mediaName}</p>
     {!taskId && <>
       <p className="mt-3 text-sm text-muted-foreground">{modelName} · {payer === "platform" ? (zh ? "平台积分" : "Platform credits") : (zh ? "自带 Key" : "Own key")}</p>
-      <p className="mt-3 text-sm">{automaticSplit ? (zh ? "链接视频：先拆镜，再选择镜头分析。" : "Linked video: split first, then select shots to analyze.") : (zh ? "上传文件：单镜头分析，不收拆镜费。" : "Uploaded file: single-shot analysis, no splitting fee.")}</p>
+      <p className="mt-3 text-sm">{automaticSplit ? (zh ? "先拆镜，再选择镜头分析。" : "Split first, then select shots to analyze.") : (zh ? "整段分析，不收拆镜费。" : "Whole-video analysis, no splitting fee.")}</p>
       {preparation && <div className="mt-5">
         <p className="mb-3 text-sm">{(preparation.durationUs / 1000000).toFixed(2)}s · {preparation.scenes.length} {zh ? "个镜头" : "shots"}</p>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">

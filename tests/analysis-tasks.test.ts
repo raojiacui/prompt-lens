@@ -57,12 +57,13 @@ describe("durable analysis", () => {
   });
   afterAll(async () => { vi.unstubAllEnvs(); await client.close(); });
 
-  it("keeps trial and short BYOK available with commercial billing enabled", () => {
-    const input = { commercialEnabled: true, mediaType: "video" as const, longVideo: false, trialRemaining: 2 };
+  it("routes whole-video trial and BYOK directly, and splitting through a quote", () => {
+    const input = { commercialEnabled: true, mediaType: "video" as const, trialRemaining: 2 };
     expect(requiresAnalysisQuote({ ...input, mode: "trial" })).toBe(false);
     expect(requiresAnalysisQuote({ ...input, mode: "byok" })).toBe(false);
     expect(requiresAnalysisQuote({ ...input, mode: "trial", trialRemaining: 0 })).toBe(true);
-    expect(requiresAnalysisQuote({ ...input, mode: "byok", longVideo: true })).toBe(true);
+    expect(requiresAnalysisQuote({ ...input, mode: "byok", automaticSplit: true })).toBe(true);
+    expect(requiresAnalysisQuote({ ...input, mode: "trial", automaticSplit: true })).toBe(true);
   });
 
   it("reuses a task on resubmission and consumes exactly one trial", async () => {
@@ -107,7 +108,7 @@ describe("durable analysis", () => {
     expect(mocks.analyze).toHaveBeenCalledTimes(1);
   });
 
-  it("checks actual video duration before calling a trial model", async () => {
+  it("rejects invalid worker intervals before calling a trial model", async () => {
     mocks.probe.mockResolvedValue({ durationUs: 30_000_000, bytes: 500, scenes: [{ id: "1" }] });
     const queued = await enqueueAnalysis(userId, projectId, { mediaType: "video", mediaDuration: 5, mediaUrl: "https://r2.example/a.mp4" });
     expect((await drain(queued.id)).state).toBe("failed");
@@ -129,13 +130,20 @@ describe("durable analysis", () => {
     expect(mocks.analyze).not.toHaveBeenCalled();
   });
 
-  it.each(["trial", "byok", "platform_credits", "admin"])("rejects uploads above exactly ten seconds for %s", async mode => {
+  it.each(["trial", "byok", "platform_credits", "admin"])("analyzes a sixty-second upload as one shot for %s", async mode => {
     mocks.mode = mode;
-    mocks.probe.mockResolvedValue({ durationUs: 10_000_001, bytes: 500, scenes: [{ id: "1" }] });
+    if (mode === "platform_credits") await testDb.insert(schema.userCredits).values({ userId, balance: 100 });
+    mocks.probe.mockResolvedValueOnce({ durationUs: 60_000_000, bytes: 500, sourceHash: "a".repeat(64), scenes: [{ id: "1", startUs: 0, endUs: 60_000_000 }] }).mockResolvedValueOnce({ scenes: [{ sceneIndex: 1, startTime: 0, endTime: 60, duration: 60, keyframeUrls: ["https://r2.example/frame.png"] }], metadata: { duration: 60 } });
     const queued = await enqueueAnalysis(userId, projectId, { mediaType: "video", mediaDuration: 5, mediaUrl: "https://r2.example/a.mp4" });
-    expect((await drain(queued.id)).state).toBe("failed");
+    expect((await drain(queued.id)).state).toBe("completed");
     expect(mocks.probe).toHaveBeenCalledWith("https://r2.example/a.mp4", { mode: "preview", automaticSplit: false });
-    expect(mocks.analyze).not.toHaveBeenCalled();
+    expect(mocks.analyze).toHaveBeenCalledTimes(1);
+    expect(mocks.analyze.mock.calls[0][0].scene.duration).toBe(60);
+  });
+
+  it("does not allow splitting through the unbilled whole-video endpoint", async () => {
+    await expect(enqueueAnalysis(userId, projectId, { mediaType: "video", mediaUrl: "https://r2.example/a.mp4", automaticSplit: true })).rejects.toThrow("CONFIRMED_QUOTE_REQUIRED");
+    expect(mocks.probe).not.toHaveBeenCalled();
   });
 
   it("does not refund a delivered trial when the final settlement was interrupted", async () => {

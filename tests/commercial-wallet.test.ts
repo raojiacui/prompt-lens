@@ -555,19 +555,43 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(refundAlipayTrade).not.toHaveBeenCalled();
   });
 
-  it("rejects long local uploads and prevents switching the trusted source mode", async () => {
+  it("requires purchased available credits before splitting local uploads", async () => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     const [project] = await testDb.insert(schema.projects).values({ userId, title: "Upload boundary" }).returning();
     const input = { projectId: project.id, mediaUrl: "https://example.com/local.mp4", mediaName: "local", automaticSplit: false };
-    await expect(prepareCommercialAnalysis(userId, { ...input, automaticSplit: true })).rejects.toThrow("INVALID_ANALYSIS_SOURCE_MODE");
+    await expect(prepareCommercialAnalysis(userId, { ...input, automaticSplit: true })).rejects.toThrow("SPLIT_PAYMENT_REQUIRED");
+    expect(commercialMediaRequest).not.toHaveBeenCalled();
     vi.mocked(isOwnedLinkedVideo).mockResolvedValueOnce(true);
     await expect(prepareCommercialAnalysis(userId, input)).rejects.toThrow("INVALID_ANALYSIS_SOURCE_MODE");
-    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ durationUs: 10_000_001 });
-    await expect(prepareCommercialAnalysis(userId, input)).rejects.toThrow("UPLOAD_VIDEO_TOO_LONG");
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+  });
+
+  it("allows long local uploads without splitting or purchased credits", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Whole upload" }).returning();
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 60_000_000, bytes: 500, scenes: [{ id: "1", startUs: 0, endUs: 60_000_000 }] });
+    const preparation = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/local.mp4", mediaName: "local", automaticSplit: false });
+    expect(preparation.durationUs).toBe(60_000_000);
+    expect(preparation.scenes).toHaveLength(1);
+  });
+
+  it("splits paid local uploads and quotes only the selected shots", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Split upload" }).returning();
+    const scenes = Array.from({ length: 6 }, (_, i) => ({ id: String(i + 1), startUs: i * 10_000_000, endUs: (i + 1) * 10_000_000 }));
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 60_000_000, bytes: 500, scenes });
+    const preparation = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/local.mp4", mediaName: "local", automaticSplit: true });
+    expect(preparation.scenes).toHaveLength(6);
+    expect(commercialMediaRequest).toHaveBeenCalledWith("https://example.com/local.mp4", { mode: "preview", automaticSplit: true });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preparation.id, sceneIds: ["2"], payer: "platform", model: "flash", outputLanguage: "zh" });
+    expect(quote).toMatchObject({ splitCredits: 10, analysisCredits: 5, credits: 15, sceneCount: 1 });
     expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
   });
 
   it("allows long linked video splitting without the local upload duration limit", async () => {
+    await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     const [project] = await testDb.insert(schema.projects).values({ userId, title: "Long link" }).returning();
     vi.mocked(isOwnedLinkedVideo).mockResolvedValueOnce(true);

@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { AnalysisExecutionLost, executionCondition, lockAnalysisExecution } from "./analysis-execution";
-import { db, commercialTasks, projects, referenceVideos, projectVersions, videoScenes, sceneVersions } from "@/lib/db";
+import { db, commercialLots, commercialTasks, projects, referenceVideos, projectVersions, videoScenes, sceneVersions } from "@/lib/db";
 import { isOwnedLinkedVideo, commercialMediaRequest, type MediaPreview } from "./commercial-media";
 import { quoteAnalysis, settleAnalysis, type AnalysisPriceInput, PRICING_VERSION } from "./pricing-v6";
 import { getUserKieApiKey } from "@/lib/byok/kie";
@@ -31,7 +31,11 @@ function savedAnalysisModel(input: AnalysisInput) {
 export async function prepareCommercialAnalysis(userId: string, input: { projectId: string; mediaUrl: string; mediaName: string; automaticSplit: boolean }) {
   if (!commercialConsumptionEnabled()) throw new Error("COMMERCIAL_NOT_ENABLED");
   const linkedVideo = await isOwnedLinkedVideo(userId, input.mediaUrl);
-  if (input.automaticSplit !== linkedVideo) throw new Error("INVALID_ANALYSIS_SOURCE_MODE");
+  if (linkedVideo && !input.automaticSplit) throw new Error("INVALID_ANALYSIS_SOURCE_MODE");
+  if (input.automaticSplit) {
+    const purchase = await db.query.commercialLots.findFirst({ where: and(eq(commercialLots.userId, userId), eq(commercialLots.state, "active"), sql`${commercialLots.availableCredits} > 0`) });
+    if (!purchase) throw new Error("SPLIT_PAYMENT_REQUIRED");
+  }
   const project = await db.query.projects.findFirst({ where: and(eq(projects.id, input.projectId), eq(projects.userId, userId)) });
   if (!project || project.status !== "draft") throw new Error("PROJECT_NOT_READY");
   // A durable per-user quota applies before probing, across application instances.
@@ -44,7 +48,6 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
   });
   try {
   const preview = await commercialMediaRequest<MediaPreview>(input.mediaUrl, { mode: "preview", automaticSplit: input.automaticSplit });
-  if (!linkedVideo && preview.durationUs > 10_000_000) throw new Error("UPLOAD_VIDEO_TOO_LONG");
   // Validate worker quantities using the exact same billing validator before storing them.
   quoteAnalysis({ payer: input.automaticSplit ? "byok_split" : "byok", model: "flash", sourceDurationUs: preview.durationUs, automaticSplit: input.automaticSplit, paidSplitReusable: false, scenes: preview.scenes });
   if (!/^[0-9a-f]{64}$/.test(preview.sourceHash) || !Number.isSafeInteger(preview.bytes) || preview.bytes <= 0 || preview.bytes > 100 * 1024 * 1024) throw new Error("INVALID_MEDIA_PROBE");
