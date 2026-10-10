@@ -15,7 +15,7 @@ class AnalysisRequestError extends Error {
 }
 type AnalysisQuoteSource = { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string };
 
-export function AnalysisQuotePanel({ source, onClose, onComplete, onLockChange }: { source: AnalysisQuoteSource; onClose: () => void; onComplete: (bundle: unknown) => void; onLockChange?: (locked: boolean) => void }) {
+export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onLockChange }: { source: AnalysisQuoteSource; onClose: () => void; onComplete: (bundle: unknown) => void; onPartial?: (bundle: unknown) => void; onLockChange?: (locked: boolean) => void }) {
   const zh = useLocale() === "zh";
   const automaticSplit = source.automaticSplit;
   const payer = source.payer ?? "platform";
@@ -50,6 +50,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onLockChange }
   const quote = savedQuote?.requestKey === quoteRequestKey ? savedQuote : null;
   useEffect(() => { onLockChange?.(selectionLocked); }, [selectionLocked, onLockChange]);
   const onCompleteRef = useRef(onComplete); onCompleteRef.current = onComplete;
+  const onPartialRef = useRef(onPartial); onPartialRef.current = onPartial;
   useEffect(() => {
     if (selectAll.current) selectAll.current.indeterminate = selectedScenes.length > 0 && !allSelected;
   }, [selectedScenes.length, allSelected]);
@@ -165,6 +166,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onLockChange }
         setState(data.state);
         setError("");
         setTaskProgress(previous => ({ ...previous, phase: data.phase || previous.phase, total: data.totalScenes ?? previous.total, finished: data.completedScenes ?? previous.finished }));
+        if (data.bundle && !["completed", "failed"].includes(data.state)) onPartialRef.current?.(data.bundle);
         if (["completed", "failed"].includes(data.state) && data.bundle && !completed.current) { completed.current = true; onCompleteRef.current(data.bundle); }
         if (["completed", "failed", "review"].includes(data.state)) return;
       } catch { if (!controller.signal.aborted) setError(zh ? "查询暂时中断，任务仍保留在账户中。" : "Status temporarily unavailable. Your task remains in your account."); }
@@ -173,7 +175,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onLockChange }
     void poll();
     return () => { controller.abort(); clearTimeout(timer); };
   }, [taskId, zh]);
-  return <section aria-labelledby="analysis-quote-title" className="min-h-0 flex-1 overflow-y-auto p-1 text-foreground">
+  return <section aria-labelledby="analysis-quote-title" className="min-h-0 p-1 text-foreground">
     <header className="flex items-start justify-between gap-4"><h2 id="analysis-quote-title" className="text-xl font-semibold">{zh ? "镜头选择与费用" : "Shots and analysis cost"}</h2>{!taskId && <button disabled={busy || confirmationStarted} onClick={onClose} title={zh ? "返回素材选择" : "Back to reference"} aria-label={zh ? "返回素材选择" : "Back to reference"} className="flex h-8 w-8 shrink-0 items-center justify-center disabled:opacity-50"><X size={18} /></button>}</header>
     <p className="mt-3 truncate text-sm text-muted-foreground">{source.mediaName}</p>
     {!taskId && <>

@@ -381,11 +381,13 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }, [analysisProgress, loading]);
 
   useEffect(() => {
-    const drafts: Record<string, string> = {};
-    bundle?.allSceneVersions.forEach((scene) => {
-      drafts[scene.id] = buildRecreationPrompt(scene);
+    setSceneDrafts(current => {
+      const drafts: Record<string, string> = {};
+      bundle?.allSceneVersions.forEach((scene) => {
+        drafts[scene.id] = current[scene.id] ?? buildRecreationPrompt(scene);
+      });
+      return drafts;
     });
-    setSceneDrafts(drafts);
   }, [bundle?.activeVersion?.id, bundle?.allSceneVersions]);
   const projectMediaType = bundle?.project.metadata?.mediaType === "image" ? "image" : "video";
 
@@ -474,8 +476,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           throw new Error(data.error || "Task status unavailable");
         }
         setError("");
+        if (data.bundle) setBundle(data.bundle);
         if (["completed", "failed"].includes(data.state)) {
-          if (data.bundle) setBundle(data.bundle);
           setError(data.state === "failed" ? data.error || "分析失败，请检查 Key 后重试。" : data.partial ? "部分镜头分析失败，成功结果已保留，仅结算成功镜头。" : "");
           setAnalysisTaskId(""); setLoading(false); setAnalysisProgress(null);
           setProgress(data.state === "completed" ? "分析完成" : "分析失败");
@@ -652,6 +654,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         body: JSON.stringify({ title: preparedTitle }),
       });
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
+      setBundle(null);
       if (automaticSplit || (prepared.mediaType === "video" && latestStatus?.commercialConsumptionEnabled && ((latestStatus.commercial?.credits ?? 0) > 0 || latestStatus.mode !== "trial") && analysisPayer === "platform") || requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", automaticSplit, trialRemaining: latestStatus?.trial.remaining || 0 })) {
         setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage, automaticSplit, payer: analysisPayer, modelId: analysisModelValue });
         setAnalysisProgress(null);
@@ -960,7 +963,10 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
         <div className="relative min-h-0">
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
-          {commercialSource ? <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onLockChange={setAnalysisQuoteLocked} onClose={() => { setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} /> : !bundle ? (
+          <div className="space-y-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-2">
+          {commercialSource && <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onPartial={(result) => setBundle(result as Bundle)} onLockChange={setAnalysisQuoteLocked} onClose={() => { setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} />}
+          {!commercialSource && loading && analysisProgress && bundle && <AnalysisProgressPanel progress={analysisProgress} />}
+          {!commercialSource && !bundle ? (
             loading && analysisProgress ? (
               <AnalysisProgressPanel progress={analysisProgress} />
             ) : (
@@ -970,8 +976,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                 <p className="text-sm text-muted-foreground">{ui.emptyHint}</p>
               </div>
             )
-          ) : (
-            <div className="space-y-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-2">
+          ) : bundle ? (
+            <div className="space-y-5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h2 className="text-xl font-semibold">{bundle.project.title}</h2>
@@ -1130,7 +1136,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                 })}
               </div>
             </div>
-          )}
+          ) : null}
+          </div>
           </section>
         </div>
       </div>

@@ -22,7 +22,7 @@ for (const width of [1440, 390]) {
       else if (path === "/api/upload") body = { presignedUrl: "https://example.com/upload", publicUrl: "https://example.com/image.png", key: "uploads/test/image.png" };
       else if (path === `/api/workflow/projects/${projectId}/breakdown`) {
         submissions++;
-        expect(route.request().postDataJSON()).toMatchObject({ modelMode: "auto" });
+        expect(route.request().postDataJSON()).toMatchObject({ modelMode: "manual", modelId: "analysis-gemini-3-8-flash" });
         body = { taskId, state: "queued" };
       } else if (path === `/api/commercial/tasks/${taskId}`) {
         polls++;
@@ -31,8 +31,8 @@ for (const width of [1440, 390]) {
       await route.fulfill({ json: body });
     });
     await page.goto("/dashboard?tab=analyze");
-    await expect(page.getByLabel("Analysis model")).toBeDisabled();
-    await expect(page.getByLabel("Analysis model")).toHaveValue("analysis-gemini-3-8-flash");
+    await expect(page.getByLabel("分析模型")).toBeDisabled();
+    await expect(page.getByLabel("分析模型")).toHaveValue("analysis-gemini-3-8-flash");
     await page.locator('input[type="file"]').first().setInputFiles({ name: "image.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=", "base64") });
     await page.getByRole("button", { name: "分析图片", exact: true }).click();
     await expect.poll(() => polls, { timeout: 15000 }).toBeGreaterThanOrEqual(2);
