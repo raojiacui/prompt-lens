@@ -693,6 +693,10 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect((await testDb.select().from(schema.paymentOrders))[0].status).toBe("refunded");
     expect(await balance()).toMatchObject({ credits: 0, rewrites: 0 });
   });
+  it.each(["v6_creator_650", "v6_volume_1500"])("rejects direct checkout for unopened package %s before inserting an order", async (packageId) => {
+    await expect(createAlipayCreditCheckout(userId, packageId, randomUUID())).rejects.toThrow("PACKAGE_NOT_OPEN");
+    expect(await testDb.select().from(schema.paymentOrders)).toHaveLength(0);
+  });
   it("uses saved checkout price and benefits when replaying an old purchase request", async () => {
     vi.stubEnv("ALIPAY_APP_ID", "test-app");
     vi.stubEnv("ALIPAY_PRIVATE_KEY", "mock-private-key");

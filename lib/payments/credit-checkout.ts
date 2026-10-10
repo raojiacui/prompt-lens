@@ -82,6 +82,7 @@ export async function createAlipayCreditCheckout(userId: string, packageId: stri
   if (!commercial || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)) {
     throw new Error("Invalid commercial checkout request");
   }
+  if (!commercial.checkoutEnabled) throw new Error("PACKAGE_NOT_OPEN");
   const { appId } = alipayConfig();
   const providerOrderId = `ali_${crypto.createHash("sha256").update(`${userId}:${requestId}`).digest("hex").slice(0, 28)}`;
   const [created] = await db.insert(paymentOrders).values({

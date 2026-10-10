@@ -39,7 +39,8 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
                   zh ? "自带 Key 也可购买套餐，套餐积分可用于自动拆镜服务" : "You can buy a package with your own API key and use its credits for automatic shot splitting",
                 ].map((line) => <li key={line} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[#4C7055]" /><span>{line}</span></li>)}
               </ul>
-              <button type="button" onClick={() => {
+              <button type="button" disabled={!pack.checkoutEnabled} onClick={() => {
+                if (!pack.checkoutEnabled) return;
                 if (!authenticated) { window.location.href = "/login?next=%2F%23pricing"; return; }
                 const storageKey = `promptlens:checkout:${session?.user.id || "current"}:${pack.id}`;
                 try { requestIds.current[pack.id] ??= localStorage.getItem(storageKey) || crypto.randomUUID(); localStorage.setItem(storageKey, requestIds.current[pack.id]); }
@@ -47,7 +48,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
                 setPreviousOrderUnconfirmed(false);
                 setSelected(pack);
               }} className="mt-auto min-h-11 rounded-lg bg-[#241915] px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50">
-                {authenticated ? (zh ? "支付宝购买" : "Buy with Alipay") : (zh ? "登录后购买" : "Sign in to buy")}
+                {!pack.checkoutEnabled ? (zh ? "待开放" : "Coming soon") : authenticated ? (zh ? "支付宝购买" : "Buy with Alipay") : (zh ? "登录后购买" : "Sign in to buy")}
               </button>
             </article>
           ))}

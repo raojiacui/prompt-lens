@@ -37,6 +37,12 @@ describe("Domestic checkout route", () => {
     expect((await call({ credits: 999999, amountCents: 1, rewrites: 999999 })).status).toBe(200);
     expect(createAlipayCreditCheckout).toHaveBeenCalledWith("owner", body.packageId, body.requestId);
   });
+  it.each(["v6_creator_650", "v6_volume_1500"])("blocks unopened package %s without creating an order", async (packageId) => {
+    const response = await call({ packageId });
+    expect(response.status).toBe(409);
+    expect((await response.json()).code).toBe("PACKAGE_NOT_OPEN");
+    expect(createAlipayCreditCheckout).not.toHaveBeenCalled();
+  });
   it("reports actual failures and preserves the request ID for retries", async () => {
     vi.mocked(createAlipayCreditCheckout).mockRejectedValueOnce(new Error("Provider unavailable"));
     const response = await call();

@@ -13,7 +13,9 @@ export async function POST(request: NextRequest) {
   if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const body = await request.json().catch(() => null);
   if (body?.provider !== "alipay" || body?.method !== "alipay") return NextResponse.json({ error: "Only Alipay is supported", code: "UNSUPPORTED_PAYMENT_METHOD" }, { status: 400 });
-  if (!COMMERCIAL_PACKAGES.some((pack) => pack.id === body?.packageId)) return NextResponse.json({ error: "Package unavailable" }, { status: 400 });
+  const pack = COMMERCIAL_PACKAGES.find((pack) => pack.id === body?.packageId);
+  if (!pack) return NextResponse.json({ error: "Package unavailable" }, { status: 400 });
+  if (!pack.checkoutEnabled) return NextResponse.json({ error: "Package coming soon", code: "PACKAGE_NOT_OPEN" }, { status: 409 });
   if (typeof body.requestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.requestId)) return NextResponse.json({ error: "Invalid checkout request ID" }, { status: 400 });
   try {
     return NextResponse.json(await createAlipayCreditCheckout(session.user.id, body.packageId, body.requestId));
