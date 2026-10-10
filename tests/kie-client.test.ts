@@ -61,11 +61,23 @@ describe("KIE transport", () => {
     const fetchMock = vi.fn(async () => stage === "connection" ? await new Promise<Response>(() => {}) : new Response(new ReadableStream({ start() {} }), { headers: { "Content-Type": "text/event-stream" } }));
     vi.stubGlobal("fetch", fetchMock);
     const request = requestKieChat({ ...input, timeoutMs: 100 });
-    const rejected = expect(request).rejects.toThrow("KIE_ANALYSIS_TIMEOUT");
+    const rejected = expect(request).rejects.toThrow(`KIE_ANALYSIS_TIMEOUT: ${stage === "connection" ? "connecting" : "reading_response"}`);
     await vi.advanceTimersByTimeAsync(101);
     await rejected;
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(vi.getTimerCount()).toBe(0);
+  });
+  it("allows a slow analysis response within the default three-minute deadline", async () => {
+    vi.useFakeTimers();
+    const fetchMock = vi.fn(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100_000));
+      return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "answer" }] } }] }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const request = requestKieChat(input);
+    await vi.advanceTimersByTimeAsync(100_000);
+    await expect(request).resolves.toBe("answer");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
   it("recognizes a provider error inside an HTTP 200 response", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ code: 500, msg: "upstream unavailable" }))));

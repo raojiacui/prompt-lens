@@ -1,6 +1,7 @@
 import { getKieResponseText } from "./kie-response";
 
 export const DEFAULT_KIE_CHAT_MODEL = "gemini-3-8-flash-openai";
+export const DEFAULT_KIE_ANALYSIS_TIMEOUT_MS = 180_000;
 
 export class KieRequestError extends Error {
   constructor(message: string, readonly status?: number) {
@@ -102,11 +103,14 @@ export async function requestKieChat(input: {
   // Do not retry inference automatically: a lost response may already have been billed.
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout>;
+  let stage: "connecting" | "reading_response" = "connecting";
+  const startedAt = Date.now();
   const deadline = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
-      reject(new KieRequestError("KIE_ANALYSIS_TIMEOUT: model response exceeded the request deadline"));
+      console.warn("kie.analysis.timeout", { modelId: input.modelId, stage, elapsedMs: Date.now() - startedAt });
+      reject(new KieRequestError(`KIE_ANALYSIS_TIMEOUT: ${stage} exceeded the request deadline`));
       controller.abort();
-    }, input.timeoutMs ?? 90000);
+    }, input.timeoutMs ?? DEFAULT_KIE_ANALYSIS_TIMEOUT_MS);
   });
   try {
     // Bound both connection and body reading even if a fetch wrapper ignores abort.
@@ -116,6 +120,7 @@ export async function requestKieChat(input: {
         headers: { Authorization: `Bearer ${input.apiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
+      stage = "reading_response";
       const text = await readChatResponse(response, controller.signal);
       if (!text) throw new KieRequestError("KIE API returned an empty result", response.status);
       return text;
