@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { commercialTasks, db } from "@/lib/db";
 import { commercialConsumptionEnabled, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { recoverAnalysisTasks } from "@/lib/workflow/analysis-tasks";
@@ -15,11 +15,23 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const queued = await db.select({ id: commercialTasks.id }).from(commercialTasks).where(and(
+  const dispatchReady = sql`(${commercialTasks.result}->>'nextDispatchAt' IS NULL OR (${commercialTasks.result}->>'nextDispatchAt')::timestamptz <= now())`;
+  const queued = await db.select({ id: commercialTasks.id, result: commercialTasks.result }).from(commercialTasks).where(and(
     eq(commercialTasks.state, "queued"),
     inArray(commercialTasks.kind, commercialConsumptionEnabled() ? ["analysis", "workflow_analysis"] : ["workflow_analysis"]),
-  )).orderBy(asc(commercialTasks.updatedAt)).limit(5);
-  const dispatched = await Promise.all(queued.map(task => dispatchQueuedAnalysis(task.id)));
+    dispatchReady,
+  )).orderBy(sql`(${commercialTasks.result}->>'lastDispatchAt')::timestamptz ASC NULLS FIRST`, asc(commercialTasks.updatedAt)).limit(5);
+  const dispatched = await Promise.all(queued.map(async task => {
+    try {
+      const now = new Date();
+      const result = task.result as Record<string, unknown>;
+      const [claimed] = await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ lastDispatchAt: now.toISOString(), nextDispatchAt: new Date(now.getTime() + 2 * 60_000).toISOString(), dispatchAttempts: Number(result.dispatchAttempts || 0) + 1 })}::jsonb` }).where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, "queued"), dispatchReady)).returning({ id: commercialTasks.id });
+      return claimed ? dispatchQueuedAnalysis(task.id) : false;
+    } catch (error) {
+      console.error("analysis.dispatch_cron.task_failed", { taskId: task.id, error });
+      return false;
+    }
+  }));
   const accepted = dispatched.filter(Boolean).length;
   const recoveryErrors: string[] = [];
   const deadline = Date.now() + 40_000;

@@ -194,7 +194,7 @@ export async function recoverCommercialAnalysisTasks(taskId?: string, options: {
   const expired = sql`((${commercialTasks.state} IN ('running', 'review') AND (${commercialTasks.updatedAt} < ${runningCutoff.toISOString()}::timestamptz
     OR (${commercialTasks.updatedAt} < ${saveCutoff.toISOString()}::timestamptz AND ${commercialTasks.result}->'pendingResult' IS NOT NULL AND ${commercialTasks.result}->'pendingResult' <> 'null'::jsonb)))
     OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.updatedAt} < now() - interval '24 hours'))`;
-  const stale = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "analysis"), taskId ? eq(commercialTasks.id, taskId) : undefined, expired, taskId ? undefined : sql`(${commercialTasks.result}->>'recoveryRetryAt' IS NULL OR (${commercialTasks.result}->>'recoveryRetryAt')::timestamptz <= now())`)).orderBy(asc(commercialTasks.updatedAt)).limit(taskId ? 1 : options.limit ?? 10);
+  const stale = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "analysis"), taskId ? eq(commercialTasks.id, taskId) : undefined, expired, sql`(${commercialTasks.result}->>'recoveryRetryAt' IS NULL OR (${commercialTasks.result}->>'recoveryRetryAt')::timestamptz <= now())`)).orderBy(asc(commercialTasks.updatedAt)).limit(taskId ? 1 : options.limit ?? 10);
   const resumed: string[] = [];
   for (const candidate of stale) {
     if (options.deadline && Date.now() >= options.deadline) break;
@@ -255,7 +255,7 @@ export async function recoverCommercialAnalysisTasks(taskId?: string, options: {
     } catch (error) {
       console.error("commercial.analysis.recovery_failed", { taskId: candidate.id, error });
       try {
-        await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ recoveryRetryAt: new Date(Date.now() + 5 * 60_000).toISOString() })}::jsonb` }).where(and(eq(commercialTasks.id, candidate.id), eq(commercialTasks.state, candidate.state)));
+        await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ recoveryRetryAt: new Date(Date.now() + 5 * 60_000).toISOString() })}::jsonb` }).where(and(eq(commercialTasks.id, candidate.id), eq(commercialTasks.state, candidate.state), eq(commercialTasks.updatedAt, candidate.updatedAt)));
       } catch (recordError) { console.error("commercial.analysis.recovery_defer_failed", { taskId: candidate.id, error: recordError }); }
     }
   }

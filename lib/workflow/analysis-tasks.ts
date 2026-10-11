@@ -263,7 +263,7 @@ export async function recoverAnalysisTasks(options: { dispatch?: boolean; limit?
     } catch (error) {
       console.error("workflow.analysis.recovery_failed", { taskId: task.id, error });
       try {
-        await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ recoveryRetryAt: new Date(Date.now() + 5 * 60_000).toISOString() })}::jsonb` }).where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, task.state)));
+        await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ recoveryRetryAt: new Date(Date.now() + 5 * 60_000).toISOString() })}::jsonb` }).where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, task.state), eq(commercialTasks.updatedAt, task.updatedAt)));
       } catch (recordError) { console.error("workflow.analysis.recovery_defer_failed", { taskId: task.id, error: recordError }); }
     }
   }
