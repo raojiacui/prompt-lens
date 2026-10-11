@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
-type Review = { orders: { id: string; userId: string; amountCents: number; reconciliation: string | null }[]; refunds: { id: string; orderId: string; userId: string; email?: string | null; name?: string | null; packageName?: string; createdAt?: string; state: string; reason: string; contact: string | null; amountCents: number }[]; tasks: { id: string; userId: string; credits: number; rewrites: number }[]; taskReviews: { id: string; userId: string; kind: string; reason: string; action: string; deadlineAt: string | null; nextActionAt: string | null; reservedCredits: number; updatedAt: string }[]; taskReviewTotal: number; frozen: { userId: string }[] };
+type Review = { orders: { id: string; userId: string; amountCents: number; reconciliation: string | null }[]; refunds: { id: string; orderId: string; userId: string; email?: string | null; name?: string | null; packageName?: string; createdAt?: string; state: string; reason: string; contact: string | null; amountCents: number }[]; tasks: { id: string; userId: string; credits: number; rewrites: number }[]; taskReviews: { id: string; userId: string; kind: string; reason: string; action: string; deadlineAt: string | null; nextActionAt: string | null; escalatedAt: string | null; reservedCredits: number; updatedAt: string; providerTaskId: string | null; successfulScenes: number; finishedScenes: number; diagnostic: string | null }[]; taskReviewTotal: number; frozen: { userId: string }[] };
 const reviewReasons: Record<string, [string, string]> = { save_failed: ["保存结果失败", "Result save failed"], settlement_failed: ["结算失败", "Settlement failed"], provider_unknown: ["供应商结果待确认", "Provider result unconfirmed"], checkpoint_invalid: ["任务检查点异常", "Task checkpoint invalid"], manual_required: ["需要人工核对", "Manual review required"], legacy_review: ["历史异常待核对", "Legacy task needs review"] };
 export default function CommercialReviewPage() {
   const zh = useLocale() === "zh";
@@ -65,8 +65,10 @@ export default function CommercialReviewPage() {
           <p className="font-medium">{task.kind === "analysis" ? (zh ? "视频分析" : "Video analysis") : (zh ? "视频生成" : "Video generation")} · {(reviewReasons[task.reason] || reviewReasons.manual_required)[zh ? 0 : 1]}</p>
           <p className="mt-1 break-all text-muted-foreground">{task.id} · {zh ? "预留积分" : "Reserved credits"} {task.reservedCredits}</p>
           <p className="mt-1 text-muted-foreground">{zh ? "下一步" : "Next action"}: {task.action === "automatic_recovery" ? (zh ? "系统自动恢复" : "Automatic recovery") : (zh ? "人工核对供应商记录" : "Manual provider reconciliation")}</p>
-          {task.deadlineAt && <p className="mt-1 text-muted-foreground">{zh ? "处理期限" : "Review deadline"}: {new Date(task.deadlineAt).toLocaleString(zh ? "zh-CN" : "en-US")}</p>}
-          <Link className="mt-2 inline-block underline" href={`/billing/tasks/${task.id}`}>{zh ? "查看任务" : "View task"}</Link>
+          {task.kind === "analysis" && <p className="mt-1 text-muted-foreground">{zh ? "已完成／成功镜头" : "Finished / successful shots"}: {task.finishedScenes} / {task.successfulScenes}</p>}
+          {task.providerTaskId && <p className="mt-1 break-all text-muted-foreground">{zh ? "供应商任务" : "Provider task"}: {task.providerTaskId}</p>}
+          {task.diagnostic && <p className="mt-1 break-words text-muted-foreground">{zh ? "最近错误" : "Last error"}: {task.diagnostic}</p>}
+          {task.deadlineAt && <p className={`mt-1 ${task.escalatedAt ? "text-red-700" : "text-muted-foreground"}`}>{zh ? "处理期限" : "Review deadline"}: {new Date(task.deadlineAt).toLocaleString(zh ? "zh-CN" : "en-US")}{task.escalatedAt ? (zh ? " · 已升级人工处理" : " · Escalated") : ""}</p>}
         </div>)}
         {data.taskReviewTotal > data.taskReviews.length && <p className="text-sm text-muted-foreground">{zh ? `当前显示最早的 ${data.taskReviews.length} 项，请先处理后刷新。` : `Showing the oldest ${data.taskReviews.length} tasks. Resolve them and refresh.`}</p>}
       </section>
