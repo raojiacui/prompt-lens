@@ -57,13 +57,12 @@ export async function POST(request: NextRequest) {
     if (!/^[0-9a-f-]{36}$/i.test(body.reservationId || "") || typeof body.evidence !== "string" || body.evidence.trim().length < 12 || body.evidence.length > 2000) return NextResponse.json({ error: "Evidence is required" }, { status: 400 });
     const reservation = await db.query.commercialReservations.findFirst({ where: eq(commercialReservations.id, body.reservationId) });
     if (!reservation || Date.now() - reservation.createdAt.getTime() < 86400000) return NextResponse.json({ error: "Reservation is not eligible for review" }, { status: 409 });
+    if (!reservation.taskKey.startsWith("commercial:")) return NextResponse.json({ error: "Unknown reservation task type" }, { status: 409 });
     try {
       await db.transaction(async (tx) => {
         let task: typeof commercialTasks.$inferSelect | undefined;
-        if (reservation.taskKey.startsWith("commercial:")) {
-          [task] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, reservation.taskKey.slice(11)), eq(commercialTasks.userId, reservation.userId))).for("update");
-          if (!canFullyReleaseTask(task)) throw new Error("TASK_NOT_ELIGIBLE_FOR_FULL_RELEASE");
-        }
+        [task] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, reservation.taskKey.slice(11)), eq(commercialTasks.userId, reservation.userId))).for("update");
+        if (!canFullyReleaseTask(task)) throw new Error("TASK_NOT_ELIGIBLE_FOR_FULL_RELEASE");
         const current = await tx.query.commercialReservations.findFirst({ where: eq(commercialReservations.id, reservation.id) });
         if (current?.state !== "held") throw new Error("Reservation is no longer held");
         await settleCommercialTaskInTransaction(tx, { userId: reservation.userId, taskKey: reservation.taskKey, credits: 0, rewrites: 0 });
