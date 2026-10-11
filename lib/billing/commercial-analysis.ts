@@ -187,7 +187,7 @@ async function finishCommercialAnalysis(task: typeof commercialTasks.$inferSelec
   else await db.transaction(finish);
 }
 
-export async function recoverCommercialAnalysisTasks(taskId?: string) {
+export async function recoverCommercialAnalysisTasks(taskId?: string, options: { dispatch?: boolean } = {}) {
   if (!taskId) await db.update(commercialTasks).set({ state: "failed", result: { code: "PREVIEW_EXPIRED" }, updatedAt: new Date() }).where(and(eq(commercialTasks.kind, "analysis_preview"), sql`${commercialTasks.state} IN ('running', 'quoted')`, sql`${commercialTasks.expiresAt} < now()`));
   const runningCutoff = new Date(Date.now() - ANALYSIS_STALE_TIMEOUT_MS);
   const saveCutoff = new Date(Date.now() - ANALYSIS_SAVE_STALE_TIMEOUT_MS);
@@ -250,7 +250,7 @@ export async function recoverCommercialAnalysisTasks(taskId?: string) {
     }
     });
   }
-  if (!taskId) for (const id of resumed) await dispatchQueuedAnalysis(id);
+  if (!taskId && options.dispatch !== false) for (const id of resumed) await dispatchQueuedAnalysis(id);
 }
 
 export async function commercialAnalysisBundle(task: typeof commercialTasks.$inferSelect) {

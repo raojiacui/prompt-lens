@@ -220,7 +220,7 @@ export async function runAnalysisTask(id: string) {
   finally { await dispatchQueuedAnalysis(id); }
 }
 
-export async function recoverAnalysisTasks() {
+export async function recoverAnalysisTasks(options: { dispatch?: boolean } = {}) {
   const abandoned = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "workflow_analysis"), sql`((${commercialTasks.state} = 'running' AND ${commercialTasks.updatedAt} < now() - ${LEASE_MS} * interval '1 millisecond') OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.expiresAt} < now()))`)).limit(20);
   for (const task of abandoned) {
     if (task.state === "queued") {
@@ -256,6 +256,6 @@ export async function recoverAnalysisTasks() {
       await tx.update(commercialTasks).set({ state: "queued", result: next, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
       resumed = true;
     });
-    if (resumed) await dispatchQueuedAnalysis(task.id);
+    if (resumed && options.dispatch !== false) await dispatchQueuedAnalysis(task.id);
   }
 }
