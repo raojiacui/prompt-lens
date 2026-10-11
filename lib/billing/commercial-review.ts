@@ -1,5 +1,5 @@
 import { and, asc, eq, sql } from "drizzle-orm";
-import { commercialLedger, commercialReservations, commercialTasks, db, projects } from "@/lib/db";
+import { commercialLedger, commercialReservations, commercialTasks, db, projects, projectVersions, sceneVersions } from "@/lib/db";
 import { settleCommercialTaskInTransaction } from "./commercial-wallet";
 
 export function canFullyReleaseTask(task: { state: string; kind: string; result: unknown } | undefined) {
@@ -34,6 +34,15 @@ export async function releaseUnfulfilledCommercialAnalysis(input: { reservationI
   await db.transaction(async (tx) => {
     const [task] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, reservation.taskKey.slice(11)), eq(commercialTasks.userId, reservation.userId))).for("update");
     if (!task || !canFullyReleaseTask(task)) throw new Error("TASK_NOT_ELIGIBLE_FOR_FULL_RELEASE");
+    const taskInput = task.input as { projectId?: string; retry?: unknown; pricing?: { automaticSplit?: boolean } };
+    if (taskInput.retry) throw new Error("RETRY_REQUIRES_INDIVIDUAL_RECONCILIATION");
+    if (!taskInput.projectId || typeof taskInput.pricing?.automaticSplit !== "boolean") throw new Error("INCOMPLETE_ANALYSIS_CHECKPOINT");
+    const [deliveredScene] = await tx.select({ id: sceneVersions.id }).from(sceneVersions).where(and(eq(sceneVersions.projectId, taskInput.projectId), sql`(${sceneVersions.metadata}->>'analysisProvider' = 'kie' OR ${sceneVersions.generationPrompt} <> '')`)).limit(1);
+    if (deliveredScene) throw new Error("DELIVERED_SCENE_EXISTS");
+    if (taskInput.pricing.automaticSplit) {
+      const [deliveredSplit] = await tx.select({ id: projectVersions.id }).from(projectVersions).where(eq(projectVersions.projectId, taskInput.projectId)).limit(1);
+      if (deliveredSplit) throw new Error("DELIVERED_SPLIT_EXISTS");
+    }
     const current = await tx.query.commercialReservations.findFirst({ where: eq(commercialReservations.id, reservation.id) });
     if (current?.state !== "held") throw new Error("RESERVATION_ALREADY_SETTLED");
     await settleCommercialTaskInTransaction(tx, { userId: reservation.userId, taskKey: reservation.taskKey, credits: 0, rewrites: 0 });
@@ -41,7 +50,6 @@ export async function releaseUnfulfilledCommercialAnalysis(input: { reservationI
     const resolvedAt = new Date();
     const event = { action: "manual_full_release", actorId: input.actorId, at: resolvedAt.toISOString(), evidence: input.evidence };
     await tx.update(commercialTasks).set({ state: "failed", result: sql`jsonb_set(${commercialTasks.result} || ${JSON.stringify({ chargedCredits: 0, manualRelease: true, reviewResolution: event })}::jsonb, '{reviewHistory}', COALESCE(${commercialTasks.result}->'reviewHistory', '[]'::jsonb) || ${JSON.stringify([event])}::jsonb)`, updatedAt: resolvedAt }).where(eq(commercialTasks.id, task.id));
-    const taskInput = task.input as { projectId?: string; retry?: unknown };
     if (taskInput.projectId && !taskInput.retry) await tx.update(projects).set({ status: "failed", updatedAt: resolvedAt }).where(and(eq(projects.id, taskInput.projectId), eq(projects.userId, task.userId), eq(projects.status, "analyzing")));
   });
 }

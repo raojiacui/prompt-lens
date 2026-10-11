@@ -721,7 +721,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   it("releases only an undelivered analysis with audit and project closure", async () => {
     await grant();
     const [project] = await testDb.insert(schema.projects).values({ userId, title: "Undelivered", status: "analyzing" }).returning();
-    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "review", input: { projectId: project.id }, credits: 4, result: { review: { reason: "save_failed" }, successfulSceneIds: [] }, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "review", input: { projectId: project.id, pricing: { automaticSplit: false } }, credits: 4, result: { review: { reason: "save_failed" }, successfulSceneIds: [] }, expiresAt: new Date(Date.now() + 600_000) }).returning();
     const key = `commercial:${task.id}`;
     const { reservation } = await reserveCommercialTask({ userId, taskKey: key, credits: 4, rewrites: 0, quote: { projectId: project.id } });
     await client.query("UPDATE commercial_reservations SET created_at = now() - interval '25 hours' WHERE id = $1", [reservation.id]);
@@ -744,6 +744,29 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
       expect((await testDb.select().from(schema.commercialReservations).where(eq(schema.commercialReservations.id, reservation.id)))[0].state).toBe("held");
     }
     expect(await balance()).toMatchObject({ credits: 192, heldCredits: 8 });
+  });
+  it("checks durable scene delivery before releasing an inconsistent review", async () => {
+    await grant();
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Saved scene", status: "analyzing" }).returning();
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "review", input: { projectId: project.id, pricing: { automaticSplit: false } }, credits: 4, result: { review: {}, successfulSceneIds: [] }, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    const { reservation } = await reserveCommercialTask({ userId, taskKey: `commercial:${task.id}`, credits: 4, rewrites: 0, quote: {} });
+    await client.query("UPDATE commercial_reservations SET created_at = now() - interval '25 hours' WHERE id = $1", [reservation.id]);
+    const [version] = await testDb.insert(schema.projectVersions).values({ projectId: project.id, versionNumber: 0, label: "Original" }).returning();
+    const [scene] = await testDb.insert(schema.videoScenes).values({ projectId: project.id, sceneIndex: 1, startTime: 0, endTime: 5, duration: 5 }).returning();
+    await testDb.insert(schema.sceneVersions).values({ projectId: project.id, projectVersionId: version.id, originalSceneId: scene.id, sceneIndex: 1, duration: 5, generationPrompt: "Delivered result", metadata: { analysisProvider: "kie" } });
+    await expect(releaseUnfulfilledCommercialAnalysis({ reservationId: reservation.id, actorId: "admin-test", evidence: "Checked the complete delivery record" })).rejects.toThrow("DELIVERED_SCENE_EXISTS");
+    expect((await testDb.select().from(schema.commercialReservations).where(eq(schema.commercialReservations.id, reservation.id)))[0].state).toBe("held");
+    expect(await balance()).toMatchObject({ credits: 196, heldCredits: 4 });
+  });
+  it("keeps a saved automatic split held when the checkpoint omits delivery", async () => {
+    await grant();
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Saved split", status: "analyzing" }).returning();
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "review", input: { projectId: project.id, pricing: { automaticSplit: true } }, credits: 4, result: { review: {}, successfulSceneIds: [] }, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    const { reservation } = await reserveCommercialTask({ userId, taskKey: `commercial:${task.id}`, credits: 4, rewrites: 0, quote: {} });
+    await client.query("UPDATE commercial_reservations SET created_at = now() - interval '25 hours' WHERE id = $1", [reservation.id]);
+    await testDb.insert(schema.projectVersions).values({ projectId: project.id, versionNumber: 0, label: "Original" });
+    await expect(releaseUnfulfilledCommercialAnalysis({ reservationId: reservation.id, actorId: "admin-test", evidence: "Checked the complete delivery record" })).rejects.toThrow("DELIVERED_SPLIT_EXISTS");
+    expect((await testDb.select().from(schema.commercialReservations).where(eq(schema.commercialReservations.id, reservation.id)))[0].state).toBe("held");
   });
   it("edits a pending ticket without another wallet hold and rejects edits by other users or after review", async () => {
     const row = await paidOrder();
