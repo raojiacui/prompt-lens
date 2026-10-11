@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="390" viewBox="0 0 1280 390" role="img" aria-labelledby="title desc">
+  <title id="title">PromptLens V2 创作流程</title>
+  <desc id="desc">视频分析从上传或链接开始，经拆镜、选择镜头、提示词和改写进入做同款。文字、图片、参考视频三条生成链路均在报价后确认生成。本次录制止于费用确认页。</desc>
+  <style>
+    text{font-family:system-ui,"Microsoft YaHei",sans-serif;fill:#34231d} .label{font-size:19px;font-weight:600} .small{font-size:14px;fill:#806c60} .node{fill:#fffaf3;stroke:#decebf;stroke-width:1.5} .flow{fill:none;stroke:#d89970;stroke-width:3;stroke-dasharray:6 8;animation:travel 2s linear infinite} @keyframes travel{to{stroke-dashoffset:-56}} @media(prefers-reduced-motion:reduce){.flow{animation:none}}
+  </style>
+  <rect width="1280" height="390" rx="18" fill="#f5efe5"/>
+  <text x="30" y="40" font-size="25" font-weight="700">从参考素材，到自己的视频</text>
+  <text x="1250" y="38" text-anchor="end" class="small">PROMPTLENS V2 / 流程概览</text>
+  <path class="flow" d="M230 100H1050 M230 175H1050 M230 250H1050 M230 325H1050"/>
+  <g class="node"><rect x="30" y="73" width="200" height="54" rx="12"/><rect x="275" y="73" width="175" height="54" rx="12"/><rect x="495" y="73" width="190" height="54" rx="12"/><rect x="730" y="73" width="240" height="54" rx="12"/><rect x="1015" y="73" width="235" height="54" rx="12"/></g>
+  <g class="label" text-anchor="middle"><text x="130" y="107">上传 / 粘贴链接</text><text x="362" y="107">拆镜</text><text x="590" y="107">选择镜头分析</text><text x="850" y="107">提示词 / AI 改写</text><text x="1132" y="107">做同款 → 生成页</text></g>
+  <g class="node"><rect x="30" y="148" width="200" height="54" rx="12"/><rect x="275" y="148" width="410" height="54" rx="12"/><rect x="730" y="148" width="240" height="54" rx="12"/><rect x="1015" y="148" width="235" height="54" rx="12"/></g>
+  <g class="label" text-anchor="middle"><text x="130" y="182">文生视频</text><text x="480" y="182">文字提示词 + 模型与参数</text><text x="850" y="182">获取报价</text><text x="1132" y="182">确认后生成</text></g>
+  <g class="node"><rect x="30" y="223" width="200" height="54" rx="12"/><rect x="275" y="223" width="410" height="54" rx="12"/><rect x="730" y="223" width="240" height="54" rx="12"/><rect x="1015" y="223" width="235" height="54" rx="12"/></g>
+  <g class="label" text-anchor="middle"><text x="130" y="257">图生视频</text><text x="480" y="257">参考图片 + 动作描述</text><text x="850" y="257">获取报价</text><text x="1132" y="257">确认后生成</text></g>
+  <g class="node"><rect x="30" y="298" width="200" height="54" rx="12"/><rect x="275" y="298" width="410" height="54" rx="12"/><rect x="730" y="298" width="240" height="54" rx="12"/><rect x="1015" y="298" width="235" height="54" rx="12"/></g>
+  <g class="label" text-anchor="middle"><text x="130" y="332">参考视频 / 编辑</text><text x="480" y="332">上传片段 + 参考或编辑要求</text><text x="850" y="332">检测时长并报价</text><text x="1132" y="332">确认后生成</text></g>
+  <text x="1250" y="376" text-anchor="end" class="small">下方操作演示止于费用确认页；历史结果单独展示。</text>
+</svg>
