@@ -32,9 +32,10 @@ it("recovers stale tasks without duplicate dispatch and wakes queued tasks", asy
   mocks.dispatch.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
   const response = await GET(request("test-secret"));
   expect(await response.json()).toMatchObject({ scanned: 2, accepted: 1, recoveryErrors: [] });
-  expect(mocks.recoverWorkflow).toHaveBeenCalledWith({ dispatch: false });
-  expect(mocks.recoverCommercial).toHaveBeenCalledWith(undefined, { dispatch: false });
+  expect(mocks.recoverWorkflow).toHaveBeenCalledWith(expect.objectContaining({ dispatch: false, limit: 1, deadline: expect.any(Number) }));
+  expect(mocks.recoverCommercial).toHaveBeenCalledWith(undefined, expect.objectContaining({ dispatch: false, limit: 1, deadline: expect.any(Number) }));
   expect(mocks.dispatch.mock.calls.map(([id]) => id)).toEqual(["one", "two"]);
+  expect(mocks.dispatch.mock.invocationCallOrder[0]).toBeLessThan(mocks.recoverWorkflow.mock.invocationCallOrder[0]);
 });
 
 it("continues waking queued tasks when one recovery path fails", async () => {

@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { ANALYSIS_SAVE_STALE_TIMEOUT_MS, ANALYSIS_STALE_TIMEOUT_MS, AnalysisExecutionLost, executionCondition, lockAnalysisExecution } from "./analysis-execution";
 import { db, commercialLots, commercialTasks, projects, referenceVideos, projectVersions, videoScenes, sceneVersions } from "@/lib/db";
@@ -187,17 +187,20 @@ async function finishCommercialAnalysis(task: typeof commercialTasks.$inferSelec
   else await db.transaction(finish);
 }
 
-export async function recoverCommercialAnalysisTasks(taskId?: string, options: { dispatch?: boolean } = {}) {
+export async function recoverCommercialAnalysisTasks(taskId?: string, options: { dispatch?: boolean; limit?: number; deadline?: number } = {}) {
   if (!taskId) await db.update(commercialTasks).set({ state: "failed", result: { code: "PREVIEW_EXPIRED" }, updatedAt: new Date() }).where(and(eq(commercialTasks.kind, "analysis_preview"), sql`${commercialTasks.state} IN ('running', 'quoted')`, sql`${commercialTasks.expiresAt} < now()`));
   const runningCutoff = new Date(Date.now() - ANALYSIS_STALE_TIMEOUT_MS);
   const saveCutoff = new Date(Date.now() - ANALYSIS_SAVE_STALE_TIMEOUT_MS);
   const expired = sql`((${commercialTasks.state} IN ('running', 'review') AND (${commercialTasks.updatedAt} < ${runningCutoff.toISOString()}::timestamptz
     OR (${commercialTasks.updatedAt} < ${saveCutoff.toISOString()}::timestamptz AND ${commercialTasks.result}->'pendingResult' IS NOT NULL AND ${commercialTasks.result}->'pendingResult' <> 'null'::jsonb)))
     OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.updatedAt} < now() - interval '24 hours'))`;
-  const stale = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "analysis"), taskId ? eq(commercialTasks.id, taskId) : undefined, expired)).limit(taskId ? 1 : 10);
+  const stale = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "analysis"), taskId ? eq(commercialTasks.id, taskId) : undefined, expired, taskId ? undefined : sql`(${commercialTasks.result}->>'recoveryRetryAt' IS NULL OR (${commercialTasks.result}->>'recoveryRetryAt')::timestamptz <= now())`)).orderBy(asc(commercialTasks.updatedAt)).limit(taskId ? 1 : options.limit ?? 10);
   const resumed: string[] = [];
   for (const candidate of stale) {
+    if (options.deadline && Date.now() >= options.deadline) break;
+    try {
     await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT set_config('statement_timeout', '15s', true), set_config('lock_timeout', '5s', true)`);
     const [task] = await tx.update(commercialTasks).set({ state: "running", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionId: randomUUID() })}::jsonb`, updatedAt: new Date() }).where(and(eq(commercialTasks.id, candidate.id), expired)).returning();
     if (!task) return;
     const checkpoint = task.result as Record<string, unknown>;
@@ -249,6 +252,12 @@ export async function recoverCommercialAnalysisTasks(taskId?: string, options: {
       await finishCommercialAnalysis(task, successes, Boolean(progress.splitDelivered), successes.length > (input.retry?.previousSuccess.length || 0) ? "completed" : "failed", tx);
     }
     });
+    } catch (error) {
+      console.error("commercial.analysis.recovery_failed", { taskId: candidate.id, error });
+      try {
+        await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ recoveryRetryAt: new Date(Date.now() + 5 * 60_000).toISOString() })}::jsonb` }).where(and(eq(commercialTasks.id, candidate.id), eq(commercialTasks.state, candidate.state)));
+      } catch (recordError) { console.error("commercial.analysis.recovery_defer_failed", { taskId: candidate.id, error: recordError }); }
+    }
   }
   if (!taskId && options.dispatch !== false) for (const id of resumed) await dispatchQueuedAnalysis(id);
 }

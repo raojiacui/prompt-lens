@@ -220,15 +220,18 @@ export async function runAnalysisTask(id: string) {
   finally { await dispatchQueuedAnalysis(id); }
 }
 
-export async function recoverAnalysisTasks(options: { dispatch?: boolean } = {}) {
-  const abandoned = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "workflow_analysis"), sql`((${commercialTasks.state} = 'running' AND ${commercialTasks.updatedAt} < now() - ${LEASE_MS} * interval '1 millisecond') OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.expiresAt} < now()))`)).limit(20);
+export async function recoverAnalysisTasks(options: { dispatch?: boolean; limit?: number; deadline?: number } = {}) {
+  const abandoned = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "workflow_analysis"), sql`((${commercialTasks.state} = 'running' AND ${commercialTasks.updatedAt} < now() - ${LEASE_MS} * interval '1 millisecond') OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.expiresAt} < now()))`, sql`(${commercialTasks.result}->>'recoveryRetryAt' IS NULL OR (${commercialTasks.result}->>'recoveryRetryAt')::timestamptz <= now())`)).orderBy(asc(commercialTasks.updatedAt)).limit(options.limit ?? 20);
   for (const task of abandoned) {
+    if (options.deadline && Date.now() >= options.deadline) break;
+    try {
     if (task.state === "queued") {
       await settleAnalysisTask(task, { ...task.result as Progress, error: "任务已过期，已保留完成的镜头并退回未交付额度。" }, true);
       continue;
     }
     let resumed = false;
     await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT set_config('statement_timeout', '15s', true), set_config('lock_timeout', '5s', true)`);
       const [current] = await tx.select().from(commercialTasks).where(eq(commercialTasks.id, task.id)).for("update");
       if (!current || current.state !== "running" || current.updatedAt.getTime() >= Date.now() - LEASE_MS) return;
       const progress = current.result as Progress;
@@ -257,5 +260,11 @@ export async function recoverAnalysisTasks(options: { dispatch?: boolean } = {})
       resumed = true;
     });
     if (resumed && options.dispatch !== false) await dispatchQueuedAnalysis(task.id);
+    } catch (error) {
+      console.error("workflow.analysis.recovery_failed", { taskId: task.id, error });
+      try {
+        await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ recoveryRetryAt: new Date(Date.now() + 5 * 60_000).toISOString() })}::jsonb` }).where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, task.state)));
+      } catch (recordError) { console.error("workflow.analysis.recovery_defer_failed", { taskId: task.id, error: recordError }); }
+    }
   }
 }
