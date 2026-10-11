@@ -33,12 +33,24 @@ export async function GET(request: NextRequest, { params }: Context) {
   let task = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) });
   if (!task) return NextResponse.json({ code: "TASK_NOT_FOUND" }, { status: 404 });
   if (analysisNeedsRecovery(task)) {
-    await recoverCommercialAnalysisTasks(id);
-    task = (await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) }))!;
+    after(async () => {
+      try {
+        await recoverCommercialAnalysisTasks(id);
+        await runCommercialTask(id);
+      } catch (error) {
+        console.error("analysis.recovery.failed", { taskId: id, message: error instanceof Error ? error.message : "Unknown error" });
+      }
+    });
   }
   if (task.kind === "workflow_analysis" && ((task.state === "running" && task.updatedAt.getTime() < Date.now() - 6 * 60000) || (task.state === "queued" && task.expiresAt.getTime() < Date.now()))) {
-    await recoverAnalysisTasks();
-    task = (await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) }))!;
+    after(async () => {
+      try {
+        await recoverAnalysisTasks();
+        await runAnalysisTask(id);
+      } catch (error) {
+        console.error("workflow.analysis.recovery_failed", { taskId: id, message: error instanceof Error ? error.message : "Unknown error" });
+      }
+    });
   }
   if (task.state === "queued") after(() => task!.kind === "workflow_analysis" ? runAnalysisTask(id) : runCommercialTask(id));
   if (task.kind === "generation" && task.state === "running") {
@@ -51,7 +63,11 @@ export async function GET(request: NextRequest, { params }: Context) {
   const retryAvailable = task.kind === "analysis" && ["completed", "failed"].includes(task.state) && !result.nextTaskId && Boolean(result.assets) && success < (input.pricing?.scenes.length || 0);
   const totalScenes = task.kind === "workflow_analysis" ? (result.assets as { scenes?: unknown[] } | undefined)?.scenes?.length || 0 : input.retry?.sceneVersions.length ?? input.pricing?.scenes.length ?? 0;
   const completedScenes = task.kind === "workflow_analysis" ? Number(result.cursor || 0) : Array.isArray(result.finishedSceneIds) ? result.finishedSceneIds.length : 0;
-  const bundle = ["analysis", "workflow_analysis"].includes(task.kind) && (["completed", "failed"].includes(task.state) || completedScenes > 0) ? await commercialAnalysisBundle(task) : undefined;
+  let bundle: Awaited<ReturnType<typeof commercialAnalysisBundle>> | undefined;
+  if (["analysis", "workflow_analysis"].includes(task.kind) && (["completed", "failed"].includes(task.state) || completedScenes > 0)) {
+    try { bundle = await commercialAnalysisBundle(task); }
+    catch (error) { console.error("analysis.bundle.unavailable", { taskId: id, message: error instanceof Error ? error.message : "Unknown error" }); }
+  }
   const partial = task.kind === "workflow_analysis" ? Boolean(result.partial) : success > 0 && success < (input.pricing?.scenes.length || 0);
   const phase = task.kind === "analysis" ? !result.assets ? "preparing" : completedScenes < totalScenes ? "analyzing" : "saving" : undefined;
   const saveRecoveryPending = task.kind === "analysis" && task.state === "review" && Boolean(result.pendingResult);

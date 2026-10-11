@@ -16,6 +16,7 @@ const id = "22222222-2222-4222-8222-222222222222";
 const call = () => GET(new NextRequest(`http://localhost/api/commercial/tasks/${id}`), { params: Promise.resolve({ id }) });
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.after.mockImplementation(() => undefined);
   mocks.session.mockResolvedValue({ user: { id: "alice" } });
   mocks.find.mockResolvedValue({ id, userId: "alice", kind: "analysis", state: "running", updatedAt: new Date(), expiresAt: new Date(Date.now() + 60000), input: { pricing: { scenes: [1, 2] } }, result: { assets: { scenes: [1, 2] }, finishedSceneIds: ["1"], successfulSceneIds: ["1"] } });
   mocks.bundle.mockResolvedValue({ sceneVersions: [{ id: "completed-shot" }] });
@@ -42,12 +43,16 @@ it.each([[5, false], [7, true], [31, true]])("uses the shared six-minute inactiv
   const task = await mocks.find();
   mocks.find.mockResolvedValue({ ...task, updatedAt: new Date(Date.now() - Number(minutes) * 60000) });
   await call();
+  expect(mocks.recover).not.toHaveBeenCalled();
+  for (const [callback] of mocks.after.mock.calls) await callback();
   expect(mocks.recover).toHaveBeenCalledTimes(shouldRecover ? 1 : 0);
 });
 it.each([[30, false], [61, true]])("recovers a durable save checkpoint after %s seconds without waiting for inference timeout", async (seconds, shouldRecover) => {
   const task = await mocks.find();
   mocks.find.mockResolvedValue({ ...task, updatedAt: new Date(Date.now() - Number(seconds) * 1000), result: { ...task.result, pendingResult: { sceneId: "2", blueprint: {} } } });
   await call();
+  expect(mocks.recover).not.toHaveBeenCalled();
+  for (const [callback] of mocks.after.mock.calls) await callback();
   expect(mocks.recover).toHaveBeenCalledTimes(shouldRecover ? 1 : 0);
 });
 it.each([true, false])("reports whether a reviewed save can continue polling: %s", async pending => {
@@ -64,6 +69,14 @@ it("keeps returning terminal failed results even without completed scenes", asyn
   const task = await mocks.find();
   mocks.find.mockResolvedValue({ ...task, state: "failed", result: {} });
   expect((await (await call()).json()).bundle).toBeDefined();
+});
+it("keeps terminal task status readable when its bundle cannot be loaded", async () => {
+  const task = await mocks.find();
+  mocks.find.mockResolvedValue({ ...task, state: "completed" });
+  mocks.bundle.mockRejectedValue(new Error("Temporary database error"));
+  const response = await call();
+  expect(response.status).toBe(200);
+  expect(await response.json()).toMatchObject({ id, state: "completed" });
 });
 it("does not include analysis bundles in generation status", async () => {
   const task = await mocks.find();

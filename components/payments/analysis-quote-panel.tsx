@@ -157,6 +157,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     if (!taskId || completed.current) return;
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
+    let missingTerminalBundle = 0;
     async function poll() {
       try {
         const response = await fetch(`/api/commercial/tasks/${taskId}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
@@ -167,8 +168,15 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         setError("");
         setTaskProgress(previous => ({ ...previous, phase: data.phase || previous.phase, total: data.totalScenes ?? previous.total, finished: data.completedScenes ?? previous.finished }));
         if (data.bundle && !["completed", "failed"].includes(data.state)) onPartialRef.current?.(data.bundle);
-        if (["completed", "failed"].includes(data.state) && data.bundle && !completed.current) { completed.current = true; onCompleteRef.current(data.bundle); }
-        if (["completed", "failed"].includes(data.state) || (data.state === "review" && !data.saveRecoveryPending)) return;
+        if (["completed", "failed"].includes(data.state)) {
+          if (data.bundle && !completed.current) { completed.current = true; onCompleteRef.current(data.bundle); return; }
+          missingTerminalBundle++;
+          setError(zh ? "任务已结束，正在读取结果。" : "Task finished; loading results.");
+          if (missingTerminalBundle >= 5) {
+            setError(zh ? "结果暂时无法读取，请在账户任务中查看。" : "Results are temporarily unavailable. Check the task in your account.");
+            return;
+          }
+        }
       } catch { if (!controller.signal.aborted) setError(zh ? "查询暂时中断，任务仍保留在账户中。" : "Status temporarily unavailable. Your task remains in your account."); }
       if (!controller.signal.aborted) timer = setTimeout(poll, 4000);
     }
