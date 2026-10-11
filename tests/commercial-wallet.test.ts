@@ -725,11 +725,12 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const key = `commercial:${task.id}`;
     const { reservation } = await reserveCommercialTask({ userId, taskKey: key, credits: 4, rewrites: 0, quote: { projectId: project.id } });
     await client.query("UPDATE commercial_reservations SET created_at = now() - interval '25 hours' WHERE id = $1", [reservation.id]);
-    await releaseUnfulfilledCommercialAnalysis({ reservationId: reservation.id, actorId: "admin-test", evidence: "Confirmed no result was delivered" });
+    const competing = await Promise.allSettled(["admin-test", "second-admin"].map(actorId => releaseUnfulfilledCommercialAnalysis({ reservationId: reservation.id, actorId, evidence: "Confirmed no result was delivered" })));
+    expect(competing.map(result => result.status).sort()).toEqual(["fulfilled", "rejected"]);
     await expect(releaseUnfulfilledCommercialAnalysis({ reservationId: reservation.id, actorId: "admin-test", evidence: "Confirmed no result was delivered" })).rejects.toThrow("RESERVATION_NOT_ELIGIBLE");
     expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
     expect((await testDb.select().from(schema.projects).where(eq(schema.projects.id, project.id)))[0].status).toBe("failed");
-    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, task.id)))[0]).toMatchObject({ state: "failed", result: { reviewResolution: { action: "manual_full_release", actorId: "admin-test" }, reviewHistory: [{ action: "manual_full_release" }] } });
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, task.id)))[0]).toMatchObject({ state: "failed", result: { reviewResolution: { action: "manual_full_release" }, reviewHistory: [{ action: "manual_full_release" }] } });
     expect((await testDb.select().from(schema.commercialReservations).where(eq(schema.commercialReservations.id, reservation.id)))[0]).toMatchObject({ state: "settled", settledCredits: 0 });
     expect((await testDb.select().from(schema.commercialLedger).where(eq(schema.commercialLedger.eventKey, `review-release:${reservation.id}`))).length).toBe(1);
   });
