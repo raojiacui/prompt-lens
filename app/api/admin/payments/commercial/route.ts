@@ -4,6 +4,7 @@ import { getAdminUserFromHeaders } from "@/lib/auth";
 import { db, user, paymentOrders, commercialRefunds, commercialReservations, commercialWallets, commercialLedger, commercialTasks } from "@/lib/db";
 import { settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { commercialReadiness } from "@/lib/billing/commercial-readiness";
+import { canFullyReleaseTask } from "@/lib/billing/commercial-review";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 import { reconcileCommercialRefund, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
 
@@ -47,12 +48,16 @@ export async function POST(request: NextRequest) {
     if (!reservation || Date.now() - reservation.createdAt.getTime() < 86400000) return NextResponse.json({ error: "Reservation is not eligible for review" }, { status: 409 });
     try {
       await db.transaction(async (tx) => {
-        if (reservation.taskKey.startsWith("commercial:")) await tx.select().from(commercialTasks).where(eq(commercialTasks.id, reservation.taskKey.slice(11))).for("update");
+        let task: typeof commercialTasks.$inferSelect | undefined;
+        if (reservation.taskKey.startsWith("commercial:")) {
+          [task] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, reservation.taskKey.slice(11)), eq(commercialTasks.userId, reservation.userId))).for("update");
+          if (!canFullyReleaseTask(task)) throw new Error("TASK_NOT_ELIGIBLE_FOR_FULL_RELEASE");
+        }
         const current = await tx.query.commercialReservations.findFirst({ where: eq(commercialReservations.id, reservation.id) });
         if (current?.state !== "held") throw new Error("Reservation is no longer held");
         await settleCommercialTaskInTransaction(tx, { userId: reservation.userId, taskKey: reservation.taskKey, credits: 0, rewrites: 0 });
         await tx.insert(commercialLedger).values({ userId: reservation.userId, eventKey: `review-release:${reservation.id}`, credits: 0, rewrites: 0, metadata: { actorId: admin.id, evidence: body.evidence.trim(), reservationId: reservation.id } }).onConflictDoNothing();
-        if (reservation.taskKey.startsWith("commercial:")) await tx.update(commercialTasks).set({ state: "failed", result: sql`${commercialTasks.result} || '{"chargedCredits":0,"manualRelease":true}'::jsonb`, updatedAt: new Date() }).where(and(eq(commercialTasks.id, reservation.taskKey.slice(11)), eq(commercialTasks.userId, reservation.userId)));
+        if (task) await tx.update(commercialTasks).set({ state: "failed", result: sql`${commercialTasks.result} || ${JSON.stringify({ chargedCredits: 0, manualRelease: true, reviewResolution: { action: "manual_full_release", actorId: admin.id, at: new Date().toISOString() } })}::jsonb`, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
       });
       return NextResponse.json({ success: true });
     } catch { return NextResponse.json({ error: "Reservation changed; refresh before reviewing" }, { status: 409 }); }
