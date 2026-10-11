@@ -27,7 +27,6 @@ export async function GET(request: NextRequest) {
   if (commercialConsumptionEnabled()) {
     const generation = await db.select({ id: commercialTasks.id }).from(commercialTasks).where(and(eq(commercialTasks.kind, "generation"), eq(commercialTasks.state, "running"))).orderBy(sql`COALESCE((${commercialTasks.result}->>'queryAfter')::bigint, 0)`, asc(commercialTasks.updatedAt)).limit(3);
     for (const task of generation) { try { await reconcileCommercialGeneration(task.id); } catch { /* Leave an uncertain provider result reserved. */ } }
-    await db.update(commercialTasks).set({ state: "review", updatedAt: new Date() }).where(and(eq(commercialTasks.state, "running"), sql`${commercialTasks.createdAt} < now() - interval '24 hours'`));
   }
   const [queued] = await db.select({ id: commercialTasks.id, kind: commercialTasks.kind }).from(commercialTasks).where(and(
     eq(commercialTasks.state, "queued"),
