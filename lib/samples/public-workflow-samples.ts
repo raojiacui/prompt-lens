@@ -11,7 +11,7 @@ export const PUBLIC_WORKFLOW_SAMPLES = [
   },
   {
     id: "e3a4aa5b-976d-4dd7-a906-c818f55c4a54",
-    title: "猫咪牛仔",
+    title: "动物城邦",
   },
 ] as const;
 
