@@ -701,6 +701,8 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await runCommercialTask(uncertain.id);
     await runCommercialTask(uncertain.id);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [reviewTask] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, uncertain.id));
+    expect(reviewTask).toMatchObject({ state: "review", result: { review: { reason: "provider_unknown", action: "manual_reconciliation", reservedCredits: 29 }, reviewHistory: [{ action: "entered_review", reason: "provider_unknown" }] } });
     expect(await balance()).toMatchObject({ credits: 171, heldCredits: 29 });
   });
   it("edits a pending ticket without another wallet hold and rejects edits by other users or after review", async () => {

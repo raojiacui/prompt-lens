@@ -55,7 +55,13 @@ export async function runCommercialTask(taskId: string) {
     console.error("commercial.task.failed", diagnostic);
     // Preserve funds and durable results for reconciliation. Never resubmit unknown inference.
     try {
-      await db.update(commercialTasks).set({ state: "review", result: sql`${commercialTasks.result} || ${JSON.stringify({ code: "TASK_REQUIRES_RECONCILIATION", diagnostic })}::jsonb`, updatedAt: new Date() }).where(task.kind === "analysis" ? executionCondition(task) : and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, "running")));
+      const failedAt = new Date();
+      const reason = task.kind === "generation" && !task.providerTaskId ? "provider_unknown"
+        : /^ANALYSIS_CHECKPOINT_/.test(error instanceof Error ? error.message : "") ? "checkpoint_invalid"
+        : progress.executionPhase === "saving_result" ? "save_failed" : "manual_required";
+      const review = { reason, enteredAt: failedAt.toISOString(), nextActionAt: new Date(failedAt.getTime() + 5 * 60_000).toISOString(), deadlineAt: new Date(failedAt.getTime() + 24 * 60 * 60_000).toISOString(), action: task.kind === "analysis" ? "automatic_recovery" : "manual_reconciliation", executionId: progress.executionId || null, reservedCredits: task.credits };
+      const event = { at: failedAt.toISOString(), action: "entered_review", reason, executionId: progress.executionId || null };
+      await db.update(commercialTasks).set({ state: "review", result: sql`jsonb_set(${commercialTasks.result} || ${JSON.stringify({ code: "TASK_REQUIRES_RECONCILIATION", diagnostic, review })}::jsonb, '{reviewHistory}', COALESCE(${commercialTasks.result}->'reviewHistory', '[]'::jsonb) || ${JSON.stringify([event])}::jsonb)`, updatedAt: failedAt }).where(task.kind === "analysis" ? executionCondition(task) : and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, "running")));
     } catch (saveError) {
       console.error("commercial.task.diagnostic_save_failed", { taskId: task.id, error: taskErrorDetails(saveError) });
       throw saveError;
