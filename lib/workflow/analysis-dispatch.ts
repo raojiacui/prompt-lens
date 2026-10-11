@@ -4,11 +4,11 @@ import { commercialTasks, db } from "@/lib/db";
 function dispatchBaseUrl() {
   const raw = process.env.NODE_ENV === "production"
     ? process.env.COMMERCIAL_RECONCILIATION_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "")
-    : process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "";
+    : process.env.LOCAL_ANALYSIS_BASE_URL || `http://127.0.0.1:${process.env.PORT || "3000"}`;
   if (!raw) return null;
   try {
     const url = new URL(raw);
-    if (url.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && url.hostname === "localhost")) return null;
+    if (url.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && ["localhost", "127.0.0.1"].includes(url.hostname))) return null;
     return url;
   } catch { return null; }
 }
