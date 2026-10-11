@@ -36,6 +36,15 @@ describe("scene analysis response compatibility", () => {
     expect(result.metadata?.fallbackReason).toBe("KIE API error (524)");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+  it("retries one platform network failure", async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockRejectedValueOnce(new TypeError("fetch failed"))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(response) } }] })));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await analyzeSceneBlueprint({ ...input, analysisKeySource: "platform", analysisApiKey: "test-key" });
+    expect(result.metadata?.analysisProvider).toBe("kie");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
   it("preserves the underlying connection failure without another inference request", async () => {
     const cause = Object.assign(new Error("connect timeout"), { code: "UND_ERR_CONNECT_TIMEOUT" });
     const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed", { cause }));

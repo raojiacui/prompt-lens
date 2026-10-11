@@ -181,8 +181,10 @@ async function callAnalysisChatJson(params: {
     content = await request();
   } catch (error) {
     const platformKey = params.forceFreeTrialKie || (params.keySource ?? params.selection?.analysisKeySource) === "platform";
-    if (!(error instanceof KieRequestError) || error.status !== 524 || !platformKey) throw error;
-    console.warn("kie.analysis.gateway_retry", { modelId: selected.modelId, status: error.status });
+    const gatewayTimeout = error instanceof KieRequestError && error.status === 524;
+    const networkFailure = error instanceof TypeError && error.message === "fetch failed";
+    if (!platformKey || (!gatewayTimeout && !networkFailure)) throw error;
+    console.warn("kie.analysis.transport_retry", { modelId: selected.modelId, reason: gatewayTimeout ? "gateway_timeout" : "network_failure" });
     content = await request();
   }
   return { json: parseJsonObject(content), ...selected };
