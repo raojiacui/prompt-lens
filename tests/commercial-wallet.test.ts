@@ -27,6 +27,7 @@ import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercia
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
+import { escalateOverdueCommercialReviews } from "@/lib/billing/commercial-review";
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
 import { createAlipayCreditCheckout, settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION, settleAnalysis, type AnalysisPriceInput } from "@/lib/billing/pricing-v6";
@@ -704,6 +705,18 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const [reviewTask] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, uncertain.id));
     expect(reviewTask).toMatchObject({ state: "review", result: { review: { reason: "provider_unknown", action: "manual_reconciliation", reservedCredits: 29 }, reviewHistory: [{ action: "entered_review", reason: "provider_unknown" }] } });
     expect(await balance()).toMatchObject({ credits: 171, heldCredits: 29 });
+  });
+  it("escalates overdue reviews once without changing task or wallet settlement", async () => {
+    await grant();
+    const [overdue] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "generation", state: "review", input: {}, credits: 29, result: { review: { reason: "provider_unknown", deadlineAt: new Date(Date.now() - 60_000).toISOString() } }, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    const [fresh] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "review", input: {}, credits: 3, result: { review: { reason: "save_failed", deadlineAt: new Date(Date.now() + 60_000).toISOString() } }, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    expect(await escalateOverdueCommercialReviews()).toBe(1);
+    expect(await escalateOverdueCommercialReviews()).toBe(0);
+    const [current] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, overdue.id));
+    expect(current).toMatchObject({ state: "review", result: { review: { reason: "provider_unknown", action: "manual_reconciliation", reservedCredits: 29 }, reviewHistory: [{ action: "escalated_for_manual_reconciliation" }] } });
+    expect((current.result as { reviewHistory: unknown[] }).reviewHistory).toHaveLength(1);
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, fresh.id)))[0].result).not.toHaveProperty("reviewHistory");
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
   });
   it("edits a pending ticket without another wallet hold and rejects edits by other users or after review", async () => {
     const row = await paidOrder();

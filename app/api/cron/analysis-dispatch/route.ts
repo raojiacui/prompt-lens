@@ -5,6 +5,7 @@ import { commercialTasks, db } from "@/lib/db";
 import { commercialConsumptionEnabled, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { recoverAnalysisTasks } from "@/lib/workflow/analysis-tasks";
 import { dispatchQueuedAnalysis } from "@/lib/workflow/analysis-dispatch";
+import { escalateOverdueCommercialReviews } from "@/lib/billing/commercial-review";
 
 export const maxDuration = 300;
 
@@ -34,6 +35,10 @@ export async function GET(request: NextRequest) {
   }));
   const accepted = dispatched.filter(Boolean).length;
   const recoveryErrors: string[] = [];
+  if (commercialConsumptionEnabled()) {
+    try { await escalateOverdueCommercialReviews(5); }
+    catch (error) { console.error("analysis.dispatch_cron.review_escalation_failed", error); recoveryErrors.push("review_escalation"); }
+  }
   const deadline = Date.now() + 40_000;
   try { await recoverAnalysisTasks({ dispatch: false, limit: 1, deadline }); }
   catch (error) {
