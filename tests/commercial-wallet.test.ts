@@ -18,7 +18,7 @@ vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
   refundAlipayTrade: vi.fn(),
   queryAlipayRefund: vi.fn(),
 }));
-import { rewriteSceneBlueprint, analyzeSceneBlueprint } from "@/lib/workflow/scene-analysis";
+import { rewriteSceneBlueprint, analyzeSceneBlueprint, buildFallbackSceneBlueprint } from "@/lib/workflow/scene-analysis";
 import { assertOwnedUploadedVideo, isOwnedLinkedVideo, commercialMediaRequest } from "@/lib/billing/commercial-media";
 import { getUserKieApiKey } from "@/lib/byok/kie";
 import { copyR2Object } from "@/lib/cloudflare/r2";
@@ -29,7 +29,7 @@ import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
 import { createAlipayCreditCheckout, settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
-import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
+import { PRICING_VERSION, settleAnalysis, type AnalysisPriceInput } from "@/lib/billing/pricing-v6";
 import { reconcileCommercialRefund, requestCommercialRefund, updateCommercialRefundRequest, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
 import { queryAlipayRefund, queryAlipayTrade, refundAlipayTrade, closeAlipayTrade } from "@/lib/payments/alipay";
 import { ALIPAY_EXPIRY_VERSION } from "@/lib/payments/order-expiry";
@@ -586,8 +586,44 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(2);
     const versions = await testDb.query.sceneVersions.findMany({ orderBy: [schema.sceneVersions.sceneIndex] });
     expect(versions.map(version => (version.metadata as Record<string, unknown>).analysisProvider)).toEqual(["kie", "fallback", "kie"]);
-    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0]).toMatchObject({ state: "completed" });
-    expect((await balance()).heldCredits).toBe(0);
+    expect(versions[1].metadata).toMatchObject({ failureCode: "ANALYSIS_INTERRUPTED", providerOutcome: "unknown" });
+    const [completed] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+    const charged = settleAnalysis((completed.input as { pricing: AnalysisPriceInput }).pricing, ["1", "3"], true);
+    expect(completed).toMatchObject({ state: "completed", result: { successfulSceneIds: ["1", "3"], finishedSceneIds: ["1", "2", "3"], chargedCredits: charged, totalChargedCredits: charged } });
+    expect(await balance()).toMatchObject({ credits: 200 - charged, heldCredits: 0 });
+    const [reservation] = await testDb.select().from(schema.commercialReservations).where(eq(schema.commercialReservations.taskKey, `commercial:${quote.id}`));
+    expect(reservation).toMatchObject({ state: "settled", settledCredits: charged });
+    const settlement = await testDb.select().from(schema.commercialLedger).where(eq(schema.commercialLedger.eventKey, `settle:${reservation.id}`));
+    expect(settlement).toMatchObject([{ credits: -charged }]);
+    await recoverCommercialAnalysisTasks();
+    await runCommercialTask(quote.id);
+    expect(await balance()).toMatchObject({ credits: 200 - charged, heldCredits: 0 });
+    expect(await testDb.select().from(schema.commercialLedger).where(eq(schema.commercialLedger.eventKey, `settle:${reservation.id}`))).toHaveLength(1);
+  });
+  it("does not charge or repeat a KIE unknown fallback saved by the normal analysis path", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Unknown provider result" }).returning();
+    const interval = { id: "1", startUs: 0, endUs: 5_000_000 };
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 5_000_000, bytes: 500, metadata: {}, scenes: [interval] });
+    const preview = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/a.mp4", mediaName: "a", automaticSplit: false });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preview.id, sceneIds: ["1"], payer: "platform", model: "flash", outputLanguage: "zh" });
+    await confirmCommercialTask(userId, quote.id);
+    const scene = { sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] };
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [scene] });
+    vi.mocked(analyzeSceneBlueprint).mockResolvedValueOnce({ ...buildFallbackSceneBlueprint(scene, "KIE response interrupted"), metadata: { analysisProvider: "fallback", providerOutcome: "unknown", failureCode: "KIE_OUTCOME_UNKNOWN" } });
+    await drain(quote.id);
+    await runCommercialTask(quote.id);
+    expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(1);
+    const [version] = await testDb.select().from(schema.sceneVersions);
+    expect(version.metadata).toMatchObject({ analysisProvider: "fallback", providerOutcome: "unknown", failureCode: "KIE_OUTCOME_UNKNOWN" });
+    const [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+    expect(task).toMatchObject({ state: "failed", result: { successfulSceneIds: [], chargedCredits: 0 } });
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+    const [reservation] = await testDb.select().from(schema.commercialReservations).where(eq(schema.commercialReservations.taskKey, `commercial:${quote.id}`));
+    expect(reservation).toMatchObject({ state: "settled", settledCredits: 0 });
+    expect(await testDb.select().from(schema.commercialLedger).where(eq(schema.commercialLedger.eventKey, `settle:${reservation.id}`))).toMatchObject([{ credits: 0 }]);
   });
   it.each([false, true])("discards late paid analysis results after settlement (retry=%s)", async (retry) => {
     await grant();
