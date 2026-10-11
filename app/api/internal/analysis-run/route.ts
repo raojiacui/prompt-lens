@@ -17,12 +17,19 @@ export async function POST(request: NextRequest) {
   }
   const body = await request.json().catch(() => null);
   if (typeof body?.taskId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.taskId)) return NextResponse.json({ error: "Invalid task" }, { status: 400 });
-  let task = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, body.taskId) });
-  if (task && analysisNeedsRecovery(task)) {
-    await recoverCommercialAnalysisTasks(task.id);
-    task = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, body.taskId) });
-  }
-  if (!task || task.state !== "queued" || !["analysis", "workflow_analysis"].includes(task.kind)) return NextResponse.json({ state: "not_queued" });
-  after(() => task.kind === "workflow_analysis" ? runAnalysisTask(task.id) : runCommercialTask(task.id));
+  after(async () => {
+    try {
+      let task = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, body.taskId) });
+      if (task && analysisNeedsRecovery(task)) {
+        await recoverCommercialAnalysisTasks(task.id);
+        task = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, body.taskId) });
+      }
+      if (!task || task.state !== "queued" || !["analysis", "workflow_analysis"].includes(task.kind)) return;
+      if (task.kind === "workflow_analysis") await runAnalysisTask(task.id);
+      else await runCommercialTask(task.id);
+    } catch (error) {
+      console.error("analysis.run.failed", { taskId: body.taskId, message: error instanceof Error ? error.message : "Unknown error" });
+    }
+  });
   return NextResponse.json({ state: "scheduled" });
 }
