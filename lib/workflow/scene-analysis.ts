@@ -175,19 +175,13 @@ async function callAnalysisChatJson(params: {
     { role: "user", content: params.content },
   ];
 
-  const request = () => requestKieChat({ apiKey, modelId: selected.modelId, messages, timeoutMs: DEFAULT_KIE_ANALYSIS_TIMEOUT_MS });
-  let content: string;
-  try {
-    content = await request();
-  } catch (error) {
-    const platformKey = params.forceFreeTrialKie || (params.keySource ?? params.selection?.analysisKeySource) === "platform";
-    const gatewayTimeout = error instanceof KieRequestError && error.status === 524;
-    const networkFailure = error instanceof TypeError && error.message === "fetch failed";
-    if (!platformKey || (!gatewayTimeout && !networkFailure)) throw error;
-    console.warn("kie.analysis.transport_retry", { modelId: selected.modelId, reason: gatewayTimeout ? "gateway_timeout" : "network_failure" });
-    content = await request();
-  }
+  const content = await requestKieChat({ apiKey, modelId: selected.modelId, messages, timeoutMs: DEFAULT_KIE_ANALYSIS_TIMEOUT_MS });
   return { json: parseJsonObject(content), ...selected };
+}
+
+function unknownKieOutcome(error: unknown) {
+  return (error instanceof KieRequestError && (error.status === 524 || /KIE_ANALYSIS_TIMEOUT|streaming response was interrupted/i.test(error.message)))
+    || (error instanceof TypeError && error.message === "fetch failed");
 }
 
 export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason = "Analysis failed", audioContext?: SceneAudioContext, _language?: "zh" | "en"): SceneBlueprintDraft {
@@ -278,7 +272,7 @@ export async function analyzeSceneBlueprint(params: {
     return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority } };
   } catch (error) {
     const fallback = buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "Scene analysis failed", params.context.audio, outputLanguage(params.outputLanguage));
-    return { ...fallback, metadata: { ...fallback.metadata, analysisError: taskErrorDetails(error) } };
+    return { ...fallback, metadata: { ...fallback.metadata, analysisError: taskErrorDetails(error), ...(unknownKieOutcome(error) ? { providerOutcome: "unknown", failureCode: "KIE_OUTCOME_UNKNOWN" } : {}) } };
   }
 }
 
@@ -329,7 +323,8 @@ export async function analyzeImageBlueprint(params: {
     const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider, outputLanguage(params.outputLanguage));
     return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority, mediaType: "image" } };
   } catch (error) {
-    return buildFallbackImageBlueprint(params.scene, error instanceof Error ? error.message : "Image analysis failed");
+    const fallback = buildFallbackImageBlueprint(params.scene, error instanceof Error ? error.message : "Image analysis failed");
+    return { ...fallback, metadata: { ...fallback.metadata, analysisError: taskErrorDetails(error), ...(unknownKieOutcome(error) ? { providerOutcome: "unknown", failureCode: "KIE_OUTCOME_UNKNOWN" } : {}) } };
   }
 }
 

@@ -20,14 +20,13 @@ function mock(value: unknown) {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("scene analysis response compatibility", () => {
-  it("retries one KIE 524 for a platform-paid scene", async () => {
+  it("does not repeat a platform-paid scene after an ambiguous KIE 524", async () => {
     const fetchMock = vi.fn<typeof fetch>()
-      .mockResolvedValueOnce(new Response("gateway timeout", { status: 524 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(response) } }] })));
+      .mockResolvedValue(new Response("gateway timeout", { status: 524 }));
     vi.stubGlobal("fetch", fetchMock);
     const result = await analyzeSceneBlueprint({ ...input, analysisKeySource: "platform", analysisApiKey: "test-key" });
-    expect(result.metadata).toMatchObject({ analysisProvider: "kie" });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.metadata).toMatchObject({ analysisProvider: "fallback", providerOutcome: "unknown", failureCode: "KIE_OUTCOME_UNKNOWN" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
   it("does not repeat a KIE 524 when the user supplies the key", async () => {
     const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response("gateway timeout", { status: 524 }));
@@ -36,14 +35,13 @@ describe("scene analysis response compatibility", () => {
     expect(result.metadata?.fallbackReason).toBe("KIE API error (524)");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
-  it("retries one platform network failure", async () => {
+  it("does not repeat an ambiguous platform network failure", async () => {
     const fetchMock = vi.fn<typeof fetch>()
-      .mockRejectedValueOnce(new TypeError("fetch failed"))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(response) } }] })));
+      .mockRejectedValue(new TypeError("fetch failed"));
     vi.stubGlobal("fetch", fetchMock);
     const result = await analyzeSceneBlueprint({ ...input, analysisKeySource: "platform", analysisApiKey: "test-key" });
-    expect(result.metadata?.analysisProvider).toBe("kie");
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.metadata).toMatchObject({ analysisProvider: "fallback", providerOutcome: "unknown" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
   it("preserves the underlying connection failure without another inference request", async () => {
     const cause = Object.assign(new Error("connect timeout"), { code: "UND_ERR_CONNECT_TIMEOUT" });
