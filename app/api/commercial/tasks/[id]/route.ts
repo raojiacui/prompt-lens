@@ -33,7 +33,7 @@ export async function GET(request: NextRequest, { params }: Context) {
   let task = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) });
   if (!task) return NextResponse.json({ code: "TASK_NOT_FOUND" }, { status: 404 });
   if (analysisNeedsRecovery(task)) {
-    await recoverCommercialAnalysisTasks();
+    await recoverCommercialAnalysisTasks(id);
     task = (await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) }))!;
   }
   if (task.kind === "workflow_analysis" && ((task.state === "running" && task.updatedAt.getTime() < Date.now() - 6 * 60000) || (task.state === "queued" && task.expiresAt.getTime() < Date.now()))) {

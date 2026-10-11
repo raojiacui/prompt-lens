@@ -452,8 +452,8 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
       expect(task.result).toMatchObject({ pendingResult: { sceneId: "4", blueprint: { generationPrompt: "Fourth model result" } } });
       transaction.mockRestore();
       await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '61 seconds' WHERE id = $1", [quote.id]);
-      await recoverCommercialAnalysisTasks();
-      await recoverCommercialAnalysisTasks();
+      await recoverCommercialAnalysisTasks(quote.id);
+      await recoverCommercialAnalysisTasks(quote.id);
       await runCommercialTask(quote.id);
       expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(4);
       const [saved] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));

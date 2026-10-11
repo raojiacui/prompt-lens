@@ -1,8 +1,10 @@
 import crypto from "node:crypto";
 import { after, NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { commercialTasks, db } from "@/lib/db";
 import { runCommercialTask } from "@/lib/billing/commercial-task-runner";
+import { recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
+import { analysisNeedsRecovery } from "@/lib/billing/analysis-execution";
 import { runAnalysisTask } from "@/lib/workflow/analysis-tasks";
 
 export const maxDuration = 300;
@@ -15,8 +17,12 @@ export async function POST(request: NextRequest) {
   }
   const body = await request.json().catch(() => null);
   if (typeof body?.taskId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.taskId)) return NextResponse.json({ error: "Invalid task" }, { status: 400 });
-  const task = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, body.taskId), eq(commercialTasks.state, "queued")) });
-  if (!task || !["analysis", "workflow_analysis"].includes(task.kind)) return NextResponse.json({ state: "not_queued" });
+  let task = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, body.taskId) });
+  if (task && analysisNeedsRecovery(task)) {
+    await recoverCommercialAnalysisTasks(task.id);
+    task = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, body.taskId) });
+  }
+  if (!task || task.state !== "queued" || !["analysis", "workflow_analysis"].includes(task.kind)) return NextResponse.json({ state: "not_queued" });
   after(() => task.kind === "workflow_analysis" ? runAnalysisTask(task.id) : runCommercialTask(task.id));
   return NextResponse.json({ state: "scheduled" });
 }

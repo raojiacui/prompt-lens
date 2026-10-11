@@ -187,14 +187,14 @@ async function finishCommercialAnalysis(task: typeof commercialTasks.$inferSelec
   else await db.transaction(finish);
 }
 
-export async function recoverCommercialAnalysisTasks() {
-  await db.update(commercialTasks).set({ state: "failed", result: { code: "PREVIEW_EXPIRED" }, updatedAt: new Date() }).where(and(eq(commercialTasks.kind, "analysis_preview"), sql`${commercialTasks.state} IN ('running', 'quoted')`, sql`${commercialTasks.expiresAt} < now()`));
+export async function recoverCommercialAnalysisTasks(taskId?: string) {
+  if (!taskId) await db.update(commercialTasks).set({ state: "failed", result: { code: "PREVIEW_EXPIRED" }, updatedAt: new Date() }).where(and(eq(commercialTasks.kind, "analysis_preview"), sql`${commercialTasks.state} IN ('running', 'quoted')`, sql`${commercialTasks.expiresAt} < now()`));
   const runningCutoff = new Date(Date.now() - ANALYSIS_STALE_TIMEOUT_MS);
   const saveCutoff = new Date(Date.now() - ANALYSIS_SAVE_STALE_TIMEOUT_MS);
   const expired = sql`((${commercialTasks.state} IN ('running', 'review') AND (${commercialTasks.updatedAt} < ${runningCutoff}
     OR (${commercialTasks.updatedAt} < ${saveCutoff} AND ${commercialTasks.result}->'pendingResult' IS NOT NULL AND ${commercialTasks.result}->'pendingResult' <> 'null'::jsonb)))
     OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.updatedAt} < now() - interval '24 hours'))`;
-  const stale = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "analysis"), expired)).limit(10);
+  const stale = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "analysis"), taskId ? eq(commercialTasks.id, taskId) : undefined, expired)).limit(taskId ? 1 : 10);
   const resumed: string[] = [];
   for (const candidate of stale) {
     await db.transaction(async (tx) => {
@@ -250,7 +250,7 @@ export async function recoverCommercialAnalysisTasks() {
     }
     });
   }
-  for (const id of resumed) await dispatchQueuedAnalysis(id);
+  if (!taskId) for (const id of resumed) await dispatchQueuedAnalysis(id);
 }
 
 export async function commercialAnalysisBundle(task: typeof commercialTasks.$inferSelect) {
