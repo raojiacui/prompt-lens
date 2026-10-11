@@ -14,12 +14,23 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, Math.min(100000, Math.floor(Number(request.nextUrl.searchParams.get("page")) || 1)));
   const [counts] = await db.select({ total: sql<number>`count(*)::int` }).from(commercialRefunds).where(inArray(commercialRefunds.state, ["requested", "processing", "review"]));
   if (request.nextUrl.searchParams.get("countOnly") === "1") return NextResponse.json({ total: counts.total }, { headers: { "Cache-Control": "private, no-store" } });
+  const reviewFilter = and(eq(commercialTasks.state, "review"), inArray(commercialTasks.kind, ["analysis", "generation"]));
+  const [reviewCount] = await db.select({ total: sql<number>`count(*)::int` }).from(commercialTasks).where(reviewFilter);
+  const reviewRows = await db.select({ id: commercialTasks.id, userId: commercialTasks.userId, kind: commercialTasks.kind, result: commercialTasks.result, updatedAt: commercialTasks.updatedAt, reservedCredits: commercialReservations.credits })
+    .from(commercialTasks)
+    .leftJoin(commercialReservations, and(eq(commercialReservations.taskKey, sql`'commercial:' || ${commercialTasks.id}::text`), eq(commercialReservations.state, "held")))
+    .where(reviewFilter)
+    .orderBy(asc(commercialTasks.updatedAt)).limit(50);
+  const taskReviews = reviewRows.map(row => {
+    const review = (row.result as { review?: { reason?: string; action?: string; deadlineAt?: string; nextActionAt?: string } }).review;
+    return { id: row.id, userId: row.userId, kind: row.kind, reason: review?.reason || "legacy_review", action: review?.action || "manual_reconciliation", deadlineAt: review?.deadlineAt || null, nextActionAt: review?.nextActionAt || null, reservedCredits: row.reservedCredits ?? 0, updatedAt: row.updatedAt };
+  });
   const refunds = await db.select({ id: commercialRefunds.id, orderId: commercialRefunds.orderId, userId: commercialRefunds.userId, email: user.email, name: user.name, packageName: paymentOrders.packageName, state: commercialRefunds.state, reason: commercialRefunds.reason, contact: sql<string>`${commercialRefunds.evidence}->>'contact'`, amountCents: paymentOrders.amountCents, createdAt: commercialRefunds.createdAt }).from(commercialRefunds).innerJoin(paymentOrders, eq(paymentOrders.id, commercialRefunds.orderId)).leftJoin(user, eq(user.id, commercialRefunds.userId)).where(inArray(commercialRefunds.state, ["requested", "processing", "review"])).orderBy(asc(commercialRefunds.createdAt), asc(commercialRefunds.id)).limit(refundView ? 20 : 100).offset(refundView ? (page - 1) * 20 : 0);
-  if (refundView) return NextResponse.json({ refunds, total: counts.total, page }, { headers: { "Cache-Control": "private, no-store" } });
+  if (refundView) return NextResponse.json({ refunds, taskReviews, taskReviewTotal: reviewCount.total, total: counts.total, page }, { headers: { "Cache-Control": "private, no-store" } });
   const orders = await db.select({ id: paymentOrders.id, userId: paymentOrders.userId, amountCents: paymentOrders.amountCents, status: paymentOrders.status, createdAt: paymentOrders.createdAt, reconciliation: sql<string>`${paymentOrders.metadata}->>'reconciliation'` }).from(paymentOrders).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"))).orderBy(asc(paymentOrders.createdAt)).limit(100);
   const tasks = await db.select({ id: commercialReservations.id, userId: commercialReservations.userId, taskKey: commercialReservations.taskKey, credits: commercialReservations.credits, rewrites: commercialReservations.rewrites, createdAt: commercialReservations.createdAt }).from(commercialReservations).where(and(eq(commercialReservations.state, "held"), sql`${commercialReservations.createdAt} < now() - interval '24 hours'`)).orderBy(asc(commercialReservations.createdAt)).limit(100);
   const frozen = await db.select({ userId: commercialWallets.userId }).from(commercialWallets).where(eq(commercialWallets.frozen, true)).limit(100);
-  return NextResponse.json({ orders, refunds, tasks, frozen, readiness: commercialReadiness() }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ orders, refunds, tasks, taskReviews, taskReviewTotal: reviewCount.total, frozen, readiness: commercialReadiness() }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function POST(request: NextRequest) {

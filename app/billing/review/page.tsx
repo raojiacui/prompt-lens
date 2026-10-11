@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
-type Review = { orders: { id: string; userId: string; amountCents: number; reconciliation: string | null }[]; refunds: { id: string; orderId: string; userId: string; email?: string | null; name?: string | null; packageName?: string; createdAt?: string; state: string; reason: string; contact: string | null; amountCents: number }[]; tasks: { id: string; userId: string; credits: number; rewrites: number }[]; frozen: { userId: string }[] };
+type Review = { orders: { id: string; userId: string; amountCents: number; reconciliation: string | null }[]; refunds: { id: string; orderId: string; userId: string; email?: string | null; name?: string | null; packageName?: string; createdAt?: string; state: string; reason: string; contact: string | null; amountCents: number }[]; tasks: { id: string; userId: string; credits: number; rewrites: number }[]; taskReviews: { id: string; userId: string; kind: string; reason: string; action: string; deadlineAt: string | null; nextActionAt: string | null; reservedCredits: number; updatedAt: string }[]; taskReviewTotal: number; frozen: { userId: string }[] };
+const reviewReasons: Record<string, [string, string]> = { save_failed: ["保存结果失败", "Result save failed"], settlement_failed: ["结算失败", "Settlement failed"], provider_unknown: ["供应商结果待确认", "Provider result unconfirmed"], checkpoint_invalid: ["任务检查点异常", "Task checkpoint invalid"], manual_required: ["需要人工核对", "Manual review required"], legacy_review: ["历史异常待核对", "Legacy task needs review"] };
 export default function CommercialReviewPage() {
   const zh = useLocale() === "zh";
   const [data, setData] = useState<Review | null>(null);
@@ -57,6 +58,18 @@ export default function CommercialReviewPage() {
     {error && <p role="alert" className="mt-5 text-red-700">{error}</p>}
     {notice && <p role="status" className="mt-5 text-sm">{notice}</p>}
     {data && <>
+      <section className="mt-8 space-y-3" aria-label={zh ? "异常任务" : "Tasks requiring reconciliation"}>
+        <h2 className="text-lg font-semibold">{zh ? "异常任务待核对" : "Tasks requiring reconciliation"} ({data.taskReviewTotal || 0})</h2>
+        {!data.taskReviews?.length && <p className="text-sm text-muted-foreground">{zh ? "暂无异常任务" : "No tasks requiring reconciliation"}</p>}
+        {data.taskReviews?.map(task => <div key={task.id} className="rounded-lg border border-border p-4 text-sm">
+          <p className="font-medium">{task.kind === "analysis" ? (zh ? "视频分析" : "Video analysis") : (zh ? "视频生成" : "Video generation")} · {(reviewReasons[task.reason] || reviewReasons.manual_required)[zh ? 0 : 1]}</p>
+          <p className="mt-1 break-all text-muted-foreground">{task.id} · {zh ? "预留积分" : "Reserved credits"} {task.reservedCredits}</p>
+          <p className="mt-1 text-muted-foreground">{zh ? "下一步" : "Next action"}: {task.action === "automatic_recovery" ? (zh ? "系统自动恢复" : "Automatic recovery") : (zh ? "人工核对供应商记录" : "Manual provider reconciliation")}</p>
+          {task.deadlineAt && <p className="mt-1 text-muted-foreground">{zh ? "处理期限" : "Review deadline"}: {new Date(task.deadlineAt).toLocaleString(zh ? "zh-CN" : "en-US")}</p>}
+          <Link className="mt-2 inline-block underline" href={`/billing/tasks/${task.id}`}>{zh ? "查看任务" : "View task"}</Link>
+        </div>)}
+        {data.taskReviewTotal > data.taskReviews.length && <p className="text-sm text-muted-foreground">{zh ? `当前显示最早的 ${data.taskReviews.length} 项，请先处理后刷新。` : `Showing the oldest ${data.taskReviews.length} tasks. Resolve them and refresh.`}</p>}
+      </section>
       <h2 ref={refundHeading} id="refunds" className="mt-8 scroll-mt-6 text-lg font-semibold">{zh ? "待处理" : "Awaiting review"} ({total})</h2>
       {!data.refunds.length && <p className="mt-3 text-sm text-muted-foreground">{zh ? "暂无待处理的退款申请" : "No refund requests awaiting review"}</p>}
       {data.refunds.map((r) => <div key={r.id} className="space-y-3 border-b border-border py-4 text-sm">
