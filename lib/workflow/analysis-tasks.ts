@@ -29,7 +29,7 @@ type Progress = {
   preview?: MediaPreview; assets?: FfmpegBreakdownResult; versionId?: string; sceneIds?: string[];
   cursor: number; successful: number; failed: number; heldCredits: number; chargedCredits?: number;
   transcription?: KieTranscriptionResult | null; transcriptionError?: string; music?: BackgroundMusicRecognition;
-  error?: string; projectId?: string; partial?: boolean;
+  error?: string; projectId?: string; partial?: boolean; executionId?: string;
 };
 const LEASE_MS = 6 * 60_000;
 
@@ -245,7 +245,7 @@ export async function recoverAnalysisTasks(options: { dispatch?: boolean; limit?
         const existing = await tx.query.sceneVersions.findFirst({ where: and(eq(sceneVersions.projectVersionId, progress.versionId), eq(sceneVersions.originalSceneId, originalSceneId)) });
         if (!existing) {
           const fallback = buildFallbackSceneBlueprint(scene, reason);
-          await tx.insert(sceneVersions).values({ projectId: (current.input as Input).projectId, projectVersionId: progress.versionId, originalSceneId, sceneIndex: scene.sceneIndex, duration: scene.duration, ...fallback, metadata: { ...fallback.metadata, failureCode: "ANALYSIS_INTERRUPTED" } });
+          await tx.insert(sceneVersions).values({ projectId: (current.input as Input).projectId, projectVersionId: progress.versionId, originalSceneId, sceneIndex: scene.sceneIndex, duration: scene.duration, ...fallback, metadata: { ...fallback.metadata, failureCode: "ANALYSIS_INTERRUPTED", providerOutcome: "unknown", executionId: progress.executionId, interruptedAt: new Date().toISOString() } });
         }
         await tx.update(videoScenes).set({ status: "failed", error: reason, updatedAt: new Date() }).where(eq(videoScenes.id, originalSceneId));
         next = { ...progress, cursor: progress.cursor + 1, failed: progress.failed + 1, error: reason };

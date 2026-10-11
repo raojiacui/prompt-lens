@@ -32,6 +32,16 @@ describe("KIE transport", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response('data: {"candidates":[{"content":{"parts":[{"text":"partial"}]}}]}\n\n', { headers: { "Content-Type": "text/event-stream" } })));
     await expect(requestKieChat(input)).rejects.toThrow("streaming response was interrupted");
   });
+  it.each(["text/event-stream", "application/json"])("marks a %s body read error as an unknown provider outcome", async contentType => {
+    const body = new ReadableStream<Uint8Array>({ start(controller) {
+      controller.enqueue(new TextEncoder().encode(contentType === "application/json" ? "{\"candidates\":" : "data: {\"candidates\":"));
+      controller.error(new TypeError("terminated"));
+    } });
+    const fetchMock = vi.fn(async () => new Response(body, { headers: { "Content-Type": contentType } }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(requestKieChat(input)).rejects.toMatchObject({ name: "KieRequestError", outcome: "unknown", cause: { message: "terminated" } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("finishes at DONE even when the transport remains open", async () => {
     const cancel = vi.fn();
     const bytes = new TextEncoder().encode('data: {"candidates":[{"content":{"parts":[{"text":"完整结果"}]}}]}\r\n\r\ndata: [DONE]\r\n\r\n');

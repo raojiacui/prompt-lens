@@ -4,9 +4,10 @@ export const DEFAULT_KIE_CHAT_MODEL = "gemini-3-8-flash-openai";
 export const DEFAULT_KIE_ANALYSIS_TIMEOUT_MS = 180_000;
 
 export class KieRequestError extends Error {
-  constructor(message: string, readonly status?: number) {
+  constructor(message: string, readonly status?: number, readonly outcome?: "unknown" | "confirmed_failure", cause?: unknown) {
     super(message);
     this.name = "KieRequestError";
+    if (cause !== undefined) this.cause = cause;
   }
 }
 
@@ -35,15 +36,23 @@ function nativeGeminiBody(messages: Array<{ role: string; content: unknown }>) {
 
 function readPayload(payload: unknown, status: number) {
   const data = payload as { code?: unknown; error?: { message?: string }; msg?: string } | null;
-  if (data?.error || (data?.code != null && Number(data.code) !== 200)) throw new KieRequestError(data?.error?.message || data?.msg || `KIE API error (${status})`, status);
+  if (data?.error || (data?.code != null && Number(data.code) !== 200)) throw new KieRequestError(data?.error?.message || data?.msg || `KIE API error (${status})`, status, status >= 500 ? "unknown" : "confirmed_failure");
   return getKieResponseText(payload) || "";
 }
 
 async function readChatResponse(response: Response, signal: AbortSignal) {
   if (!response.headers.get("content-type")?.includes("text/event-stream")) {
-    const payload = await response.json().catch(() => null);
+    let raw: string;
+    try { raw = await response.text(); }
+    catch (error) { throw new KieRequestError("KIE response body was interrupted", response.status, "unknown", error); }
+    let payload: unknown;
+    try { payload = JSON.parse(raw); }
+    catch { throw new KieRequestError(response.ok ? "KIE returned invalid JSON" : `KIE API error (${response.status})`, response.status, response.status >= 500 ? "unknown" : "confirmed_failure"); }
     const text = readPayload(payload, response.status);
-    if (!response.ok) throw new KieRequestError(payload?.error?.message || payload?.msg || `KIE API error (${response.status})`, response.status);
+    if (!response.ok) {
+      const data = payload as { error?: { message?: string }; msg?: string } | null;
+      throw new KieRequestError(data?.error?.message || data?.msg || `KIE API error (${response.status})`, response.status, response.status >= 500 ? "unknown" : "confirmed_failure");
+    }
     return text;
   }
   if (!response.body) throw new KieRequestError("KIE returned an empty streaming response", response.status);
@@ -81,8 +90,8 @@ async function readChatResponse(response: Response, signal: AbortSignal) {
     if (!closed) cancel();
     reader.releaseLock();
   }
-  if (!done) throw new KieRequestError("KIE streaming response was interrupted", response.status);
-  if (!response.ok) throw new KieRequestError(`KIE API error (${response.status})`, response.status);
+  if (!done) throw new KieRequestError("KIE streaming response was interrupted", response.status, "unknown");
+  if (!response.ok) throw new KieRequestError(`KIE API error (${response.status})`, response.status, response.status >= 500 ? "unknown" : "confirmed_failure");
   return text;
 }
 
@@ -108,7 +117,7 @@ export async function requestKieChat(input: {
   const deadline = new Promise<never>((_, reject) => {
     timer = setTimeout(() => {
       console.warn("kie.analysis.timeout", { modelId: input.modelId, stage, elapsedMs: Date.now() - startedAt });
-      reject(new KieRequestError(`KIE_ANALYSIS_TIMEOUT: ${stage} exceeded the request deadline`));
+      reject(new KieRequestError(`KIE_ANALYSIS_TIMEOUT: ${stage} exceeded the request deadline`, undefined, "unknown"));
       controller.abort();
     }, input.timeoutMs ?? 90_000);
   });
@@ -125,5 +134,8 @@ export async function requestKieChat(input: {
       if (!text) throw new KieRequestError("KIE API returned an empty result", response.status);
       return text;
     })()]);
+  } catch (error) {
+    if (error instanceof KieRequestError) throw error;
+    throw new KieRequestError(`KIE transport failed during ${stage}`, undefined, "unknown", error);
   } finally { clearTimeout(timer!); }
 }

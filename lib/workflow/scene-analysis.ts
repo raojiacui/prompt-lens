@@ -180,8 +180,7 @@ async function callAnalysisChatJson(params: {
 }
 
 function unknownKieOutcome(error: unknown) {
-  return (error instanceof KieRequestError && (error.status === 524 || /KIE_ANALYSIS_TIMEOUT|streaming response was interrupted/i.test(error.message)))
-    || (error instanceof TypeError && error.message === "fetch failed");
+  return error instanceof KieRequestError && error.outcome === "unknown";
 }
 
 export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason = "Analysis failed", audioContext?: SceneAudioContext, _language?: "zh" | "en"): SceneBlueprintDraft {

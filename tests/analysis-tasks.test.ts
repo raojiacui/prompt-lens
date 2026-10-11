@@ -202,7 +202,7 @@ describe("durable analysis", () => {
     await running;
     await runAnalysisTask(queued.id);
     expect((await task(queued.id)).state).toBe("failed");
-    expect((await testDb.select().from(schema.sceneVersions)).filter(row => row.projectId === projectId)).toMatchObject([{ generationPrompt: "", metadata: { failureCode: "ANALYSIS_INTERRUPTED" } }]);
+    expect((await testDb.select().from(schema.sceneVersions)).filter(row => row.projectId === projectId)).toMatchObject([{ generationPrompt: "", metadata: { failureCode: "ANALYSIS_INTERRUPTED", providerOutcome: "unknown" } }]);
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
   });
 });

@@ -228,7 +228,7 @@ export async function recoverCommercialAnalysisTasks(taskId?: string, options: {
       const index = input.pricing.scenes.findIndex(scene => scene.id === interrupted);
       const interval = input.pricing.scenes[index];
       const fallback = buildFallbackSceneBlueprint(progress.assets.scenes[index], interruptedReason, undefined, input.outputLanguage);
-      const metadata = { ...fallback.metadata, failureCode: "ANALYSIS_INTERRUPTED", interruptedPhase };
+      const metadata = { ...fallback.metadata, failureCode: "ANALYSIS_INTERRUPTED", providerOutcome: "unknown", interruptedPhase, executionId: checkpoint.executionId, interruptedAt: new Date().toISOString() };
       if (input.retry) {
         const retryScene = input.retry.sceneVersions.find(scene => scene.id === interrupted)!;
         const [version] = await tx.select().from(sceneVersions).where(and(eq(sceneVersions.id, retryScene.sceneVersionId), eq(sceneVersions.projectId, input.projectId))).for("update");
