@@ -9,7 +9,7 @@ import { commercialConsumptionEnabled, recoverCommercialAnalysisTasks } from "@/
 import { runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { processMediaCleanupJobs } from "@/lib/workflow/media-cleanup";
-import { escalateOverdueCommercialReviews } from "@/lib/billing/commercial-review";
+import { escalateOverdueCommercialReviews, notifyDueCommercialReviews } from "@/lib/billing/commercial-review";
 import { expireProjectMedia } from "@/lib/workflow/media-retention";
 
 export const maxDuration = 300;
@@ -27,6 +27,7 @@ export async function GET(request: NextRequest) {
   await db.update(paymentOrders).set({ metadata: sql`${paymentOrders.metadata} || '{"reconciliation":"manual_review"}'::jsonb` }).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"), sql`${paymentOrders.createdAt} < now() - interval '24 hours'`));
   if (commercialConsumptionEnabled()) {
     await escalateOverdueCommercialReviews(20);
+    await notifyDueCommercialReviews(20);
     const generation = await db.select({ id: commercialTasks.id }).from(commercialTasks).where(and(eq(commercialTasks.kind, "generation"), eq(commercialTasks.state, "running"))).orderBy(sql`COALESCE((${commercialTasks.result}->>'queryAfter')::bigint, 0)`, asc(commercialTasks.updatedAt)).limit(3);
     for (const task of generation) { try { await reconcileCommercialGeneration(task.id); } catch { /* Leave an uncertain provider result reserved. */ } }
   }

@@ -3,7 +3,7 @@ import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getAdminUserFromHeaders } from "@/lib/auth";
 import { db, user, paymentOrders, commercialRefunds, commercialReservations, commercialWallets, commercialTasks } from "@/lib/db";
 import { commercialReadiness } from "@/lib/billing/commercial-readiness";
-import { canFullyReleaseTask, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
+import { acknowledgeCommercialReview, canFullyReleaseTask, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 import { reconcileCommercialRefund, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
 
@@ -21,9 +21,9 @@ export async function GET(request: NextRequest) {
     .where(reviewFilter)
     .orderBy(asc(commercialTasks.updatedAt)).limit(50);
   const taskReviews = reviewRows.map(row => {
-    const result = row.result as { review?: { reason?: string; action?: string; deadlineAt?: string; nextActionAt?: string; escalatedAt?: string }; successfulSceneIds?: unknown; finishedSceneIds?: unknown; diagnostic?: { error?: { message?: string } } };
+    const result = row.result as { review?: { reason?: string; action?: string; deadlineAt?: string; nextActionAt?: string; nextFollowUpAt?: string; lastNotifiedAt?: string; lastNotificationError?: string; assignedTo?: string; acknowledgedAt?: string; escalatedAt?: string }; successfulSceneIds?: unknown; finishedSceneIds?: unknown; diagnostic?: { error?: { message?: string } } };
     const review = result.review;
-    return { id: row.id, userId: row.userId, kind: row.kind, reason: review?.reason || "legacy_review", action: review?.action || "manual_reconciliation", deadlineAt: review?.deadlineAt || null, nextActionAt: review?.nextActionAt || null, escalatedAt: review?.escalatedAt || null, reservedCredits: row.reservedCredits ?? 0, reservationId: row.reservationId, canFullyRelease: Boolean(row.reservationId && row.reservationCreatedAt && Date.now() - row.reservationCreatedAt.getTime() >= 86400000 && canFullyReleaseTask({ state: "review", kind: row.kind, result: row.result })), updatedAt: row.updatedAt, providerTaskId: row.providerTaskId, successfulScenes: Array.isArray(result.successfulSceneIds) ? result.successfulSceneIds.length : 0, finishedScenes: Array.isArray(result.finishedSceneIds) ? result.finishedSceneIds.length : 0, diagnostic: result.diagnostic?.error?.message?.slice(0, 300) || null };
+    return { id: row.id, userId: row.userId, kind: row.kind, reason: review?.reason || "legacy_review", action: review?.action || "manual_reconciliation", deadlineAt: review?.deadlineAt || null, nextActionAt: review?.nextActionAt || null, nextFollowUpAt: review?.nextFollowUpAt || null, lastNotifiedAt: review?.lastNotifiedAt || null, lastNotificationError: review?.lastNotificationError || null, assignedTo: review?.assignedTo || null, acknowledgedAt: review?.acknowledgedAt || null, escalatedAt: review?.escalatedAt || null, reservedCredits: row.reservedCredits ?? 0, reservationId: row.reservationId, canFullyRelease: Boolean(row.reservationId && row.reservationCreatedAt && Date.now() - row.reservationCreatedAt.getTime() >= 86400000 && canFullyReleaseTask({ state: "review", kind: row.kind, result: row.result })), updatedAt: row.updatedAt, providerTaskId: row.providerTaskId, successfulScenes: Array.isArray(result.successfulSceneIds) ? result.successfulSceneIds.length : 0, finishedScenes: Array.isArray(result.finishedSceneIds) ? result.finishedSceneIds.length : 0, diagnostic: result.diagnostic?.error?.message?.slice(0, 300) || null };
   });
   const refunds = await db.select({ id: commercialRefunds.id, orderId: commercialRefunds.orderId, userId: commercialRefunds.userId, email: user.email, name: user.name, packageName: paymentOrders.packageName, state: commercialRefunds.state, reason: commercialRefunds.reason, contact: sql<string>`${commercialRefunds.evidence}->>'contact'`, amountCents: paymentOrders.amountCents, createdAt: commercialRefunds.createdAt }).from(commercialRefunds).innerJoin(paymentOrders, eq(paymentOrders.id, commercialRefunds.orderId)).leftJoin(user, eq(user.id, commercialRefunds.userId)).where(inArray(commercialRefunds.state, ["requested", "processing", "review"])).orderBy(asc(commercialRefunds.createdAt), asc(commercialRefunds.id)).limit(refundView ? 20 : 100).offset(refundView ? (page - 1) * 20 : 0);
   if (refundView) return NextResponse.json({ refunds, taskReviews, taskReviewTotal: reviewCount.total, total: counts.total, page }, { headers: { "Cache-Control": "private, no-store" } });
@@ -38,6 +38,11 @@ export async function POST(request: NextRequest) {
   if (!admin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const body = await request.json().catch(() => null);
+  if (body?.action === "acknowledge_task_review") {
+    if (typeof body.taskId !== "string" || !/^[0-9a-f-]{36}$/i.test(body.taskId)) return NextResponse.json({ error: "Invalid task" }, { status: 400 });
+    try { await acknowledgeCommercialReview(body.taskId, admin.id); return NextResponse.json({ success: true }); }
+    catch { return NextResponse.json({ error: "Review changed; refresh before claiming" }, { status: 409 }); }
+  }
   if (body?.action === "query_refund") {
     if (typeof body.refundId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.refundId)) return NextResponse.json({ error: "Invalid refund" }, { status: 400 });
     try {

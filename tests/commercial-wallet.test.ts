@@ -10,6 +10,7 @@ vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() 
 vi.mock("@/lib/workflow/scene-analysis", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/workflow/scene-analysis")>(), rewriteSceneBlueprint: vi.fn(), analyzeSceneBlueprint: vi.fn() }));
 vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: vi.fn(async () => "owned-upload"), isOwnedLinkedVideo: vi.fn(async () => false), commercialMediaRequest: vi.fn() }));
 vi.mock("@/lib/byok/kie", () => ({ getUserKieApiKey: vi.fn(async () => null) }));
+vi.mock("@/lib/email/smtp", () => ({ sendEmail: vi.fn(async () => undefined) }));
 vi.mock("@/lib/cloudflare/r2", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/cloudflare/r2")>(), copyR2Object: vi.fn(async () => "https://example.com/frozen-video.mp4") }));
 vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
   ...await importOriginal<typeof import("@/lib/payments/alipay")>(),
@@ -21,13 +22,14 @@ vi.mock("@/lib/payments/alipay", async (importOriginal) => ({
 import { rewriteSceneBlueprint, analyzeSceneBlueprint, buildFallbackSceneBlueprint } from "@/lib/workflow/scene-analysis";
 import { assertOwnedUploadedVideo, isOwnedLinkedVideo, commercialMediaRequest } from "@/lib/billing/commercial-media";
 import { getUserKieApiKey } from "@/lib/byok/kie";
+import { sendEmail } from "@/lib/email/smtp";
 import { copyR2Object } from "@/lib/cloudflare/r2";
 import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnalysisRetry, quotedAnalysisModel, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
-import { escalateOverdueCommercialReviews, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
+import { acknowledgeCommercialReview, escalateOverdueCommercialReviews, notifyDueCommercialReviews, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
 import { createAlipayCreditCheckout, settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION, settleAnalysis, type AnalysisPriceInput } from "@/lib/billing/pricing-v6";
@@ -81,6 +83,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.mocked(commercialMediaRequest).mockReset();
     vi.mocked(getUserKieApiKey).mockReset().mockResolvedValue(null);
     vi.mocked(copyR2Object).mockClear();
+    vi.mocked(sendEmail).mockReset().mockResolvedValue(undefined);
     await client.exec("TRUNCATE media_cleanup_jobs");
     vi.mocked(queryAlipayTrade).mockReset();
     vi.mocked(closeAlipayTrade).mockReset();
@@ -717,6 +720,36 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect((current.result as { reviewHistory: unknown[] }).reviewHistory).toHaveLength(1);
     expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, fresh.id)))[0].result).not.toHaveProperty("reviewHistory");
     expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+  });
+  it("notifies overdue reviews and keeps reminding an assigned owner", async () => {
+    vi.stubEnv("COMMERCIAL_REVIEW_ALERT_EMAIL", "ops@example.com");
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "generation", state: "review", input: {}, credits: 29, result: { review: { reason: "provider_unknown", deadlineAt: new Date(Date.now() - 60_000).toISOString() } }, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    await escalateOverdueCommercialReviews();
+    expect(await notifyDueCommercialReviews()).toBe(1);
+    expect(await notifyDueCommercialReviews()).toBe(0);
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(sendEmail).mock.calls[0][0].to).toBe("ops@example.com");
+    await acknowledgeCommercialReview(task.id, "admin-test");
+    await expect(acknowledgeCommercialReview(task.id, "second-admin")).rejects.toThrow("REVIEW_NOT_AVAILABLE");
+    await client.query("UPDATE commercial_tasks SET result = jsonb_set(result, '{review,nextFollowUpAt}', to_jsonb((now() - interval '1 minute')::text)) WHERE id = $1", [task.id]);
+    expect(await notifyDueCommercialReviews()).toBe(1);
+    const [current] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, task.id));
+    expect(current.result).toMatchObject({ review: { assignedTo: "admin-test", lastNotifiedAt: expect.any(String) }, reviewHistory: [{ action: "escalated_for_manual_reconciliation" }, { action: "review_alert_accepted_by_smtp" }, { action: "review_acknowledged", actorId: "admin-test" }, { action: "review_alert_accepted_by_smtp" }] });
+    expect(vi.mocked(sendEmail)).toHaveBeenCalledTimes(2);
+  });
+  it("retries failed review alerts without claiming successful delivery", async () => {
+    vi.stubEnv("COMMERCIAL_REVIEW_ALERT_EMAIL", "ops@example.com");
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "review", input: {}, credits: 4, result: { review: { reason: "save_failed", deadlineAt: new Date(Date.now() - 60_000).toISOString() } }, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    await escalateOverdueCommercialReviews();
+    vi.mocked(sendEmail).mockRejectedValueOnce(new Error("SMTP unavailable"));
+    expect(await notifyDueCommercialReviews()).toBe(0);
+    let [current] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, task.id));
+    expect(current.result).toMatchObject({ review: { lastNotificationError: "SMTP unavailable" } });
+    expect((current.result as { review: { lastNotifiedAt?: string } }).review.lastNotifiedAt).toBeUndefined();
+    await client.query("UPDATE commercial_tasks SET result = jsonb_set(result, '{review,nextFollowUpAt}', to_jsonb((now() - interval '1 minute')::text)) WHERE id = $1", [task.id]);
+    expect(await notifyDueCommercialReviews()).toBe(1);
+    [current] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, task.id));
+    expect(current.result).toMatchObject({ review: { lastNotificationError: null, lastNotifiedAt: expect.any(String) } });
   });
   it("releases only an undelivered analysis with audit and project closure", async () => {
     await grant();

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
-type Review = { orders: { id: string; userId: string; amountCents: number; reconciliation: string | null }[]; refunds: { id: string; orderId: string; userId: string; email?: string | null; name?: string | null; packageName?: string; createdAt?: string; state: string; reason: string; contact: string | null; amountCents: number }[]; tasks: { id: string; userId: string; credits: number; rewrites: number }[]; taskReviews: { id: string; userId: string; kind: string; reason: string; action: string; deadlineAt: string | null; nextActionAt: string | null; escalatedAt: string | null; reservedCredits: number; reservationId: string | null; canFullyRelease: boolean; updatedAt: string; providerTaskId: string | null; successfulScenes: number; finishedScenes: number; diagnostic: string | null }[]; taskReviewTotal: number; frozen: { userId: string }[] };
+type Review = { orders: { id: string; userId: string; amountCents: number; reconciliation: string | null }[]; refunds: { id: string; orderId: string; userId: string; email?: string | null; name?: string | null; packageName?: string; createdAt?: string; state: string; reason: string; contact: string | null; amountCents: number }[]; tasks: { id: string; userId: string; credits: number; rewrites: number }[]; taskReviews: { id: string; userId: string; kind: string; reason: string; action: string; deadlineAt: string | null; nextActionAt: string | null; nextFollowUpAt: string | null; lastNotifiedAt: string | null; lastNotificationError: string | null; assignedTo: string | null; acknowledgedAt: string | null; escalatedAt: string | null; reservedCredits: number; reservationId: string | null; canFullyRelease: boolean; updatedAt: string; providerTaskId: string | null; successfulScenes: number; finishedScenes: number; diagnostic: string | null }[]; taskReviewTotal: number; frozen: { userId: string }[] };
 const reviewReasons: Record<string, [string, string]> = { save_failed: ["保存结果失败", "Result save failed"], settlement_failed: ["结算失败", "Settlement failed"], provider_unknown: ["供应商结果待确认", "Provider result unconfirmed"], checkpoint_invalid: ["任务检查点异常", "Task checkpoint invalid"], manual_required: ["需要人工核对", "Manual review required"], legacy_review: ["历史异常待核对", "Legacy task needs review"] };
 export default function CommercialReviewPage() {
   const zh = useLocale() === "zh";
@@ -43,6 +43,7 @@ export default function CommercialReviewPage() {
       }
       if (body.action === "reject_refund") setNotice(zh ? "已拒绝申请，套餐额度已恢复。" : "Request declined. Package balance restored.");
       if (body.action === "release_unfulfilled_task") setNotice(zh ? "已记录核查证据并释放未交付任务的预留额度。" : "Evidence recorded and the undelivered task reservation was released.");
+      if (body.action === "acknowledge_task_review") setNotice(zh ? "已认领异常任务，请完成供应商与交付核对。" : "Review claimed. Complete provider and delivery reconciliation.");
       window.dispatchEvent(new Event("refund-requests-changed"));
       setSelectedRefund(""); setReviewNote(""); setCustomerContacted(false); setApproveConfirmed(false); setSelectedTask(""); setTaskEvidence(""); setTaskConfirmed(false); await load();
     } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
@@ -73,6 +74,10 @@ export default function CommercialReviewPage() {
           {task.providerTaskId && <p className="mt-1 break-all text-muted-foreground">{zh ? "供应商任务" : "Provider task"}: {task.providerTaskId}</p>}
           {task.diagnostic && <p className="mt-1 break-words text-muted-foreground">{zh ? "最近错误" : "Last error"}: {task.diagnostic}</p>}
           {task.deadlineAt && <p className={`mt-1 ${task.escalatedAt ? "text-red-700" : "text-muted-foreground"}`}>{zh ? "处理期限" : "Review deadline"}: {new Date(task.deadlineAt).toLocaleString(zh ? "zh-CN" : "en-US")}{task.escalatedAt ? (zh ? " · 已升级人工处理" : " · Escalated") : ""}</p>}
+          <p className="mt-1 text-muted-foreground">{zh ? "负责人" : "Owner"}: {task.assignedTo || (zh ? "未认领" : "Unclaimed")}{task.acknowledgedAt ? ` · ${new Date(task.acknowledgedAt).toLocaleString(zh ? "zh-CN" : "en-US")}` : ""}</p>
+          {task.nextFollowUpAt && <p className="mt-1 text-muted-foreground">{zh ? "下次提醒" : "Next reminder"}: {new Date(task.nextFollowUpAt).toLocaleString(zh ? "zh-CN" : "en-US")}</p>}
+          {task.lastNotificationError && <p className="mt-1 text-red-700">{zh ? "提醒发送失败" : "Alert failed"}: {task.lastNotificationError}</p>}
+          <button disabled={busy} className="mt-2 min-h-10 underline" onClick={() => void act({ action: "acknowledge_task_review", taskId: task.id })}>{zh ? "认领并跟进" : "Claim review"}</button>
           {task.canFullyRelease && task.reservationId && <>
             <button disabled={busy} className="mt-2 min-h-10 underline" onClick={() => { setSelectedTask(task.id); setTaskEvidence(""); setTaskConfirmed(false); }}>{zh ? "核对并释放未交付额度" : "Review and release undelivered credits"}</button>
             {selectedTask === task.id && <div className="mt-3 space-y-3" role="group" aria-label={zh ? "任务预留额度核查" : "Task reservation review"}>

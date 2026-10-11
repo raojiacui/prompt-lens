@@ -9,6 +9,7 @@ export function commercialReadiness() {
     kie: Boolean(process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY),
     worker: Boolean(process.env.FFMPEG_WORKER_URL && process.env.FFMPEG_WORKER_SECRET),
     reconciliation: Boolean(process.env.CRON_SECRET && process.env.COMMERCIAL_SCHEDULER_ACCEPTED === "true"),
+    reviewAlert: Boolean(process.env.COMMERCIAL_REVIEW_ALERT_EMAIL && process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS && process.env.SMTP_FROM),
     publicHttps,
     consumption: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true",
     rewrites: process.env.COMMERCIAL_REWRITE_ENABLED === "true",
