@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     await db.insert(operationLogs).values({
       userId: auth.user.id,
       action: "file.upload",
-      resourceType: "project_asset",
+      resourceType: contentType.startsWith("video/") ? "video" : "image",
       metadata: {
         phase: "completed",
         filename: file.name,
@@ -67,6 +67,7 @@ export async function POST(request: Request) {
         url,
         storageKey: key,
         storage: "r2",
+        source: "project_asset",
         assetType: typeof assetType === "string" ? assetType : "product",
       },
     });

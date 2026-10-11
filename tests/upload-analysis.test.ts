@@ -9,15 +9,19 @@ import * as schema from "@/lib/db/schema";
 const mocks = vi.hoisted(() => ({ db: null as unknown, userId: "", size: 123, sign: vi.fn() }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return mocks.db; } }));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: async () => ({ user: { id: mocks.userId } }) } } }));
+vi.mock("@/lib/reference-video/auth", () => ({ requireReferenceVideoUser: async () => ({ user: { id: mocks.userId } }) }));
+vi.mock("@/lib/utils/rate-limit", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/utils/rate-limit")>(), checkRateLimit: async () => ({ allowed: true }) }));
 vi.mock("@/lib/cloudflare/r2", () => ({
   getPresignedUploadUrl: mocks.sign,
   getR2PublicUrl: (key: string) => `https://media.example/${key}`,
   getR2ObjectSize: async () => mocks.size,
   extractR2Key: (url: string) => url.startsWith("https://media.example/") ? url.slice(22) : null,
   getSignedUrlFromR2: vi.fn(),
+  uploadToR2: async (_buffer: unknown, key: string) => `https://media.example/${key}`,
 }));
 import { POST as requestUpload } from "@/app/api/upload/route";
 import { POST as completeUpload } from "@/app/api/upload/complete/route";
+import { POST as uploadProjectAsset } from "@/app/api/project-assets/route";
 import { assertOwnedUploadedVideo, isOwnedLinkedVideo } from "@/lib/billing/commercial-media";
 
 const client = new PGlite();
@@ -45,6 +49,18 @@ describe("upload to analysis boundary", () => {
     await testDb.insert(schema.user).values({ id: mocks.userId, email: `${mocks.userId}@example.com` });
   });
   afterAll(async () => { await client.close(); });
+
+  it.each(["video", "image"] as const)("generation-page %s uploads pass ownership checks only for their owner and media type", async (type) => {
+    const form = new FormData();
+    const mime = type === "video" ? "video/mp4" : "image/jpeg";
+    form.set("file", new File([new Uint8Array([1, 2, 3])], type === "video" ? "cat.mp4" : "cat.jpg", { type: mime }));
+    const response = await uploadProjectAsset(new Request("http://localhost/api/project-assets", { method: "POST", headers: { origin: "http://localhost" }, body: form }));
+    expect(response.status).toBe(200);
+    const { url } = await response.json();
+    await expect(assertOwnedUploadedVideo(mocks.userId, url, type)).resolves.toBe(url.slice(22));
+    await expect(assertOwnedUploadedVideo(randomUUID(), url, type)).rejects.toThrow("UPLOAD_NOT_OWNED");
+    await expect(assertOwnedUploadedVideo(mocks.userId, url, type === "video" ? "image" : "video")).rejects.toThrow("UPLOAD_NOT_OWNED");
+  });
 
   it.each(["video", "image"] as const)("accepts only completed %s uploads and completes idempotently", async (type) => {
     const upload = await reserve(type);
