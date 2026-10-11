@@ -1,5 +1,6 @@
 import { and, asc, eq, sql } from "drizzle-orm";
-import { commercialTasks, db } from "@/lib/db";
+import { commercialLedger, commercialReservations, commercialTasks, db, projects } from "@/lib/db";
+import { settleCommercialTaskInTransaction } from "./commercial-wallet";
 
 export function canFullyReleaseTask(task: { state: string; kind: string; result: unknown } | undefined) {
   if (!task || task.state !== "review" || task.kind !== "analysis") return false;
@@ -24,4 +25,23 @@ export async function escalateOverdueCommercialReviews(limit = 5) {
     if (updated) { escalated++; console.error("commercial.review.escalated", { taskId: task.id, reason: review.reason, deadlineAt: review.deadlineAt }); }
   }
   return escalated;
+}
+
+export async function releaseUnfulfilledCommercialAnalysis(input: { reservationId: string; actorId: string; evidence: string }) {
+  if (input.evidence.trim().length < 12 || input.evidence.length > 2000 || !input.actorId) throw new Error("REVIEW_EVIDENCE_REQUIRED");
+  const reservation = await db.query.commercialReservations.findFirst({ where: eq(commercialReservations.id, input.reservationId) });
+  if (!reservation || reservation.state !== "held" || Date.now() - reservation.createdAt.getTime() < 86400000 || !reservation.taskKey.startsWith("commercial:")) throw new Error("RESERVATION_NOT_ELIGIBLE");
+  await db.transaction(async (tx) => {
+    const [task] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, reservation.taskKey.slice(11)), eq(commercialTasks.userId, reservation.userId))).for("update");
+    if (!task || !canFullyReleaseTask(task)) throw new Error("TASK_NOT_ELIGIBLE_FOR_FULL_RELEASE");
+    const current = await tx.query.commercialReservations.findFirst({ where: eq(commercialReservations.id, reservation.id) });
+    if (current?.state !== "held") throw new Error("RESERVATION_ALREADY_SETTLED");
+    await settleCommercialTaskInTransaction(tx, { userId: reservation.userId, taskKey: reservation.taskKey, credits: 0, rewrites: 0 });
+    await tx.insert(commercialLedger).values({ userId: reservation.userId, eventKey: `review-release:${reservation.id}`, credits: 0, rewrites: 0, metadata: { actorId: input.actorId, evidence: input.evidence, reservationId: reservation.id } }).onConflictDoNothing();
+    const resolvedAt = new Date();
+    const event = { action: "manual_full_release", actorId: input.actorId, at: resolvedAt.toISOString(), evidence: input.evidence };
+    await tx.update(commercialTasks).set({ state: "failed", result: sql`jsonb_set(${commercialTasks.result} || ${JSON.stringify({ chargedCredits: 0, manualRelease: true, reviewResolution: event })}::jsonb, '{reviewHistory}', COALESCE(${commercialTasks.result}->'reviewHistory', '[]'::jsonb) || ${JSON.stringify([event])}::jsonb)`, updatedAt: resolvedAt }).where(eq(commercialTasks.id, task.id));
+    const taskInput = task.input as { projectId?: string; retry?: unknown };
+    if (taskInput.projectId && !taskInput.retry) await tx.update(projects).set({ status: "failed", updatedAt: resolvedAt }).where(and(eq(projects.id, taskInput.projectId), eq(projects.userId, task.userId), eq(projects.status, "analyzing")));
+  });
 }

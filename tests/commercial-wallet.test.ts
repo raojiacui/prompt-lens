@@ -27,7 +27,7 @@ import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercia
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
-import { escalateOverdueCommercialReviews } from "@/lib/billing/commercial-review";
+import { escalateOverdueCommercialReviews, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
 import { createAlipayCreditCheckout, settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION, settleAnalysis, type AnalysisPriceInput } from "@/lib/billing/pricing-v6";
@@ -717,6 +717,32 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect((current.result as { reviewHistory: unknown[] }).reviewHistory).toHaveLength(1);
     expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, fresh.id)))[0].result).not.toHaveProperty("reviewHistory");
     expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+  });
+  it("releases only an undelivered analysis with audit and project closure", async () => {
+    await grant();
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Undelivered", status: "analyzing" }).returning();
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "review", input: { projectId: project.id }, credits: 4, result: { review: { reason: "save_failed" }, successfulSceneIds: [] }, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    const key = `commercial:${task.id}`;
+    const { reservation } = await reserveCommercialTask({ userId, taskKey: key, credits: 4, rewrites: 0, quote: { projectId: project.id } });
+    await client.query("UPDATE commercial_reservations SET created_at = now() - interval '25 hours' WHERE id = $1", [reservation.id]);
+    await releaseUnfulfilledCommercialAnalysis({ reservationId: reservation.id, actorId: "admin-test", evidence: "Confirmed no result was delivered" });
+    await expect(releaseUnfulfilledCommercialAnalysis({ reservationId: reservation.id, actorId: "admin-test", evidence: "Confirmed no result was delivered" })).rejects.toThrow("RESERVATION_NOT_ELIGIBLE");
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+    expect((await testDb.select().from(schema.projects).where(eq(schema.projects.id, project.id)))[0].status).toBe("failed");
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, task.id)))[0]).toMatchObject({ state: "failed", result: { reviewResolution: { action: "manual_full_release", actorId: "admin-test" }, reviewHistory: [{ action: "manual_full_release" }] } });
+    expect((await testDb.select().from(schema.commercialReservations).where(eq(schema.commercialReservations.id, reservation.id)))[0]).toMatchObject({ state: "settled", settledCredits: 0 });
+    expect((await testDb.select().from(schema.commercialLedger).where(eq(schema.commercialLedger.eventKey, `review-release:${reservation.id}`))).length).toBe(1);
+  });
+  it("keeps delivered analysis and unknown generation under review", async () => {
+    await grant();
+    for (const [kind, result] of [["analysis", { review: {}, splitDelivered: true }], ["generation", { review: { reason: "provider_unknown" } }]] as const) {
+      const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind, state: "review", input: {}, credits: 4, result, expiresAt: new Date(Date.now() + 600_000) }).returning();
+      const { reservation } = await reserveCommercialTask({ userId, taskKey: `commercial:${task.id}`, credits: 4, rewrites: 0, quote: {} });
+      await client.query("UPDATE commercial_reservations SET created_at = now() - interval '25 hours' WHERE id = $1", [reservation.id]);
+      await expect(releaseUnfulfilledCommercialAnalysis({ reservationId: reservation.id, actorId: "admin-test", evidence: "Reviewed the provider records" })).rejects.toThrow("TASK_NOT_ELIGIBLE_FOR_FULL_RELEASE");
+      expect((await testDb.select().from(schema.commercialReservations).where(eq(schema.commercialReservations.id, reservation.id)))[0].state).toBe("held");
+    }
+    expect(await balance()).toMatchObject({ credits: 192, heldCredits: 8 });
   });
   it("edits a pending ticket without another wallet hold and rejects edits by other users or after review", async () => {
     const row = await paidOrder();

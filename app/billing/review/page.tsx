@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 
-type Review = { orders: { id: string; userId: string; amountCents: number; reconciliation: string | null }[]; refunds: { id: string; orderId: string; userId: string; email?: string | null; name?: string | null; packageName?: string; createdAt?: string; state: string; reason: string; contact: string | null; amountCents: number }[]; tasks: { id: string; userId: string; credits: number; rewrites: number }[]; taskReviews: { id: string; userId: string; kind: string; reason: string; action: string; deadlineAt: string | null; nextActionAt: string | null; escalatedAt: string | null; reservedCredits: number; updatedAt: string; providerTaskId: string | null; successfulScenes: number; finishedScenes: number; diagnostic: string | null }[]; taskReviewTotal: number; frozen: { userId: string }[] };
+type Review = { orders: { id: string; userId: string; amountCents: number; reconciliation: string | null }[]; refunds: { id: string; orderId: string; userId: string; email?: string | null; name?: string | null; packageName?: string; createdAt?: string; state: string; reason: string; contact: string | null; amountCents: number }[]; tasks: { id: string; userId: string; credits: number; rewrites: number }[]; taskReviews: { id: string; userId: string; kind: string; reason: string; action: string; deadlineAt: string | null; nextActionAt: string | null; escalatedAt: string | null; reservedCredits: number; reservationId: string | null; canFullyRelease: boolean; updatedAt: string; providerTaskId: string | null; successfulScenes: number; finishedScenes: number; diagnostic: string | null }[]; taskReviewTotal: number; frozen: { userId: string }[] };
 const reviewReasons: Record<string, [string, string]> = { save_failed: ["保存结果失败", "Result save failed"], settlement_failed: ["结算失败", "Settlement failed"], provider_unknown: ["供应商结果待确认", "Provider result unconfirmed"], checkpoint_invalid: ["任务检查点异常", "Task checkpoint invalid"], manual_required: ["需要人工核对", "Manual review required"], legacy_review: ["历史异常待核对", "Legacy task needs review"] };
 export default function CommercialReviewPage() {
   const zh = useLocale() === "zh";
@@ -18,6 +18,9 @@ export default function CommercialReviewPage() {
   const [reviewNote, setReviewNote] = useState("");
   const [customerContacted, setCustomerContacted] = useState(false);
   const [approveConfirmed, setApproveConfirmed] = useState(false);
+  const [selectedTask, setSelectedTask] = useState("");
+  const [taskEvidence, setTaskEvidence] = useState("");
+  const [taskConfirmed, setTaskConfirmed] = useState(false);
   const refundHeading = useRef<HTMLHeadingElement>(null);
   const locatedRefunds = useRef(false);
   useEffect(() => {
@@ -39,8 +42,9 @@ export default function CommercialReviewPage() {
           : (zh ? "尚未确认退款成功，保留待核对状态，未再次发起退款。" : "Refund remains unconfirmed. No refund was resubmitted."));
       }
       if (body.action === "reject_refund") setNotice(zh ? "已拒绝申请，套餐额度已恢复。" : "Request declined. Package balance restored.");
+      if (body.action === "release_unfulfilled_task") setNotice(zh ? "已记录核查证据并释放未交付任务的预留额度。" : "Evidence recorded and the undelivered task reservation was released.");
       window.dispatchEvent(new Event("refund-requests-changed"));
-      setSelectedRefund(""); setReviewNote(""); setCustomerContacted(false); setApproveConfirmed(false); await load();
+      setSelectedRefund(""); setReviewNote(""); setCustomerContacted(false); setApproveConfirmed(false); setSelectedTask(""); setTaskEvidence(""); setTaskConfirmed(false); await load();
     } catch (e) { setError(e instanceof Error ? e.message : "Error"); }
     finally { setBusy(false); }
   }
@@ -69,6 +73,14 @@ export default function CommercialReviewPage() {
           {task.providerTaskId && <p className="mt-1 break-all text-muted-foreground">{zh ? "供应商任务" : "Provider task"}: {task.providerTaskId}</p>}
           {task.diagnostic && <p className="mt-1 break-words text-muted-foreground">{zh ? "最近错误" : "Last error"}: {task.diagnostic}</p>}
           {task.deadlineAt && <p className={`mt-1 ${task.escalatedAt ? "text-red-700" : "text-muted-foreground"}`}>{zh ? "处理期限" : "Review deadline"}: {new Date(task.deadlineAt).toLocaleString(zh ? "zh-CN" : "en-US")}{task.escalatedAt ? (zh ? " · 已升级人工处理" : " · Escalated") : ""}</p>}
+          {task.canFullyRelease && task.reservationId && <>
+            <button disabled={busy} className="mt-2 min-h-10 underline" onClick={() => { setSelectedTask(task.id); setTaskEvidence(""); setTaskConfirmed(false); }}>{zh ? "核对并释放未交付额度" : "Review and release undelivered credits"}</button>
+            {selectedTask === task.id && <div className="mt-3 space-y-3" role="group" aria-label={zh ? "任务预留额度核查" : "Task reservation review"}>
+              <label className="block">{zh ? "核查证据（至少 12 个字）" : "Review evidence (at least 12 characters)"}<textarea minLength={12} maxLength={2000} value={taskEvidence} onChange={event => setTaskEvidence(event.target.value)} className="mt-2 min-h-24 w-full rounded-lg border border-border bg-background p-3" /></label>
+              <label className="flex items-start gap-2"><input type="checkbox" checked={taskConfirmed} onChange={event => setTaskConfirmed(event.target.checked)} className="mt-1" />{zh ? "我已核对没有已交付的收费内容；此次操作会全额释放预留积分。" : "I verified that no billable result was delivered. This will release all reserved credits."}</label>
+              <button disabled={busy || taskEvidence.trim().length < 12 || !taskConfirmed} className="min-h-11 rounded-lg border border-border px-4 disabled:opacity-50" onClick={() => void act({ action: "release_unfulfilled_task", reservationId: task.reservationId, evidence: taskEvidence.trim(), deliveryConfirmed: true })}>{zh ? "确认释放预留" : "Confirm release"}</button>
+            </div>}
+          </>}
         </div>)}
         {data.taskReviewTotal > data.taskReviews.length && <p className="text-sm text-muted-foreground">{zh ? `当前显示最早的 ${data.taskReviews.length} 项，请先处理后刷新。` : `Showing the oldest ${data.taskReviews.length} tasks. Resolve them and refresh.`}</p>}
       </section>

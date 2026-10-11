@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { getAdminUserFromHeaders } from "@/lib/auth";
-import { db, user, paymentOrders, commercialRefunds, commercialReservations, commercialWallets, commercialLedger, commercialTasks } from "@/lib/db";
-import { settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
+import { db, user, paymentOrders, commercialRefunds, commercialReservations, commercialWallets, commercialTasks } from "@/lib/db";
 import { commercialReadiness } from "@/lib/billing/commercial-readiness";
-import { canFullyReleaseTask } from "@/lib/billing/commercial-review";
+import { canFullyReleaseTask, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 import { reconcileCommercialRefund, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
 
@@ -16,7 +15,7 @@ export async function GET(request: NextRequest) {
   if (request.nextUrl.searchParams.get("countOnly") === "1") return NextResponse.json({ total: counts.total }, { headers: { "Cache-Control": "private, no-store" } });
   const reviewFilter = and(eq(commercialTasks.state, "review"), inArray(commercialTasks.kind, ["analysis", "generation"]));
   const [reviewCount] = await db.select({ total: sql<number>`count(*)::int` }).from(commercialTasks).where(reviewFilter);
-  const reviewRows = await db.select({ id: commercialTasks.id, userId: commercialTasks.userId, kind: commercialTasks.kind, result: commercialTasks.result, updatedAt: commercialTasks.updatedAt, providerTaskId: commercialTasks.providerTaskId, reservedCredits: commercialReservations.credits })
+  const reviewRows = await db.select({ id: commercialTasks.id, userId: commercialTasks.userId, kind: commercialTasks.kind, result: commercialTasks.result, updatedAt: commercialTasks.updatedAt, providerTaskId: commercialTasks.providerTaskId, reservationId: commercialReservations.id, reservationCreatedAt: commercialReservations.createdAt, reservedCredits: commercialReservations.credits })
     .from(commercialTasks)
     .leftJoin(commercialReservations, and(eq(commercialReservations.taskKey, sql`'commercial:' || ${commercialTasks.id}::text`), eq(commercialReservations.state, "held")))
     .where(reviewFilter)
@@ -24,7 +23,7 @@ export async function GET(request: NextRequest) {
   const taskReviews = reviewRows.map(row => {
     const result = row.result as { review?: { reason?: string; action?: string; deadlineAt?: string; nextActionAt?: string; escalatedAt?: string }; successfulSceneIds?: unknown; finishedSceneIds?: unknown; diagnostic?: { error?: { message?: string } } };
     const review = result.review;
-    return { id: row.id, userId: row.userId, kind: row.kind, reason: review?.reason || "legacy_review", action: review?.action || "manual_reconciliation", deadlineAt: review?.deadlineAt || null, nextActionAt: review?.nextActionAt || null, escalatedAt: review?.escalatedAt || null, reservedCredits: row.reservedCredits ?? 0, updatedAt: row.updatedAt, providerTaskId: row.providerTaskId, successfulScenes: Array.isArray(result.successfulSceneIds) ? result.successfulSceneIds.length : 0, finishedScenes: Array.isArray(result.finishedSceneIds) ? result.finishedSceneIds.length : 0, diagnostic: result.diagnostic?.error?.message?.slice(0, 300) || null };
+    return { id: row.id, userId: row.userId, kind: row.kind, reason: review?.reason || "legacy_review", action: review?.action || "manual_reconciliation", deadlineAt: review?.deadlineAt || null, nextActionAt: review?.nextActionAt || null, escalatedAt: review?.escalatedAt || null, reservedCredits: row.reservedCredits ?? 0, reservationId: row.reservationId, canFullyRelease: Boolean(row.reservationId && row.reservationCreatedAt && Date.now() - row.reservationCreatedAt.getTime() >= 86400000 && canFullyReleaseTask({ state: "review", kind: row.kind, result: row.result })), updatedAt: row.updatedAt, providerTaskId: row.providerTaskId, successfulScenes: Array.isArray(result.successfulSceneIds) ? result.successfulSceneIds.length : 0, finishedScenes: Array.isArray(result.finishedSceneIds) ? result.finishedSceneIds.length : 0, diagnostic: result.diagnostic?.error?.message?.slice(0, 300) || null };
   });
   const refunds = await db.select({ id: commercialRefunds.id, orderId: commercialRefunds.orderId, userId: commercialRefunds.userId, email: user.email, name: user.name, packageName: paymentOrders.packageName, state: commercialRefunds.state, reason: commercialRefunds.reason, contact: sql<string>`${commercialRefunds.evidence}->>'contact'`, amountCents: paymentOrders.amountCents, createdAt: commercialRefunds.createdAt }).from(commercialRefunds).innerJoin(paymentOrders, eq(paymentOrders.id, commercialRefunds.orderId)).leftJoin(user, eq(user.id, commercialRefunds.userId)).where(inArray(commercialRefunds.state, ["requested", "processing", "review"])).orderBy(asc(commercialRefunds.createdAt), asc(commercialRefunds.id)).limit(refundView ? 20 : 100).offset(refundView ? (page - 1) * 20 : 0);
   if (refundView) return NextResponse.json({ refunds, taskReviews, taskReviewTotal: reviewCount.total, total: counts.total, page }, { headers: { "Cache-Control": "private, no-store" } });
@@ -55,25 +54,9 @@ export async function POST(request: NextRequest) {
     } catch { return NextResponse.json({ error: "Refund changed or requires review; do not repeat the payment request" }, { status: 409 }); }
   }
   if (body?.action === "release_unfulfilled_task") {
-    if (!/^[0-9a-f-]{36}$/i.test(body.reservationId || "") || typeof body.evidence !== "string" || body.evidence.trim().length < 12 || body.evidence.length > 2000) return NextResponse.json({ error: "Evidence is required" }, { status: 400 });
-    const reservation = await db.query.commercialReservations.findFirst({ where: eq(commercialReservations.id, body.reservationId) });
-    if (!reservation || Date.now() - reservation.createdAt.getTime() < 86400000) return NextResponse.json({ error: "Reservation is not eligible for review" }, { status: 409 });
-    if (!reservation.taskKey.startsWith("commercial:")) return NextResponse.json({ error: "Unknown reservation task type" }, { status: 409 });
+    if (!/^[0-9a-f-]{36}$/i.test(body.reservationId || "") || typeof body.evidence !== "string" || body.evidence.trim().length < 12 || body.evidence.length > 2000 || body.deliveryConfirmed !== true) return NextResponse.json({ error: "Delivery review and evidence are required" }, { status: 400 });
     try {
-      await db.transaction(async (tx) => {
-        let task: typeof commercialTasks.$inferSelect | undefined;
-        [task] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, reservation.taskKey.slice(11)), eq(commercialTasks.userId, reservation.userId))).for("update");
-        if (!canFullyReleaseTask(task)) throw new Error("TASK_NOT_ELIGIBLE_FOR_FULL_RELEASE");
-        const current = await tx.query.commercialReservations.findFirst({ where: eq(commercialReservations.id, reservation.id) });
-        if (current?.state !== "held") throw new Error("Reservation is no longer held");
-        await settleCommercialTaskInTransaction(tx, { userId: reservation.userId, taskKey: reservation.taskKey, credits: 0, rewrites: 0 });
-        await tx.insert(commercialLedger).values({ userId: reservation.userId, eventKey: `review-release:${reservation.id}`, credits: 0, rewrites: 0, metadata: { actorId: admin.id, evidence: body.evidence.trim(), reservationId: reservation.id } }).onConflictDoNothing();
-        if (task) {
-          const resolvedAt = new Date();
-          const event = { action: "manual_full_release", actorId: admin.id, at: resolvedAt.toISOString(), evidence: body.evidence.trim() };
-          await tx.update(commercialTasks).set({ state: "failed", result: sql`jsonb_set(${commercialTasks.result} || ${JSON.stringify({ chargedCredits: 0, manualRelease: true, reviewResolution: event })}::jsonb, '{reviewHistory}', COALESCE(${commercialTasks.result}->'reviewHistory', '[]'::jsonb) || ${JSON.stringify([event])}::jsonb)`, updatedAt: resolvedAt }).where(eq(commercialTasks.id, task.id));
-        }
-      });
+      await releaseUnfulfilledCommercialAnalysis({ reservationId: body.reservationId, actorId: admin.id, evidence: body.evidence.trim() });
       return NextResponse.json({ success: true });
     } catch { return NextResponse.json({ error: "Reservation changed; refresh before reviewing" }, { status: 409 }); }
   }
