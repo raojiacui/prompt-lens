@@ -2,7 +2,7 @@ import { getUserKieApiKey } from "@/lib/byok/kie";
 import { getPlatformKieApiKey } from "@/lib/billing/platform-access";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import { FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/billing/video-analysis";
-import { DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, requestKieChat } from "@/lib/ai/kie-client";
+import { DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, KieRequestError, requestKieChat } from "@/lib/ai/kie-client";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
 import { buildRecreationPrompt } from "./recreation-prompt";
@@ -175,7 +175,16 @@ async function callAnalysisChatJson(params: {
     { role: "user", content: params.content },
   ];
 
-  const content = await requestKieChat({ apiKey, modelId: selected.modelId, messages, timeoutMs: DEFAULT_KIE_ANALYSIS_TIMEOUT_MS });
+  const request = () => requestKieChat({ apiKey, modelId: selected.modelId, messages, timeoutMs: DEFAULT_KIE_ANALYSIS_TIMEOUT_MS });
+  let content: string;
+  try {
+    content = await request();
+  } catch (error) {
+    const platformKey = params.forceFreeTrialKie || (params.keySource ?? params.selection?.analysisKeySource) === "platform";
+    if (!(error instanceof KieRequestError) || error.status !== 524 || !platformKey) throw error;
+    console.warn("kie.analysis.gateway_retry", { modelId: selected.modelId, status: error.status });
+    content = await request();
+  }
   return { json: parseJsonObject(content), ...selected };
 }
 

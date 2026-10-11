@@ -20,6 +20,22 @@ function mock(value: unknown) {
 }
 afterEach(() => vi.unstubAllGlobals());
 describe("scene analysis response compatibility", () => {
+  it("retries one KIE 524 for a platform-paid scene", async () => {
+    const fetchMock = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response("gateway timeout", { status: 524 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(response) } }] })));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await analyzeSceneBlueprint({ ...input, analysisKeySource: "platform", analysisApiKey: "test-key" });
+    expect(result.metadata).toMatchObject({ analysisProvider: "kie" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+  it("does not repeat a KIE 524 when the user supplies the key", async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(new Response("gateway timeout", { status: 524 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await analyzeSceneBlueprint({ ...input, analysisKeySource: "user" });
+    expect(result.metadata?.fallbackReason).toBe("KIE API error (524)");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("preserves the underlying connection failure without another inference request", async () => {
     const cause = Object.assign(new Error("connect timeout"), { code: "UND_ERR_CONNECT_TIMEOUT" });
     const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed", { cause }));
