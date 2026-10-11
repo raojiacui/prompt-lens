@@ -177,10 +177,11 @@ async function finishCommercialAnalysis(task: typeof commercialTasks.$inferSelec
   const input = task.input as AnalysisInput;
   const totalChargedCredits = settleAnalysis(input.pricing, success, splitDelivered);
   const credits = totalChargedCredits - (input.retry?.previousCharged || 0);
+  const hadReview = Boolean((task.result as Record<string, unknown>).review);
   const finish = async (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => {
     await lockAnalysisExecution(tx, task);
     await settleCommercialTaskInTransaction(tx, { userId: task.userId, taskKey: `commercial:${task.id}`, credits, rewrites: 0 });
-    await tx.update(commercialTasks).set({ state, result: sql`${commercialTasks.result} || ${JSON.stringify({ successfulSceneIds: success, totalChargedCredits, chargedCredits: credits, projectId: input.projectId })}::jsonb`, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+    await tx.update(commercialTasks).set({ state, result: sql`${commercialTasks.result} || ${JSON.stringify({ successfulSceneIds: success, totalChargedCredits, chargedCredits: credits, projectId: input.projectId, ...(hadReview ? { reviewResolution: { action: "automatic_settlement", at: new Date().toISOString(), chargedCredits: credits } } : {}) })}::jsonb`, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
     await tx.update(projects).set({ status: success.length ? "ready" : "failed", metadata: sql`${projects.metadata} || ${JSON.stringify({ failedSceneCount: input.pricing.scenes.length - success.length, partialAnalysis: success.length > 0 && success.length < input.pricing.scenes.length })}::jsonb`, updatedAt: new Date() }).where(eq(projects.id, input.projectId));
   };
   if (transaction) await finish(transaction);

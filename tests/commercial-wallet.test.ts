@@ -462,7 +462,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
       await drain(quote.id);
       expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(11);
       const [completed] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
-      expect(completed).toMatchObject({ state: "completed", result: { finishedSceneIds: scenes.map(scene => scene.id) } });
+      expect(completed).toMatchObject({ state: "completed", result: { finishedSceneIds: scenes.map(scene => scene.id), reviewResolution: { action: "automatic_settlement" } } });
       expect((await balance()).heldCredits).toBe(0);
       const failedVersion = (await testDb.select().from(schema.sceneVersions)).find(version => version.sceneIndex === 2)!;
       const retry = await quoteCommercialAnalysisRetry(userId, quote.id, failedVersion.id);
