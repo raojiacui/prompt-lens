@@ -2,13 +2,14 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { PgDialect } from "drizzle-orm/pg-core";
 
-const mocks = vi.hoisted(() => ({ session: vi.fn(), find: vi.fn(), bundle: vi.fn(), after: vi.fn(), recover: vi.fn() }));
+const mocks = vi.hoisted(() => ({ session: vi.fn(), find: vi.fn(), bundle: vi.fn(), after: vi.fn(), recover: vi.fn(), resumeScenes: vi.fn() }));
 vi.mock("next/server", async importOriginal => ({ ...await importOriginal<typeof import("next/server")>(), after: mocks.after }));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { query: { commercialTasks: { findFirst: mocks.find } } } }));
 vi.mock("@/lib/billing/commercial-analysis", () => ({ commercialAnalysisBundle: mocks.bundle, recoverCommercialAnalysisTasks: mocks.recover }));
 vi.mock("@/lib/billing/commercial-task-runner", () => ({ confirmCommercialTask: vi.fn(), runCommercialTask: vi.fn() }));
 vi.mock("@/lib/billing/commercial-generation", () => ({ reconcileCommercialGeneration: vi.fn() }));
+vi.mock("@/lib/billing/independent-scene-analysis", () => ({ resumeIndependentAnalysis: mocks.resumeScenes }));
 vi.mock("@/lib/workflow/analysis-tasks", () => ({ recoverAnalysisTasks: vi.fn(), runAnalysisTask: vi.fn() }));
 import { GET } from "@/app/api/commercial/tasks/[id]/route";
 
@@ -38,6 +39,15 @@ it("does not load a project before any scene is processed", async () => {
   mocks.find.mockResolvedValue({ ...task, result: {} });
   expect((await (await call()).json()).bundle).toBeUndefined();
   expect(mocks.bundle).not.toHaveBeenCalled();
+});
+it("wakes independent scene recovery from authenticated task polling", async () => {
+  const task = await mocks.find();
+  mocks.find.mockResolvedValue({ ...task, result: { ...task.result, sceneJobMode: "independent_v1" } });
+  await call();
+  expect(mocks.resumeScenes).not.toHaveBeenCalled();
+  for (const [callback] of mocks.after.mock.calls) await callback();
+  expect(mocks.resumeScenes).toHaveBeenCalledOnce();
+  expect(mocks.resumeScenes).toHaveBeenCalledWith(id);
 });
 it.each([[5, false], [7, true], [31, true]])("uses the shared six-minute inactivity limit at %s minutes", async (minutes, shouldRecover) => {
   const task = await mocks.find();

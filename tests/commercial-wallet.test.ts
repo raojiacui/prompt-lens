@@ -30,7 +30,7 @@ import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileC
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
 import { acknowledgeCommercialReview, escalateOverdueCommercialReviews, notifyDueCommercialReviews, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
-import { reconcileTerminalIndependentAnalysis, recoverStaleAnalysisSceneJobs, runIndependentSceneJob } from "@/lib/billing/independent-scene-analysis";
+import { reconcileTerminalIndependentAnalysis, recoverStaleAnalysisSceneJobs, resumeIndependentAnalysis, runIndependentSceneJob } from "@/lib/billing/independent-scene-analysis";
 import { generationKeyFingerprint } from "@/lib/billing/generation-key";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "@/lib/billing/analysis-provider-limit";
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
@@ -502,7 +502,8 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await runCommercialTask(quote.id);
     const [job] = await testDb.select().from(schema.analysisSceneJobs);
     await testDb.update(schema.analysisSceneJobs).set({ state: "running", executionId: randomUUID(), result: { pendingBlueprint: { story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Saved model answer", metadata: { analysisProvider: "kie" } } }, updatedAt: new Date(Date.now() - 7 * 60_000) }).where(eq(schema.analysisSceneJobs.id, job.id));
-    expect(await recoverStaleAnalysisSceneJobs()).toBe(1);
+    expect(await resumeIndependentAnalysis(quote.id)).toBe(true);
+    expect(await resumeIndependentAnalysis(quote.id)).toBe(false);
     expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
     expect((await testDb.select().from(schema.sceneVersions))[0].generationPrompt).toBe("Saved model answer");
     expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0].state).toBe("completed");

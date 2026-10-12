@@ -107,9 +107,10 @@ export async function runIndependentSceneJob(jobId: string) {
   return true;
 }
 
-export async function recoverStaleAnalysisSceneJobs(limit = 5) {
+export async function recoverStaleAnalysisSceneJobs(limit = 5, taskId?: string) {
   const stale = await db.select({ id: analysisSceneJobs.id, taskId: analysisSceneJobs.taskId }).from(analysisSceneJobs)
-    .where(and(eq(analysisSceneJobs.state, "running"), sql`${analysisSceneJobs.updatedAt} < now() - interval '6 minutes'`)).orderBy(asc(analysisSceneJobs.updatedAt)).limit(limit);
+    .where(and(eq(analysisSceneJobs.state, "running"), taskId ? eq(analysisSceneJobs.taskId, taskId) : undefined,
+      sql`${analysisSceneJobs.updatedAt} < now() - interval '6 minutes'`)).orderBy(asc(analysisSceneJobs.updatedAt)).limit(limit);
   for (const job of stale) {
     await db.transaction(async (tx) => {
       const [current] = await tx.select().from(analysisSceneJobs).where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), sql`${analysisSceneJobs.updatedAt} < now() - interval '6 minutes'`)).for("update");
@@ -143,6 +144,22 @@ export async function recoverStaleAnalysisSceneJobs(limit = 5) {
     await dispatchQueuedSceneJobs(job.taskId);
   }
   return stale.length;
+}
+
+// Task status polling also runs in local development, where Vercel Cron is absent.
+// Claim one recovery attempt per task per minute across concurrent poll requests.
+export async function resumeIndependentAnalysis(taskId: string) {
+  const [claimed] = await db.update(commercialTasks)
+    .set({ result: sql`${commercialTasks.result} || jsonb_build_object('sceneRecoveryAt', now())` })
+    .where(and(eq(commercialTasks.id, taskId), eq(commercialTasks.state, "running"),
+      sql`${commercialTasks.result}->>'sceneJobMode' = 'independent_v1'`,
+      sql`coalesce((${commercialTasks.result}->>'sceneRecoveryAt')::timestamptz, 'epoch'::timestamptz) < now() - interval '1 minute'`))
+    .returning({ id: commercialTasks.id });
+  if (!claimed) return false;
+  await recoverStaleAnalysisSceneJobs(5, taskId);
+  await reconcileTerminalIndependentAnalysis(taskId);
+  await dispatchQueuedSceneJobs(taskId);
+  return true;
 }
 
 export async function dispatchQueuedSceneJobs(taskId?: string) {
