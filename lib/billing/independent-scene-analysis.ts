@@ -42,8 +42,8 @@ export async function runIndependentSceneJob(jobId: string) {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${candidate.taskId}))`);
     const [task] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, candidate.taskId), eq(commercialTasks.state, "running"))).for("update");
     if (!task || (task.result as Progress).sceneJobMode !== "independent_v1") return null;
-    const [active] = await tx.select({ id: analysisSceneJobs.id }).from(analysisSceneJobs).where(and(eq(analysisSceneJobs.taskId, task.id), eq(analysisSceneJobs.state, "running"))).limit(1);
-    if (active) return null; // Stage B: one child per video until isolation is verified.
+    const [active] = await tx.select({ count: sql<number>`count(*)::int` }).from(analysisSceneJobs).where(and(eq(analysisSceneJobs.taskId, task.id), eq(analysisSceneJobs.state, "running")));
+    if (active.count >= 2) return null;
     if (!await reserveAnalysisProviderSlot(tx, candidate.id, (task.input as AnalysisInput).keyFingerprint)) return null;
     const [job] = await tx.update(analysisSceneJobs).set({ state: "running", executionId, updatedAt: new Date() }).where(and(eq(analysisSceneJobs.id, jobId), eq(analysisSceneJobs.state, "queued"))).returning();
     return job ? { job, task } : null;
@@ -56,16 +56,21 @@ export async function runIndependentSceneJob(jobId: string) {
   const sceneRecord = progress.sceneRecords?.[job.sceneId];
   if (!asset || !progress.versionId || !sceneRecord) { await quarantineInvalidCheckpoint(task.id, job.id, executionId); return false; }
   let blueprint: SceneBlueprintDraft;
+  let requestStarted = false;
   try {
     const apiKey = input.pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(task.userId);
     if (!apiKey || generationKeyFingerprint(apiKey) !== input.keyFingerprint) throw new Error("KIE_KEY_CHANGED");
+    requestStarted = true;
     blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false });
   } catch (error) {
     console.error("commercial.scene.model_failed", { taskId: task.id, sceneId: job.sceneId, error: taskErrorDetails(error) });
-    blueprint = buildFallbackSceneBlueprint(asset, "Analysis unavailable", undefined, input.outputLanguage);
+    const fallback = buildFallbackSceneBlueprint(asset, "Analysis unavailable", undefined, input.outputLanguage);
+    blueprint = { ...fallback, metadata: { ...fallback.metadata, providerOutcome: requestStarted ? "unknown" : "not_sent" } };
   }
-  try { await releaseAnalysisProviderSlot(job.id); }
-  catch (error) { console.error("commercial.scene.provider_slot_release_failed", { sceneJobId: job.id, error }); }
+  if (blueprint.metadata?.providerOutcome !== "unknown") {
+    try { await releaseAnalysisProviderSlot(job.id); }
+    catch (error) { console.error("commercial.scene.provider_slot_release_failed", { sceneJobId: job.id, error }); }
+  }
   const succeeded = blueprint.metadata?.analysisProvider === "kie";
   const [checkpointed] = await db.update(analysisSceneJobs).set({ result: { pendingBlueprint: blueprint }, updatedAt: new Date() })
     .where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), eq(analysisSceneJobs.executionId, executionId))).returning({ id: analysisSceneJobs.id });
@@ -128,11 +133,12 @@ export async function recoverStaleAnalysisSceneJobs(limit = 5) {
 }
 
 export async function dispatchQueuedSceneJobs(taskId?: string) {
-  const queued = await db.select({ id: analysisSceneJobs.id, taskId: analysisSceneJobs.taskId }).from(analysisSceneJobs)
+  const queued = await db.select({ id: analysisSceneJobs.id, taskId: analysisSceneJobs.taskId,
+    activeCount: sql<number>`(SELECT count(*)::int FROM analysis_scene_jobs active WHERE active.task_id = ${analysisSceneJobs.taskId} AND active.state = 'running')` }).from(analysisSceneJobs)
     .innerJoin(commercialTasks, eq(commercialTasks.id, analysisSceneJobs.taskId))
     .where(and(eq(analysisSceneJobs.state, "queued"), eq(commercialTasks.state, "running"), taskId ? eq(analysisSceneJobs.taskId, taskId) : undefined,
-      sql`NOT EXISTS (SELECT 1 FROM analysis_scene_jobs active WHERE active.task_id = ${analysisSceneJobs.taskId} AND active.state = 'running')`))
-    .orderBy(asc(analysisSceneJobs.createdAt), asc(analysisSceneJobs.sceneIndex)).limit(taskId ? 1 : 50);
+      sql`(SELECT count(*) FROM analysis_scene_jobs active WHERE active.task_id = ${analysisSceneJobs.taskId} AND active.state = 'running') < 2`))
+    .orderBy(asc(analysisSceneJobs.createdAt), asc(analysisSceneJobs.sceneIndex)).limit(taskId ? 2 : 50);
   const secret = process.env.CRON_SECRET;
   const raw = process.env.NODE_ENV === "production" ? process.env.COMMERCIAL_RECONCILIATION_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") : process.env.LOCAL_ANALYSIS_BASE_URL || `http://127.0.0.1:${process.env.PORT || "3000"}`;
   if (!secret || !raw) return 0;
@@ -140,10 +146,11 @@ export async function dispatchQueuedSceneJobs(taskId?: string) {
   try { base = new URL(raw); if (base.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && ["localhost", "127.0.0.1"].includes(base.hostname))) return 0; }
   catch { return 0; }
   let sent = 0;
-  const dispatchedParents = new Set<string>();
+  const dispatchedParents = new Map<string, number>();
   for (const job of queued) {
-    if (dispatchedParents.has(job.taskId) || sent >= 5) continue;
-    dispatchedParents.add(job.taskId);
+    const dispatchedForParent = dispatchedParents.get(job.taskId) || 0;
+    if (job.activeCount + dispatchedForParent >= 2 || sent >= 5) continue;
+    dispatchedParents.set(job.taskId, dispatchedForParent + 1);
     try {
       const response = await fetch(new URL("/api/internal/analysis-run", base), { method: "POST", cache: "no-store", signal: AbortSignal.timeout(10_000), headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" }, body: JSON.stringify({ sceneJobId: job.id }) });
       if (response.ok) sent++;
