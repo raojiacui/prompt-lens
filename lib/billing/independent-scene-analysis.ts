@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { Agent, fetch as directFetch } from "undici";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { analysisSceneJobs, commercialTasks, db, sceneVersions, videoScenes } from "@/lib/db";
 import { analyzeSceneBlueprint, buildFallbackSceneBlueprint, type SceneBlueprintDraft } from "@/lib/workflow/scene-analysis";
@@ -11,6 +12,7 @@ import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "./analysis-provider-limit";
 
 type Progress = { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; splitDelivered?: boolean; sceneJobMode?: string };
+const localDispatchAgent = new Agent();
 
 async function quarantineInvalidCheckpoint(taskId: string, sceneJobId: string, executionId: string) {
   const at = new Date();
@@ -152,7 +154,11 @@ export async function dispatchQueuedSceneJobs(taskId?: string) {
     if (job.activeCount + dispatchedForParent >= 2 || sent >= 5) continue;
     dispatchedParents.set(job.taskId, dispatchedForParent + 1);
     try {
-      const response = await fetch(new URL("/api/internal/analysis-run", base), { method: "POST", cache: "no-store", signal: AbortSignal.timeout(10_000), headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" }, body: JSON.stringify({ sceneJobId: job.id }) });
+      const url = new URL("/api/internal/analysis-run", base);
+      const request = { method: "POST", signal: AbortSignal.timeout(10_000), headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" }, body: JSON.stringify({ sceneJobId: job.id }) };
+      const response = base.protocol === "http:"
+        ? await directFetch(url, { ...request, dispatcher: localDispatchAgent })
+        : await fetch(url, { ...request, cache: "no-store" });
       if (response.ok) sent++;
     } catch (error) { console.error("commercial.scene.dispatch_failed", { sceneJobId: job.id, error }); }
   }
