@@ -501,7 +501,11 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: { duration: 5 }, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, clipUrl: "https://example.com/clip.mp4", keyframeUrls: [] }] });
     await runCommercialTask(quote.id);
     const [job] = await testDb.select().from(schema.analysisSceneJobs);
-    await testDb.update(schema.analysisSceneJobs).set({ state: "running", executionId: randomUUID(), result: { pendingBlueprint: { story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Saved model answer", metadata: { analysisProvider: "kie" } } }, updatedAt: new Date(Date.now() - 7 * 60_000) }).where(eq(schema.analysisSceneJobs.id, job.id));
+    await testDb.update(schema.analysisSceneJobs).set({ state: "running", executionId: randomUUID(), result: {}, updatedAt: new Date(Date.now() - 25_000) }).where(eq(schema.analysisSceneJobs.id, job.id));
+    expect(await recoverStaleAnalysisSceneJobs(5, quote.id)).toBe(0);
+    await testDb.update(schema.analysisSceneJobs).set({ state: "running", executionId: randomUUID(), result: { pendingBlueprint: { story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Saved model answer", metadata: { analysisProvider: "kie" } } }, updatedAt: new Date(Date.now() - 5_000) }).where(eq(schema.analysisSceneJobs.id, job.id));
+    expect(await recoverStaleAnalysisSceneJobs(5, quote.id)).toBe(0);
+    await testDb.update(schema.analysisSceneJobs).set({ updatedAt: new Date(Date.now() - 25_000) }).where(eq(schema.analysisSceneJobs.id, job.id));
     expect(await resumeIndependentAnalysis(quote.id)).toBe(true);
     expect(await resumeIndependentAnalysis(quote.id)).toBe(false);
     expect(analyzeSceneBlueprint).not.toHaveBeenCalled();

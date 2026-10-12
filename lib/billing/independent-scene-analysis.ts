@@ -108,12 +108,19 @@ export async function runIndependentSceneJob(jobId: string) {
 }
 
 export async function recoverStaleAnalysisSceneJobs(limit = 5, taskId?: string) {
+  // A saved model response can be committed by another worker without repeating inference.
+  // Give the original save a short window, then recover it independently of the model lease.
+  const recoveryDue = sql`(
+    (jsonb_typeof(${analysisSceneJobs.result}->'pendingBlueprint') = 'object'
+      AND ${analysisSceneJobs.updatedAt} < now() - interval '20 seconds')
+    OR ${analysisSceneJobs.updatedAt} < now() - interval '6 minutes'
+  )`;
   const stale = await db.select({ id: analysisSceneJobs.id, taskId: analysisSceneJobs.taskId }).from(analysisSceneJobs)
     .where(and(eq(analysisSceneJobs.state, "running"), taskId ? eq(analysisSceneJobs.taskId, taskId) : undefined,
-      sql`${analysisSceneJobs.updatedAt} < now() - interval '6 minutes'`)).orderBy(asc(analysisSceneJobs.updatedAt)).limit(limit);
+      recoveryDue)).orderBy(asc(analysisSceneJobs.updatedAt)).limit(limit);
   for (const job of stale) {
     await db.transaction(async (tx) => {
-      const [current] = await tx.select().from(analysisSceneJobs).where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), sql`${analysisSceneJobs.updatedAt} < now() - interval '6 minutes'`)).for("update");
+      const [current] = await tx.select().from(analysisSceneJobs).where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), recoveryDue)).for("update", { skipLocked: true });
       if (!current) return;
       const [task] = await tx.select().from(commercialTasks).where(eq(commercialTasks.id, job.taskId)).for("update");
       if (!task || task.state !== "running") return;
@@ -147,13 +154,13 @@ export async function recoverStaleAnalysisSceneJobs(limit = 5, taskId?: string) 
 }
 
 // Task status polling also runs in local development, where Vercel Cron is absent.
-// Claim one recovery attempt per task per minute across concurrent poll requests.
+// Claim one recovery attempt per task every 15 seconds across concurrent poll requests.
 export async function resumeIndependentAnalysis(taskId: string) {
   const [claimed] = await db.update(commercialTasks)
     .set({ result: sql`${commercialTasks.result} || jsonb_build_object('sceneRecoveryAt', now())` })
     .where(and(eq(commercialTasks.id, taskId), eq(commercialTasks.state, "running"),
       sql`${commercialTasks.result}->>'sceneJobMode' = 'independent_v1'`,
-      sql`coalesce((${commercialTasks.result}->>'sceneRecoveryAt')::timestamptz, 'epoch'::timestamptz) < now() - interval '1 minute'`))
+      sql`coalesce((${commercialTasks.result}->>'sceneRecoveryAt')::timestamptz, 'epoch'::timestamptz) < now() - interval '15 seconds'`))
     .returning({ id: commercialTasks.id });
   if (!claimed) return false;
   await recoverStaleAnalysisSceneJobs(5, taskId);
