@@ -1,7 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { ANALYSIS_SAVE_STALE_TIMEOUT_MS, ANALYSIS_STALE_TIMEOUT_MS, AnalysisExecutionLost, executionCondition, lockAnalysisExecution } from "./analysis-execution";
-import { db, commercialLots, commercialTasks, projects, referenceVideos, projectVersions, videoScenes, sceneVersions } from "@/lib/db";
+import { db, analysisSceneJobs, commercialLots, commercialTasks, projects, referenceVideos, projectVersions, videoScenes, sceneVersions } from "@/lib/db";
 import { isOwnedLinkedVideo, commercialMediaRequest, type MediaPreview } from "./commercial-media";
 import { quoteAnalysis, settleAnalysis, type AnalysisPriceInput, PRICING_VERSION } from "./pricing-v6";
 import { getUserKieApiKey } from "@/lib/byok/kie";
@@ -14,9 +14,14 @@ import { settleCommercialTaskInTransaction } from "./commercial-wallet";
 import { resolveModelSelection } from "@/lib/ai/model-registry";
 import { taskErrorDetails } from "./task-diagnostics";
 import { dispatchQueuedAnalysis } from "@/lib/workflow/analysis-dispatch";
+import { dispatchQueuedSceneJobs } from "./independent-scene-analysis";
 
 export function commercialConsumptionEnabled() { return process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true"; }
-type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
+function sceneJobExperimentEnabled(userId: string) {
+  return process.env.COMMERCIAL_SCENE_JOB_EXPERIMENT === "true"
+    && (process.env.COMMERCIAL_SCENE_JOB_TEST_USER_IDS || "").split(",").map(id => id.trim()).includes(userId);
+}
+export type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; executionMode?: "scene_jobs_v1"; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
 
 export function quotedAnalysisModel(input: { payer: string; model: string; modelId?: string }) {
   const modelId = input.payer === "platform"
@@ -25,7 +30,7 @@ export function quotedAnalysisModel(input: { payer: string; model: string; model
   return resolveModelSelection("analysis", { mode: "manual", modelId }).model.kieModelId;
 }
 
-function savedAnalysisModel(input: AnalysisInput) {
+export function savedAnalysisModel(input: AnalysisInput) {
   // Quotes created before model snapshots were introduced retain their original model.
   return input.modelId || (input.pricing.model === "flash" ? "gemini-2.5-flash" : "gemini-2.5-pro");
 }
@@ -72,7 +77,7 @@ export async function quoteCommercialAnalysis(userId: string, input: { preparati
   const apiKey = pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(userId);
   if (!apiKey) throw new Error("KIE_KEY_REQUIRED");
   const modelId = quotedAnalysisModel(input);
-  const snapshot: AnalysisInput = { ...source, pricing, modelId, pricingVersion: PRICING_VERSION, outputLanguage: input.outputLanguage === "zh" ? "zh" : "en", keyFingerprint: generationKeyFingerprint(apiKey) };
+  const snapshot: AnalysisInput = { ...source, pricing, modelId, pricingVersion: PRICING_VERSION, outputLanguage: input.outputLanguage === "zh" ? "zh" : "en", keyFingerprint: generationKeyFingerprint(apiKey), ...(sceneJobExperimentEnabled(userId) ? { executionMode: "scene_jobs_v1" as const } : {}) };
   const [task] = await db.insert(commercialTasks).values({ userId, kind: "analysis", input: snapshot, credits: quote.credits, expiresAt: new Date(Date.now() + 600000) }).returning();
   return { id: task.id, ...quote, modelId, payer: pricing.payer, expiresAt: task.expiresAt };
 }
@@ -92,6 +97,10 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
   const finished = progress.finishedSceneIds || [];
   const successes = progress.successfulSceneIds || input.retry?.previousSuccess || [];
   const attempts = input.retry?.sceneVersions.map((s) => s.id) || input.pricing.scenes.map((s) => s.id);
+  if (input.executionMode === "scene_jobs_v1" && progress.assets && !input.retry) {
+    await dispatchQueuedSceneJobs(task.id);
+    return;
+  }
   const next = attempts.find((id) => !finished.includes(id));
   if (progress.pendingResult && progress.pendingResult.sceneId !== next) throw new Error("ANALYSIS_CHECKPOINT_MISMATCH");
   if (!next) {
@@ -148,8 +157,12 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
         sceneRecords[interval.id] = scene.id;
       }
       await tx.update(projects).set({ activeVersionId: version.id, updatedAt: new Date() }).where(eq(projects.id, input.projectId));
-      await tx.update(commercialTasks).set({ state: "queued", result: { ...progress, assets, splitDelivered: input.pricing.automaticSplit, versionId: version.id, sceneRecords, successfulSceneIds: [], finishedSceneIds: [] }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+      if (input.executionMode === "scene_jobs_v1") {
+        await tx.insert(analysisSceneJobs).values(input.pricing.scenes.map((interval, index) => ({ taskId: task.id, sceneId: interval.id, sceneIndex: index + 1 })));
+      }
+      await tx.update(commercialTasks).set({ state: input.executionMode === "scene_jobs_v1" ? "running" : "queued", result: { ...progress, assets, splitDelivered: input.pricing.automaticSplit, versionId: version.id, sceneRecords, successfulSceneIds: [], finishedSceneIds: [], ...(input.executionMode === "scene_jobs_v1" ? { executionPhase: "scene_jobs_waiting", sceneJobMode: "independent_v1" } : {}) }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
     });
+    if (input.executionMode === "scene_jobs_v1") await dispatchQueuedSceneJobs(task.id);
     return;
   }
   const index = input.pricing.scenes.findIndex((s) => s.id === next);
@@ -173,7 +186,7 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
   });
 }
 
-async function finishCommercialAnalysis(task: typeof commercialTasks.$inferSelect, success: string[], splitDelivered: boolean, state: "completed" | "failed", transaction?: Parameters<Parameters<typeof db.transaction>[0]>[0]) {
+export async function finishCommercialAnalysis(task: typeof commercialTasks.$inferSelect, success: string[], splitDelivered: boolean, state: "completed" | "failed", transaction?: Parameters<Parameters<typeof db.transaction>[0]>[0], finishedSceneIds?: string[]) {
   const input = task.input as AnalysisInput;
   const totalChargedCredits = settleAnalysis(input.pricing, success, splitDelivered);
   const credits = totalChargedCredits - (input.retry?.previousCharged || 0);
@@ -182,7 +195,7 @@ async function finishCommercialAnalysis(task: typeof commercialTasks.$inferSelec
     await lockAnalysisExecution(tx, task);
     await settleCommercialTaskInTransaction(tx, { userId: task.userId, taskKey: `commercial:${task.id}`, credits, rewrites: 0 });
     const resolvedAt = new Date();
-    const settlementResult = { successfulSceneIds: success, totalChargedCredits, chargedCredits: credits, projectId: input.projectId, ...(hadReview ? { reviewResolution: { action: "automatic_settlement", at: resolvedAt.toISOString(), chargedCredits: credits } } : {}) };
+    const settlementResult = { successfulSceneIds: success, ...(finishedSceneIds ? { finishedSceneIds } : {}), totalChargedCredits, chargedCredits: credits, projectId: input.projectId, ...(hadReview ? { reviewResolution: { action: "automatic_settlement", at: resolvedAt.toISOString(), chargedCredits: credits } } : {}) };
     const result = hadReview
       ? sql`jsonb_set(${commercialTasks.result} || ${JSON.stringify(settlementResult)}::jsonb, '{reviewHistory}', COALESCE(${commercialTasks.result}->'reviewHistory', '[]'::jsonb) || ${JSON.stringify([{ at: resolvedAt.toISOString(), action: "automatic_settlement", chargedCredits: credits }])}::jsonb)`
       : sql`${commercialTasks.result} || ${JSON.stringify(settlementResult)}::jsonb`;
@@ -197,9 +210,9 @@ export async function recoverCommercialAnalysisTasks(taskId?: string, options: {
   if (!taskId) await db.update(commercialTasks).set({ state: "failed", result: { code: "PREVIEW_EXPIRED" }, updatedAt: new Date() }).where(and(eq(commercialTasks.kind, "analysis_preview"), sql`${commercialTasks.state} IN ('running', 'quoted')`, sql`${commercialTasks.expiresAt} < now()`));
   const runningCutoff = new Date(Date.now() - ANALYSIS_STALE_TIMEOUT_MS);
   const saveCutoff = new Date(Date.now() - ANALYSIS_SAVE_STALE_TIMEOUT_MS);
-  const expired = sql`((${commercialTasks.state} IN ('running', 'review') AND (${commercialTasks.updatedAt} < ${runningCutoff.toISOString()}::timestamptz
+  const expired = sql`(${commercialTasks.result}->>'sceneJobMode' IS DISTINCT FROM 'independent_v1' AND ((${commercialTasks.state} IN ('running', 'review') AND (${commercialTasks.updatedAt} < ${runningCutoff.toISOString()}::timestamptz
     OR (${commercialTasks.updatedAt} < ${saveCutoff.toISOString()}::timestamptz AND ${commercialTasks.result}->'pendingResult' IS NOT NULL AND ${commercialTasks.result}->'pendingResult' <> 'null'::jsonb)))
-    OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.updatedAt} < now() - interval '24 hours'))`;
+    OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.updatedAt} < now() - interval '24 hours')))`;
   const stale = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "analysis"), taskId ? eq(commercialTasks.id, taskId) : undefined, expired, sql`(${commercialTasks.result}->>'recoveryRetryAt' IS NULL OR (${commercialTasks.result}->>'recoveryRetryAt')::timestamptz <= now())`)).orderBy(asc(commercialTasks.updatedAt)).limit(taskId ? 1 : options.limit ?? 10);
   const resumed: string[] = [];
   for (const candidate of stale) {
