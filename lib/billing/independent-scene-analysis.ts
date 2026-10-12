@@ -36,6 +36,17 @@ async function settleIfTerminal(taskId: string) {
   });
 }
 
+export async function reconcileTerminalIndependentAnalysis(taskId?: string, limit = 5) {
+  const terminal = await db.select({ id: commercialTasks.id }).from(commercialTasks)
+    .where(and(eq(commercialTasks.state, "running"), sql`${commercialTasks.result}->>'sceneJobMode' = 'independent_v1'`,
+      taskId ? eq(commercialTasks.id, taskId) : undefined,
+      sql`EXISTS (SELECT 1 FROM analysis_scene_jobs job WHERE job.task_id = ${commercialTasks.id})`,
+      sql`NOT EXISTS (SELECT 1 FROM analysis_scene_jobs job WHERE job.task_id = ${commercialTasks.id} AND job.state IN ('queued', 'running'))`))
+    .orderBy(asc(commercialTasks.updatedAt)).limit(limit);
+  for (const task of terminal) await settleIfTerminal(task.id);
+  return terminal.length;
+}
+
 export async function runIndependentSceneJob(jobId: string) {
   const executionId = randomUUID();
   const claimed = await db.transaction(async (tx) => {

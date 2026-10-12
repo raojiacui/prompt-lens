@@ -30,7 +30,7 @@ import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileC
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
 import { acknowledgeCommercialReview, escalateOverdueCommercialReviews, notifyDueCommercialReviews, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
-import { recoverStaleAnalysisSceneJobs, runIndependentSceneJob } from "@/lib/billing/independent-scene-analysis";
+import { reconcileTerminalIndependentAnalysis, recoverStaleAnalysisSceneJobs, runIndependentSceneJob } from "@/lib/billing/independent-scene-analysis";
 import { generationKeyFingerprint } from "@/lib/billing/generation-key";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "@/lib/billing/analysis-provider-limit";
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
@@ -558,6 +558,24 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const settlements = await testDb.select().from(schema.commercialLedger).where(eq(schema.commercialLedger.eventKey, `settle:${reservation.id}`));
     expect(settlements).toHaveLength(1);
     expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0].state).toBe("completed");
+    expect((await balance()).heldCredits).toBe(0);
+  });
+  it("reconciles a terminal scene parent after its final worker exits before settlement", async () => {
+    await grant();
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Terminal scene recovery" }).returning();
+    const [task] = await testDb.insert(schema.commercialTasks).values({
+      userId, kind: "analysis", state: "running", credits: 5, expiresAt: new Date(Date.now() + 600_000),
+      input: { projectId: project.id, pricing: { payer: "platform", model: "flash", sourceDurationUs: 5_000_000, automaticSplit: false, paidSplitReusable: false, scenes: [{ id: "1", startUs: 0, endUs: 5_000_000 }] } },
+      result: { sceneJobMode: "independent_v1", executionId: randomUUID() },
+    }).returning();
+    await reserveCommercialTask({ userId, taskKey: `commercial:${task.id}`, credits: 5, rewrites: 0, quote: { kind: "analysis" } });
+    await testDb.insert(schema.analysisSceneJobs).values({ taskId: task.id, sceneId: "1", sceneIndex: 1, state: "failed" });
+    expect(await reconcileTerminalIndependentAnalysis(task.id)).toBe(1);
+    expect(await reconcileTerminalIndependentAnalysis(task.id)).toBe(0);
+    const [reservation] = await testDb.select().from(schema.commercialReservations);
+    expect(reservation).toMatchObject({ state: "settled", settledCredits: 0 });
+    expect((await testDb.select().from(schema.commercialLedger).where(eq(schema.commercialLedger.eventKey, `settle:${reservation.id}`)))).toHaveLength(1);
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, task.id)))[0].state).toBe("failed");
     expect((await balance()).heldCredits).toBe(0);
   });
   it("replays the eleven-shot failure checkpoints and records the save error without duplicate inference", async () => {

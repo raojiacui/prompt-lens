@@ -2,7 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 const mocks = vi.hoisted(() => ({
-  recoverWorkflow: vi.fn(), recoverCommercial: vi.fn(), escalateReviews: vi.fn(), notifyReviews: vi.fn(), recoverScenes: vi.fn(), dispatchScenes: vi.fn(), dispatch: vi.fn(),
+  recoverWorkflow: vi.fn(), recoverCommercial: vi.fn(), escalateReviews: vi.fn(), notifyReviews: vi.fn(), recoverScenes: vi.fn(), reconcileScenes: vi.fn(), dispatchScenes: vi.fn(), dispatch: vi.fn(),
   consumptionEnabled: vi.fn(), select: vi.fn(), update: vi.fn(),
 }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { select: mocks.select, update: mocks.update } }));
@@ -10,7 +10,7 @@ vi.mock("@/lib/workflow/analysis-tasks", () => ({ recoverAnalysisTasks: mocks.re
 vi.mock("@/lib/billing/commercial-analysis", () => ({ recoverCommercialAnalysisTasks: mocks.recoverCommercial, commercialConsumptionEnabled: mocks.consumptionEnabled }));
 vi.mock("@/lib/workflow/analysis-dispatch", () => ({ dispatchQueuedAnalysis: mocks.dispatch }));
 vi.mock("@/lib/billing/commercial-review", () => ({ escalateOverdueCommercialReviews: mocks.escalateReviews, notifyDueCommercialReviews: mocks.notifyReviews }));
-vi.mock("@/lib/billing/independent-scene-analysis", () => ({ recoverStaleAnalysisSceneJobs: mocks.recoverScenes, dispatchQueuedSceneJobs: mocks.dispatchScenes }));
+vi.mock("@/lib/billing/independent-scene-analysis", () => ({ recoverStaleAnalysisSceneJobs: mocks.recoverScenes, reconcileTerminalIndependentAnalysis: mocks.reconcileScenes, dispatchQueuedSceneJobs: mocks.dispatchScenes }));
 
 import { GET } from "@/app/api/cron/analysis-dispatch/route";
 
@@ -24,6 +24,7 @@ beforeEach(() => {
   mocks.escalateReviews.mockResolvedValue(0);
   mocks.notifyReviews.mockResolvedValue(0);
   mocks.recoverScenes.mockResolvedValue(0);
+  mocks.reconcileScenes.mockResolvedValue(0);
   mocks.dispatchScenes.mockResolvedValue(0);
   mocks.dispatch.mockResolvedValue(true);
   mocks.select.mockReturnValue({ from: () => ({ where: () => ({ orderBy: () => ({ limit: () => Promise.resolve([{ id: "one", result: {} }, { id: "two", result: {} }]) }) }) }) });
@@ -42,6 +43,7 @@ it("recovers stale tasks without duplicate dispatch and wakes queued tasks", asy
   expect(mocks.recoverWorkflow).toHaveBeenCalledWith(expect.objectContaining({ dispatch: false, limit: 1, deadline: expect.any(Number) }));
   expect(mocks.recoverCommercial).toHaveBeenCalledWith(undefined, expect.objectContaining({ dispatch: false, limit: 1, deadline: expect.any(Number) }));
   expect(mocks.escalateReviews).toHaveBeenCalledWith(5);
+  expect(mocks.reconcileScenes).toHaveBeenCalledWith(undefined, 5);
   expect(mocks.dispatch.mock.calls.map(([id]) => id)).toEqual(["one", "two"]);
   expect(mocks.update).toHaveBeenCalledTimes(2);
   expect(mocks.dispatch.mock.invocationCallOrder[0]).toBeLessThan(mocks.recoverWorkflow.mock.invocationCallOrder[0]);

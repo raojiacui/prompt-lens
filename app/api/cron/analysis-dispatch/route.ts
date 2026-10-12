@@ -6,7 +6,7 @@ import { commercialConsumptionEnabled, recoverCommercialAnalysisTasks } from "@/
 import { recoverAnalysisTasks } from "@/lib/workflow/analysis-tasks";
 import { dispatchQueuedAnalysis } from "@/lib/workflow/analysis-dispatch";
 import { escalateOverdueCommercialReviews, notifyDueCommercialReviews } from "@/lib/billing/commercial-review";
-import { dispatchQueuedSceneJobs, recoverStaleAnalysisSceneJobs } from "@/lib/billing/independent-scene-analysis";
+import { dispatchQueuedSceneJobs, reconcileTerminalIndependentAnalysis, recoverStaleAnalysisSceneJobs } from "@/lib/billing/independent-scene-analysis";
 
 export const maxDuration = 300;
 
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
   if (commercialConsumptionEnabled()) {
     try { await escalateOverdueCommercialReviews(5); await notifyDueCommercialReviews(5); }
     catch (error) { console.error("analysis.dispatch_cron.review_escalation_failed", error); recoveryErrors.push("review_escalation"); }
-    try { await recoverStaleAnalysisSceneJobs(5); await dispatchQueuedSceneJobs(); }
+    try { await recoverStaleAnalysisSceneJobs(5); await reconcileTerminalIndependentAnalysis(undefined, 5); await dispatchQueuedSceneJobs(); }
     catch (error) { console.error("analysis.dispatch_cron.scene_jobs_failed", error); recoveryErrors.push("scene_jobs"); }
   }
   const deadline = Date.now() + 40_000;
