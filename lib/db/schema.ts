@@ -106,6 +106,22 @@ export const commercialTasks = pgTable("commercial_tasks", {
   uniqueIndex("workflow_analysis_project_unique").on(t.userId, sql`(${t.input}->>'projectId')`).where(sql`${t.kind} = 'workflow_analysis'`),
 ]);
 
+export const analysisSceneJobs = pgTable("analysis_scene_jobs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id").notNull().references(() => commercialTasks.id, { onDelete: "cascade" }),
+  sceneId: text("scene_id").notNull(),
+  sceneIndex: integer("scene_index").notNull(),
+  state: varchar("state", { length: 16 }).notNull().default("queued"),
+  executionId: uuid("execution_id"),
+  result: jsonb("result").notNull().default({}),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  uniqueIndex("analysis_scene_job_unique").on(t.taskId, t.sceneId),
+  index("analysis_scene_job_state_idx").on(t.state, t.updatedAt),
+  check("analysis_scene_job_state_check", sql`${t.state} IN ('queued', 'running', 'completed', 'failed')`),
+]);
+
 export const mediaCleanupJobs = pgTable("media_cleanup_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
   storageKey: text("storage_key").notNull().unique(),

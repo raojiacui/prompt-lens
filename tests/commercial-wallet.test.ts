@@ -73,6 +73,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await client.exec(readFileSync("drizzle/0006_generation_workflow_links.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0012_commercial_tasks.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0019_media_cleanup_jobs.sql", "utf8"));
+    await client.exec(readFileSync("drizzle/0023_analysis_scene_jobs.sql", "utf8"));
     await client.query('INSERT INTO "user" (id) VALUES ($1)', [userId]);
   });
   beforeEach(async () => {
@@ -93,6 +94,14 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await client.exec("TRUNCATE video_generation, commercial_tasks, commercial_refunds, commercial_allocations, commercial_lots, commercial_ledger, commercial_reservations, commercial_wallets, payment_orders, credit_ledger, user_credits CASCADE");
   });
   afterAll(async () => { await client.close(); });
+
+  it("allows one durable execution row per selected scene", async () => {
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", input: {}, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    await testDb.insert(schema.analysisSceneJobs).values({ taskId: task.id, sceneId: "shot-2", sceneIndex: 2 });
+    await expect(testDb.insert(schema.analysisSceneJobs).values({ taskId: task.id, sceneId: "shot-2", sceneIndex: 2 })).rejects.toThrow();
+    await testDb.insert(schema.analysisSceneJobs).values({ taskId: task.id, sceneId: "shot-3", sceneIndex: 3 });
+    expect(await testDb.select().from(schema.analysisSceneJobs)).toHaveLength(2);
+  });
 
   it("grants, accumulates and bounds zero-credit link imports without changing balances", async () => {
     await grant();

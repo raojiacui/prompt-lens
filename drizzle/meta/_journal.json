@@ -162,6 +162,13 @@
                         "when": 1790323200006,
                         "tag": "0022_auth_session_compatibility",
                         "breakpoints": true
+                    },
+                    {
+                        "idx": 23,
+                        "version": "7",
+                        "when": 1790323200007,
+                        "tag": "0023_analysis_scene_jobs",
+                        "breakpoints": true
                     }
                 ]
 }
