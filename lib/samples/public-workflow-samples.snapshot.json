@@ -1,6 +1,989 @@
 [
   {
     "project": {
+      "id": "52457e72-44d6-41e1-ae89-8233ef50082c",
+      "description": null,
+      "status": "ready",
+      "activeVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+      "createdAt": "2026-10-12T12:43:52.381Z",
+      "updatedAt": "2026-10-12T13:24:13.372Z",
+      "title": "风在耳边呼啸，山在脚下臣服",
+      "metadata": {
+        "mediaType": "video",
+        "failedSceneCount": 0
+      }
+    },
+    "versions": [
+      {
+        "id": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "parentVersionId": null,
+        "versionNumber": 0,
+        "kind": "original",
+        "label": "原始版本",
+        "remixPrompt": null,
+        "overview": {
+          "sceneCount": 7
+        },
+        "metadata": {},
+        "createdAt": "2026-10-12T12:47:06.964Z",
+        "updatedAt": "2026-10-12T12:47:06.964Z"
+      }
+    ],
+    "activeVersion": {
+      "id": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+      "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+      "parentVersionId": null,
+      "versionNumber": 0,
+      "kind": "original",
+      "label": "原始版本",
+      "remixPrompt": null,
+      "overview": {
+        "sceneCount": 7
+      },
+      "metadata": {},
+      "createdAt": "2026-10-12T12:47:06.964Z",
+      "updatedAt": "2026-10-12T12:47:06.964Z"
+    },
+    "scenes": [
+      {
+        "id": "8d959c1f-4897-4143-8221-9b69a881dd69",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "referenceVideoId": "165449d0-fd1a-4f3c-9d6c-9a477724465d",
+        "sceneIndex": 1,
+        "shotGroupId": null,
+        "startTime": 0,
+        "endTime": 3.208,
+        "duration": 3.208,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T12:47:06.964Z",
+        "updatedAt": "2026-10-12T12:59:31.102Z"
+      },
+      {
+        "id": "78c8eb2a-0e3f-4b6a-8e91-fd96cc23b18a",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "referenceVideoId": "165449d0-fd1a-4f3c-9d6c-9a477724465d",
+        "sceneIndex": 2,
+        "shotGroupId": null,
+        "startTime": 3.208,
+        "endTime": 8.25,
+        "duration": 5.042,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/002/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/002/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/002/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/002/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/002/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T12:47:06.964Z",
+        "updatedAt": "2026-10-12T13:06:15.401Z"
+      },
+      {
+        "id": "5296da5f-744a-43e3-ac95-1f4d09c430dd",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "referenceVideoId": "165449d0-fd1a-4f3c-9d6c-9a477724465d",
+        "sceneIndex": 3,
+        "shotGroupId": null,
+        "startTime": 8.25,
+        "endTime": 18.083,
+        "duration": 9.833,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/003/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/003/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/003/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/003/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/003/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T12:47:06.964Z",
+        "updatedAt": "2026-10-12T13:06:29.808Z"
+      },
+      {
+        "id": "3803c190-8b4c-4bee-9cb3-f07f7ef471ad",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "referenceVideoId": "165449d0-fd1a-4f3c-9d6c-9a477724465d",
+        "sceneIndex": 4,
+        "shotGroupId": null,
+        "startTime": 18.083,
+        "endTime": 23.208,
+        "duration": 5.125,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/004/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/004/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/004/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/004/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/004/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T12:47:06.964Z",
+        "updatedAt": "2026-10-12T13:07:01.619Z"
+      },
+      {
+        "id": "a494ef65-c3ae-4faa-b9f3-a57a696019d9",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "referenceVideoId": "165449d0-fd1a-4f3c-9d6c-9a477724465d",
+        "sceneIndex": 5,
+        "shotGroupId": null,
+        "startTime": 23.208,
+        "endTime": 28.125,
+        "duration": 4.917,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/005/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/005/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/005/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/005/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/005/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T12:47:06.964Z",
+        "updatedAt": "2026-10-12T13:07:12.776Z"
+      },
+      {
+        "id": "55f2344f-08d9-4629-a823-edb25ff0a4ea",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "referenceVideoId": "165449d0-fd1a-4f3c-9d6c-9a477724465d",
+        "sceneIndex": 6,
+        "shotGroupId": null,
+        "startTime": 28.125,
+        "endTime": 33.042,
+        "duration": 4.917,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/006/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/006/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/006/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/006/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/006/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T12:47:06.964Z",
+        "updatedAt": "2026-10-12T13:15:27.812Z"
+      },
+      {
+        "id": "3f96a1bc-9c10-4177-819a-255a88d16d7f",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "referenceVideoId": "165449d0-fd1a-4f3c-9d6c-9a477724465d",
+        "sceneIndex": 7,
+        "shotGroupId": null,
+        "startTime": 33.042,
+        "endTime": 37.222,
+        "duration": 4.18,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/007/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/007/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/007/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/007/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fcdb27f6-bf90-446a-ad73-c46707588d01/scenes/007/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T12:47:06.964Z",
+        "updatedAt": "2026-10-12T13:17:13.091Z"
+      }
+    ],
+    "sceneVersions": [
+      {
+        "id": "c51b867f-fc21-4754-a931-32d1b24080ca",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "8d959c1f-4897-4143-8221-9b69a881dd69",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 3.208,
+          "summary": "一名男子正沿着高山草甸斜坡全力向下奔跑，镜头自后方紧随其后穿行于壮阔山峦之中。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "高饱和度偏冷绿色调，苔藓绿与深草绿主导画面，伴随白色花草点缀。",
+          "style": "电影感沉浸式实拍风格，高速运动写实风格，伴随动态模糊与镜头畸变。",
+          "action": "男子从画面近处持续向画面深处的山坡下冲刺奔跑，手臂前后摆动，步伐迅速，周围草木迅速倒退。",
+          "camera": "追随跟拍视角（第三人称背后视角），广角镜头，高速跟随俯冲，带有轻微手持颠簸与强烈运动模糊，焦点始终锁定在男子背部。",
+          "motion": "人物快速向前下冲，摄像机高速前推跟随，四周场景向边缘径向模糊拉伸。",
+          "subject": "背影奔跑的男子，身着浅色短袖T恤与深色短裤，体格健硕。",
+          "lighting": "自然漫射天光，微泛柔和的日光，整体光线较为均匀且略带阴沉感。",
+          "characters": [
+            {
+              "pose": "身体前倾，重心放低，大步向下冲刺。",
+              "identity": "奔跑中的年轻男子",
+              "wardrobe": "浅白色短袖运动衫、深色运动短裤。",
+              "appearance": "体态强健，深色短发，后背视点。",
+              "expression": "背对镜头不可见。"
+            }
+          ],
+          "composition": "中心对称构图，主体男子居中，前景与中景为倾斜向下的草坡，后景为延伸开阔的深邃峡谷。",
+          "environment": "广袤的高山草甸与山谷斜坡，地面覆盖深绿色植被与白色细小野花，背景为起伏的雄伟山峦与局部薄雾。",
+          "sceneDescription": "全景高山草甸，一名短发男子背对镜头沿着陡峭的绿色山坡飞速向下奔跑，草丛在两侧飞速掠过并伴随动态模糊，远方是连绵深绿的山谷与山脉。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知/无直接音频信息",
+          "ambient": "高山呼啸的风声与剧烈的喘息脚步声（推测）",
+          "soundEffects": "草丛摩擦与鞋底踏地的声音（推测）"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快节奏，高动态运动连贯镜头",
+            "techniques": "硬切（Hard cut）进出"
+          }
+        },
+        "generationPrompt": "电影质感，广角跟拍镜头。一名身穿白色短袖和深色短裤的年轻男子背对镜头，正以极快的速度沿着开阔陡峭的高山绿色草甸向下冲刺。摄像机自后方紧紧跟随俯冲，呈现强烈的纵深感与速度感。山坡上覆盖着青绿草地和小白花，两侧草丛因快速运动产生明显的径向模糊。背景是连绵起伏、烟雾微锁的雄伟深绿山峦。冷色调，浓郁的青绿色调风格，自然漫射日光，沉浸式写实视觉效果。\n\n画面与环境: 全景高山草甸，一名短发男子背对镜头沿着陡峭的绿色山坡飞速向下奔跑，草丛在两侧飞速掠过并伴随动态模糊，远方是连绵深绿的山谷与山脉。；背影奔跑的男子，身着浅色短袖T恤与深色短裤，体格健硕。；广袤的高山草甸与山谷斜坡，地面覆盖深绿色植被与白色细小野花，背景为起伏的雄伟山峦与局部薄雾。\n\n人物与动作: identity: 奔跑中的年轻男子; appearance: 体态强健，深色短发，后背视点。; wardrobe: 浅白色短袖运动衫、深色运动短裤。; expression: 背对镜头不可见。; pose: 身体前倾，重心放低，大步向下冲刺。；男子从画面近处持续向画面深处的山坡下冲刺奔跑，手臂前后摆动，步伐迅速，周围草木迅速倒退。；人物快速向前下冲，摄像机高速前推跟随，四周场景向边缘径向模糊拉伸。\n\n镜头与构图: 追随跟拍视角（第三人称背后视角），广角镜头，高速跟随俯冲，带有轻微手持颠簸与强烈运动模糊，焦点始终锁定在男子背部。；中心对称构图，主体男子居中，前景与中景为倾斜向下的草坡，后景为延伸开阔的深邃峡谷。\n\n光影与质感: 自然漫射天光，微泛柔和的日光，整体光线较为均匀且略带阴沉感。；高饱和度偏冷绿色调，苔藓绿与深草绿主导画面，伴随白色花草点缀。；电影感沉浸式实拍风格，高速运动写实风格，伴随动态模糊与镜头畸变。\n\n声音: ambient: 高山呼啸的风声与剧烈的喘息脚步声（推测）; music: 未知/无直接音频信息; soundEffects: 草丛摩擦与鞋底踏地的声音（推测）\n\n节奏与转场: editing: pacing: 快节奏，高动态运动连贯镜头; techniques: 硬切（Hard cut）进出",
+        "duration": 3.208,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T12:59:28.486Z",
+        "updatedAt": "2026-10-12T12:59:28.486Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "16114553-fa05-470a-b3b6-cbaa6fe9335c",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "78c8eb2a-0e3f-4b6a-8e91-fd96cc23b18a",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 8.25,
+          "summary": "一名身穿白衬衫和黑裤子的光头男子背对镜头，在开阔的绿色山坡上快速向下奔跑。",
+          "startTime": 3.208,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "偏青绿调的高原自然色彩，青翠草地与暗绿松树占主导，天空呈蓝青色，白云与白衬衫形成高光对比。",
+          "style": "具有梦核（dreamcore）质感的复古低保真胶片与早期数字视频风格，强运动残影。",
+          "action": "男子从坡顶快速朝斜下方奔跑，步幅大且步伐急促；随着奔跑，草地与树木在画面两侧迅速后掠。",
+          "camera": "背部跟随中远景镜头，广角略带边缘畸变，随人物高速向下俯冲移动，伴随强烈动态运动模糊。",
+          "motion": "人物快速向前冲刺，镜头高速前推贴地跟拍，画面四周有强烈的放射状径向模糊。",
+          "subject": "一名光头成年男性，身穿宽松白色长袖衬衫与黑色长裤，赤足或穿深色鞋，全力向下冲刺奔跑。",
+          "lighting": "室外日间自然顶光，光线略带柔焦与泛光效果，地面投射出短促的深色阴影。",
+          "characters": "仅有一名背向镜头的男性奔跑者，看不见正脸面部表情，展现逃离或追逐的紧迫肢体状态。",
+          "composition": "奔跑主体位于画面中心偏中景，近景为模糊后退的草皮，远景为开阔山体与天空，具纵深推进感。",
+          "environment": "起伏的绿色高山草甸，右侧和前方分布着松树林，远景为连绵的山脉和点缀着白云的晴空，远处可见一条蜿蜒小路。",
+          "sceneDescription": "全景跟拍视角，一个身穿白衬衫与黑色长裤的光头男子在绿草如茵的山坡上全力向下奔跑。背景是层叠的远山、深绿松树和蔚蓝带白云的天空，画面伴有明显的运动模糊与梦幻感。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "奔跑的沉重脚步踏草声、急促呼吸声与呼啸的高原山风声，无对白。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "高速连续运动长镜头，节奏紧张而急促。",
+            "techniques": "硬切入，硬切出。"
+          }
+        },
+        "generationPrompt": "实景电影质感，低保真复古风格。一个身穿宽松白色长袖衬衫、黑色长裤的光头男子背对镜头，在青翠起伏的高山草坡上快速向下奔跑。广角跟拍镜头紧随男子背后高速下冲，四周边缘带有强烈的运动模糊和径向拉伸感。背景是层叠的绿色远山、松树林和漂浮着蓬松白云的蓝绿色天空。日光漫射，整体色调略偏胶片青绿，充满梦境般的奔跑逃离感。\n\n画面与环境: 全景跟拍视角，一个身穿白衬衫与黑色长裤的光头男子在绿草如茵的山坡上全力向下奔跑。背景是层叠的远山、深绿松树和蔚蓝带白云的天空，画面伴有明显的运动模糊与梦幻感。；一名光头成年男性，身穿宽松白色长袖衬衫与黑色长裤，赤足或穿深色鞋，全力向下冲刺奔跑。；起伏的绿色高山草甸，右侧和前方分布着松树林，远景为连绵的山脉和点缀着白云的晴空，远处可见一条蜿蜒小路。\n\n人物与动作: 仅有一名背向镜头的男性奔跑者，看不见正脸面部表情，展现逃离或追逐的紧迫肢体状态。；男子从坡顶快速朝斜下方奔跑，步幅大且步伐急促；随着奔跑，草地与树木在画面两侧迅速后掠。；人物快速向前冲刺，镜头高速前推贴地跟拍，画面四周有强烈的放射状径向模糊。\n\n镜头与构图: 背部跟随中远景镜头，广角略带边缘畸变，随人物高速向下俯冲移动，伴随强烈动态运动模糊。；奔跑主体位于画面中心偏中景，近景为模糊后退的草皮，远景为开阔山体与天空，具纵深推进感。\n\n光影与质感: 室外日间自然顶光，光线略带柔焦与泛光效果，地面投射出短促的深色阴影。；偏青绿调的高原自然色彩，青翠草地与暗绿松树占主导，天空呈蓝青色，白云与白衬衫形成高光对比。；具有梦核（dreamcore）质感的复古低保真胶片与早期数字视频风格，强运动残影。\n\n声音: soundStyle: 奔跑的沉重脚步踏草声、急促呼吸声与呼啸的高原山风声，无对白。\n\n节奏与转场: editing: pacing: 高速连续运动长镜头，节奏紧张而急促。; techniques: 硬切入，硬切出。",
+        "duration": 5.042,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:06:13.160Z",
+        "updatedAt": "2026-10-12T13:06:13.160Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "d1a02dee-fbac-4724-a865-364f3c13087a",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "5296da5f-744a-43e3-ac95-1f4d09c430dd",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 18.083,
+          "summary": "一名男子在起伏连绵的翠绿山丘与深谷上方低空悬浮滑翔。",
+          "startTime": 8.25,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "深橄榄绿、草绿色与浅色衣物高光。",
+          "style": "超现实魔幻写实电影质感。",
+          "action": "男子从近景坡地上方掠出，在空中微调姿态，随后持续向山谷深处滑翔远去。",
+          "camera": "后方跟拍推进镜头，微俯视角，运动平滑顺畅，焦点锁定主体并带出纵深全景。",
+          "motion": "人物如在水中游动般平稳滑空，镜头平顺跟进。",
+          "subject": "光头成年男子，体格匀称，身着米白色短袖及短裤，身体在空中舒展滑行。",
+          "lighting": "柔和自然的漫射光，暗部阴影丰富，整体呈沉郁电影感调性。",
+          "characters": [
+            {
+              "name": "滑翔男子",
+              "action": "在草坡上空悬空滑翔，轻微翻转并飞向远方谷底",
+              "appearance": "光头，短袖短裤休闲装束",
+              "expression": "平静沉浸"
+            }
+          ],
+          "composition": "深远景深构图，主体自中近景逐渐移向画中远景，背景为层叠宏大的绿色山峦。",
+          "environment": "起伏剧烈的多褶皱绿色草山、山谷，地表覆盖草甸并有隐约山径，呈广袤自然景观。",
+          "sceneDescription": "全景至远景。一名光头男子身穿浅色T恤和短裤，呈俯卧自由滑翔姿态，从草坡上方掠过并飞向深邃的绿色山谷，镜头平稳尾随跟拍。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知",
+          "ambient": "空旷风声与自然沉浸底噪",
+          "soundEffects": "无明显拟音"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "舒缓流畅",
+            "techniques": "长镜头跟随推进"
+          }
+        },
+        "generationPrompt": "电影质感超现实镜头。一名光头男子身穿米白T恤与短裤，以俯冲漂浮姿态在起伏的绿色草山与山谷上空低空滑翔。摄像机平稳尾随跟拍，俯视广袤褶皱草坡与深邃谷底。漫射自然光，深橄榄绿调，画面沉静宏大。\n\n画面与环境: 全景至远景。一名光头男子身穿浅色T恤和短裤，呈俯卧自由滑翔姿态，从草坡上方掠过并飞向深邃的绿色山谷，镜头平稳尾随跟拍。；光头成年男子，体格匀称，身着米白色短袖及短裤，身体在空中舒展滑行。；起伏剧烈的多褶皱绿色草山、山谷，地表覆盖草甸并有隐约山径，呈广袤自然景观。\n\n人物与动作: name: 滑翔男子; appearance: 光头，短袖短裤休闲装束; expression: 平静沉浸; action: 在草坡上空悬空滑翔，轻微翻转并飞向远方谷底；男子从近景坡地上方掠出，在空中微调姿态，随后持续向山谷深处滑翔远去。；人物如在水中游动般平稳滑空，镜头平顺跟进。\n\n镜头与构图: 后方跟拍推进镜头，微俯视角，运动平滑顺畅，焦点锁定主体并带出纵深全景。；深远景深构图，主体自中近景逐渐移向画中远景，背景为层叠宏大的绿色山峦。\n\n光影与质感: 柔和自然的漫射光，暗部阴影丰富，整体呈沉郁电影感调性。；深橄榄绿、草绿色与浅色衣物高光。；超现实魔幻写实电影质感。\n\n声音: ambient: 空旷风声与自然沉浸底噪; music: 未知; soundEffects: 无明显拟音\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 舒缓流畅; techniques: 长镜头跟随推进",
+        "duration": 9.833,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:06:26.743Z",
+        "updatedAt": "2026-10-12T13:06:26.743Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "0b022876-133a-4259-9527-2866527dafe2",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "3803c190-8b4c-4bee-9cb3-f07f7ef471ad",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 23.208,
+          "summary": "一名孤独的人影奔跑在广袤连绵的翠绿山坡上，穿过随风翻滚的高草丛，向着辽阔的山谷深处前行。",
+          "startTime": 18.083,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "以鲜艳浓郁的草绿、黄绿为主色调，点缀深绿树丛与暗色岩石土壤。",
+          "style": "电影感写实摄影与数字艺术融合风格，充满沉浸感与辽阔诗意。",
+          "action": "人物背向镜头，在被狂风吹拂的高草丛中顺着下坡向前奔跑；强风使草浪持续向一侧倾伏律动。",
+          "camera": "大远景俯拍，伴随缓慢平稳的向前俯冲与推进跟随运动，深焦表现宏大空间感。",
+          "motion": "前景草浪剧烈翻涌，镜头匀速向前推进下沉，人物步伐稳定向画面深处远去。",
+          "subject": "一名奔跑的人影，身形纤细，背对镜头朝山谷深处移动。",
+          "lighting": "柔和自然的漫射日光，山间伴有部分云影与斜射高光，层次丰富。",
+          "characters": "一名未知性别与年龄的人物，剪影状远景，身穿深色服饰，无清晰面部细节，动作呈现持续的奔跑姿态。",
+          "composition": "居中向心构图，主体人影位于画面纵深中心，四周被广阔的斜向草浪包围，远景山脉层叠呈现深邃纵深。",
+          "environment": "壮丽的崇山峻岭与高山草甸，遍布起伏的翠绿草浪、散落的针叶树丛及崎岖岩石小径，自然原野氛围浓厚。",
+          "sceneDescription": "全景俯拍，展现连绵起伏的翠绿色山丘与深谷。前景是迎风剧烈摇曳的长草，中景一个小巧的人影正沿山坡向下奔跑，远景群山叠翠，带有斑驳光影。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "空旷呼啸的山间风声与草叶剧烈摩擦的沙沙声，可能伴有舒缓宏大的氛围音乐。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓流畅的长镜头推进节奏",
+            "techniques": "硬切入与硬切出"
+          }
+        },
+        "generationPrompt": "电影质感大远景俯拍，一个孤独的人影背对镜头，在狂风呼啸的壮丽绿色山脊上向下奔跑。前景是金色与翠绿色相间、随风剧烈倾斜翻涌的茂密高草丛；中景和远景是层叠起伏的宏伟群山与葱郁山谷，阳光在山峦间投下斑驳光影。摄影机缓慢平稳地向前向下推进跟随，画面充满辽阔诗意与深远纵深感，8k超清写实风景风格。\n\n画面与环境: 全景俯拍，展现连绵起伏的翠绿色山丘与深谷。前景是迎风剧烈摇曳的长草，中景一个小巧的人影正沿山坡向下奔跑，远景群山叠翠，带有斑驳光影。；一名奔跑的人影，身形纤细，背对镜头朝山谷深处移动。；壮丽的崇山峻岭与高山草甸，遍布起伏的翠绿草浪、散落的针叶树丛及崎岖岩石小径，自然原野氛围浓厚。\n\n人物与动作: 一名未知性别与年龄的人物，剪影状远景，身穿深色服饰，无清晰面部细节，动作呈现持续的奔跑姿态。；人物背向镜头，在被狂风吹拂的高草丛中顺着下坡向前奔跑；强风使草浪持续向一侧倾伏律动。；前景草浪剧烈翻涌，镜头匀速向前推进下沉，人物步伐稳定向画面深处远去。\n\n镜头与构图: 大远景俯拍，伴随缓慢平稳的向前俯冲与推进跟随运动，深焦表现宏大空间感。；居中向心构图，主体人影位于画面纵深中心，四周被广阔的斜向草浪包围，远景山脉层叠呈现深邃纵深。\n\n光影与质感: 柔和自然的漫射日光，山间伴有部分云影与斜射高光，层次丰富。；以鲜艳浓郁的草绿、黄绿为主色调，点缀深绿树丛与暗色岩石土壤。；电影感写实摄影与数字艺术融合风格，充满沉浸感与辽阔诗意。\n\n声音: soundStyle: 空旷呼啸的山间风声与草叶剧烈摩擦的沙沙声，可能伴有舒缓宏大的氛围音乐。\n\n节奏与转场: editing: pacing: 舒缓流畅的长镜头推进节奏; techniques: 硬切入与硬切出",
+        "duration": 5.125,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:06:59.557Z",
+        "updatedAt": "2026-10-12T13:06:59.557Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "6cfddaff-687e-45c6-9f2b-99560d0b9dba",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "a494ef65-c3ae-4faa-b9f3-a57a696019d9",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 28.125,
+          "summary": "少女漫步在繁花盛开的山林小径上，背影逐渐融入静谧的自然远景中。",
+          "startTime": 23.208,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "以浓郁草绿、墨绿为主色调，点缀白色花斑，具有轻微泛绿的复古胶片与油画色调。",
+          "style": "兼具复古实景质感与怀旧手绘油画氛围，边缘柔和且带轻微噪点颗粒感。",
+          "action": "女孩保持平稳步伐沿着右侧泥土小道向纵深处漫步，身形在开阔自然环境中缓步前移。",
+          "camera": "高角度远景俯拍，机位轻微缓慢平移或保持稳定，焦点覆盖整片山坡全景。",
+          "motion": "人物步伐稳定缓慢，画面整体运动轻柔平缓。",
+          "subject": "独自行走在山坡小径上的少女背影。",
+          "lighting": "柔和自然的阴天漫射光，无明显直射强光，整体光感柔润通透。",
+          "characters": "一名年轻女性，深色短发，身穿白色短袖衬衫与藏青色及膝裙，背对镜头，姿态轻盈自然。",
+          "composition": "三分法则构图，主体女孩位于画面右下至中景区域，左侧大面积绿草野花与森林构成自然纵深平衡。",
+          "environment": "高山草甸与森林边缘，斜坡上点缀大量白色小野花与零星岩石，周围分布高大深绿松树，远景为雾霭笼罩的苍翠群山。",
+          "sceneDescription": "高角度远景，一名穿白衬衫与深色裙的年轻女孩背对镜头，沿着右侧布满白色小野花的山间草坡小径缓缓向前行走，背景为连绵起伏的翠绿山峦与茂密松林。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "musicStyle": "抒情、空灵、缓慢的环境器乐配乐",
+          "soundEffects": "推测为自然微风与脚步摩擦草地的细微声效"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓悠长",
+            "techniques": "硬切进入，硬切退出"
+          }
+        },
+        "generationPrompt": "高角度俯拍远景，复古油画质感与胶片颗粒感。一名身穿白色短袖衬衫和藏青色及膝裙的年轻女孩背对镜头，沿着开满白色小野花的青翠山间草坡小径缓步向前漫步。左侧与前景为郁郁葱葱的松林与草地，远景是笼罩在柔和雾霭中的连绵青山。柔和阴天漫射光，清新静谧的绿色调画面，摄影机平稳微幅运镜，营造孤独而唯美的自然诗意氛围。\n\n画面与环境: 高角度远景，一名穿白衬衫与深色裙的年轻女孩背对镜头，沿着右侧布满白色小野花的山间草坡小径缓缓向前行走，背景为连绵起伏的翠绿山峦与茂密松林。；独自行走在山坡小径上的少女背影。；高山草甸与森林边缘，斜坡上点缀大量白色小野花与零星岩石，周围分布高大深绿松树，远景为雾霭笼罩的苍翠群山。\n\n人物与动作: 一名年轻女性，深色短发，身穿白色短袖衬衫与藏青色及膝裙，背对镜头，姿态轻盈自然。；女孩保持平稳步伐沿着右侧泥土小道向纵深处漫步，身形在开阔自然环境中缓步前移。；人物步伐稳定缓慢，画面整体运动轻柔平缓。\n\n镜头与构图: 高角度远景俯拍，机位轻微缓慢平移或保持稳定，焦点覆盖整片山坡全景。；三分法则构图，主体女孩位于画面右下至中景区域，左侧大面积绿草野花与森林构成自然纵深平衡。\n\n光影与质感: 柔和自然的阴天漫射光，无明显直射强光，整体光感柔润通透。；以浓郁草绿、墨绿为主色调，点缀白色花斑，具有轻微泛绿的复古胶片与油画色调。；兼具复古实景质感与怀旧手绘油画氛围，边缘柔和且带轻微噪点颗粒感。\n\n声音: soundEffects: 推测为自然微风与脚步摩擦草地的细微声效; musicStyle: 抒情、空灵、缓慢的环境器乐配乐\n\n节奏与转场: editing: pacing: 舒缓悠长; techniques: 硬切进入，硬切退出",
+        "duration": 4.917,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:07:09.319Z",
+        "updatedAt": "2026-10-12T13:07:09.319Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "5dda32b2-f882-4ff7-8683-2d023eb2592b",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "55f2344f-08d9-4629-a823-edb25ff0a4ea",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 33.042,
+          "summary": "一名身穿浅色长袍的人物如梦境般在高山草甸上空平稳滑翔，飞越深邃的绿色峡谷。",
+          "startTime": 28.125,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "偏浓重饱和的橄榄绿调，绿色草木与远山主导画面，长袍呈柔和的米黄色。",
+          "style": "魔幻现实主义、超现实电影质感。",
+          "action": "人物以超现实方式沿斜坡上方平稳向前滑翔，衣料受气流吹拂；镜头贴近草坡匀速向前跟随滑行。",
+          "camera": "广角镜头，斜角俯视追踪，中景兼顾宏大远景，平滑向斜下方前推运镜。",
+          "motion": "主体与镜头同步向前平稳推进，草木与衣摆轻微晃动。",
+          "subject": "在空中水平滑翔的飞人角色。",
+          "lighting": "柔和自然的漫射天光，阴云笼罩感，无硬光阴影。",
+          "characters": "一人，身着浅黄至米白色连体长袍，面部背对镜头，身体在空中平展向前，衣摆微扬。",
+          "composition": "右下半幅为倾斜草甸前景，主体位于中左半空，远景为深谷与山脉形成的纵深纵轴。",
+          "environment": "高山草甸、陡峭山坡、白色野花丛、暗绿松树林及远处被薄雾笼罩的峡谷裂隙。",
+          "sceneDescription": "开阔陡峭的高山峡谷草坡上，斜长着白色野花。一名穿着浅黄色宽松长袍的人物呈俯卧姿态在半空中低空滑行，背景为层叠苍翠的群山与松林。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知，推测为空灵悠扬的氛围音乐",
+          "ambient": "未知，推测为高空气流与微弱风声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "平稳舒缓",
+            "techniques": "硬切进入与移出"
+          }
+        },
+        "generationPrompt": "电影级超现实画面。一名身穿浅黄色飘逸长袍的人物以水平姿势在空中向前平稳滑翔，位于陡峭的高山草坡上方。右侧近景是摇曳的翠绿草丛与零星白色小花，背景是深邃广袤的绿色山谷与松林，群山之间雾气缭绕。广角镜头低角度平稳跟拍推进，画面呈现浓郁的墨绿与橄榄绿色调，自然漫射光，梦幻且诗意。\n\n画面与环境: 开阔陡峭的高山峡谷草坡上，斜长着白色野花。一名穿着浅黄色宽松长袍的人物呈俯卧姿态在半空中低空滑行，背景为层叠苍翠的群山与松林。；在空中水平滑翔的飞人角色。；高山草甸、陡峭山坡、白色野花丛、暗绿松树林及远处被薄雾笼罩的峡谷裂隙。\n\n人物与动作: 一人，身着浅黄至米白色连体长袍，面部背对镜头，身体在空中平展向前，衣摆微扬。；人物以超现实方式沿斜坡上方平稳向前滑翔，衣料受气流吹拂；镜头贴近草坡匀速向前跟随滑行。；主体与镜头同步向前平稳推进，草木与衣摆轻微晃动。\n\n镜头与构图: 广角镜头，斜角俯视追踪，中景兼顾宏大远景，平滑向斜下方前推运镜。；右下半幅为倾斜草甸前景，主体位于中左半空，远景为深谷与山脉形成的纵深纵轴。\n\n光影与质感: 柔和自然的漫射天光，阴云笼罩感，无硬光阴影。；偏浓重饱和的橄榄绿调，绿色草木与远山主导画面，长袍呈柔和的米黄色。；魔幻现实主义、超现实电影质感。\n\n声音: ambient: 未知，推测为高空气流与微弱风声; music: 未知，推测为空灵悠扬的氛围音乐\n\n节奏与转场: editing: pacing: 平稳舒缓; techniques: 硬切进入与移出",
+        "duration": 4.917,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:15:25.479Z",
+        "updatedAt": "2026-10-12T13:15:25.479Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "64fc03c0-e4e3-4d12-9379-ba9bc1836100",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "3f96a1bc-9c10-4177-819a-255a88d16d7f",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 37.222,
+          "summary": "一名周身微光的白袍僧人凌空飘向幽深辽阔的墨绿色山谷深处。",
+          "startTime": 33.042,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "暗绿与墨青基调，点缀白袍荧光与草地浅金暖色。",
+          "style": "东方玄幻写实风，空灵神秘，超现实意境。",
+          "action": "僧人保持直立悬浮姿态，缓缓向画中纵深及下方滑行飘去。",
+          "camera": "大远景，微俯角，镜头平稳近乎静止或微幅前推，景深开阔。",
+          "motion": "人物匀速平缓下坠悬飘，草地受风微动。",
+          "subject": "背对镜头的白袍僧人，周身有微弱自发光晕，身形朝远方徐徐飘移降落。",
+          "lighting": "幽暗漫射环境光，主体自带冷白微光，前景草地有零星反光亮点。",
+          "characters": "1人，光头僧侣形象，着宽大纯白长袍，背影呈现。",
+          "composition": "下部为前景金色草坡，主体人物位于中偏左，广阔暗绿山体充斥中后景，纵深感强烈。",
+          "environment": "高山悬崖边缘，远方是薄雾与墨绿林木覆盖的绵延山峦，可见蜿蜒细径。",
+          "sceneDescription": "俯瞰视角，一位散发柔和白光的僧人悬浮空中，缓慢飘向雾气弥漫的深绿色群山。前景为长满反光杂草的斜坡。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "低沉舒缓的氛围音乐，节奏静止幽远",
+          "ambient": "空旷遥远的山谷风声与微弱低鸣"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "缓慢凝练",
+            "techniques": "硬切进入，尾段自然淡出收尾"
+          }
+        },
+        "generationPrompt": "微俯瞰大远景，空灵的东方奇幻电影质感。前景是山顶斜坡，长着随风微动的金褐色草丛，草叶带有点点星芒微光；中景处，一位光头白袍僧人背对镜头，通体散发着柔和纯净的白色光晕，如神仙般在半空中缓缓向前下方的深谷平稳滑行飘去。背景是雾气缭绕、无边无际的深墨绿色山峦与隐约蜿蜒的小径。整体影调呈深邃暗绿色，光影幽静神秘，动作极其缓慢流畅。\n\n画面与环境: 俯瞰视角，一位散发柔和白光的僧人悬浮空中，缓慢飘向雾气弥漫的深绿色群山。前景为长满反光杂草的斜坡。；背对镜头的白袍僧人，周身有微弱自发光晕，身形朝远方徐徐飘移降落。；高山悬崖边缘，远方是薄雾与墨绿林木覆盖的绵延山峦，可见蜿蜒细径。\n\n人物与动作: 1人，光头僧侣形象，着宽大纯白长袍，背影呈现。；僧人保持直立悬浮姿态，缓缓向画中纵深及下方滑行飘去。；人物匀速平缓下坠悬飘，草地受风微动。\n\n镜头与构图: 大远景，微俯角，镜头平稳近乎静止或微幅前推，景深开阔。；下部为前景金色草坡，主体人物位于中偏左，广阔暗绿山体充斥中后景，纵深感强烈。\n\n光影与质感: 幽暗漫射环境光，主体自带冷白微光，前景草地有零星反光亮点。；暗绿与墨青基调，点缀白袍荧光与草地浅金暖色。；东方玄幻写实风，空灵神秘，超现实意境。\n\n声音: ambient: 空旷遥远的山谷风声与微弱低鸣; music: 低沉舒缓的氛围音乐，节奏静止幽远\n\n节奏与转场: editing: pacing: 缓慢凝练; techniques: 硬切进入，尾段自然淡出收尾",
+        "duration": 4.18,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:17:10.847Z",
+        "updatedAt": "2026-10-12T13:17:10.847Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      }
+    ],
+    "allSceneVersions": [
+      {
+        "id": "c51b867f-fc21-4754-a931-32d1b24080ca",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "8d959c1f-4897-4143-8221-9b69a881dd69",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 3.208,
+          "summary": "一名男子正沿着高山草甸斜坡全力向下奔跑，镜头自后方紧随其后穿行于壮阔山峦之中。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "高饱和度偏冷绿色调，苔藓绿与深草绿主导画面，伴随白色花草点缀。",
+          "style": "电影感沉浸式实拍风格，高速运动写实风格，伴随动态模糊与镜头畸变。",
+          "action": "男子从画面近处持续向画面深处的山坡下冲刺奔跑，手臂前后摆动，步伐迅速，周围草木迅速倒退。",
+          "camera": "追随跟拍视角（第三人称背后视角），广角镜头，高速跟随俯冲，带有轻微手持颠簸与强烈运动模糊，焦点始终锁定在男子背部。",
+          "motion": "人物快速向前下冲，摄像机高速前推跟随，四周场景向边缘径向模糊拉伸。",
+          "subject": "背影奔跑的男子，身着浅色短袖T恤与深色短裤，体格健硕。",
+          "lighting": "自然漫射天光，微泛柔和的日光，整体光线较为均匀且略带阴沉感。",
+          "characters": [
+            {
+              "pose": "身体前倾，重心放低，大步向下冲刺。",
+              "identity": "奔跑中的年轻男子",
+              "wardrobe": "浅白色短袖运动衫、深色运动短裤。",
+              "appearance": "体态强健，深色短发，后背视点。",
+              "expression": "背对镜头不可见。"
+            }
+          ],
+          "composition": "中心对称构图，主体男子居中，前景与中景为倾斜向下的草坡，后景为延伸开阔的深邃峡谷。",
+          "environment": "广袤的高山草甸与山谷斜坡，地面覆盖深绿色植被与白色细小野花，背景为起伏的雄伟山峦与局部薄雾。",
+          "sceneDescription": "全景高山草甸，一名短发男子背对镜头沿着陡峭的绿色山坡飞速向下奔跑，草丛在两侧飞速掠过并伴随动态模糊，远方是连绵深绿的山谷与山脉。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知/无直接音频信息",
+          "ambient": "高山呼啸的风声与剧烈的喘息脚步声（推测）",
+          "soundEffects": "草丛摩擦与鞋底踏地的声音（推测）"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快节奏，高动态运动连贯镜头",
+            "techniques": "硬切（Hard cut）进出"
+          }
+        },
+        "generationPrompt": "电影质感，广角跟拍镜头。一名身穿白色短袖和深色短裤的年轻男子背对镜头，正以极快的速度沿着开阔陡峭的高山绿色草甸向下冲刺。摄像机自后方紧紧跟随俯冲，呈现强烈的纵深感与速度感。山坡上覆盖着青绿草地和小白花，两侧草丛因快速运动产生明显的径向模糊。背景是连绵起伏、烟雾微锁的雄伟深绿山峦。冷色调，浓郁的青绿色调风格，自然漫射日光，沉浸式写实视觉效果。\n\n画面与环境: 全景高山草甸，一名短发男子背对镜头沿着陡峭的绿色山坡飞速向下奔跑，草丛在两侧飞速掠过并伴随动态模糊，远方是连绵深绿的山谷与山脉。；背影奔跑的男子，身着浅色短袖T恤与深色短裤，体格健硕。；广袤的高山草甸与山谷斜坡，地面覆盖深绿色植被与白色细小野花，背景为起伏的雄伟山峦与局部薄雾。\n\n人物与动作: identity: 奔跑中的年轻男子; appearance: 体态强健，深色短发，后背视点。; wardrobe: 浅白色短袖运动衫、深色运动短裤。; expression: 背对镜头不可见。; pose: 身体前倾，重心放低，大步向下冲刺。；男子从画面近处持续向画面深处的山坡下冲刺奔跑，手臂前后摆动，步伐迅速，周围草木迅速倒退。；人物快速向前下冲，摄像机高速前推跟随，四周场景向边缘径向模糊拉伸。\n\n镜头与构图: 追随跟拍视角（第三人称背后视角），广角镜头，高速跟随俯冲，带有轻微手持颠簸与强烈运动模糊，焦点始终锁定在男子背部。；中心对称构图，主体男子居中，前景与中景为倾斜向下的草坡，后景为延伸开阔的深邃峡谷。\n\n光影与质感: 自然漫射天光，微泛柔和的日光，整体光线较为均匀且略带阴沉感。；高饱和度偏冷绿色调，苔藓绿与深草绿主导画面，伴随白色花草点缀。；电影感沉浸式实拍风格，高速运动写实风格，伴随动态模糊与镜头畸变。\n\n声音: ambient: 高山呼啸的风声与剧烈的喘息脚步声（推测）; music: 未知/无直接音频信息; soundEffects: 草丛摩擦与鞋底踏地的声音（推测）\n\n节奏与转场: editing: pacing: 快节奏，高动态运动连贯镜头; techniques: 硬切（Hard cut）进出",
+        "duration": 3.208,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T12:59:28.486Z",
+        "updatedAt": "2026-10-12T12:59:28.486Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "16114553-fa05-470a-b3b6-cbaa6fe9335c",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "78c8eb2a-0e3f-4b6a-8e91-fd96cc23b18a",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 8.25,
+          "summary": "一名身穿白衬衫和黑裤子的光头男子背对镜头，在开阔的绿色山坡上快速向下奔跑。",
+          "startTime": 3.208,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "偏青绿调的高原自然色彩，青翠草地与暗绿松树占主导，天空呈蓝青色，白云与白衬衫形成高光对比。",
+          "style": "具有梦核（dreamcore）质感的复古低保真胶片与早期数字视频风格，强运动残影。",
+          "action": "男子从坡顶快速朝斜下方奔跑，步幅大且步伐急促；随着奔跑，草地与树木在画面两侧迅速后掠。",
+          "camera": "背部跟随中远景镜头，广角略带边缘畸变，随人物高速向下俯冲移动，伴随强烈动态运动模糊。",
+          "motion": "人物快速向前冲刺，镜头高速前推贴地跟拍，画面四周有强烈的放射状径向模糊。",
+          "subject": "一名光头成年男性，身穿宽松白色长袖衬衫与黑色长裤，赤足或穿深色鞋，全力向下冲刺奔跑。",
+          "lighting": "室外日间自然顶光，光线略带柔焦与泛光效果，地面投射出短促的深色阴影。",
+          "characters": "仅有一名背向镜头的男性奔跑者，看不见正脸面部表情，展现逃离或追逐的紧迫肢体状态。",
+          "composition": "奔跑主体位于画面中心偏中景，近景为模糊后退的草皮，远景为开阔山体与天空，具纵深推进感。",
+          "environment": "起伏的绿色高山草甸，右侧和前方分布着松树林，远景为连绵的山脉和点缀着白云的晴空，远处可见一条蜿蜒小路。",
+          "sceneDescription": "全景跟拍视角，一个身穿白衬衫与黑色长裤的光头男子在绿草如茵的山坡上全力向下奔跑。背景是层叠的远山、深绿松树和蔚蓝带白云的天空，画面伴有明显的运动模糊与梦幻感。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "奔跑的沉重脚步踏草声、急促呼吸声与呼啸的高原山风声，无对白。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "高速连续运动长镜头，节奏紧张而急促。",
+            "techniques": "硬切入，硬切出。"
+          }
+        },
+        "generationPrompt": "实景电影质感，低保真复古风格。一个身穿宽松白色长袖衬衫、黑色长裤的光头男子背对镜头，在青翠起伏的高山草坡上快速向下奔跑。广角跟拍镜头紧随男子背后高速下冲，四周边缘带有强烈的运动模糊和径向拉伸感。背景是层叠的绿色远山、松树林和漂浮着蓬松白云的蓝绿色天空。日光漫射，整体色调略偏胶片青绿，充满梦境般的奔跑逃离感。\n\n画面与环境: 全景跟拍视角，一个身穿白衬衫与黑色长裤的光头男子在绿草如茵的山坡上全力向下奔跑。背景是层叠的远山、深绿松树和蔚蓝带白云的天空，画面伴有明显的运动模糊与梦幻感。；一名光头成年男性，身穿宽松白色长袖衬衫与黑色长裤，赤足或穿深色鞋，全力向下冲刺奔跑。；起伏的绿色高山草甸，右侧和前方分布着松树林，远景为连绵的山脉和点缀着白云的晴空，远处可见一条蜿蜒小路。\n\n人物与动作: 仅有一名背向镜头的男性奔跑者，看不见正脸面部表情，展现逃离或追逐的紧迫肢体状态。；男子从坡顶快速朝斜下方奔跑，步幅大且步伐急促；随着奔跑，草地与树木在画面两侧迅速后掠。；人物快速向前冲刺，镜头高速前推贴地跟拍，画面四周有强烈的放射状径向模糊。\n\n镜头与构图: 背部跟随中远景镜头，广角略带边缘畸变，随人物高速向下俯冲移动，伴随强烈动态运动模糊。；奔跑主体位于画面中心偏中景，近景为模糊后退的草皮，远景为开阔山体与天空，具纵深推进感。\n\n光影与质感: 室外日间自然顶光，光线略带柔焦与泛光效果，地面投射出短促的深色阴影。；偏青绿调的高原自然色彩，青翠草地与暗绿松树占主导，天空呈蓝青色，白云与白衬衫形成高光对比。；具有梦核（dreamcore）质感的复古低保真胶片与早期数字视频风格，强运动残影。\n\n声音: soundStyle: 奔跑的沉重脚步踏草声、急促呼吸声与呼啸的高原山风声，无对白。\n\n节奏与转场: editing: pacing: 高速连续运动长镜头，节奏紧张而急促。; techniques: 硬切入，硬切出。",
+        "duration": 5.042,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:06:13.160Z",
+        "updatedAt": "2026-10-12T13:06:13.160Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "d1a02dee-fbac-4724-a865-364f3c13087a",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "5296da5f-744a-43e3-ac95-1f4d09c430dd",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 18.083,
+          "summary": "一名男子在起伏连绵的翠绿山丘与深谷上方低空悬浮滑翔。",
+          "startTime": 8.25,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "深橄榄绿、草绿色与浅色衣物高光。",
+          "style": "超现实魔幻写实电影质感。",
+          "action": "男子从近景坡地上方掠出，在空中微调姿态，随后持续向山谷深处滑翔远去。",
+          "camera": "后方跟拍推进镜头，微俯视角，运动平滑顺畅，焦点锁定主体并带出纵深全景。",
+          "motion": "人物如在水中游动般平稳滑空，镜头平顺跟进。",
+          "subject": "光头成年男子，体格匀称，身着米白色短袖及短裤，身体在空中舒展滑行。",
+          "lighting": "柔和自然的漫射光，暗部阴影丰富，整体呈沉郁电影感调性。",
+          "characters": [
+            {
+              "name": "滑翔男子",
+              "action": "在草坡上空悬空滑翔，轻微翻转并飞向远方谷底",
+              "appearance": "光头，短袖短裤休闲装束",
+              "expression": "平静沉浸"
+            }
+          ],
+          "composition": "深远景深构图，主体自中近景逐渐移向画中远景，背景为层叠宏大的绿色山峦。",
+          "environment": "起伏剧烈的多褶皱绿色草山、山谷，地表覆盖草甸并有隐约山径，呈广袤自然景观。",
+          "sceneDescription": "全景至远景。一名光头男子身穿浅色T恤和短裤，呈俯卧自由滑翔姿态，从草坡上方掠过并飞向深邃的绿色山谷，镜头平稳尾随跟拍。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知",
+          "ambient": "空旷风声与自然沉浸底噪",
+          "soundEffects": "无明显拟音"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "舒缓流畅",
+            "techniques": "长镜头跟随推进"
+          }
+        },
+        "generationPrompt": "电影质感超现实镜头。一名光头男子身穿米白T恤与短裤，以俯冲漂浮姿态在起伏的绿色草山与山谷上空低空滑翔。摄像机平稳尾随跟拍，俯视广袤褶皱草坡与深邃谷底。漫射自然光，深橄榄绿调，画面沉静宏大。\n\n画面与环境: 全景至远景。一名光头男子身穿浅色T恤和短裤，呈俯卧自由滑翔姿态，从草坡上方掠过并飞向深邃的绿色山谷，镜头平稳尾随跟拍。；光头成年男子，体格匀称，身着米白色短袖及短裤，身体在空中舒展滑行。；起伏剧烈的多褶皱绿色草山、山谷，地表覆盖草甸并有隐约山径，呈广袤自然景观。\n\n人物与动作: name: 滑翔男子; appearance: 光头，短袖短裤休闲装束; expression: 平静沉浸; action: 在草坡上空悬空滑翔，轻微翻转并飞向远方谷底；男子从近景坡地上方掠出，在空中微调姿态，随后持续向山谷深处滑翔远去。；人物如在水中游动般平稳滑空，镜头平顺跟进。\n\n镜头与构图: 后方跟拍推进镜头，微俯视角，运动平滑顺畅，焦点锁定主体并带出纵深全景。；深远景深构图，主体自中近景逐渐移向画中远景，背景为层叠宏大的绿色山峦。\n\n光影与质感: 柔和自然的漫射光，暗部阴影丰富，整体呈沉郁电影感调性。；深橄榄绿、草绿色与浅色衣物高光。；超现实魔幻写实电影质感。\n\n声音: ambient: 空旷风声与自然沉浸底噪; music: 未知; soundEffects: 无明显拟音\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 舒缓流畅; techniques: 长镜头跟随推进",
+        "duration": 9.833,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:06:26.743Z",
+        "updatedAt": "2026-10-12T13:06:26.743Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "0b022876-133a-4259-9527-2866527dafe2",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "3803c190-8b4c-4bee-9cb3-f07f7ef471ad",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 23.208,
+          "summary": "一名孤独的人影奔跑在广袤连绵的翠绿山坡上，穿过随风翻滚的高草丛，向着辽阔的山谷深处前行。",
+          "startTime": 18.083,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "以鲜艳浓郁的草绿、黄绿为主色调，点缀深绿树丛与暗色岩石土壤。",
+          "style": "电影感写实摄影与数字艺术融合风格，充满沉浸感与辽阔诗意。",
+          "action": "人物背向镜头，在被狂风吹拂的高草丛中顺着下坡向前奔跑；强风使草浪持续向一侧倾伏律动。",
+          "camera": "大远景俯拍，伴随缓慢平稳的向前俯冲与推进跟随运动，深焦表现宏大空间感。",
+          "motion": "前景草浪剧烈翻涌，镜头匀速向前推进下沉，人物步伐稳定向画面深处远去。",
+          "subject": "一名奔跑的人影，身形纤细，背对镜头朝山谷深处移动。",
+          "lighting": "柔和自然的漫射日光，山间伴有部分云影与斜射高光，层次丰富。",
+          "characters": "一名未知性别与年龄的人物，剪影状远景，身穿深色服饰，无清晰面部细节，动作呈现持续的奔跑姿态。",
+          "composition": "居中向心构图，主体人影位于画面纵深中心，四周被广阔的斜向草浪包围，远景山脉层叠呈现深邃纵深。",
+          "environment": "壮丽的崇山峻岭与高山草甸，遍布起伏的翠绿草浪、散落的针叶树丛及崎岖岩石小径，自然原野氛围浓厚。",
+          "sceneDescription": "全景俯拍，展现连绵起伏的翠绿色山丘与深谷。前景是迎风剧烈摇曳的长草，中景一个小巧的人影正沿山坡向下奔跑，远景群山叠翠，带有斑驳光影。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "空旷呼啸的山间风声与草叶剧烈摩擦的沙沙声，可能伴有舒缓宏大的氛围音乐。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓流畅的长镜头推进节奏",
+            "techniques": "硬切入与硬切出"
+          }
+        },
+        "generationPrompt": "电影质感大远景俯拍，一个孤独的人影背对镜头，在狂风呼啸的壮丽绿色山脊上向下奔跑。前景是金色与翠绿色相间、随风剧烈倾斜翻涌的茂密高草丛；中景和远景是层叠起伏的宏伟群山与葱郁山谷，阳光在山峦间投下斑驳光影。摄影机缓慢平稳地向前向下推进跟随，画面充满辽阔诗意与深远纵深感，8k超清写实风景风格。\n\n画面与环境: 全景俯拍，展现连绵起伏的翠绿色山丘与深谷。前景是迎风剧烈摇曳的长草，中景一个小巧的人影正沿山坡向下奔跑，远景群山叠翠，带有斑驳光影。；一名奔跑的人影，身形纤细，背对镜头朝山谷深处移动。；壮丽的崇山峻岭与高山草甸，遍布起伏的翠绿草浪、散落的针叶树丛及崎岖岩石小径，自然原野氛围浓厚。\n\n人物与动作: 一名未知性别与年龄的人物，剪影状远景，身穿深色服饰，无清晰面部细节，动作呈现持续的奔跑姿态。；人物背向镜头，在被狂风吹拂的高草丛中顺着下坡向前奔跑；强风使草浪持续向一侧倾伏律动。；前景草浪剧烈翻涌，镜头匀速向前推进下沉，人物步伐稳定向画面深处远去。\n\n镜头与构图: 大远景俯拍，伴随缓慢平稳的向前俯冲与推进跟随运动，深焦表现宏大空间感。；居中向心构图，主体人影位于画面纵深中心，四周被广阔的斜向草浪包围，远景山脉层叠呈现深邃纵深。\n\n光影与质感: 柔和自然的漫射日光，山间伴有部分云影与斜射高光，层次丰富。；以鲜艳浓郁的草绿、黄绿为主色调，点缀深绿树丛与暗色岩石土壤。；电影感写实摄影与数字艺术融合风格，充满沉浸感与辽阔诗意。\n\n声音: soundStyle: 空旷呼啸的山间风声与草叶剧烈摩擦的沙沙声，可能伴有舒缓宏大的氛围音乐。\n\n节奏与转场: editing: pacing: 舒缓流畅的长镜头推进节奏; techniques: 硬切入与硬切出",
+        "duration": 5.125,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:06:59.557Z",
+        "updatedAt": "2026-10-12T13:06:59.557Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "6cfddaff-687e-45c6-9f2b-99560d0b9dba",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "a494ef65-c3ae-4faa-b9f3-a57a696019d9",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 28.125,
+          "summary": "少女漫步在繁花盛开的山林小径上，背影逐渐融入静谧的自然远景中。",
+          "startTime": 23.208,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "以浓郁草绿、墨绿为主色调，点缀白色花斑，具有轻微泛绿的复古胶片与油画色调。",
+          "style": "兼具复古实景质感与怀旧手绘油画氛围，边缘柔和且带轻微噪点颗粒感。",
+          "action": "女孩保持平稳步伐沿着右侧泥土小道向纵深处漫步，身形在开阔自然环境中缓步前移。",
+          "camera": "高角度远景俯拍，机位轻微缓慢平移或保持稳定，焦点覆盖整片山坡全景。",
+          "motion": "人物步伐稳定缓慢，画面整体运动轻柔平缓。",
+          "subject": "独自行走在山坡小径上的少女背影。",
+          "lighting": "柔和自然的阴天漫射光，无明显直射强光，整体光感柔润通透。",
+          "characters": "一名年轻女性，深色短发，身穿白色短袖衬衫与藏青色及膝裙，背对镜头，姿态轻盈自然。",
+          "composition": "三分法则构图，主体女孩位于画面右下至中景区域，左侧大面积绿草野花与森林构成自然纵深平衡。",
+          "environment": "高山草甸与森林边缘，斜坡上点缀大量白色小野花与零星岩石，周围分布高大深绿松树，远景为雾霭笼罩的苍翠群山。",
+          "sceneDescription": "高角度远景，一名穿白衬衫与深色裙的年轻女孩背对镜头，沿着右侧布满白色小野花的山间草坡小径缓缓向前行走，背景为连绵起伏的翠绿山峦与茂密松林。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "musicStyle": "抒情、空灵、缓慢的环境器乐配乐",
+          "soundEffects": "推测为自然微风与脚步摩擦草地的细微声效"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓悠长",
+            "techniques": "硬切进入，硬切退出"
+          }
+        },
+        "generationPrompt": "高角度俯拍远景，复古油画质感与胶片颗粒感。一名身穿白色短袖衬衫和藏青色及膝裙的年轻女孩背对镜头，沿着开满白色小野花的青翠山间草坡小径缓步向前漫步。左侧与前景为郁郁葱葱的松林与草地，远景是笼罩在柔和雾霭中的连绵青山。柔和阴天漫射光，清新静谧的绿色调画面，摄影机平稳微幅运镜，营造孤独而唯美的自然诗意氛围。\n\n画面与环境: 高角度远景，一名穿白衬衫与深色裙的年轻女孩背对镜头，沿着右侧布满白色小野花的山间草坡小径缓缓向前行走，背景为连绵起伏的翠绿山峦与茂密松林。；独自行走在山坡小径上的少女背影。；高山草甸与森林边缘，斜坡上点缀大量白色小野花与零星岩石，周围分布高大深绿松树，远景为雾霭笼罩的苍翠群山。\n\n人物与动作: 一名年轻女性，深色短发，身穿白色短袖衬衫与藏青色及膝裙，背对镜头，姿态轻盈自然。；女孩保持平稳步伐沿着右侧泥土小道向纵深处漫步，身形在开阔自然环境中缓步前移。；人物步伐稳定缓慢，画面整体运动轻柔平缓。\n\n镜头与构图: 高角度远景俯拍，机位轻微缓慢平移或保持稳定，焦点覆盖整片山坡全景。；三分法则构图，主体女孩位于画面右下至中景区域，左侧大面积绿草野花与森林构成自然纵深平衡。\n\n光影与质感: 柔和自然的阴天漫射光，无明显直射强光，整体光感柔润通透。；以浓郁草绿、墨绿为主色调，点缀白色花斑，具有轻微泛绿的复古胶片与油画色调。；兼具复古实景质感与怀旧手绘油画氛围，边缘柔和且带轻微噪点颗粒感。\n\n声音: soundEffects: 推测为自然微风与脚步摩擦草地的细微声效; musicStyle: 抒情、空灵、缓慢的环境器乐配乐\n\n节奏与转场: editing: pacing: 舒缓悠长; techniques: 硬切进入，硬切退出",
+        "duration": 4.917,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:07:09.319Z",
+        "updatedAt": "2026-10-12T13:07:09.319Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "5dda32b2-f882-4ff7-8683-2d023eb2592b",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "55f2344f-08d9-4629-a823-edb25ff0a4ea",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 33.042,
+          "summary": "一名身穿浅色长袍的人物如梦境般在高山草甸上空平稳滑翔，飞越深邃的绿色峡谷。",
+          "startTime": 28.125,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "偏浓重饱和的橄榄绿调，绿色草木与远山主导画面，长袍呈柔和的米黄色。",
+          "style": "魔幻现实主义、超现实电影质感。",
+          "action": "人物以超现实方式沿斜坡上方平稳向前滑翔，衣料受气流吹拂；镜头贴近草坡匀速向前跟随滑行。",
+          "camera": "广角镜头，斜角俯视追踪，中景兼顾宏大远景，平滑向斜下方前推运镜。",
+          "motion": "主体与镜头同步向前平稳推进，草木与衣摆轻微晃动。",
+          "subject": "在空中水平滑翔的飞人角色。",
+          "lighting": "柔和自然的漫射天光，阴云笼罩感，无硬光阴影。",
+          "characters": "一人，身着浅黄至米白色连体长袍，面部背对镜头，身体在空中平展向前，衣摆微扬。",
+          "composition": "右下半幅为倾斜草甸前景，主体位于中左半空，远景为深谷与山脉形成的纵深纵轴。",
+          "environment": "高山草甸、陡峭山坡、白色野花丛、暗绿松树林及远处被薄雾笼罩的峡谷裂隙。",
+          "sceneDescription": "开阔陡峭的高山峡谷草坡上，斜长着白色野花。一名穿着浅黄色宽松长袍的人物呈俯卧姿态在半空中低空滑行，背景为层叠苍翠的群山与松林。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知，推测为空灵悠扬的氛围音乐",
+          "ambient": "未知，推测为高空气流与微弱风声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "平稳舒缓",
+            "techniques": "硬切进入与移出"
+          }
+        },
+        "generationPrompt": "电影级超现实画面。一名身穿浅黄色飘逸长袍的人物以水平姿势在空中向前平稳滑翔，位于陡峭的高山草坡上方。右侧近景是摇曳的翠绿草丛与零星白色小花，背景是深邃广袤的绿色山谷与松林，群山之间雾气缭绕。广角镜头低角度平稳跟拍推进，画面呈现浓郁的墨绿与橄榄绿色调，自然漫射光，梦幻且诗意。\n\n画面与环境: 开阔陡峭的高山峡谷草坡上，斜长着白色野花。一名穿着浅黄色宽松长袍的人物呈俯卧姿态在半空中低空滑行，背景为层叠苍翠的群山与松林。；在空中水平滑翔的飞人角色。；高山草甸、陡峭山坡、白色野花丛、暗绿松树林及远处被薄雾笼罩的峡谷裂隙。\n\n人物与动作: 一人，身着浅黄至米白色连体长袍，面部背对镜头，身体在空中平展向前，衣摆微扬。；人物以超现实方式沿斜坡上方平稳向前滑翔，衣料受气流吹拂；镜头贴近草坡匀速向前跟随滑行。；主体与镜头同步向前平稳推进，草木与衣摆轻微晃动。\n\n镜头与构图: 广角镜头，斜角俯视追踪，中景兼顾宏大远景，平滑向斜下方前推运镜。；右下半幅为倾斜草甸前景，主体位于中左半空，远景为深谷与山脉形成的纵深纵轴。\n\n光影与质感: 柔和自然的漫射天光，阴云笼罩感，无硬光阴影。；偏浓重饱和的橄榄绿调，绿色草木与远山主导画面，长袍呈柔和的米黄色。；魔幻现实主义、超现实电影质感。\n\n声音: ambient: 未知，推测为高空气流与微弱风声; music: 未知，推测为空灵悠扬的氛围音乐\n\n节奏与转场: editing: pacing: 平稳舒缓; techniques: 硬切进入与移出",
+        "duration": 4.917,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:15:25.479Z",
+        "updatedAt": "2026-10-12T13:15:25.479Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "64fc03c0-e4e3-4d12-9379-ba9bc1836100",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "projectVersionId": "cc201d2b-8815-4a21-aa85-5d8a7eef06d7",
+        "originalSceneId": "3f96a1bc-9c10-4177-819a-255a88d16d7f",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 37.222,
+          "summary": "一名周身微光的白袍僧人凌空飘向幽深辽阔的墨绿色山谷深处。",
+          "startTime": 33.042,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "暗绿与墨青基调，点缀白袍荧光与草地浅金暖色。",
+          "style": "东方玄幻写实风，空灵神秘，超现实意境。",
+          "action": "僧人保持直立悬浮姿态，缓缓向画中纵深及下方滑行飘去。",
+          "camera": "大远景，微俯角，镜头平稳近乎静止或微幅前推，景深开阔。",
+          "motion": "人物匀速平缓下坠悬飘，草地受风微动。",
+          "subject": "背对镜头的白袍僧人，周身有微弱自发光晕，身形朝远方徐徐飘移降落。",
+          "lighting": "幽暗漫射环境光，主体自带冷白微光，前景草地有零星反光亮点。",
+          "characters": "1人，光头僧侣形象，着宽大纯白长袍，背影呈现。",
+          "composition": "下部为前景金色草坡，主体人物位于中偏左，广阔暗绿山体充斥中后景，纵深感强烈。",
+          "environment": "高山悬崖边缘，远方是薄雾与墨绿林木覆盖的绵延山峦，可见蜿蜒细径。",
+          "sceneDescription": "俯瞰视角，一位散发柔和白光的僧人悬浮空中，缓慢飘向雾气弥漫的深绿色群山。前景为长满反光杂草的斜坡。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "低沉舒缓的氛围音乐，节奏静止幽远",
+          "ambient": "空旷遥远的山谷风声与微弱低鸣"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "缓慢凝练",
+            "techniques": "硬切进入，尾段自然淡出收尾"
+          }
+        },
+        "generationPrompt": "微俯瞰大远景，空灵的东方奇幻电影质感。前景是山顶斜坡，长着随风微动的金褐色草丛，草叶带有点点星芒微光；中景处，一位光头白袍僧人背对镜头，通体散发着柔和纯净的白色光晕，如神仙般在半空中缓缓向前下方的深谷平稳滑行飘去。背景是雾气缭绕、无边无际的深墨绿色山峦与隐约蜿蜒的小径。整体影调呈深邃暗绿色，光影幽静神秘，动作极其缓慢流畅。\n\n画面与环境: 俯瞰视角，一位散发柔和白光的僧人悬浮空中，缓慢飘向雾气弥漫的深绿色群山。前景为长满反光杂草的斜坡。；背对镜头的白袍僧人，周身有微弱自发光晕，身形朝远方徐徐飘移降落。；高山悬崖边缘，远方是薄雾与墨绿林木覆盖的绵延山峦，可见蜿蜒细径。\n\n人物与动作: 1人，光头僧侣形象，着宽大纯白长袍，背影呈现。；僧人保持直立悬浮姿态，缓缓向画中纵深及下方滑行飘去。；人物匀速平缓下坠悬飘，草地受风微动。\n\n镜头与构图: 大远景，微俯角，镜头平稳近乎静止或微幅前推，景深开阔。；下部为前景金色草坡，主体人物位于中偏左，广阔暗绿山体充斥中后景，纵深感强烈。\n\n光影与质感: 幽暗漫射环境光，主体自带冷白微光，前景草地有零星反光亮点。；暗绿与墨青基调，点缀白袍荧光与草地浅金暖色。；东方玄幻写实风，空灵神秘，超现实意境。\n\n声音: ambient: 空旷遥远的山谷风声与微弱低鸣; music: 低沉舒缓的氛围音乐，节奏静止幽远\n\n节奏与转场: editing: pacing: 缓慢凝练; techniques: 硬切进入，尾段自然淡出收尾",
+        "duration": 4.18,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T13:17:10.847Z",
+        "updatedAt": "2026-10-12T13:17:10.847Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "recreationPromptVersion": 1
+        }
+      }
+    ],
+    "referenceVideos": [
+      {
+        "id": "165449d0-fd1a-4f3c-9d6c-9a477724465d",
+        "projectId": "52457e72-44d6-41e1-ae89-8233ef50082c",
+        "sourceUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/87066363-c919-4c68-8ea7-53b176adf9ef/video/20f50268-749b-407a-aeff-de5aa1f7f51a-8d325f1200690dfac8bf7ba879b13052.mp4",
+        "fileName": "8d325f1200690dfac8bf7ba879b13052.mp4",
+        "mimeType": null,
+        "duration": 37,
+        "createdAt": "2026-10-12T12:47:06.964Z",
+        "metadata": {
+          "fps": 24,
+          "width": 1280,
+          "height": 576,
+          "duration": 37.222,
+          "hasAudio": true
+        }
+      }
+    ]
+  },
+  {
+    "project": {
       "id": "fb380b0f-6bd0-42b0-a96d-a5853562beba",
       "title": "江湖除了爱恨情仇之外，还有龙",
       "description": null,

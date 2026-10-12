@@ -2,6 +2,10 @@ import snapshot from "./public-workflow-samples.snapshot.json";
 
 export const PUBLIC_WORKFLOW_SAMPLES = [
   {
+    id: "52457e72-44d6-41e1-ae89-8233ef50082c",
+    title: "风在耳边呼啸，山在脚下臣服",
+  },
+  {
     id: "fb380b0f-6bd0-42b0-a96d-a5853562beba",
     title: "江湖除了爱恨情仇之外，还有龙",
   },
