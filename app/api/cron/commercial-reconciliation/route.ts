@@ -12,6 +12,7 @@ import { processMediaCleanupJobs } from "@/lib/workflow/media-cleanup";
 import { escalateOverdueCommercialReviews, notifyDueCommercialReviews } from "@/lib/billing/commercial-review";
 import { expireProjectMedia } from "@/lib/workflow/media-retention";
 import { dispatchQueuedSceneJobs, recoverStaleAnalysisSceneJobs } from "@/lib/billing/independent-scene-analysis";
+import { pruneAnalysisProviderSlots } from "@/lib/billing/analysis-provider-limit";
 
 export const maxDuration = 300;
 export async function GET(request: NextRequest) {
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
     await notifyDueCommercialReviews(20);
     await recoverStaleAnalysisSceneJobs(20);
     await dispatchQueuedSceneJobs();
+    await pruneAnalysisProviderSlots();
     const generation = await db.select({ id: commercialTasks.id }).from(commercialTasks).where(and(eq(commercialTasks.kind, "generation"), eq(commercialTasks.state, "running"))).orderBy(sql`COALESCE((${commercialTasks.result}->>'queryAfter')::bigint, 0)`, asc(commercialTasks.updatedAt)).limit(3);
     for (const task of generation) { try { await reconcileCommercialGeneration(task.id); } catch { /* Leave an uncertain provider result reserved. */ } }
   }

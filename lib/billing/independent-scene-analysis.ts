@@ -8,6 +8,7 @@ import { generationKeyFingerprint } from "./generation-key";
 import { finishCommercialAnalysis, savedAnalysisModel, type AnalysisInput } from "./commercial-analysis";
 import { taskErrorDetails } from "./task-diagnostics";
 import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
+import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "./analysis-provider-limit";
 
 type Progress = { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; splitDelivered?: boolean; sceneJobMode?: string };
 
@@ -43,6 +44,7 @@ export async function runIndependentSceneJob(jobId: string) {
     if (!task || (task.result as Progress).sceneJobMode !== "independent_v1") return null;
     const [active] = await tx.select({ id: analysisSceneJobs.id }).from(analysisSceneJobs).where(and(eq(analysisSceneJobs.taskId, task.id), eq(analysisSceneJobs.state, "running"))).limit(1);
     if (active) return null; // Stage B: one child per video until isolation is verified.
+    if (!await reserveAnalysisProviderSlot(tx, candidate.id, (task.input as AnalysisInput).keyFingerprint)) return null;
     const [job] = await tx.update(analysisSceneJobs).set({ state: "running", executionId, updatedAt: new Date() }).where(and(eq(analysisSceneJobs.id, jobId), eq(analysisSceneJobs.state, "queued"))).returning();
     return job ? { job, task } : null;
   });
@@ -62,6 +64,8 @@ export async function runIndependentSceneJob(jobId: string) {
     console.error("commercial.scene.model_failed", { taskId: task.id, sceneId: job.sceneId, error: taskErrorDetails(error) });
     blueprint = buildFallbackSceneBlueprint(asset, "Analysis unavailable", undefined, input.outputLanguage);
   }
+  try { await releaseAnalysisProviderSlot(job.id); }
+  catch (error) { console.error("commercial.scene.provider_slot_release_failed", { sceneJobId: job.id, error }); }
   const succeeded = blueprint.metadata?.analysisProvider === "kie";
   const [checkpointed] = await db.update(analysisSceneJobs).set({ result: { pendingBlueprint: blueprint }, updatedAt: new Date() })
     .where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), eq(analysisSceneJobs.executionId, executionId))).returning({ id: analysisSceneJobs.id });

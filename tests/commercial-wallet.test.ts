@@ -32,6 +32,7 @@ import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, g
 import { acknowledgeCommercialReview, escalateOverdueCommercialReviews, notifyDueCommercialReviews, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
 import { recoverStaleAnalysisSceneJobs, runIndependentSceneJob } from "@/lib/billing/independent-scene-analysis";
 import { generationKeyFingerprint } from "@/lib/billing/generation-key";
+import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "@/lib/billing/analysis-provider-limit";
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
 import { createAlipayCreditCheckout, settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION, settleAnalysis, type AnalysisPriceInput } from "@/lib/billing/pricing-v6";
@@ -76,6 +77,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await client.exec(readFileSync("drizzle/0012_commercial_tasks.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0019_media_cleanup_jobs.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0023_analysis_scene_jobs.sql", "utf8"));
+    await client.exec(readFileSync("drizzle/0024_analysis_provider_slots.sql", "utf8"));
     await client.query('INSERT INTO "user" (id) VALUES ($1)', [userId]);
   });
   beforeEach(async () => {
@@ -103,6 +105,16 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await expect(testDb.insert(schema.analysisSceneJobs).values({ taskId: task.id, sceneId: "shot-2", sceneIndex: 2 })).rejects.toThrow();
     await testDb.insert(schema.analysisSceneJobs).values({ taskId: task.id, sceneId: "shot-3", sceneIndex: 3 });
     expect(await testDb.select().from(schema.analysisSceneJobs)).toHaveLength(2);
+  });
+  it("shares a four-active and fifteen-per-ten-second KIE limit across transactions", async () => {
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", input: {}, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    const jobs = await testDb.insert(schema.analysisSceneJobs).values(Array.from({ length: 16 }, (_, index) => ({ taskId: task.id, sceneId: `shot-${index}`, sceneIndex: index + 1 }))).returning();
+    const claim = (id: string) => testDb.transaction(tx => reserveAnalysisProviderSlot(tx as unknown as Parameters<typeof reserveAnalysisProviderSlot>[0], id, "same-platform-key"));
+    expect(await Promise.all(jobs.slice(0, 5).map(job => claim(job.id)))).toEqual([true, true, true, true, false]);
+    for (const job of jobs.slice(0, 4)) await releaseAnalysisProviderSlot(job.id);
+    for (const job of jobs.slice(4, 15)) { expect(await claim(job.id)).toBe(true); await releaseAnalysisProviderSlot(job.id); }
+    expect(await claim(jobs[15].id)).toBe(false);
+    expect((await testDb.select().from(schema.analysisProviderSlots)).length).toBe(15);
   });
 
   it("grants, accumulates and bounds zero-credit link imports without changing balances", async () => {

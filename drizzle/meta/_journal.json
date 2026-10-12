@@ -169,6 +169,13 @@
                         "when": 1790323200007,
                         "tag": "0023_analysis_scene_jobs",
                         "breakpoints": true
+                    },
+                    {
+                        "idx": 24,
+                        "version": "7",
+                        "when": 1790323200008,
+                        "tag": "0024_analysis_provider_slots",
+                        "breakpoints": true
                     }
                 ]
 }

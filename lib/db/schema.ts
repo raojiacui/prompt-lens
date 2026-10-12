@@ -122,6 +122,14 @@ export const analysisSceneJobs = pgTable("analysis_scene_jobs", {
   check("analysis_scene_job_state_check", sql`${t.state} IN ('queued', 'running', 'completed', 'failed')`),
 ]);
 
+export const analysisProviderSlots = pgTable("analysis_provider_slots", {
+  sceneJobId: uuid("scene_job_id").primaryKey().references(() => analysisSceneJobs.id, { onDelete: "cascade" }),
+  keyFingerprint: varchar("key_fingerprint", { length: 64 }).notNull(),
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull().defaultNow(),
+  leaseUntil: timestamp("lease_until", { withTimezone: true }).notNull(),
+  releasedAt: timestamp("released_at", { withTimezone: true }),
+}, (t) => [index("analysis_provider_slots_key_idx").on(t.keyFingerprint, t.startedAt)]);
+
 export const mediaCleanupJobs = pgTable("media_cleanup_jobs", {
   id: uuid("id").primaryKey().defaultRandom(),
   storageKey: text("storage_key").notNull().unique(),
