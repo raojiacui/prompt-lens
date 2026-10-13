@@ -3,6 +3,8 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
+import { drizzle as drizzlePostgres } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import * as schema from "@/lib/db/schema";
 
 const isolated = vi.hoisted(() => ({ db: null as unknown }));
@@ -42,8 +44,19 @@ import { ALIPAY_EXPIRY_VERSION } from "@/lib/payments/order-expiry";
 import { eq } from "drizzle-orm";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 
-const client = new PGlite();
-const testDb = drizzle(client, { schema });
+const nativeTestUrl = process.env.SCENE_SAVE_TEST_DATABASE_URL;
+if (nativeTestUrl) {
+  const target = new URL(nativeTestUrl);
+  if (target.hostname !== "127.0.0.1" || target.port !== "55432" || target.pathname !== "/scene_save_diagnostics") throw new Error("Scene save diagnostics require the isolated local test database");
+}
+const nativeClient = nativeTestUrl ? postgres(nativeTestUrl, { max: 5, idle_timeout: 20, connect_timeout: 10, onnotice: () => {} }) : null;
+const memoryClient = nativeClient ? null : new PGlite();
+const client = nativeClient ? {
+  exec: (query: string) => nativeClient.unsafe(query),
+  query: (query: string, values: string[]) => nativeClient.unsafe(query, values),
+  close: () => nativeClient.end(),
+} : memoryClient!;
+const testDb = nativeClient ? drizzlePostgres(nativeClient, { schema }) : drizzle(memoryClient!, { schema });
 isolated.db = testDb;
 const userId = randomUUID();
 
@@ -64,6 +77,8 @@ async function drain(taskId: string) {
 
 describe("Commercial wallet transactions on isolated Postgres", () => {
   beforeAll(async () => {
+    // Migrations explicitly use public enums. This opt-in URL is restricted to the disposable local database above.
+    if (nativeClient) await nativeClient.unsafe("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
     await client.exec('CREATE TABLE "user" (id uuid PRIMARY KEY);');
     await client.exec(readFileSync("drizzle/0005_v2_workflow.sql", "utf8"));
     await client.exec("CREATE TYPE log_action AS ENUM ('video.edit.start');");
@@ -521,6 +536,55 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     } finally {
       await client.exec("DROP TRIGGER inject_scene_save_fault ON scene_versions; DROP FUNCTION inject_scene_save_fault(); DROP SEQUENCE save_fault_attempt;");
     }
+  });
+  it.skipIf(!nativeClient)("identifies a blocked parent lock and recovers its saved answer with the real driver", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("COMMERCIAL_SCENE_JOB_EXPERIMENT", "true");
+    vi.stubEnv("COMMERCIAL_SCENE_JOB_TEST_USER_IDS", userId);
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const errors = vi.spyOn(console, "error");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Blocked parent reproduction" }).returning();
+    const interval = { id: "one", startUs: 0, endUs: 5_000_000 };
+    vi.mocked(isOwnedLinkedVideo).mockResolvedValueOnce(true);
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "b".repeat(64), durationUs: 5_000_000, bytes: 500, metadata: { duration: 5 }, scenes: [interval] });
+    const preview = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/source.mp4", mediaName: "source.mp4", automaticSplit: true });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preview.id, sceneIds: [interval.id], payer: "platform", model: "flash", outputLanguage: "zh" });
+    await confirmCommercialTask(userId, quote.id);
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: { duration: 5 }, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] });
+    await runCommercialTask(quote.id);
+    const [job] = await testDb.select().from(schema.analysisSceneJobs);
+    let finishModel!: (value: Awaited<ReturnType<typeof analyzeSceneBlueprint>>) => void;
+    vi.mocked(analyzeSceneBlueprint).mockImplementationOnce(() => new Promise(resolve => { finishModel = resolve; }));
+    const running = runIndependentSceneJob(job.id);
+    const failedSave = expect(running).rejects.toThrow();
+    await vi.waitFor(() => expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(1));
+    let unlock!: () => void;
+    let locked!: () => void;
+    const lockAcquired = new Promise<void>(resolve => { locked = resolve; });
+    const releaseLock = new Promise<void>(resolve => { unlock = resolve; });
+    const blocker = nativeClient!.begin(async tx => {
+      await tx.unsafe("SELECT id FROM commercial_tasks WHERE id = $1 FOR UPDATE", [quote.id]);
+      locked();
+      await releaseLock;
+    });
+    try {
+      await lockAcquired;
+      finishModel({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Answer survives lock timeout", metadata: { analysisProvider: "kie" } });
+      await failedSave;
+      expect(errors).toHaveBeenCalledWith("commercial.scene.save_failed", expect.objectContaining({ stage: "lock_parent_task", attempt: 2 }));
+      expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(0);
+      expect((await testDb.select().from(schema.analysisSceneJobs))[0]).toMatchObject({ result: { pendingBlueprint: { generationPrompt: "Answer survives lock timeout" } } });
+    } finally {
+      unlock();
+      await blocker;
+      errors.mockRestore();
+    }
+    await testDb.update(schema.analysisSceneJobs).set({ updatedAt: new Date(Date.now() - 25_000) }).where(eq(schema.analysisSceneJobs.id, job.id));
+    await recoverStaleAnalysisSceneJobs(5, quote.id);
+    expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(1);
+    expect((await testDb.select().from(schema.sceneVersions))[0].generationPrompt).toBe("Answer survives lock timeout");
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0].state).toBe("completed");
   });
   it("saves a checkpointed scene after worker interruption without another KIE request", async () => {
     await grant();

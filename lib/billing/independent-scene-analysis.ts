@@ -28,17 +28,40 @@ function retryableSaveError(error: unknown, depth = 0): boolean {
     || retryableSaveError(value.cause, depth + 1);
 }
 
+function traceSceneSave(sceneJobId: string, attempt: number, recovery: boolean, initialStage = "acquire_connection") {
+  const startedAt = Date.now();
+  let stage = initialStage;
+  let stageStartedAt = startedAt;
+  const durations: Record<string, number> = {};
+  const timer = setTimeout(() => console.warn("commercial.scene.save_slow", {
+    sceneJobId, attempt, recovery, stage, elapsedMs: Date.now() - startedAt,
+  }), 5_000);
+  timer.unref();
+  return {
+    mark(next: string) {
+      durations[stage] = (durations[stage] || 0) + Date.now() - stageStartedAt;
+      stage = next;
+      stageStartedAt = Date.now();
+    },
+    snapshot: () => ({ stage, elapsedMs: Date.now() - startedAt, stagesMs: { ...durations, [stage]: (durations[stage] || 0) + Date.now() - stageStartedAt } }),
+    stop: () => clearTimeout(timer),
+  };
+}
+
 async function saveSceneCheckpoint(jobId: string, executionId?: string) {
   for (let attempt = 1; attempt <= 2; attempt++) {
+    const trace = traceSceneSave(jobId, attempt, !executionId);
     try {
-      return await db.transaction(async tx => {
-        await tx.execute(sql`SET LOCAL lock_timeout = '5s'`);
-        await tx.execute(sql`SET LOCAL statement_timeout = '15s'`);
+      const saved = await db.transaction(async tx => {
+        trace.mark("configure_transaction");
+        await tx.execute(sql`SELECT set_config('lock_timeout', '5s', true), set_config('statement_timeout', '15s', true), set_config('idle_in_transaction_session_timeout', '20s', true)`);
+        trace.mark("lock_scene_job");
         const [current] = await tx.select().from(analysisSceneJobs).where(and(
           eq(analysisSceneJobs.id, jobId), eq(analysisSceneJobs.state, "running"),
           executionId ? eq(analysisSceneJobs.executionId, executionId) : recoveryDue,
         )).for("update", executionId ? undefined : { skipLocked: true });
         if (!current) return null;
+        trace.mark("lock_parent_task");
         const [task] = await tx.select().from(commercialTasks).where(eq(commercialTasks.id, current.taskId)).for("update");
         if (!task || task.state !== "running" || (task.result as Progress).sceneJobMode !== "independent_v1") return null;
         const input = task.input as AnalysisInput;
@@ -59,19 +82,28 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string) {
         const blueprint = pending || buildFallbackSceneBlueprint(asset, "Analysis interrupted", undefined, input.outputLanguage);
         const succeeded = blueprint.metadata?.analysisProvider === "kie";
         const interval = input.pricing.scenes[current.sceneIndex - 1];
+        trace.mark("insert_scene_result");
         await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId, originalSceneId: sceneRecord, sceneIndex: current.sceneIndex, duration: (interval.endUs - interval.startUs) / 1_000_000, ...blueprint, metadata: pending ? blueprint.metadata : { ...blueprint.metadata, providerOutcome: "unknown", failureCode: "ANALYSIS_INTERRUPTED", executionId: current.executionId } });
+        trace.mark("update_scene_status");
         await tx.update(videoScenes).set({ status: succeeded ? "completed" : "failed", error: succeeded ? null : String(blueprint.metadata?.fallbackReason || "Analysis interrupted"), updatedAt: new Date() }).where(eq(videoScenes.id, sceneRecord));
-        const timings = { ...stored.timings, savedAt: new Date().toISOString(), checkpointToSaveMs: Math.max(0, Date.now() - current.updatedAt.getTime()), recovered: !executionId, saveAttempt: attempt };
+        trace.mark("complete_scene_job");
+        const timings = { ...stored.timings, savedAt: new Date().toISOString(), checkpointToSaveMs: Math.max(0, Date.now() - current.updatedAt.getTime()), recovered: !executionId, saveAttempt: attempt, saveStagesMs: trace.snapshot().stagesMs };
         await tx.update(analysisSceneJobs).set({ state: succeeded ? "completed" : "failed", result: { providerOutcome: pending ? blueprint.metadata?.providerOutcome || (succeeded ? "success" : "unknown") : "unknown", analysisProvider: blueprint.metadata?.analysisProvider || "fallback", failureCode: pending ? null : "ANALYSIS_INTERRUPTED", timings }, updatedAt: new Date() }).where(eq(analysisSceneJobs.id, current.id));
         const parentResult = task.result as Record<string, unknown>;
         const finished = Array.isArray(parentResult.finishedSceneIds) ? parentResult.finishedSceneIds as string[] : [];
         const successes = Array.isArray(parentResult.successfulSceneIds) ? parentResult.successfulSceneIds as string[] : [];
+        trace.mark("update_parent_progress");
         await tx.update(commercialTasks).set({ result: { ...parentResult, finishedSceneIds: [...new Set([...finished, current.sceneId])], successfulSceneIds: succeeded ? [...new Set([...successes, current.sceneId])] : successes }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+        trace.mark("commit_transaction");
         return task.id;
       });
+      console.info("commercial.scene.save_transaction_finished", { sceneJobId: jobId, attempt, recovery: !executionId, saved: Boolean(saved), ...trace.snapshot() });
+      return saved;
     } catch (error) {
-      console.error("commercial.scene.save_failed", { sceneJobId: jobId, attempt, recovery: !executionId, error: taskErrorDetails(error) });
+      console.error("commercial.scene.save_failed", { sceneJobId: jobId, attempt, recovery: !executionId, ...trace.snapshot(), error: taskErrorDetails(error) });
       if (attempt === 2 || !retryableSaveError(error)) throw error;
+    } finally {
+      trace.stop();
     }
   }
   return null;
@@ -150,8 +182,18 @@ export async function runIndependentSceneJob(jobId: string) {
   const timings = { startedAt: new Date(startedAt).toISOString(), modelFinishedAt: new Date(modelFinishedAt).toISOString(), queueMs: modelStartedAt - job.createdAt.getTime(), modelMs: modelFinishedAt - modelStartedAt };
   console.info("commercial.scene.model_finished", { taskId: task.id, sceneJobId: job.id, sceneIndex: job.sceneIndex, ...timings });
   // Persist the response before any optional cleanup so a cleanup failure cannot lose it.
-  const [checkpointed] = await db.update(analysisSceneJobs).set({ result: { pendingBlueprint: blueprint, timings }, updatedAt: new Date() })
-    .where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), eq(analysisSceneJobs.executionId, executionId))).returning({ id: analysisSceneJobs.id });
+  const checkpointTrace = traceSceneSave(job.id, 1, false, "persist_model_checkpoint");
+  let checkpointed: { id: string } | undefined;
+  try {
+    [checkpointed] = await db.update(analysisSceneJobs).set({ result: { pendingBlueprint: blueprint, timings }, updatedAt: new Date() })
+      .where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), eq(analysisSceneJobs.executionId, executionId))).returning({ id: analysisSceneJobs.id });
+    console.info("commercial.scene.checkpoint_finished", { sceneJobId: job.id, checkpointed: Boolean(checkpointed), ...checkpointTrace.snapshot() });
+  } catch (error) {
+    console.error("commercial.scene.checkpoint_failed", { sceneJobId: job.id, ...checkpointTrace.snapshot(), error: taskErrorDetails(error) });
+    throw error;
+  } finally {
+    checkpointTrace.stop();
+  }
   try {
     if (checkpointed) {
       const saved = await saveSceneCheckpoint(job.id, executionId);
