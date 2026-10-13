@@ -43,6 +43,14 @@ pnpm dev
 
 另起终端启动 FFmpeg worker，参见 `workers/ffmpeg-worker/README.md`。首次部署或更新代码后先运行数据库迁移；试用次数的原子计数依赖 `0016_trial_analysis_usage.sql`。
 
+### 单镜头并行实验的本地调度
+
+启动实验分支前，在 `.env.local` 设置 `COMMERCIAL_SCENE_JOB_EXPERIMENT=true`、`COMMERCIAL_SCENE_JOB_TEST_USER_IDS`（测试账号 UUID，逗号分隔）、`CRON_SECRET`，以及与本地端口一致的 `LOCAL_ANALYSIS_BASE_URL`（例如 `http://127.0.0.1:3001`）。启动时需使用对应端口，例如 `pnpm dev --port 3001`。
+
+开发服务器启动后会自动检查这些测试账号的运行中并行任务，每轮结束后等待 15 秒再检查；关闭浏览器不会停止检查，停止开发服务器则会停止。它不扫描其他账号或旧串行任务。生产环境继续由已有 Cron 负责调度。
+
+已暂存的模型结果超过 20 秒即可恢复保存；模型响应未知的任务仍保留原有 6 分钟保护期。镜头任务的 `result.timings` 记录排队、模型响应、检查点到保存的耗时，服务器日志记录模型开始、完成和保存异常。真实视频验证时应分别比较这些耗时，不把恢复阈值当作完成时间保证。
+
 ## 验证
 
 1. 在设置页保存自己的 KIE API Key，或用没有 Key 的新账号检查两次免费试用。

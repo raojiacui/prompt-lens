@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Agent, fetch as directFetch } from "undici";
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { analysisSceneJobs, commercialTasks, db, sceneVersions, videoScenes } from "@/lib/db";
 import { analyzeSceneBlueprint, buildFallbackSceneBlueprint, type SceneBlueprintDraft } from "@/lib/workflow/scene-analysis";
 import { getUserKieApiKey } from "@/lib/byok/kie";
@@ -208,6 +208,21 @@ export async function resumeIndependentAnalysis(taskId: string) {
   await reconcileTerminalIndependentAnalysis(taskId);
   await dispatchQueuedSceneJobs(taskId);
   return true;
+}
+
+export async function resumeLocalIndependentAnalyses() {
+  if (process.env.NODE_ENV !== "development" || process.env.COMMERCIAL_SCENE_JOB_EXPERIMENT !== "true") return;
+  const userIds = (process.env.COMMERCIAL_SCENE_JOB_TEST_USER_IDS || "").split(",").map(id => id.trim()).filter(id => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id));
+  if (!userIds.length) return;
+  // Local and production may share a database. Only resume allowlisted experiment tasks.
+  const tasks = await db.select({ id: commercialTasks.id }).from(commercialTasks).where(and(
+    eq(commercialTasks.state, "running"), eq(commercialTasks.kind, "analysis"), inArray(commercialTasks.userId, userIds),
+    sql`${commercialTasks.result}->>'sceneJobMode' = 'independent_v1'`,
+  )).orderBy(sql`(${commercialTasks.result}->>'sceneRecoveryAt')::timestamptz ASC NULLS FIRST`, asc(commercialTasks.createdAt)).limit(5);
+  for (const task of tasks) {
+    try { await resumeIndependentAnalysis(task.id); }
+    catch (error) { console.error("commercial.scene.local_resume_failed", { taskId: task.id, error: taskErrorDetails(error) }); }
+  }
 }
 
 export async function dispatchQueuedSceneJobs(taskId?: string) {
