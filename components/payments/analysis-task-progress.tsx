@@ -21,7 +21,7 @@ export function AnalysisTaskProgress({ zh, state, phase, total, finished, starte
     : state === "failed" ? (zh ? "分析未完成" : "Analysis incomplete")
     : state === "completed" ? (zh ? "分析完成" : "Analysis complete")
     : phase === "saving" ? (zh ? "正在保存分析结果" : "Saving results")
-    : phase === "analyzing" ? (zh ? `正在分析镜头 ${Math.min(count, done + 1)}/${count}` : `Analyzing shot ${Math.min(count, done + 1)}/${count}`)
+    : phase === "analyzing" ? (zh ? "正在分析镜头" : "Analyzing shots")
     : (zh ? "正在准备镜头素材" : "Preparing shot media");
   const minutes = Math.floor(elapsed / 60);
   const seconds = String(elapsed % 60).padStart(2, "0");

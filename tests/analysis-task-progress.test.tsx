@@ -26,7 +26,7 @@ describe("analysis task progress", () => {
     expect(render("review", "analyzing", 1)).not.toContain("预计约");
   });
   it("supports English status and estimates", () => {
-    expect(render("running", "analyzing", 1, false)).toContain("Analyzing shot 2/2");
+    expect(render("running", "analyzing", 1, false)).toContain('>Analyzing shots</p>');
     expect(render("running", "analyzing", 1, false)).toContain("approximate");
   });
 });
