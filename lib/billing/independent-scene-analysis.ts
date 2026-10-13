@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { Agent, fetch as directFetch } from "undici";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
-import { analysisSceneJobs, commercialTasks, db, sceneVersions, videoScenes } from "@/lib/db";
+import { analysisProviderSlots, analysisSceneJobs, commercialTasks, db, sceneVersions, videoScenes } from "@/lib/db";
 import { analyzeSceneBlueprint, buildFallbackSceneBlueprint, type SceneBlueprintDraft } from "@/lib/workflow/scene-analysis";
 import { getUserKieApiKey } from "@/lib/byok/kie";
 import { getPlatformKieApiKey } from "./platform-access";
@@ -10,9 +9,9 @@ import { finishCommercialAnalysis, savedAnalysisModel, type AnalysisInput } from
 import { taskErrorDetails } from "./task-diagnostics";
 import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "./analysis-provider-limit";
+import { analysisDispatchTarget, dispatchAnalysisInvocation } from "@/lib/workflow/analysis-dispatch";
 
 type Progress = { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; splitDelivered?: boolean; sceneJobMode?: string };
-const localDispatchAgent = new Agent();
 
 const recoveryDue = sql`(
   (jsonb_typeof(${analysisSceneJobs.result}->'pendingBlueprint') = 'object'
@@ -88,12 +87,17 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string) {
         await tx.update(videoScenes).set({ status: succeeded ? "completed" : "failed", error: succeeded ? null : String(blueprint.metadata?.fallbackReason || "Analysis interrupted"), updatedAt: new Date() }).where(eq(videoScenes.id, sceneRecord));
         trace.mark("complete_scene_job");
         const timings = { ...stored.timings, savedAt: new Date().toISOString(), checkpointToSaveMs: Math.max(0, Date.now() - current.updatedAt.getTime()), recovered: !executionId, saveAttempt: attempt, saveStagesMs: trace.snapshot().stagesMs };
-        await tx.update(analysisSceneJobs).set({ state: succeeded ? "completed" : "failed", result: { providerOutcome: pending ? blueprint.metadata?.providerOutcome || (succeeded ? "success" : "unknown") : "unknown", analysisProvider: blueprint.metadata?.analysisProvider || "fallback", failureCode: pending ? null : "ANALYSIS_INTERRUPTED", timings }, updatedAt: new Date() }).where(eq(analysisSceneJobs.id, current.id));
+        const providerOutcome = pending ? blueprint.metadata?.providerOutcome || (succeeded ? "success" : "unknown") : "unknown";
+        await tx.update(analysisSceneJobs).set({ state: succeeded ? "completed" : "failed", result: { providerOutcome, analysisProvider: blueprint.metadata?.analysisProvider || "fallback", failureCode: pending ? null : "ANALYSIS_INTERRUPTED", timings }, updatedAt: new Date() }).where(eq(analysisSceneJobs.id, current.id));
         const parentResult = task.result as Record<string, unknown>;
         const finished = Array.isArray(parentResult.finishedSceneIds) ? parentResult.finishedSceneIds as string[] : [];
         const successes = Array.isArray(parentResult.successfulSceneIds) ? parentResult.successfulSceneIds as string[] : [];
         trace.mark("update_parent_progress");
-        await tx.update(commercialTasks).set({ result: { ...parentResult, finishedSceneIds: [...new Set([...finished, current.sceneId])], successfulSceneIds: succeeded ? [...new Set([...successes, current.sceneId])] : successes }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+        const parentUpdate = tx.update(commercialTasks).set({ result: { ...parentResult, finishedSceneIds: [...new Set([...finished, current.sceneId])], successfulSceneIds: succeeded ? [...new Set([...successes, current.sceneId])] : successes }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id)).returning({ id: commercialTasks.id });
+        const knownOutcome = providerOutcome !== "unknown";
+        const releaseSlot = tx.update(analysisProviderSlots).set({ releasedAt: new Date() }).where(and(eq(analysisProviderSlots.sceneJobId, current.id), sql`${knownOutcome}`, sql`${analysisProviderSlots.releasedAt} IS NULL`)).returning({ id: analysisProviderSlots.sceneJobId });
+        // Publish the result and free a known provider slot together, with one database round trip.
+        await tx.execute(sql`WITH parent_progress AS (${parentUpdate.getSQL()}), released_provider AS (${releaseSlot.getSQL()}) SELECT id FROM parent_progress`);
         trace.mark("commit_transaction");
         return task.id;
       });
@@ -194,13 +198,14 @@ export async function runIndependentSceneJob(jobId: string) {
   } finally {
     checkpointTrace.stop();
   }
+  let saved = false;
   try {
     if (checkpointed) {
-      const saved = await saveSceneCheckpoint(job.id, executionId);
-      console.info("commercial.scene.save_finished", { taskId: task.id, sceneJobId: job.id, saved: Boolean(saved), saveMs: Date.now() - modelFinishedAt });
+      saved = Boolean(await saveSceneCheckpoint(job.id, executionId));
+      console.info("commercial.scene.save_finished", { taskId: task.id, sceneJobId: job.id, saved, saveMs: Date.now() - modelFinishedAt });
     }
   } finally {
-    if (blueprint.metadata?.providerOutcome !== "unknown") {
+    if (!saved && blueprint.metadata?.providerOutcome !== "unknown") {
       try { await releaseAnalysisProviderSlot(job.id); }
       catch (error) { console.error("commercial.scene.provider_slot_release_failed", { sceneJobId: job.id, error: taskErrorDetails(error) }); }
     }
@@ -219,13 +224,6 @@ export async function recoverStaleAnalysisSceneJobs(limit = 5, taskId?: string) 
     try {
       const saved = await saveSceneCheckpoint(job.id);
       if (!saved) continue;
-      // Known results can release a provider lease even if the original worker exited before cleanup.
-      const current = await db.query.analysisSceneJobs.findFirst({ where: eq(analysisSceneJobs.id, job.id) });
-      const outcome = (current?.result as { providerOutcome?: string })?.providerOutcome;
-      if (outcome && outcome !== "unknown") {
-        try { await releaseAnalysisProviderSlot(job.id); }
-        catch (error) { console.error("commercial.scene.provider_slot_release_failed", { sceneJobId: job.id, error: taskErrorDetails(error) }); }
-      }
       await dispatchQueuedSceneJobs(job.taskId);
       await settleIfTerminal(job.taskId);
     } catch (error) {
@@ -268,32 +266,22 @@ export async function resumeLocalIndependentAnalyses() {
 }
 
 export async function dispatchQueuedSceneJobs(taskId?: string) {
+  if (!process.env.CRON_SECRET || !analysisDispatchTarget()) return 0;
   const queued = await db.select({ id: analysisSceneJobs.id, taskId: analysisSceneJobs.taskId,
     activeCount: sql<number>`(SELECT count(*)::int FROM analysis_scene_jobs active WHERE active.task_id = ${analysisSceneJobs.taskId} AND active.state = 'running')` }).from(analysisSceneJobs)
     .innerJoin(commercialTasks, eq(commercialTasks.id, analysisSceneJobs.taskId))
     .where(and(eq(analysisSceneJobs.state, "queued"), eq(commercialTasks.state, "running"), taskId ? eq(analysisSceneJobs.taskId, taskId) : undefined,
       sql`(SELECT count(*) FROM analysis_scene_jobs active WHERE active.task_id = ${analysisSceneJobs.taskId} AND active.state = 'running') < 2`))
     .orderBy(asc(analysisSceneJobs.createdAt), asc(analysisSceneJobs.sceneIndex)).limit(taskId ? 2 : 50);
-  const secret = process.env.CRON_SECRET;
-  const raw = process.env.NODE_ENV === "production" ? process.env.COMMERCIAL_RECONCILIATION_BASE_URL || process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "") : process.env.LOCAL_ANALYSIS_BASE_URL || `http://127.0.0.1:${process.env.PORT || "3000"}`;
-  if (!secret || !raw) return 0;
-  let base: URL;
-  try { base = new URL(raw); if (base.protocol !== "https:" && !(process.env.NODE_ENV !== "production" && ["localhost", "127.0.0.1"].includes(base.hostname))) return 0; }
-  catch { return 0; }
-  let sent = 0;
+  const candidates: typeof queued = [];
   const dispatchedParents = new Map<string, number>();
   for (const job of queued) {
     const dispatchedForParent = dispatchedParents.get(job.taskId) || 0;
-    if (job.activeCount + dispatchedForParent >= 2 || sent >= 5) continue;
+    if (job.activeCount + dispatchedForParent >= 2 || candidates.length >= 5) continue;
     dispatchedParents.set(job.taskId, dispatchedForParent + 1);
-    try {
-      const url = new URL("/api/internal/analysis-run", base);
-      const request = { method: "POST", signal: AbortSignal.timeout(10_000), headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" }, body: JSON.stringify({ sceneJobId: job.id }) };
-      const response = base.protocol === "http:"
-        ? await directFetch(url, { ...request, dispatcher: localDispatchAgent })
-        : await fetch(url, { ...request, cache: "no-store" });
-      if (response.ok) sent++;
-    } catch (error) { console.error("commercial.scene.dispatch_failed", { sceneJobId: job.id, error }); }
+    candidates.push(job);
   }
-  return sent;
+  // HTTP acknowledgements are independent. One slow request must not hold the other available lanes.
+  const dispatched = await Promise.all(candidates.map(job => dispatchAnalysisInvocation({ sceneJobId: job.id })));
+  return dispatched.filter(Boolean).length;
 }

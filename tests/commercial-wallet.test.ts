@@ -9,6 +9,7 @@ import * as schema from "@/lib/db/schema";
 
 const isolated = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return isolated.db; } }));
+vi.mock("undici", async importOriginal => ({ ...await importOriginal<typeof import("undici")>(), fetch: vi.fn(async () => new Response("{}")) }));
 vi.mock("@/lib/workflow/scene-analysis", async (importOriginal) => ({ ...await importOriginal<typeof import("@/lib/workflow/scene-analysis")>(), rewriteSceneBlueprint: vi.fn(), analyzeSceneBlueprint: vi.fn() }));
 vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: vi.fn(async () => "owned-upload"), isOwnedLinkedVideo: vi.fn(async () => false), commercialMediaRequest: vi.fn() }));
 vi.mock("@/lib/byok/kie", () => ({ getUserKieApiKey: vi.fn(async () => null) }));
