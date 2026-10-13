@@ -7,6 +7,7 @@ import { recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysi
 import { analysisNeedsRecovery } from "@/lib/billing/analysis-execution";
 import { runAnalysisTask } from "@/lib/workflow/analysis-tasks";
 import { runIndependentSceneJob } from "@/lib/billing/independent-scene-analysis";
+import { taskErrorDetails } from "@/lib/billing/task-diagnostics";
 
 export const maxDuration = 300;
 
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
       if (task.kind === "workflow_analysis") await runAnalysisTask(task.id);
       else await runCommercialTask(task.id);
     } catch (error) {
-      console.error("analysis.run.failed", { taskId: taskId || sceneJobId, message: error instanceof Error ? error.message : "Unknown error" });
+      console.error("analysis.run.failed", { taskId, sceneJobId, error: taskErrorDetails(error) });
     }
   });
   return NextResponse.json({ state: "scheduled" });

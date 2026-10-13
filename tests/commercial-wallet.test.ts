@@ -485,6 +485,43 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(await runIndependentSceneJob(jobs[1].id)).toBe(false);
     expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(3);
   });
+  it.each(["40001", "23514"])("preserves the model answer across save error %s without repeating inference", async (code) => {
+    await grant();
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Save fault injection" }).returning();
+    const [version] = await testDb.insert(schema.projectVersions).values({ projectId: project.id, versionNumber: 0, label: "Original" }).returning();
+    const [scene] = await testDb.insert(schema.videoScenes).values({ projectId: project.id, sceneIndex: 1, startTime: 0, endTime: 5, duration: 5 }).returning();
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "running", credits: 5, expiresAt: new Date(Date.now() + 600_000),
+      input: { projectId: project.id, pricing: { payer: "platform", model: "flash", sourceDurationUs: 5_000_000, automaticSplit: false, paidSplitReusable: false, scenes: [{ id: "one", startUs: 0, endUs: 5_000_000 }] }, modelId: "gemini-3-8-flash-openai", outputLanguage: "zh", keyFingerprint: generationKeyFingerprint("platform-test-key") },
+      result: { executionId: randomUUID(), sceneJobMode: "independent_v1", versionId: version.id, sceneRecords: { one: scene.id }, assets: { scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] } },
+    }).returning();
+    await reserveCommercialTask({ userId, taskKey: `commercial:${task.id}`, credits: 5, rewrites: 0, quote: { kind: "analysis" } });
+    const [job] = await testDb.insert(schema.analysisSceneJobs).values({ taskId: task.id, sceneId: "one", sceneIndex: 1 }).returning();
+    vi.mocked(analyzeSceneBlueprint).mockResolvedValue({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Keep this model answer", metadata: { analysisProvider: "kie" } });
+    await client.exec(`CREATE SEQUENCE save_fault_attempt; CREATE FUNCTION inject_scene_save_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF nextval('save_fault_attempt') = 1 THEN RAISE EXCEPTION 'simulated save fault' USING ERRCODE = '${code}'; END IF; RETURN NEW; END $$; CREATE TRIGGER inject_scene_save_fault BEFORE INSERT ON scene_versions FOR EACH ROW EXECUTE FUNCTION inject_scene_save_fault();`);
+    try {
+      if (code === "40001") {
+        expect(await runIndependentSceneJob(job.id)).toBe(true);
+        expect((await testDb.select().from(schema.analysisSceneJobs))[0]).toMatchObject({ state: "completed", result: { timings: { saveAttempt: 2, recovered: false, modelMs: expect.any(Number) } } });
+      } else {
+        await expect(runIndependentSceneJob(job.id)).rejects.toThrow();
+        expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(0);
+        expect((await testDb.select().from(schema.analysisSceneJobs))[0]).toMatchObject({ state: "running", result: { pendingBlueprint: { generationPrompt: "Keep this model answer" } } });
+        await testDb.update(schema.analysisSceneJobs).set({ updatedAt: new Date(Date.now() - 25_000) }).where(eq(schema.analysisSceneJobs.id, job.id));
+        await recoverStaleAnalysisSceneJobs(5, task.id);
+      }
+      await recoverStaleAnalysisSceneJobs(5, task.id);
+      expect(await runIndependentSceneJob(job.id)).toBe(false);
+      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(1);
+      expect(await testDb.select().from(schema.sceneVersions)).toMatchObject([{ originalSceneId: scene.id, generationPrompt: "Keep this model answer" }]);
+      expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(1);
+      expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, task.id)))[0].state).toBe("completed");
+      const [reservation] = await testDb.select().from(schema.commercialReservations);
+      expect((await testDb.select().from(schema.commercialLedger).where(eq(schema.commercialLedger.eventKey, `settle:${reservation.id}`)))).toHaveLength(1);
+    } finally {
+      await client.exec("DROP TRIGGER inject_scene_save_fault ON scene_versions; DROP FUNCTION inject_scene_save_fault(); DROP SEQUENCE save_fault_attempt;");
+    }
+  });
   it("saves a checkpointed scene after worker interruption without another KIE request", async () => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
