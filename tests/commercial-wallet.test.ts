@@ -71,6 +71,13 @@ async function drain(taskId: string) {
   for (let i = 0; i < 30; i++) {
     await runCommercialTask(taskId);
     const task = (await testDb.select().from(schema.commercialTasks)).find((t) => t.id === taskId)!;
+    if (task.state === "running" && (task.result as Record<string, unknown>).sceneJobMode === "independent_v1") {
+      const jobs = await testDb.select().from(schema.analysisSceneJobs).where(eq(schema.analysisSceneJobs.taskId, taskId));
+      for (const job of jobs.filter(job => job.state === "queued")) await runIndependentSceneJob(job.id);
+      await recoverStaleAnalysisSceneJobs(30, taskId);
+      await reconcileTerminalIndependentAnalysis(taskId);
+      continue;
+    }
     if (task.state !== "queued") return;
   }
   throw new Error("Task failed to reach a durable boundary");
@@ -464,8 +471,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   it("runs later shots as independent durable jobs and settles the parent once", async () => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
-    vi.stubEnv("COMMERCIAL_SCENE_JOB_EXPERIMENT", "true");
-    vi.stubEnv("COMMERCIAL_SCENE_JOB_TEST_USER_IDS", userId);
+    vi.stubEnv("LOCAL_ANALYSIS_USER_IDS", userId);
     vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
     vi.stubEnv("CRON_SECRET", "test-secret");
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
@@ -541,8 +547,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   it.skipIf(!nativeClient)("identifies a blocked parent lock and recovers its saved answer with the real driver", async () => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
-    vi.stubEnv("COMMERCIAL_SCENE_JOB_EXPERIMENT", "true");
-    vi.stubEnv("COMMERCIAL_SCENE_JOB_TEST_USER_IDS", userId);
+    vi.stubEnv("LOCAL_ANALYSIS_USER_IDS", userId);
     vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
     const errors = vi.spyOn(console, "error");
     const [project] = await testDb.insert(schema.projects).values({ userId, title: "Blocked parent reproduction" }).returning();
@@ -590,8 +595,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   it("saves a checkpointed scene after worker interruption without another KIE request", async () => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
-    vi.stubEnv("COMMERCIAL_SCENE_JOB_EXPERIMENT", "true");
-    vi.stubEnv("COMMERCIAL_SCENE_JOB_TEST_USER_IDS", userId);
+    vi.stubEnv("LOCAL_ANALYSIS_USER_IDS", userId);
     vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
     const [project] = await testDb.insert(schema.projects).values({ userId, title: "Recovered scene" }).returning();
     const interval = { id: "shot-1", startUs: 0, endUs: 5_000_000 };
@@ -609,10 +613,10 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(await recoverStaleAnalysisSceneJobs(5, quote.id)).toBe(0);
     await testDb.update(schema.analysisSceneJobs).set({ updatedAt: new Date(Date.now() - 25_000) }).where(eq(schema.analysisSceneJobs.id, job.id));
     vi.stubEnv("NODE_ENV", "development");
-    vi.stubEnv("COMMERCIAL_SCENE_JOB_TEST_USER_IDS", randomUUID());
+    vi.stubEnv("LOCAL_ANALYSIS_USER_IDS", randomUUID());
     await resumeLocalIndependentAnalyses();
     expect((await testDb.select().from(schema.analysisSceneJobs))[0].state).toBe("running");
-    vi.stubEnv("COMMERCIAL_SCENE_JOB_TEST_USER_IDS", userId);
+    vi.stubEnv("LOCAL_ANALYSIS_USER_IDS", userId);
     await resumeLocalIndependentAnalyses();
     expect(await resumeIndependentAnalysis(quote.id)).toBe(false);
     expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
@@ -650,8 +654,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   it("settles one parent reservation when two scene workers finish together", async () => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
-    vi.stubEnv("COMMERCIAL_SCENE_JOB_EXPERIMENT", "true");
-    vi.stubEnv("COMMERCIAL_SCENE_JOB_TEST_USER_IDS", userId);
+    vi.stubEnv("LOCAL_ANALYSIS_USER_IDS", userId);
     vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
     const [project] = await testDb.insert(schema.projects).values({ userId, title: "Two finishes" }).returning();
     const intervals = [{ id: "1", startUs: 0, endUs: 5_000_000 }, { id: "2", startUs: 5_000_000, endUs: 10_000_000 }];
@@ -690,65 +693,44 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, task.id)))[0].state).toBe("failed");
     expect((await balance()).heldCredits).toBe(0);
   });
-  it("replays the eleven-shot failure checkpoints and records the save error without duplicate inference", async () => {
+  it("enables independent jobs for every account without experiment flags", async () => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
-    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Save failure reproduction" }).returning();
-    const ends = [3625000, 5958000, 8042000, 10292000, 12500000, 14708000, 17083000, 19125000, 21375000, 23542000, 27209000];
-    const scenes = ends.map((endUs, index) => ({ id: String(index + 1), startUs: index ? ends[index - 1] : 0, endUs }));
-    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a5a8711fcde187fd617c90cd137fcf0f02d73e7bc3699686386b5e19513ca28c", durationUs: 27209000, bytes: 1140481, metadata: { duration: 27.209 }, scenes });
-    const preview = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/source.mp4", mediaName: "98dbda782b986a1452deb45fb8bc2ebc.mp4", automaticSplit: true });
-    const quote = await quoteCommercialAnalysis(userId, { preparationId: preview.id, sceneIds: scenes.map(scene => scene.id), payer: "platform", model: "flash", outputLanguage: "zh" });
+    vi.stubEnv("COMMERCIAL_SCENE_JOB_EXPERIMENT", "false");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Default flow" }).returning();
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 5_000_000, bytes: 500, metadata: {}, scenes: [{ id: "1", startUs: 0, endUs: 5_000_000 }] });
+    const preview = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/source.mp4", mediaName: "source.mp4", automaticSplit: false });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preview.id, sceneIds: ["1"], payer: "platform", model: "flash", outputLanguage: "zh" });
+    const [quoted] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+    expect(quoted.input).toMatchObject({ executionMode: "scene_jobs_v1" });
     await confirmCommercialTask(userId, quote.id);
-    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: { duration: 27.209 }, scenes: scenes.map((scene, index) => ({ sceneIndex: index + 1, startTime: scene.startUs / 1e6, endTime: scene.endUs / 1e6, duration: (scene.endUs - scene.startUs) / 1e6, keyframeUrls: [1, 2, 3].map(frame => `https://example.com/frame-${frame}.jpg`) })) });
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] });
     await runCommercialTask(quote.id);
-    vi.mocked(analyzeSceneBlueprint).mockResolvedValueOnce({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Complete model result", metadata: { analysisProvider: "kie" } });
-    vi.mocked(analyzeSceneBlueprint).mockRejectedValueOnce(new Error("KIE_ANALYSIS_TIMEOUT")).mockRejectedValueOnce(new Error("KIE_ANALYSIS_TIMEOUT"));
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+    expect(await testDb.select().from(schema.analysisSceneJobs)).toMatchObject([{ state: "queued", sceneId: "1" }]);
+  });
+  it("adopts a historical saved answer into scene jobs without another model request", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Historical saved answer" }).returning();
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 5_000_000, bytes: 500, metadata: {}, scenes: [{ id: "1", startUs: 0, endUs: 5_000_000 }] });
+    const preview = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/source.mp4", mediaName: "source.mp4", automaticSplit: false });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preview.id, sceneIds: ["1"], payer: "platform", model: "flash", outputLanguage: "zh" });
+    await confirmCommercialTask(userId, quote.id);
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] });
     await runCommercialTask(quote.id);
-    await runCommercialTask(quote.id);
-    await runCommercialTask(quote.id);
-    vi.mocked(analyzeSceneBlueprint).mockResolvedValueOnce({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Fourth model result", metadata: { analysisProvider: "kie" } });
-    const cause = Object.assign(new Error("connection lost platform-test-key"), { code: "08006" });
-    const transaction = vi.spyOn(testDb, "transaction").mockRejectedValueOnce(new Error("Failed query: sensitive SQL", { cause }));
-    const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    try {
-      await runCommercialTask(quote.id);
-      const [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
-      expect(task).toMatchObject({ state: "review", result: { finishedSceneIds: ["1", "2", "3"], successfulSceneIds: ["1"], diagnostic: { taskId: quote.id, phase: "saving_result", sceneId: "4", error: { cause: { code: "08006", message: "connection lost [REDACTED]" } } } } });
-      expect(JSON.stringify(task.result)).not.toContain("sensitive SQL");
-      await runCommercialTask(quote.id);
-      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(4);
-      expect((await balance()).heldCredits).toBe(quote.credits);
-      expect(log).toHaveBeenCalledWith("commercial.task.failed", expect.objectContaining({ phase: "saving_result" }));
-      expect(task.result).toMatchObject({ pendingResult: { sceneId: "4", blueprint: { generationPrompt: "Fourth model result" } } });
-      transaction.mockRestore();
-      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '61 seconds' WHERE id = $1", [quote.id]);
-      await recoverCommercialAnalysisTasks(quote.id);
-      await recoverCommercialAnalysisTasks(quote.id);
-      await runCommercialTask(quote.id);
-      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(4);
-      const [saved] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
-      expect(saved).toMatchObject({ state: "queued", result: { pendingResult: null, successfulSceneIds: ["1", "4"], finishedSceneIds: ["1", "2", "3", "4"] } });
-      vi.mocked(analyzeSceneBlueprint).mockResolvedValue({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Remaining scene result", metadata: { analysisProvider: "kie" } });
-      await drain(quote.id);
-      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(11);
-      const [completed] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
-      expect(completed).toMatchObject({ state: "completed", result: { finishedSceneIds: scenes.map(scene => scene.id), reviewResolution: { action: "automatic_settlement" }, reviewHistory: [{ action: "entered_review" }, { action: "automatic_settlement" }] } });
-      expect((await balance()).heldCredits).toBe(0);
-      const failedVersion = (await testDb.select().from(schema.sceneVersions)).find(version => version.sceneIndex === 2)!;
-      const retry = await quoteCommercialAnalysisRetry(userId, quote.id, failedVersion.id);
-      await confirmCommercialTask(userId, retry.id);
-      const retrySave = vi.spyOn(testDb, "transaction").mockRejectedValueOnce(new Error("Retry save interrupted"));
-      try { await runCommercialTask(retry.id); } finally { retrySave.mockRestore(); }
-      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(12);
-      await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '61 seconds' WHERE id = $1", [retry.id]);
-      await recoverCommercialAnalysisTasks();
-      await drain(retry.id);
-      expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(12);
-      expect((await testDb.select().from(schema.sceneVersions)).find(version => version.id === failedVersion.id)?.generationPrompt).toBe("Remaining scene result");
-      expect((await balance()).heldCredits).toBe(0);
-    } finally { transaction.mockRestore(); log.mockRestore(); }
+    await client.query("DELETE FROM analysis_scene_jobs WHERE task_id = $1", [quote.id]);
+    const pendingResult = { sceneId: "1", blueprint: { story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Historical answer", metadata: { analysisProvider: "kie" } } };
+    await client.query("UPDATE commercial_tasks SET state = 'review', input = input - 'executionMode', result = (result - 'sceneJobMode') || $2::jsonb, updated_at = now() - interval '61 seconds' WHERE id = $1", [quote.id, JSON.stringify({ pendingResult })]);
+    await recoverCommercialAnalysisTasks(quote.id);
+    await drain(quote.id);
+    await drain(quote.id);
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+    expect(await testDb.select().from(schema.sceneVersions)).toMatchObject([{ generationPrompt: "Historical answer" }]);
+    expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(1);
+    expect(await balance()).toMatchObject({ heldCredits: 0 });
   });
   it("retries only the selected failed shot and leaves other failures for a later retry", async () => {
     await grant();
@@ -826,9 +808,11 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await confirmCommercialTask(userId, quote.id);
     vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] });
     await runCommercialTask(quote.id);
-    await client.query("UPDATE commercial_tasks SET state = 'running', updated_at = now() - interval '31 minutes' WHERE id = $1", [quote.id]);
+    await client.query("DELETE FROM analysis_scene_jobs WHERE task_id = $1", [quote.id]);
+    await client.query("UPDATE commercial_tasks SET state = 'running', result = result - 'sceneJobMode', updated_at = now() - interval '31 minutes' WHERE id = $1", [quote.id]);
     await recoverCommercialAnalysisTasks();
     await recoverCommercialAnalysisTasks();
+    await drain(quote.id);
     expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
     expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
     expect((await testDb.select().from(schema.sceneVersions))[0].generationPrompt).toBe("");
@@ -849,11 +833,13 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: intervals.map((scene, index) => ({ sceneIndex: index + 1, startTime: scene.startUs / 1_000_000, endTime: scene.endUs / 1_000_000, duration: 5, keyframeUrls: [] })) });
     await runCommercialTask(quote.id);
     vi.mocked(analyzeSceneBlueprint).mockResolvedValue({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Analyzed", metadata: { analysisProvider: "kie" } });
-    await runCommercialTask(quote.id);
-    await client.query("UPDATE commercial_tasks SET state='running', result=result || '{\"executionPhase\":\"model_request\",\"activeSceneId\":\"2\"}'::jsonb, updated_at=now()-interval '7 minutes' WHERE id=$1", [quote.id]);
+    const firstJob = (await testDb.select().from(schema.analysisSceneJobs).where(eq(schema.analysisSceneJobs.taskId, quote.id)))[0];
+    await runIndependentSceneJob(firstJob.id);
+    await client.query("DELETE FROM analysis_scene_jobs WHERE task_id = $1", [quote.id]);
+    await client.query("UPDATE commercial_tasks SET state='running', result=(result - 'sceneJobMode') || '{\"executionPhase\":\"model_request\",\"activeSceneId\":\"2\"}'::jsonb, updated_at=now()-interval '7 minutes' WHERE id=$1", [quote.id]);
     await recoverCommercialAnalysisTasks();
     const [resumed] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
-    expect(resumed).toMatchObject({ state: "queued", result: { finishedSceneIds: ["1", "2"], successfulSceneIds: ["1"] } });
+    expect(resumed).toMatchObject({ state: "queued", result: { pendingResult: { sceneId: "2", blueprint: { metadata: { providerOutcome: "unknown" } } }, finishedSceneIds: ["1"], successfulSceneIds: ["1"] } });
     await drain(quote.id);
     expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(2);
     const versions = await testDb.query.sceneVersions.findMany({ orderBy: [schema.sceneVersions.sceneIndex] });
@@ -920,14 +906,15 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     let started!: () => void;
     const entered = new Promise<void>(resolve => { started = resolve; });
     vi.mocked(analyzeSceneBlueprint).mockImplementationOnce(() => { started(); return new Promise(resolve => { deliver = resolve; }); });
-    const running = runCommercialTask(taskId);
+    await runCommercialTask(taskId);
+    const [job] = await testDb.select().from(schema.analysisSceneJobs).where(eq(schema.analysisSceneJobs.taskId, taskId));
+    const running = runIndependentSceneJob(job.id);
     await entered;
-    expect((await testDb.select().from(schema.commercialTasks)).find(t => t.id === taskId)?.result).toMatchObject({ executionPhase: "model_request", activeSceneId: "1" });
-    await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '5 minutes' WHERE id = $1", [taskId]);
-    await recoverCommercialAnalysisTasks();
+    await client.query("UPDATE analysis_scene_jobs SET updated_at = now() - interval '5 minutes' WHERE id = $1", [job.id]);
+    await recoverStaleAnalysisSceneJobs(5, taskId);
     expect((await testDb.select().from(schema.commercialTasks)).find(t => t.id === taskId)?.state).toBe("running");
-    await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '31 minutes' WHERE id = $1", [taskId]);
-    await recoverCommercialAnalysisTasks();
+    await client.query("UPDATE analysis_scene_jobs SET updated_at = now() - interval '7 minutes' WHERE id = $1", [job.id]);
+    await recoverStaleAnalysisSceneJobs(5, taskId);
     deliver({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Late result", metadata: { analysisProvider: "kie" } });
     await running;
     expect((await testDb.select().from(schema.sceneVersions))[0].generationPrompt).toBe("");

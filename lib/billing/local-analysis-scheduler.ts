@@ -5,8 +5,8 @@ type Scheduler = { stop: () => void };
 const runtime = globalThis as typeof globalThis & { localAnalysisScheduler?: Scheduler };
 
 export function startLocalAnalysisScheduler(): Scheduler | undefined {
-  if (process.env.NODE_ENV !== "development" || process.env.COMMERCIAL_SCENE_JOB_EXPERIMENT !== "true"
-    || !process.env.COMMERCIAL_SCENE_JOB_TEST_USER_IDS || !process.env.CRON_SECRET) return;
+  if (process.env.NODE_ENV !== "development"
+    || !process.env.LOCAL_ANALYSIS_USER_IDS || !process.env.CRON_SECRET) return;
   // Require an explicit loopback target so this scheduler cannot wake a deployed service.
   let target: URL;
   try { target = new URL(process.env.LOCAL_ANALYSIS_BASE_URL || ""); } catch { return; }

@@ -82,7 +82,15 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string) {
         const succeeded = blueprint.metadata?.analysisProvider === "kie";
         const interval = input.pricing.scenes[current.sceneIndex - 1];
         trace.mark("insert_scene_result");
-        await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId, originalSceneId: sceneRecord, sceneIndex: current.sceneIndex, duration: (interval.endUs - interval.startUs) / 1_000_000, ...blueprint, metadata: pending ? blueprint.metadata : { ...blueprint.metadata, providerOutcome: "unknown", failureCode: "ANALYSIS_INTERRUPTED", executionId: current.executionId } });
+        const retryVersion = input.retry?.sceneVersions.find(scene => scene.id === current.sceneId);
+        const metadata = pending ? blueprint.metadata : { ...blueprint.metadata, providerOutcome: "unknown", failureCode: "ANALYSIS_INTERRUPTED", executionId: current.executionId };
+        if (input.retry) {
+          if (!retryVersion) throw new Error("ANALYSIS_CHECKPOINT_MISMATCH");
+          const [updated] = await tx.update(sceneVersions).set({ ...blueprint, metadata: { ...metadata, retryOfSceneVersionId: retryVersion.sceneVersionId }, updatedAt: new Date() }).where(and(eq(sceneVersions.id, retryVersion.sceneVersionId), eq(sceneVersions.projectId, input.projectId), eq(sceneVersions.originalSceneId, sceneRecord))).returning({ id: sceneVersions.id });
+          if (!updated) throw new Error("ANALYSIS_CHECKPOINT_MISSING");
+        } else {
+          await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId, originalSceneId: sceneRecord, sceneIndex: current.sceneIndex, duration: (interval.endUs - interval.startUs) / 1_000_000, ...blueprint, metadata });
+        }
         trace.mark("update_scene_status");
         await tx.update(videoScenes).set({ status: succeeded ? "completed" : "failed", error: succeeded ? null : String(blueprint.metadata?.fallbackReason || "Analysis interrupted"), updatedAt: new Date() }).where(eq(videoScenes.id, sceneRecord));
         trace.mark("complete_scene_job");
@@ -129,9 +137,9 @@ async function settleIfTerminal(taskId: string) {
     if (!task || (task.result as Progress).sceneJobMode !== "independent_v1") return;
     const jobs = await tx.select().from(analysisSceneJobs).where(eq(analysisSceneJobs.taskId, taskId)).orderBy(asc(analysisSceneJobs.sceneIndex));
     const input = task.input as AnalysisInput;
-    if (jobs.length !== input.pricing.scenes.length || jobs.some(job => !["completed", "failed"].includes(job.state))) return;
-    const successes = jobs.filter(job => job.state === "completed").map(job => job.sceneId);
-    await finishCommercialAnalysis(task, successes, Boolean((task.result as Progress).splitDelivered), successes.length ? "completed" : "failed", tx, jobs.map(job => job.sceneId));
+    if (jobs.length !== (input.retry?.sceneVersions.length ?? input.pricing.scenes.length) || jobs.some(job => !["completed", "failed"].includes(job.state))) return;
+    const successes = [...new Set([...(input.retry?.previousSuccess || []), ...jobs.filter(job => job.state === "completed").map(job => job.sceneId)])];
+    await finishCommercialAnalysis(task, successes, Boolean((task.result as Progress).splitDelivered), successes.length > (input.retry?.previousSuccess.length || 0) ? "completed" : "failed", tx, jobs.map(job => job.sceneId));
   });
 }
 
@@ -251,10 +259,10 @@ export async function resumeIndependentAnalysis(taskId: string) {
 }
 
 export async function resumeLocalIndependentAnalyses() {
-  if (process.env.NODE_ENV !== "development" || process.env.COMMERCIAL_SCENE_JOB_EXPERIMENT !== "true") return;
-  const userIds = (process.env.COMMERCIAL_SCENE_JOB_TEST_USER_IDS || "").split(",").map(id => id.trim()).filter(id => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id));
+  if (process.env.NODE_ENV !== "development") return;
+  const userIds = (process.env.LOCAL_ANALYSIS_USER_IDS || "").split(",").map(id => id.trim()).filter(id => /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(id));
   if (!userIds.length) return;
-  // Local and production may share a database. Only resume allowlisted experiment tasks.
+  // Local and production may share a database. Only resume explicitly scoped local tasks.
   const tasks = await db.select({ id: commercialTasks.id }).from(commercialTasks).where(and(
     eq(commercialTasks.state, "running"), eq(commercialTasks.kind, "analysis"), inArray(commercialTasks.userId, userIds),
     sql`${commercialTasks.result}->>'sceneJobMode' = 'independent_v1'`,

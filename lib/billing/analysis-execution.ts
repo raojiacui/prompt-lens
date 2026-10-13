@@ -11,7 +11,7 @@ export const ANALYSIS_SAVE_STALE_TIMEOUT_MS = 60_000;
 
 export function analysisNeedsRecovery(task: Task, now = Date.now()) {
   if (task.kind !== "analysis") return false;
-  if ((task.input as { executionMode?: string }).executionMode === "scene_jobs_v1" && (task.result as { sceneJobMode?: string }).sceneJobMode === "independent_v1") return false;
+  if ((task.result as { sceneJobMode?: string }).sceneJobMode === "independent_v1") return false;
   if (task.state === "queued") return task.updatedAt.getTime() < now - 24 * 3600_000;
   if (!["running", "review"].includes(task.state)) return false;
   const checkpoint = (task.result as Record<string, unknown>).pendingResult;

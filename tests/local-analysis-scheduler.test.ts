@@ -9,8 +9,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   mocks.resume.mockReset().mockResolvedValue(undefined);
   vi.stubEnv("NODE_ENV", "development");
-  vi.stubEnv("COMMERCIAL_SCENE_JOB_EXPERIMENT", "true");
-  vi.stubEnv("COMMERCIAL_SCENE_JOB_TEST_USER_IDS", "59593254-1819-4e2e-8600-c3bebff86669");
+  vi.stubEnv("LOCAL_ANALYSIS_USER_IDS", "59593254-1819-4e2e-8600-c3bebff86669");
   vi.stubEnv("CRON_SECRET", "local-test-secret");
   vi.stubEnv("LOCAL_ANALYSIS_BASE_URL", "http://127.0.0.1:3001");
 });
@@ -46,8 +45,8 @@ it("keeps a single scheduler and never overlaps slow scans", async () => {
 });
 
 it.each([
-  ["NODE_ENV", "production"], ["COMMERCIAL_SCENE_JOB_EXPERIMENT", "false"],
-  ["COMMERCIAL_SCENE_JOB_TEST_USER_IDS", ""], ["CRON_SECRET", ""],
+  ["NODE_ENV", "production"],
+  ["LOCAL_ANALYSIS_USER_IDS", ""], ["CRON_SECRET", ""],
   ["LOCAL_ANALYSIS_BASE_URL", ""], ["LOCAL_ANALYSIS_BASE_URL", "https://example.com"],
 ])("stays disabled with %s=%s", async (name, value) => {
   vi.stubEnv(name, value);
