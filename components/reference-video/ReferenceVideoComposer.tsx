@@ -313,7 +313,8 @@ export function ReferenceVideoComposer({
   const [assets, setAssets] = useState<UploadedAsset[]>([]);
   const [error, setError] = useState("");
   const zh = useLocale() === "zh";
-  const [commercialEnabled, setCommercialEnabled] = useState(false);
+  const [commercialEnabled, setCommercialEnabled] = useState<boolean | null>(null);
+  const [creditLoadFailed, setCreditLoadFailed] = useState(false);
   const [creditStatus, setCreditStatus] = useState<{ balance: number; commercial?: { credits?: number; heldCredits?: number } } | null>(null);
   const [balanceRefresh, setBalanceRefresh] = useState(0);
   const [generationPayer, setGenerationPayer] = useState("platform");
@@ -337,12 +338,15 @@ export function ReferenceVideoComposer({
         const response = await fetch("/api/credits/me", { cache: "no-store", signal: request.signal });
         if (!response.ok) throw new Error("Balance unavailable");
         const data = await response.json();
+        if (typeof data?.commercialConsumptionEnabled !== "boolean") throw new Error("Payment configuration unavailable");
         if (active && controller === request) {
           setCreditStatus(data);
-          setCommercialEnabled(data?.commercialConsumptionEnabled === true);
+          setCommercialEnabled(data.commercialConsumptionEnabled);
+          setCreditLoadFailed(false);
+          if (!data.commercialConsumptionEnabled) setGenerationPayer("byok");
         }
       } catch {
-        if (active && controller === request) setCommercialEnabled(false);
+        if (active && controller === request) setCreditLoadFailed(true);
       } finally {
         if (controller === request) clearTimeout(timer);
       }
@@ -490,8 +494,10 @@ export function ReferenceVideoComposer({
   });
   const generationCostLabel = !resolvedModel
     ? (zh ? "当前模型不支持这些素材" : "Materials unsupported by this model")
-    : !commercialEnabled || generationPayer === "byok"
+    : generationPayer === "byok"
     ? (zh ? "0 平台积分 · 自带 Key" : "0 platform credits · own key")
+    : commercialEnabled === null
+    ? (creditLoadFailed ? (zh ? "费用暂不可用" : "Cost unavailable") : (zh ? "费用加载中…" : "Loading cost…"))
     : creditPreview.state === "priced"
       ? (zh ? `预计 ${creditPreview.total} 积分` : `Est. ${creditPreview.total} credits`) + (model.startsWith("veo3") ? (zh ? " · 按条计费" : " · per video") : "")
       : creditPreview.state === "pending"
@@ -1111,7 +1117,7 @@ export function ReferenceVideoComposer({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...(commercialEnabled ? { payer: "byok" } : {}),
+            payer: "byok",
             userPrompt: promptWithInlineReferences,
             prompt: [
               `Selected public model: ${model}.`,
@@ -1655,11 +1661,11 @@ export function ReferenceVideoComposer({
                 </p>
               ) : null}
 
-              <div data-testid="generation-action-row" className={`mt-auto grid items-stretch gap-2 ${commercialEnabled ? "grid-cols-[minmax(0,1fr)_7rem] sm:grid-cols-[minmax(0,1fr)_8rem]" : "grid-cols-1"}`}>
+              <div data-testid="generation-action-row" className="mt-auto grid grid-cols-[minmax(0,1fr)_7rem] items-stretch gap-2 sm:grid-cols-[minmax(0,1fr)_8rem]">
               <button
                 type="button"
                 onClick={() => void createVideo()}
-                disabled={isRunning || (!pendingConfirmation && (!resolvedModel || (commercialEnabled && generationPayer === "platform" && creditPreview.state === "unavailable")))}
+                disabled={isRunning || (!pendingConfirmation && (!resolvedModel || (generationPayer === "platform" && (commercialEnabled !== true || creditPreview.state === "unavailable"))))}
                 className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-lg bg-[#D97757] px-2 py-1 text-sm font-semibold leading-tight text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <WandSparkles className="h-5 w-5 shrink-0" />
@@ -1669,7 +1675,7 @@ export function ReferenceVideoComposer({
                   : t("create.button") || "Generate Video"}
                 {!isRunning && !pendingConfirmation && <span aria-live="polite">· {generationCostLabel}</span>}</span>
               </button>
-              {commercialEnabled && <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning || pendingConfirmation} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>}
+              <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning || pendingConfirmation} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform" disabled={commercialEnabled === false}>{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>
               </div>
             </div>
           </section>

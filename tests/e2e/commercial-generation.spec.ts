@@ -69,3 +69,32 @@ test("checks a lost submission after reload without opening a dialog or creating
   expect(confirmations).toEqual([["original-quote"], ["original-quote"]]);
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
+
+test("keeps both payment choices visible when loading the balance fails", async ({ page, context }) => {
+  await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
+  let byokSubmissions = 0;
+  await page.route("**/api/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    let body: unknown = {};
+    if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
+    else if (path === "/api/credits/me") { await route.fulfill({ status: 500, json: { error: "Database temporarily unavailable" } }); return; }
+    else if (path === "/api/generation-jobs" && route.request().method() === "POST") {
+      byokSubmissions++;
+      expect(route.request().postDataJSON().payer).toBe("byok");
+      body = { providerTaskId: "own-key-task" };
+    }
+    await route.fulfill({ json: body });
+  });
+  await page.goto("/dashboard?tab=video-gen&duration=5&videoGenPrompt=A%20cinematic%20cloud%20palace", { waitUntil: "domcontentloaded" });
+  const payer = page.getByLabel("费用来源");
+  await expect(payer).toBeVisible();
+  await expect(payer.locator("option")).toHaveText(["平台积分", "自带 Key"]);
+  await expect(payer).toHaveValue("platform");
+  await expect(page.getByRole("button", { name: /^生成视频/ })).toContainText("费用暂不可用");
+  await expect(page.getByRole("button", { name: /^生成视频/ })).toBeDisabled();
+  await payer.selectOption("byok");
+  await expect(page.getByRole("button", { name: /^生成视频/ })).toContainText("0 平台积分");
+  await page.getByRole("button", { name: /^生成视频/ }).click();
+  await expect.poll(() => byokSubmissions).toBe(1);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
