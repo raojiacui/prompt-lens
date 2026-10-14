@@ -1,6 +1,2808 @@
 [
   {
     "project": {
+      "id": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+      "description": null,
+      "status": "ready",
+      "activeVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+      "createdAt": "2026-10-12T14:14:34.751Z",
+      "updatedAt": "2026-10-12T15:13:21.768Z",
+      "title": "山海经",
+      "metadata": {
+        "mediaType": "video",
+        "failedSceneCount": 0
+      }
+    },
+    "versions": [
+      {
+        "id": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "parentVersionId": null,
+        "versionNumber": 0,
+        "kind": "original",
+        "label": "原始版本",
+        "remixPrompt": null,
+        "overview": {
+          "sceneCount": 14
+        },
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:17:46.648Z"
+      }
+    ],
+    "activeVersion": {
+      "id": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+      "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+      "parentVersionId": null,
+      "versionNumber": 0,
+      "kind": "original",
+      "label": "原始版本",
+      "remixPrompt": null,
+      "overview": {
+        "sceneCount": 14
+      },
+      "metadata": {},
+      "createdAt": "2026-10-12T14:17:46.648Z",
+      "updatedAt": "2026-10-12T14:17:46.648Z"
+    },
+    "scenes": [
+      {
+        "id": "3cb25924-4349-45cc-a489-b1792d87bf90",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 1,
+        "shotGroupId": null,
+        "startTime": 0,
+        "endTime": 3.75,
+        "duration": 3.75,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:24:47.624Z"
+      },
+      {
+        "id": "66bd9884-78f9-4737-834f-94809c491586",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 2,
+        "shotGroupId": null,
+        "startTime": 3.75,
+        "endTime": 4.625,
+        "duration": 0.875,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/002/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/002/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/002/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/002/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/002/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:18:32.086Z"
+      },
+      {
+        "id": "ead085ad-8706-495c-8997-650422b77ff6",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 3,
+        "shotGroupId": null,
+        "startTime": 4.625,
+        "endTime": 5.542,
+        "duration": 0.917,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/003/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/003/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/003/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/003/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/003/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:25:58.647Z"
+      },
+      {
+        "id": "d5d81001-37c0-4bed-a7fe-3f0703258b4e",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 4,
+        "shotGroupId": null,
+        "startTime": 5.542,
+        "endTime": 6.583,
+        "duration": 1.041,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/004/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/004/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/004/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/004/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/004/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:32:40.772Z"
+      },
+      {
+        "id": "60505cfc-54c0-48d6-b6bd-2fedfed13357",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 5,
+        "shotGroupId": null,
+        "startTime": 6.583,
+        "endTime": 7.417,
+        "duration": 0.834,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/005/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/005/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/005/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/005/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/005/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:33:48.372Z"
+      },
+      {
+        "id": "e5c3d49f-446b-4c4a-8e45-55f97b389c91",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 6,
+        "shotGroupId": null,
+        "startTime": 7.417,
+        "endTime": 8.292,
+        "duration": 0.875,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/006/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/006/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/006/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/006/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/006/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:40:28.071Z"
+      },
+      {
+        "id": "997e931a-0e86-4be0-8f47-424d983c4049",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 7,
+        "shotGroupId": null,
+        "startTime": 8.292,
+        "endTime": 9.417,
+        "duration": 1.125,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/007/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/007/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/007/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/007/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/007/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:34:36.105Z"
+      },
+      {
+        "id": "c607a167-499a-4855-aa12-cb144c919d92",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 8,
+        "shotGroupId": null,
+        "startTime": 9.417,
+        "endTime": 10.375,
+        "duration": 0.958,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/008/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/008/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/008/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/008/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/008/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:35:14.705Z"
+      },
+      {
+        "id": "32ad1696-4a66-40c8-8020-9edbdda811f9",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 9,
+        "shotGroupId": null,
+        "startTime": 10.375,
+        "endTime": 11.25,
+        "duration": 0.875,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/009/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/009/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/009/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/009/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/009/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:42:55.600Z"
+      },
+      {
+        "id": "00fbd84f-f2e6-4e00-bf14-953bb9de4080",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 10,
+        "shotGroupId": null,
+        "startTime": 11.25,
+        "endTime": 12.25,
+        "duration": 1,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/010/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/010/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/010/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/010/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/010/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:47:15.545Z"
+      },
+      {
+        "id": "1b8701f6-2a5c-43b5-9eb1-ed83ff4704cb",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 11,
+        "shotGroupId": null,
+        "startTime": 12.25,
+        "endTime": 13.292,
+        "duration": 1.042,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/011/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/011/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/011/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/011/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/011/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:51:44.299Z"
+      },
+      {
+        "id": "1866cde7-2c89-443d-b66b-b50ef9fefc6a",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 12,
+        "shotGroupId": null,
+        "startTime": 13.292,
+        "endTime": 15.25,
+        "duration": 1.958,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/012/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/012/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/012/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/012/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/012/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:54:58.194Z"
+      },
+      {
+        "id": "98af21d2-963c-49e6-a92f-e5f31c9682ab",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 13,
+        "shotGroupId": null,
+        "startTime": 15.25,
+        "endTime": 16.333,
+        "duration": 1.083,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/013/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/013/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/013/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/013/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/013/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T15:08:34.697Z"
+      },
+      {
+        "id": "c3b71d7d-066f-4af1-adec-6144ba231a2c",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "referenceVideoId": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "sceneIndex": 14,
+        "shotGroupId": null,
+        "startTime": 16.333,
+        "endTime": 19.296,
+        "duration": 2.963,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/014/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/014/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/014/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/014/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/464c27c9-ed5d-4319-8613-b34e43c83434/scenes/014/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "updatedAt": "2026-10-12T14:56:49.016Z"
+      }
+    ],
+    "sceneVersions": [
+      {
+        "id": "2fe0517c-7340-4051-a2ff-75ef6c94c150",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "3cb25924-4349-45cc-a489-b1792d87bf90",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 3.75,
+          "summary": "清晨薄雾弥漫的河畔，一名少年与身旁静卧的小狗背光站立，少年扬手向水面打出一记水漂。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖金与墨绿相撞，天空淡金橙黄，水面深绿带冷调反光。",
+          "style": "电影写实质感，诗意静谧的东方氛围感胶片风。",
+          "action": "少年保持站姿，扬起手臂将手中的石片用力掷出，石片在泛着金光的墨绿色水面上弹跳滑行。",
+          "camera": {
+            "angle": "低角度平视",
+            "focus": "全景深，焦点兼顾水面与中景剪影",
+            "speed": "平稳静止",
+            "lensFeel": "长焦镜头，空间压缩感强",
+            "movement": "固定镜头或极其缓慢的平移",
+            "shotSize": "远景"
+          },
+          "motion": "微幅水波流动与少年挥臂投掷的瞬间动态。",
+          "subject": "远处的少年与蹲坐的犬类剪影，动作是打水漂。",
+          "lighting": "强逆光，晨曦或夕阳低角度斜射，人物完全形成黑色剪影，水面反射金光。",
+          "characters": [
+            {
+              "pose": "站立侧身，抬臂掷石",
+              "identity": "少年",
+              "appearance": "逆光剪影，身形纤细，着宽松古朴衣物",
+              "expression": "逆光不可辨"
+            },
+            {
+              "pose": "静卧或蹲坐在少年身旁",
+              "identity": "狗",
+              "appearance": "剪影，体型中等，立耳",
+              "expression": "逆光不可辨"
+            }
+          ],
+          "composition": {
+            "depth": "前景波纹、中景剪影岸滩、远景雾山，层级分明",
+            "layout": "三分法则，中景人物置于偏中偏右，下三分之二为水面，上部为天空远山"
+          },
+          "environment": {
+            "props": [
+              "石子",
+              "水花"
+            ],
+            "setting": "自然河流与雾气平原",
+            "backgroundLayers": "远山层峦隐于晨雾中，天际透出泛黄日光；中景为低矮芦苇荡与河岸；前景为流动的水面。"
+          },
+          "sceneDescription": "开阔的水面上泛着晨光粼粼的波纹，远景为雾气缭绕的连绵山丘。河滩中景处，一名少年侧身站立，身旁趴着一只狗，二人呈现出清晰的剪影。少年挥动手臂将石子扔向水面，石片在水面弹起激起微小水花。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "dialogue": [],
+          "soundStyle": "清晨静谧环境音，隐约有潺潺流水声与微弱石子擦水声"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "pacing": "舒缓静谧",
+          "techniques": "硬切出"
+        },
+        "generationPrompt": "电影级远景画面，静谧的晨雾河流。中景河滩上站着一名少年与一只静坐的小狗，二人呈深黑色剪影。少年侧身挥臂向水面掷出打水漂的扁石，石子在水面上轻巧弹跳激起涟漪。背景是笼罩在薄雾中的连绵青绿远山与金黄色晨曦天空，强烈的逆光在泛着墨绿色微波的水面上勾勒出粼粼金斑。长焦镜头，低角度水平构图，诗意写实，带有柔和胶片颗粒感。\n\n画面与环境: 开阔的水面上泛着晨光粼粼的波纹，远景为雾气缭绕的连绵山丘。河滩中景处，一名少年侧身站立，身旁趴着一只狗，二人呈现出清晰的剪影。少年挥动手臂将石子扔向水面，石片在水面弹起激起微小水花。；远处的少年与蹲坐的犬类剪影，动作是打水漂。；setting: 自然河流与雾气平原; props: 石子; 水花; backgroundLayers: 远山层峦隐于晨雾中，天际透出泛黄日光；中景为低矮芦苇荡与河岸；前景为流动的水面。\n\n人物与动作: identity: 少年; appearance: 逆光剪影，身形纤细，着宽松古朴衣物; expression: 逆光不可辨; pose: 站立侧身，抬臂掷石; identity: 狗; appearance: 剪影，体型中等，立耳; expression: 逆光不可辨; pose: 静卧或蹲坐在少年身旁；少年保持站姿，扬起手臂将手中的石片用力掷出，石片在泛着金光的墨绿色水面上弹跳滑行。；微幅水波流动与少年挥臂投掷的瞬间动态。\n\n镜头与构图: shotSize: 远景; angle: 低角度平视; lensFeel: 长焦镜头，空间压缩感强; movement: 固定镜头或极其缓慢的平移; focus: 全景深，焦点兼顾水面与中景剪影; speed: 平稳静止；layout: 三分法则，中景人物置于偏中偏右，下三分之二为水面，上部为天空远山; depth: 前景波纹、中景剪影岸滩、远景雾山，层级分明\n\n光影与质感: 强逆光，晨曦或夕阳低角度斜射，人物完全形成黑色剪影，水面反射金光。；暖金与墨绿相撞，天空淡金橙黄，水面深绿带冷调反光。；电影写实质感，诗意静谧的东方氛围感胶片风。\n\n声音: soundStyle: 清晨静谧环境音，隐约有潺潺流水声与微弱石子擦水声\n\n节奏与转场: pacing: 舒缓静谧; techniques: 硬切出",
+        "duration": 3.75,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:24:44.967Z",
+        "updatedAt": "2026-10-12T14:24:44.967Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:18:37.801Z",
+          "sceneIndex": 1,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "464d82e9-c3c0-42a8-9f28-94e18c66e0d2",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "66bd9884-78f9-4737-834f-94809c491586",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 4.625,
+          "summary": "夜空中一团耀眼的球形金色烟花火花由中心向外急剧爆发扩散。",
+          "startTime": 3.75,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "暖金黄色、高光亮白为主，搭配暗绿灰色的夜空背景。",
+          "style": "电影级特效，强动态模糊粒子感，写实火花质感。",
+          "action": "明亮能量核在中心闪耀，数以千计的金色火花粒子向外高速喷射扩散并占据整个画幅。",
+          "camera": "正面对称正视，固定机位，景深开阔，爆炸呈现强烈的视觉逼近感。",
+          "motion": "由内而外的快速径向扩张运动。",
+          "subject": "急剧向外辐射扩张的金色球形爆炸火花球。",
+          "lighting": "火花爆炸自发高亮暖光，核心过曝泛白，与深暗背景形成高反差。",
+          "characters": "无",
+          "composition": "中心对称构图，爆炸核心位于正中央，辐射状粒子填满中景与前景。",
+          "environment": "深色夜空，远景地平线处带有模糊闪烁的城市微光。",
+          "sceneDescription": "夜幕之中，球状金色火花中心发出刺眼强光，无数细密火星呈放射状急速向四周膨胀扩散，背景隐约可见微弱的城市灯火。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "低沉剧烈的爆破冲击声伴随密集的火花呼啸噼啪声。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极快，不足1秒的瞬间爆发快切。",
+            "techniques": "硬切进、硬切出。"
+          }
+        },
+        "generationPrompt": "电影级视觉特效，黑夜中一团极为耀眼的球形金色烟花火花在正中心剧烈爆发。中心发出刺眼的亮白色强光，数以千计的细碎金色火星以完美球状向全方位剧烈喷射扩张，带有强烈的动态模糊与粒子拖尾。背景为深沉微绿的夜空及远方模糊微弱的城市地面灯火。中心对称构图，超高光比对比，强烈的冲击力与视觉纵深感。\n\n画面与环境: 夜幕之中，球状金色火花中心发出刺眼强光，无数细密火星呈放射状急速向四周膨胀扩散，背景隐约可见微弱的城市灯火。；急剧向外辐射扩张的金色球形爆炸火花球。；深色夜空，远景地平线处带有模糊闪烁的城市微光。\n\n人物与动作: 无；明亮能量核在中心闪耀，数以千计的金色火花粒子向外高速喷射扩散并占据整个画幅。；由内而外的快速径向扩张运动。\n\n镜头与构图: 正面对称正视，固定机位，景深开阔，爆炸呈现强烈的视觉逼近感。；中心对称构图，爆炸核心位于正中央，辐射状粒子填满中景与前景。\n\n光影与质感: 火花爆炸自发高亮暖光，核心过曝泛白，与深暗背景形成高反差。；暖金黄色、高光亮白为主，搭配暗绿灰色的夜空背景。；电影级特效，强动态模糊粒子感，写实火花质感。\n\n声音: style: 低沉剧烈的爆破冲击声伴随密集的火花呼啸噼啪声。\n\n节奏与转场: editing: pacing: 极快，不足1秒的瞬间爆发快切。; techniques: 硬切进、硬切出。",
+        "duration": 0.875,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:18:29.208Z",
+        "updatedAt": "2026-10-12T14:18:29.208Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:18:28.100Z",
+          "sceneIndex": 2,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "d1915dc4-9788-43c7-bc12-3a7bee2f68d1",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "ead085ad-8706-495c-8997-650422b77ff6",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 5.542,
+          "summary": "黄昏的山巅上，一只长角泛着微光的黑色异兽伫立在悬崖边缘，静静俯瞰落日下的群山。",
+          "startTime": 4.625,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "暖金、橙黄与主体岩石的暗黑基调，点缀角部的冷青绿色。",
+          "style": "写实奇幻电影风格，厚重大气的质感。",
+          "action": "异兽维持站立姿态静止远眺，微风吹动其颈部与背部鬃毛。",
+          "camera": "中景，微仰角拍摄，焦点置于异兽主体，背景保持大景深虚实结合，镜头基本静止。",
+          "motion": "环境微风拂动鬃毛，整体动作极其微弱静止。",
+          "subject": "神秘黑兽，外形类似高山塔尔羊或黑鹿，披着浓密长毛，头顶双角尖端带有青绿色超自然光晕。",
+          "lighting": "强烈的黄昏逆光与边缘轮廓光，主体呈半剪影效果，角尖荧光形成局部冷色点光源。",
+          "characters": [],
+          "composition": "右侧三分法则构图，主体异兽占据右半部，左侧留白展现广袤的山峦与落日余晖。",
+          "environment": "高山峰顶岩石，远景为多层渐隐的雾霭山峦，天空呈现黄昏特有的橙黄光辉。",
+          "sceneDescription": "日落时分，一头黑色长毛异兽静立在嶙峋的山脊岩石上，兽角尖端闪烁青绿荧光，背景为金色霞光笼罩的朦胧山脉。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "低沉空灵的氛围背景音乐",
+          "ambient": "空旷的高山呼啸风声",
+          "soundEffects": "未知"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉稳缓慢",
+            "techniques": "前后硬切"
+          }
+        },
+        "generationPrompt": "电影中景，微仰拍镜头。黄昏落日时分，一头黑色长毛神秘异兽静止伫立在陡峭的山岩之巅。异兽的双角尖端闪烁着一抹青绿色微光。背景是沉浸在温暖金黄色夕阳与薄雾中的连绵群山。主体呈深色半剪影，山风吹拂鬃毛，强烈的逆光勾勒轮廓，具有史诗感与自然奇幻质感，画质写实细腻。\n\n画面与环境: 日落时分，一头黑色长毛异兽静立在嶙峋的山脊岩石上，兽角尖端闪烁青绿荧光，背景为金色霞光笼罩的朦胧山脉。；神秘黑兽，外形类似高山塔尔羊或黑鹿，披着浓密长毛，头顶双角尖端带有青绿色超自然光晕。；高山峰顶岩石，远景为多层渐隐的雾霭山峦，天空呈现黄昏特有的橙黄光辉。\n\n人物与动作: 异兽维持站立姿态静止远眺，微风吹动其颈部与背部鬃毛。；环境微风拂动鬃毛，整体动作极其微弱静止。\n\n镜头与构图: 中景，微仰角拍摄，焦点置于异兽主体，背景保持大景深虚实结合，镜头基本静止。；右侧三分法则构图，主体异兽占据右半部，左侧留白展现广袤的山峦与落日余晖。\n\n光影与质感: 强烈的黄昏逆光与边缘轮廓光，主体呈半剪影效果，角尖荧光形成局部冷色点光源。；暖金、橙黄与主体岩石的暗黑基调，点缀角部的冷青绿色。；写实奇幻电影风格，厚重大气的质感。\n\n声音: ambient: 空旷的高山呼啸风声; music: 低沉空灵的氛围背景音乐; soundEffects: 未知\n\n节奏与转场: editing: pacing: 沉稳缓慢; techniques: 前后硬切",
+        "duration": 0.917,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:25:54.689Z",
+        "updatedAt": "2026-10-12T14:25:54.689Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:19:17.869Z",
+          "sceneIndex": 3,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "0a565a44-7cd9-4956-968b-8d381176a575",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "d5d81001-37c0-4bed-a7fe-3f0703258b4e",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 6.583,
+          "summary": "巨龙在黄昏薄雾中贴近地面高速滑翔。",
+          "startTime": 5.542,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "暖金黄、橄榄绿与大地色调为主，高饱和的暮色天空与暗调前景形成对比。",
+          "style": "电影写实风格，带有浓厚的史诗奇幻质感与自然的大气雾气效果。",
+          "action": "巨龙以极快的速度从左至右水平滑翔，双翼保持稳定升力，尾部带起微弱的气流扰动。",
+          "camera": "中远景，侧面平视跟拍，长焦镜头压缩景深，伴随巨龙飞行轨迹快速向右平移。",
+          "motion": "主体向右平滑而迅猛的高速位移，背景伴随轻微视差后退。",
+          "subject": "一只巨大的双足飞龙，灰绿色坚硬鳞甲，翼膜张开，利爪微蜷，长尾向后延伸，呈低空滑翔姿态。",
+          "lighting": "柔和的夕阳逆光与漫射光，形成金黄色轮廓光，龙身体侧处于阴影中，整体呈大气质感。",
+          "characters": [],
+          "composition": "巨龙横贯画面中央偏左，背部与翼尖指向天空，主体呈半剪影轮廓，地平线位于画面下三分之一。",
+          "environment": "广阔的原野或水面上方，薄雾弥漫，远方有起伏的山脉轮廓，天空布满被夕阳染成金黄色的厚重云层。",
+          "sceneDescription": "黄昏朦胧的光线下，一只巨大的飞龙展开双翼，自左向右贴地低空快速掠过，背景为被暖黄夕阳笼罩的远山与云雾。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉的风声呼啸与巨大的翅膀破空声，伴随史诗感环境氛围低音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快节奏，转瞬即逝的动态闪现",
+            "techniques": "硬切进出"
+          }
+        },
+        "generationPrompt": "电影写实镜头，远景。黄昏浓雾中，一只巨大的龙展开破损质感的翼膜，自画面左侧向右侧低空极速滑翔。背景是连绵的远山与被金色落日映照的厚云，前景地表模糊略过。长焦平视侧面跟拍，暖黄色与橄榄绿的暮色色调，逆光剪影效果，高动态范围，史诗奇幻电影画质。\n\n画面与环境: 黄昏朦胧的光线下，一只巨大的飞龙展开双翼，自左向右贴地低空快速掠过，背景为被暖黄夕阳笼罩的远山与云雾。；一只巨大的双足飞龙，灰绿色坚硬鳞甲，翼膜张开，利爪微蜷，长尾向后延伸，呈低空滑翔姿态。；广阔的原野或水面上方，薄雾弥漫，远方有起伏的山脉轮廓，天空布满被夕阳染成金黄色的厚重云层。\n\n人物与动作: 巨龙以极快的速度从左至右水平滑翔，双翼保持稳定升力，尾部带起微弱的气流扰动。；主体向右平滑而迅猛的高速位移，背景伴随轻微视差后退。\n\n镜头与构图: 中远景，侧面平视跟拍，长焦镜头压缩景深，伴随巨龙飞行轨迹快速向右平移。；巨龙横贯画面中央偏左，背部与翼尖指向天空，主体呈半剪影轮廓，地平线位于画面下三分之一。\n\n光影与质感: 柔和的夕阳逆光与漫射光，形成金黄色轮廓光，龙身体侧处于阴影中，整体呈大气质感。；暖金黄、橄榄绿与大地色调为主，高饱和的暮色天空与暗调前景形成对比。；电影写实风格，带有浓厚的史诗奇幻质感与自然的大气雾气效果。\n\n声音: soundStyle: 低沉的风声呼啸与巨大的翅膀破空声，伴随史诗感环境氛围低音。\n\n节奏与转场: editing: pacing: 快节奏，转瞬即逝的动态闪现; techniques: 硬切进出",
+        "duration": 1.041,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:32:36.605Z",
+        "updatedAt": "2026-10-12T14:32:36.605Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:25:41.973Z",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "c15b62c4-25bc-4972-af1f-a2bcd869bb31",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "60505cfc-54c0-48d6-b6bd-2fedfed13357",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 7.417,
+          "summary": "一只轻盈的白狐在洒满夕阳斑驳光影的幽暗森林中疾速飞奔。",
+          "startTime": 6.583,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "暖金与墨绿、暗棕的强烈撞色，高对比度电影级调色。",
+          "style": "具有奇幻色彩的写实电影质感，高速奔跑与梦幻焦外光斑交织。",
+          "action": "白狐压低身体重心，四肢敏捷交替蹬地，快速穿过林地中央向前飞奔。",
+          "camera": "贴地低角度侧向跟踪拍摄，大光圈浅景深，焦距紧锁白狐身体，随其奔跑同步横移。",
+          "motion": "主体动作迅捷流畅，摄影机平稳横移跟拍，前后景虚化光斑快速滑过。",
+          "subject": "体型修长轻盈的白狐，拥有柔顺的白色皮毛与修长的尾巴。",
+          "lighting": "强烈的逆光与轮廓光，金色暖光穿透树林打亮动物毛发边缘，明暗对比强烈。",
+          "characters": [],
+          "composition": "三分法水平构图，奔跑的狐狸居于画面中下部，前景大面积金色散景虚化形成视觉层次。",
+          "environment": "幽暗古老森林，地面覆有松散落叶层，背景为模糊的树干与林隙逆光。",
+          "sceneDescription": "极低角度跟拍镜头，一只身形灵动的白狐在布满落叶的林地上自左向右快速奔跑。强烈的金色逆光在白狐背脊勾勒出明亮轮廓，前景与背景充斥着绚烂的金色圆形光斑。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "轻盈且具神秘感、节奏紧凑的管弦配乐（推测）",
+          "ambient": "微风拂过林间的幽静自然声（推测）",
+          "soundEffects": "细微急促的落叶踩踏沙沙声（推测）"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快速剪辑，节奏紧凑",
+            "techniques": "前后均为硬切"
+          }
+        },
+        "generationPrompt": "电影级贴地侧向跟拍镜头。一只浅白色的狐狸在幽暗森林地面上自左向右快速奔跑。极强烈的金色夕阳逆光照射，勾勒出狐狸周身发光的毛发轮廓。极致浅景深，前景是跳跃闪烁的金色圆形散景光斑，背景为昏暗模糊的深色树干。动作轻盈敏捷，4K分辨率，奇幻电影写实风格。\n\n画面与环境: 极低角度跟拍镜头，一只身形灵动的白狐在布满落叶的林地上自左向右快速奔跑。强烈的金色逆光在白狐背脊勾勒出明亮轮廓，前景与背景充斥着绚烂的金色圆形光斑。；体型修长轻盈的白狐，拥有柔顺的白色皮毛与修长的尾巴。；幽暗古老森林，地面覆有松散落叶层，背景为模糊的树干与林隙逆光。\n\n人物与动作: 白狐压低身体重心，四肢敏捷交替蹬地，快速穿过林地中央向前飞奔。；主体动作迅捷流畅，摄影机平稳横移跟拍，前后景虚化光斑快速滑过。\n\n镜头与构图: 贴地低角度侧向跟踪拍摄，大光圈浅景深，焦距紧锁白狐身体，随其奔跑同步横移。；三分法水平构图，奔跑的狐狸居于画面中下部，前景大面积金色散景虚化形成视觉层次。\n\n光影与质感: 强烈的逆光与轮廓光，金色暖光穿透树林打亮动物毛发边缘，明暗对比强烈。；暖金与墨绿、暗棕的强烈撞色，高对比度电影级调色。；具有奇幻色彩的写实电影质感，高速奔跑与梦幻焦外光斑交织。\n\n声音: soundEffects: 细微急促的落叶踩踏沙沙声（推测）; ambient: 微风拂过林间的幽静自然声（推测）; music: 轻盈且具神秘感、节奏紧凑的管弦配乐（推测）\n\n节奏与转场: editing: pacing: 快速剪辑，节奏紧凑; techniques: 前后均为硬切",
+        "duration": 0.834,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:33:44.969Z",
+        "updatedAt": "2026-10-12T14:33:44.969Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:26:44.200Z",
+          "sceneIndex": 5,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "f2bbf07d-f89c-471e-ae12-428f1731d462",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "e5c3d49f-446b-4c4a-8e45-55f97b389c91",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 8.292,
+          "summary": "黄昏时分，一名持剑侠客在屋脊上行走，身后天空中群鸟飞掠。",
+          "startTime": 7.417,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": {
+            "palette": [
+              "金黄色",
+              "琥珀暖色",
+              "墨绿黑剪影"
+            ],
+            "contrast": "高反差剪影风格"
+          },
+          "style": "写意东方武侠电影质感",
+          "action": [
+            {
+              "order": 1,
+              "description": "侠客手扛长剑稳步沿屋脊向前行走，群鸟自右上方天空穿梭飞过。"
+            }
+          ],
+          "camera": {
+            "angle": "平视微仰",
+            "focus": "聚焦于人物剪影与飞鸟",
+            "speed": "平稳中速",
+            "lensFeel": "中焦电影镜头，浅景深",
+            "movement": "微幅横移跟随",
+            "shotSize": "中景"
+          },
+          "motion": "人物匀速步伐与飞鸟的自由流动轨迹",
+          "subject": "持剑行走的古代侠客剪影。",
+          "lighting": {
+            "type": "强逆光",
+            "source": "低角度夕阳",
+            "quality": "温暖耀眼，边缘泛金光"
+          },
+          "characters": [
+            {
+              "pose": "侧身向右行走，双手执剑搭在肩颈处",
+              "identity": "年轻剑客或刺客",
+              "wardrobe": "深色古代武侠长袍与披风",
+              "appearance": "头顶挽发髻，侧脸轮廓清晰，身材干练",
+              "expression": "神情冷峻坚定"
+            }
+          ],
+          "composition": {
+            "framing": "主体居中偏左三分构图",
+            "midground": "行走的侠客主体",
+            "background": "金黄晚霞天空与盘旋的群鸟",
+            "foreground": "屋顶瓦片边缘"
+          },
+          "environment": "古代中式建筑屋顶，背景为开阔的黄昏晚霞天空与模糊远景建筑群。",
+          "sceneDescription": "夕阳逆光下，一名束发侠客手持长剑斜担在肩，沿着瓦片屋顶向右侧前行。金黄色的天空背景中，一群飞鸟在远方盘旋掠过，人物与屋顶呈现深色剪影效果。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambience": "黄昏风声与远方飞鸟拍翅鸣叫（推测）",
+          "musicStyle": "低沉肃穆的武侠国风弦乐或氛围铺底",
+          "soundEffects": "衣物微弱随风摆动声"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "从容凝练",
+            "techniques": "剪影视觉留白"
+          }
+        },
+        "generationPrompt": "电影质感，写意武侠风格。黄昏时刻，低角度暖金逆光。一名古代侠客呈侧身剪影，头挽发髻，身披暗色武侠长袍，手持长剑搭在肩头，沿着中式古建瓦片屋脊平稳前行。背景为大片金黄渐变夕阳天空，大群黑鸟在晚霞中展翅飞掠。中景，平视微仰视角，高对比度剪影构图，胶片颗粒质感，画面意境苍茫深远。\n\n画面与环境: 夕阳逆光下，一名束发侠客手持长剑斜担在肩，沿着瓦片屋顶向右侧前行。金黄色的天空背景中，一群飞鸟在远方盘旋掠过，人物与屋顶呈现深色剪影效果。；持剑行走的古代侠客剪影。；古代中式建筑屋顶，背景为开阔的黄昏晚霞天空与模糊远景建筑群。\n\n人物与动作: identity: 年轻剑客或刺客; appearance: 头顶挽发髻，侧脸轮廓清晰，身材干练; wardrobe: 深色古代武侠长袍与披风; expression: 神情冷峻坚定; pose: 侧身向右行走，双手执剑搭在肩颈处；order: 1; description: 侠客手扛长剑稳步沿屋脊向前行走，群鸟自右上方天空穿梭飞过。；人物匀速步伐与飞鸟的自由流动轨迹\n\n镜头与构图: shotSize: 中景; angle: 平视微仰; lensFeel: 中焦电影镜头，浅景深; movement: 微幅横移跟随; focus: 聚焦于人物剪影与飞鸟; speed: 平稳中速；framing: 主体居中偏左三分构图; foreground: 屋顶瓦片边缘; midground: 行走的侠客主体; background: 金黄晚霞天空与盘旋的群鸟\n\n光影与质感: type: 强逆光; source: 低角度夕阳; quality: 温暖耀眼，边缘泛金光；palette: 金黄色; 琥珀暖色; 墨绿黑剪影; contrast: 高反差剪影风格；写意东方武侠电影质感\n\n声音: ambience: 黄昏风声与远方飞鸟拍翅鸣叫（推测）; soundEffects: 衣物微弱随风摆动声; musicStyle: 低沉肃穆的武侠国风弦乐或氛围铺底\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 从容凝练; techniques: 剪影视觉留白",
+        "duration": 0.875,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:40:25.648Z",
+        "updatedAt": "2026-10-12T14:40:25.648Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:33:14.272Z",
+          "sceneIndex": 6,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "0b94daf1-717e-4db8-ba43-7f5e7db0645d",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "997e931a-0e86-4be0-8f47-424d983c4049",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 9.417,
+          "summary": "幽暗密林中，手持长剑的骑者剪影与一只长着发光眼睛的多足异兽对峙。",
+          "startTime": 8.292,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "偏暗沉的单色黄绿调与深黑剪影对比。",
+          "style": "暗黑奇幻CG写实风，浓郁迷雾氛围。",
+          "action": "骑者持剑对准异兽；怪物沿树干向前攀爬压迫逼近。",
+          "camera": "低角度仰拍，倾斜构图，中景，微幅手持摇晃。",
+          "motion": "主体动作幅度小，环境碎屑漂浮运动快速。",
+          "subject": "暗处对峙的持剑骑手与多足异兽",
+          "lighting": "强逆光，大面积黄绿雾气环境光，人物呈黑剪影，怪物眼球微弱自发光。",
+          "characters": "右侧武者呈逆光剪影，握剑警戒；左侧怪物外形似巨蛛，身覆粗糙硬甲，双眼发光且具多足。",
+          "composition": "对角线构图，右侧主体与左侧怪物呈对立布局，背景透光形成强烈剪影反差。",
+          "environment": "幽闭神秘的暗黑森林，背景有粗大斜向树干，空气中充斥绿色弥散光与飞舞杂质。",
+          "sceneDescription": "倾斜仰拍构图，右侧呈现一名骑坐骑、持利刃的武者剪影；左侧是一只双眼发白光的红黑多足怪兽自树干爬下，环境弥漫浓重的绿色雾气与漂浮尘屑。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "紧张短促的悬疑铺底音",
+          "ambient": "沉闷压抑的密林风声与生物低鸣"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快节奏切入",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "暗黑奇幻电影级画面，倾斜仰拍中景。右侧是一名身披斗篷、骑在战马上的战士高反差剪影，正拔剑指向前方；左侧巨型斜木上攀爬着一只面目狰狞的多足巨型怪物，双眼散发冷白荧光。全景笼罩在浓稠诡异的墨绿与亮黄迷雾之中，逆光勾勒轮廓，空气中充斥着飞舞的碎屑与微粒，氛围压抑紧张，极具视觉冲击力。\n\n画面与环境: 倾斜仰拍构图，右侧呈现一名骑坐骑、持利刃的武者剪影；左侧是一只双眼发白光的红黑多足怪兽自树干爬下，环境弥漫浓重的绿色雾气与漂浮尘屑。；暗处对峙的持剑骑手与多足异兽；幽闭神秘的暗黑森林，背景有粗大斜向树干，空气中充斥绿色弥散光与飞舞杂质。\n\n人物与动作: 右侧武者呈逆光剪影，握剑警戒；左侧怪物外形似巨蛛，身覆粗糙硬甲，双眼发光且具多足。；骑者持剑对准异兽；怪物沿树干向前攀爬压迫逼近。；主体动作幅度小，环境碎屑漂浮运动快速。\n\n镜头与构图: 低角度仰拍，倾斜构图，中景，微幅手持摇晃。；对角线构图，右侧主体与左侧怪物呈对立布局，背景透光形成强烈剪影反差。\n\n光影与质感: 强逆光，大面积黄绿雾气环境光，人物呈黑剪影，怪物眼球微弱自发光。；偏暗沉的单色黄绿调与深黑剪影对比。；暗黑奇幻CG写实风，浓郁迷雾氛围。\n\n声音: ambient: 沉闷压抑的密林风声与生物低鸣; music: 紧张短促的悬疑铺底音\n\n节奏与转场: editing: pacing: 快节奏切入; techniques: 硬切",
+        "duration": 1.125,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:34:34.021Z",
+        "updatedAt": "2026-10-12T14:34:34.021Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:34:30.463Z",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "efb5636e-5c0d-41fa-a191-eac5c7114487",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "c607a167-499a-4855-aa12-cb144c919d92",
+        "sceneIndex": 8,
+        "story": {
+          "endTime": 10.375,
+          "summary": "黄昏草原上，女子与狐狸静坐相伴，羽毛随风在她掌心周围飘散。",
+          "startTime": 9.417,
+          "sceneIndex": 8
+        },
+        "visual": {
+          "color": "暖金、琥珀色与米白为主色调，整体高饱和度暖色调。",
+          "style": "唯美电影感，梦幻诗意写实风。",
+          "action": "女子伸出左手手掌微屈，白色羽毛在掌心上方悠然飘落悬浮，狐狸依偎在一侧静止注视前方。",
+          "camera": "中景，平视微仰角度，浅景深，镜头平稳固定。",
+          "motion": "微风带动羽毛缓慢飘动，人物与动物动作极其微小凝练。",
+          "subject": "白衣女子与浅色大耳狐狸",
+          "lighting": "强烈的黄昏逆光，金黄色的轮廓光打在人物发丝与狐狸毛发边缘。",
+          "characters": "一位长发束起、身着宽松米白古风或波西米亚长袍的年轻女子，神情宁静柔和。",
+          "composition": "人物与狐狸居中偏右，左侧留出羽毛飘扬的空间，画面呈三角形稳定构图。",
+          "environment": "落日余晖下的空旷草地或戈壁边缘，背景为平缓的地平线与暖黄天空。",
+          "sceneDescription": "金色夕阳下的开阔草原，白衣女子席地而坐，身旁蹲坐着一只浅色狐狸。女子轻抬手臂，数片白色羽毛在掌心周围轻盈飞舞，逆光勾勒出温暖光晕。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "柔和舒缓的环境风声与轻柔音乐氛围（推测）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "pacing": "缓慢抒情",
+          "techniques": "硬切"
+        },
+        "generationPrompt": "电影质感，黄金时刻逆光。开阔草地上，一位身穿米白色宽松长袍的年轻女子盘腿而坐，身旁伴着一只大耳朵浅色狐狸。女子伸出一只手，几片纯白羽毛在微风中轻盈飘舞于掌心上方。强烈的夕阳轮廓光勾勒出狐狸蓬松的毛发与女子身姿，暖黄色调，浅景深，画面充满诗意与宁静，4K画质。\n\n画面与环境: 金色夕阳下的开阔草原，白衣女子席地而坐，身旁蹲坐着一只浅色狐狸。女子轻抬手臂，数片白色羽毛在掌心周围轻盈飞舞，逆光勾勒出温暖光晕。；白衣女子与浅色大耳狐狸；落日余晖下的空旷草地或戈壁边缘，背景为平缓的地平线与暖黄天空。\n\n人物与动作: 一位长发束起、身着宽松米白古风或波西米亚长袍的年轻女子，神情宁静柔和。；女子伸出左手手掌微屈，白色羽毛在掌心上方悠然飘落悬浮，狐狸依偎在一侧静止注视前方。；微风带动羽毛缓慢飘动，人物与动物动作极其微小凝练。\n\n镜头与构图: 中景，平视微仰角度，浅景深，镜头平稳固定。；人物与狐狸居中偏右，左侧留出羽毛飘扬的空间，画面呈三角形稳定构图。\n\n光影与质感: 强烈的黄昏逆光，金黄色的轮廓光打在人物发丝与狐狸毛发边缘。；暖金、琥珀色与米白为主色调，整体高饱和度暖色调。；唯美电影感，梦幻诗意写实风。\n\n声音: soundStyle: 柔和舒缓的环境风声与轻柔音乐氛围（推测）。\n\n节奏与转场: pacing: 缓慢抒情; techniques: 硬切",
+        "duration": 0.958,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:35:12.422Z",
+        "updatedAt": "2026-10-12T14:35:12.422Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:35:11.310Z",
+          "sceneIndex": 8,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "7c40afeb-33b5-4649-bf80-5b8707372a6a",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "32ad1696-4a66-40c8-8020-9edbdda811f9",
+        "sceneIndex": 9,
+        "story": {
+          "endTime": 11.25,
+          "summary": "清晨薄雾中，一头背负行囊的白鹿带领同行者缓步走过古朴的木桥。",
+          "startTime": 10.375,
+          "sceneIndex": 9
+        },
+        "visual": {
+          "color": "暖金与黛青冷暖对冲，东方古典奇幻色调，明暗对照明晰。",
+          "style": "唯美东方奇幻写实电影风格，画面通透且带有柔和雾气颗粒感。",
+          "action": "白鹿迈着沉稳从容的步伐由左向右缓行；身后随行者缓步紧随。",
+          "camera": "中远景，侧面微仰视视角，50mm中焦镜头，保持平稳缓慢的横向移动跟随。",
+          "motion": "主体白鹿缓慢右行动作，空气中伴有微弱光晕流转。",
+          "subject": "背负行李包裹的雄性白鹿，拥有繁复挺拔的鹿角与洁白皮毛。",
+          "lighting": "强侧逆光与轮廓光，右上方金黄暖光穿透晨雾勾勒出白鹿毛发边缘，左侧阴影区域偏冷青色。",
+          "characters": "左侧后景跟随着两名身着朴素深色古装的人影，面部模糊隐于阴影中。",
+          "composition": "横向构图，白鹿居于中右侧主体位置，木桥构成前中景斜线引导，远景青翠山色被雾气虚化。",
+          "environment": "建在山谷间的古朴木质拱桥，桥身栏杆粗糙简陋；背景为被浓重晨雾笼罩的苍翠山峦。",
+          "sceneDescription": "晨雾弥漫的山间，一头体态优雅的巨大白鹿背驮负重，稳步穿过一座原木栈桥。金黄色的晨曦逆光打在鹿角与鹿身边缘，身后有模糊行人随行。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "空灵山风与晨雾轻拂声",
+          "musicStyle": "悠远舒缓的东方管弦乐或笛声铺底",
+          "soundEffects": "沉稳轻微的蹄踏木板声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓沉静",
+            "techniques": "硬切接入，硬切接出"
+          }
+        },
+        "generationPrompt": "电影中远景，东方奇幻史诗风格。清晨浓雾弥漫的山谷中，一头体形高大、鹿角繁盛的白鹿背负着行囊与捆扎木材，优雅地走过一座古朴的原木桥梁。右侧强烈的金色晨曦逆光穿透薄雾，为白鹿的全身毛发与鹿角镀上耀眼轮廓光。左侧远景隐约可见随行的旅人身影。背景为青翠黛绿的朦胧群山，冷暖色调鲜明，光影层次丰富，8k画质，逼真毛发质感。\n\n画面与环境: 晨雾弥漫的山间，一头体态优雅的巨大白鹿背驮负重，稳步穿过一座原木栈桥。金黄色的晨曦逆光打在鹿角与鹿身边缘，身后有模糊行人随行。；背负行李包裹的雄性白鹿，拥有繁复挺拔的鹿角与洁白皮毛。；建在山谷间的古朴木质拱桥，桥身栏杆粗糙简陋；背景为被浓重晨雾笼罩的苍翠山峦。\n\n人物与动作: 左侧后景跟随着两名身着朴素深色古装的人影，面部模糊隐于阴影中。；白鹿迈着沉稳从容的步伐由左向右缓行；身后随行者缓步紧随。；主体白鹿缓慢右行动作，空气中伴有微弱光晕流转。\n\n镜头与构图: 中远景，侧面微仰视视角，50mm中焦镜头，保持平稳缓慢的横向移动跟随。；横向构图，白鹿居于中右侧主体位置，木桥构成前中景斜线引导，远景青翠山色被雾气虚化。\n\n光影与质感: 强侧逆光与轮廓光，右上方金黄暖光穿透晨雾勾勒出白鹿毛发边缘，左侧阴影区域偏冷青色。；暖金与黛青冷暖对冲，东方古典奇幻色调，明暗对照明晰。；唯美东方奇幻写实电影风格，画面通透且带有柔和雾气颗粒感。\n\n声音: ambient: 空灵山风与晨雾轻拂声; musicStyle: 悠远舒缓的东方管弦乐或笛声铺底; soundEffects: 沉稳轻微的蹄踏木板声\n\n节奏与转场: editing: pacing: 舒缓沉静; techniques: 硬切接入，硬切接出",
+        "duration": 0.875,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:42:52.038Z",
+        "updatedAt": "2026-10-12T14:42:52.038Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:35:57.890Z",
+          "sceneIndex": 9,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "165aacc5-b71a-4bbe-a16a-f7bf649d2151",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "00fbd84f-f2e6-4e00-bf14-953bb9de4080",
+        "sceneIndex": 10,
+        "story": {
+          "endTime": 12.25,
+          "summary": "两个幼童在古镇街道上奔跑逃窜，头顶掠过巨大禽类的羽翼阴影。",
+          "startTime": 11.25,
+          "sceneIndex": 10
+        },
+        "visual": {
+          "color": "暖金、土黄与暗褐为主调，呈现高对比剪影质感。",
+          "style": "东方古装奇幻电影写实风格，带有空气尘埃颗粒感。",
+          "action": "两个孩子向前奔跑；巨大黑翅从右上至左下高速划过镜头上方，投下急掠的黑影。",
+          "camera": "全景，低角度仰视，固定镜头，焦点覆盖奔跑主体与前景动势。",
+          "motion": "人物快速奔跑的纵深位移与巨翼掠过的极速横切运动。",
+          "subject": "两名奔跑的幼童与上方掠过的巨型羽翼",
+          "lighting": "强烈的暖金色逆光，人物边缘呈明亮轮廓光，地面拉出修长投影。",
+          "characters": "两名身着朴素布衣短衫的幼童，背对镜头，步伐急促向前奔跑，身形娇小。",
+          "composition": "双人背影位于中下方向纵深延伸，巨大羽翼横穿画面上方，形成压迫式分层。",
+          "environment": "古代村镇街道，由不规则青石板铺就，两侧有古朴院墙与瓦顶，空气中飘散着尘土与薄雾。",
+          "sceneDescription": "逆光弥漫的古镇石板路上，两名古代幼童背对镜头狂奔，一只巨大的黑色羽翼自上方呼啸掠过，激起微尘与动态光影。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "紧张压迫的鼓点或低音弦乐氛围",
+          "soundEffects": "沉重的羽翼破风声、急促的踏石脚步声与沙土飞扬声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极快，短促紧张的1秒动作镜头",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "电影质感，东方奇幻场景。两个身穿粗布汉服的幼童背对镜头，在阳光逆照的古镇青石板路上全力向前奔跑，脚下扬起微尘。强烈的夕阳金色逆光穿透薄雾，勾勒出人物金色轮廓与长长投影。画面上方一只巨大的黑色神禽羽翼猛烈掠过，带来压迫性的动态阴影。暖黄调，尘土飞扬，广角低机位，史诗奇幻写实风格。\n\n画面与环境: 逆光弥漫的古镇石板路上，两名古代幼童背对镜头狂奔，一只巨大的黑色羽翼自上方呼啸掠过，激起微尘与动态光影。；两名奔跑的幼童与上方掠过的巨型羽翼；古代村镇街道，由不规则青石板铺就，两侧有古朴院墙与瓦顶，空气中飘散着尘土与薄雾。\n\n人物与动作: 两名身着朴素布衣短衫的幼童，背对镜头，步伐急促向前奔跑，身形娇小。；两个孩子向前奔跑；巨大黑翅从右上至左下高速划过镜头上方，投下急掠的黑影。；人物快速奔跑的纵深位移与巨翼掠过的极速横切运动。\n\n镜头与构图: 全景，低角度仰视，固定镜头，焦点覆盖奔跑主体与前景动势。；双人背影位于中下方向纵深延伸，巨大羽翼横穿画面上方，形成压迫式分层。\n\n光影与质感: 强烈的暖金色逆光，人物边缘呈明亮轮廓光，地面拉出修长投影。；暖金、土黄与暗褐为主调，呈现高对比剪影质感。；东方古装奇幻电影写实风格，带有空气尘埃颗粒感。\n\n声音: soundEffects: 沉重的羽翼破风声、急促的踏石脚步声与沙土飞扬声; music: 紧张压迫的鼓点或低音弦乐氛围\n\n节奏与转场: editing: pacing: 极快，短促紧张的1秒动作镜头; techniques: 硬切",
+        "duration": 1,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:47:11.573Z",
+        "updatedAt": "2026-10-12T14:47:11.573Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:41:06.042Z",
+          "sceneIndex": 10,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "1c564307-5cfd-4bd1-999f-84cc3c170ef4",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "1b8701f6-2a5c-43b5-9eb1-ed83ff4704cb",
+        "sceneIndex": 11,
+        "story": {
+          "endTime": 13.292,
+          "summary": "在夕阳映照的悬崖之巅，一位修行者静坐入定，凝视着金色云海中浮现的远古巨龙。",
+          "startTime": 12.25,
+          "sceneIndex": 11
+        },
+        "visual": {
+          "color": "暖金、橙黄与岩石深黑构成的史诗暖色调。",
+          "style": "写实东方玄幻电影风，意境空灵辽阔。",
+          "action": "修士静止保持冥想姿势；巨龙在远方云雾中缓慢昂首、蜿蜒游移。",
+          "camera": "大远景，近似固定机位或极缓慢前推，全景深，视野宽广宏大。",
+          "motion": "极其缓慢的运动节奏，云雾舒缓流动，巨龙从容起伏。",
+          "subject": "悬崖上打坐的静止人物与云海中隐现的巨龙。",
+          "lighting": "柔和温暖的黄昏逆光与漫射光，云海呈现金橙色反光，前景物体呈剪影效果。",
+          "characters": "右下角一人，盘膝打坐，身着宽松素袍，背对镜头面向云海，神态静穆入定。",
+          "composition": "对角线构图。前景右下角人物岩石构成深色剪影，中左侧云海与巨龙形成视觉重心，形成强烈体量对比。",
+          "environment": "高山巅峰与壮阔云海，远处山峦起伏，天空呈现暖黄与淡橙色的落日霞光。",
+          "sceneDescription": "黄昏群山之巅的大远景。前景右侧悬崖上坐着一名静止打坐的修士背影；中远景左侧连绵起伏的金色云海中，一条身躯庞大的东方巨龙缓缓破云而出。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "低缓悠远的仙侠史诗弦乐（推测）。",
+          "ambience": "空旷遥远的山巅风声与低沉肃穆的玄幻氛围音效（推测）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极慢且肃穆的镜头节奏。",
+            "techniques": "前后硬切。"
+          }
+        },
+        "generationPrompt": "大远景，东方玄幻史诗电影质感。黄昏落日映照着壮阔无垠的金色云海与险峻山脉。画面右下角的前景岩石峭壁上，一名修行者盘腿打坐呈现深色剪影；中景左侧翻腾的金黄厚重云雾中，一条巍峨庞大的东方神龙徐徐探出头角、蜿蜒游弋。逆光漫射，金色辉光穿透薄雾，全景深构图，镜头极缓慢推移，意境悠远宁静，高细节度。\n\n画面与环境: 黄昏群山之巅的大远景。前景右侧悬崖上坐着一名静止打坐的修士背影；中远景左侧连绵起伏的金色云海中，一条身躯庞大的东方巨龙缓缓破云而出。；悬崖上打坐的静止人物与云海中隐现的巨龙。；高山巅峰与壮阔云海，远处山峦起伏，天空呈现暖黄与淡橙色的落日霞光。\n\n人物与动作: 右下角一人，盘膝打坐，身着宽松素袍，背对镜头面向云海，神态静穆入定。；修士静止保持冥想姿势；巨龙在远方云雾中缓慢昂首、蜿蜒游移。；极其缓慢的运动节奏，云雾舒缓流动，巨龙从容起伏。\n\n镜头与构图: 大远景，近似固定机位或极缓慢前推，全景深，视野宽广宏大。；对角线构图。前景右下角人物岩石构成深色剪影，中左侧云海与巨龙形成视觉重心，形成强烈体量对比。\n\n光影与质感: 柔和温暖的黄昏逆光与漫射光，云海呈现金橙色反光，前景物体呈剪影效果。；暖金、橙黄与岩石深黑构成的史诗暖色调。；写实东方玄幻电影风，意境空灵辽阔。\n\n声音: ambience: 空旷遥远的山巅风声与低沉肃穆的玄幻氛围音效（推测）。; music: 低缓悠远的仙侠史诗弦乐（推测）。\n\n节奏与转场: editing: pacing: 极慢且肃穆的镜头节奏。; techniques: 前后硬切。",
+        "duration": 1.042,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:51:40.807Z",
+        "updatedAt": "2026-10-12T14:51:40.807Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:44:37.358Z",
+          "sceneIndex": 11,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "61f2a317-e2b7-4cd8-af92-398163cc908f",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "1866cde7-2c89-443d-b66b-b50ef9fefc6a",
+        "sceneIndex": 12,
+        "story": {
+          "endTime": 15.25,
+          "summary": "暮色原野上，白衣少女骑乘巨型羽兽疾驰，随后群兽迎着落日余晖振翅飞向天际。",
+          "startTime": 13.292,
+          "sceneIndex": 12
+        },
+        "visual": {
+          "color": "暖金、橙红与阴影暗绿、黑褐色调。",
+          "style": "史诗奇幻写实风格，带有强烈电影镜头质感。",
+          "action": "异兽迈动双腿快速奔袭穿过花草，随后镜头中多只飞兽贴地振翅飞向夕阳核心。",
+          "camera": "中景侧向快速平移跟拍，随后切为正面长焦远景锁定落日剪影。",
+          "motion": "高速横向奔跑动态衔接低空飞行动感。",
+          "subject": "疾驰的羽兽与骑手，以及飞掠落日的翼兽群。",
+          "lighting": "浓烈的黄昏低角度逆光，形成明亮轮廓光与深色剪影反差。",
+          "characters": "浅色衣衫的长发少女，俯身骑在羽兽背上，衣摆随风向后飘展。",
+          "composition": "奔跑画面为主体居中横向运动构图；落日画面为巨日居中对称式剪影构图。",
+          "environment": "起伏的黄昏草甸与开阔天际，背景为巨大的橙黄落日与云霞。",
+          "sceneDescription": "夕阳逆光下，少女骑着绿色长尾似鸟异兽在原野上高速向右奔跑，随后转为数只翼兽在巨大落日前展翅高飞的剪影画面。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "急速风声、原野踏地声与振翅掠空音效，伴随昂扬的管弦乐烘托。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快速紧凑",
+            "techniques": "硬切快速蒙太奇"
+          }
+        },
+        "generationPrompt": "奇幻史诗电影画面。黄昏时分，一位身着浅色古风长裙的长发女子骑乘一只长有孔雀般尾羽的巨大似鸟异兽，在野花草甸上高速向右疾驰，侧面高速跟拍镜头，暖金逆光穿透发丝与羽毛。随后画面切换为数只双翼异兽正面对着地平线上硕大的金红落日振翅高飞，在火红晚霞中形成生动的黑色剪影。极强逆光层次，暖色调，流畅动感，超高画质。\n\n画面与环境: 夕阳逆光下，少女骑着绿色长尾似鸟异兽在原野上高速向右奔跑，随后转为数只翼兽在巨大落日前展翅高飞的剪影画面。；疾驰的羽兽与骑手，以及飞掠落日的翼兽群。；起伏的黄昏草甸与开阔天际，背景为巨大的橙黄落日与云霞。\n\n人物与动作: 浅色衣衫的长发少女，俯身骑在羽兽背上，衣摆随风向后飘展。；异兽迈动双腿快速奔袭穿过花草，随后镜头中多只飞兽贴地振翅飞向夕阳核心。；高速横向奔跑动态衔接低空飞行动感。\n\n镜头与构图: 中景侧向快速平移跟拍，随后切为正面长焦远景锁定落日剪影。；奔跑画面为主体居中横向运动构图；落日画面为巨日居中对称式剪影构图。\n\n光影与质感: 浓烈的黄昏低角度逆光，形成明亮轮廓光与深色剪影反差。；暖金、橙红与阴影暗绿、黑褐色调。；史诗奇幻写实风格，带有强烈电影镜头质感。\n\n声音: soundStyle: 急速风声、原野踏地声与振翅掠空音效，伴随昂扬的管弦乐烘托。\n\n节奏与转场: editing: pacing: 快速紧凑; techniques: 硬切快速蒙太奇",
+        "duration": 1.958,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:54:55.702Z",
+        "updatedAt": "2026-10-12T14:54:55.702Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:48:04.441Z",
+          "sceneIndex": 12,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "3b30e7d1-4ec5-478f-b9e4-a696c35fe832",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "98af21d2-963c-49e6-a92f-e5f31c9682ab",
+        "sceneIndex": 13,
+        "story": {
+          "endTime": 16.333,
+          "summary": "黄昏原野上，古装女子与手臂托着的猎鹰额首相触，神态亲昵温柔。",
+          "startTime": 15.25,
+          "sceneIndex": 13
+        },
+        "visual": {
+          "color": "暖金与黄褐色调为主，层次分明，衣着浅白与羽毛灰褐形成自然对比。",
+          "style": "电影质感，唯美写实古风，抒情意境。",
+          "action": "女子双臂平抬托住猎鹰，微低额头与停驻的猎鹰喙部轻轻相触，两者几乎静止依偎。",
+          "camera": "中近景，侧面视平线拍摄，浅景深虚化远景，微量手持呼吸感。",
+          "motion": "人物与飞禽微小呼吸晃动，发丝轻微飘动。",
+          "subject": "年轻女子与猎鹰",
+          "lighting": "强烈的黄昏金色逆光，形成明亮的人物发丝与羽毛轮廓光，面部呈柔和漫射阴影。",
+          "characters": "年轻东亚女子，侧颜清秀，发丝随性半挽，身着米白色素雅古风长衫，神情宁静安详；猎鹰羽毛丰满，灰褐色相间，姿态驯服。",
+          "composition": "双主体中景横向对称构图，左鹰右人，面部与头部位于画幅中心偏上交汇。",
+          "environment": "落日余晖下的辽阔草原或荒原，远景为低矮连绵的山脉剪影，空气中有金色微尘。",
+          "sceneDescription": "夕阳逆光下的开阔荒野，一位身穿淡色宽袖古风衣袍的年轻女子侧立，手臂托着一只猎鹰。女子额头与猎鹰的喙部亲密相抵，整体笼罩在浓郁的暖金色晚霞中。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "旷野傍晚微风",
+          "musicStyle": "柔和舒缓的国风管弦乐或笛声",
+          "soundEffects": "细微风声与羽毛摩挲音"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓静谧",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "中近景侧拍，电影质感。黄昏金色逆光下的辽阔荒原，一位身着素雅浅色古装长袍的东亚年轻女子，侧身站立，手臂托着一只灰褐色猎鹰。猎鹰的喙与女子的额头温柔地轻触依偎，神情平静安宁。背景是落日余晖中模糊的起伏山峦，强烈的夕阳轮廓光勾勒出发丝与鸟羽细节，暖金黄色彩，浅景深，画面唯美宁静。\n\n画面与环境: 夕阳逆光下的开阔荒野，一位身穿淡色宽袖古风衣袍的年轻女子侧立，手臂托着一只猎鹰。女子额头与猎鹰的喙部亲密相抵，整体笼罩在浓郁的暖金色晚霞中。；年轻女子与猎鹰；落日余晖下的辽阔草原或荒原，远景为低矮连绵的山脉剪影，空气中有金色微尘。\n\n人物与动作: 年轻东亚女子，侧颜清秀，发丝随性半挽，身着米白色素雅古风长衫，神情宁静安详；猎鹰羽毛丰满，灰褐色相间，姿态驯服。；女子双臂平抬托住猎鹰，微低额头与停驻的猎鹰喙部轻轻相触，两者几乎静止依偎。；人物与飞禽微小呼吸晃动，发丝轻微飘动。\n\n镜头与构图: 中近景，侧面视平线拍摄，浅景深虚化远景，微量手持呼吸感。；双主体中景横向对称构图，左鹰右人，面部与头部位于画幅中心偏上交汇。\n\n光影与质感: 强烈的黄昏金色逆光，形成明亮的人物发丝与羽毛轮廓光，面部呈柔和漫射阴影。；暖金与黄褐色调为主，层次分明，衣着浅白与羽毛灰褐形成自然对比。；电影质感，唯美写实古风，抒情意境。\n\n声音: musicStyle: 柔和舒缓的国风管弦乐或笛声; soundEffects: 细微风声与羽毛摩挲音; ambient: 旷野傍晚微风\n\n节奏与转场: editing: pacing: 舒缓静谧; techniques: 硬切",
+        "duration": 1.083,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T15:08:32.472Z",
+        "updatedAt": "2026-10-12T15:08:32.472Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:52:23.089Z",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "47a2eb82-3503-4722-ae02-dc73c096e161",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "c3b71d7d-066f-4af1-adec-6144ba231a2c",
+        "sceneIndex": 14,
+        "story": {
+          "endTime": 19.296,
+          "summary": "黄昏时分，年轻男子站在山坡上回眸看了一眼，随后转过身，静静凝望夕阳下的城镇。",
+          "startTime": 16.333,
+          "sceneIndex": 14
+        },
+        "visual": {
+          "color": "暖金黄、暮色橙红与低饱和暗绿、黑褐色调。",
+          "style": "电影胶片质感，意境悠远，略带复古颗粒感。",
+          "action": "男子先侧头看视镜头方向，随后缓慢转头朝前，维持背影站姿远眺。",
+          "camera": "中景，微仰拍，浅景深，主体居中，镜头平稳近乎静止。",
+          "motion": "人物转头动作缓慢，发丝微动，无剧烈位移。",
+          "subject": "逆光剪影下的年轻男子，发丝随风轻微拂动。",
+          "lighting": "低角度落日强逆光，形成金黄色边缘轮廓光，人物大面积处于暗部剪影。",
+          "characters": [
+            {
+              "name": "青年",
+              "pose": "起初侧身回眸，后完全背对镜头站立",
+              "wardrobe": "深色外套",
+              "appearance": "年轻男子，微卷短发",
+              "expression": "淡然且略带感伤"
+            }
+          ],
+          "composition": "层级分明，前景草地，中景人物剪影，远景为落日天空与城镇群峰轮廓。",
+          "environment": "长满野草的高坡，背景为暮色笼罩的城镇建筑群与远山，天空呈浓艳暖橙色。",
+          "sceneDescription": "暮色逆光中，一名男子立于草坡高处俯瞰城镇，先侧身回望，后转为背对镜头远眺天际线。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "悠扬舒缓的收尾配乐风格（推测）",
+          "ambient": "轻微旷野风声（推测）",
+          "soundEffects": "无明显动作音效"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "舒缓凝滞",
+            "techniques": "硬切进入，画面自然定格或结束"
+          }
+        },
+        "generationPrompt": "电影质感中景，微仰拍。黄昏逆光下，一名身穿深色夹克的年轻男子站在长满杂草的山坡上。起初他侧头回眸看向镜头，眼神略带忧郁，随后缓缓转过头背对镜头，静静眺望落日下隐约可见的城镇和远山。天边呈现浓郁温暖的橙黄色余晖，强烈的轮廓光勾勒出男子的发丝与肩线，微风吹拂。色调深沉暖黄，画质细腻，带有复古胶片氛围。\n\n画面与环境: 暮色逆光中，一名男子立于草坡高处俯瞰城镇，先侧身回望，后转为背对镜头远眺天际线。；逆光剪影下的年轻男子，发丝随风轻微拂动。；长满野草的高坡，背景为暮色笼罩的城镇建筑群与远山，天空呈浓艳暖橙色。\n\n人物与动作: name: 青年; appearance: 年轻男子，微卷短发; wardrobe: 深色外套; expression: 淡然且略带感伤; pose: 起初侧身回眸，后完全背对镜头站立；男子先侧头看视镜头方向，随后缓慢转头朝前，维持背影站姿远眺。；人物转头动作缓慢，发丝微动，无剧烈位移。\n\n镜头与构图: 中景，微仰拍，浅景深，主体居中，镜头平稳近乎静止。；层级分明，前景草地，中景人物剪影，远景为落日天空与城镇群峰轮廓。\n\n光影与质感: 低角度落日强逆光，形成金黄色边缘轮廓光，人物大面积处于暗部剪影。；暖金黄、暮色橙红与低饱和暗绿、黑褐色调。；电影胶片质感，意境悠远，略带复古颗粒感。\n\n声音: ambient: 轻微旷野风声（推测）; music: 悠扬舒缓的收尾配乐风格（推测）; soundEffects: 无明显动作音效\n\n节奏与转场: editing: pacing: 舒缓凝滞; techniques: 硬切进入，画面自然定格或结束",
+        "duration": 2.963,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:56:45.565Z",
+        "updatedAt": "2026-10-12T14:56:45.565Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:56:44.473Z",
+          "sceneIndex": 14,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      }
+    ],
+    "allSceneVersions": [
+      {
+        "id": "2fe0517c-7340-4051-a2ff-75ef6c94c150",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "3cb25924-4349-45cc-a489-b1792d87bf90",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 3.75,
+          "summary": "清晨薄雾弥漫的河畔，一名少年与身旁静卧的小狗背光站立，少年扬手向水面打出一记水漂。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖金与墨绿相撞，天空淡金橙黄，水面深绿带冷调反光。",
+          "style": "电影写实质感，诗意静谧的东方氛围感胶片风。",
+          "action": "少年保持站姿，扬起手臂将手中的石片用力掷出，石片在泛着金光的墨绿色水面上弹跳滑行。",
+          "camera": {
+            "angle": "低角度平视",
+            "focus": "全景深，焦点兼顾水面与中景剪影",
+            "speed": "平稳静止",
+            "lensFeel": "长焦镜头，空间压缩感强",
+            "movement": "固定镜头或极其缓慢的平移",
+            "shotSize": "远景"
+          },
+          "motion": "微幅水波流动与少年挥臂投掷的瞬间动态。",
+          "subject": "远处的少年与蹲坐的犬类剪影，动作是打水漂。",
+          "lighting": "强逆光，晨曦或夕阳低角度斜射，人物完全形成黑色剪影，水面反射金光。",
+          "characters": [
+            {
+              "pose": "站立侧身，抬臂掷石",
+              "identity": "少年",
+              "appearance": "逆光剪影，身形纤细，着宽松古朴衣物",
+              "expression": "逆光不可辨"
+            },
+            {
+              "pose": "静卧或蹲坐在少年身旁",
+              "identity": "狗",
+              "appearance": "剪影，体型中等，立耳",
+              "expression": "逆光不可辨"
+            }
+          ],
+          "composition": {
+            "depth": "前景波纹、中景剪影岸滩、远景雾山，层级分明",
+            "layout": "三分法则，中景人物置于偏中偏右，下三分之二为水面，上部为天空远山"
+          },
+          "environment": {
+            "props": [
+              "石子",
+              "水花"
+            ],
+            "setting": "自然河流与雾气平原",
+            "backgroundLayers": "远山层峦隐于晨雾中，天际透出泛黄日光；中景为低矮芦苇荡与河岸；前景为流动的水面。"
+          },
+          "sceneDescription": "开阔的水面上泛着晨光粼粼的波纹，远景为雾气缭绕的连绵山丘。河滩中景处，一名少年侧身站立，身旁趴着一只狗，二人呈现出清晰的剪影。少年挥动手臂将石子扔向水面，石片在水面弹起激起微小水花。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "dialogue": [],
+          "soundStyle": "清晨静谧环境音，隐约有潺潺流水声与微弱石子擦水声"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "pacing": "舒缓静谧",
+          "techniques": "硬切出"
+        },
+        "generationPrompt": "电影级远景画面，静谧的晨雾河流。中景河滩上站着一名少年与一只静坐的小狗，二人呈深黑色剪影。少年侧身挥臂向水面掷出打水漂的扁石，石子在水面上轻巧弹跳激起涟漪。背景是笼罩在薄雾中的连绵青绿远山与金黄色晨曦天空，强烈的逆光在泛着墨绿色微波的水面上勾勒出粼粼金斑。长焦镜头，低角度水平构图，诗意写实，带有柔和胶片颗粒感。\n\n画面与环境: 开阔的水面上泛着晨光粼粼的波纹，远景为雾气缭绕的连绵山丘。河滩中景处，一名少年侧身站立，身旁趴着一只狗，二人呈现出清晰的剪影。少年挥动手臂将石子扔向水面，石片在水面弹起激起微小水花。；远处的少年与蹲坐的犬类剪影，动作是打水漂。；setting: 自然河流与雾气平原; props: 石子; 水花; backgroundLayers: 远山层峦隐于晨雾中，天际透出泛黄日光；中景为低矮芦苇荡与河岸；前景为流动的水面。\n\n人物与动作: identity: 少年; appearance: 逆光剪影，身形纤细，着宽松古朴衣物; expression: 逆光不可辨; pose: 站立侧身，抬臂掷石; identity: 狗; appearance: 剪影，体型中等，立耳; expression: 逆光不可辨; pose: 静卧或蹲坐在少年身旁；少年保持站姿，扬起手臂将手中的石片用力掷出，石片在泛着金光的墨绿色水面上弹跳滑行。；微幅水波流动与少年挥臂投掷的瞬间动态。\n\n镜头与构图: shotSize: 远景; angle: 低角度平视; lensFeel: 长焦镜头，空间压缩感强; movement: 固定镜头或极其缓慢的平移; focus: 全景深，焦点兼顾水面与中景剪影; speed: 平稳静止；layout: 三分法则，中景人物置于偏中偏右，下三分之二为水面，上部为天空远山; depth: 前景波纹、中景剪影岸滩、远景雾山，层级分明\n\n光影与质感: 强逆光，晨曦或夕阳低角度斜射，人物完全形成黑色剪影，水面反射金光。；暖金与墨绿相撞，天空淡金橙黄，水面深绿带冷调反光。；电影写实质感，诗意静谧的东方氛围感胶片风。\n\n声音: soundStyle: 清晨静谧环境音，隐约有潺潺流水声与微弱石子擦水声\n\n节奏与转场: pacing: 舒缓静谧; techniques: 硬切出",
+        "duration": 3.75,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:24:44.967Z",
+        "updatedAt": "2026-10-12T14:24:44.967Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:18:37.801Z",
+          "sceneIndex": 1,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "464d82e9-c3c0-42a8-9f28-94e18c66e0d2",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "66bd9884-78f9-4737-834f-94809c491586",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 4.625,
+          "summary": "夜空中一团耀眼的球形金色烟花火花由中心向外急剧爆发扩散。",
+          "startTime": 3.75,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "暖金黄色、高光亮白为主，搭配暗绿灰色的夜空背景。",
+          "style": "电影级特效，强动态模糊粒子感，写实火花质感。",
+          "action": "明亮能量核在中心闪耀，数以千计的金色火花粒子向外高速喷射扩散并占据整个画幅。",
+          "camera": "正面对称正视，固定机位，景深开阔，爆炸呈现强烈的视觉逼近感。",
+          "motion": "由内而外的快速径向扩张运动。",
+          "subject": "急剧向外辐射扩张的金色球形爆炸火花球。",
+          "lighting": "火花爆炸自发高亮暖光，核心过曝泛白，与深暗背景形成高反差。",
+          "characters": "无",
+          "composition": "中心对称构图，爆炸核心位于正中央，辐射状粒子填满中景与前景。",
+          "environment": "深色夜空，远景地平线处带有模糊闪烁的城市微光。",
+          "sceneDescription": "夜幕之中，球状金色火花中心发出刺眼强光，无数细密火星呈放射状急速向四周膨胀扩散，背景隐约可见微弱的城市灯火。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "低沉剧烈的爆破冲击声伴随密集的火花呼啸噼啪声。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极快，不足1秒的瞬间爆发快切。",
+            "techniques": "硬切进、硬切出。"
+          }
+        },
+        "generationPrompt": "电影级视觉特效，黑夜中一团极为耀眼的球形金色烟花火花在正中心剧烈爆发。中心发出刺眼的亮白色强光，数以千计的细碎金色火星以完美球状向全方位剧烈喷射扩张，带有强烈的动态模糊与粒子拖尾。背景为深沉微绿的夜空及远方模糊微弱的城市地面灯火。中心对称构图，超高光比对比，强烈的冲击力与视觉纵深感。\n\n画面与环境: 夜幕之中，球状金色火花中心发出刺眼强光，无数细密火星呈放射状急速向四周膨胀扩散，背景隐约可见微弱的城市灯火。；急剧向外辐射扩张的金色球形爆炸火花球。；深色夜空，远景地平线处带有模糊闪烁的城市微光。\n\n人物与动作: 无；明亮能量核在中心闪耀，数以千计的金色火花粒子向外高速喷射扩散并占据整个画幅。；由内而外的快速径向扩张运动。\n\n镜头与构图: 正面对称正视，固定机位，景深开阔，爆炸呈现强烈的视觉逼近感。；中心对称构图，爆炸核心位于正中央，辐射状粒子填满中景与前景。\n\n光影与质感: 火花爆炸自发高亮暖光，核心过曝泛白，与深暗背景形成高反差。；暖金黄色、高光亮白为主，搭配暗绿灰色的夜空背景。；电影级特效，强动态模糊粒子感，写实火花质感。\n\n声音: style: 低沉剧烈的爆破冲击声伴随密集的火花呼啸噼啪声。\n\n节奏与转场: editing: pacing: 极快，不足1秒的瞬间爆发快切。; techniques: 硬切进、硬切出。",
+        "duration": 0.875,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:18:29.208Z",
+        "updatedAt": "2026-10-12T14:18:29.208Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:18:28.100Z",
+          "sceneIndex": 2,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "d1915dc4-9788-43c7-bc12-3a7bee2f68d1",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "ead085ad-8706-495c-8997-650422b77ff6",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 5.542,
+          "summary": "黄昏的山巅上，一只长角泛着微光的黑色异兽伫立在悬崖边缘，静静俯瞰落日下的群山。",
+          "startTime": 4.625,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "暖金、橙黄与主体岩石的暗黑基调，点缀角部的冷青绿色。",
+          "style": "写实奇幻电影风格，厚重大气的质感。",
+          "action": "异兽维持站立姿态静止远眺，微风吹动其颈部与背部鬃毛。",
+          "camera": "中景，微仰角拍摄，焦点置于异兽主体，背景保持大景深虚实结合，镜头基本静止。",
+          "motion": "环境微风拂动鬃毛，整体动作极其微弱静止。",
+          "subject": "神秘黑兽，外形类似高山塔尔羊或黑鹿，披着浓密长毛，头顶双角尖端带有青绿色超自然光晕。",
+          "lighting": "强烈的黄昏逆光与边缘轮廓光，主体呈半剪影效果，角尖荧光形成局部冷色点光源。",
+          "characters": [],
+          "composition": "右侧三分法则构图，主体异兽占据右半部，左侧留白展现广袤的山峦与落日余晖。",
+          "environment": "高山峰顶岩石，远景为多层渐隐的雾霭山峦，天空呈现黄昏特有的橙黄光辉。",
+          "sceneDescription": "日落时分，一头黑色长毛异兽静立在嶙峋的山脊岩石上，兽角尖端闪烁青绿荧光，背景为金色霞光笼罩的朦胧山脉。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "低沉空灵的氛围背景音乐",
+          "ambient": "空旷的高山呼啸风声",
+          "soundEffects": "未知"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉稳缓慢",
+            "techniques": "前后硬切"
+          }
+        },
+        "generationPrompt": "电影中景，微仰拍镜头。黄昏落日时分，一头黑色长毛神秘异兽静止伫立在陡峭的山岩之巅。异兽的双角尖端闪烁着一抹青绿色微光。背景是沉浸在温暖金黄色夕阳与薄雾中的连绵群山。主体呈深色半剪影，山风吹拂鬃毛，强烈的逆光勾勒轮廓，具有史诗感与自然奇幻质感，画质写实细腻。\n\n画面与环境: 日落时分，一头黑色长毛异兽静立在嶙峋的山脊岩石上，兽角尖端闪烁青绿荧光，背景为金色霞光笼罩的朦胧山脉。；神秘黑兽，外形类似高山塔尔羊或黑鹿，披着浓密长毛，头顶双角尖端带有青绿色超自然光晕。；高山峰顶岩石，远景为多层渐隐的雾霭山峦，天空呈现黄昏特有的橙黄光辉。\n\n人物与动作: 异兽维持站立姿态静止远眺，微风吹动其颈部与背部鬃毛。；环境微风拂动鬃毛，整体动作极其微弱静止。\n\n镜头与构图: 中景，微仰角拍摄，焦点置于异兽主体，背景保持大景深虚实结合，镜头基本静止。；右侧三分法则构图，主体异兽占据右半部，左侧留白展现广袤的山峦与落日余晖。\n\n光影与质感: 强烈的黄昏逆光与边缘轮廓光，主体呈半剪影效果，角尖荧光形成局部冷色点光源。；暖金、橙黄与主体岩石的暗黑基调，点缀角部的冷青绿色。；写实奇幻电影风格，厚重大气的质感。\n\n声音: ambient: 空旷的高山呼啸风声; music: 低沉空灵的氛围背景音乐; soundEffects: 未知\n\n节奏与转场: editing: pacing: 沉稳缓慢; techniques: 前后硬切",
+        "duration": 0.917,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:25:54.689Z",
+        "updatedAt": "2026-10-12T14:25:54.689Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:19:17.869Z",
+          "sceneIndex": 3,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "0a565a44-7cd9-4956-968b-8d381176a575",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "d5d81001-37c0-4bed-a7fe-3f0703258b4e",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 6.583,
+          "summary": "巨龙在黄昏薄雾中贴近地面高速滑翔。",
+          "startTime": 5.542,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "暖金黄、橄榄绿与大地色调为主，高饱和的暮色天空与暗调前景形成对比。",
+          "style": "电影写实风格，带有浓厚的史诗奇幻质感与自然的大气雾气效果。",
+          "action": "巨龙以极快的速度从左至右水平滑翔，双翼保持稳定升力，尾部带起微弱的气流扰动。",
+          "camera": "中远景，侧面平视跟拍，长焦镜头压缩景深，伴随巨龙飞行轨迹快速向右平移。",
+          "motion": "主体向右平滑而迅猛的高速位移，背景伴随轻微视差后退。",
+          "subject": "一只巨大的双足飞龙，灰绿色坚硬鳞甲，翼膜张开，利爪微蜷，长尾向后延伸，呈低空滑翔姿态。",
+          "lighting": "柔和的夕阳逆光与漫射光，形成金黄色轮廓光，龙身体侧处于阴影中，整体呈大气质感。",
+          "characters": [],
+          "composition": "巨龙横贯画面中央偏左，背部与翼尖指向天空，主体呈半剪影轮廓，地平线位于画面下三分之一。",
+          "environment": "广阔的原野或水面上方，薄雾弥漫，远方有起伏的山脉轮廓，天空布满被夕阳染成金黄色的厚重云层。",
+          "sceneDescription": "黄昏朦胧的光线下，一只巨大的飞龙展开双翼，自左向右贴地低空快速掠过，背景为被暖黄夕阳笼罩的远山与云雾。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉的风声呼啸与巨大的翅膀破空声，伴随史诗感环境氛围低音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快节奏，转瞬即逝的动态闪现",
+            "techniques": "硬切进出"
+          }
+        },
+        "generationPrompt": "电影写实镜头，远景。黄昏浓雾中，一只巨大的龙展开破损质感的翼膜，自画面左侧向右侧低空极速滑翔。背景是连绵的远山与被金色落日映照的厚云，前景地表模糊略过。长焦平视侧面跟拍，暖黄色与橄榄绿的暮色色调，逆光剪影效果，高动态范围，史诗奇幻电影画质。\n\n画面与环境: 黄昏朦胧的光线下，一只巨大的飞龙展开双翼，自左向右贴地低空快速掠过，背景为被暖黄夕阳笼罩的远山与云雾。；一只巨大的双足飞龙，灰绿色坚硬鳞甲，翼膜张开，利爪微蜷，长尾向后延伸，呈低空滑翔姿态。；广阔的原野或水面上方，薄雾弥漫，远方有起伏的山脉轮廓，天空布满被夕阳染成金黄色的厚重云层。\n\n人物与动作: 巨龙以极快的速度从左至右水平滑翔，双翼保持稳定升力，尾部带起微弱的气流扰动。；主体向右平滑而迅猛的高速位移，背景伴随轻微视差后退。\n\n镜头与构图: 中远景，侧面平视跟拍，长焦镜头压缩景深，伴随巨龙飞行轨迹快速向右平移。；巨龙横贯画面中央偏左，背部与翼尖指向天空，主体呈半剪影轮廓，地平线位于画面下三分之一。\n\n光影与质感: 柔和的夕阳逆光与漫射光，形成金黄色轮廓光，龙身体侧处于阴影中，整体呈大气质感。；暖金黄、橄榄绿与大地色调为主，高饱和的暮色天空与暗调前景形成对比。；电影写实风格，带有浓厚的史诗奇幻质感与自然的大气雾气效果。\n\n声音: soundStyle: 低沉的风声呼啸与巨大的翅膀破空声，伴随史诗感环境氛围低音。\n\n节奏与转场: editing: pacing: 快节奏，转瞬即逝的动态闪现; techniques: 硬切进出",
+        "duration": 1.041,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:32:36.605Z",
+        "updatedAt": "2026-10-12T14:32:36.605Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:25:41.973Z",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "c15b62c4-25bc-4972-af1f-a2bcd869bb31",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "60505cfc-54c0-48d6-b6bd-2fedfed13357",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 7.417,
+          "summary": "一只轻盈的白狐在洒满夕阳斑驳光影的幽暗森林中疾速飞奔。",
+          "startTime": 6.583,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "暖金与墨绿、暗棕的强烈撞色，高对比度电影级调色。",
+          "style": "具有奇幻色彩的写实电影质感，高速奔跑与梦幻焦外光斑交织。",
+          "action": "白狐压低身体重心，四肢敏捷交替蹬地，快速穿过林地中央向前飞奔。",
+          "camera": "贴地低角度侧向跟踪拍摄，大光圈浅景深，焦距紧锁白狐身体，随其奔跑同步横移。",
+          "motion": "主体动作迅捷流畅，摄影机平稳横移跟拍，前后景虚化光斑快速滑过。",
+          "subject": "体型修长轻盈的白狐，拥有柔顺的白色皮毛与修长的尾巴。",
+          "lighting": "强烈的逆光与轮廓光，金色暖光穿透树林打亮动物毛发边缘，明暗对比强烈。",
+          "characters": [],
+          "composition": "三分法水平构图，奔跑的狐狸居于画面中下部，前景大面积金色散景虚化形成视觉层次。",
+          "environment": "幽暗古老森林，地面覆有松散落叶层，背景为模糊的树干与林隙逆光。",
+          "sceneDescription": "极低角度跟拍镜头，一只身形灵动的白狐在布满落叶的林地上自左向右快速奔跑。强烈的金色逆光在白狐背脊勾勒出明亮轮廓，前景与背景充斥着绚烂的金色圆形光斑。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "轻盈且具神秘感、节奏紧凑的管弦配乐（推测）",
+          "ambient": "微风拂过林间的幽静自然声（推测）",
+          "soundEffects": "细微急促的落叶踩踏沙沙声（推测）"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快速剪辑，节奏紧凑",
+            "techniques": "前后均为硬切"
+          }
+        },
+        "generationPrompt": "电影级贴地侧向跟拍镜头。一只浅白色的狐狸在幽暗森林地面上自左向右快速奔跑。极强烈的金色夕阳逆光照射，勾勒出狐狸周身发光的毛发轮廓。极致浅景深，前景是跳跃闪烁的金色圆形散景光斑，背景为昏暗模糊的深色树干。动作轻盈敏捷，4K分辨率，奇幻电影写实风格。\n\n画面与环境: 极低角度跟拍镜头，一只身形灵动的白狐在布满落叶的林地上自左向右快速奔跑。强烈的金色逆光在白狐背脊勾勒出明亮轮廓，前景与背景充斥着绚烂的金色圆形光斑。；体型修长轻盈的白狐，拥有柔顺的白色皮毛与修长的尾巴。；幽暗古老森林，地面覆有松散落叶层，背景为模糊的树干与林隙逆光。\n\n人物与动作: 白狐压低身体重心，四肢敏捷交替蹬地，快速穿过林地中央向前飞奔。；主体动作迅捷流畅，摄影机平稳横移跟拍，前后景虚化光斑快速滑过。\n\n镜头与构图: 贴地低角度侧向跟踪拍摄，大光圈浅景深，焦距紧锁白狐身体，随其奔跑同步横移。；三分法水平构图，奔跑的狐狸居于画面中下部，前景大面积金色散景虚化形成视觉层次。\n\n光影与质感: 强烈的逆光与轮廓光，金色暖光穿透树林打亮动物毛发边缘，明暗对比强烈。；暖金与墨绿、暗棕的强烈撞色，高对比度电影级调色。；具有奇幻色彩的写实电影质感，高速奔跑与梦幻焦外光斑交织。\n\n声音: soundEffects: 细微急促的落叶踩踏沙沙声（推测）; ambient: 微风拂过林间的幽静自然声（推测）; music: 轻盈且具神秘感、节奏紧凑的管弦配乐（推测）\n\n节奏与转场: editing: pacing: 快速剪辑，节奏紧凑; techniques: 前后均为硬切",
+        "duration": 0.834,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:33:44.969Z",
+        "updatedAt": "2026-10-12T14:33:44.969Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:26:44.200Z",
+          "sceneIndex": 5,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "f2bbf07d-f89c-471e-ae12-428f1731d462",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "e5c3d49f-446b-4c4a-8e45-55f97b389c91",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 8.292,
+          "summary": "黄昏时分，一名持剑侠客在屋脊上行走，身后天空中群鸟飞掠。",
+          "startTime": 7.417,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": {
+            "palette": [
+              "金黄色",
+              "琥珀暖色",
+              "墨绿黑剪影"
+            ],
+            "contrast": "高反差剪影风格"
+          },
+          "style": "写意东方武侠电影质感",
+          "action": [
+            {
+              "order": 1,
+              "description": "侠客手扛长剑稳步沿屋脊向前行走，群鸟自右上方天空穿梭飞过。"
+            }
+          ],
+          "camera": {
+            "angle": "平视微仰",
+            "focus": "聚焦于人物剪影与飞鸟",
+            "speed": "平稳中速",
+            "lensFeel": "中焦电影镜头，浅景深",
+            "movement": "微幅横移跟随",
+            "shotSize": "中景"
+          },
+          "motion": "人物匀速步伐与飞鸟的自由流动轨迹",
+          "subject": "持剑行走的古代侠客剪影。",
+          "lighting": {
+            "type": "强逆光",
+            "source": "低角度夕阳",
+            "quality": "温暖耀眼，边缘泛金光"
+          },
+          "characters": [
+            {
+              "pose": "侧身向右行走，双手执剑搭在肩颈处",
+              "identity": "年轻剑客或刺客",
+              "wardrobe": "深色古代武侠长袍与披风",
+              "appearance": "头顶挽发髻，侧脸轮廓清晰，身材干练",
+              "expression": "神情冷峻坚定"
+            }
+          ],
+          "composition": {
+            "framing": "主体居中偏左三分构图",
+            "midground": "行走的侠客主体",
+            "background": "金黄晚霞天空与盘旋的群鸟",
+            "foreground": "屋顶瓦片边缘"
+          },
+          "environment": "古代中式建筑屋顶，背景为开阔的黄昏晚霞天空与模糊远景建筑群。",
+          "sceneDescription": "夕阳逆光下，一名束发侠客手持长剑斜担在肩，沿着瓦片屋顶向右侧前行。金黄色的天空背景中，一群飞鸟在远方盘旋掠过，人物与屋顶呈现深色剪影效果。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambience": "黄昏风声与远方飞鸟拍翅鸣叫（推测）",
+          "musicStyle": "低沉肃穆的武侠国风弦乐或氛围铺底",
+          "soundEffects": "衣物微弱随风摆动声"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "从容凝练",
+            "techniques": "剪影视觉留白"
+          }
+        },
+        "generationPrompt": "电影质感，写意武侠风格。黄昏时刻，低角度暖金逆光。一名古代侠客呈侧身剪影，头挽发髻，身披暗色武侠长袍，手持长剑搭在肩头，沿着中式古建瓦片屋脊平稳前行。背景为大片金黄渐变夕阳天空，大群黑鸟在晚霞中展翅飞掠。中景，平视微仰视角，高对比度剪影构图，胶片颗粒质感，画面意境苍茫深远。\n\n画面与环境: 夕阳逆光下，一名束发侠客手持长剑斜担在肩，沿着瓦片屋顶向右侧前行。金黄色的天空背景中，一群飞鸟在远方盘旋掠过，人物与屋顶呈现深色剪影效果。；持剑行走的古代侠客剪影。；古代中式建筑屋顶，背景为开阔的黄昏晚霞天空与模糊远景建筑群。\n\n人物与动作: identity: 年轻剑客或刺客; appearance: 头顶挽发髻，侧脸轮廓清晰，身材干练; wardrobe: 深色古代武侠长袍与披风; expression: 神情冷峻坚定; pose: 侧身向右行走，双手执剑搭在肩颈处；order: 1; description: 侠客手扛长剑稳步沿屋脊向前行走，群鸟自右上方天空穿梭飞过。；人物匀速步伐与飞鸟的自由流动轨迹\n\n镜头与构图: shotSize: 中景; angle: 平视微仰; lensFeel: 中焦电影镜头，浅景深; movement: 微幅横移跟随; focus: 聚焦于人物剪影与飞鸟; speed: 平稳中速；framing: 主体居中偏左三分构图; foreground: 屋顶瓦片边缘; midground: 行走的侠客主体; background: 金黄晚霞天空与盘旋的群鸟\n\n光影与质感: type: 强逆光; source: 低角度夕阳; quality: 温暖耀眼，边缘泛金光；palette: 金黄色; 琥珀暖色; 墨绿黑剪影; contrast: 高反差剪影风格；写意东方武侠电影质感\n\n声音: ambience: 黄昏风声与远方飞鸟拍翅鸣叫（推测）; soundEffects: 衣物微弱随风摆动声; musicStyle: 低沉肃穆的武侠国风弦乐或氛围铺底\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 从容凝练; techniques: 剪影视觉留白",
+        "duration": 0.875,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:40:25.648Z",
+        "updatedAt": "2026-10-12T14:40:25.648Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:33:14.272Z",
+          "sceneIndex": 6,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "0b94daf1-717e-4db8-ba43-7f5e7db0645d",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "997e931a-0e86-4be0-8f47-424d983c4049",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 9.417,
+          "summary": "幽暗密林中，手持长剑的骑者剪影与一只长着发光眼睛的多足异兽对峙。",
+          "startTime": 8.292,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "偏暗沉的单色黄绿调与深黑剪影对比。",
+          "style": "暗黑奇幻CG写实风，浓郁迷雾氛围。",
+          "action": "骑者持剑对准异兽；怪物沿树干向前攀爬压迫逼近。",
+          "camera": "低角度仰拍，倾斜构图，中景，微幅手持摇晃。",
+          "motion": "主体动作幅度小，环境碎屑漂浮运动快速。",
+          "subject": "暗处对峙的持剑骑手与多足异兽",
+          "lighting": "强逆光，大面积黄绿雾气环境光，人物呈黑剪影，怪物眼球微弱自发光。",
+          "characters": "右侧武者呈逆光剪影，握剑警戒；左侧怪物外形似巨蛛，身覆粗糙硬甲，双眼发光且具多足。",
+          "composition": "对角线构图，右侧主体与左侧怪物呈对立布局，背景透光形成强烈剪影反差。",
+          "environment": "幽闭神秘的暗黑森林，背景有粗大斜向树干，空气中充斥绿色弥散光与飞舞杂质。",
+          "sceneDescription": "倾斜仰拍构图，右侧呈现一名骑坐骑、持利刃的武者剪影；左侧是一只双眼发白光的红黑多足怪兽自树干爬下，环境弥漫浓重的绿色雾气与漂浮尘屑。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "紧张短促的悬疑铺底音",
+          "ambient": "沉闷压抑的密林风声与生物低鸣"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快节奏切入",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "暗黑奇幻电影级画面，倾斜仰拍中景。右侧是一名身披斗篷、骑在战马上的战士高反差剪影，正拔剑指向前方；左侧巨型斜木上攀爬着一只面目狰狞的多足巨型怪物，双眼散发冷白荧光。全景笼罩在浓稠诡异的墨绿与亮黄迷雾之中，逆光勾勒轮廓，空气中充斥着飞舞的碎屑与微粒，氛围压抑紧张，极具视觉冲击力。\n\n画面与环境: 倾斜仰拍构图，右侧呈现一名骑坐骑、持利刃的武者剪影；左侧是一只双眼发白光的红黑多足怪兽自树干爬下，环境弥漫浓重的绿色雾气与漂浮尘屑。；暗处对峙的持剑骑手与多足异兽；幽闭神秘的暗黑森林，背景有粗大斜向树干，空气中充斥绿色弥散光与飞舞杂质。\n\n人物与动作: 右侧武者呈逆光剪影，握剑警戒；左侧怪物外形似巨蛛，身覆粗糙硬甲，双眼发光且具多足。；骑者持剑对准异兽；怪物沿树干向前攀爬压迫逼近。；主体动作幅度小，环境碎屑漂浮运动快速。\n\n镜头与构图: 低角度仰拍，倾斜构图，中景，微幅手持摇晃。；对角线构图，右侧主体与左侧怪物呈对立布局，背景透光形成强烈剪影反差。\n\n光影与质感: 强逆光，大面积黄绿雾气环境光，人物呈黑剪影，怪物眼球微弱自发光。；偏暗沉的单色黄绿调与深黑剪影对比。；暗黑奇幻CG写实风，浓郁迷雾氛围。\n\n声音: ambient: 沉闷压抑的密林风声与生物低鸣; music: 紧张短促的悬疑铺底音\n\n节奏与转场: editing: pacing: 快节奏切入; techniques: 硬切",
+        "duration": 1.125,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:34:34.021Z",
+        "updatedAt": "2026-10-12T14:34:34.021Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:34:30.463Z",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "efb5636e-5c0d-41fa-a191-eac5c7114487",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "c607a167-499a-4855-aa12-cb144c919d92",
+        "sceneIndex": 8,
+        "story": {
+          "endTime": 10.375,
+          "summary": "黄昏草原上，女子与狐狸静坐相伴，羽毛随风在她掌心周围飘散。",
+          "startTime": 9.417,
+          "sceneIndex": 8
+        },
+        "visual": {
+          "color": "暖金、琥珀色与米白为主色调，整体高饱和度暖色调。",
+          "style": "唯美电影感，梦幻诗意写实风。",
+          "action": "女子伸出左手手掌微屈，白色羽毛在掌心上方悠然飘落悬浮，狐狸依偎在一侧静止注视前方。",
+          "camera": "中景，平视微仰角度，浅景深，镜头平稳固定。",
+          "motion": "微风带动羽毛缓慢飘动，人物与动物动作极其微小凝练。",
+          "subject": "白衣女子与浅色大耳狐狸",
+          "lighting": "强烈的黄昏逆光，金黄色的轮廓光打在人物发丝与狐狸毛发边缘。",
+          "characters": "一位长发束起、身着宽松米白古风或波西米亚长袍的年轻女子，神情宁静柔和。",
+          "composition": "人物与狐狸居中偏右，左侧留出羽毛飘扬的空间，画面呈三角形稳定构图。",
+          "environment": "落日余晖下的空旷草地或戈壁边缘，背景为平缓的地平线与暖黄天空。",
+          "sceneDescription": "金色夕阳下的开阔草原，白衣女子席地而坐，身旁蹲坐着一只浅色狐狸。女子轻抬手臂，数片白色羽毛在掌心周围轻盈飞舞，逆光勾勒出温暖光晕。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "柔和舒缓的环境风声与轻柔音乐氛围（推测）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "pacing": "缓慢抒情",
+          "techniques": "硬切"
+        },
+        "generationPrompt": "电影质感，黄金时刻逆光。开阔草地上，一位身穿米白色宽松长袍的年轻女子盘腿而坐，身旁伴着一只大耳朵浅色狐狸。女子伸出一只手，几片纯白羽毛在微风中轻盈飘舞于掌心上方。强烈的夕阳轮廓光勾勒出狐狸蓬松的毛发与女子身姿，暖黄色调，浅景深，画面充满诗意与宁静，4K画质。\n\n画面与环境: 金色夕阳下的开阔草原，白衣女子席地而坐，身旁蹲坐着一只浅色狐狸。女子轻抬手臂，数片白色羽毛在掌心周围轻盈飞舞，逆光勾勒出温暖光晕。；白衣女子与浅色大耳狐狸；落日余晖下的空旷草地或戈壁边缘，背景为平缓的地平线与暖黄天空。\n\n人物与动作: 一位长发束起、身着宽松米白古风或波西米亚长袍的年轻女子，神情宁静柔和。；女子伸出左手手掌微屈，白色羽毛在掌心上方悠然飘落悬浮，狐狸依偎在一侧静止注视前方。；微风带动羽毛缓慢飘动，人物与动物动作极其微小凝练。\n\n镜头与构图: 中景，平视微仰角度，浅景深，镜头平稳固定。；人物与狐狸居中偏右，左侧留出羽毛飘扬的空间，画面呈三角形稳定构图。\n\n光影与质感: 强烈的黄昏逆光，金黄色的轮廓光打在人物发丝与狐狸毛发边缘。；暖金、琥珀色与米白为主色调，整体高饱和度暖色调。；唯美电影感，梦幻诗意写实风。\n\n声音: soundStyle: 柔和舒缓的环境风声与轻柔音乐氛围（推测）。\n\n节奏与转场: pacing: 缓慢抒情; techniques: 硬切",
+        "duration": 0.958,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:35:12.422Z",
+        "updatedAt": "2026-10-12T14:35:12.422Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:35:11.310Z",
+          "sceneIndex": 8,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "7c40afeb-33b5-4649-bf80-5b8707372a6a",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "32ad1696-4a66-40c8-8020-9edbdda811f9",
+        "sceneIndex": 9,
+        "story": {
+          "endTime": 11.25,
+          "summary": "清晨薄雾中，一头背负行囊的白鹿带领同行者缓步走过古朴的木桥。",
+          "startTime": 10.375,
+          "sceneIndex": 9
+        },
+        "visual": {
+          "color": "暖金与黛青冷暖对冲，东方古典奇幻色调，明暗对照明晰。",
+          "style": "唯美东方奇幻写实电影风格，画面通透且带有柔和雾气颗粒感。",
+          "action": "白鹿迈着沉稳从容的步伐由左向右缓行；身后随行者缓步紧随。",
+          "camera": "中远景，侧面微仰视视角，50mm中焦镜头，保持平稳缓慢的横向移动跟随。",
+          "motion": "主体白鹿缓慢右行动作，空气中伴有微弱光晕流转。",
+          "subject": "背负行李包裹的雄性白鹿，拥有繁复挺拔的鹿角与洁白皮毛。",
+          "lighting": "强侧逆光与轮廓光，右上方金黄暖光穿透晨雾勾勒出白鹿毛发边缘，左侧阴影区域偏冷青色。",
+          "characters": "左侧后景跟随着两名身着朴素深色古装的人影，面部模糊隐于阴影中。",
+          "composition": "横向构图，白鹿居于中右侧主体位置，木桥构成前中景斜线引导，远景青翠山色被雾气虚化。",
+          "environment": "建在山谷间的古朴木质拱桥，桥身栏杆粗糙简陋；背景为被浓重晨雾笼罩的苍翠山峦。",
+          "sceneDescription": "晨雾弥漫的山间，一头体态优雅的巨大白鹿背驮负重，稳步穿过一座原木栈桥。金黄色的晨曦逆光打在鹿角与鹿身边缘，身后有模糊行人随行。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "空灵山风与晨雾轻拂声",
+          "musicStyle": "悠远舒缓的东方管弦乐或笛声铺底",
+          "soundEffects": "沉稳轻微的蹄踏木板声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓沉静",
+            "techniques": "硬切接入，硬切接出"
+          }
+        },
+        "generationPrompt": "电影中远景，东方奇幻史诗风格。清晨浓雾弥漫的山谷中，一头体形高大、鹿角繁盛的白鹿背负着行囊与捆扎木材，优雅地走过一座古朴的原木桥梁。右侧强烈的金色晨曦逆光穿透薄雾，为白鹿的全身毛发与鹿角镀上耀眼轮廓光。左侧远景隐约可见随行的旅人身影。背景为青翠黛绿的朦胧群山，冷暖色调鲜明，光影层次丰富，8k画质，逼真毛发质感。\n\n画面与环境: 晨雾弥漫的山间，一头体态优雅的巨大白鹿背驮负重，稳步穿过一座原木栈桥。金黄色的晨曦逆光打在鹿角与鹿身边缘，身后有模糊行人随行。；背负行李包裹的雄性白鹿，拥有繁复挺拔的鹿角与洁白皮毛。；建在山谷间的古朴木质拱桥，桥身栏杆粗糙简陋；背景为被浓重晨雾笼罩的苍翠山峦。\n\n人物与动作: 左侧后景跟随着两名身着朴素深色古装的人影，面部模糊隐于阴影中。；白鹿迈着沉稳从容的步伐由左向右缓行；身后随行者缓步紧随。；主体白鹿缓慢右行动作，空气中伴有微弱光晕流转。\n\n镜头与构图: 中远景，侧面微仰视视角，50mm中焦镜头，保持平稳缓慢的横向移动跟随。；横向构图，白鹿居于中右侧主体位置，木桥构成前中景斜线引导，远景青翠山色被雾气虚化。\n\n光影与质感: 强侧逆光与轮廓光，右上方金黄暖光穿透晨雾勾勒出白鹿毛发边缘，左侧阴影区域偏冷青色。；暖金与黛青冷暖对冲，东方古典奇幻色调，明暗对照明晰。；唯美东方奇幻写实电影风格，画面通透且带有柔和雾气颗粒感。\n\n声音: ambient: 空灵山风与晨雾轻拂声; musicStyle: 悠远舒缓的东方管弦乐或笛声铺底; soundEffects: 沉稳轻微的蹄踏木板声\n\n节奏与转场: editing: pacing: 舒缓沉静; techniques: 硬切接入，硬切接出",
+        "duration": 0.875,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:42:52.038Z",
+        "updatedAt": "2026-10-12T14:42:52.038Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:35:57.890Z",
+          "sceneIndex": 9,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "165aacc5-b71a-4bbe-a16a-f7bf649d2151",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "00fbd84f-f2e6-4e00-bf14-953bb9de4080",
+        "sceneIndex": 10,
+        "story": {
+          "endTime": 12.25,
+          "summary": "两个幼童在古镇街道上奔跑逃窜，头顶掠过巨大禽类的羽翼阴影。",
+          "startTime": 11.25,
+          "sceneIndex": 10
+        },
+        "visual": {
+          "color": "暖金、土黄与暗褐为主调，呈现高对比剪影质感。",
+          "style": "东方古装奇幻电影写实风格，带有空气尘埃颗粒感。",
+          "action": "两个孩子向前奔跑；巨大黑翅从右上至左下高速划过镜头上方，投下急掠的黑影。",
+          "camera": "全景，低角度仰视，固定镜头，焦点覆盖奔跑主体与前景动势。",
+          "motion": "人物快速奔跑的纵深位移与巨翼掠过的极速横切运动。",
+          "subject": "两名奔跑的幼童与上方掠过的巨型羽翼",
+          "lighting": "强烈的暖金色逆光，人物边缘呈明亮轮廓光，地面拉出修长投影。",
+          "characters": "两名身着朴素布衣短衫的幼童，背对镜头，步伐急促向前奔跑，身形娇小。",
+          "composition": "双人背影位于中下方向纵深延伸，巨大羽翼横穿画面上方，形成压迫式分层。",
+          "environment": "古代村镇街道，由不规则青石板铺就，两侧有古朴院墙与瓦顶，空气中飘散着尘土与薄雾。",
+          "sceneDescription": "逆光弥漫的古镇石板路上，两名古代幼童背对镜头狂奔，一只巨大的黑色羽翼自上方呼啸掠过，激起微尘与动态光影。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "紧张压迫的鼓点或低音弦乐氛围",
+          "soundEffects": "沉重的羽翼破风声、急促的踏石脚步声与沙土飞扬声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极快，短促紧张的1秒动作镜头",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "电影质感，东方奇幻场景。两个身穿粗布汉服的幼童背对镜头，在阳光逆照的古镇青石板路上全力向前奔跑，脚下扬起微尘。强烈的夕阳金色逆光穿透薄雾，勾勒出人物金色轮廓与长长投影。画面上方一只巨大的黑色神禽羽翼猛烈掠过，带来压迫性的动态阴影。暖黄调，尘土飞扬，广角低机位，史诗奇幻写实风格。\n\n画面与环境: 逆光弥漫的古镇石板路上，两名古代幼童背对镜头狂奔，一只巨大的黑色羽翼自上方呼啸掠过，激起微尘与动态光影。；两名奔跑的幼童与上方掠过的巨型羽翼；古代村镇街道，由不规则青石板铺就，两侧有古朴院墙与瓦顶，空气中飘散着尘土与薄雾。\n\n人物与动作: 两名身着朴素布衣短衫的幼童，背对镜头，步伐急促向前奔跑，身形娇小。；两个孩子向前奔跑；巨大黑翅从右上至左下高速划过镜头上方，投下急掠的黑影。；人物快速奔跑的纵深位移与巨翼掠过的极速横切运动。\n\n镜头与构图: 全景，低角度仰视，固定镜头，焦点覆盖奔跑主体与前景动势。；双人背影位于中下方向纵深延伸，巨大羽翼横穿画面上方，形成压迫式分层。\n\n光影与质感: 强烈的暖金色逆光，人物边缘呈明亮轮廓光，地面拉出修长投影。；暖金、土黄与暗褐为主调，呈现高对比剪影质感。；东方古装奇幻电影写实风格，带有空气尘埃颗粒感。\n\n声音: soundEffects: 沉重的羽翼破风声、急促的踏石脚步声与沙土飞扬声; music: 紧张压迫的鼓点或低音弦乐氛围\n\n节奏与转场: editing: pacing: 极快，短促紧张的1秒动作镜头; techniques: 硬切",
+        "duration": 1,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:47:11.573Z",
+        "updatedAt": "2026-10-12T14:47:11.573Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:41:06.042Z",
+          "sceneIndex": 10,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "1c564307-5cfd-4bd1-999f-84cc3c170ef4",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "1b8701f6-2a5c-43b5-9eb1-ed83ff4704cb",
+        "sceneIndex": 11,
+        "story": {
+          "endTime": 13.292,
+          "summary": "在夕阳映照的悬崖之巅，一位修行者静坐入定，凝视着金色云海中浮现的远古巨龙。",
+          "startTime": 12.25,
+          "sceneIndex": 11
+        },
+        "visual": {
+          "color": "暖金、橙黄与岩石深黑构成的史诗暖色调。",
+          "style": "写实东方玄幻电影风，意境空灵辽阔。",
+          "action": "修士静止保持冥想姿势；巨龙在远方云雾中缓慢昂首、蜿蜒游移。",
+          "camera": "大远景，近似固定机位或极缓慢前推，全景深，视野宽广宏大。",
+          "motion": "极其缓慢的运动节奏，云雾舒缓流动，巨龙从容起伏。",
+          "subject": "悬崖上打坐的静止人物与云海中隐现的巨龙。",
+          "lighting": "柔和温暖的黄昏逆光与漫射光，云海呈现金橙色反光，前景物体呈剪影效果。",
+          "characters": "右下角一人，盘膝打坐，身着宽松素袍，背对镜头面向云海，神态静穆入定。",
+          "composition": "对角线构图。前景右下角人物岩石构成深色剪影，中左侧云海与巨龙形成视觉重心，形成强烈体量对比。",
+          "environment": "高山巅峰与壮阔云海，远处山峦起伏，天空呈现暖黄与淡橙色的落日霞光。",
+          "sceneDescription": "黄昏群山之巅的大远景。前景右侧悬崖上坐着一名静止打坐的修士背影；中远景左侧连绵起伏的金色云海中，一条身躯庞大的东方巨龙缓缓破云而出。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "低缓悠远的仙侠史诗弦乐（推测）。",
+          "ambience": "空旷遥远的山巅风声与低沉肃穆的玄幻氛围音效（推测）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极慢且肃穆的镜头节奏。",
+            "techniques": "前后硬切。"
+          }
+        },
+        "generationPrompt": "大远景，东方玄幻史诗电影质感。黄昏落日映照着壮阔无垠的金色云海与险峻山脉。画面右下角的前景岩石峭壁上，一名修行者盘腿打坐呈现深色剪影；中景左侧翻腾的金黄厚重云雾中，一条巍峨庞大的东方神龙徐徐探出头角、蜿蜒游弋。逆光漫射，金色辉光穿透薄雾，全景深构图，镜头极缓慢推移，意境悠远宁静，高细节度。\n\n画面与环境: 黄昏群山之巅的大远景。前景右侧悬崖上坐着一名静止打坐的修士背影；中远景左侧连绵起伏的金色云海中，一条身躯庞大的东方巨龙缓缓破云而出。；悬崖上打坐的静止人物与云海中隐现的巨龙。；高山巅峰与壮阔云海，远处山峦起伏，天空呈现暖黄与淡橙色的落日霞光。\n\n人物与动作: 右下角一人，盘膝打坐，身着宽松素袍，背对镜头面向云海，神态静穆入定。；修士静止保持冥想姿势；巨龙在远方云雾中缓慢昂首、蜿蜒游移。；极其缓慢的运动节奏，云雾舒缓流动，巨龙从容起伏。\n\n镜头与构图: 大远景，近似固定机位或极缓慢前推，全景深，视野宽广宏大。；对角线构图。前景右下角人物岩石构成深色剪影，中左侧云海与巨龙形成视觉重心，形成强烈体量对比。\n\n光影与质感: 柔和温暖的黄昏逆光与漫射光，云海呈现金橙色反光，前景物体呈剪影效果。；暖金、橙黄与岩石深黑构成的史诗暖色调。；写实东方玄幻电影风，意境空灵辽阔。\n\n声音: ambience: 空旷遥远的山巅风声与低沉肃穆的玄幻氛围音效（推测）。; music: 低缓悠远的仙侠史诗弦乐（推测）。\n\n节奏与转场: editing: pacing: 极慢且肃穆的镜头节奏。; techniques: 前后硬切。",
+        "duration": 1.042,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:51:40.807Z",
+        "updatedAt": "2026-10-12T14:51:40.807Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:44:37.358Z",
+          "sceneIndex": 11,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "61f2a317-e2b7-4cd8-af92-398163cc908f",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "1866cde7-2c89-443d-b66b-b50ef9fefc6a",
+        "sceneIndex": 12,
+        "story": {
+          "endTime": 15.25,
+          "summary": "暮色原野上，白衣少女骑乘巨型羽兽疾驰，随后群兽迎着落日余晖振翅飞向天际。",
+          "startTime": 13.292,
+          "sceneIndex": 12
+        },
+        "visual": {
+          "color": "暖金、橙红与阴影暗绿、黑褐色调。",
+          "style": "史诗奇幻写实风格，带有强烈电影镜头质感。",
+          "action": "异兽迈动双腿快速奔袭穿过花草，随后镜头中多只飞兽贴地振翅飞向夕阳核心。",
+          "camera": "中景侧向快速平移跟拍，随后切为正面长焦远景锁定落日剪影。",
+          "motion": "高速横向奔跑动态衔接低空飞行动感。",
+          "subject": "疾驰的羽兽与骑手，以及飞掠落日的翼兽群。",
+          "lighting": "浓烈的黄昏低角度逆光，形成明亮轮廓光与深色剪影反差。",
+          "characters": "浅色衣衫的长发少女，俯身骑在羽兽背上，衣摆随风向后飘展。",
+          "composition": "奔跑画面为主体居中横向运动构图；落日画面为巨日居中对称式剪影构图。",
+          "environment": "起伏的黄昏草甸与开阔天际，背景为巨大的橙黄落日与云霞。",
+          "sceneDescription": "夕阳逆光下，少女骑着绿色长尾似鸟异兽在原野上高速向右奔跑，随后转为数只翼兽在巨大落日前展翅高飞的剪影画面。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "急速风声、原野踏地声与振翅掠空音效，伴随昂扬的管弦乐烘托。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快速紧凑",
+            "techniques": "硬切快速蒙太奇"
+          }
+        },
+        "generationPrompt": "奇幻史诗电影画面。黄昏时分，一位身着浅色古风长裙的长发女子骑乘一只长有孔雀般尾羽的巨大似鸟异兽，在野花草甸上高速向右疾驰，侧面高速跟拍镜头，暖金逆光穿透发丝与羽毛。随后画面切换为数只双翼异兽正面对着地平线上硕大的金红落日振翅高飞，在火红晚霞中形成生动的黑色剪影。极强逆光层次，暖色调，流畅动感，超高画质。\n\n画面与环境: 夕阳逆光下，少女骑着绿色长尾似鸟异兽在原野上高速向右奔跑，随后转为数只翼兽在巨大落日前展翅高飞的剪影画面。；疾驰的羽兽与骑手，以及飞掠落日的翼兽群。；起伏的黄昏草甸与开阔天际，背景为巨大的橙黄落日与云霞。\n\n人物与动作: 浅色衣衫的长发少女，俯身骑在羽兽背上，衣摆随风向后飘展。；异兽迈动双腿快速奔袭穿过花草，随后镜头中多只飞兽贴地振翅飞向夕阳核心。；高速横向奔跑动态衔接低空飞行动感。\n\n镜头与构图: 中景侧向快速平移跟拍，随后切为正面长焦远景锁定落日剪影。；奔跑画面为主体居中横向运动构图；落日画面为巨日居中对称式剪影构图。\n\n光影与质感: 浓烈的黄昏低角度逆光，形成明亮轮廓光与深色剪影反差。；暖金、橙红与阴影暗绿、黑褐色调。；史诗奇幻写实风格，带有强烈电影镜头质感。\n\n声音: soundStyle: 急速风声、原野踏地声与振翅掠空音效，伴随昂扬的管弦乐烘托。\n\n节奏与转场: editing: pacing: 快速紧凑; techniques: 硬切快速蒙太奇",
+        "duration": 1.958,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:54:55.702Z",
+        "updatedAt": "2026-10-12T14:54:55.702Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:48:04.441Z",
+          "sceneIndex": 12,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "3b30e7d1-4ec5-478f-b9e4-a696c35fe832",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "98af21d2-963c-49e6-a92f-e5f31c9682ab",
+        "sceneIndex": 13,
+        "story": {
+          "endTime": 16.333,
+          "summary": "黄昏原野上，古装女子与手臂托着的猎鹰额首相触，神态亲昵温柔。",
+          "startTime": 15.25,
+          "sceneIndex": 13
+        },
+        "visual": {
+          "color": "暖金与黄褐色调为主，层次分明，衣着浅白与羽毛灰褐形成自然对比。",
+          "style": "电影质感，唯美写实古风，抒情意境。",
+          "action": "女子双臂平抬托住猎鹰，微低额头与停驻的猎鹰喙部轻轻相触，两者几乎静止依偎。",
+          "camera": "中近景，侧面视平线拍摄，浅景深虚化远景，微量手持呼吸感。",
+          "motion": "人物与飞禽微小呼吸晃动，发丝轻微飘动。",
+          "subject": "年轻女子与猎鹰",
+          "lighting": "强烈的黄昏金色逆光，形成明亮的人物发丝与羽毛轮廓光，面部呈柔和漫射阴影。",
+          "characters": "年轻东亚女子，侧颜清秀，发丝随性半挽，身着米白色素雅古风长衫，神情宁静安详；猎鹰羽毛丰满，灰褐色相间，姿态驯服。",
+          "composition": "双主体中景横向对称构图，左鹰右人，面部与头部位于画幅中心偏上交汇。",
+          "environment": "落日余晖下的辽阔草原或荒原，远景为低矮连绵的山脉剪影，空气中有金色微尘。",
+          "sceneDescription": "夕阳逆光下的开阔荒野，一位身穿淡色宽袖古风衣袍的年轻女子侧立，手臂托着一只猎鹰。女子额头与猎鹰的喙部亲密相抵，整体笼罩在浓郁的暖金色晚霞中。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "旷野傍晚微风",
+          "musicStyle": "柔和舒缓的国风管弦乐或笛声",
+          "soundEffects": "细微风声与羽毛摩挲音"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓静谧",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "中近景侧拍，电影质感。黄昏金色逆光下的辽阔荒原，一位身着素雅浅色古装长袍的东亚年轻女子，侧身站立，手臂托着一只灰褐色猎鹰。猎鹰的喙与女子的额头温柔地轻触依偎，神情平静安宁。背景是落日余晖中模糊的起伏山峦，强烈的夕阳轮廓光勾勒出发丝与鸟羽细节，暖金黄色彩，浅景深，画面唯美宁静。\n\n画面与环境: 夕阳逆光下的开阔荒野，一位身穿淡色宽袖古风衣袍的年轻女子侧立，手臂托着一只猎鹰。女子额头与猎鹰的喙部亲密相抵，整体笼罩在浓郁的暖金色晚霞中。；年轻女子与猎鹰；落日余晖下的辽阔草原或荒原，远景为低矮连绵的山脉剪影，空气中有金色微尘。\n\n人物与动作: 年轻东亚女子，侧颜清秀，发丝随性半挽，身着米白色素雅古风长衫，神情宁静安详；猎鹰羽毛丰满，灰褐色相间，姿态驯服。；女子双臂平抬托住猎鹰，微低额头与停驻的猎鹰喙部轻轻相触，两者几乎静止依偎。；人物与飞禽微小呼吸晃动，发丝轻微飘动。\n\n镜头与构图: 中近景，侧面视平线拍摄，浅景深虚化远景，微量手持呼吸感。；双主体中景横向对称构图，左鹰右人，面部与头部位于画幅中心偏上交汇。\n\n光影与质感: 强烈的黄昏金色逆光，形成明亮的人物发丝与羽毛轮廓光，面部呈柔和漫射阴影。；暖金与黄褐色调为主，层次分明，衣着浅白与羽毛灰褐形成自然对比。；电影质感，唯美写实古风，抒情意境。\n\n声音: musicStyle: 柔和舒缓的国风管弦乐或笛声; soundEffects: 细微风声与羽毛摩挲音; ambient: 旷野傍晚微风\n\n节奏与转场: editing: pacing: 舒缓静谧; techniques: 硬切",
+        "duration": 1.083,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T15:08:32.472Z",
+        "updatedAt": "2026-10-12T15:08:32.472Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:52:23.089Z",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "47a2eb82-3503-4722-ae02-dc73c096e161",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "projectVersionId": "b16c66c5-a28b-4bf6-82ff-82a59b8b3d6c",
+        "originalSceneId": "c3b71d7d-066f-4af1-adec-6144ba231a2c",
+        "sceneIndex": 14,
+        "story": {
+          "endTime": 19.296,
+          "summary": "黄昏时分，年轻男子站在山坡上回眸看了一眼，随后转过身，静静凝望夕阳下的城镇。",
+          "startTime": 16.333,
+          "sceneIndex": 14
+        },
+        "visual": {
+          "color": "暖金黄、暮色橙红与低饱和暗绿、黑褐色调。",
+          "style": "电影胶片质感，意境悠远，略带复古颗粒感。",
+          "action": "男子先侧头看视镜头方向，随后缓慢转头朝前，维持背影站姿远眺。",
+          "camera": "中景，微仰拍，浅景深，主体居中，镜头平稳近乎静止。",
+          "motion": "人物转头动作缓慢，发丝微动，无剧烈位移。",
+          "subject": "逆光剪影下的年轻男子，发丝随风轻微拂动。",
+          "lighting": "低角度落日强逆光，形成金黄色边缘轮廓光，人物大面积处于暗部剪影。",
+          "characters": [
+            {
+              "name": "青年",
+              "pose": "起初侧身回眸，后完全背对镜头站立",
+              "wardrobe": "深色外套",
+              "appearance": "年轻男子，微卷短发",
+              "expression": "淡然且略带感伤"
+            }
+          ],
+          "composition": "层级分明，前景草地，中景人物剪影，远景为落日天空与城镇群峰轮廓。",
+          "environment": "长满野草的高坡，背景为暮色笼罩的城镇建筑群与远山，天空呈浓艳暖橙色。",
+          "sceneDescription": "暮色逆光中，一名男子立于草坡高处俯瞰城镇，先侧身回望，后转为背对镜头远眺天际线。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "悠扬舒缓的收尾配乐风格（推测）",
+          "ambient": "轻微旷野风声（推测）",
+          "soundEffects": "无明显动作音效"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "舒缓凝滞",
+            "techniques": "硬切进入，画面自然定格或结束"
+          }
+        },
+        "generationPrompt": "电影质感中景，微仰拍。黄昏逆光下，一名身穿深色夹克的年轻男子站在长满杂草的山坡上。起初他侧头回眸看向镜头，眼神略带忧郁，随后缓缓转过头背对镜头，静静眺望落日下隐约可见的城镇和远山。天边呈现浓郁温暖的橙黄色余晖，强烈的轮廓光勾勒出男子的发丝与肩线，微风吹拂。色调深沉暖黄，画质细腻，带有复古胶片氛围。\n\n画面与环境: 暮色逆光中，一名男子立于草坡高处俯瞰城镇，先侧身回望，后转为背对镜头远眺天际线。；逆光剪影下的年轻男子，发丝随风轻微拂动。；长满野草的高坡，背景为暮色笼罩的城镇建筑群与远山，天空呈浓艳暖橙色。\n\n人物与动作: name: 青年; appearance: 年轻男子，微卷短发; wardrobe: 深色外套; expression: 淡然且略带感伤; pose: 起初侧身回眸，后完全背对镜头站立；男子先侧头看视镜头方向，随后缓慢转头朝前，维持背影站姿远眺。；人物转头动作缓慢，发丝微动，无剧烈位移。\n\n镜头与构图: 中景，微仰拍，浅景深，主体居中，镜头平稳近乎静止。；层级分明，前景草地，中景人物剪影，远景为落日天空与城镇群峰轮廓。\n\n光影与质感: 低角度落日强逆光，形成金黄色边缘轮廓光，人物大面积处于暗部剪影。；暖金黄、暮色橙红与低饱和暗绿、黑褐色调。；电影胶片质感，意境悠远，略带复古颗粒感。\n\n声音: ambient: 轻微旷野风声（推测）; music: 悠扬舒缓的收尾配乐风格（推测）; soundEffects: 无明显动作音效\n\n节奏与转场: editing: pacing: 舒缓凝滞; techniques: 硬切进入，画面自然定格或结束",
+        "duration": 2.963,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-12T14:56:45.565Z",
+        "updatedAt": "2026-10-12T14:56:45.565Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-12T14:56:44.473Z",
+          "sceneIndex": 14,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      }
+    ],
+    "referenceVideos": [
+      {
+        "id": "4997fc33-2127-4dcb-819e-24ec0d701db2",
+        "projectId": "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+        "sourceUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/87066363-c919-4c68-8ea7-53b176adf9ef/video/d4147639-703c-4041-b4c5-4066648251fc-74acb09c935dde81a519bbd19e71211c.mp4",
+        "fileName": "74acb09c935dde81a519bbd19e71211c.mp4",
+        "mimeType": null,
+        "duration": 19,
+        "createdAt": "2026-10-12T14:17:46.648Z",
+        "metadata": {}
+      }
+    ]
+  },
+  {
+    "project": {
+      "id": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+      "description": null,
+      "status": "ready",
+      "activeVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+      "createdAt": "2026-10-14T14:00:49.480Z",
+      "updatedAt": "2026-10-14T14:15:51.735Z",
+      "title": "赛博神祇",
+      "metadata": {
+        "mediaType": "video",
+        "failedSceneCount": 0
+      }
+    },
+    "versions": [
+      {
+        "id": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "parentVersionId": null,
+        "versionNumber": 0,
+        "kind": "original",
+        "label": "原始版本",
+        "remixPrompt": null,
+        "overview": {
+          "sceneCount": 5
+        },
+        "metadata": {},
+        "createdAt": "2026-10-14T14:10:45.548Z",
+        "updatedAt": "2026-10-14T14:10:45.548Z"
+      }
+    ],
+    "activeVersion": {
+      "id": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+      "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+      "parentVersionId": null,
+      "versionNumber": 0,
+      "kind": "original",
+      "label": "原始版本",
+      "remixPrompt": null,
+      "overview": {
+        "sceneCount": 5
+      },
+      "metadata": {},
+      "createdAt": "2026-10-14T14:10:45.548Z",
+      "updatedAt": "2026-10-14T14:10:45.548Z"
+    },
+    "scenes": [
+      {
+        "id": "653d96cd-ef45-4200-9296-189e8f757fad",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "referenceVideoId": "6e760645-ded7-42be-a243-d22b403f19d2",
+        "sceneIndex": 1,
+        "shotGroupId": null,
+        "startTime": 0,
+        "endTime": 4.667,
+        "duration": 4.667,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-14T14:10:45.548Z",
+        "updatedAt": "2026-10-14T14:12:24.345Z"
+      },
+      {
+        "id": "6a5b23f0-2eff-47aa-be9e-29fb6c43cbac",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "referenceVideoId": "6e760645-ded7-42be-a243-d22b403f19d2",
+        "sceneIndex": 2,
+        "shotGroupId": null,
+        "startTime": 4.667,
+        "endTime": 9.75,
+        "duration": 5.083,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/002/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/002/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/002/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/002/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/002/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-14T14:10:45.548Z",
+        "updatedAt": "2026-10-14T14:12:46.747Z"
+      },
+      {
+        "id": "3d283b7a-02f9-4c94-945a-8ce31609c57b",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "referenceVideoId": "6e760645-ded7-42be-a243-d22b403f19d2",
+        "sceneIndex": 3,
+        "shotGroupId": null,
+        "startTime": 9.75,
+        "endTime": 14.792,
+        "duration": 5.042,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/003/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/003/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/003/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/003/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/003/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-14T14:10:45.548Z",
+        "updatedAt": "2026-10-14T14:15:02.659Z"
+      },
+      {
+        "id": "5b1c51e2-259e-4b40-9880-ad54699404dd",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "referenceVideoId": "6e760645-ded7-42be-a243-d22b403f19d2",
+        "sceneIndex": 4,
+        "shotGroupId": null,
+        "startTime": 14.792,
+        "endTime": 19.833,
+        "duration": 5.041,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/004/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/004/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/004/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/004/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/004/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-14T14:10:45.548Z",
+        "updatedAt": "2026-10-14T14:13:31.999Z"
+      },
+      {
+        "id": "b0f55a27-9807-4e51-ae9d-8835cdcd85e6",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "referenceVideoId": "6e760645-ded7-42be-a243-d22b403f19d2",
+        "sceneIndex": 5,
+        "shotGroupId": null,
+        "startTime": 19.833,
+        "endTime": 24.59,
+        "duration": 4.757,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/005/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/005/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/005/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/005/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0400eccb-3212-4d3e-a229-2cee99d795ab/scenes/005/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "metadata": {},
+        "createdAt": "2026-10-14T14:10:45.548Z",
+        "updatedAt": "2026-10-14T14:15:17.715Z"
+      }
+    ],
+    "sceneVersions": [
+      {
+        "id": "5d029033-feab-479c-be00-23cdbad29c98",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "projectVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "originalSceneId": "653d96cd-ef45-4200-9296-189e8f757fad",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 4.667,
+          "summary": "在宏伟的巨型神殿建筑前，成群的民众聚集在广场上参加盛大集会。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖白、深红饰带、暗金神像壁画与冷调建筑阴影交织。",
+          "style": "电影级奇幻史诗巨构风格，写实光影与繁复装饰细节兼备。",
+          "action": "人群在广场上走动、伫立聚集，阳光与阴影形成鲜明分界，整体场面庄重宏大。",
+          "camera": "超广角仰拍全景镜头，缓慢平稳向前微移，突出建筑的崇高感与渺小人潮的对比。",
+          "motion": "人群微幅动态扰动，镜头平缓向前推进。",
+          "subject": "宏伟的巨构建筑立面及门下聚集的庞大人潮。",
+          "lighting": "强烈的自然侧顶日光，在建筑表面及广场投下深刻的硬阴影，明暗对比强烈。",
+          "characters": "广场上的大众群体，身着复古或传统长袍服饰，身形渺小，呈现集会状态。",
+          "composition": "垂直纵向构图，下部为开阔广场与人流，中部至顶部被巨大的红色拱门与殿堂壁画完全占据。",
+          "environment": "结合东方传统元素与科幻巨构的巨大神庙或宫殿外立面，周围有树木与装饰立柱，地面为开阔石质广场。",
+          "sceneDescription": "阳光斜射下的超巨型奇幻东方建筑前，红色巨幅缎带与繁复壁画装点着高达百米的门廊，广场与台阶上聚集着密密麻麻的人群。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉恢弘的环境回响、遥远的庞大人群嘈杂声与庄重史诗风管弦配乐。"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢而沉稳",
+            "techniques": "首帧切入，尾部硬切"
+          }
+        },
+        "generationPrompt": "超广角仰拍全景，史诗级巨构奇幻神殿前，两道巨大鲜艳的红色缎带沿高达百米的白色巨壁悬垂而下，中央拱形凹槽内绘有巨大的东方神秘神像壁画。阳光斜照在建筑表面形成明暗交界。下方石阶与宽阔广场上聚集着身着传统长袍的长长人流，场面极其宏伟。电影级质感，写实光影，强明暗对比，慢速轻微向前推进运镜。\n\n画面与环境: 阳光斜射下的超巨型奇幻东方建筑前，红色巨幅缎带与繁复壁画装点着高达百米的门廊，广场与台阶上聚集着密密麻麻的人群。；宏伟的巨构建筑立面及门下聚集的庞大人潮。；结合东方传统元素与科幻巨构的巨大神庙或宫殿外立面，周围有树木与装饰立柱，地面为开阔石质广场。\n\n人物与动作: 广场上的大众群体，身着复古或传统长袍服饰，身形渺小，呈现集会状态。；人群在广场上走动、伫立聚集，阳光与阴影形成鲜明分界，整体场面庄重宏大。；人群微幅动态扰动，镜头平缓向前推进。\n\n镜头与构图: 超广角仰拍全景镜头，缓慢平稳向前微移，突出建筑的崇高感与渺小人潮的对比。；垂直纵向构图，下部为开阔广场与人流，中部至顶部被巨大的红色拱门与殿堂壁画完全占据。\n\n光影与质感: 强烈的自然侧顶日光，在建筑表面及广场投下深刻的硬阴影，明暗对比强烈。；暖白、深红饰带、暗金神像壁画与冷调建筑阴影交织。；电影级奇幻史诗巨构风格，写实光影与繁复装饰细节兼备。\n\n声音: soundStyle: 低沉恢弘的环境回响、遥远的庞大人群嘈杂声与庄重史诗风管弦配乐。\n\n节奏与转场: editing: pacing: 缓慢而沉稳; techniques: 首帧切入，尾部硬切",
+        "duration": 4.667,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-14T14:12:21.521Z",
+        "updatedAt": "2026-10-14T14:12:21.521Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-14T14:11:49.030Z",
+          "sceneIndex": 1,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "6a5bfea7-21ce-42f0-a725-3c127aec7173",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "projectVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "originalSceneId": "6a5b23f0-2eff-47aa-be9e-29fb6c43cbac",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 9.75,
+          "summary": "在宏伟的多层中式环形巨殿内，地面人群驻足仰望右侧顶天立地的庞大红色机关巨神像。",
+          "startTime": 4.667,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "朱红、赤褐、暗金与幽黑为主色调，氛围庄严厚重。",
+          "style": "东方奇幻与巨构美学结合，高精度电影CG质感。",
+          "action": "地面行人缓慢走动，镜头自低处缓慢微仰，展现巨神像的绝对体量。",
+          "camera": "超低仰角大远景，广角镜头，微弱向上平移或仰拍运镜，强调垂直空间感。",
+          "motion": "行人的缓慢步态，微弱的空气尘埃与宏大而静止的压迫感。",
+          "subject": "右侧占据画面的巨大红色中式机甲神像，外覆复杂龙鳞状甲胄与红绸构件。",
+          "lighting": "低照度幽暗光线，底部灯笼点亮暖黄光芒，上层漫射冷暗天光，金红反光若隐若现。",
+          "characters": "地面多名身穿中式素色宽袍的行者，体态微缩，或缓步行走或仰视巨像。",
+          "composition": "极端仰视构图，底部为人群前景，右侧巨物贯穿画面延伸至穹顶，左侧为螺旋上升的环形楼阁。",
+          "environment": "高耸通天的多层环形东方古建内部，环形红色回廊、楼梯、悬挂布幔及暖色纸灯笼。",
+          "sceneDescription": "纵向深邃的环形中式木构殿堂，环绕多层挂满红布的走廊。右侧耸立着一尊极为庞大的红色东方机关神像，底部广场上行立着身着古代长袍的渺小人群，灯笼发出温润暖光。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "description": "深沉低频氛围音，带有悠远肃穆的东方宫廷乐与微弱殿内回响。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "平缓",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "极致低角度仰拍，宏大深邃的东方多层环形巨阁内部。右侧矗立着顶天立地的巨型红色古代机关武神雕像，装甲精细，金红交错，散发威严。左侧是层层向上环绕的红色回廊，悬挂密集红幔。底部地面站立着数名身着中式长袍的渺小人物，仰望巨像。场景散落暖光灯笼，薄雾缭绕，明暗对比强烈，电影史诗级构图与光影，中式奇幻巨构风格。\n\n画面与环境: 纵向深邃的环形中式木构殿堂，环绕多层挂满红布的走廊。右侧耸立着一尊极为庞大的红色东方机关神像，底部广场上行立着身着古代长袍的渺小人群，灯笼发出温润暖光。；右侧占据画面的巨大红色中式机甲神像，外覆复杂龙鳞状甲胄与红绸构件。；高耸通天的多层环形东方古建内部，环形红色回廊、楼梯、悬挂布幔及暖色纸灯笼。\n\n人物与动作: 地面多名身穿中式素色宽袍的行者，体态微缩，或缓步行走或仰视巨像。；地面行人缓慢走动，镜头自低处缓慢微仰，展现巨神像的绝对体量。；行人的缓慢步态，微弱的空气尘埃与宏大而静止的压迫感。\n\n镜头与构图: 超低仰角大远景，广角镜头，微弱向上平移或仰拍运镜，强调垂直空间感。；极端仰视构图，底部为人群前景，右侧巨物贯穿画面延伸至穹顶，左侧为螺旋上升的环形楼阁。\n\n光影与质感: 低照度幽暗光线，底部灯笼点亮暖黄光芒，上层漫射冷暗天光，金红反光若隐若现。；朱红、赤褐、暗金与幽黑为主色调，氛围庄严厚重。；东方奇幻与巨构美学结合，高精度电影CG质感。\n\n声音: description: 深沉低频氛围音，带有悠远肃穆的东方宫廷乐与微弱殿内回响。\n\n节奏与转场: editing: pacing: 平缓; techniques: 硬切",
+        "duration": 5.083,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-14T14:12:42.288Z",
+        "updatedAt": "2026-10-14T14:12:42.288Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-14T14:11:49.742Z",
+          "sceneIndex": 2,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "e33e2ee3-166e-47a9-b8db-c92b312171c0",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "projectVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "originalSceneId": "3d283b7a-02f9-4c94-945a-8ce31609c57b",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 14.792,
+          "summary": "在深邃垂直的东方赛博地下城底层，人群仰望顶端天井与宏伟悬垂神柱。",
+          "startTime": 9.75,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "青绿色雾气与冷灰色调为主，点缀朱红招牌与金黄色灯火。",
+          "style": "东方奇幻赛博朋克，暗黑压抑且具巨物崇拜氛围的写实CG质感。",
+          "action": "人群在底部慢步移动，微尘在光束中漂浮，镜头缓慢向上仰移推近顶部洞口。",
+          "camera": "超广角大远景，极低角度仰拍，平稳慢速向上摇移并微幅推入。",
+          "motion": "底部轻微的人群走动与整体垂直向上的平稳镜头运动。",
+          "subject": "垂直延伸的层叠楼宇与中央悬垂巨柱。",
+          "lighting": "顶部天光形成的强逆光与体积光雾，结合建筑间零星散布的暖黄色招牌灯与红色微光。",
+          "characters": "底部前景聚集的剪影人群，身穿杂色市井服饰，背对镜头缓步走动或仰望。",
+          "composition": "深景深对称垂直构图，底部人群压底，巨柱居中纵贯画面，顶部天井作为视觉消失点。",
+          "environment": "多层环形立体的东方奇幻赛博城寨，布满发光招牌、红灯笼、飞檐与繁杂管道，顶端有圆形巨大天井洞口。",
+          "sceneDescription": "巨大的圆柱形垂直地下城，中央悬立装饰繁复的图腾柱与飘带，顶部天光倾泻，底部聚集密集人群。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉空灵的环境嗡鸣、微弱嘈杂的市井人声与深邃的回声质感。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢平稳的长镜头运镜。",
+            "techniques": "硬切进入，硬切退出。"
+          }
+        },
+        "generationPrompt": "大远景，极低角度仰拍，东方奇幻赛博地下城。巨大深邃的垂直圆筒形空间，底层挤满背对镜头的市井人群，中央是一根自顶垂下的繁复巨型图腾柱，四周环绕密集的层叠楼宇、飞檐、红灯笼与发光招牌。顶部巨大的圆形天窗倾泻出强烈的青绿色体积光，微尘在光雾中浮动。超广角镜头缓慢向上仰移推进，电影级质感，宏大压抑的巨物感。\n\n画面与环境: 巨大的圆柱形垂直地下城，中央悬立装饰繁复的图腾柱与飘带，顶部天光倾泻，底部聚集密集人群。；垂直延伸的层叠楼宇与中央悬垂巨柱。；多层环形立体的东方奇幻赛博城寨，布满发光招牌、红灯笼、飞檐与繁杂管道，顶端有圆形巨大天井洞口。\n\n人物与动作: 底部前景聚集的剪影人群，身穿杂色市井服饰，背对镜头缓步走动或仰望。；人群在底部慢步移动，微尘在光束中漂浮，镜头缓慢向上仰移推近顶部洞口。；底部轻微的人群走动与整体垂直向上的平稳镜头运动。\n\n镜头与构图: 超广角大远景，极低角度仰拍，平稳慢速向上摇移并微幅推入。；深景深对称垂直构图，底部人群压底，巨柱居中纵贯画面，顶部天井作为视觉消失点。\n\n光影与质感: 顶部天光形成的强逆光与体积光雾，结合建筑间零星散布的暖黄色招牌灯与红色微光。；青绿色雾气与冷灰色调为主，点缀朱红招牌与金黄色灯火。；东方奇幻赛博朋克，暗黑压抑且具巨物崇拜氛围的写实CG质感。\n\n声音: soundStyle: 低沉空灵的环境嗡鸣、微弱嘈杂的市井人声与深邃的回声质感。\n\n节奏与转场: editing: pacing: 缓慢平稳的长镜头运镜。; techniques: 硬切进入，硬切退出。",
+        "duration": 5.042,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-14T14:15:00.675Z",
+        "updatedAt": "2026-10-14T14:15:00.675Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-14T14:13:07.313Z",
+          "sceneIndex": 3,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "50a1437b-90ce-474c-8f94-183e81236272",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "projectVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "originalSceneId": "5b1c51e2-259e-4b40-9880-ad54699404dd",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 19.833,
+          "summary": "在拥挤杂乱的市集上方，耸立着一座遮天蔽日的巨型红色机械结构，展现出强烈的工业科幻压迫感。",
+          "startTime": 14.792,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "工业朱红为主色调，与青灰天空、暗色建筑阴影形成鲜明冷暖明暗对比。",
+          "style": "写实工业科幻与赛博朋克废土风格，质感厚重真实。",
+          "action": "行人在街道上缓步向前走动，仰视视角的镜头缓慢上摇并微弱推进，突显背景巨型机械的庞大体量。",
+          "camera": "超低角度仰拍，广角视野，缓慢推仰运动，大景深保持巨物与人群的层次细节。",
+          "motion": "人群移动缓慢平稳，空中烟雾微弱流动，镜头移动平缓。",
+          "subject": "遮蔽半边天空的庞大红色工业机械结构，表面附着复杂管线与结构分支。",
+          "lighting": "冷色漫射天光结合局部的街市微弱暖光，金属表面呈现哑光反射。",
+          "characters": "前景与中景中行走的人群，多为背影或侧影，穿着深色服饰与风衣。",
+          "composition": "下沉式三分法构图，底部为街道人流，顶部大部分画面被巨型红色机械体占据，形成巨大尺度落差。",
+          "environment": "破败密集的赛博朋克市集街区，悬挂灯笼、招牌与错综复杂的电线，空气中弥漫轻度烟尘与雾气。",
+          "sceneDescription": "极低角度仰视街巷，头顶杂乱电线横跨，背景为直插云霄的庞大红色机械机体，街道上行人缓缓走动。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "低沉浑厚的工业低频轰鸣，伴随环境机械震颤与远处集市微弱人声。",
+          "confidence": "推测"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "pacing": "沉稳缓慢",
+          "techniques": "硬切"
+        },
+        "generationPrompt": "9:16画幅，超低角度仰拍。前景是一条狭窄拥挤的亚洲风赛博集市街道，穿深色服装的行人背对镜头前行，头顶悬挂着混乱的黑色电线与泛黄灯笼。背景耸立着一座极其庞大、直插云霄的红色工业机械体，布满复杂的排气口、管道与桁架结构。青灰色阴天带雾气，工业朱红与冷色天空形成对比，强烈的尺度对比与深邃空间感，写实电影级质感。\n\n画面与环境: 极低角度仰视街巷，头顶杂乱电线横跨，背景为直插云霄的庞大红色机械机体，街道上行人缓缓走动。；遮蔽半边天空的庞大红色工业机械结构，表面附着复杂管线与结构分支。；破败密集的赛博朋克市集街区，悬挂灯笼、招牌与错综复杂的电线，空气中弥漫轻度烟尘与雾气。\n\n人物与动作: 前景与中景中行走的人群，多为背影或侧影，穿着深色服饰与风衣。；行人在街道上缓步向前走动，仰视视角的镜头缓慢上摇并微弱推进，突显背景巨型机械的庞大体量。；人群移动缓慢平稳，空中烟雾微弱流动，镜头移动平缓。\n\n镜头与构图: 超低角度仰拍，广角视野，缓慢推仰运动，大景深保持巨物与人群的层次细节。；下沉式三分法构图，底部为街道人流，顶部大部分画面被巨型红色机械体占据，形成巨大尺度落差。\n\n光影与质感: 冷色漫射天光结合局部的街市微弱暖光，金属表面呈现哑光反射。；工业朱红为主色调，与青灰天空、暗色建筑阴影形成鲜明冷暖明暗对比。；写实工业科幻与赛博朋克废土风格，质感厚重真实。\n\n声音: style: 低沉浑厚的工业低频轰鸣，伴随环境机械震颤与远处集市微弱人声。; confidence: 推测\n\n节奏与转场: pacing: 沉稳缓慢; techniques: 硬切",
+        "duration": 5.041,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-14T14:13:28.549Z",
+        "updatedAt": "2026-10-14T14:13:28.549Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-14T14:13:26.587Z",
+          "sceneIndex": 4,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "987c0bb7-47d4-4960-b97e-4ddb5659a782",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "projectVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "originalSceneId": "b0f55a27-9807-4e51-ae9d-8835cdcd85e6",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 24.59,
+          "summary": "众人身着长袍肃立于宏伟平台，仰望中央拔地而起、由无数巨鼓和机械构件堆叠而成的通天巨树神塔。",
+          "startTime": 19.833,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "青灰冷色调为主，点缀暗红与棕褐色的鼓面与旗幡，对比鲜明克制。",
+          "style": "史诗奇幻与暗黑超现实工业宗教美学，具有厚重的油画与电影质感。",
+          "action": "人群静止仰望；高塔结构与周围风力气流产生极其缓慢的漂浮与气流流动感。",
+          "camera": "超广角，极低仰视角，缓慢后拉微仰，全景深，凸显主体的压迫感与崇高感。",
+          "motion": "人物相对静止，镜头平稳低速移动，画面伴随微弱的环境风动与光影流动。",
+          "subject": "巍峨矗立的机械树状神塔与前方的朝拜人群。",
+          "lighting": "顶部漫射冷白天光自穹顶下洒，背光形成塔身的深邃阴影与人群轮廓光。",
+          "characters": "众多信徒或朝圣者，背对镜头肃立，身着宽松的白、黑或深灰连帽长袍，姿态庄严肃穆。",
+          "composition": "底部人群形成剪影前景压底，巨树中轴居中对称直冲画面顶部，构筑强烈的纵深感与庄严的垂直线条。",
+          "environment": "空旷冰冷的崇拜广场，头顶为旋转扭曲的深渊穹顶，空气中弥漫着稀薄冷雾与悬浮尘埃。",
+          "sceneDescription": "极低仰角远景，画面底部聚集着身穿白袍与黑袍的人群背影；中景为一座直插云霄的树状机械高塔，顶部向外散开，挂满圆形巨鼓、幡旗与繁复构件；背景为旋转上升的冰冷漩涡状虚空与穹顶天光。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉空灵的氛围低音隆鸣，伴随呼啸的远方风声与肃穆的仪式感回响。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "极慢、庄严且具有沉浸感。",
+            "techniques": "前接硬切，尾部随镜头运动淡出或硬切结束。"
+          }
+        },
+        "generationPrompt": "电影级极低仰视全景镜头，前方平地上聚集着大量身着白色和黑色长袍的人群背影，庄严凝视。中景矗立着一座直通穹顶的宏大巴别塔式机械神树，塔身堆叠着无数暗红色的巨大圆鼓与繁复青铜构件，形如蘑菇云般在空中舒展。背景为旋转如水流漩涡的幽蓝冷光深渊穹顶。幽暗青灰与冷绿调的电影光影，漫射顶光，史诗感，超现实奇幻与暗黑仪式美学，高精细节，极缓运镜。\n\n画面与环境: 极低仰角远景，画面底部聚集着身穿白袍与黑袍的人群背影；中景为一座直插云霄的树状机械高塔，顶部向外散开，挂满圆形巨鼓、幡旗与繁复构件；背景为旋转上升的冰冷漩涡状虚空与穹顶天光。；巍峨矗立的机械树状神塔与前方的朝拜人群。；空旷冰冷的崇拜广场，头顶为旋转扭曲的深渊穹顶，空气中弥漫着稀薄冷雾与悬浮尘埃。\n\n人物与动作: 众多信徒或朝圣者，背对镜头肃立，身着宽松的白、黑或深灰连帽长袍，姿态庄严肃穆。；人群静止仰望；高塔结构与周围风力气流产生极其缓慢的漂浮与气流流动感。；人物相对静止，镜头平稳低速移动，画面伴随微弱的环境风动与光影流动。\n\n镜头与构图: 超广角，极低仰视角，缓慢后拉微仰，全景深，凸显主体的压迫感与崇高感。；底部人群形成剪影前景压底，巨树中轴居中对称直冲画面顶部，构筑强烈的纵深感与庄严的垂直线条。\n\n光影与质感: 顶部漫射冷白天光自穹顶下洒，背光形成塔身的深邃阴影与人群轮廓光。；青灰冷色调为主，点缀暗红与棕褐色的鼓面与旗幡，对比鲜明克制。；史诗奇幻与暗黑超现实工业宗教美学，具有厚重的油画与电影质感。\n\n声音: soundStyle: 低沉空灵的氛围低音隆鸣，伴随呼啸的远方风声与肃穆的仪式感回响。\n\n节奏与转场: editing: pacing: 极慢、庄严且具有沉浸感。; techniques: 前接硬切，尾部随镜头运动淡出或硬切结束。",
+        "duration": 4.757,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-14T14:15:15.643Z",
+        "updatedAt": "2026-10-14T14:15:15.643Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-14T14:14:27.176Z",
+          "sceneIndex": 5,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      }
+    ],
+    "allSceneVersions": [
+      {
+        "id": "5d029033-feab-479c-be00-23cdbad29c98",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "projectVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "originalSceneId": "653d96cd-ef45-4200-9296-189e8f757fad",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 4.667,
+          "summary": "在宏伟的巨型神殿建筑前，成群的民众聚集在广场上参加盛大集会。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖白、深红饰带、暗金神像壁画与冷调建筑阴影交织。",
+          "style": "电影级奇幻史诗巨构风格，写实光影与繁复装饰细节兼备。",
+          "action": "人群在广场上走动、伫立聚集，阳光与阴影形成鲜明分界，整体场面庄重宏大。",
+          "camera": "超广角仰拍全景镜头，缓慢平稳向前微移，突出建筑的崇高感与渺小人潮的对比。",
+          "motion": "人群微幅动态扰动，镜头平缓向前推进。",
+          "subject": "宏伟的巨构建筑立面及门下聚集的庞大人潮。",
+          "lighting": "强烈的自然侧顶日光，在建筑表面及广场投下深刻的硬阴影，明暗对比强烈。",
+          "characters": "广场上的大众群体，身着复古或传统长袍服饰，身形渺小，呈现集会状态。",
+          "composition": "垂直纵向构图，下部为开阔广场与人流，中部至顶部被巨大的红色拱门与殿堂壁画完全占据。",
+          "environment": "结合东方传统元素与科幻巨构的巨大神庙或宫殿外立面，周围有树木与装饰立柱，地面为开阔石质广场。",
+          "sceneDescription": "阳光斜射下的超巨型奇幻东方建筑前，红色巨幅缎带与繁复壁画装点着高达百米的门廊，广场与台阶上聚集着密密麻麻的人群。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉恢弘的环境回响、遥远的庞大人群嘈杂声与庄重史诗风管弦配乐。"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢而沉稳",
+            "techniques": "首帧切入，尾部硬切"
+          }
+        },
+        "generationPrompt": "超广角仰拍全景，史诗级巨构奇幻神殿前，两道巨大鲜艳的红色缎带沿高达百米的白色巨壁悬垂而下，中央拱形凹槽内绘有巨大的东方神秘神像壁画。阳光斜照在建筑表面形成明暗交界。下方石阶与宽阔广场上聚集着身着传统长袍的长长人流，场面极其宏伟。电影级质感，写实光影，强明暗对比，慢速轻微向前推进运镜。\n\n画面与环境: 阳光斜射下的超巨型奇幻东方建筑前，红色巨幅缎带与繁复壁画装点着高达百米的门廊，广场与台阶上聚集着密密麻麻的人群。；宏伟的巨构建筑立面及门下聚集的庞大人潮。；结合东方传统元素与科幻巨构的巨大神庙或宫殿外立面，周围有树木与装饰立柱，地面为开阔石质广场。\n\n人物与动作: 广场上的大众群体，身着复古或传统长袍服饰，身形渺小，呈现集会状态。；人群在广场上走动、伫立聚集，阳光与阴影形成鲜明分界，整体场面庄重宏大。；人群微幅动态扰动，镜头平缓向前推进。\n\n镜头与构图: 超广角仰拍全景镜头，缓慢平稳向前微移，突出建筑的崇高感与渺小人潮的对比。；垂直纵向构图，下部为开阔广场与人流，中部至顶部被巨大的红色拱门与殿堂壁画完全占据。\n\n光影与质感: 强烈的自然侧顶日光，在建筑表面及广场投下深刻的硬阴影，明暗对比强烈。；暖白、深红饰带、暗金神像壁画与冷调建筑阴影交织。；电影级奇幻史诗巨构风格，写实光影与繁复装饰细节兼备。\n\n声音: soundStyle: 低沉恢弘的环境回响、遥远的庞大人群嘈杂声与庄重史诗风管弦配乐。\n\n节奏与转场: editing: pacing: 缓慢而沉稳; techniques: 首帧切入，尾部硬切",
+        "duration": 4.667,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-14T14:12:21.521Z",
+        "updatedAt": "2026-10-14T14:12:21.521Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-14T14:11:49.030Z",
+          "sceneIndex": 1,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "6a5bfea7-21ce-42f0-a725-3c127aec7173",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "projectVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "originalSceneId": "6a5b23f0-2eff-47aa-be9e-29fb6c43cbac",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 9.75,
+          "summary": "在宏伟的多层中式环形巨殿内，地面人群驻足仰望右侧顶天立地的庞大红色机关巨神像。",
+          "startTime": 4.667,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "朱红、赤褐、暗金与幽黑为主色调，氛围庄严厚重。",
+          "style": "东方奇幻与巨构美学结合，高精度电影CG质感。",
+          "action": "地面行人缓慢走动，镜头自低处缓慢微仰，展现巨神像的绝对体量。",
+          "camera": "超低仰角大远景，广角镜头，微弱向上平移或仰拍运镜，强调垂直空间感。",
+          "motion": "行人的缓慢步态，微弱的空气尘埃与宏大而静止的压迫感。",
+          "subject": "右侧占据画面的巨大红色中式机甲神像，外覆复杂龙鳞状甲胄与红绸构件。",
+          "lighting": "低照度幽暗光线，底部灯笼点亮暖黄光芒，上层漫射冷暗天光，金红反光若隐若现。",
+          "characters": "地面多名身穿中式素色宽袍的行者，体态微缩，或缓步行走或仰视巨像。",
+          "composition": "极端仰视构图，底部为人群前景，右侧巨物贯穿画面延伸至穹顶，左侧为螺旋上升的环形楼阁。",
+          "environment": "高耸通天的多层环形东方古建内部，环形红色回廊、楼梯、悬挂布幔及暖色纸灯笼。",
+          "sceneDescription": "纵向深邃的环形中式木构殿堂，环绕多层挂满红布的走廊。右侧耸立着一尊极为庞大的红色东方机关神像，底部广场上行立着身着古代长袍的渺小人群，灯笼发出温润暖光。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "description": "深沉低频氛围音，带有悠远肃穆的东方宫廷乐与微弱殿内回响。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "平缓",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "极致低角度仰拍，宏大深邃的东方多层环形巨阁内部。右侧矗立着顶天立地的巨型红色古代机关武神雕像，装甲精细，金红交错，散发威严。左侧是层层向上环绕的红色回廊，悬挂密集红幔。底部地面站立着数名身着中式长袍的渺小人物，仰望巨像。场景散落暖光灯笼，薄雾缭绕，明暗对比强烈，电影史诗级构图与光影，中式奇幻巨构风格。\n\n画面与环境: 纵向深邃的环形中式木构殿堂，环绕多层挂满红布的走廊。右侧耸立着一尊极为庞大的红色东方机关神像，底部广场上行立着身着古代长袍的渺小人群，灯笼发出温润暖光。；右侧占据画面的巨大红色中式机甲神像，外覆复杂龙鳞状甲胄与红绸构件。；高耸通天的多层环形东方古建内部，环形红色回廊、楼梯、悬挂布幔及暖色纸灯笼。\n\n人物与动作: 地面多名身穿中式素色宽袍的行者，体态微缩，或缓步行走或仰视巨像。；地面行人缓慢走动，镜头自低处缓慢微仰，展现巨神像的绝对体量。；行人的缓慢步态，微弱的空气尘埃与宏大而静止的压迫感。\n\n镜头与构图: 超低仰角大远景，广角镜头，微弱向上平移或仰拍运镜，强调垂直空间感。；极端仰视构图，底部为人群前景，右侧巨物贯穿画面延伸至穹顶，左侧为螺旋上升的环形楼阁。\n\n光影与质感: 低照度幽暗光线，底部灯笼点亮暖黄光芒，上层漫射冷暗天光，金红反光若隐若现。；朱红、赤褐、暗金与幽黑为主色调，氛围庄严厚重。；东方奇幻与巨构美学结合，高精度电影CG质感。\n\n声音: description: 深沉低频氛围音，带有悠远肃穆的东方宫廷乐与微弱殿内回响。\n\n节奏与转场: editing: pacing: 平缓; techniques: 硬切",
+        "duration": 5.083,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-14T14:12:42.288Z",
+        "updatedAt": "2026-10-14T14:12:42.288Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-14T14:11:49.742Z",
+          "sceneIndex": 2,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "e33e2ee3-166e-47a9-b8db-c92b312171c0",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "projectVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "originalSceneId": "3d283b7a-02f9-4c94-945a-8ce31609c57b",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 14.792,
+          "summary": "在深邃垂直的东方赛博地下城底层，人群仰望顶端天井与宏伟悬垂神柱。",
+          "startTime": 9.75,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "青绿色雾气与冷灰色调为主，点缀朱红招牌与金黄色灯火。",
+          "style": "东方奇幻赛博朋克，暗黑压抑且具巨物崇拜氛围的写实CG质感。",
+          "action": "人群在底部慢步移动，微尘在光束中漂浮，镜头缓慢向上仰移推近顶部洞口。",
+          "camera": "超广角大远景，极低角度仰拍，平稳慢速向上摇移并微幅推入。",
+          "motion": "底部轻微的人群走动与整体垂直向上的平稳镜头运动。",
+          "subject": "垂直延伸的层叠楼宇与中央悬垂巨柱。",
+          "lighting": "顶部天光形成的强逆光与体积光雾，结合建筑间零星散布的暖黄色招牌灯与红色微光。",
+          "characters": "底部前景聚集的剪影人群，身穿杂色市井服饰，背对镜头缓步走动或仰望。",
+          "composition": "深景深对称垂直构图，底部人群压底，巨柱居中纵贯画面，顶部天井作为视觉消失点。",
+          "environment": "多层环形立体的东方奇幻赛博城寨，布满发光招牌、红灯笼、飞檐与繁杂管道，顶端有圆形巨大天井洞口。",
+          "sceneDescription": "巨大的圆柱形垂直地下城，中央悬立装饰繁复的图腾柱与飘带，顶部天光倾泻，底部聚集密集人群。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉空灵的环境嗡鸣、微弱嘈杂的市井人声与深邃的回声质感。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢平稳的长镜头运镜。",
+            "techniques": "硬切进入，硬切退出。"
+          }
+        },
+        "generationPrompt": "大远景，极低角度仰拍，东方奇幻赛博地下城。巨大深邃的垂直圆筒形空间，底层挤满背对镜头的市井人群，中央是一根自顶垂下的繁复巨型图腾柱，四周环绕密集的层叠楼宇、飞檐、红灯笼与发光招牌。顶部巨大的圆形天窗倾泻出强烈的青绿色体积光，微尘在光雾中浮动。超广角镜头缓慢向上仰移推进，电影级质感，宏大压抑的巨物感。\n\n画面与环境: 巨大的圆柱形垂直地下城，中央悬立装饰繁复的图腾柱与飘带，顶部天光倾泻，底部聚集密集人群。；垂直延伸的层叠楼宇与中央悬垂巨柱。；多层环形立体的东方奇幻赛博城寨，布满发光招牌、红灯笼、飞檐与繁杂管道，顶端有圆形巨大天井洞口。\n\n人物与动作: 底部前景聚集的剪影人群，身穿杂色市井服饰，背对镜头缓步走动或仰望。；人群在底部慢步移动，微尘在光束中漂浮，镜头缓慢向上仰移推近顶部洞口。；底部轻微的人群走动与整体垂直向上的平稳镜头运动。\n\n镜头与构图: 超广角大远景，极低角度仰拍，平稳慢速向上摇移并微幅推入。；深景深对称垂直构图，底部人群压底，巨柱居中纵贯画面，顶部天井作为视觉消失点。\n\n光影与质感: 顶部天光形成的强逆光与体积光雾，结合建筑间零星散布的暖黄色招牌灯与红色微光。；青绿色雾气与冷灰色调为主，点缀朱红招牌与金黄色灯火。；东方奇幻赛博朋克，暗黑压抑且具巨物崇拜氛围的写实CG质感。\n\n声音: soundStyle: 低沉空灵的环境嗡鸣、微弱嘈杂的市井人声与深邃的回声质感。\n\n节奏与转场: editing: pacing: 缓慢平稳的长镜头运镜。; techniques: 硬切进入，硬切退出。",
+        "duration": 5.042,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-14T14:15:00.675Z",
+        "updatedAt": "2026-10-14T14:15:00.675Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-14T14:13:07.313Z",
+          "sceneIndex": 3,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "50a1437b-90ce-474c-8f94-183e81236272",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "projectVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "originalSceneId": "5b1c51e2-259e-4b40-9880-ad54699404dd",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 19.833,
+          "summary": "在拥挤杂乱的市集上方，耸立着一座遮天蔽日的巨型红色机械结构，展现出强烈的工业科幻压迫感。",
+          "startTime": 14.792,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "工业朱红为主色调，与青灰天空、暗色建筑阴影形成鲜明冷暖明暗对比。",
+          "style": "写实工业科幻与赛博朋克废土风格，质感厚重真实。",
+          "action": "行人在街道上缓步向前走动，仰视视角的镜头缓慢上摇并微弱推进，突显背景巨型机械的庞大体量。",
+          "camera": "超低角度仰拍，广角视野，缓慢推仰运动，大景深保持巨物与人群的层次细节。",
+          "motion": "人群移动缓慢平稳，空中烟雾微弱流动，镜头移动平缓。",
+          "subject": "遮蔽半边天空的庞大红色工业机械结构，表面附着复杂管线与结构分支。",
+          "lighting": "冷色漫射天光结合局部的街市微弱暖光，金属表面呈现哑光反射。",
+          "characters": "前景与中景中行走的人群，多为背影或侧影，穿着深色服饰与风衣。",
+          "composition": "下沉式三分法构图，底部为街道人流，顶部大部分画面被巨型红色机械体占据，形成巨大尺度落差。",
+          "environment": "破败密集的赛博朋克市集街区，悬挂灯笼、招牌与错综复杂的电线，空气中弥漫轻度烟尘与雾气。",
+          "sceneDescription": "极低角度仰视街巷，头顶杂乱电线横跨，背景为直插云霄的庞大红色机械机体，街道上行人缓缓走动。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "低沉浑厚的工业低频轰鸣，伴随环境机械震颤与远处集市微弱人声。",
+          "confidence": "推测"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "pacing": "沉稳缓慢",
+          "techniques": "硬切"
+        },
+        "generationPrompt": "9:16画幅，超低角度仰拍。前景是一条狭窄拥挤的亚洲风赛博集市街道，穿深色服装的行人背对镜头前行，头顶悬挂着混乱的黑色电线与泛黄灯笼。背景耸立着一座极其庞大、直插云霄的红色工业机械体，布满复杂的排气口、管道与桁架结构。青灰色阴天带雾气，工业朱红与冷色天空形成对比，强烈的尺度对比与深邃空间感，写实电影级质感。\n\n画面与环境: 极低角度仰视街巷，头顶杂乱电线横跨，背景为直插云霄的庞大红色机械机体，街道上行人缓缓走动。；遮蔽半边天空的庞大红色工业机械结构，表面附着复杂管线与结构分支。；破败密集的赛博朋克市集街区，悬挂灯笼、招牌与错综复杂的电线，空气中弥漫轻度烟尘与雾气。\n\n人物与动作: 前景与中景中行走的人群，多为背影或侧影，穿着深色服饰与风衣。；行人在街道上缓步向前走动，仰视视角的镜头缓慢上摇并微弱推进，突显背景巨型机械的庞大体量。；人群移动缓慢平稳，空中烟雾微弱流动，镜头移动平缓。\n\n镜头与构图: 超低角度仰拍，广角视野，缓慢推仰运动，大景深保持巨物与人群的层次细节。；下沉式三分法构图，底部为街道人流，顶部大部分画面被巨型红色机械体占据，形成巨大尺度落差。\n\n光影与质感: 冷色漫射天光结合局部的街市微弱暖光，金属表面呈现哑光反射。；工业朱红为主色调，与青灰天空、暗色建筑阴影形成鲜明冷暖明暗对比。；写实工业科幻与赛博朋克废土风格，质感厚重真实。\n\n声音: style: 低沉浑厚的工业低频轰鸣，伴随环境机械震颤与远处集市微弱人声。; confidence: 推测\n\n节奏与转场: pacing: 沉稳缓慢; techniques: 硬切",
+        "duration": 5.041,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-14T14:13:28.549Z",
+        "updatedAt": "2026-10-14T14:13:28.549Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-14T14:13:26.587Z",
+          "sceneIndex": 4,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      },
+      {
+        "id": "987c0bb7-47d4-4960-b97e-4ddb5659a782",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "projectVersionId": "124d0632-f843-46cf-8ee7-11b89fe5ff19",
+        "originalSceneId": "b0f55a27-9807-4e51-ae9d-8835cdcd85e6",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 24.59,
+          "summary": "众人身着长袍肃立于宏伟平台，仰望中央拔地而起、由无数巨鼓和机械构件堆叠而成的通天巨树神塔。",
+          "startTime": 19.833,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "青灰冷色调为主，点缀暗红与棕褐色的鼓面与旗幡，对比鲜明克制。",
+          "style": "史诗奇幻与暗黑超现实工业宗教美学，具有厚重的油画与电影质感。",
+          "action": "人群静止仰望；高塔结构与周围风力气流产生极其缓慢的漂浮与气流流动感。",
+          "camera": "超广角，极低仰视角，缓慢后拉微仰，全景深，凸显主体的压迫感与崇高感。",
+          "motion": "人物相对静止，镜头平稳低速移动，画面伴随微弱的环境风动与光影流动。",
+          "subject": "巍峨矗立的机械树状神塔与前方的朝拜人群。",
+          "lighting": "顶部漫射冷白天光自穹顶下洒，背光形成塔身的深邃阴影与人群轮廓光。",
+          "characters": "众多信徒或朝圣者，背对镜头肃立，身着宽松的白、黑或深灰连帽长袍，姿态庄严肃穆。",
+          "composition": "底部人群形成剪影前景压底，巨树中轴居中对称直冲画面顶部，构筑强烈的纵深感与庄严的垂直线条。",
+          "environment": "空旷冰冷的崇拜广场，头顶为旋转扭曲的深渊穹顶，空气中弥漫着稀薄冷雾与悬浮尘埃。",
+          "sceneDescription": "极低仰角远景，画面底部聚集着身穿白袍与黑袍的人群背影；中景为一座直插云霄的树状机械高塔，顶部向外散开，挂满圆形巨鼓、幡旗与繁复构件；背景为旋转上升的冰冷漩涡状虚空与穹顶天光。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉空灵的氛围低音隆鸣，伴随呼啸的远方风声与肃穆的仪式感回响。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "极慢、庄严且具有沉浸感。",
+            "techniques": "前接硬切，尾部随镜头运动淡出或硬切结束。"
+          }
+        },
+        "generationPrompt": "电影级极低仰视全景镜头，前方平地上聚集着大量身着白色和黑色长袍的人群背影，庄严凝视。中景矗立着一座直通穹顶的宏大巴别塔式机械神树，塔身堆叠着无数暗红色的巨大圆鼓与繁复青铜构件，形如蘑菇云般在空中舒展。背景为旋转如水流漩涡的幽蓝冷光深渊穹顶。幽暗青灰与冷绿调的电影光影，漫射顶光，史诗感，超现实奇幻与暗黑仪式美学，高精细节，极缓运镜。\n\n画面与环境: 极低仰角远景，画面底部聚集着身穿白袍与黑袍的人群背影；中景为一座直插云霄的树状机械高塔，顶部向外散开，挂满圆形巨鼓、幡旗与繁复构件；背景为旋转上升的冰冷漩涡状虚空与穹顶天光。；巍峨矗立的机械树状神塔与前方的朝拜人群。；空旷冰冷的崇拜广场，头顶为旋转扭曲的深渊穹顶，空气中弥漫着稀薄冷雾与悬浮尘埃。\n\n人物与动作: 众多信徒或朝圣者，背对镜头肃立，身着宽松的白、黑或深灰连帽长袍，姿态庄严肃穆。；人群静止仰望；高塔结构与周围风力气流产生极其缓慢的漂浮与气流流动感。；人物相对静止，镜头平稳低速移动，画面伴随微弱的环境风动与光影流动。\n\n镜头与构图: 超广角，极低仰视角，缓慢后拉微仰，全景深，凸显主体的压迫感与崇高感。；底部人群形成剪影前景压底，巨树中轴居中对称直冲画面顶部，构筑强烈的纵深感与庄严的垂直线条。\n\n光影与质感: 顶部漫射冷白天光自穹顶下洒，背光形成塔身的深邃阴影与人群轮廓光。；青灰冷色调为主，点缀暗红与棕褐色的鼓面与旗幡，对比鲜明克制。；史诗奇幻与暗黑超现实工业宗教美学，具有厚重的油画与电影质感。\n\n声音: soundStyle: 低沉空灵的氛围低音隆鸣，伴随呼啸的远方风声与肃穆的仪式感回响。\n\n节奏与转场: editing: pacing: 极慢、庄严且具有沉浸感。; techniques: 前接硬切，尾部随镜头运动淡出或硬切结束。",
+        "duration": 4.757,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-14T14:15:15.643Z",
+        "updatedAt": "2026-10-14T14:15:15.643Z",
+        "metadata": {
+          "modelMode": "manual",
+          "analyzedAt": "2026-10-14T14:14:27.176Z",
+          "sceneIndex": 5,
+          "analysisModel": "gemini-3-8-flash-openai",
+          "modelPriority": "balanced",
+          "analysisProvider": "kie",
+          "recreationPromptVersion": 1
+        }
+      }
+    ],
+    "referenceVideos": [
+      {
+        "id": "6e760645-ded7-42be-a243-d22b403f19d2",
+        "projectId": "61998c4e-4df0-405e-8200-d99a1d0d734d",
+        "sourceUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/87066363-c919-4c68-8ea7-53b176adf9ef/video/7e47a81c-16f9-4fdd-9414-eb37e4c681e5-195365815d66be35152043b5e7df4ea4.mp4",
+        "fileName": "195365815d66be35152043b5e7df4ea4.mp4",
+        "mimeType": null,
+        "duration": 25,
+        "createdAt": "2026-10-14T14:10:45.548Z",
+        "metadata": {}
+      }
+    ]
+  },
+  {
+    "project": {
       "id": "52457e72-44d6-41e1-ae89-8233ef50082c",
       "description": null,
       "status": "ready",

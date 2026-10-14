@@ -2,6 +2,14 @@ import snapshot from "./public-workflow-samples.snapshot.json";
 
 export const PUBLIC_WORKFLOW_SAMPLES = [
   {
+    id: "1a54fb8d-254a-4867-910f-b7d4c6ae8ac0",
+    title: "山海经",
+  },
+  {
+    id: "61998c4e-4df0-405e-8200-d99a1d0d734d",
+    title: "赛博神祇",
+  },
+  {
     id: "52457e72-44d6-41e1-ae89-8233ef50082c",
     title: "风在耳边呼啸，山在脚下臣服",
   },
