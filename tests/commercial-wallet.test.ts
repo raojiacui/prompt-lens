@@ -693,6 +693,23 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, task.id)))[0].state).toBe("failed");
     expect((await balance()).heldCredits).toBe(0);
   });
+  it("records asset preparation failures without charging or starting inference", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Failed asset preparation" }).returning();
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 5_000_000, bytes: 500, metadata: {}, scenes: [{ id: "1", startUs: 0, endUs: 5_000_000 }] });
+    const preview = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/source.mp4", mediaName: "source.mp4", automaticSplit: false });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preview.id, sceneIds: ["1"], payer: "platform", model: "flash", outputLanguage: "zh" });
+    await confirmCommercialTask(userId, quote.id);
+    vi.mocked(commercialMediaRequest).mockRejectedValueOnce(new Error("MEDIA_PREPARATION_FAILED", { cause: Object.assign(new Error("worker unavailable"), { code: "MEDIA_HTTP_503" }) }));
+    await runCommercialTask(quote.id);
+    const [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+    expect(task).toMatchObject({ state: "failed", result: { code: "MEDIA_PREPARATION_FAILED", chargedCredits: 0, diagnostic: { phase: "extracting_assets", error: { cause: { code: "MEDIA_HTTP_503" } } } } });
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+    expect(await testDb.select().from(schema.analysisSceneJobs)).toHaveLength(0);
+  });
   it("enables independent jobs for every account without experiment flags", async () => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");

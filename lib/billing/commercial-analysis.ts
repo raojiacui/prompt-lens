@@ -99,7 +99,14 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
     if (input.retry) throw new Error("ANALYSIS_CHECKPOINT_MISSING");
     await recordAnalysisPhase(task, "extracting_assets");
     try { assets = await commercialMediaRequest<FfmpegBreakdownResult>(input.mediaUrl, { mode: "assets", sourceHash: input.preview.sourceHash, scenes: input.pricing.scenes }); }
-    catch { await finishCommercialAnalysis(task, [], false, "failed"); return; }
+    catch (error) {
+      const diagnostic = { phase: "extracting_assets", error: taskErrorDetails(error) };
+      console.error("commercial.analysis.assets_failed", { taskId: task.id, ...diagnostic });
+      const [current] = await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ code: "MEDIA_PREPARATION_FAILED", diagnostic })}::jsonb`, updatedAt: new Date() }).where(executionCondition(task)).returning({ id: commercialTasks.id });
+      if (!current) throw new AnalysisExecutionLost();
+      await finishCommercialAnalysis(task, [], false, "failed");
+      return;
+    }
   }
   if (assets.scenes.length !== input.pricing.scenes.length || assets.scenes.some((s, index) => Math.abs(s.startTime * 1000000 - input.pricing.scenes[index].startUs) > 1000 || Math.abs(s.endTime * 1000000 - input.pricing.scenes[index].endUs) > 1000)) throw new Error("SPLIT_ASSET_MISMATCH");
   const extracted = assets;

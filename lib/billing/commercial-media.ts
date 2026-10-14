@@ -23,6 +23,14 @@ export async function commercialMediaRequest<T>(mediaUrl: string, body: Record<s
   const key = extractR2Key(mediaUrl);
   if (!worker || !secret || !key) throw new Error("MEDIA_PROBE_NOT_CONFIGURED");
   const response = await fetch(`${worker}/commercial-media`, { method: "POST", headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" }, body: JSON.stringify({ ...body, videoUrl: await getSignedUrlFromR2(key, 600) }), signal: AbortSignal.timeout(240000) });
-  if (!response.ok) throw new Error("MEDIA_PREPARATION_FAILED");
+  if (!response.ok) {
+    // Keep a bounded worker explanation in the cause so task diagnostics can redact it.
+    let reason = "Media worker rejected the request";
+    try {
+      const payload = await response.json() as { error?: unknown };
+      if (typeof payload.error === "string") reason = payload.error.slice(0, 1000);
+    } catch { /* A proxy may return HTML instead of the worker's JSON response. */ }
+    throw new Error("MEDIA_PREPARATION_FAILED", { cause: Object.assign(new Error(reason), { code: `MEDIA_HTTP_${response.status}` }) });
+  }
   return await response.json() as T;
 }
