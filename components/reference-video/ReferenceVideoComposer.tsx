@@ -314,7 +314,6 @@ export function ReferenceVideoComposer({
   const [error, setError] = useState("");
   const zh = useLocale() === "zh";
   const [commercialEnabled, setCommercialEnabled] = useState<boolean | null>(null);
-  const [creditLoadFailed, setCreditLoadFailed] = useState(false);
   const [creditStatus, setCreditStatus] = useState<{ balance: number; commercial?: { credits?: number; heldCredits?: number } } | null>(null);
   const [balanceRefresh, setBalanceRefresh] = useState(0);
   const [generationPayer, setGenerationPayer] = useState("platform");
@@ -323,6 +322,24 @@ export function ReferenceVideoComposer({
   const commercialBatchRef = useRef<GenerationSubmissionBatch | null>(null);
   const [pendingConfirmation, setPendingConfirmation] = useState(false);
   const [referenceTiming, setReferenceTiming] = useState<{ url: string; seconds: number } | null>(null);
+  useEffect(() => {
+    let active = true;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+    void fetch("/api/commercial/config", { cache: "no-store", signal: controller.signal })
+      .then(async response => {
+        if (!response.ok) throw new Error("Generation configuration unavailable");
+        const data = await response.json();
+        if (typeof data?.commercialConsumptionEnabled !== "boolean") throw new Error("Generation configuration unavailable");
+        if (active) {
+          setCommercialEnabled(data.commercialConsumptionEnabled);
+          if (!data.commercialConsumptionEnabled) setGenerationPayer("byok");
+        }
+      })
+      .catch(() => { if (active) setError(zh ? "生成设置暂时无法加载，请刷新页面重试。" : "Unable to load generation settings. Refresh to retry."); })
+      .finally(() => clearTimeout(timer));
+    return () => { active = false; clearTimeout(timer); controller.abort(); };
+  }, [zh]);
   useEffect(() => {
     let active = true;
     let controller: AbortController | undefined;
@@ -338,15 +355,11 @@ export function ReferenceVideoComposer({
         const response = await fetch("/api/credits/me", { cache: "no-store", signal: request.signal });
         if (!response.ok) throw new Error("Balance unavailable");
         const data = await response.json();
-        if (typeof data?.commercialConsumptionEnabled !== "boolean") throw new Error("Payment configuration unavailable");
         if (active && controller === request) {
           setCreditStatus(data);
-          setCommercialEnabled(data.commercialConsumptionEnabled);
-          setCreditLoadFailed(false);
-          if (!data.commercialConsumptionEnabled) setGenerationPayer("byok");
         }
       } catch {
-        if (active && controller === request) setCreditLoadFailed(true);
+        if (active && controller === request) setCreditStatus(null);
       } finally {
         if (controller === request) clearTimeout(timer);
       }
@@ -496,8 +509,6 @@ export function ReferenceVideoComposer({
     ? (zh ? "当前模型不支持这些素材" : "Materials unsupported by this model")
     : generationPayer === "byok"
     ? (zh ? "0 平台积分 · 自带 Key" : "0 platform credits · own key")
-    : commercialEnabled === null
-    ? (creditLoadFailed ? (zh ? "费用暂不可用" : "Cost unavailable") : (zh ? "费用加载中…" : "Loading cost…"))
     : creditPreview.state === "priced"
       ? (zh ? `预计 ${creditPreview.total} 积分` : `Est. ${creditPreview.total} credits`) + (model.startsWith("veo3") ? (zh ? " · 按条计费" : " · per video") : "")
       : creditPreview.state === "pending"

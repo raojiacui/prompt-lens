@@ -9,6 +9,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       const path = new URL(route.request().url()).pathname;
       let body: unknown = {};
       if (path === "/api/auth/get-session") body = { user: { id: "owner", name: "Owner", email: "owner@example.com" }, session: { id: "session", expiresAt: "2099-01-01T00:00:00Z" } };
+      if (path === "/api/commercial/config") body = { commercialConsumptionEnabled: true };
       if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, commercial: { credits: 200 } };
       if (path === "/api/payments/account") body = { wallet: { credits: 200 } };
       if (path === "/api/generation-history") body = { history: [

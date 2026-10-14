@@ -13,6 +13,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       let body: unknown = {};
       if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
       else if (path === "/api/models") body = { models: modelRegistry };
+      else if (path === "/api/commercial/config") body = { commercialConsumptionEnabled: true };
       else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, commercial: { credits: 650, rewrites: 60 } };
       else if (path === "/api/commercial/generation") {
         quoteRequests++;

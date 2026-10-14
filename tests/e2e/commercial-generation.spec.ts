@@ -10,6 +10,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const f
       const path = new URL(route.request().url()).pathname;
       let body: unknown = {};
       if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
+      else if (path === "/api/commercial/config") body = { commercialConsumptionEnabled: true };
       else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, commercial: { credits: 650, rewrites: 60 } };
       else if (path === "/api/models") body = { models: [] };
       else if (path === "/api/commercial/generation") { quotes++; body = { id: `quote-${quotes}`, credits: 95, model: "wan/2-6-text-to-video", duration: 5, resolution: "720p" }; }
@@ -49,6 +50,7 @@ test("checks a lost submission after reload without opening a dialog or creating
     const path = new URL(route.request().url()).pathname;
     let body: unknown = {};
     if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
+    else if (path === "/api/commercial/config") body = { commercialConsumptionEnabled: true };
     else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, commercial: { credits: 650, rewrites: 60 } };
     else if (path === "/api/commercial/generation") { quotes++; body = { id: "original-quote", credits: 20 }; }
     else if (path === "/api/commercial/confirm") {
@@ -70,14 +72,22 @@ test("checks a lost submission after reload without opening a dialog or creating
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
-test("keeps both payment choices visible when loading the balance fails", async ({ page, context }) => {
+for (const payerChoice of ["platform", "byok"] as const) test(`allows ${payerChoice} generation when loading the balance fails`, async ({ page, context }) => {
   await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
   let byokSubmissions = 0;
+  let platformSubmissions = 0;
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
     let body: unknown = {};
     if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
+    else if (path === "/api/commercial/config") body = { commercialConsumptionEnabled: true };
     else if (path === "/api/credits/me") { await route.fulfill({ status: 500, json: { error: "Database temporarily unavailable" } }); return; }
+    else if (path === "/api/commercial/generation") body = { id: "quoted-task", credits: 20 };
+    else if (path === "/api/commercial/confirm") {
+      platformSubmissions++;
+      expect(route.request().postDataJSON().ids).toEqual(["quoted-task"]);
+      body = { tasks: [{ id: "quoted-task", state: "queued" }] };
+    }
     else if (path === "/api/generation-jobs" && route.request().method() === "POST") {
       byokSubmissions++;
       expect(route.request().postDataJSON().payer).toBe("byok");
@@ -90,11 +100,12 @@ test("keeps both payment choices visible when loading the balance fails", async 
   await expect(payer).toBeVisible();
   await expect(payer.locator("option")).toHaveText(["平台积分", "自带 Key"]);
   await expect(payer).toHaveValue("platform");
-  await expect(page.getByRole("button", { name: /^生成视频/ })).toContainText("费用暂不可用");
-  await expect(page.getByRole("button", { name: /^生成视频/ })).toBeDisabled();
-  await payer.selectOption("byok");
-  await expect(page.getByRole("button", { name: /^生成视频/ })).toContainText("0 平台积分");
+  await expect(page.getByRole("button", { name: /^生成视频/ })).toContainText("预计");
+  await expect(page.getByRole("button", { name: /^生成视频/ })).toBeEnabled();
+  await payer.selectOption(payerChoice);
+  if (payerChoice === "byok") await expect(page.getByRole("button", { name: /^生成视频/ })).toContainText("0 平台积分");
   await page.getByRole("button", { name: /^生成视频/ }).click();
-  await expect.poll(() => byokSubmissions).toBe(1);
+  await expect.poll(() => payerChoice === "platform" ? platformSubmissions : byokSubmissions).toBe(1);
+  expect(payerChoice === "platform" ? byokSubmissions : platformSubmissions).toBe(0);
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
