@@ -179,8 +179,9 @@ async function callAnalysisChatJson(params: {
   return { json: parseJsonObject(content), ...selected };
 }
 
-function unknownKieOutcome(error: unknown) {
-  return error instanceof KieRequestError && error.outcome === "unknown";
+function kieFailureMetadata(error: unknown) {
+  if (!(error instanceof KieRequestError) || !error.outcome) return {};
+  return { providerOutcome: error.outcome, failureCode: error.outcome === "unknown" ? "KIE_OUTCOME_UNKNOWN" : error.outcome === "not_sent" ? "KIE_CONNECTION_FAILED" : "KIE_REQUEST_FAILED" };
 }
 
 export function buildFallbackSceneBlueprint(scene: FfmpegSceneAsset, reason = "Analysis failed", audioContext?: SceneAudioContext, _language?: "zh" | "en"): SceneBlueprintDraft {
@@ -271,7 +272,7 @@ export async function analyzeSceneBlueprint(params: {
     return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority } };
   } catch (error) {
     const fallback = buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "Scene analysis failed", params.context.audio, outputLanguage(params.outputLanguage));
-    return { ...fallback, metadata: { ...fallback.metadata, analysisError: taskErrorDetails(error), ...(unknownKieOutcome(error) ? { providerOutcome: "unknown", failureCode: "KIE_OUTCOME_UNKNOWN" } : {}) } };
+    return { ...fallback, metadata: { ...fallback.metadata, analysisError: taskErrorDetails(error), ...kieFailureMetadata(error) } };
   }
 }
 
@@ -323,7 +324,7 @@ export async function analyzeImageBlueprint(params: {
     return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority, mediaType: "image" } };
   } catch (error) {
     const fallback = buildFallbackImageBlueprint(params.scene, error instanceof Error ? error.message : "Image analysis failed");
-    return { ...fallback, metadata: { ...fallback.metadata, analysisError: taskErrorDetails(error), ...(unknownKieOutcome(error) ? { providerOutcome: "unknown", failureCode: "KIE_OUTCOME_UNKNOWN" } : {}) } };
+    return { ...fallback, metadata: { ...fallback.metadata, analysisError: taskErrorDetails(error), ...kieFailureMetadata(error) } };
   }
 }
 

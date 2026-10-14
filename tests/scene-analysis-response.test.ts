@@ -43,13 +43,13 @@ describe("scene analysis response compatibility", () => {
     expect(result.metadata).toMatchObject({ analysisProvider: "fallback", providerOutcome: "unknown" });
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
-  it("preserves the underlying connection failure without another inference request", async () => {
+  it("retries an unopened connection once and preserves its final not-sent failure", async () => {
     const cause = Object.assign(new Error("connect timeout"), { code: "UND_ERR_CONNECT_TIMEOUT" });
     const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed", { cause }));
     vi.stubGlobal("fetch", fetchMock);
     const result = await analyzeSceneBlueprint(input);
-    expect(result.metadata).toMatchObject({ analysisProvider: "fallback", providerOutcome: "unknown", analysisError: { name: "KieRequestError", cause: { name: "TypeError", message: "fetch failed", cause: { code: "UND_ERR_CONNECT_TIMEOUT" } } } });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.metadata).toMatchObject({ analysisProvider: "fallback", providerOutcome: "not_sent", failureCode: "KIE_CONNECTION_FAILED", analysisError: { name: "KieRequestError", cause: { name: "TypeError", message: "fetch failed", cause: { code: "UND_ERR_CONNECT_TIMEOUT" } } } });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
   it("retains a real prompt when the model returns story as a string", async () => {
     const fetchMock = mock(response);

@@ -4,11 +4,19 @@ export const DEFAULT_KIE_CHAT_MODEL = "gemini-3-8-flash-openai";
 export const DEFAULT_KIE_ANALYSIS_TIMEOUT_MS = 180_000;
 
 export class KieRequestError extends Error {
-  constructor(message: string, readonly status?: number, readonly outcome?: "unknown" | "confirmed_failure", cause?: unknown) {
+  constructor(message: string, readonly status?: number, readonly outcome?: "unknown" | "confirmed_failure" | "not_sent", cause?: unknown) {
     super(message);
     this.name = "KieRequestError";
     if (cause !== undefined) this.cause = cause;
   }
+}
+
+function connectionNotEstablished(error: unknown, depth = 0): boolean {
+  if (!error || typeof error !== "object" || depth > 4) return false;
+  const value = error as { code?: string; cause?: unknown; errors?: unknown[] };
+  if (value.code) return ["UND_ERR_CONNECT_TIMEOUT", "ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN"].includes(value.code);
+  if (value.errors?.length) return value.errors.every(item => connectionNotEstablished(item, depth + 1));
+  return connectionNotEstablished(value.cause, depth + 1);
 }
 
 function nativeGeminiBody(messages: Array<{ role: string; content: unknown }>) {
@@ -109,7 +117,7 @@ export async function requestKieChat(input: {
   const nativeModelId = input.modelId.replace(/-openai$/, "");
   const endpoint = nativeGemini ? `/gemini/v1/models/${nativeModelId}:streamGenerateContent` : `/${input.modelId}/v1/chat/completions`;
   const body = nativeGemini ? nativeGeminiBody(input.messages) : { messages: input.messages };
-  // Do not retry inference automatically: a lost response may already have been billed.
+  // Only retry proof of an unopened connection; response loss may already have been billed.
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout>;
   let stage: "connecting" | "reading_response" = "connecting";
@@ -124,11 +132,25 @@ export async function requestKieChat(input: {
   try {
     // Bound both connection and body reading even if a fetch wrapper ignores abort.
     return await Promise.race([deadline, (async () => {
-      const response = await fetch(`${baseUrl}${endpoint}`, {
-        method: "POST", cache: "no-store", signal: controller.signal,
-        headers: { Authorization: `Bearer ${input.apiKey}`, "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+      let response: Response | undefined;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (controller.signal.aborted) throw new KieRequestError("KIE_ANALYSIS_TIMEOUT", undefined, "unknown");
+        try {
+          response = await fetch(`${baseUrl}${endpoint}`, {
+            method: "POST", cache: "no-store", redirect: "error", signal: controller.signal,
+            headers: { Authorization: `Bearer ${input.apiKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          break;
+        } catch (error) {
+          const notSent = connectionNotEstablished(error);
+          if (!notSent || attempt === 1 || controller.signal.aborted) {
+            throw new KieRequestError("KIE transport failed during connecting", undefined, notSent ? "not_sent" : "unknown", error);
+          }
+          console.warn("kie.analysis.connection_retry", { modelId: input.modelId, attempt: 2, elapsedMs: Date.now() - startedAt });
+        }
+      }
+      if (!response) throw new KieRequestError("KIE connection unavailable", undefined, "not_sent");
       stage = "reading_response";
       const text = await readChatResponse(response, controller.signal);
       if (!text) throw new KieRequestError("KIE API returned an empty result", response.status);

@@ -4,6 +4,48 @@ import { requestKieChat } from "@/lib/ai/kie-client";
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("KIE transport", () => {
   const input = { apiKey: "test", modelId: "gemini-3-8-flash-openai", messages: [{ role: "user", content: "test" }] };
+  it.each(["UND_ERR_CONNECT_TIMEOUT", "ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN"])("retries %s before any inference reaches the server", async code => {
+    const cause = Object.assign(new Error("connection unavailable"), { code });
+    const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError("fetch failed", { cause }))
+      .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: "answer" } }] }));
+    vi.stubGlobal("fetch", fetchMock);
+    expect(await requestKieChat(input)).toBe("answer");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ redirect: "error" });
+  });
+  it("stops after two unopened connections and reports that inference was not sent", async () => {
+    const cause = Object.assign(new Error("connection unavailable"), { code: "UND_ERR_CONNECT_TIMEOUT" });
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed", { cause }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(requestKieChat(input)).rejects.toMatchObject({ outcome: "not_sent", cause: { cause: { code: "UND_ERR_CONNECT_TIMEOUT" } } });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+  it("does not retry a socket reset that may follow submission", async () => {
+    const cause = Object.assign(new Error("socket reset"), { code: "ECONNRESET" });
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed", { cause }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(requestKieChat(input)).rejects.toMatchObject({ outcome: "unknown" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("keeps a mixed aggregate transport failure unknown", async () => {
+    const cause = new AggregateError([Object.assign(new Error("refused"), { code: "ECONNREFUSED" }), Object.assign(new Error("reset"), { code: "ECONNRESET" })]);
+    const fetchMock = vi.fn().mockRejectedValue(new TypeError("fetch failed", { cause }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(requestKieChat(input)).rejects.toMatchObject({ outcome: "unknown" });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+  it("keeps both connection attempts inside one request deadline", async () => {
+    vi.useFakeTimers();
+    const cause = Object.assign(new Error("connection unavailable"), { code: "UND_ERR_CONNECT_TIMEOUT" });
+    const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError("fetch failed", { cause })).mockImplementationOnce(() => new Promise(() => {}));
+    vi.stubGlobal("fetch", fetchMock);
+    const request = requestKieChat({ ...input, timeoutMs: 100 });
+    const rejected = expect(request).rejects.toMatchObject({ outcome: "unknown", message: expect.stringContaining("KIE_ANALYSIS_TIMEOUT") });
+    await vi.advanceTimersByTimeAsync(101);
+    await rejected;
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(vi.getTimerCount()).toBe(0);
+  });
   it.each(["3-5", "3-6", "3-7", "3-8"])("uses the native Gemini %s endpoint and normalizes the response", async version => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "answer" }] } }] })));
     vi.stubGlobal("fetch", fetchMock);
