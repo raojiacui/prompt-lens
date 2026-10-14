@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { localizedStatus } from "@/lib/workflow/interface-copy";
-import { GenerationQuoteDialog } from "@/components/payments/generation-quote-dialog";
+import { restoreGenerationSubmission, submitCommercialGeneration, type GenerationSubmissionBatch } from "@/lib/reference-video/commercial-generation-submit";
 import { generationCreditPreview } from "@/lib/billing/generation-credit-preview";
 import { getModelById, type ModelRegistryEntry } from "@/lib/ai/model-registry";
 import { generationChoiceId, generationChoices, generationDisplayName, resolveGenerationModel } from "@/lib/ai/generation-models";
@@ -317,7 +317,10 @@ export function ReferenceVideoComposer({
   const [creditStatus, setCreditStatus] = useState<{ balance: number; commercial?: { credits?: number; heldCredits?: number } } | null>(null);
   const [balanceRefresh, setBalanceRefresh] = useState(0);
   const [generationPayer, setGenerationPayer] = useState("platform");
-  const [commercialRequest, setCommercialRequest] = useState<{ request: Record<string, unknown>; quantity: number } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionInFlight = useRef(false);
+  const commercialBatchRef = useRef<GenerationSubmissionBatch | null>(null);
+  const [pendingConfirmation, setPendingConfirmation] = useState(false);
   const [referenceTiming, setReferenceTiming] = useState<{ url: string; seconds: number } | null>(null);
   useEffect(() => {
     let active = true;
@@ -391,7 +394,7 @@ export function ReferenceVideoComposer({
   const maxSelectableDuration =
     supportedDurationSeconds[supportedDurationSeconds.length - 1] ??
     minSelectableDuration;
-  const isRunning = variants.some(
+  const isRunning = isSubmitting || variants.some(
     (variant) => variant.status === "queued" || variant.status === "generating",
   );
   const hasStartedGeneration = variants.some(
@@ -405,6 +408,29 @@ export function ReferenceVideoComposer({
     sceneId: initialSceneId || undefined,
     projectVersionId: initialProjectVersionId || undefined,
   };
+  const commercialBatchStorageKey = `reference-commercial-batch-${storageKey}-${session?.user.id || "guest"}`;
+  useEffect(() => {
+    commercialBatchRef.current = restoreGenerationSubmission(window.localStorage.getItem(commercialBatchStorageKey));
+    setPendingConfirmation(Boolean(commercialBatchRef.current?.confirmationStarted));
+  }, [commercialBatchStorageKey]);
+
+  function persistCommercialBatch(batch: GenerationSubmissionBatch) {
+    commercialBatchRef.current = batch;
+    setPendingConfirmation(batch.confirmationStarted);
+    window.localStorage.setItem(commercialBatchStorageKey, JSON.stringify(batch));
+  }
+
+  function showCommercialGeneration(ids: string[]) {
+    const next: GenerationVariant[] = ids.map((id, index) => ({ id: `variant-${index + 1}`, label: `Variation ${index + 1}`, status: "generating", progress: 10, providerTaskId: `commercial:${id}`, notes: zh ? "已预留积分" : "Credits reserved" }));
+    window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(next));
+    setVariants(next);
+    window.localStorage.removeItem(commercialBatchStorageKey);
+    commercialBatchRef.current = null;
+    setPendingConfirmation(false);
+    setBalanceRefresh(value => value + 1);
+    refreshWalletBalance();
+  }
+
 
   const uploadedReferenceImageCount = assets.filter(
     (asset) => asset.type.startsWith("image/") && asset.status !== "failed",
@@ -999,7 +1025,13 @@ export function ReferenceVideoComposer({
     insertImageMention(assetId);
   }
 
-  async function submitGenerationJob(confirmedByok = false) {
+  async function submitGenerationJob() {
+    // A lost confirmation resumes its original IDs, even after a refresh or settings change.
+    if (commercialBatchRef.current?.confirmationStarted) {
+      const ids = await submitCommercialGeneration(commercialBatchRef.current, zh, persistCommercialBatch);
+      showCommercialGeneration(ids);
+      return;
+    }
     if (hasUploadingAssets)
       return setError(t("errors.assetUploading") || "Asset uploading");
     if (!readyReferenceVideoAsset && !prompt.trim())
@@ -1032,10 +1064,21 @@ export function ReferenceVideoComposer({
     const variantCount = Number.isFinite(requestedOutputCount)
       ? Math.max(1, Math.min(4, requestedOutputCount))
       : 1;
-    if (commercialEnabled && !confirmedByok) {
-      setCommercialRequest({ quantity: variantCount, request: { userPrompt: promptWithInlineReferences, replacementAssets, hiddenReferenceImageUrl, referenceVideoUrl: readyReferenceVideoAsset?.url, aspectRatio, model, duration: durationSeconds, quality, ...workflowContext } });
+    if (commercialEnabled && generationPayer === "platform") {
+      const request = { userPrompt: promptWithInlineReferences, replacementAssets, hiddenReferenceImageUrl, referenceVideoUrl: readyReferenceVideoAsset?.url, aspectRatio, model, duration: durationSeconds, quality, ...workflowContext };
+      let batch = commercialBatchRef.current;
+      if (!batch || batch.quantity !== variantCount || JSON.stringify(batch.request) !== JSON.stringify(request)) {
+        batch = { version: 1, request, quantity: variantCount, quotes: [], confirmationStarted: false };
+      }
+      persistCommercialBatch(batch);
+      const ids = await submitCommercialGeneration(batch, zh, persistCommercialBatch);
+      showCommercialGeneration(ids);
       return;
     }
+    // Own-key submissions start directly from the same generate button.
+    commercialBatchRef.current = null;
+    setPendingConfirmation(false);
+    window.localStorage.removeItem(commercialBatchStorageKey);
     const queuedVariants: GenerationVariant[] = Array.from(
       { length: variantCount },
       (_, index) => ({
@@ -1151,20 +1194,24 @@ export function ReferenceVideoComposer({
   }
 
   async function createVideo() {
+    if (submissionInFlight.current || isRunning) return;
+    submissionInFlight.current = true;
+    setIsSubmitting(true);
     setError("");
     try {
       await submitGenerationJob();
     } catch (generationError) {
+      const uncertain = Boolean(commercialBatchRef.current?.confirmationStarted);
       setVariants([
         {
           ...initialVariants[0],
-          status: "failed",
-          progress: 100,
+          status: uncertain ? "pending" : "failed",
+          progress: uncertain ? 0 : 100,
           error:
             generationError instanceof Error
               ? generationError.message
               : "Generation failed",
-          notes: zh ? "视频生成失败。" : "Generation failed.",
+          notes: uncertain ? (zh ? "提交状态待核实。" : "Submission awaiting verification.") : (zh ? "视频生成失败。" : "Generation failed."),
         },
       ]);
       setError(
@@ -1172,6 +1219,9 @@ export function ReferenceVideoComposer({
           ? generationError.message
           : "Generation failed",
       );
+    } finally {
+      submissionInFlight.current = false;
+      setIsSubmitting(false);
     }
   }
 
@@ -1193,12 +1243,6 @@ export function ReferenceVideoComposer({
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
-      {commercialRequest && <GenerationQuoteDialog {...commercialRequest} payer={generationPayer} onPayerChange={setGenerationPayer} onByokConfirmed={async () => { await submitGenerationJob(true); setCommercialRequest(null); }} onClose={() => setCommercialRequest(null)} onConfirmed={(ids) => {
-        const next: GenerationVariant[] = ids.map((id, i) => ({ id: `variant-${i + 1}`, label: `Variation ${i + 1}`, status: "generating", progress: 10, providerTaskId: `commercial:${id}`, notes: zh ? "已预留积分" : "Credits reserved" }));
-        setVariants(next); window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(next)); setCommercialRequest(null);
-        setBalanceRefresh((value) => value + 1);
-        refreshWalletBalance();
-      }} />}
       <div className="mx-auto flex max-w-[1680px] flex-col gap-5 px-4 py-4 lg:px-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -1615,16 +1659,17 @@ export function ReferenceVideoComposer({
               <button
                 type="button"
                 onClick={() => void createVideo()}
-                disabled={isRunning || !resolvedModel || (commercialEnabled && generationPayer === "platform" && creditPreview.state === "unavailable")}
+                disabled={isRunning || (!pendingConfirmation && (!resolvedModel || (commercialEnabled && generationPayer === "platform" && creditPreview.state === "unavailable")))}
                 className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-lg bg-[#D97757] px-2 py-1 text-sm font-semibold leading-tight text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <WandSparkles className="h-5 w-5 shrink-0" />
                 <span className="flex min-w-0 flex-wrap items-center justify-center gap-x-2 [overflow-wrap:anywhere]">{isRunning
                   ? t("create.preparing") || "Preparing..."
+                  : pendingConfirmation ? (zh ? "核对提交" : "Check submission")
                   : t("create.button") || "Generate Video"}
-                {!isRunning && <span aria-live="polite">· {generationCostLabel}</span>}</span>
+                {!isRunning && !pendingConfirmation && <span aria-live="polite">· {generationCostLabel}</span>}</span>
               </button>
-              {commercialEnabled && <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning || Boolean(commercialRequest)} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>}
+              {commercialEnabled && <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning || pendingConfirmation} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>}
               </div>
             </div>
           </section>
