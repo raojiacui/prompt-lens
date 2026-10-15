@@ -2,6 +2,7 @@ export type LinkedMediaPlatform = "tiktok" | "douyin" | "bilibili";
 
 export interface LinkedMediaCandidate {
   videoUrl: string;
+  videoCodec?: "h264" | "hevc" | "bvc2";
   audioUrl?: string;
   videoHeaders?: Record<string, string>;
   audioHeaders?: Record<string, string>;

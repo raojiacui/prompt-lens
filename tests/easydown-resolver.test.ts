@@ -61,6 +61,81 @@ describe("EasyDown linked media resolver", () => {
     expect(result.videoCandidates?.[1].videoHeaders).toEqual({ Referer: "https://www.douyin.com/" });
   });
 
+  it("uses Douyin platform metadata to exclude higher resolution ByteVC2 and prefer H.264", () => {
+    const avcUrl = "https://cdn.example/avc.mp4?signature=avc";
+    const hevcUrl = "https://cdn.example/hevc.mp4?signature=hevc";
+    const bvcUrl = "https://cdn.example/bytevc2.mp4?signature=bvc";
+    const unknownUrl = "https://cdn.example/unknown.mp4?signature=unknown";
+    const result = selectEasyDownMedia({ data: {
+      media: {
+        title: "  compatible source  ", duration: 12,
+        videos: [
+          { url: bvcUrl, mimeType: "video/mp4", width: 3840, height: 2160, hasAudio: true },
+          { url: unknownUrl, mimeType: "video/mp4", width: 2560, height: 1440, hasAudio: true },
+          { url: hevcUrl, mimeType: "video/mp4", width: 1920, height: 1080, hasAudio: true },
+          { url: avcUrl, mimeType: "video/mp4", width: 1280, height: 720, hasAudio: true,
+            headers: { Referer: "https://www.douyin.com/", Authorization: "private" } },
+        ],
+      },
+      platformData: { aweme_detail: { video: {
+        play_addr_h264: { url_list: [avcUrl], url_key: "video_h264_720p_1000000" },
+        play_addr_265: { url_list: [hevcUrl], url_key: "video_bytevc1_1080p_1500000" },
+        bit_rate: [{ is_h265: 2, is_bytevc1: 2, play_addr: { url_list: [bvcUrl], url_key: "video_bytevc2_2160p_2000000" } }],
+      } } },
+    } }, "douyin");
+
+    expect(result.videoUrl).toBe(avcUrl);
+    expect(result.videoCodec).toBe("h264");
+    expect(result.videoHeaders).toEqual({ Referer: "https://www.douyin.com/" });
+    expect(result.videoCandidates?.map(item => [item.videoUrl, item.videoCodec])).toEqual([
+      [avcUrl, "h264"], [hevcUrl, "hevc"], [unknownUrl, undefined],
+    ]);
+    expect(result.title).toBe("compatible source");
+    expect(result.duration).toBe(12);
+  });
+
+  it("joins codec metadata by exact URL and does not infer H.264 from zero flags", () => {
+    const exact = "https://cdn.example/shared.mp4?signature=first";
+    const otherSignature = "https://cdn.example/shared.mp4?signature=second";
+    const unlabeled = "https://cdn.example/unlabeled.mp4";
+    const result = selectEasyDownMedia({ data: {
+      media: { videos: [
+        { url: otherSignature, width: 1920, height: 1080, hasAudio: true },
+        { url: unlabeled, width: 1280, height: 720, hasAudio: true },
+        { url: exact, width: 640, height: 360, hasAudio: true },
+      ] },
+      platformData: { video: {
+        play_addr_h264: { url_list: [exact], url_key: "video_h264_360p_500000" },
+        bit_rate: [{ is_h265: 0, is_bytevc1: 0, play_addr: { url_list: [unlabeled] } }],
+      } },
+    } }, "douyin");
+
+    expect(result.videoUrl).toBe(exact);
+    expect(result.videoCandidates?.map(item => item.videoCodec)).toEqual(["h264", undefined, undefined]);
+    expect(result.videoCandidates?.[1].videoUrl).toBe(otherSignature);
+  });
+
+  it.each(["is_h265", "is_bytevc1"])("gives ByteVC2 %s enum conflicts precedence and rejects unsupported versions", (flag) => {
+    const url = "https://cdn.example/conflict.mp4";
+    expect(() => selectEasyDownMedia({ data: {
+      media: { videos: [{ url, mimeType: "video/mp4", hasAudio: true }] },
+      platformData: { video: {
+        play_addr_h264: { url_list: [url], url_key: "video_h264_720p_1000000" },
+        bit_rate: [{ [flag]: 2, play_addr: { url_list: [url], url_key: "video_h264_720p_1000000" } }],
+      } },
+    } }, "douyin")).toThrow("视频版本编码不受支持");
+  });
+
+  it("excludes an explicit ByteVC2 url_key even when the rendition is under play_addr_h264", () => {
+    const url = "https://cdn.example/mislabeled.mp4";
+    expect(() => selectEasyDownMedia({ data: {
+      media: { videos: [{ url, hasAudio: true }] },
+      platformData: { video: {
+        play_addr_h264: { url_list: [url], url_key: "video_bytevc2_720p_1000000" },
+      } },
+    } }, "douyin")).toThrow("视频版本编码不受支持");
+  });
+
   it("pairs audio separately for each alternate rendition", () => {
     const result = selectEasyDownMedia({ data: {
       videos: [
@@ -87,18 +162,38 @@ describe("EasyDown linked media resolver", () => {
     process.env.EASYDOWN_API_BASE_URL = "https://resolver.example";
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({
       status: 200,
-      data: { videos: [{ url: "https://cdn.example/video.mp4", mimeType: "video/mp4", hasAudio: true }] },
+      data: {
+        media: { videos: [{ url: "https://cdn.example/video.mp4", mimeType: "video/mp4", hasAudio: true }] },
+        platformData: { video: { play_addr_h264: { url_list: ["https://cdn.example/video.mp4"] } } },
+      },
     }), { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await resolveLinkedMedia("https://v.douyin.com/example/");
 
     expect(result.platform).toBe("douyin");
-    expect(fetchMock).toHaveBeenCalledWith("https://resolver.example/api/v1/parse", expect.objectContaining({
+    expect(result.videoCodec).toBe("h264");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith("https://resolver.example/api/v1/platforms/douyin/parse", expect.objectContaining({
       method: "POST",
       headers: expect.objectContaining({ Authorization: "Bearer test-token" }),
       body: JSON.stringify({ url: "https://v.douyin.com/example/" }),
     }));
+  });
+
+  it.each([
+    ["tiktok", "https://www.tiktok.com/@example/video/123"],
+    ["bilibili", "https://www.bilibili.com/video/BVexample"],
+  ])("keeps %s on the common parse endpoint", async (platform, url) => {
+    process.env.EASYDOWN_API_KEY = "test-token";
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ status: 200, data: {
+      videos: [{ url: "https://cdn.example/video.mp4", hasAudio: true }],
+    } }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect((await resolveLinkedMediaWithEasyDown(url)).platform).toBe(platform);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith("https://api.easydown.org/api/v1/parse", expect.anything());
   });
 
   it("rejects an empty success response", () => {

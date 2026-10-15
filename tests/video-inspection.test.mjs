@@ -73,34 +73,76 @@ test("recovers a primary detector failure using FFmpeg and rejects when both fai
   await assert.rejects(detectWithFallback(async () => null, cancel), actual => actual === aborted);
 });
 
-test("uses another already-resolved URL only after a confirmed codec failure", async () => {
-  const calls = [];
+test("preflights alternatives and downloads only the supported rendition", async () => {
+  const inspected = [];
+  const downloaded = [];
   const source = { videoUrl: "https://media/first", videoCandidates: [{ videoUrl: "https://media/first" }, { videoUrl: "https://media/second", audioUrl: "https://media/audio" }] };
-  const result = await ingestVideoCandidates(source, async candidate => {
-    calls.push(candidate.videoUrl);
-    if (calls.length === 1) throw unsupported();
-    assert.equal(candidate.audioUrl, "https://media/audio");
-    return { inputPath: "source-video" };
+  const result = await ingestVideoCandidates(source, {
+    inspect: async candidate => {
+      inspected.push(candidate.videoUrl);
+      if (inspected.length === 1) throw unsupported();
+      return { codec: "h264" };
+    },
+    download: async candidate => {
+      downloaded.push(candidate.videoUrl);
+      assert.equal(candidate.audioUrl, "https://media/audio");
+      return { inputPath: "source-video" };
+    },
   });
-  assert.deepEqual(calls, ["https://media/first", "https://media/second"]);
+  assert.deepEqual(inspected, ["https://media/first", "https://media/second"]);
+  assert.deepEqual(downloaded, ["https://media/second"]);
   assert.deepEqual(result, { inputPath: "source-video" });
+});
+
+test("skips known unsupported codecs and never downloads an unconfirmed candidate", async () => {
+  let inspections = 0;
+  let downloads = 0;
+  await assert.rejects(ingestVideoCandidates({ videoUrl: "https://media/bvc2", videoCodec: "bvc2", videoCandidates: [{ videoUrl: "https://media/unknown" }] }, {
+    inspect: async () => { inspections++; throw Object.assign(new Error("No range support"), { code: "VIDEO_CODEC_PREFLIGHT_FAILED" }); },
+    download: async () => { downloads++; },
+  }), { code: "VIDEO_CODEC_PREFLIGHT_FAILED" });
+  assert.equal(inspections, 1);
+  assert.equal(downloads, 0);
+});
+
+test("checks the actual container even when provider metadata claims H.264", async () => {
+  let downloads = 0;
+  await assert.rejects(ingestVideoCandidates({ videoUrl: "https://media/mislabeled", videoCodec: "h264" }, {
+    inspect: async () => ({ codec: "bvc2" }),
+    download: async () => { downloads++; },
+  }), { code: "UNSUPPORTED_VIDEO_CODEC" });
+  assert.equal(downloads, 0);
+});
+
+test("keeps final frame validation after preflight and can use another valid rendition", async () => {
+  const downloaded = [];
+  const result = await ingestVideoCandidates({ videoUrl: "https://media/broken", videoCandidates: [{ videoUrl: "https://media/good" }] }, {
+    inspect: async () => ({ codec: "h264" }),
+    download: async candidate => {
+      downloaded.push(candidate.videoUrl);
+      if (downloaded.length === 1) throw Object.assign(new Error("corrupt frame"), { code: "INVALID_VIDEO_STREAM" });
+      return "decoded";
+    },
+  });
+  assert.equal(result, "decoded");
+  assert.deepEqual(downloaded, ["https://media/broken", "https://media/good"]);
 });
 
 test("does not fall through to more downloads after a network or timeout error", async () => {
   for (const error of [new Error("download failed"), Object.assign(new Error("timeout"), { code: "ETIMEDOUT" })]) {
     let calls = 0;
-    await assert.rejects(ingestVideoCandidates({ videoUrl: "https://media/first", videoCandidates: [{ videoUrl: "https://media/second" }] }, async () => { calls++; throw error; }), actual => actual === error);
+    await assert.rejects(ingestVideoCandidates({ videoUrl: "https://media/first", videoCandidates: [{ videoUrl: "https://media/second" }] }, { inspect: async () => { calls++; throw error; }, download: async () => { throw new Error("Should not download"); } }), actual => actual === error);
     assert.equal(calls, 1);
   }
 });
 
-test("bounds candidate downloads and stops when the shared ingestion signal is canceled", async () => {
+test("bounds candidate probes and stops when the shared ingestion signal is canceled", async () => {
   const source = { videoUrl: "https://media/0", videoCandidates: Array.from({ length: 20 }, (_, index) => ({ videoUrl: `https://media/${index}` })) };
   let calls = 0;
-  await assert.rejects(ingestVideoCandidates(source, async () => { calls++; throw unsupported(); }), { code: "UNSUPPORTED_VIDEO_CODEC" });
+  await assert.rejects(ingestVideoCandidates(source, { inspect: async () => { calls++; throw unsupported(); }, download: async () => { throw new Error("Should not download"); } }), { code: "UNSUPPORTED_VIDEO_CODEC" });
   assert.equal(calls, 12);
   const controller = new AbortController();
   calls = 0;
-  await assert.rejects(ingestVideoCandidates(source, async () => { calls++; controller.abort(); throw unsupported(); }, controller.signal), { name: "AbortError" });
+  await assert.rejects(ingestVideoCandidates(source, { inspect: async () => { calls++; controller.abort(); throw unsupported(); }, download: async () => { throw new Error("Should not download"); } }, controller.signal), { name: "AbortError" });
   assert.equal(calls, 1);
 });

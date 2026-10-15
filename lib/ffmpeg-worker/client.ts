@@ -67,6 +67,7 @@ export async function checkLinkedMediaWorker() {
 export async function ingestLinkedMediaWithWorker(source: {
   platform: LinkedMediaResolveResult["platform"];
   videoUrl: string;
+  videoCodec?: LinkedMediaCandidate["videoCodec"];
   audioUrl?: string;
   videoHeaders?: Record<string, string>;
   audioHeaders?: Record<string, string>;
@@ -98,6 +99,7 @@ export async function ingestLinkedMediaWithWorker(source: {
   if (!response.ok) {
     if (payload?.code === "UNSUPPORTED_VIDEO_CODEC") throw new Error("该链接返回的视频版本均无法解码，未完成导入。请上传 H.264 MP4 视频。");
     if (payload?.code === "INVALID_VIDEO_STREAM") throw new Error("该链接未返回可读取的视频画面，未完成导入。请更换链接或上传视频文件。");
+    if (payload?.code === "VIDEO_CODEC_PREFLIGHT_FAILED") throw new Error("无法在下载前确认可用视频编码，未完成导入。请更换链接或上传 H.264 MP4 文件。");
     throw new Error(payload?.error || `Link resolver failed with ${response.status}`);
   }
   if (!payload?.mediaUrl || !payload?.metadata) {

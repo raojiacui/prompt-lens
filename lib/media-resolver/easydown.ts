@@ -17,7 +17,63 @@ interface EasyDownResponse {
     duration?: unknown;
     videos?: unknown;
     audios?: unknown;
+    media?: {
+      title?: unknown;
+      duration?: unknown;
+      videos?: unknown;
+      audios?: unknown;
+    } | null;
+    platformData?: unknown;
   } | null;
+}
+
+type VideoCodec = "h264" | "hevc" | "bvc2";
+
+function record(value: unknown): Record<string, unknown> | undefined {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
+}
+
+function codecFromUrlKey(value: unknown): VideoCodec | undefined {
+  if (typeof value !== "string") return undefined;
+  if (/(?:^|_)(?:bytevc2|bvc2)(?:_|$)/i.test(value)) return "bvc2";
+  if (/(?:^|_)(?:bytevc1|bvc1|h265|hevc)(?:_|$)/i.test(value)) return "hevc";
+  if (/(?:^|_)(?:h264|avc1)(?:_|$)/i.test(value)) return "h264";
+  return undefined;
+}
+
+function douyinVideoCodecs(platformData: unknown): Map<string, VideoCodec> {
+  const data = record(platformData);
+  // The published field table uses video; its full response example uses aweme_detail.video.
+  const videos = [record(data?.video), record(record(data?.aweme_detail)?.video)];
+  const codecs = new Map<string, VideoCodec>();
+  const priority: Record<VideoCodec, number> = { h264: 1, hevc: 2, bvc2: 3 };
+  function add(address: unknown, fallback?: VideoCodec) {
+    const rendition = record(address);
+    const explicit = codecFromUrlKey(rendition?.url_key);
+    const codec = explicit === "bvc2" || fallback === "bvc2" ? "bvc2" : explicit || fallback;
+    if (!codec || !Array.isArray(rendition?.url_list)) return;
+    for (const url of rendition.url_list) {
+      if (typeof url !== "string") continue;
+      const previous = codecs.get(url);
+      if (!previous || priority[codec] > priority[previous]) codecs.set(url, codec);
+    }
+  }
+  for (const video of videos) {
+    if (!video) continue;
+    add(video.play_addr_h264, "h264");
+    add(video.play_addr_265, "hevc");
+    add(video.play_addr);
+    if (!Array.isArray(video.bit_rate)) continue;
+    for (const item of video.bit_rate) {
+      const bitrate = record(item);
+      // These values are enums. In particular, zero or a missing flag does not prove H.264.
+      const codec = bitrate?.is_h265 === 2 || bitrate?.is_bytevc1 === 2 ? "bvc2" : undefined;
+      add(bitrate?.play_addr, codec);
+    }
+  }
+  return codecs;
 }
 
 function streams(value: unknown): EasyDownStream[] {
@@ -42,11 +98,20 @@ function publicHeaders(value: unknown): Record<string, string> | undefined {
 }
 
 export function selectEasyDownMedia(payload: EasyDownResponse, platform: LinkedMediaPlatform): ResolvedLinkedMediaSource {
-  const videos = streams(payload.data?.videos).sort((a, b) => Number(b.hasAudio === true) - Number(a.hasAudio === true) || score(b) - score(a));
-  if (!videos.length) throw new Error("EasyDown 没有返回可下载的视频资源");
+  const media = platform === "douyin" ? payload.data?.media || payload.data : payload.data;
+  const parsedVideos = streams(media?.videos);
+  if (!parsedVideos.length) throw new Error("EasyDown 没有返回可下载的视频资源");
+  const codecs = platform === "douyin" ? douyinVideoCodecs(payload.data?.platformData) : new Map<string, VideoCodec>();
+  const codecPriority = (stream: EasyDownStream) => {
+    const codec = codecs.get(stream.url as string);
+    return codec === "h264" ? 2 : codec === "hevc" ? 1 : 0;
+  };
+  const videos = parsedVideos.filter(video => codecs.get(video.url as string) !== "bvc2")
+    .sort((a, b) => codecPriority(b) - codecPriority(a) || Number(b.hasAudio === true) - Number(a.hasAudio === true) || score(b) - score(a));
+  if (!videos.length) throw new Error("EasyDown 返回的视频版本编码不受支持，请更换视频或上传兼容文件");
 
   const audio = platform === "bilibili"
-    ? streams(payload.data?.audios).find((stream) => stream.mimeType === "audio/mp4") || streams(payload.data?.audios)[0]
+    ? streams(media?.audios).find((stream) => stream.mimeType === "audio/mp4") || streams(media?.audios)[0]
     : undefined;
   if (videos[0].hasAudio !== true && platform === "bilibili" && !audio) {
     throw new Error("EasyDown 返回了无声视频流，但没有可合并的音频流");
@@ -61,6 +126,7 @@ export function selectEasyDownMedia(payload: EasyDownResponse, platform: LinkedM
     return true;
   }).slice(0, 12).map(video => ({
     videoUrl: video.url as string,
+    videoCodec: codecs.get(video.url as string),
     audioUrl: video.hasAudio !== true ? audio?.url as string | undefined : undefined,
     videoHeaders: publicHeaders(video.headers),
     audioHeaders: video.hasAudio !== true ? publicHeaders(audio?.headers) : undefined,
@@ -71,8 +137,8 @@ export function selectEasyDownMedia(payload: EasyDownResponse, platform: LinkedM
     ...videoCandidates[0],
     videoCandidates: videoCandidates.length > 1 ? videoCandidates : undefined,
     filename: `${platform}-linked-video.mp4`,
-    title: typeof payload.data?.title === "string" ? payload.data.title.trim().slice(0, 160) || undefined : undefined,
-    duration: typeof payload.data?.duration === "number" && Number.isFinite(payload.data.duration) ? payload.data.duration : undefined,
+    title: typeof media?.title === "string" ? media.title.trim().slice(0, 160) || undefined : undefined,
+    duration: typeof media?.duration === "number" && Number.isFinite(media.duration) ? media.duration : undefined,
   };
 }
 
@@ -84,7 +150,8 @@ export async function resolveLinkedMediaWithEasyDown(url: string): Promise<Resol
   const baseUrl = (process.env.EASYDOWN_API_BASE_URL || "https://api.easydown.org").replace(/\/$/, "");
   let response: Response;
   try {
-    response = await fetch(`${baseUrl}/api/v1/parse`, {
+    const endpoint = platform === "douyin" ? "/api/v1/platforms/douyin/parse" : "/api/v1/parse";
+    response = await fetch(`${baseUrl}${endpoint}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json", "Content-Type": "application/json" },
       body: JSON.stringify({ url }),

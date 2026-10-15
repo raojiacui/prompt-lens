@@ -60,21 +60,28 @@ export async function detectWithFallback(primary, fallback, onPrimaryFailure = (
   }
 }
 
-export async function ingestVideoCandidates(source, attempt, signal) {
+export async function ingestVideoCandidates(source, { inspect, download }, signal) {
   const candidates = [source, ...(Array.isArray(source.videoCandidates) ? source.videoCandidates : [])];
   const seen = new Set();
   let lastError;
+  let unconfirmed = false;
   for (const candidate of candidates) {
     if (!candidate || typeof candidate.videoUrl !== "string" || seen.has(candidate.videoUrl)) continue;
     if (seen.size >= 12) break;
     seen.add(candidate.videoUrl);
     signal?.throwIfAborted();
     try {
-      return await attempt(candidate);
+      if (candidate.videoCodec === "bvc2") throw inspectionError("UNSUPPORTED_VIDEO_CODEC", "该视频版本编码不受支持。");
+      const probe = await inspect(candidate);
+      if (!["h264", "hevc"].includes(probe?.codec)) throw inspectionError("UNSUPPORTED_VIDEO_CODEC", "该视频版本编码不受支持。");
+      // Only the selected, preflighted rendition reaches the full download.
+      return await download(candidate);
     } catch (error) {
-      if (!["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM"].includes(error?.code)) throw error;
+      if (!["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "VIDEO_CODEC_PREFLIGHT_FAILED"].includes(error?.code)) throw error;
+      if (error.code === "VIDEO_CODEC_PREFLIGHT_FAILED") unconfirmed = true;
       lastError = error;
     }
   }
-  throw inspectionError(lastError?.code || "INVALID_VIDEO_STREAM", "链接提供的视频编码暂不支持，所有可用视频均无法解码。请下载 H.264 或 H.265 视频后上传。", lastError);
+  if (unconfirmed) throw inspectionError("VIDEO_CODEC_PREFLIGHT_FAILED", "无法在完整下载前确认受支持的视频版本，请更换链接或上传 H.264 MP4 文件。", lastError);
+  throw inspectionError(lastError?.code || "INVALID_VIDEO_STREAM", "链接未提供当前支持的视频编码版本，请上传 H.264 或 H.265 视频。", lastError);
 }

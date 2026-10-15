@@ -44,7 +44,9 @@ Response:
 ```
 
 
-`/ingest-media` receives media URLs already resolved by the app's video-link provider, downloads them, optionally merges a separate audio stream, uploads the resulting MP4 to R2, and returns the stored media URL for the analysis flow. It accepts optional `videoHeaders` and `audioHeaders` for public media-host headers such as `Referer`.
+`/ingest-media` receives media URLs already resolved by the app's video-link provider. The app ranks explicitly identified H.264 versions first and excludes known ByteVC2 versions. Before any complete media download, the worker reads bounded MP4 container metadata using HTTP Range requests and accepts H.264 or HEVC video tracks. An unknown or unsupported encoding never falls through to a full download. Candidate selection reuses one provider response and does not make another paid parsing request.
+
+The worker then downloads the selected rendition, verifies an actual decoded frame, optionally merges a separate audio stream, uploads the resulting MP4 to R2, and returns the stored media URL for the analysis flow. It accepts optional `videoCandidates`, `videoCodec`, `videoHeaders` and `audioHeaders`; public media-host headers such as `Referer` are preserved. Raw imported video is not transcoded during ingestion. Commercial analysis clips are subsequently encoded as H.264/AAC.
 
 Separate video and audio streams download concurrently. Uploads stream from disk rather than buffering the entire file in memory. Media ingest downloads and uploads are canceled on client disconnect or after 210 seconds, before the app's 240-second timeout. Stage logs identify download, merge, inspection and upload durations without logging temporary media URLs or secrets. Network throughput still depends on the media host and worker region.
 

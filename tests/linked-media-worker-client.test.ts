@@ -54,4 +54,9 @@ describe("linked media worker connection", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "UNSUPPORTED_VIDEO_CODEC", error: "unknown codec bvc2" }, { status: 422 })));
     await expect(ingestLinkedMediaWithWorker(source)).rejects.toThrow("未完成导入");
   });
+
+  it("explains an unconfirmed preflight without claiming the codec is supported", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "VIDEO_CODEC_PREFLIGHT_FAILED", error: "Range unavailable" }, { status: 422 })));
+    await expect(ingestLinkedMediaWithWorker(source)).rejects.toThrow("无法在下载前确认可用视频编码");
+  });
 });

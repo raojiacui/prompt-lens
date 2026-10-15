@@ -12,6 +12,7 @@ import { downloadStreamsInParallel } from "./parallel-download.mjs";
 import { splitLongScenes, sampleSceneFrameTimes } from "./scene-segments.mjs";
 import { fetchMedia } from "./media-fetch.mjs";
 import { inspectVideoProbe, detectWithFallback, ingestVideoCandidates } from "./video-inspection.mjs";
+import { probeRemoteVideoCodec } from "./remote-video-codec.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
 const WORKER_SECRET = process.env.WORKER_SECRET || process.env.FFMPEG_WORKER_SECRET || "";
@@ -148,7 +149,14 @@ function parseRemoteMediaUrl(url) {
 }
 
 async function ingestMediaToLocalFile(source, workDir, signal, reportStage) {
-  return ingestVideoCandidates(source, candidate => ingestMediaCandidate(candidate, workDir, signal, reportStage), signal);
+  return ingestVideoCandidates(source, {
+    inspect: candidate => {
+      parseRemoteMediaUrl(candidate.videoUrl);
+      reportStage("inspect-codec");
+      return probeRemoteVideoCodec(candidate.videoUrl, { headers: mediaHeaders(candidate.videoHeaders), signal });
+    },
+    download: candidate => ingestMediaCandidate(candidate, workDir, signal, reportStage),
+  }, signal);
 }
 
 async function ingestMediaCandidate({ videoUrl, audioUrl, videoHeaders, audioHeaders }, workDir, signal, reportStage) {
@@ -522,7 +530,7 @@ const server = createServer(async (req, res) => {
   } catch (error) {
     const status = error.statusCode || 500;
     console.error(error);
-    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED"].includes(error.code) ? error.code : undefined;
+    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "VIDEO_CODEC_PREFLIGHT_FAILED"].includes(error.code) ? error.code : undefined;
     return json(res, status, { error: error.message || "Worker error", ...(code ? { code } : {}) });
   }
 });
