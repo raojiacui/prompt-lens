@@ -156,18 +156,6 @@ PySceneDetect 未启用或运行失败时，worker 回退到 **FFmpeg 的 scene 
 
 填写提示词，按需上传参考图片或视频，选择模型、画幅、分辨率、时长及数量后提交。可在页面查看任务进度和生成历史，完成后下载视频。
 
-### 查看公开样例
-
-样例页展示原视频、镜头素材、完整分析及提示词，无需重新发起分析。
-
-| 样例 | 镜头数 |
-| --- | --- |
-| 山海经 | 14 |
-| 赛博神祇 | 5 |
-| 风在耳边呼啸，山在脚下臣服 | 7 |
-
-本地启动后访问 [样例页](http://localhost:3001/samples)。
-
 ## 技术栈
 
 - **应用**：Next.js 15、React 19、TypeScript
@@ -187,16 +175,16 @@ pnpm install
 Copy-Item .env.example .env.local
 ```
 
-按 [.env.example](.env.example) 填写本地配置；已有 `.env.local` 时保留现有文件。示例使用 3001 端口，站点与认证地址需与实际端口一致。
+按 [.env.example](.env.example) 填写你自己的数据库、媒体存储和模型服务配置；已有 `.env.local` 时保留现有文件。示例使用 3001 端口，站点与认证地址需与实际端口一致。
 
-配置完成后，应用数据库迁移并启动应用：
+配置完成后，对 `DATABASE_URL` 指定的数据库应用迁移并启动应用：
 
 ```powershell
 node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate
 pnpm dev --port 3001
 ```
 
-访问 [视频分析](http://localhost:3001/dashboard?tab=analyze)、[视频生成](http://localhost:3001/dashboard?tab=video-gen) 或 [公开样例](http://localhost:3001/samples)。
+访问 [视频分析](http://localhost:3001/dashboard?tab=analyze) 或 [视频生成](http://localhost:3001/dashboard?tab=video-gen)。
 
 使用本地媒体 worker 时，另开终端运行：
 
