@@ -30,13 +30,15 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const p
     await expect(page.getByText(locale === "zh" ? "视频文件最大 100MB，不限制时长。" : "Video files up to 100MB, with no duration limit.")).toBeVisible();
     const whole = page.getByRole("radio", { name: locale === "zh" ? "整段分析" : "Whole video", exact: true });
     const split = page.getByRole("radio", { name: locale === "zh" ? "拆镜分析" : "Split shots", exact: true });
-    await expect(whole).toBeChecked();
     if (paid) {
       await expect(split).toBeEnabled();
-      await split.check();
       await expect(split).toBeChecked();
+      await whole.check();
+      await expect(whole).toBeChecked();
+      await split.check();
       await expect(page.getByText(locale === "zh" ? "拆镜使用平台积分，拆分后可选择要分析的镜头。" : "Splitting uses platform credits. Choose shots to analyze after splitting.")).toBeVisible();
     } else {
+      await expect(whole).toBeChecked();
       await expect(split).toBeDisabled();
       await expect(page.getByText(locale === "zh" ? /拆镜需购买平台积分；配置自己的 Key 可直接整段分析/ : /Shot splitting requires purchased platform credits; your own Key can be used for whole-video analysis/)).toBeVisible();
     }

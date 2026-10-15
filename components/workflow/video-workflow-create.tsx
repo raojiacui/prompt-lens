@@ -303,7 +303,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [bundle, setBundle] = useState<Bundle | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [mediaInputMode, setMediaInputMode] = useState<MediaInputMode>("upload");
-  const [uploadAnalysisMode, setUploadAnalysisMode] = useState<"whole" | "split">("whole");
+  const [preferredUploadAnalysisMode, setUploadAnalysisMode] = useState<"whole" | "split">("split");
   const [sourceUrl, setSourceUrl] = useState("");
   const linkImportRequestRef = useRef<{ url: string; id: string } | null>(null);
   const [preview, setPreview] = useState("");
@@ -345,6 +345,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }, []);
   const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer: "platform" | "byok"; modelId: string } | null>(null);
   const canSplitUpload = Boolean(creditStatus?.commercialConsumptionEnabled && (creditStatus.commercial?.credits ?? 0) > 0);
+  const uploadAnalysisMode = canSplitUpload ? preferredUploadAnalysisMode : "whole";
   const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (canSplitUpload || creditStatus.hasUserKieKey || creditStatus.mode !== "trial") && (mediaInputMode === "link" || mediaType !== "image"));
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
   const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
