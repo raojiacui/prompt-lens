@@ -1,4 +1,4 @@
-
+import type { LinkedMediaCandidate } from "@/lib/media-resolver/source-platform";
 export interface FfmpegSceneAsset {
   sceneIndex: number;
   startTime: number;
@@ -70,6 +70,7 @@ export async function ingestLinkedMediaWithWorker(source: {
   audioUrl?: string;
   videoHeaders?: Record<string, string>;
   audioHeaders?: Record<string, string>;
+  videoCandidates?: LinkedMediaCandidate[];
   filename?: string;
 }): Promise<LinkedMediaResolveResult> {
   const { workerUrl, workerSecret } = workerConfiguration();
@@ -95,6 +96,8 @@ export async function ingestLinkedMediaWithWorker(source: {
 
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
+    if (payload?.code === "UNSUPPORTED_VIDEO_CODEC") throw new Error("该链接返回的视频版本均无法解码，未完成导入。请上传 H.264 MP4 视频。");
+    if (payload?.code === "INVALID_VIDEO_STREAM") throw new Error("该链接未返回可读取的视频画面，未完成导入。请更换链接或上传视频文件。");
     throw new Error(payload?.error || `Link resolver failed with ${response.status}`);
   }
   if (!payload?.mediaUrl || !payload?.metadata) {

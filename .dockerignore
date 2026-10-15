@@ -9,5 +9,6 @@ workers/ffmpeg-worker/*
 !workers/ffmpeg-worker/server.mjs
 !workers/ffmpeg-worker/parallel-download.mjs
 !workers/ffmpeg-worker/media-fetch.mjs
+!workers/ffmpeg-worker/video-inspection.mjs
 !workers/ffmpeg-worker/scene-segments.mjs
 !workers/ffmpeg-worker/scene-detect.py

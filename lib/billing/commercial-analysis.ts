@@ -58,7 +58,10 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
   if (!task) throw new Error("PREVIEW_EXPIRED");
   return { id: task.id, durationUs: preview.durationUs, scenes: preview.scenes };
   } catch (error) {
-    await db.update(commercialTasks).set({ state: "failed", result: { code: "MEDIA_PREPARATION_FAILED" }, updatedAt: new Date() }).where(and(eq(commercialTasks.id, preparation.id), eq(commercialTasks.state, "running")));
+    const diagnostic = taskErrorDetails(error);
+    const failureMessage = error instanceof Error ? error.message : "";
+    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED"].includes(failureMessage) ? failureMessage : "MEDIA_PREPARATION_FAILED";
+    await db.update(commercialTasks).set({ state: "failed", result: { code, diagnostic }, updatedAt: new Date() }).where(and(eq(commercialTasks.id, preparation.id), eq(commercialTasks.state, "running")));
     throw error;
   }
 }

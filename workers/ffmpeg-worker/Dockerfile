@@ -11,6 +11,7 @@ RUN npm install --omit=dev
 COPY workers/ffmpeg-worker/server.mjs ./server.mjs
 COPY workers/ffmpeg-worker/parallel-download.mjs ./parallel-download.mjs
 COPY workers/ffmpeg-worker/media-fetch.mjs ./media-fetch.mjs
+COPY workers/ffmpeg-worker/video-inspection.mjs ./video-inspection.mjs
 COPY workers/ffmpeg-worker/scene-segments.mjs ./scene-segments.mjs
 COPY workers/ffmpeg-worker/scene-detect.py ./scene-detect.py
 

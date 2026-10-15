@@ -48,6 +48,40 @@ describe("EasyDown linked media resolver", () => {
     expect(result.audioHeaders).toEqual({ Referer: "https://www.bilibili.com/" });
   });
 
+  it("keeps alternate MP4 renditions from one parse response for codec fallback", () => {
+    const result = selectEasyDownMedia({ data: { videos: [
+      { url: "https://cdn.example/unsupported.mp4", mimeType: "video/mp4", width: 1920, height: 1080, hasAudio: true },
+      { url: "https://cdn.example/compatible.mp4", mimeType: "video/mp4", width: 1280, height: 720, hasAudio: true, headers: { Referer: "https://www.douyin.com/", Authorization: "private" } },
+      { url: "https://cdn.example/compatible.mp4", mimeType: "video/mp4", hasAudio: true },
+    ] } }, "douyin");
+    expect(result.videoUrl).toBe("https://cdn.example/unsupported.mp4");
+    expect(result.videoCandidates?.map(item => item.videoUrl)).toEqual([
+      "https://cdn.example/unsupported.mp4", "https://cdn.example/compatible.mp4",
+    ]);
+    expect(result.videoCandidates?.[1].videoHeaders).toEqual({ Referer: "https://www.douyin.com/" });
+  });
+
+  it("pairs audio separately for each alternate rendition", () => {
+    const result = selectEasyDownMedia({ data: {
+      videos: [
+        { url: "https://cdn.example/muxed.mp4", hasAudio: true },
+        { url: "https://cdn.example/video-only.mp4", hasAudio: false },
+      ],
+      audios: [{ url: "https://cdn.example/audio.m4a", mimeType: "audio/mp4" }],
+    } }, "bilibili");
+    expect(result.videoCandidates?.[0].audioUrl).toBeUndefined();
+    expect(result.videoCandidates?.[1].audioUrl).toBe("https://cdn.example/audio.m4a");
+  });
+
+  it("bounds fallback candidates and excludes silent Bilibili streams without audio", () => {
+    const result = selectEasyDownMedia({ data: { videos: [
+      ...Array.from({ length: 20 }, (_, index) => ({ url: `https://cdn.example/${index}.mp4`, hasAudio: true })),
+      { url: "https://cdn.example/silent.mp4", hasAudio: false },
+    ] } }, "bilibili");
+    expect(result.videoCandidates).toHaveLength(12);
+    expect(result.videoCandidates?.some(item => item.videoUrl.endsWith("silent.mp4"))).toBe(false);
+  });
+
   it("sends a server-side POST with the video URL", async () => {
     process.env.EASYDOWN_API_KEY = "test-token";
     process.env.EASYDOWN_API_BASE_URL = "https://resolver.example";

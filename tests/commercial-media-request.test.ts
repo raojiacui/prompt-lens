@@ -28,3 +28,17 @@ it("retains the HTTP status when the proxy responds with HTML", async () => {
   catch (error) { failure = error; }
   expect(taskErrorDetails(failure)).toMatchObject({ cause: { code: "MEDIA_HTTP_502" } });
 });
+
+it.each(["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED"])("preserves a known media failure code: %s", async (code) => {
+  vi.stubEnv("FFMPEG_WORKER_URL", "https://worker.example");
+  vi.stubEnv("FFMPEG_WORKER_SECRET", "worker-test-secret");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code, error: "Cannot inspect video" }, { status: 422 })));
+  await expect(commercialMediaRequest("https://storage.example/video", { mode: "preview", automaticSplit: true })).rejects.toThrow(code);
+});
+
+it("does not expose arbitrary worker error codes", async () => {
+  vi.stubEnv("FFMPEG_WORKER_URL", "https://worker.example");
+  vi.stubEnv("FFMPEG_WORKER_SECRET", "worker-test-secret");
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "PRIVATE_PROVIDER_VALUE", error: "Cannot inspect video" }, { status: 500 })));
+  await expect(commercialMediaRequest("https://storage.example/video", { mode: "preview" })).rejects.toThrow("MEDIA_PREPARATION_FAILED");
+});

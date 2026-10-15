@@ -11,6 +11,7 @@ import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { downloadStreamsInParallel } from "./parallel-download.mjs";
 import { splitLongScenes, sampleSceneFrameTimes } from "./scene-segments.mjs";
 import { fetchMedia } from "./media-fetch.mjs";
+import { inspectVideoProbe, detectWithFallback, ingestVideoCandidates } from "./video-inspection.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
 const WORKER_SECRET = process.env.WORKER_SECRET || process.env.FFMPEG_WORKER_SECRET || "";
@@ -146,7 +147,11 @@ function parseRemoteMediaUrl(url) {
   return parsed;
 }
 
-async function ingestMediaToLocalFile({ videoUrl, audioUrl, videoHeaders, audioHeaders }, workDir, signal, reportStage) {
+async function ingestMediaToLocalFile(source, workDir, signal, reportStage) {
+  return ingestVideoCandidates(source, candidate => ingestMediaCandidate(candidate, workDir, signal, reportStage), signal);
+}
+
+async function ingestMediaCandidate({ videoUrl, audioUrl, videoHeaders, audioHeaders }, workDir, signal, reportStage) {
   parseRemoteMediaUrl(videoUrl);
   if (audioUrl) parseRemoteMediaUrl(audioUrl);
   const downloadedVideoPath = path.join(workDir, "source-video");
@@ -158,6 +163,8 @@ async function ingestMediaToLocalFile({ videoUrl, audioUrl, videoHeaders, audioH
     signal,
   );
   let inputPath = downloadedVideoPath;
+  reportStage("inspect");
+  let metadata = await probeVideo(inputPath, signal);
   if (audioUrl) {
     const muxedPath = path.join(workDir, "resolved-video.mp4");
     reportStage("merge");
@@ -165,16 +172,15 @@ async function ingestMediaToLocalFile({ videoUrl, audioUrl, videoHeaders, audioH
       "-y", "-hide_banner",
       "-i", downloadedVideoPath,
       "-i", audioPath,
-      "-map", "0:v:0",
+      "-map", `0:${metadata.videoStreamIndex}`,
       "-map", "1:a:0",
       "-c", "copy",
       "-shortest",
       muxedPath,
-    ]);
+    ], { signal });
     inputPath = muxedPath;
+    metadata = await probeVideo(inputPath, signal);
   }
-  reportStage("inspect");
-  const metadata = await probeVideo(inputPath);
   if (!metadata.duration || metadata.duration <= 0) throw new Error("Unable to determine resolved video duration");
   if (metadata.duration > MAX_RESOLVE_SECONDS) {
     const error = new Error(`Resolved video is too long (${metadata.duration.toFixed(1)}s). Max: ${MAX_RESOLVE_SECONDS}s`);
@@ -184,54 +190,45 @@ async function ingestMediaToLocalFile({ videoUrl, audioUrl, videoHeaders, audioH
   return { inputPath, metadata };
 }
 
-async function probeVideo(inputPath) {
+async function probeVideo(inputPath, signal) {
   const { stdout } = await run(FFPROBE_PATH, [
     "-v", "error",
     "-print_format", "json",
     "-show_format",
     "-show_streams",
     inputPath,
-  ]);
-  const parsed = JSON.parse(stdout);
-  const video = parsed.streams?.find((stream) => stream.codec_type === "video") || {};
-  const audio = parsed.streams?.find((stream) => stream.codec_type === "audio");
-  const duration = Number(parsed.format?.duration || video.duration || 0);
-  const fpsParts = String(video.avg_frame_rate || video.r_frame_rate || "0/1").split("/").map(Number);
-  const fps = fpsParts[1] ? fpsParts[0] / fpsParts[1] : fpsParts[0] || undefined;
-  return {
-    duration,
-    width: Number(video.width || 0) || undefined,
-    height: Number(video.height || 0) || undefined,
-    fps,
-    hasAudio: Boolean(audio),
-  };
+  ], { signal });
+  return inspectVideoProbe(JSON.parse(stdout), async (streamIndex) => {
+    const frame = await run(FFMPEG_PATH, [
+      "-v", "error", "-i", inputPath, "-map", `0:${streamIndex}`,
+      "-frames:v", "1", "-an", "-sn", "-dn", "-f", "framehash", "-",
+    ], { signal });
+    if (!/^\s*\d+,\s*-?\d+,/m.test(frame.stdout)) throw new Error("No video frame was decoded");
+  });
 }
 
-async function detectSceneCuts(inputPath) {
-  try {
-    const { stderr } = await run(FFMPEG_PATH, [
-      "-hide_banner",
-      "-i", inputPath,
-      "-filter:v", `select='gt(scene,${SCENE_THRESHOLD})',showinfo`,
-      "-f", "null",
-      "-",
-    ]);
-    const cuts = [];
-    const pattern = /pts_time:([0-9.]+)/g;
-    let match;
-    while ((match = pattern.exec(stderr))) {
-      const seconds = Number(match[1]);
-      if (Number.isFinite(seconds) && seconds > MIN_SCENE_SECONDS) cuts.push(seconds);
-    }
-    return [...new Set(cuts.map((value) => Number(value.toFixed(3))))].sort((a, b) => a - b);
-  } catch (error) {
-    console.warn("Scene detection failed, using duration fallback:", error.message);
-    return [];
+async function detectSceneCuts(inputPath, metadata) {
+  const { stderr } = await run(FFMPEG_PATH, [
+    "-hide_banner", "-xerror",
+    "-i", inputPath,
+    "-map", `0:${metadata.videoStreamIndex}`,
+    "-filter:v", `select='gt(scene,${SCENE_THRESHOLD})',showinfo`,
+    "-f", "null",
+    "-",
+  ]);
+  const cuts = [];
+  const pattern = /pts_time:([0-9.]+)/g;
+  let match;
+  while ((match = pattern.exec(stderr))) {
+    const seconds = Number(match[1]);
+    if (Number.isFinite(seconds) && seconds > MIN_SCENE_SECONDS) cuts.push(seconds);
   }
+  return [...new Set(cuts.map((value) => Number(value.toFixed(3))))].sort((a, b) => a - b);
 }
 
 function parsePySceneDetectCuts(payload, duration) {
-  const scenes = Array.isArray(payload?.scenes) ? payload.scenes : [];
+  if (!Array.isArray(payload?.scenes)) throw new Error("Invalid scene detector response");
+  const scenes = payload.scenes;
   return scenes
     .map((scene) => Number(scene.start))
     .filter((seconds) => Number.isFinite(seconds) && seconds > MIN_SCENE_SECONDS && seconds < duration - MIN_SCENE_SECONDS)
@@ -239,42 +236,39 @@ function parsePySceneDetectCuts(payload, duration) {
 }
 
 async function detectSceneCutsWithPySceneDetect(inputPath, metadata) {
-  if (!PYSCENEDETECT_ENABLED) return null;
-  try {
-    const { stdout } = await run(PYTHON_PATH, [
-      PYSCENEDETECT_SCRIPT_PATH,
-      "--input", inputPath,
-      "--detector", PYSCENEDETECT_DETECTOR,
-      "--threshold", String(PYSCENEDETECT_THRESHOLD),
-      "--adaptive-threshold", String(PYSCENEDETECT_ADAPTIVE_THRESHOLD),
-      "--min-content-val", String(PYSCENEDETECT_MIN_CONTENT_VAL),
-      "--window-width", String(PYSCENEDETECT_WINDOW_WIDTH),
-      "--min-scene-seconds", String(MIN_SCENE_SECONDS),
-      "--fps", String(metadata.fps || 30),
-    ]);
-    const payload = JSON.parse(stdout);
-    const cuts = parsePySceneDetectCuts(payload, metadata.duration);
-    return {
-      provider: "pyscenedetect",
-      detector: payload.detector || PYSCENEDETECT_DETECTOR,
-      cuts: [...new Set(cuts)].sort((a, b) => a - b),
-      rawSceneCount: Array.isArray(payload.scenes) ? payload.scenes.length : 0,
-    };
-  } catch (error) {
-    console.warn("PySceneDetect failed, falling back to FFmpeg scene detection:", error.message);
-    return null;
-  }
+  if (!PYSCENEDETECT_ENABLED || metadata.useFfmpegSceneDetection) return null;
+  const { stdout } = await run(PYTHON_PATH, [
+    PYSCENEDETECT_SCRIPT_PATH,
+    "--input", inputPath,
+    "--detector", PYSCENEDETECT_DETECTOR,
+    "--threshold", String(PYSCENEDETECT_THRESHOLD),
+    "--adaptive-threshold", String(PYSCENEDETECT_ADAPTIVE_THRESHOLD),
+    "--min-content-val", String(PYSCENEDETECT_MIN_CONTENT_VAL),
+    "--window-width", String(PYSCENEDETECT_WINDOW_WIDTH),
+    "--min-scene-seconds", String(MIN_SCENE_SECONDS),
+    "--fps", String(metadata.fps || 30),
+  ]);
+  const payload = JSON.parse(stdout);
+  const cuts = parsePySceneDetectCuts(payload, metadata.duration);
+  return {
+    provider: "pyscenedetect",
+    detector: payload.detector || PYSCENEDETECT_DETECTOR,
+    cuts: [...new Set(cuts)].sort((a, b) => a - b),
+    rawSceneCount: Array.isArray(payload.scenes) ? payload.scenes.length : 0,
+  };
 }
 
 async function detectSceneCutsWithFallback(inputPath, metadata) {
-  const pySceneDetectResult = await detectSceneCutsWithPySceneDetect(inputPath, metadata);
-  if (pySceneDetectResult) return pySceneDetectResult;
-  return {
-    provider: "ffmpeg_scene_filter",
-    detector: "scene",
-    cuts: await detectSceneCuts(inputPath),
-    rawSceneCount: undefined,
-  };
+  return detectWithFallback(
+    () => detectSceneCutsWithPySceneDetect(inputPath, metadata),
+    async () => ({
+      provider: "ffmpeg_scene_filter",
+      detector: "scene",
+      cuts: await detectSceneCuts(inputPath, metadata),
+      rawSceneCount: undefined,
+    }),
+    error => console.warn("PySceneDetect failed, falling back to FFmpeg scene detection:", error.message),
+  );
 }
 
 function buildBoundaries(cuts, duration) {
@@ -322,6 +316,7 @@ async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, me
       "-y", "-hide_banner",
       "-ss", String(start),
       "-i", inputPath,
+      "-map", `0:${metadata.videoStreamIndex}`, "-map", "0:a:0?",
       "-t", String(duration),
       ...(exact ? ["-c:v", "libx264", "-preset", "fast", "-crf", "20", "-c:a", "aac"] : ["-c", "copy"]),
       "-avoid_negative_ts", "make_zero",
@@ -331,7 +326,7 @@ async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, me
     const keyframeUrls = [];
     for (const [frameIndex, time] of sampleSceneFrameTimes(start, end).entries()) {
       const framePath = path.join(workDir, `scene-${sceneIndex}-keyframe-${frameIndex}.jpg`);
-      await run(FFMPEG_PATH, ["-y", "-hide_banner", "-ss", String(time), "-i", inputPath, "-frames:v", "1", "-q:v", "2", framePath]);
+      await run(FFMPEG_PATH, ["-y", "-hide_banner", "-ss", String(time), "-i", inputPath, "-map", `0:${metadata.videoStreamIndex}`, "-frames:v", "1", "-q:v", "2", framePath]);
       keyframeUrls.push(await uploadFile(framePath, `${scenePrefix}/keyframe-${frameIndex}.jpg`, "image/jpeg"));
     }
 
@@ -527,7 +522,8 @@ const server = createServer(async (req, res) => {
   } catch (error) {
     const status = error.statusCode || 500;
     console.error(error);
-    return json(res, status, { error: error.message || "Worker error" });
+    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED"].includes(error.code) ? error.code : undefined;
+    return json(res, status, { error: error.message || "Worker error", ...(code ? { code } : {}) });
   }
 });
 

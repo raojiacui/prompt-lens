@@ -26,11 +26,13 @@ export async function commercialMediaRequest<T>(mediaUrl: string, body: Record<s
   if (!response.ok) {
     // Keep a bounded worker explanation in the cause so task diagnostics can redact it.
     let reason = "Media worker rejected the request";
+    let code = "MEDIA_PREPARATION_FAILED";
     try {
-      const payload = await response.json() as { error?: unknown };
+      const payload = await response.json() as { error?: unknown; code?: unknown };
       if (typeof payload.error === "string") reason = payload.error.slice(0, 1000);
+      if (["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED"].includes(String(payload.code))) code = String(payload.code);
     } catch { /* A proxy may return HTML instead of the worker's JSON response. */ }
-    throw new Error("MEDIA_PREPARATION_FAILED", { cause: Object.assign(new Error(reason), { code: `MEDIA_HTTP_${response.status}` }) });
+    throw new Error(code, { cause: Object.assign(new Error(reason), { code: `MEDIA_HTTP_${response.status}` }) });
   }
   return await response.json() as T;
 }

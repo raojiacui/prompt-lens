@@ -1,11 +1,15 @@
 export type LinkedMediaPlatform = "tiktok" | "douyin" | "bilibili";
 
-export interface ResolvedLinkedMediaSource {
-  platform: LinkedMediaPlatform;
+export interface LinkedMediaCandidate {
   videoUrl: string;
   audioUrl?: string;
   videoHeaders?: Record<string, string>;
   audioHeaders?: Record<string, string>;
+}
+
+export interface ResolvedLinkedMediaSource extends LinkedMediaCandidate {
+  platform: LinkedMediaPlatform;
+  videoCandidates?: LinkedMediaCandidate[];
   filename: string;
   title?: string;
   duration?: number;

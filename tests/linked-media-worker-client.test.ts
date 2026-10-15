@@ -40,4 +40,18 @@ describe("linked media worker connection", () => {
     await ingestLinkedMediaWithWorker(source);
     expect(fetchMock).toHaveBeenCalledWith("https://new-worker.example/ingest-media", expect.anything());
   });
+
+  it("passes alternate renditions in the same ingestion request", async () => {
+    const alternatives = [source, { videoUrl: "https://cdn.example/h264.mp4", videoHeaders: { Referer: "https://www.bilibili.com/" } }];
+    const fetchMock = vi.fn().mockResolvedValue(Response.json({ mediaUrl: "https://r2.example/video.mp4", metadata: { duration: 10 } }));
+    vi.stubGlobal("fetch", fetchMock);
+    await ingestLinkedMediaWithWorker({ ...source, videoCandidates: alternatives });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({ videoCandidates: alternatives });
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
+
+  it("explains unsupported codecs instead of accepting a stored video", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code: "UNSUPPORTED_VIDEO_CODEC", error: "unknown codec bvc2" }, { status: 422 })));
+    await expect(ingestLinkedMediaWithWorker(source)).rejects.toThrow("未完成导入");
+  });
 });

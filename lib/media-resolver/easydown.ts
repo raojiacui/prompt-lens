@@ -42,24 +42,34 @@ function publicHeaders(value: unknown): Record<string, string> | undefined {
 }
 
 export function selectEasyDownMedia(payload: EasyDownResponse, platform: LinkedMediaPlatform): ResolvedLinkedMediaSource {
-  const videos = streams(payload.data?.videos).sort((a, b) => score(b) - score(a));
+  const videos = streams(payload.data?.videos).sort((a, b) => Number(b.hasAudio === true) - Number(a.hasAudio === true) || score(b) - score(a));
   if (!videos.length) throw new Error("EasyDown 没有返回可下载的视频资源");
 
-  const muxed = videos.find((video) => video.hasAudio === true);
-  const video = muxed || videos[0];
-  const audio = !muxed && platform === "bilibili"
+  const audio = platform === "bilibili"
     ? streams(payload.data?.audios).find((stream) => stream.mimeType === "audio/mp4") || streams(payload.data?.audios)[0]
     : undefined;
-  if (!muxed && platform === "bilibili" && !audio) {
+  if (videos[0].hasAudio !== true && platform === "bilibili" && !audio) {
     throw new Error("EasyDown 返回了无声视频流，但没有可合并的音频流");
   }
+  const seen = new Set<string>();
+  // MP4 describes the container, so the worker must verify that a rendition can actually decode.
+  // Keep alternatives from this one provider response; codec fallback must not spend another parse call.
+  const videoCandidates = videos.filter(video => {
+    const url = video.url as string;
+    if (seen.has(url) || (platform === "bilibili" && video.hasAudio !== true && !audio)) return false;
+    seen.add(url);
+    return true;
+  }).slice(0, 12).map(video => ({
+    videoUrl: video.url as string,
+    audioUrl: video.hasAudio !== true ? audio?.url as string | undefined : undefined,
+    videoHeaders: publicHeaders(video.headers),
+    audioHeaders: video.hasAudio !== true ? publicHeaders(audio?.headers) : undefined,
+  }));
 
   return {
     platform,
-    videoUrl: video.url as string,
-    audioUrl: audio?.url as string | undefined,
-    videoHeaders: publicHeaders(video.headers),
-    audioHeaders: publicHeaders(audio?.headers),
+    ...videoCandidates[0],
+    videoCandidates: videoCandidates.length > 1 ? videoCandidates : undefined,
     filename: `${platform}-linked-video.mp4`,
     title: typeof payload.data?.title === "string" ? payload.data.title.trim().slice(0, 160) || undefined : undefined,
     duration: typeof payload.data?.duration === "number" && Number.isFinite(payload.data.duration) ? payload.data.duration : undefined,
