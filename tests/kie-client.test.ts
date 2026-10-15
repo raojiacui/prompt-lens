@@ -133,6 +133,6 @@ describe("KIE transport", () => {
   });
   it("recognizes a provider error inside an HTTP 200 response", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ code: 500, msg: "upstream unavailable" }))));
-    await expect(requestKieChat(input)).rejects.toThrow("upstream unavailable");
+    await expect(requestKieChat(input)).rejects.toMatchObject({ message: "upstream unavailable", status: 200, providerCode: 500, modelId: "gemini-3-8-flash-openai", endpoint: "/gemini/v1/models/gemini-3-8-flash:streamGenerateContent" });
   });
 });

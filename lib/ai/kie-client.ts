@@ -4,6 +4,9 @@ export const DEFAULT_KIE_CHAT_MODEL = "gemini-3-8-flash-openai";
 export const DEFAULT_KIE_ANALYSIS_TIMEOUT_MS = 180_000;
 
 export class KieRequestError extends Error {
+  providerCode?: number | string;
+  modelId?: string;
+  endpoint?: string;
   constructor(message: string, readonly status?: number, readonly outcome?: "unknown" | "confirmed_failure" | "not_sent", cause?: unknown) {
     super(message);
     this.name = "KieRequestError";
@@ -44,7 +47,11 @@ function nativeGeminiBody(messages: Array<{ role: string; content: unknown }>) {
 
 function readPayload(payload: unknown, status: number) {
   const data = payload as { code?: unknown; error?: { message?: string }; msg?: string } | null;
-  if (data?.error || (data?.code != null && Number(data.code) !== 200)) throw new KieRequestError(data?.error?.message || data?.msg || `KIE API error (${status})`, status, status >= 500 ? "unknown" : "confirmed_failure");
+  if (data?.error || (data?.code != null && Number(data.code) !== 200)) {
+    const error = new KieRequestError(data?.error?.message || data?.msg || `KIE API error (${status})`, status, status >= 500 ? "unknown" : "confirmed_failure");
+    if (typeof data?.code === "number" || typeof data?.code === "string") error.providerCode = data.code;
+    throw error;
+  }
   return getKieResponseText(payload) || "";
 }
 
@@ -157,7 +164,11 @@ export async function requestKieChat(input: {
       return text;
     })()]);
   } catch (error) {
-    if (error instanceof KieRequestError) throw error;
+    if (error instanceof KieRequestError) {
+      error.modelId = input.modelId;
+      error.endpoint = endpoint;
+      throw error;
+    }
     throw new KieRequestError(`KIE transport failed during ${stage}`, undefined, "unknown", error);
   } finally { clearTimeout(timer!); }
 }
