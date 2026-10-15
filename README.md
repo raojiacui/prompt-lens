@@ -2,11 +2,13 @@
 
 PromptLens V2 是一个 AI 视频创作工作流工具，把参考视频或图片拆成可编辑、可复刻、可生成的创作蓝图。
 
-用户上传参考素材后，系统会完成上传、拆镜、关键帧提取、音频/字幕上下文整理、AI 分析、提示词生成和二次改写，最终帮助用户快速做同款、改同款、生成新视频。
+用户上传参考素材后，系统会完成上传、拆镜、关键帧提取、AI 分析、提示词生成和二次改写，并按所用流程整理可用的音频/字幕上下文，帮助用户做同款、改同款、生成新视频。
 
 ## V2 操作演示
 
-以公开样例「动物城邦」为素材：约 27 秒、11 个镜头。下方 GIF 来自实际页面操作画面，保留关键步骤并缩短等待时间；生成操作录到费用确认页，未提交新的视频生成任务。分析结果来自已有历史项目。
+以公开样例「动物城邦」为素材：约 27 秒、11 个镜头。下方 GIF 录制于 2026-10-11，来自实际页面操作画面，保留关键步骤并缩短等待时间；生成操作录到当时的费用确认页，未提交新的视频生成任务。分析结果来自已有历史项目。
+
+当前生成页已移除费用确认弹窗：选择「平台积分 / 自带 Key」，查看按钮上的报价后，点击生成直接提交。下方动图中的确认弹窗属于旧版界面。
 
 ![视频分析与三条视频生成链路的动态矢量概览](docs/demos/workflow.svg)
 
@@ -57,14 +59,17 @@ PromptLens V2 支持上传本地素材，也支持粘贴公开视频链接作为
 
 - 上传视频或图片进行分析
 - 粘贴 TikTok、抖音或 Bilibili 公热视频链接进行分析
-- 10 秒以内视频按单镜头分析
-- 已解锁长视频权限的账号可上传长视频自动拆镜
-- 本地 FFmpeg worker 负责长视频切镜、切 clip、抽关键帧、抽音频
+- 支持整段分析或自动拆镜；免费体验推荐上传 10 秒以内的完整单镜头片段
+- 自动拆镜需具备相应权限，非管理员需购买平台积分；自带 Key 可用于镜头分析
+- 独立部署的 FFmpeg worker 负责切镜、切 clip、抽关键帧、抽音频和视频时长检测
 - AI 分析每个镜头的画面、角色、动作、镜头语言、光线、色彩、风格、剧情作用和复刻提示词
 - 支持对单个镜头提示词进行 AI 改写和重试分析
 - 支持把镜头提示词发送到视频生成流程做同款
 - 支持图片作为单场景参考图进行分析
 - 支持管理员、平台积分、免费体验和 BYOK 等不同权限模式
+- 商业视频分析默认使用持久化单镜头任务，每条视频最多并行分析两个镜头
+- 模型答案先保存检查点，再写入正式结果；失败镜头可单独重试，已成功镜头保留
+- 视频生成支持文生、图生、参考视频和视频编辑，报价随模型、素材与参数更新
 
 ## 创作闭环
 
@@ -73,21 +78,51 @@ PromptLens V2 支持上传本地素材，也支持粘贴公开视频链接作为
         ↓
 创建项目并上传到 R2
         ↓
-短视频：单镜头分析
-长视频：本地 FFmpeg worker 自动拆镜
+整段分析：作为一个镜头
+自动拆镜：FFmpeg worker 创建镜头列表
         ↓
 抽取 clip / keyframe / audio
         ↓
-AI 分析每个镜头，生成结构化蓝图和复刻 Prompt
+商业分析：镜头任务入库 → 每视频最多 2 个并行分析
+        ↓
+模型答案检查点 → 保存结构化蓝图和复刻 Prompt
         ↓
 用户复制、改写、重试或发送到视频生成
         ↓
 生成自己的视频版本
 ```
 
+### 商业分析的执行与恢复
+
+商业视频分析和失败镜头重试已全面使用独立镜头队列，无需实验开关或账号白名单。免费试用和图片分析仍使用各自的执行与计费流程。
+
+| 环节 | 当前行为 |
+| --- | --- |
+| 镜头执行 | 每个镜头有独立数据库任务；单视频最多两个任务同时推理，结果可按完成先后返回，页面按镜头编号展示 |
+| KIE 调用限制 | PostgreSQL 按 Key 指纹跨进程协调；同一 Key 最多四个有效占位，十秒内最多启动十五次 |
+| 连接失败 | 明确未建立连接的错误内部重试一次；524、响应丢失或结果未知的请求保留保护，避免自动重复调用 |
+| 结果保存 | 先持久化模型答案，再写正式结果；短暂数据库错误会重试保存，后台可恢复已有答案，无需再次调用模型 |
+| 镜头重试与结算 | 只重试选中的失败镜头，复用素材并更新原镜头结果；结算扣除此前已收费部分，已成功镜头和已交付拆镜不重复收费 |
+| 后台调度 | 本地开发启动账号范围内的自动扫描；生产由鉴权 Cron 派发和对账，关闭浏览器后仍需调度器推进 |
+| 历史任务 | 未完成的旧任务在执行锁下转入新队列；保留已完成镜头、答案检查点和计费记录，旧串行商业推理路径已移除 |
+
+并发与限流计数覆盖独立商业分析请求，免费试用和视频生成按各自调用路径处理。实际耗时仍取决于素材处理、数据库连接和模型响应。实现与回退要求见[独立镜头分析说明](docs/independent-scene-analysis.md)，保存阶段诊断见[排查记录](docs/scene-save-investigation.md)。
+
+### 公开分析样例
+
+样例页包含原视频、镜头素材、完整分析和提示词。以下为本地测试地址，部署后使用相同的 `/samples` 路径。
+
+| 样例 | 镜头数 | 页面 |
+| --- | --- | --- |
+| 山海经 | 14 | [查看分析](http://localhost:3001/samples/1a54fb8d-254a-4867-910f-b7d4c6ae8ac0) |
+| 赛博神祇 | 5 | [查看分析](http://localhost:3001/samples/61998c4e-4df0-405e-8200-d99a1d0d734d) |
+| 风在耳边呼啸，山在脚下臣服 | 7 | [查看分析](http://localhost:3001/samples/52457e72-44d6-41e1-ae89-8233ef50082c) |
+
+样例分析数据由仓库中的公开快照提供，媒体文件来自 R2；查看样例不会创建新的模型任务。
+
 ## 长视频切镜说明
 
-长视频切镜依赖本地 FFmpeg worker。Vercel Serverless 不适合直接跑 FFmpeg，所以本地开发或自托管部署时需要单独启动 worker。
+自动拆镜依赖独立的 FFmpeg worker。Vercel Serverless 不适合直接跑 FFmpeg，本地开发单独启动 worker，生产部署到支持长任务和 FFmpeg 的服务器。
 
 worker 当前接口：
 
@@ -118,10 +153,10 @@ POST /breakdown
 
 ## 权限和计费逻辑
 
-前端和 API 会区分短视频与长视频：
+前端和 API 会根据账号权限、费用来源及是否自动拆镜选择流程：
 
-- 免费体验/未付费账号：默认只支持 10 秒以内完整镜头片段
-- 管理员账号：不受时长和积分限制
+- 免费体验/未付费账号：推荐 10 秒以内完整镜头片段，无法直接使用付费自动拆镜能力
+- 管理员账号：可使用额外模型与拆镜权限，商业分析仍以服务端报价和钱包结算为准
 - 已购买/解锁长视频分析能力的账号：可上传长视频自动拆镜
 - 长视频分析会按基础消耗加镜头数消耗积分
 
@@ -158,13 +193,22 @@ pnpm install
 Copy-Item .env.example .env.local
 ```
 
-至少需要配置：
+已有 `.env.local` 时保留现有文件，按模板补齐缺少的变量。
+
+本地测试使用 3001 端口，至少需要配置：
 
 ```env
 DATABASE_URL=postgres://postgres:password@localhost:5432/prompt_analyzer
+DATABASE_MAX_CONNECTIONS=5
 BETTER_AUTH_SECRET=your-secret
-NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
-TRUSTED_ORIGINS=http://localhost:3000
+NEXT_PUBLIC_SITE_URL=http://localhost:3001
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3001
+TRUSTED_ORIGINS=http://localhost:3001,http://127.0.0.1:3001
+LOCAL_ANALYSIS_BASE_URL=http://127.0.0.1:3001
+LOCAL_ANALYSIS_USER_IDS=your-local-test-account-uuid
+CRON_SECRET=your-random-server-only-secret
+# 本地验证商业流程时启用；先应用所需迁移并配置测试账号钱包。
+COMMERCIAL_CONSUMPTION_ENABLED=true
 
 R2_ACCOUNT_ID=your-cloudflare-account-id
 R2_ACCESS_KEY_ID=your-r2-access-key-id
@@ -181,23 +225,39 @@ KIE_API_KEY=your-kie-api-key
 
 本地 worker 脚本会自动把 `FFMPEG_WORKER_SECRET` 映射成 worker 内部使用的 `WORKER_SECRET`。
 
-### 3. 初始化数据库
+`LOCAL_ANALYSIS_USER_IDS` 填写测试账号的用户 UUID，多个账号用逗号分隔。它只限制本地后台扫描的范围，适用于本地与线上共用数据库的情况，所有账号的商业分析均使用新队列。开发调度器要求显式的 HTTP 回环地址、账号列表及 `CRON_SECRET`，每轮结束后间隔 15 秒再扫描。
+
+远程数据库使用服务商提供的连接地址，并按要求启用 TLS。例如：
+
+```env
+DATABASE_URL=postgres://user:password@your-database-host:6543/postgres?sslmode=require
+```
+
+已有查询参数时使用 `&sslmode=require`。本机 PostgreSQL 是否启用 TLS 以本机配置为准；不要通过关闭证书校验排查连接问题。`CONNECT_TIMEOUT` 需要分别检查 DNS、端口、线路和数据库服务状态，页面能打开不代表数据库连接稳定。
+
+### 3. 应用数据库迁移
 
 ```powershell
-pnpm db:push
+node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate
 ```
+
+新库按迁移历史依次创建结构；已有数据库先核对已应用迁移，再补齐缺失项。独立镜头队列必须包含 `0023_analysis_scene_jobs.sql` 和 `0024_analysis_provider_slots.sql`，分别创建镜头任务和跨实例 KIE 占位表。共享或生产数据库应使用迁移记录管理变更。
+
+`pnpm db:check-v2` 当前只检查到 `0019` 的基础结构，不能证明 `0023`、`0024` 已应用。部署前还应核对这两张新表及迁移记录。
 
 ### 4. 启动 Next.js
 
 ```powershell
-pnpm dev
+pnpm dev --port 3001
 ```
 
 访问：
 
 ```text
-http://localhost:3000
+http://localhost:3001/dashboard?tab=analyze
 ```
+
+视频生成：`http://localhost:3001/dashboard?tab=video-gen`；公开样例：`http://localhost:3001/samples`。直接运行 `pnpm dev` 默认使用 3000 端口，认证地址、站点地址和 `LOCAL_ANALYSIS_BASE_URL` 也需同步调整。
 
 ### 5. 启动本地 FFmpeg worker
 
@@ -255,9 +315,9 @@ ffprobe -version
 1. 登录账号
 2. 进入视频分析页
 3. 上传视频或图片
-4. 选择分析模型，默认 Auto Balanced
-5. 点击 Analyze Video / Analyze Image
-6. 等待上传、拆镜和 AI 分析完成
+4. 选择整段分析或自动拆镜、可用模型及费用来源
+5. 提交素材；付费拆镜后可选择镜头并查看分析报价
+6. 确认分析后等待结果，已完成镜头会陆续显示
 7. 查看每个镜头的复刻 Prompt、画面拆解、镜头语言和音频上下文
 8. 可复制 Prompt、AI 改写、Retry，或点击“做同款”进入视频生成
 
@@ -265,8 +325,8 @@ ffprobe -version
 
 长视频需要同时满足：
 
-- 本地 FFmpeg worker 正在运行
-- `.env.local` 中 `FFMPEG_WORKER_URL=http://localhost:8080`
+- 独立 FFmpeg worker 正在运行
+- `FFMPEG_WORKER_URL` 指向可访问的 worker；本地启动时通常为 `http://localhost:8080`
 - R2 配置可上传和公开访问资源
 - 当前账号具备长视频分析权限或管理员权限
 - 积分余额足够覆盖基础消耗和镜头数消耗
@@ -274,6 +334,16 @@ ffprobe -version
 ### 图片分析
 
 图片不会走 FFmpeg worker，会作为单场景参考素材直接进入 AI 分析流程。
+
+### 视频生成
+
+1. 填写提示词，按需上传参考图片或视频
+2. 选择模型、画幅、分辨率、时长和数量
+3. 在按钮旁选择「平台积分 / 自带 Key」，查看生成按钮的报价
+4. 点击生成直接提交；服务端继续校验参数、余额、Key 和最终报价
+5. 在页面查看进度、错误和生成历史，完成后及时下载视频
+
+生成页不再弹出费用确认窗口，报价展示也不依赖余额查询成功。需要检测参考视频时长的模型，会在素材信息就绪后提供对应报价。
 
 ### 视频平台链接
 
@@ -299,7 +369,7 @@ prompt-lens/
 │   ├── ffmpeg-worker/           # Next.js 调用 worker 的客户端
 │   └── workflow/                # 项目、拆镜、分析、改写服务
 ├── workers/
-│   └── ffmpeg-worker/           # 本地 FFmpeg HTTP worker
+│   └── ffmpeg-worker/           # 独立部署的 FFmpeg HTTP worker
 ├── scripts/
 │   └── start-local-ffmpeg-worker.ps1
 └── tests/                       # Vitest / Playwright 测试
@@ -315,7 +385,11 @@ prompt-lens/
 - `DELETE /api/workflow/projects/:id`：删除项目
 - `POST /api/workflow/projects/:id/breakdown`：上传素材后的拆解和 AI 分析
 - `POST /api/workflow/projects/:id/scenes/:sceneVersionId/rewrite`：按用户指令改写镜头
-- `POST /api/workflow/projects/:id/scenes/:sceneVersionId/retry`：重试镜头分析
+- `POST /api/commercial/analysis`：准备素材、获取分析报价，或通过 `action=retry` 报价失败镜头重试
+- `POST /api/commercial/confirm`：幂等确认商业报价并创建后台任务
+- `GET /api/commercial/tasks/:id`：读取任务进度和部分结果
+- `POST /api/internal/analysis-run`：鉴权后的后台任务执行入口
+- `GET /api/cron/analysis-dispatch`：派发任务、恢复镜头检查点并补位
 
 ### Worker
 
@@ -340,9 +414,9 @@ Invoke-WebRequest -UseBasicParsing http://localhost:8080/healthz
 
 技术上可以。只要账号具备长视频权限、worker 正常运行、R2 配置正确，系统会自动拆镜并逐镜头分析。但 2 分钟视频会产生更多 clips/keyframes/audio，也会消耗更多分析时间和积分。
 
-### 为什么 10 秒以内视频不切镜
+### 整段分析和自动拆镜如何选择
 
-10 秒以内默认视为一个完整镜头片段，会走 single-shot 分析，避免不必要的 FFmpeg 拆分和积分浪费。
+整段分析把视频作为一个场景，适合完整单镜头片段；自动拆镜适合多镜头视频，需具备相应权限。按实际素材选择，避免对一个连续镜头做不必要的拆分，也避免将多镜头长视频整段分析造成信息遗漏。
 
 ### 视频链接为什么要先入库
 
@@ -355,9 +429,35 @@ Next.js 主站可以部署到 Vercel，但长视频拆镜 worker 不建议部署
 ```env
 FFMPEG_WORKER_URL=https://your-worker-domain
 FFMPEG_WORKER_SECRET=your-worker-secret
+NEXT_PUBLIC_SITE_URL=https://your-domain.com
+NEXT_PUBLIC_BETTER_AUTH_URL=https://your-domain.com
+TRUSTED_ORIGINS=https://your-domain.com
+COMMERCIAL_RECONCILIATION_BASE_URL=https://your-domain.com
+CRON_SECRET=your-random-server-only-secret
 ```
 
 worker 服务器需要配置同一组 R2 环境变量，并安装 `ffmpeg` / `ffprobe`。
+
+### 上线前核对
+
+- 应用所需迁移，包括 `0023` 和 `0024`；生产环境的 `DATABASE_URL` 按服务商要求启用 TLS。
+- Web 与 worker 使用相同的 `CRON_SECRET`；worker 的 `COMMERCIAL_RECONCILIATION_BASE_URL` 指向正式 Web HTTPS 根地址。
+- `vercel.json` 已配置 `/api/cron/analysis-dispatch` 每分钟执行，素材清理和商业对账每天执行。部署套餐需支持对应频率；自托管需要外部调度器按相同路由、Bearer 鉴权调用。
+- 生产不运行开发环境的 15 秒扫描器。确认派发与对账实际执行，并验证关闭浏览器后任务能够继续完成；避免为同一个职责重复部署调度器。
+- 按[商业环境模板](docs/commercial-env.example)核对计费开关与验收项。当前代码的 `COMMERCIAL_MIGRATION_ACCEPTED` 验收标记仍为 `0019`，它与独立队列需要的 `0023/0024` 结构检查分别核对。
+- 实测免费体验、平台积分、BYOK、单镜头重试、未知模型结果及数据库短暂失败；核对恢复后的镜头数和结算，避免重复收费。
+- 检查公开样例的原视频、镜头片段和关键帧可访问；现有样例快照会随代码部署公开。
+
+本地成功记录和自动测试用于验证已覆盖场景，生产调度、真实服务连接和计费仍需在目标环境完成验收。发布操作由维护者单独执行。
+
+### 常用验证命令
+
+```powershell
+pnpm exec tsc --noEmit
+pnpm exec vitest run tests/analysis-dispatch.test.ts tests/scene-job-dispatch.test.ts tests/commercial-wallet.test.ts tests/kie-client.test.ts tests/local-analysis-scheduler.test.ts
+```
+
+这些测试使用隔离数据库和模拟模型响应，不会验证线上 Key 或服务可用性。真实 PostgreSQL 的保存与锁等待诊断需要专用临时库，操作说明见[排查记录](docs/scene-save-investigation.md)。
 
 ## License
 
