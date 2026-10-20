@@ -21,7 +21,7 @@ export type UserAsset = {
 export type GenerationVariant = {
   id: string;
   label: string;
-  status: "queued" | "generating" | "completed" | "failed" | "pending";
+  status: "queued" | "generating" | "completed" | "failed" | "pending" | "review";
   progress: number;
   videoUrl?: string;
   imageUrl?: string;

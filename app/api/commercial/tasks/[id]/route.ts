@@ -18,8 +18,11 @@ export async function POST(request: NextRequest, { params }: Context) {
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ code: "INVALID_TASK" }, { status: 400 });
   try {
-    const task = await confirmCommercialTask(session.user.id, id);
-    if (task.state === "queued") after(() => runCommercialTask(task.id));
+    let task = await confirmCommercialTask(session.user.id, id);
+    if (task.state === "queued" && task.kind === "generation") {
+      await runCommercialTask(task.id);
+      task = (await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) }))!;
+    } else if (task.state === "queued") after(() => runCommercialTask(task.id));
     return NextResponse.json({ id: task.id, state: task.state, credits: task.credits });
   } catch (e) {
     const code = e instanceof Error ? e.message : "TASK_CONFIRMATION_UNKNOWN";
@@ -60,7 +63,7 @@ export async function GET(request: NextRequest, { params }: Context) {
     });
   }
   if (task.state === "queued") after(() => task!.kind === "workflow_analysis" ? runAnalysisTask(id) : runCommercialTask(id));
-  if (task.kind === "generation" && task.state === "running") {
+  if (task.kind === "generation" && ["running", "review"].includes(task.state)) {
     try { await reconcileCommercialGeneration(task.id); } catch { /* A query failure does not fail the task. */ }
     task = (await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) }))!;
   }
@@ -78,5 +81,5 @@ export async function GET(request: NextRequest, { params }: Context) {
   const partial = task.kind === "workflow_analysis" ? Boolean(result.partial) : success > 0 && success < (input.pricing?.scenes.length || 0);
   const phase = task.kind === "analysis" ? !result.assets ? "preparing" : completedScenes < totalScenes ? "analyzing" : "saving" : undefined;
   const saveRecoveryPending = task.kind === "analysis" && task.state === "review" && Boolean(result.pendingResult);
-  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, progressUpdatedAt: task.updatedAt.getTime(), saveRecoveryPending, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, progressUpdatedAt: task.updatedAt.getTime(), saveRecoveryPending, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error, reviewReason: (result.review as { reason?: string } | undefined)?.reason }, { headers: { "Cache-Control": "private, no-store" } });
 }

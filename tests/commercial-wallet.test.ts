@@ -981,6 +981,41 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(reviewTask).toMatchObject({ state: "review", result: { review: { reason: "provider_unknown", action: "manual_reconciliation", reservedCredits: 29 }, reviewHistory: [{ action: "entered_review", reason: "provider_unknown" }] } });
     expect(await balance()).toMatchObject({ credits: 171, heldCredits: 29 });
   });
+  it("moves a stopped generation without a provider id to review", async () => {
+    await grant(200, 20);
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const quote = await quoteCommercialGeneration(userId, { userPrompt: "An interrupted submission", duration: 5 });
+    await confirmCommercialTask(userId, quote.id);
+    await client.query("UPDATE commercial_tasks SET state = 'running', updated_at = now() - interval '2 minutes' WHERE id = $1", [quote.id]);
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await reconcileCommercialGeneration(quote.id);
+    const [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+    expect(task).toMatchObject({ state: "review", providerTaskId: null, result: { review: { reason: "provider_unknown", reservedCredits: 29 } } });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(await balance()).toMatchObject({ credits: 171, heldCredits: 29 });
+  });
+  it("keeps an accepted provider id when local generation bookkeeping fails", async () => {
+    await grant(200, 20);
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const quote = await quoteCommercialGeneration(userId, { userPrompt: "A durable accepted submission", duration: 5 });
+    await confirmCommercialTask(userId, quote.id);
+    await testDb.insert(schema.videoGeneration).values({ userId, taskId: "durable-provider-task", prompt: "Existing provider record" });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(Response.json({ code: 200, data: { taskId: "durable-provider-task" } }))
+      .mockResolvedValueOnce(Response.json({ code: 200, data: { taskId: "durable-provider-task", state: "success", resultJson: JSON.stringify({ resultUrls: ["https://example.com/durable.mp4"] }) } }));
+    vi.stubGlobal("fetch", fetchMock);
+    await runCommercialTask(quote.id);
+    let [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+    expect(task).toMatchObject({ state: "review", providerTaskId: "durable-provider-task", result: { review: { reason: "manual_required" } } });
+    await reconcileCommercialGeneration(quote.id);
+    [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+    expect(task).toMatchObject({ state: "completed", providerTaskId: "durable-provider-task", result: { videoUrl: "https://example.com/durable.mp4" } });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(await balance()).toMatchObject({ credits: 171, heldCredits: 0 });
+  });
   it("escalates overdue reviews once without changing task or wallet settlement", async () => {
     await grant();
     const [overdue] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "generation", state: "review", input: {}, credits: 29, result: { review: { reason: "provider_unknown", deadlineAt: new Date(Date.now() - 60_000).toISOString() } }, expiresAt: new Date(Date.now() + 600_000) }).returning();

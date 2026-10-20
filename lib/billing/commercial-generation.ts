@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { db, commercialTasks, commercialWallets, mediaCleanupJobs, projects, sceneVersions, videoGeneration } from "@/lib/db";
 import { randomUUID } from "node:crypto";
 import { copyR2Object } from "@/lib/cloudflare/r2";
@@ -119,14 +119,35 @@ export async function executeCommercialGeneration(task: typeof commercialTasks.$
   // Explicit rejection is terminal; transport errors and malformed acceptance remain under review.
   if ([400, 401, 402, 403, 422, 429, 433].includes(Number(data.code))) { await settleGeneration(task, "failed"); return; }
   if (!response.ok || data.code !== 200 || typeof data.data?.taskId !== "string") throw new Error("GENERATION_SUBMISSION_UNKNOWN");
-  await db.transaction(async (tx) => {
-    await tx.update(commercialTasks).set({ providerTaskId: data.data.taskId, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
-    await tx.insert(videoGeneration).values({ userId: task.userId, taskId: data.data.taskId, projectId: input.projectId, sceneId: input.sceneId, projectVersionId: input.projectVersionId, prompt: input.payload.input.prompt, model: input.payload.model, provider: "kie", status: "pending", duration: input.durationSeconds ?? Number(input.payload.input.duration), resolution: input.resolution ?? input.payload.input.resolution, rawResponse: { billing: { commercialTaskId: task.id, keySource: "platform_paid", keyFingerprint: input.keyFingerprint, reservedCredits: task.credits } } });
-  });
+  // Persist provider acceptance before secondary bookkeeping. If the process stops
+  // afterward, polling can still reconcile the accepted provider task safely.
+  await db.update(commercialTasks).set({ providerTaskId: data.data.taskId, updatedAt: new Date() }).where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, "running"), isNull(commercialTasks.providerTaskId)));
+  await db.insert(videoGeneration).values({ userId: task.userId, taskId: data.data.taskId, projectId: input.projectId, sceneId: input.sceneId, projectVersionId: input.projectVersionId, prompt: input.payload.input.prompt, model: input.payload.model, provider: "kie", status: "pending", duration: input.durationSeconds ?? Number(input.payload.input.duration), resolution: input.resolution ?? input.payload.input.resolution, rawResponse: { billing: { commercialTaskId: task.id, keySource: "platform_paid", keyFingerprint: input.keyFingerprint, reservedCredits: task.credits } } });
+}
+
+export async function markCommercialGenerationForReview(
+  task: typeof commercialTasks.$inferSelect,
+  reason: "provider_unknown" | "manual_required",
+  diagnostic?: Record<string, unknown>,
+) {
+  const enteredAt = new Date();
+  const executionId = (task.result as Record<string, unknown>).executionId || null;
+  const review = { reason, enteredAt: enteredAt.toISOString(), nextActionAt: new Date(enteredAt.getTime() + 5 * 60_000).toISOString(), deadlineAt: new Date(enteredAt.getTime() + 24 * 60 * 60_000).toISOString(), action: "manual_reconciliation", executionId, reservedCredits: task.credits };
+  const event = { at: enteredAt.toISOString(), action: "entered_review", reason, executionId };
+  const [reviewed] = await db.update(commercialTasks).set({ state: "review", result: sql`jsonb_set(${commercialTasks.result} || ${JSON.stringify({ code: "TASK_REQUIRES_RECONCILIATION", ...(diagnostic ? { diagnostic } : {}), review })}::jsonb, '{reviewHistory}', COALESCE(${commercialTasks.result}->'reviewHistory', '[]'::jsonb) || ${JSON.stringify([event])}::jsonb)`, updatedAt: enteredAt })
+    .where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.kind, "generation"), eq(commercialTasks.state, "running"), reason === "provider_unknown" ? isNull(commercialTasks.providerTaskId) : isNotNull(commercialTasks.providerTaskId)))
+    .returning();
+  return reviewed;
 }
 
 export async function reconcileCommercialGeneration(taskId: string) {
-  const [task] = await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ queryAfter: Date.now() + 15000 })}::jsonb` }).where(and(eq(commercialTasks.id, taskId), eq(commercialTasks.kind, "generation"), eq(commercialTasks.state, "running"), sql`COALESCE((${commercialTasks.result}->>'queryAfter')::bigint, 0) < ${Date.now()}`)).returning();
+  const orphan = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, taskId), eq(commercialTasks.kind, "generation"), eq(commercialTasks.state, "running"), isNull(commercialTasks.providerTaskId), lt(commercialTasks.updatedAt, new Date(Date.now() - 60_000))) });
+  if (orphan) {
+    const reviewed = await markCommercialGenerationForReview(orphan, "provider_unknown");
+    if (reviewed) console.error("commercial.generation.orphaned_submission", { taskId, updatedAt: orphan.updatedAt.toISOString() });
+    return;
+  }
+  const [task] = await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ queryAfter: Date.now() + 15000 })}::jsonb` }).where(and(eq(commercialTasks.id, taskId), eq(commercialTasks.kind, "generation"), inArray(commercialTasks.state, ["running", "review"]), isNotNull(commercialTasks.providerTaskId), sql`COALESCE((${commercialTasks.result}->>'queryAfter')::bigint, 0) < ${Date.now()}`)).returning();
   if (!task?.providerTaskId) return;
   const input = task.input as GenerationSnapshot;
   const key = getPlatformKieApiKey();

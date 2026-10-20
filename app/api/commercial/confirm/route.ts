@@ -1,6 +1,7 @@
 import { after, NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { and, eq, inArray } from "drizzle-orm";
+import { commercialTasks, db } from "@/lib/db";
 import { commercialConsumptionEnabled } from "@/lib/billing/commercial-analysis";
 import { confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 export const maxDuration = 300;
@@ -18,7 +19,13 @@ export async function POST(request: NextRequest) {
       for (const id of [...ids].sort()) rows.push(await confirmCommercialTaskInTransaction(tx, session.user.id, id));
       return rows;
     });
-    after(async () => { for (const task of tasks) if (task.state === "queued") await runCommercialTask(task.id); });
-    return NextResponse.json({ tasks: ids.map((id) => { const t = tasks.find((task) => task.id === id)!; return { id: t.id, state: t.state, credits: t.credits }; }) });
+    const queuedGenerations = tasks.filter((task) => task.state === "queued" && task.kind === "generation");
+    await Promise.all(queuedGenerations.map((task) => runCommercialTask(task.id)));
+    const queuedAnalysis = tasks.filter((task) => task.state === "queued" && task.kind !== "generation");
+    if (queuedAnalysis.length) after(async () => { for (const task of queuedAnalysis) await runCommercialTask(task.id); });
+    const current = queuedGenerations.length
+      ? await db.select().from(commercialTasks).where(and(eq(commercialTasks.userId, session.user.id), inArray(commercialTasks.id, ids)))
+      : tasks;
+    return NextResponse.json({ tasks: ids.map((id) => { const t = current.find((task) => task.id === id)!; return { id: t.id, state: t.state, credits: t.credits }; }) });
   } catch (e) { const code = e instanceof Error ? e.message : "TASK_CONFIRMATION_UNKNOWN"; return NextResponse.json({ code: /^[A-Z_]+$/.test(code) ? code : "TASK_CONFIRMATION_UNKNOWN" }, { status: code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? 402 : 409 }); }
 }

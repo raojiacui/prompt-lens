@@ -4,7 +4,7 @@ import { AnalysisExecutionLost, executionCondition } from "./analysis-execution"
 import { db, commercialTasks, projects } from "@/lib/db";
 import { reserveCommercialTaskInTransaction } from "./commercial-wallet";
 import { commercialConsumptionEnabled, executeCommercialAnalysis } from "./commercial-analysis";
-import { executeCommercialGeneration } from "./commercial-generation";
+import { executeCommercialGeneration, markCommercialGenerationForReview } from "./commercial-generation";
 import { taskErrorDetails } from "./task-diagnostics";
 import { dispatchQueuedAnalysis } from "@/lib/workflow/analysis-dispatch";
 
@@ -56,8 +56,12 @@ export async function runCommercialTask(taskId: string) {
     // Preserve funds and durable results for reconciliation. Never resubmit unknown inference.
     try {
       const failedAt = new Date();
-      const reason = task.kind === "generation" && !task.providerTaskId ? "provider_unknown"
-        : /^ANALYSIS_CHECKPOINT_/.test(error instanceof Error ? error.message : "") ? "checkpoint_invalid"
+      if (task.kind === "generation") {
+        const latest = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, task.id) });
+        await markCommercialGenerationForReview(latest || task, latest?.providerTaskId ? "manual_required" : "provider_unknown", diagnostic);
+        return;
+      }
+      const reason = /^ANALYSIS_CHECKPOINT_/.test(error instanceof Error ? error.message : "") ? "checkpoint_invalid"
         : progress.executionPhase === "saving_result" ? "save_failed" : "manual_required";
       const review = { reason, enteredAt: failedAt.toISOString(), nextActionAt: new Date(failedAt.getTime() + 5 * 60_000).toISOString(), deadlineAt: new Date(failedAt.getTime() + 24 * 60 * 60_000).toISOString(), action: task.kind === "analysis" ? "automatic_recovery" : "manual_reconciliation", executionId: progress.executionId || null, reservedCredits: task.credits };
       const event = { at: failedAt.toISOString(), action: "entered_review", reason, executionId: progress.executionId || null };

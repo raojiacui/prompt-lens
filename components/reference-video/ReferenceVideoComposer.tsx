@@ -55,6 +55,7 @@ type GenerationStatusPayload = {
   providerTaskId?: string;
   videoUrl?: string;
   error?: string;
+  reviewReason?: string;
 };
 
 const aspectRatioOptions: Array<{
@@ -481,7 +482,7 @@ export function ReferenceVideoComposer({
         };
   const activeGenerationTaskIdsKey = variants
     .filter(
-      (variant) => variant.status === "generating" && variant.providerTaskId,
+      (variant) => ["generating", "review"].includes(variant.status) && variant.providerTaskId,
     )
     .map((variant) => variant.providerTaskId)
     .join("|");
@@ -845,7 +846,7 @@ export function ReferenceVideoComposer({
               .catch(() => ({}))) as GenerationStatusPayload;
             if (taskId.startsWith("commercial:")) {
               const state = (payload as unknown as { state?: string }).state;
-              payload = { ...payload, providerTaskId: taskId, status: state === "completed" ? "success" : state === "failed" ? "fail" : "generating" } as GenerationStatusPayload;
+              payload = { ...payload, providerTaskId: taskId, status: state === "completed" ? "success" : state === "failed" ? "fail" : state === "review" ? "review" : "generating" } as GenerationStatusPayload;
             }
             if (!response.ok)
               throw new Error(
@@ -908,13 +909,22 @@ export function ReferenceVideoComposer({
             };
           }
 
+          if (result.payload.status === "review") {
+            return {
+              ...variant,
+              status: "review" as const,
+              providerTaskId,
+              notes: zh
+                ? "提交结果需要核实，积分仍处于预留状态，请勿重复提交。"
+                : "Submission needs verification. Credits remain reserved; do not resubmit.",
+            };
+          }
+
           return {
             ...variant,
             providerTaskId,
-            progress: Math.min(95, Math.max(variant.progress + 6, 28)),
-            notes: result.payload.state === "review"
-              ? (zh ? "结果待核实，积分仍预留，请勿重复提交。" : "Result under review. Credits remain reserved; do not resubmit.")
-              : taskId.startsWith("commercial:")
+            progress: Math.max(variant.progress, 28),
+            notes: taskId.startsWith("commercial:")
                 ? (zh ? `正在生成，已预留 ${result.payload.credits} 积分。` : `Generating. ${result.payload.credits} credits reserved.`)
                 : (zh ? "正在生成视频，等待模型返回结果……" : "Generating video. Checking provider status..."),
           };
@@ -1719,8 +1729,8 @@ export function ReferenceVideoComposer({
                     </div>
                     <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
                       <span
-                        className="block h-full rounded-full bg-primary transition-all"
-                        style={{ width: `${variant.progress}%` }}
+                        className={variant.status === "generating" ? "block h-full w-1/3 rounded-full bg-primary animate-pulse" : "block h-full rounded-full bg-primary transition-all"}
+                        style={variant.status === "generating" ? undefined : { width: `${variant.progress}%` }}
                       />
                     </div>
                     <p className="mt-1 text-xs font-medium text-foreground">
