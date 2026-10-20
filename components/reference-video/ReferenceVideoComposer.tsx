@@ -1,6 +1,5 @@
 "use client";
 
-import { authClient } from "@/lib/auth/auth-client";
 import type { GenerationVariant } from "@/lib/reference-video/types";
 import {
   ChevronDown,
@@ -275,6 +274,7 @@ function AssetPreview({ asset }: { asset: UploadedAsset }) {
 }
 
 export function ReferenceVideoComposer({
+  sessionUserId,
   initialPrompt = "",
   initialProjectId,
   initialSceneId,
@@ -283,6 +283,7 @@ export function ReferenceVideoComposer({
   initialModel,
   hiddenReferenceImageUrl,
 }: {
+  sessionUserId: string;
   initialPrompt?: string | null;
   initialProjectId?: string | null;
   initialSceneId?: string | null;
@@ -292,7 +293,6 @@ export function ReferenceVideoComposer({
   hiddenReferenceImageUrl?: string | null;
 }) {
   const t = useTranslations("videoGenerate");
-  const { data: session } = authClient.useSession();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const promptEditorRef = useRef<HTMLDivElement>(null);
   const mentionTriggerRangeRef = useRef<Range | null>(null);
@@ -367,7 +367,7 @@ export function ReferenceVideoComposer({
     };
     const onFocus = () => { void refresh(); };
     const onVisible = () => { if (document.visibilityState === "visible") onFocus(); };
-    if (session?.user.id) void refresh();
+    if (sessionUserId) void refresh();
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
@@ -377,7 +377,7 @@ export function ReferenceVideoComposer({
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [session?.user.id, balanceRefresh]);
+  }, [sessionUserId, balanceRefresh]);
   const [variants, setVariants] = useState<GenerationVariant[]>(initialVariants);
   const [sceneReferenceImageUrl, setSceneReferenceImageUrl] = useState(hiddenReferenceImageUrl || "");
 
@@ -426,7 +426,7 @@ export function ReferenceVideoComposer({
     sceneId: initialSceneId || undefined,
     projectVersionId: initialProjectVersionId || undefined,
   };
-  const commercialBatchStorageKey = `reference-commercial-batch-${storageKey}-${session?.user.id || "guest"}`;
+  const commercialBatchStorageKey = `reference-commercial-batch-${storageKey}-${sessionUserId}`;
   useEffect(() => {
     commercialBatchRef.current = restoreGenerationSubmission(window.localStorage.getItem(commercialBatchStorageKey));
     setPendingConfirmation(Boolean(commercialBatchRef.current?.confirmationStarted));
@@ -1063,7 +1063,7 @@ export function ReferenceVideoComposer({
       return setError(t("errors.assetUploading") || "Asset uploading");
     if (!readyReferenceVideoAsset && !prompt.trim())
       return setError(t("errors.missingPrompt") || "Missing prompt");
-    if (!session?.user) return setError(t("errors.loginRequired") || "Please login");
+    if (!sessionUserId) return setError(t("errors.loginRequired") || "Please login");
 
     const inlineMentionedAssetIds = getMentionedAssetIdsFromPrompt(prompt);
     const selectedReplacementAssets = inlineMentionedAssetIds.length
@@ -1091,6 +1091,17 @@ export function ReferenceVideoComposer({
     const variantCount = Number.isFinite(requestedOutputCount)
       ? Math.max(1, Math.min(4, requestedOutputCount))
       : 1;
+    const queuedVariants: GenerationVariant[] = Array.from(
+      { length: variantCount },
+      (_, index) => ({
+        id: `variant-${index + 1}`,
+        label: `Variation ${index + 1}`,
+        status: "queued",
+        progress: 8,
+        notes: zh ? "正在提交生成任务……" : "Submitting video generation...",
+      }),
+    );
+    setVariants(queuedVariants);
     if (commercialEnabled && generationPayer === "platform") {
       const request = { userPrompt: promptWithInlineReferences, replacementAssets, hiddenReferenceImageUrl, referenceVideoUrl: readyReferenceVideoAsset?.url, aspectRatio, model, duration: durationSeconds, quality, ...workflowContext };
       let batch = commercialBatchRef.current;
@@ -1106,18 +1117,6 @@ export function ReferenceVideoComposer({
     commercialBatchRef.current = null;
     setPendingConfirmation(false);
     window.localStorage.removeItem(commercialBatchStorageKey);
-    const queuedVariants: GenerationVariant[] = Array.from(
-      { length: variantCount },
-      (_, index) => ({
-        id: `variant-${index + 1}`,
-        label: `Variation ${index + 1}`,
-        status: "queued",
-        progress: 8,
-        notes: zh ? "正在提交生成任务……" : "Submitting image-to-video generation.",
-      }),
-    );
-    setVariants(queuedVariants);
-
     const submittedVariants = [...queuedVariants];
     for (let index = 0; index < variantCount; index += 1) {
       const variantId = queuedVariants[index].id;

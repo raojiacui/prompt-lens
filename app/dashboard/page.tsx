@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ElementType } from "react";
+import { useEffect, useRef, useState, type ElementType } from "react";
 import { useSession, signOut } from "@/lib/auth/auth-client";
 import { isOwnerEmail } from "@/lib/auth/admin-policy";
 import { HistoryList } from "@/components/history-list";
@@ -25,6 +25,9 @@ type FeatureTab = "analyze" | "audio" | "edit" | "video-gen";
 
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
+  const authenticatedUserRef = useRef<NonNullable<typeof session>["user"] | null>(null);
+  if (session?.user) authenticatedUserRef.current = session.user;
+  const sessionUser = session?.user || (isPending ? authenticatedUserRef.current : null);
   const t = useTranslations();
   const zh = useLocale() === "zh";
   const router = useRouter();
@@ -108,24 +111,24 @@ export default function DashboardPage() {
   const [historyRefreshTrigger] = useState(0);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [hiddenSceneReferenceImageUrl, setHiddenSceneReferenceImageUrl] = useState<string | null>(null);
-  const sessionIsOwner = isOwnerEmail(session?.user.email);
+  const sessionIsOwner = isOwnerEmail(sessionUser?.email);
   const [adminConfirmed, setCanAccessAdmin] = useState(false);
   const canAccessAdmin = sessionIsOwner && adminConfirmed;
 
   useEffect(() => {
-    if (!isPending && session?.user && activeTab === "admin" && !sessionIsOwner) router.replace(pathname);
-  }, [activeTab, isPending, pathname, router, session?.user, sessionIsOwner]);
+    if (!isPending && sessionUser && activeTab === "admin" && !sessionIsOwner) router.replace(pathname);
+  }, [activeTab, isPending, pathname, router, sessionIsOwner, sessionUser]);
 
   useEffect(() => {
-    if (!isPending && !session?.user) {
+    if (!isPending && !sessionUser) {
       router.replace(`/login?next=${encodeURIComponent(currentDashboardPath)}`);
     }
-  }, [currentDashboardPath, isPending, router, session?.user]);
+  }, [currentDashboardPath, isPending, router, sessionUser]);
   useEffect(() => {
     let cancelled = false;
 
     setCanAccessAdmin(false);
-    if (isPending || !session?.user || !sessionIsOwner) {
+    if (isPending || !sessionUser || !sessionIsOwner) {
       setCanAccessAdmin(false);
       return;
     }
@@ -141,7 +144,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-  }, [isPending, session?.user, sessionIsOwner]);
+  }, [isPending, sessionIsOwner, sessionUser]);
 
 
   // const handleNavigateVideoGen = (prompt: string) => {
@@ -214,7 +217,7 @@ export default function DashboardPage() {
     { key: "settings" as Tab, label: t("dashboard.tabs.settings"), icon: Settings },
     ...(canAccessAdmin ? [{ key: "admin" as Tab, label: zh ? "管理后台" : "Administration", icon: Shield }] : []),
   ];
-  if (isPending || !session?.user) {
+  if (!sessionUser) {
     return (
       <div className="grid h-screen place-items-center bg-[var(--color-bg-base)] px-6">
         <div className="w-full max-w-md rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-5 text-sm text-[var(--color-text-secondary)] shadow-sm">
@@ -328,7 +331,7 @@ export default function DashboardPage() {
           </nav>
 
           <div className={cn("border-t border-[var(--color-border-default)]", isSidebarCollapsed ? "p-2 flex justify-center" : "p-3")}>
-            {session?.user ? (
+            {sessionUser ? (
               <button
                 type="button"
                 onClick={() => void handleSignOut()}
@@ -414,7 +417,7 @@ export default function DashboardPage() {
                       {zh ? "管理后台" : "Administration"}
                     </button>
                   ) : null}
-                  {session?.user ? (
+                  {sessionUser ? (
                     <button
                       type="button"
                       onClick={() => void handleSignOut()}
@@ -497,6 +500,7 @@ export default function DashboardPage() {
           {activeTab === "video-gen" && (
             <div className="animate-fade-in">
               <ReferenceVideoComposer
+                sessionUserId={sessionUser.id}
                 initialPrompt={videoGenPrompt}
                 initialProjectId={videoGenProjectId}
                 initialSceneId={videoGenSceneId}
