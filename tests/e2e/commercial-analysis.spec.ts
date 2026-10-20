@@ -209,7 +209,11 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
       expect(quoteRequests).toBe(quotesBeforeRetry);
     } else await expect.poll(() => confirmations).toBe(1);
     const progress = panel.getByTestId("analysis-task-progress");
-    await expect(progress.getByRole("progressbar")).toHaveAttribute("aria-valuenow", String(20 + Math.floor(70 / scenes.length)));
+    const confirmedProgress = 20 + 70 / scenes.length;
+    const nextCheckpoint = 20 + 140 / scenes.length;
+    await expect.poll(async () => Number(await progress.getByRole("progressbar").getAttribute("aria-valuenow"))).toBeGreaterThanOrEqual(confirmedProgress);
+    const displayedProgress = Number(await progress.getByRole("progressbar").getAttribute("aria-valuenow"));
+    expect(displayedProgress).toBeLessThan(nextCheckpoint);
     await expect(progress).toContainText(locale === "zh" ? `已处理 1/${scenes.length} 个镜头` : `1/${scenes.length} shots processed`);
     await expect(progress).toContainText(locale === "zh" ? "参考估计" : "approximate");
     await progress.screenshot({ path: `test-results/analysis-progress-${locale}-${width}-${seconds}s.png` });

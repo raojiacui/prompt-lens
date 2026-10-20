@@ -30,7 +30,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   const [savedQuote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number; expiresAt?: string; requestKey: string } | null>(null);
   const [taskId, setTaskId] = useState("");
   const [state, setState] = useState("");
-  const [taskProgress, setTaskProgress] = useState({ phase: "preparing", total: 0, finished: 0, startedAt: 0 });
+  const [taskProgress, setTaskProgress] = useState({ phase: "preparing", total: 0, finished: 0, startedAt: 0, checkpointAt: 0 });
   const [busy, setBusy] = useState(false);
   const [preparing, setPreparing] = useState(true);
   const [quoting, setQuoting] = useState(false);
@@ -145,7 +145,8 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     try {
         // Keep the same server quote ID even when the confirmation response is lost.
         const data = await post(`/api/commercial/tasks/${quote.id}`, {});
-        setTaskProgress({ phase: "preparing", total: selectedScenes.length, finished: 0, startedAt: Date.now() });
+        const startedAt = Date.now();
+        setTaskProgress({ phase: "preparing", total: selectedScenes.length, finished: 0, startedAt, checkpointAt: startedAt });
         setTaskId(data.id); setState(data.state);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
@@ -169,7 +170,13 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         if (controller.signal.aborted) return;
         setState(data.state);
         setError("");
-        setTaskProgress(previous => ({ ...previous, phase: data.phase || previous.phase, total: data.totalScenes ?? previous.total, finished: data.completedScenes ?? previous.finished }));
+        setTaskProgress(previous => ({
+          ...previous,
+          phase: data.phase || previous.phase,
+          total: data.totalScenes ?? previous.total,
+          finished: data.completedScenes ?? previous.finished,
+          checkpointAt: Number.isFinite(data.progressUpdatedAt) ? data.progressUpdatedAt : previous.checkpointAt,
+        }));
         if (data.bundle && !["completed", "failed"].includes(data.state)) onPartialRef.current?.(data.bundle);
         if (["completed", "failed"].includes(data.state)) {
           if (data.bundle && !completed.current) { completed.current = true; onCompleteRef.current(data.bundle); return; }
@@ -224,7 +231,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         <button disabled={busy || downloading || preparing || quoting || (!quote && (!error || (preparation !== null && !selected.length)))} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : error ? (preparation ? (zh ? "重新获取费用" : "Refresh cost") : (zh ? "重新读取视频" : "Inspect video again")) : (zh ? "确认分析" : "Confirm analysis")}</button>
       </div>
     </>}
-    {taskId && <AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} />}
+    {taskId && <AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} checkpointAt={taskProgress.checkpointAt} />}
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
   </section>;
 }

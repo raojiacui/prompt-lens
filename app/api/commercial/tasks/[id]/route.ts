@@ -78,5 +78,5 @@ export async function GET(request: NextRequest, { params }: Context) {
   const partial = task.kind === "workflow_analysis" ? Boolean(result.partial) : success > 0 && success < (input.pricing?.scenes.length || 0);
   const phase = task.kind === "analysis" ? !result.assets ? "preparing" : completedScenes < totalScenes ? "analyzing" : "saving" : undefined;
   const saveRecoveryPending = task.kind === "analysis" && task.state === "review" && Boolean(result.pendingResult);
-  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, saveRecoveryPending, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, progressUpdatedAt: task.updatedAt.getTime(), saveRecoveryPending, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error }, { headers: { "Cache-Control": "private, no-store" } });
 }
