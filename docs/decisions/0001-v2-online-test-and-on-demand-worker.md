@@ -1,97 +1,97 @@
-# ADR 0001: Isolated V2 online test and on-demand worker
+# ADR 0001：V2 独立线上测试环境与按需运行 Worker
 
-- Status: Accepted; infrastructure deployed and lifecycle verified
-- Date: 2026-10-22
-- Owners: Prompt Lens project team
+- 状态：已接受；基础设施已部署，生命周期已验证
+- 日期：2026-10-22
+- 决策方：Prompt Lens 项目团队
 
-## Context
+## 背景
 
-Prompt Lens V2 needs realistic online testing before it is promoted to the live `prompt-lens.cc.cd` site. The existing Vercel Hobby plan cannot run a cron job every minute. Keeping a Fly worker running continuously would consume compute while there are no jobs. A daily Vercel cron remains useful as a delayed safety net, but it does not provide acceptable recovery latency for active media-processing jobs.
+Prompt Lens V2 在发布到正式站 `prompt-lens.cc.cd` 前，需要进行真实的线上测试。现有 Vercel Hobby 套餐无法每分钟运行一次 Cron。让 Fly Worker 全天持续运行会在没有任务时产生不必要的计算成本。每日一次的 Vercel Cron 可以作为延迟兜底，但无法为正在处理的媒体任务提供足够及时的中断恢复。
 
-The test environment must protect the live application, production users, production database, and paid provider credentials while still exercising the real deployment path.
+测试环境既要覆盖真实部署链路，也必须保护正式应用、正式用户、生产数据库和付费服务商密钥。
 
-## Decision
+## 决策
 
-V2 will use a separate online test stack:
+V2 使用一套独立的线上测试环境：
 
-- Vercel project: `prompt-lens-v2-test`;
-- Supabase project: `prompt-lens-v2-test`;
-- Fly application: `prompt-lens-v2-worker`;
-- stable test URL: `https://prompt-lens-v2-test.vercel.app`;
-- the live Vercel project, domain, database, users, and worker stay unchanged.
+- Vercel 项目：`prompt-lens-v2-test`；
+- Supabase 项目：`prompt-lens-v2-test`；
+- Fly 应用：`prompt-lens-v2-worker`；
+- 固定测试地址：`https://prompt-lens-v2-test.vercel.app`；
+- 正式 Vercel 项目、正式域名、生产数据库、正式用户和生产 Worker 保持独立。
 
-The Fly worker uses an on-demand lifecycle:
+Fly Worker 采用按需运行机制：
 
-1. Creating or recovering a media task calls the worker wake endpoint.
-2. While awake, the worker runs reconciliation every minute.
-3. After three consecutive successful scans find no remaining work, the worker suspends itself.
-4. A later task wakes the worker again.
-5. The daily Vercel cron remains a low-frequency recovery safety net.
+1. 创建媒体任务或恢复任务时，Web 服务调用 Worker 的唤醒接口。
+2. Worker 唤醒后，每分钟执行一次任务对账与恢复扫描。
+3. 连续三次成功扫描均未发现待处理任务后，Worker 自动挂起。
+4. 后续出现新任务时，再次唤醒 Worker。
+5. 每日一次的 Vercel Cron 继续保留，作为低频恢复兜底。
 
-The V2 test environment may reuse the existing R2 storage and SMTP credentials. It receives new isolated authentication, encryption, cron, and worker secrets. Production KIE, payment, OAuth, and other paid third-party credentials are not copied. KIE generation tests use the tester's BYOK credentials stored in the V2 test database.
+V2 测试环境可以复用现有 R2 存储和 SMTP 邮件凭据。认证、加密、Cron 和 Worker 密钥使用测试环境新生成的独立值。生产 KIE、支付、OAuth 及其他付费第三方凭据不复制到测试环境。KIE 生成测试使用测试人员存储在 V2 测试数据库中的自带 Key。
 
-The Vercel test project uses the Next.js framework preset and Node.js 22 LTS. Its serverless database connection uses the Supabase transaction pooler on port 6543 with prepared statements disabled by the connection mode. The direct Supabase database host is reserved for environments with IPv6 connectivity and administrative checks.
+Vercel 测试项目使用 Next.js 框架预设和 Node.js 22 LTS。Serverless 数据库连接使用 Supabase 的 6543 端口事务池，并通过连接模式关闭预处理语句。Supabase 数据库直连地址只用于支持 IPv6 的环境和管理检查。
 
-The Fly application has shared public IPv4 and public IPv6 ingress. Public ingress is required for Vercel to call the worker and for Fly Proxy to auto-start a suspended Machine. The application runs one Machine to prevent duplicate scheduler passes.
+Fly 应用配置共享公网 IPv4 和公网 IPv6 入口。Vercel 需要通过公网调用 Worker，Fly Proxy 也需要通过公网请求自动启动已挂起的 Machine。应用只运行一台 Machine，避免多个调度器重复执行同一轮扫描。
 
-Deployment to this isolated stack does not publish V2 to the live site. Repository decision records remain local until the user explicitly requests a push.
+部署到这套独立环境不会发布 V2 到正式站。仓库中的决策记录保持本地状态，只有用户明确要求后才推送。
 
-## Alternatives considered
+## 备选方案
 
-### Deploy V2 to the live Vercel project
+### 将 V2 部署到正式 Vercel 项目
 
-Rejected because incomplete V2 behavior could affect the public domain and production users.
+未完成的 V2 功能可能影响公开域名和生产用户，因此不采用。
 
-### Use the production database for online testing
+### 使用生产数据库进行线上测试
 
-Rejected because test accounts, jobs, migrations, and cleanup could alter production data or make test results ambiguous.
+测试账号、任务、数据库迁移和数据清理可能改变生产数据，也会让测试结果难以区分，因此不采用。
 
-### Keep the Fly worker running continuously
+### 让 Fly Worker 全天持续运行
 
-Rejected because idle compute would add avoidable cost.
+空闲计算会产生可以避免的费用，因此不采用。
 
-### Depend only on the daily Hobby cron
+### 只依赖每日一次的 Hobby Cron
 
-Rejected because failed or interrupted tasks could wait up to a day for recovery.
+失败或中断的任务可能等待接近一天才能恢复，恢复延迟不可接受，因此不采用。
 
-## Consequences
+## 影响
 
-- Web, database, and worker changes can be tested without changing the live stack.
-- The first job after suspension may wait for a short Fly machine cold start.
-- Reusing R2 and SMTP reduces setup work but preserves operational dependency on those shared services. Random object keys and isolated database records limit cross-environment collisions.
-- The extra Vercel, Supabase, and Fly resources require lifecycle tracking and cleanup after V2 promotion.
-- Provider tests that require KIE need a tester-supplied BYOK key in the isolated database.
-- Vercel deployments exclude local build caches, worktrees, package stores, temporary model weights, and local secret files through `.vercelignore`.
+- Web、数据库和 Worker 可以在线上完成联合测试，同时避免主动修改正式环境。
+- Worker 挂起后的第一项任务需要等待一次较短的 Fly Machine 冷启动。
+- 复用 R2 和 SMTP 可以减少配置工作，但测试环境仍依赖这两项共享服务。随机对象 Key 和隔离数据库记录可以降低跨环境冲突风险。
+- 新增的 Vercel、Supabase 和 Fly 资源需要持续记录生命周期，并在 V2 正式发布且不再需要时清理。
+- 需要调用 KIE 的测试必须由测试人员在隔离数据库中配置自带 Key。
+- Vercel 部署通过 `.vercelignore` 排除本地构建缓存、工作树、包缓存、临时模型权重和本地密钥文件。
 
-## Verification plan
+## 验证计划
 
-- Confirm the V2 URL loads and authentication email delivery works.
-- Apply the current schema only to the V2 Supabase project and verify production remains unchanged.
-- Confirm `GET /healthz` succeeds on `prompt-lens-v2-worker`.
-- Create a test task and confirm the worker wakes, reconciles once per minute, and reports scheduler health.
-- Confirm three successful empty scans suspend the worker.
-- Create another task and confirm the suspended worker resumes.
-- Confirm the V2 environment contains only the approved shared R2 and SMTP credentials plus newly generated isolated secrets.
-- Confirm no deployment targets `prompt-lens.cc.cd` or the production worker.
+- 确认 V2 测试地址可以访问，并验证认证邮件可以送达。
+- 只向 V2 Supabase 项目应用当前数据库结构，并确认生产数据库没有变化。
+- 确认 `prompt-lens-v2-worker` 的 `GET /healthz` 返回成功。
+- 创建测试任务，确认 Worker 自动唤醒、每分钟执行一次对账，并正确报告调度器状态。
+- 确认连续三次成功的空任务扫描会让 Worker 自动挂起。
+- 再次创建任务，确认已挂起的 Worker 可以恢复运行。
+- 确认 V2 环境只包含批准复用的 R2、SMTP 凭据以及新生成的隔离密钥。
+- 确认任何测试部署都没有以 `prompt-lens.cc.cd` 或生产 Worker 为目标。
 
-## Operational follow-up
+## 运维跟进
 
-- Revisit the daily safety-net schedule if the Vercel plan changes.
-- Remove or archive the test resources after V2 promotion when they are no longer needed.
+- 如果 Vercel 套餐发生变化，重新评估每日兜底任务的执行频率。
+- V2 正式发布且测试资源不再需要后，删除或归档测试环境资源。
 
-## Verification results
+## 验证结果
 
-Verified on 2026-10-22:
+已于 2026 年 10 月 22 日完成以下验证：
 
-- all 25 schema migrations were applied to the isolated Supabase project and the resulting 38 public tables have RLS enabled;
-- the Vercel project built successfully with the Next.js preset on Node.js 22 and the stable test URL returned HTTP 200;
-- `GET /api/commercial/config` returned HTTP 200 from the deployed test site;
-- the Vercel runtime reached Supabase through the transaction pooler and the commercial reconciliation endpoint returned HTTP 200;
-- the Fly worker health endpoint returned HTTP 200 and exposed successful scheduler state;
-- an authenticated public wake request resumed the suspended Machine and immediately scheduled reconciliation;
-- three consecutive successful empty reconciliation passes changed the Machine state to `suspended`;
-- a later public wake request changed the Machine state back to `started` and reconciliation succeeded again;
-- the Fly application has exactly one Machine;
-- the production domain and production Vercel project were not deployment targets.
+- 25 个数据库迁移已应用到隔离的 Supabase 项目，生成的 38 张 public 表均已启用 RLS；
+- Vercel 项目使用 Next.js 预设和 Node.js 22 成功构建，固定测试地址返回 HTTP 200；
+- 已部署测试站的 `GET /api/commercial/config` 返回 HTTP 200；
+- Vercel 运行时通过事务池成功连接 Supabase，商业任务对账接口返回 HTTP 200；
+- Fly Worker 健康检查返回 HTTP 200，并展示成功的调度器状态；
+- 经过认证的公网唤醒请求可以恢复已挂起的 Machine，并立即安排一次对账；
+- 连续三次成功且无任务的对账后，Machine 状态变为 `suspended`；
+- 后续公网唤醒请求可以让 Machine 状态恢复为 `started`，并成功执行对账；
+- Fly 应用中只有一台 Machine；
+- 验证期间正式域名和正式 Vercel 项目均未作为预期部署目标。
 
-Authentication email delivery, BYOK provider generation, and end-to-end user workflows remain product-level test cases for the online test environment.
+认证邮件送达、使用自带 Key 调用服务商以及完整用户流程仍需在 V2 线上测试环境中继续进行产品级测试。
