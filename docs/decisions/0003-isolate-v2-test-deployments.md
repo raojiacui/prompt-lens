@@ -1,51 +1,53 @@
-# ADR 0003: Isolate V2 test deployments from the live Vercel project
+# ADR 0003：隔离 V2 测试部署与正式站部署
 
-- Status: Accepted
-- Date: 2026-10-22
-- Owners: Prompt Lens project team
+- 状态：已接受
+- 日期：2026-10-22
+- 决策方：Prompt Lens 项目团队
 
-## Context
+## 背景
 
-Prompt Lens V2 needs a stable online environment before it replaces the existing live product. The repository branch `prompt-lens-V2` was deployed to the existing `prompt-lens` Vercel project as a production deployment on 2026-10-22. That deployment caused `prompt-lens.cc.cd` to serve the unreleased V2 interface.
+Prompt Lens V2 在替换现有正式版本前，需要一个稳定的线上测试环境。2026 年 10 月 22 日，仓库的 `prompt-lens-V2` 分支被部署到了现有的 Vercel 正式项目 `prompt-lens`，并成为 Production 部署，导致 `prompt-lens.cc.cd` 暂时展示尚未发布的 V2 界面。
 
-Vercel metadata confirmed the accidental deployment was created through the CLI with `source: cli`, `actor: codex`, `target: production`, and `githubCommitRef: prompt-lens-V2`. The V2 checkout's ignored `.vercel/project.json` still pointed to the live project ID, so the CLI production command inherited the wrong project binding. The deployment was not an automatic promotion of a preview deployment.
+Vercel 元数据确认，这次误上线由 CLI 发起，记录为 `source: cli`、`actor: codex`、`target: production` 和 `githubCommitRef: prompt-lens-V2`。V2 工作区中被 Git 忽略的 `.vercel/project.json` 仍指向正式项目 ID，CLI 的生产部署命令因此沿用了错误的项目绑定。这次事件与 Preview 部署自动提升无关。
 
-The live project was rolled back to deployment `dpl_HvZt8Wy8rLr4T4PmqGDuZq9QPTk5`, created on 2026-10-19. Vercel confirmed that `prompt-lens.cc.cd`, the project production URL, and the `main` branch URL all point to that restored deployment.
+正式项目随后回滚到 2026 年 10 月 19 日创建的部署 `dpl_HvZt8Wy8rLr4T4PmqGDuZq9QPTk5`。Vercel 已确认 `prompt-lens.cc.cd`、项目生产地址和 `main` 分支地址均指向恢复后的部署。
 
-## Decision
+## 决策
 
-- The existing Vercel project `prompt-lens` remains the live production project for `prompt-lens.cc.cd`.
-- All V2 online testing uses the separate Vercel project `prompt-lens-v2-test` and its URL `https://prompt-lens-v2-test.vercel.app`.
-- Deploying V2 with a production target is allowed only inside `prompt-lens-v2-test`; Vercel production targets are scoped per project.
-- Before every V2 deployment, the project name or project ID must be checked explicitly. Commands and automation must not rely on an implicit Vercel project link.
-- The V2 checkout's local `.vercel/project.json` must point to project `prompt-lens-v2-test` with ID `prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI`. The live project ID `prj_LA38e0saqqVw1OkQ95AyoMx5vjIV` is forbidden for V2 deployments.
-- The `prompt-lens` project may receive a V2 deployment only when the team explicitly decides to release V2 to the live site.
+- 现有 Vercel 项目 `prompt-lens` 继续作为 `prompt-lens.cc.cd` 的正式生产项目。
+- V2 的全部线上测试使用独立 Vercel 项目 `prompt-lens-v2-test`，测试地址为 `https://prompt-lens-v2-test.vercel.app`。
+- V2 可以在 `prompt-lens-v2-test` 项目内部使用 Production 目标，因为 Vercel 的 Production 标记以项目为边界。
+- 每次执行 Vercel 变更前，必须明确核对项目名称和项目 ID，禁止依赖未经检查的本地项目绑定。
+- V2 工作区的 `.vercel/project.json` 必须指向测试项目 `prompt-lens-v2-test`，项目 ID 为 `prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI`。
+- 正式项目 `prompt-lens` 的项目 ID 为 `prj_LA38e0saqqVw1OkQ95AyoMx5vjIV`。V2 测试期间禁止向该项目部署。
+- 只有项目负责人明确决定正式发布 V2 后，`prompt-lens` 项目才可以接收 V2 部署。
 
-## Alternatives considered
+## 备选方案
 
-### Use branch preview deployments inside the live project
+### 在正式项目中使用分支 Preview 部署
 
-Preview deployments can support short reviews, but project-link mistakes and production promotions remain close to the live domain. They are insufficient as the only isolation boundary for ongoing V2 testing.
+Preview 部署适合短期评审，但它与正式域名共用同一个项目。项目绑定错误或人工提升操作仍可能影响正式站，因此不适合作为 V2 长期测试的唯一隔离措施。
 
-### Keep V2 local until release
+### V2 发布前只在本地测试
 
-Local testing cannot verify hosted callbacks, environment variables, background workers, authentication, or production-like network behavior.
+本地环境无法完整验证云端回调、环境变量、后台 Worker、用户认证和生产网络行为，覆盖范围不足。
 
-### Use the live project with a temporary custom domain
+### 在正式项目中绑定临时测试域名
 
-This still shares the production project and increases the chance that a deployment or alias operation affects the live domain.
+临时域名仍与正式站共用生产项目，部署或域名别名操作影响正式站的风险依然存在。
 
-## Consequences
+## 影响
 
-- The live site and V2 test site have separate deployment histories and stable URLs.
-- V2 environment variables and access controls must be maintained on the test project.
-- A deployment labelled `Production` in `prompt-lens-v2-test` remains a test deployment because the production designation is local to that Vercel project.
-- Release promotion requires an explicit deployment to the `prompt-lens` project.
+- 正式站与 V2 测试站拥有独立的部署历史和固定访问地址。
+- V2 的环境变量和访问控制需要单独维护在测试项目中。
+- `prompt-lens-v2-test` 中标记为 Production 的部署仍属于测试环境，因为该标记只在测试项目内部生效。
+- V2 正式发布时，需要获得项目负责人明确授权，并主动部署到 `prompt-lens` 项目。
+- 当前 V2 工作区已改绑到测试项目，降低 CLI 命令误操作正式项目的风险。
 
-## Verification plan
+## 验证计划
 
-- Inspect `https://prompt-lens.cc.cd` after any deployment work and confirm its deployment ID belongs to the intended live release.
-- Inspect `https://prompt-lens-v2-test.vercel.app` and confirm it resolves through the `prompt-lens-v2-test` project.
-- Read `.vercel/project.json` before each Vercel mutation and fail the operation unless it names `prompt-lens-v2-test` with the expected project ID.
-- Confirm V2 deployments do not add or change aliases on the `prompt-lens` project.
-- Record the live deployment ID before a future V2 production release so rollback remains immediate and unambiguous.
+- 每次部署相关操作后检查 `https://prompt-lens.cc.cd`，确认其部署 ID 仍属于预期的正式版本。
+- 检查 `https://prompt-lens-v2-test.vercel.app`，确认它由 `prompt-lens-v2-test` 项目提供服务。
+- 每次执行 Vercel 变更前读取 `.vercel/project.json`，只有项目名称和 ID 与测试项目完全一致时才继续。
+- 确认 V2 测试部署没有在 `prompt-lens` 项目中新增或修改域名别名。
+- 未来正式发布 V2 前，先记录当时的正式部署 ID，确保可以快速回滚。
