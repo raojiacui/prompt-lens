@@ -8,6 +8,8 @@
 
 Prompt Lens V2 needs a stable online environment before it replaces the existing live product. The repository branch `prompt-lens-V2` was deployed to the existing `prompt-lens` Vercel project as a production deployment on 2026-10-22. That deployment caused `prompt-lens.cc.cd` to serve the unreleased V2 interface.
 
+Vercel metadata confirmed the accidental deployment was created through the CLI with `source: cli`, `actor: codex`, `target: production`, and `githubCommitRef: prompt-lens-V2`. The V2 checkout's ignored `.vercel/project.json` still pointed to the live project ID, so the CLI production command inherited the wrong project binding. The deployment was not an automatic promotion of a preview deployment.
+
 The live project was rolled back to deployment `dpl_HvZt8Wy8rLr4T4PmqGDuZq9QPTk5`, created on 2026-10-19. Vercel confirmed that `prompt-lens.cc.cd`, the project production URL, and the `main` branch URL all point to that restored deployment.
 
 ## Decision
@@ -16,6 +18,7 @@ The live project was rolled back to deployment `dpl_HvZt8Wy8rLr4T4PmqGDuZq9QPTk5
 - All V2 online testing uses the separate Vercel project `prompt-lens-v2-test` and its URL `https://prompt-lens-v2-test.vercel.app`.
 - Deploying V2 with a production target is allowed only inside `prompt-lens-v2-test`; Vercel production targets are scoped per project.
 - Before every V2 deployment, the project name or project ID must be checked explicitly. Commands and automation must not rely on an implicit Vercel project link.
+- The V2 checkout's local `.vercel/project.json` must point to project `prompt-lens-v2-test` with ID `prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI`. The live project ID `prj_LA38e0saqqVw1OkQ95AyoMx5vjIV` is forbidden for V2 deployments.
 - The `prompt-lens` project may receive a V2 deployment only when the team explicitly decides to release V2 to the live site.
 
 ## Alternatives considered
@@ -43,5 +46,6 @@ This still shares the production project and increases the chance that a deploym
 
 - Inspect `https://prompt-lens.cc.cd` after any deployment work and confirm its deployment ID belongs to the intended live release.
 - Inspect `https://prompt-lens-v2-test.vercel.app` and confirm it resolves through the `prompt-lens-v2-test` project.
+- Read `.vercel/project.json` before each Vercel mutation and fail the operation unless it names `prompt-lens-v2-test` with the expected project ID.
 - Confirm V2 deployments do not add or change aliases on the `prompt-lens` project.
 - Record the live deployment ID before a future V2 production release so rollback remains immediate and unambiguous.
