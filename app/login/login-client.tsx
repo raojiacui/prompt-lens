@@ -179,8 +179,16 @@ export function LoginClient({
             aria-modal="true"
             aria-labelledby="test-notice-title"
             aria-describedby="test-notice-description"
-            className="w-full max-w-md rounded-3xl border border-[#D8D5CC] bg-[#F5F3EC] p-7 shadow-2xl"
+            className="relative w-full max-w-md rounded-3xl border border-[#D8D5CC] bg-[#F5F3EC] p-7 shadow-2xl"
           >
+            <button
+              type="button"
+              aria-label="关闭提示"
+              className="absolute right-5 top-5 flex h-9 w-9 items-center justify-center rounded-full text-xl text-[#6B6860] transition-colors hover:bg-[#E8E4DA] hover:text-[#141413] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D97757]/35"
+              onClick={() => setShowTestNotice(false)}
+            >
+              ×
+            </button>
             <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#D97757]/12 text-2xl">
               ✦
             </div>
@@ -207,15 +215,6 @@ export function LoginClient({
                 }}
               >
                 前往 Prompt Lens 正式版
-              </Button>
-              <Button
-                type="button"
-                size="lg"
-                variant="outline"
-                className="w-full"
-                onClick={() => setShowTestNotice(false)}
-              >
-                我是测试人员
               </Button>
             </div>
           </div>
