@@ -7,6 +7,8 @@ workers/ffmpeg-worker/*
 !workers/ffmpeg-worker/Dockerfile
 !workers/ffmpeg-worker/package.json
 !workers/ffmpeg-worker/server.mjs
+!workers/ffmpeg-worker/reconciliation-scheduler.mjs
+!workers/ffmpeg-worker/fly-machine-lifecycle.mjs
 !workers/ffmpeg-worker/parallel-download.mjs
 !workers/ffmpeg-worker/media-fetch.mjs
 !workers/ffmpeg-worker/video-inspection.mjs
