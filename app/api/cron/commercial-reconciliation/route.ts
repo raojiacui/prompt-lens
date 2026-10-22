@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq, sql } from "drizzle-orm";
-import { apiRateLimits, db, paymentOrders, commercialTasks } from "@/lib/db";
+import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
+import { analysisSceneJobs, apiRateLimits, db, paymentOrders, commercialTasks } from "@/lib/db";
 import { expireTrialReservations } from "@/lib/usage/trial-quota";
 import { recoverAnalysisTasks, runAnalysisTask } from "@/lib/workflow/analysis-tasks";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
@@ -45,5 +45,13 @@ export async function GET(request: NextRequest) {
   else if (queued && commercialConsumptionEnabled()) await runCommercialTask(queued.id);
   const retention = await expireProjectMedia(10);
   await processMediaCleanupJobs(10);
-  return NextResponse.json({ checked, retention }, { headers: { "Cache-Control": "no-store" } });
+  const [activeTasks, activeSceneJobs] = await Promise.all([
+    db.select({ count: sql<number>`count(*)::int` }).from(commercialTasks).where(or(
+      inArray(commercialTasks.state, ["queued", "running"]),
+      and(eq(commercialTasks.state, "review"), sql`jsonb_typeof(${commercialTasks.result}->'pendingResult') = 'object'`),
+    )),
+    db.select({ count: sql<number>`count(*)::int` }).from(analysisSceneJobs).where(inArray(analysisSceneJobs.state, ["queued", "running"])),
+  ]);
+  const work = { tasks: activeTasks[0]?.count || 0, sceneJobs: activeSceneJobs[0]?.count || 0 };
+  return NextResponse.json({ checked, retention, work, workRemaining: work.tasks + work.sceneJobs > 0 }, { headers: { "Cache-Control": "no-store" } });
 }

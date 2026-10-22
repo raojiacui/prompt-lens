@@ -132,10 +132,13 @@ The test switch accepts loopback HTTP targets only. Inspect
 `http://127.0.0.1:8080/healthz` after one minute to verify that `lastSuccessAt`
 continues advancing and `consecutiveFailures` remains zero.
 
-In production, the scheduler runs inside the worker process. The Fly service must
-keep at least one machine running; an auto-stopped machine cannot wake itself from
-an in-process timer. `fly.ffmpeg-worker.toml` therefore keeps one primary-region
-machine online while allowing additional machines to stop when idle.
+In production, confirming an analysis or generation task calls the authenticated
+`POST /scheduler/wake` endpoint. Fly starts or resumes the Machine for that
+request. The worker reconciles once per minute while database work remains and
+suspends itself through Fly's local Machine API after three consecutive empty
+scans. `auto_stop_machines` stays off so Fly Proxy cannot stop a Machine while
+background work is still active; `min_machines_running = 0` keeps idle compute at
+zero. A reconciliation error resets the idle counter and never triggers suspend.
 
 The Dockerfile installs `scenedetect-headless` for `/breakdown`. Social-platform extraction is handled by the configured provider in the main app; this worker never receives the provider API key.
 

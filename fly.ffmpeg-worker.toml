@@ -32,10 +32,10 @@ kill_timeout = "30s"
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"
+  # Task submissions wake the Machine; the worker suspends itself after three idle scans.
+  auto_stop_machines = "off"
   auto_start_machines = true
-  # One machine must stay online because the minute scheduler runs in this process.
-  min_machines_running = 1
+  min_machines_running = 0
   processes = ["app"]
 
   [http_service.concurrency]

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { enqueueAnalysis, runAnalysisTask } from "@/lib/workflow/analysis-tasks";
 import { videoAnalysisBillingErrorResponse } from "@/lib/billing/video-analysis";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
+import { wakeReconciliationWorker } from "@/lib/billing/reconciliation-worker";
 
 export const maxDuration = 300;
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -15,6 +16,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await request.json();
     const { id } = await params;
     const task = await enqueueAnalysis(session.user.id, id, body);
+    if (["queued", "running"].includes(task.state)) await wakeReconciliationWorker("workflow_analysis");
     if (task.state === "queued") after(() => runAnalysisTask(task.id));
     return NextResponse.json({ taskId: task.id, state: task.state }, { status: 202 });
   } catch (error) {

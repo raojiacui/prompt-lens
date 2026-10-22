@@ -8,6 +8,7 @@ import { reconcileCommercialGeneration } from "@/lib/billing/commercial-generati
 import { recoverAnalysisTasks, runAnalysisTask } from "@/lib/workflow/analysis-tasks";
 import { analysisNeedsRecovery } from "@/lib/billing/analysis-execution";
 import { resumeIndependentAnalysis } from "@/lib/billing/independent-scene-analysis";
+import { wakeReconciliationWorker } from "@/lib/billing/reconciliation-worker";
 
 export const maxDuration = 300;
 type Context = { params: Promise<{ id: string }> };
@@ -19,6 +20,9 @@ export async function POST(request: NextRequest, { params }: Context) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ code: "INVALID_TASK" }, { status: 400 });
   try {
     let task = await confirmCommercialTask(session.user.id, id);
+    if (["queued", "running", "review"].includes(task.state)) {
+      await wakeReconciliationWorker("commercial_task_confirm");
+    }
     if (task.state === "queued" && task.kind === "generation") {
       await runCommercialTask(task.id);
       task = (await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) }))!;

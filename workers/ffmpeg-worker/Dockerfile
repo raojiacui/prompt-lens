@@ -9,6 +9,8 @@ WORKDIR /app
 COPY workers/ffmpeg-worker/package.json ./package.json
 RUN npm install --omit=dev
 COPY workers/ffmpeg-worker/server.mjs ./server.mjs
+COPY workers/ffmpeg-worker/reconciliation-scheduler.mjs ./reconciliation-scheduler.mjs
+COPY workers/ffmpeg-worker/fly-machine-lifecycle.mjs ./fly-machine-lifecycle.mjs
 COPY workers/ffmpeg-worker/parallel-download.mjs ./parallel-download.mjs
 COPY workers/ffmpeg-worker/media-fetch.mjs ./media-fetch.mjs
 COPY workers/ffmpeg-worker/video-inspection.mjs ./video-inspection.mjs

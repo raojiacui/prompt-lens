@@ -14,6 +14,7 @@ import { fetchMedia } from "./media-fetch.mjs";
 import { inspectVideoProbe, detectWithFallback, ingestVideoCandidates } from "./video-inspection.mjs";
 import { probeRemoteVideoCodec } from "./remote-video-codec.mjs";
 import { startReconciliationScheduler } from "./reconciliation-scheduler.mjs";
+import { createFlyMachineSuspender } from "./fly-machine-lifecycle.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
 const WORKER_SECRET = process.env.WORKER_SECRET || process.env.FFMPEG_WORKER_SECRET || "";
@@ -40,10 +41,13 @@ const PYSCENEDETECT_WINDOW_WIDTH = Number(process.env.PYSCENEDETECT_WINDOW_WIDTH
 const MAX_RESOLVE_SECONDS = Number(process.env.MAX_RESOLVE_SECONDS || 600);
 const MAX_RESOLVE_BYTES = Number(process.env.MAX_RESOLVE_BYTES || 1024 * 1024 * 1024);
 const MUSIC_RECOGNITION_PREVIEW_SECONDS = Number(process.env.MUSIC_RECOGNITION_PREVIEW_SECONDS || 12);
+let activeWorkerRequests = 0;
 const reconciliationScheduler = startReconciliationScheduler({
   baseUrl: process.env.COMMERCIAL_RECONCILIATION_BASE_URL,
   secret: process.env.CRON_SECRET,
   allowInsecureLoopback: process.env.ALLOW_INSECURE_LOCAL_RECONCILIATION === "true",
+  hasLocalWork: () => activeWorkerRequests > 0,
+  suspendMachine: createFlyMachineSuspender(),
 });
 
 function requireEnv() {
@@ -531,9 +535,20 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && req.url === "/healthz") {
       return json(res, 200, { ok: true, reconciliationScheduler: reconciliationScheduler.snapshot() });
     }
-    if (req.method === "POST" && req.url === "/ingest-media") return await handleIngestMedia(req, res);
-    if (req.method === "POST" && req.url === "/breakdown") return await handleBreakdown(req, res);
-    if (req.method === "POST" && req.url === "/commercial-media") return await handleCommercialMedia(req, res);
+    if (req.method === "POST" && req.url === "/scheduler/wake") {
+      assertAuth(req);
+      return json(res, 200, { ok: true, scheduled: reconciliationScheduler.wake() });
+    }
+    if (req.method === "POST" && ["/ingest-media", "/breakdown", "/commercial-media"].includes(req.url)) {
+      activeWorkerRequests += 1;
+      try {
+        if (req.url === "/ingest-media") return await handleIngestMedia(req, res);
+        if (req.url === "/breakdown") return await handleBreakdown(req, res);
+        return await handleCommercialMedia(req, res);
+      } finally {
+        activeWorkerRequests -= 1;
+      }
+    }
     return json(res, 404, { error: "Not found" });
   } catch (error) {
     const status = error.statusCode || 500;

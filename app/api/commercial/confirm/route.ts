@@ -4,6 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { commercialTasks, db } from "@/lib/db";
 import { commercialConsumptionEnabled } from "@/lib/billing/commercial-analysis";
 import { confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
+import { wakeReconciliationWorker } from "@/lib/billing/reconciliation-worker";
 export const maxDuration = 300;
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -19,6 +20,9 @@ export async function POST(request: NextRequest) {
       for (const id of [...ids].sort()) rows.push(await confirmCommercialTaskInTransaction(tx, session.user.id, id));
       return rows;
     });
+    if (tasks.some((task) => ["queued", "running", "review"].includes(task.state))) {
+      await wakeReconciliationWorker("commercial_confirm");
+    }
     const queuedGenerations = tasks.filter((task) => task.state === "queued" && task.kind === "generation");
     await Promise.all(queuedGenerations.map((task) => runCommercialTask(task.id)));
     const queuedAnalysis = tasks.filter((task) => task.state === "queued" && task.kind !== "generation");
