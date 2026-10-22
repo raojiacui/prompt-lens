@@ -1,5 +1,7 @@
 param(
-  [int]$Port = 8080
+  [int]$Port = 8080,
+  [switch]$EnableReconciliationScheduler,
+  [string]$ReconciliationBaseUrl = "http://127.0.0.1:3000"
 )
 
 $ErrorActionPreference = "Stop"
@@ -77,8 +79,21 @@ try {
   if (-not $env:WORKER_SECRET -and $env:FFMPEG_WORKER_SECRET) {
     $env:WORKER_SECRET = $env:FFMPEG_WORKER_SECRET
   }
-  # Local media tests must not trigger reconciliation against the production site.
-  $env:COMMERCIAL_RECONCILIATION_BASE_URL = ""
+  if ($EnableReconciliationScheduler) {
+    $reconciliationUri = [Uri]$ReconciliationBaseUrl
+    if ($reconciliationUri.Scheme -ne "http" -or $reconciliationUri.Host -notin @("localhost", "127.0.0.1", "::1")) {
+      throw "Local reconciliation testing requires an http://localhost or http://127.0.0.1 target."
+    }
+    if (-not $env:CRON_SECRET) {
+      throw "CRON_SECRET is required when the local reconciliation scheduler is enabled."
+    }
+    $env:COMMERCIAL_RECONCILIATION_BASE_URL = $reconciliationUri.GetLeftPart([System.UriPartial]::Authority)
+    $env:ALLOW_INSECURE_LOCAL_RECONCILIATION = "true"
+  } else {
+    # Local media tests must not trigger reconciliation unless explicitly enabled.
+    $env:COMMERCIAL_RECONCILIATION_BASE_URL = ""
+    $env:ALLOW_INSECURE_LOCAL_RECONCILIATION = ""
+  }
   if (-not $env:PORT) {
     $env:PORT = [string]$Port
   }

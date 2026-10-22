@@ -8,6 +8,10 @@ Cloud Run worker for V2 video breakdown. Scene boundary detection uses PySceneDe
 - `POST /breakdown`
 - `POST /ingest-media`
 
+`/healthz` reports both process health and the reconciliation scheduler's last
+attempt, last success, HTTP status, consecutive failures, and next scheduled run.
+It never returns the scheduler target or secret.
+
 `/breakdown` requires:
 
 ```http
@@ -116,6 +120,17 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-w
 The script loads .env.local, derives R2_ENDPOINT from R2_ACCOUNT_ID when needed, and serves http://localhost:8080.
 
 Set `FFMPEG_WORKER_URL=http://localhost:8080` in `.env.local` to use the local worker instead of a deployed version. The local startup script disables the commercial reconciliation scheduler, even if production scheduler settings exist in `.env.local`.
+
+To exercise the same 60-second reconciliation loop against the local Next app,
+set the same `CRON_SECRET` for both processes and run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-worker.ps1 -EnableReconciliationScheduler -ReconciliationBaseUrl http://127.0.0.1:3000
+```
+
+The test switch accepts loopback HTTP targets only. Inspect
+`http://127.0.0.1:8080/healthz` after one minute to verify that `lastSuccessAt`
+continues advancing and `consecutiveFailures` remains zero.
 
 The Dockerfile installs `scenedetect-headless` for `/breakdown`. Social-platform extraction is handled by the configured provider in the main app; this worker never receives the provider API key.
 

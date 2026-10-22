@@ -13,6 +13,7 @@ import { splitLongScenes, sampleSceneFrameTimes } from "./scene-segments.mjs";
 import { fetchMedia } from "./media-fetch.mjs";
 import { inspectVideoProbe, detectWithFallback, ingestVideoCandidates } from "./video-inspection.mjs";
 import { probeRemoteVideoCodec } from "./remote-video-codec.mjs";
+import { startReconciliationScheduler } from "./reconciliation-scheduler.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
 const WORKER_SECRET = process.env.WORKER_SECRET || process.env.FFMPEG_WORKER_SECRET || "";
@@ -39,6 +40,11 @@ const PYSCENEDETECT_WINDOW_WIDTH = Number(process.env.PYSCENEDETECT_WINDOW_WIDTH
 const MAX_RESOLVE_SECONDS = Number(process.env.MAX_RESOLVE_SECONDS || 600);
 const MAX_RESOLVE_BYTES = Number(process.env.MAX_RESOLVE_BYTES || 1024 * 1024 * 1024);
 const MUSIC_RECOGNITION_PREVIEW_SECONDS = Number(process.env.MUSIC_RECOGNITION_PREVIEW_SECONDS || 12);
+const reconciliationScheduler = startReconciliationScheduler({
+  baseUrl: process.env.COMMERCIAL_RECONCILIATION_BASE_URL,
+  secret: process.env.CRON_SECRET,
+  allowInsecureLoopback: process.env.ALLOW_INSECURE_LOCAL_RECONCILIATION === "true",
+});
 
 function requireEnv() {
   const missing = [
@@ -522,7 +528,9 @@ async function handleCommercialMedia(req, res) {
 
 const server = createServer(async (req, res) => {
   try {
-    if (req.method === "GET" && req.url === "/healthz") return json(res, 200, { ok: true });
+    if (req.method === "GET" && req.url === "/healthz") {
+      return json(res, 200, { ok: true, reconciliationScheduler: reconciliationScheduler.snapshot() });
+    }
     if (req.method === "POST" && req.url === "/ingest-media") return await handleIngestMedia(req, res);
     if (req.method === "POST" && req.url === "/breakdown") return await handleBreakdown(req, res);
     if (req.method === "POST" && req.url === "/commercial-media") return await handleCommercialMedia(req, res);
@@ -538,19 +546,3 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`Prompt Lens FFmpeg worker listening on ${PORT}`);
 });
-
-// Optional single-flight scheduler. Deployment must provide a dedicated cron secret.
-const reconciliationBase = process.env.COMMERCIAL_RECONCILIATION_BASE_URL;
-const reconciliationSecret = process.env.CRON_SECRET;
-if (reconciliationBase && reconciliationSecret) {
-  const endpoint = new URL("/api/cron/commercial-reconciliation", reconciliationBase);
-  if (endpoint.protocol !== "https:") throw new Error("Commercial reconciliation requires HTTPS");
-  const tick = async () => {
-    try {
-      const response = await fetch(endpoint, { headers: { Authorization: `Bearer ${reconciliationSecret}` }, signal: AbortSignal.timeout(290000), redirect: "error" });
-      if (!response.ok) console.warn("Commercial reconciliation unavailable:", response.status);
-    } catch { console.warn("Commercial reconciliation request unconfirmed"); }
-    setTimeout(tick, 60000).unref();
-  };
-  setTimeout(tick, 1000).unref();
-}
