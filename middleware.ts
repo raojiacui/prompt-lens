@@ -1,10 +1,47 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "./i18n/config";
+import { isAccessEmailAllowed, isAccessRestricted } from "./lib/auth/access-policy";
+import { verifiedCachedSessionEmail } from "./lib/auth/session-cache-access";
 
-export function middleware(request: NextRequest) {
+const SERVER_AUTH_PATHS = [
+  "/api/auth",
+  "/api/cron",
+  "/api/internal",
+  "/api/payments/webhooks",
+];
+
+function isServerAuthPath(pathname: string) {
+  return SERVER_AUTH_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+function restrictedApiResponse() {
+  return NextResponse.json(
+    { error: "Authorized test account required" },
+    { status: 401 },
+  );
+}
+
+export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api/auth")) {
     return NextResponse.next();
+  }
+
+  if (isAccessRestricted() && request.nextUrl.pathname !== "/login" && !isServerAuthPath(request.nextUrl.pathname)) {
+    const secret = process.env.BETTER_AUTH_SECRET;
+    const cachedEmail = secret
+      ? await verifiedCachedSessionEmail(request, secret)
+      : null;
+
+    if (!isAccessEmailAllowed(cachedEmail)) {
+      if (request.nextUrl.pathname.startsWith("/api/")) {
+        return restrictedApiResponse();
+      }
+
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
   // 1. 解析 locale：cookie 优先，未命中检测 Accept-Language

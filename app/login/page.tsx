@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+import { isAccessEmailAllowed, isAccessRestricted } from "@/lib/auth/access-policy";
 import { LoginClient } from "./login-client";
 
 type LoginPageProps = {
@@ -18,10 +19,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const callbackUrl = normalizeNextPath(params.next);
   const headersList = await headers();
   const session = await auth.api.getSession({ headers: headersList }).catch(() => null);
+  const restrictedAccess = isAccessRestricted();
+  const sessionAccessAllowed = Boolean(session?.user && isAccessEmailAllowed(session.user.email));
 
-  if (session?.user) {
+  if (sessionAccessAllowed) {
     redirect(callbackUrl);
   }
 
-  return <LoginClient defaultCallbackUrl={callbackUrl} />;
+  return (
+    <LoginClient
+      defaultCallbackUrl={callbackUrl}
+      restrictedAccess={restrictedAccess}
+      sessionAccessAllowed={sessionAccessAllowed}
+    />
+  );
 }
