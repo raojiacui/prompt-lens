@@ -34,7 +34,8 @@ kill_timeout = "30s"
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0
+  # One machine must stay online because the minute scheduler runs in this process.
+  min_machines_running = 1
   processes = ["app"]
 
   [http_service.concurrency]

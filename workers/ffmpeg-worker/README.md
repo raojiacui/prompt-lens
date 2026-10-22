@@ -132,6 +132,11 @@ The test switch accepts loopback HTTP targets only. Inspect
 `http://127.0.0.1:8080/healthz` after one minute to verify that `lastSuccessAt`
 continues advancing and `consecutiveFailures` remains zero.
 
+In production, the scheduler runs inside the worker process. The Fly service must
+keep at least one machine running; an auto-stopped machine cannot wake itself from
+an in-process timer. `fly.ffmpeg-worker.toml` therefore keeps one primary-region
+machine online while allowing additional machines to stop when idle.
+
 The Dockerfile installs `scenedetect-headless` for `/breakdown`. Social-platform extraction is handled by the configured provider in the main app; this worker never receives the provider API key.
 
 ## Scene detection evaluation
