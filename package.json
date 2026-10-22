@@ -28,6 +28,7 @@
         "@mux/mux-node": "^12.8.1",
         "@neondatabase/serverless": "^0.10.0",
         "@types/three": "^0.183.1",
+        "@vercel/analytics": "^2.0.1",
         "alipay-sdk": "^4.14.0",
         "assemblyai": "^4.29.0",
         "axios": "^1.20.0",

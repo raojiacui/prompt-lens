@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/auth/auth-client";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import { VisitTracker } from "@/components/visit-tracker";
+import { Analytics } from "@vercel/analytics/next";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://prompt-lens.cc.cd";
 
@@ -84,6 +85,7 @@ export default async function RootLayout({
             {children}
           </AuthProvider>
         </NextIntlClientProvider>
+        <Analytics />
       </body>
     </html>
   );
