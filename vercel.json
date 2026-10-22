@@ -1,6 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron/analysis-dispatch", "schedule": "* * * * *" },
+    { "path": "/api/cron/analysis-dispatch", "schedule": "0 18 * * *" },
     { "path": "/api/cron/media-retention", "schedule": "0 19 * * *" },
     { "path": "/api/cron/commercial-reconciliation", "schedule": "0 20 * * *" }
   ]
