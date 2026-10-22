@@ -1,58 +1,58 @@
-# ADR 0002: Email allowlist for the V2 online test
+# ADR 0002：V2 线上测试环境邮箱白名单
 
-- Status: Accepted
-- Date: 2026-10-22
-- Owners: Prompt Lens project team
+- 状态：已接受
+- 日期：2026-10-22
+- 决策方：Prompt Lens 项目团队
 
-## Context
+## 背景
 
-The isolated V2 deployment is available on a public Vercel URL so realistic online testing can continue before the release reaches the live site. During this stage, product pages, user APIs, test data, and provider integrations must be available only to the two designated testers. The Vercel team owner's account does not match the requested test email, so Vercel team authentication would not express the required access list.
+V2 独立测试环境通过公开的 Vercel 地址提供服务，以便在正式发布前进行真实线上测试。在这个阶段，产品页面、用户 API、测试数据和服务商集成只能由指定测试人员访问。Vercel 团队所有者账号与用户指定的测试邮箱不一致，因此 Vercel 团队身份验证无法准确表达所需的访问名单。
 
-## Decision
+## 决策
 
-The V2 test project will set `ACCESS_ALLOWED_EMAILS` to the two approved email addresses. When that variable contains at least one address:
+V2 测试项目通过环境变量 `ACCESS_ALLOWED_EMAILS` 配置允许访问的邮箱。当该变量至少包含一个邮箱时：
 
-- email matching is trimmed, case-insensitive, and exact;
-- only allowlisted emails can request or redeem an email login code;
-- social login is disabled to avoid an unverified path around the email gate;
-- product pages and ordinary APIs require a signed Better Auth cookie cache whose user email is allowlisted;
-- the login page remains public and first presents a test notice with a link to `https://prompt-lens.cc.cd`; approved testers can dismiss the notice and authenticate;
-- cron, internal dispatch, and payment webhook routes remain reachable through their existing secret or signature authentication.
+- 邮箱匹配会去除首尾空格、忽略大小写，并要求完整地址一致；
+- 只有白名单邮箱可以请求或使用邮箱登录验证码；
+- 测试环境关闭社交登录，防止未经验证的登录路径绕过邮箱限制；
+- 产品页面和普通 API 必须携带经过 Better Auth 签名且邮箱位于白名单中的会话缓存 Cookie；
+- 登录页保持公开，并首先展示测试提示以及前往 `https://prompt-lens.cc.cd` 的入口；受邀测试人员关闭提示后可以登录；
+- Cron、内部调度和支付回调路由继续使用现有密钥或签名完成身份验证。
 
-Deployments without `ACCESS_ALLOWED_EMAILS` retain the existing public sign-in behavior. This keeps the access restriction scoped to the isolated V2 test project and leaves the live site unchanged.
+没有配置 `ACCESS_ALLOWED_EMAILS` 的部署继续保留现有公开登录行为。该限制只作用于独立的 V2 测试项目，不改变正式站的登录方式。
 
-Approved testers at acceptance time:
+决策生效时允许访问的测试邮箱：
 
 - `raojiacuui@gmail.com`
 - `raojinbo@gmail.com`
 
-## Alternatives considered
+## 备选方案
 
-### Vercel Authentication
+### 使用 Vercel Authentication
 
-Rejected for this test because it grants access through Vercel membership, while the requested tester email is not the current Vercel team member identity.
+Vercel Authentication 依据 Vercel 成员身份授权，而指定测试邮箱与当前团队成员身份不一致，因此不采用。
 
-### Shared HTTP password
+### 使用共享 HTTP 密码
 
-Rejected because it creates another credential to distribute and cannot identify which tester created a task.
+共享密码会增加一个需要分发和保管的凭据，也无法识别由哪位测试人员创建任务，因此不采用。
 
-### Restrict only the login form
+### 只限制登录表单
 
-Rejected because an existing session or a direct API call could bypass a form-only check.
+已有会话或直接 API 请求可能绕过仅存在于表单层的限制，因此不采用。
 
-## Consequences
+## 影响
 
-- Both approved testers use the existing passwordless email-code flow.
-- Unauthorized visitors are redirected to the login page and cannot call ordinary product APIs.
-- Expired Better Auth cookie caches can require a brief return through the login page before an active session is refreshed.
-- Operational callbacks keep working independently of browser sessions.
-- Adding or removing a tester requires changing the test project's environment variable and redeploying.
+- 两位受邀测试人员继续使用现有的邮箱验证码登录流程。
+- 未授权访客会被引导到登录页，并且无法调用普通产品 API。
+- Better Auth 会话缓存过期后，用户可能需要短暂返回登录页刷新有效会话。
+- 运维回调可以独立于浏览器会话继续运行。
+- 增加或删除测试人员时，需要更新测试项目环境变量并重新部署。
 
-## Verification plan
+## 验证计划
 
-- Confirm an anonymous request to the V2 root redirects to `/login`.
-- Confirm a non-allowlisted email receives HTTP 403 before an OTP email is sent.
-- Confirm both allowlisted email addresses pass the access policy.
-- Confirm social sign-in receives HTTP 403 while the allowlist is enabled.
-- Confirm cron, internal dispatch, and payment webhook paths still reach their own authentication handlers.
-- Confirm the same code with no allowlist variable retains the existing live-site behavior.
+- 确认匿名访问 V2 根路径时会跳转到 `/login`。
+- 确认非白名单邮箱在验证码邮件发送前收到 HTTP 403。
+- 确认两个白名单邮箱均可通过访问策略。
+- 确认白名单启用时，社交登录请求收到 HTTP 403。
+- 确认 Cron、内部调度和支付回调路径仍能到达各自的身份验证逻辑。
+- 确认相同代码在未配置白名单变量时保留正式站现有登录行为。
