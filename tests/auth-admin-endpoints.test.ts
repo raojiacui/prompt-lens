@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const next = vi.hoisted(() => vi.fn(async () => Response.json({ ok: true })));
+const verifyEmailTransport = vi.hoisted(() => vi.fn(async () => undefined));
 vi.mock("@/lib/auth", () => ({ auth: {} }));
+vi.mock("@/lib/email/smtp", () => ({ verifyEmailTransport }));
 vi.mock("better-auth/next-js", () => ({ toNextJsHandler: () => ({ GET: next, POST: next, PATCH: next, PUT: next, DELETE: next }) }));
 import { GET, POST, PATCH, PUT, DELETE } from "@/app/api/auth/[...all]/route";
 
@@ -9,6 +11,8 @@ const previousAllowedEmails = process.env.ACCESS_ALLOWED_EMAILS;
 
 afterEach(() => {
   next.mockClear();
+  verifyEmailTransport.mockReset();
+  verifyEmailTransport.mockResolvedValue(undefined);
   if (previousAllowedEmails === undefined) delete process.env.ACCESS_ALLOWED_EMAILS;
   else process.env.ACCESS_ALLOWED_EMAILS = previousAllowedEmails;
 });
@@ -37,7 +41,7 @@ describe("role-based admin plugin endpoints", () => {
   });
 
   it("rejects non-allowlisted email OTP requests before sending mail", async () => {
-    process.env.ACCESS_ALLOWED_EMAILS = "raojiacuui@gmail.com,raojinbo@gmail.com";
+    process.env.ACCESS_ALLOWED_EMAILS = "raojiacuui@gmail.com,raojiacui@gmail.com,raojinbo@gmail.com";
     const response = await POST(new Request("http://localhost/api/auth/email-otp/send-verification-otp", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -45,11 +49,12 @@ describe("role-based admin plugin endpoints", () => {
     }));
     expect(response.status).toBe(403);
     expect(next).not.toHaveBeenCalled();
+    expect(verifyEmailTransport).not.toHaveBeenCalled();
   });
 
-  it("allows both approved testers through the OTP policy", async () => {
-    process.env.ACCESS_ALLOWED_EMAILS = "raojiacuui@gmail.com,raojinbo@gmail.com";
-    for (const email of ["raojiacuui@gmail.com", "RAOJINBO@gmail.com"]) {
+  it("allows approved testers through the OTP policy after SMTP preflight", async () => {
+    process.env.ACCESS_ALLOWED_EMAILS = "raojiacuui@gmail.com,raojiacui@gmail.com,raojinbo@gmail.com";
+    for (const email of ["raojiacuui@gmail.com", "raojiacui@gmail.com", "RAOJINBO@gmail.com"]) {
       const response = await POST(new Request("http://localhost/api/auth/email-otp/send-verification-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -57,7 +62,21 @@ describe("role-based admin plugin endpoints", () => {
       }));
       expect(response.status).toBe(200);
     }
-    expect(next).toHaveBeenCalledTimes(2);
+    expect(verifyEmailTransport).toHaveBeenCalledTimes(3);
+    expect(next).toHaveBeenCalledTimes(3);
+  });
+
+  it("reports SMTP preflight failures instead of claiming the OTP was sent", async () => {
+    process.env.ACCESS_ALLOWED_EMAILS = "raojiacui@gmail.com";
+    verifyEmailTransport.mockRejectedValueOnce(new Error("SMTP unavailable"));
+    const response = await POST(new Request("http://localhost/api/auth/email-otp/send-verification-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: "raojiacui@gmail.com", type: "sign-in" }),
+    }));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "邮件服务暂时不可用，请稍后重试" });
+    expect(next).not.toHaveBeenCalled();
   });
 
   it("disables social sign-in while the test allowlist is active", async () => {

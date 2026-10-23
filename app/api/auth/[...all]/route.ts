@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth";
 import { isAccessEmailAllowed, isAccessRestricted } from "@/lib/auth/access-policy";
+import { verifyEmailTransport } from "@/lib/email/smtp";
 import { toNextJsHandler } from "better-auth/next-js";
 
 export const runtime = 'nodejs';
@@ -44,6 +45,17 @@ function withoutAdminPlugin(next: (request: Request) => Promise<Response>) {
     }
     const accessDenied = await restrictedAccessResponse(request, pathname);
     if (accessDenied) return accessDenied;
+    if (request.method === "POST" && pathname === "/api/auth/email-otp/send-verification-otp") {
+      try {
+        await verifyEmailTransport();
+      } catch (error) {
+        console.error("[Email] SMTP preflight failed", error);
+        return Response.json(
+          { error: "邮件服务暂时不可用，请稍后重试" },
+          { status: 503 },
+        );
+      }
+    }
     return next(request);
   };
 }

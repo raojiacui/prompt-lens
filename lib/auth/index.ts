@@ -148,7 +148,6 @@ export const auth = betterAuth({
   ].filter(Boolean),
   plugins: [
     admin(),
-    nextCookies(),
     emailOTP({
       expiresIn: 10 * 60,
       storeOTP: "encrypted",
@@ -165,6 +164,7 @@ export const auth = betterAuth({
         });
       },
     }),
+    nextCookies(),
   ],
 });
 
