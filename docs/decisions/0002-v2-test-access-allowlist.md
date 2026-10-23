@@ -24,7 +24,10 @@ V2 测试项目通过环境变量 `ACCESS_ALLOWED_EMAILS` 配置允许访问的�
 决策生效时允许访问的测试邮箱：
 
 - `raojiacuui@gmail.com`
+- `raojiacui@gmail.com`
 - `raojinbo@gmail.com`
+
+2026-10-23 线上验证时发现，最初登记的 `raojiacuui@gmail.com` 比实际测试邮箱 `raojiacui@gmail.com` 多了一个字母 `u`。为避免影响可能仍在使用原地址的会话，保留原地址并补充实际测试邮箱，三个部署环境使用同一份名单。
 
 ## 备选方案
 
@@ -42,7 +45,7 @@ Vercel Authentication 依据 Vercel 成员身份授权，而指定测试邮箱�
 
 ## 影响
 
-- 两位受邀测试人员继续使用现有的邮箱验证码登录流程。
+- 受邀测试人员继续使用现有的邮箱验证码登录流程。
 - 未授权访客会被引导到登录页，并且无法调用普通产品 API。
 - Better Auth 会话缓存过期后，用户可能需要短暂返回登录页刷新有效会话。
 - 运维回调可以独立于浏览器会话继续运行。
@@ -52,7 +55,16 @@ Vercel Authentication 依据 Vercel 成员身份授权，而指定测试邮箱�
 
 - 确认匿名访问 V2 根路径时会跳转到 `/login`。
 - 确认非白名单邮箱在验证码邮件发送前收到 HTTP 403。
-- 确认两个白名单邮箱均可通过访问策略。
+- 确认三个白名单邮箱均可通过访问策略，尤其验证实际测试邮箱 `raojiacui@gmail.com`。
 - 确认白名单启用时，社交登录请求收到 HTTP 403。
 - 确认 Cron、内部调度和支付回调路径仍能到达各自的身份验证逻辑。
 - 确认相同代码在未配置白名单变量时保留正式站现有登录行为。
+
+## 验证记录
+
+2026-10-23：
+
+- 已同步更新 V2 测试项目的开发、预览和线上测试环境变量；
+- V2 测试部署 `dpl_Dab3jKkBmvCJS2gJ893cefFfhrBg` 构建完成并绑定 `https://prompt-lens-v2-test.vercel.app`；
+- 使用实际测试邮箱 `raojiacui@gmail.com` 请求登录验证码返回 HTTP 200；
+- 正式站 `https://prompt-lens.cc.cd` 继续指向回滚部署 `dpl_HvZt8Wy8rLr4T4PmqGDuZq9QPTk5`。
