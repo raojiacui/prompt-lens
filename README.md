@@ -175,7 +175,7 @@ pnpm install
 Copy-Item .env.example .env.local
 ```
 
-按 [.env.example](.env.example) 填写你自己的数据库、媒体存储和模型服务配置；已有 `.env.local` 时保留现有文件。示例使用 3001 端口，站点与认证地址需与实际端口一致。
+按 [.env.example](.env.example) 填写你自己的数据库、媒体存储和模型服务配置，并将所有本地真实配置统一保存在 `.env.local`。不要在仓库内保存 `.env`、环境快照或密钥备份；线上部署配置以对应 Vercel 项目的环境变量为准。示例使用 3001 端口，站点与认证地址需与实际端口一致。
 
 配置完成后，对 `DATABASE_URL` 指定的数据库应用迁移并启动应用：
 
