@@ -48,3 +48,15 @@ Better Auth 的邮箱验证码接口会捕获邮件回调异常并记录日志�
 - 使用 V2 测试域名向白名单邮箱请求验证码，确认接口成功、Vercel 日志没有 SMTP 错误且邮件实际到达；
 - 验证验证码登录后的会话 Cookie 生效；
 - 部署后确认 `https://prompt-lens.cc.cd` 的部署 ID 未变化。
+
+## 验证记录
+
+2026-10-23：
+
+- 认证与邮件相关测试共 14 项通过；
+- Next.js 生产构建通过；
+- SMTP 六项生产测试环境变量已按 dotenv 语义去除外层引号并重新配置；
+- V2 测试部署 `dpl_ErkDByLgCchwH2SBLwdzmnkYZDAW` 构建完成并绑定 `https://prompt-lens-v2-test.vercel.app`；
+- 实际验证码请求返回 HTTP 200，同一请求的 Vercel 运行日志没有 SMTP 配置、连接、TLS、认证或发信错误；
+- Resend 投递记录显示该验证码邮件的最终事件为 `delivered`，时间为北京时间 2026-10-23 13:57:38；
+- Better Auth 的 `nextCookies` 顺序警告已经消失。
