@@ -1,4 +1,5 @@
 import { getCookieCache, getSessionCookie } from "better-auth/cookies";
+import { authCookieOptions } from "./session-cookies";
 
 type CachedSession = {
   session?: { expiresAt?: unknown };
@@ -28,10 +29,12 @@ export async function verifiedCachedSessionEmail(
   // Better Auth chooses the secure cookie name from the runtime environment.
   // Checking both names keeps local HTTPS tests and production requests aligned.
   const secureCache = await getCookieCache(request, {
+    ...authCookieOptions,
     secret,
     isSecure: true,
   }).catch(() => null);
   const cache = secureCache ?? await getCookieCache(request, {
+    ...authCookieOptions,
     secret,
     isSecure: false,
   }).catch(() => null);
@@ -45,10 +48,7 @@ export async function inspectAccessSession(
   request: Request,
   secret: string | undefined,
 ): Promise<AccessSessionState> {
-  const sessionToken = getSessionCookie(request, {
-    cookiePrefix: "prompt-lens",
-    cookieName: "session_token",
-  });
+  const sessionToken = getSessionCookie(request, authCookieOptions);
   const email = secret
     ? await verifiedCachedSessionEmail(request, secret)
     : null;

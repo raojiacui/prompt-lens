@@ -31,9 +31,9 @@ export function LoginClient({
 
   useEffect(() => {
     if (!suppressSessionRedirect && session?.user && (!restrictedAccess || sessionAccessAllowed)) {
-      router.replace("/dashboard");
+      router.replace(defaultCallbackUrl);
     }
-  }, [restrictedAccess, router, session?.user, sessionAccessAllowed, suppressSessionRedirect]);
+  }, [defaultCallbackUrl, restrictedAccess, router, session?.user, sessionAccessAllowed, suppressSessionRedirect]);
 
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");

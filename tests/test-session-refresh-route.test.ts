@@ -58,7 +58,19 @@ describe("V2 test session refresh route", () => {
 
     expect(response.status).toBe(307);
     expect(response.headers.get("location")).toBe(
-      "https://test.example/login?next=%2Fdashboard",
+      "https://test.example/login?next=%2Fdashboard&sessionRefreshFailed=1",
     );
+  });
+
+  it("stops automatic login redirects when the database lookup fails", async () => {
+    process.env.ACCESS_ALLOWED_EMAILS = "raojiacui@gmail.com";
+    getSessionMock.mockRejectedValue(new Error("Temporary database failure"));
+
+    const response = await GET(new Request("https://test.example/api/session-refresh?next=%2Fdashboard"));
+
+    expect(response.headers.get("location")).toBe(
+      "https://test.example/login?next=%2Fdashboard&sessionRefreshFailed=1",
+    );
+    expect(response.headers.get("cache-control")).toContain("no-store");
   });
 });

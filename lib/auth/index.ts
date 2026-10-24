@@ -9,6 +9,7 @@ import { eq } from "drizzle-orm";
 import { sendOtpEmail } from "@/lib/email/send-otp-email";
 import { sendWelcomeEmail, welcomeEmailEnabled } from "@/lib/email/send-welcome-email";
 import { isOwnerEmail } from "@/lib/auth/admin-policy";
+import { authCookieOptions } from "@/lib/auth/session-cookies";
 
 // 配置代理（仅本地开发环境使用，禁止在生产环境使用）
 const isLocalDev = process.env.NODE_ENV === "development";
@@ -52,19 +53,9 @@ export const auth = betterAuth({
     },
   },
   advanced: {
+    ...authCookieOptions,
     database: {
       generateId: () => crypto.randomUUID(),
-    },
-    cookies: {
-      sessionToken: {
-        name: "prompt-lens.session_token",
-        attributes: {
-          path: "/",
-          sameSite: "lax",
-          secure: process.env.NODE_ENV === "production",
-          maxAge: 60 * 60 * 24 * 30,
-        },
-      },
     },
   },
   account: {

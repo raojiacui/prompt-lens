@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { createHmac } from "node:crypto";
+import { getCookies } from "better-auth/cookies";
+import { authCookieOptions } from "@/lib/auth/session-cookies";
 import {
   configuredAccessEmails,
   isAccessEmailAllowed,
@@ -66,6 +68,16 @@ afterEach(() => {
 });
 
 describe("V2 test access policy", () => {
+  it.each(["http://test.example", "https://test.example"])("refreshes an expired cache using the cookie Better Auth actually issues on %s", async (origin) => {
+    process.env.ACCESS_ALLOWED_EMAILS = "raojiacui@gmail.com,raojinbo@gmail.com";
+    process.env.BETTER_AUTH_SECRET = "test-secret-test-secret-test-secret";
+    const cookies = getCookies({ baseURL: origin, advanced: authCookieOptions });
+    const response = await middleware(new NextRequest(`${origin}/dashboard`, {
+      headers: { cookie: `${cookies.sessionToken.name}=existing-signed-session` },
+    }));
+
+    expect(response.headers.get("location")).toBe(`${origin}/api/session-refresh?next=%2Fdashboard`);
+  });
   it("normalizes a multi-email allowlist", () => {
     const configured = " RAOJIACUUI@gmail.com,raojinbo@gmail.com raojinbo@gmail.com ";
     expect(configuredAccessEmails(configured)).toEqual([
@@ -112,7 +124,7 @@ describe("V2 test access policy", () => {
     process.env.BETTER_AUTH_SECRET = "test-secret-test-secret-test-secret";
 
     const response = await middleware(new NextRequest("https://test.example/dashboard", {
-      headers: { cookie: "__Secure-prompt-lens.session_token=valid-session-token" },
+      headers: { cookie: "__Secure-better-auth.session_token=valid-session-token" },
     }));
 
     expect(response.status).toBe(307);
@@ -128,7 +140,7 @@ describe("V2 test access policy", () => {
     const response = await middleware(new NextRequest(
       "https://test.example/dashboard?tab=analyze&__pl_access_refreshed=1",
       {
-      headers: { cookie: "prompt-lens.session_token=valid-session-token" },
+      headers: { cookie: "better-auth.session_token=valid-session-token" },
       },
     ));
 

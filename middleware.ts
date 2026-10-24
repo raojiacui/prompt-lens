@@ -26,6 +26,10 @@ function restrictedApiResponse() {
   );
 }
 
+function sessionRedirect(destination: URL) {
+  return NextResponse.redirect(destination, { headers: { "Cache-Control": "no-store" } });
+}
+
 export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api/auth")) {
     return NextResponse.next();
@@ -38,7 +42,7 @@ export async function middleware(request: NextRequest) {
       if (request.nextUrl.searchParams.has(ACCESS_REFRESH_MARKER)) {
         const cleanUrl = request.nextUrl.clone();
         cleanUrl.searchParams.delete(ACCESS_REFRESH_MARKER);
-        return NextResponse.redirect(cleanUrl);
+        return sessionRedirect(cleanUrl);
       }
     } else {
       if (request.nextUrl.pathname.startsWith("/api/")) {
@@ -49,7 +53,7 @@ export async function middleware(request: NextRequest) {
       if (!accessSession.email && accessSession.hasSessionToken && !refreshAlreadyAttempted) {
         const refreshUrl = new URL("/api/session-refresh", request.url);
         refreshUrl.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
-        return NextResponse.redirect(refreshUrl);
+        return sessionRedirect(refreshUrl);
       }
 
       const loginUrl = new URL("/login", request.url);
@@ -57,7 +61,7 @@ export async function middleware(request: NextRequest) {
       nextUrl.searchParams.delete(ACCESS_REFRESH_MARKER);
       loginUrl.searchParams.set("next", `${nextUrl.pathname}${nextUrl.search}`);
       if (refreshAlreadyAttempted) loginUrl.searchParams.set("sessionRefreshFailed", "1");
-      return NextResponse.redirect(loginUrl);
+      return sessionRedirect(loginUrl);
     }
   }
 
