@@ -61,6 +61,7 @@
       "analyze": "Video Analyze",
       "audio": "Audio Analyze",
       "edit": "Video Edit",
+      "inDevelopment": "In development",
       "videoGen": "Video Generate",
       "history": "History",
       "settings": "Settings"

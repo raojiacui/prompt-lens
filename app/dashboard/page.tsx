@@ -9,7 +9,6 @@ import { Spinner } from "@/components/ui/spinner";
 import { HistoryList } from "@/components/history-list";
 import { ApiKeySettings } from "@/components/api-key-settings";
 import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
-import { VideoEditTab } from "@/components/video-edit-tab";
 import { VideoGenerateTab } from "@/components/video-generate-tab";
 import { FloatingChat } from "@/components/floating-chat";
 import { createImageAnalysisFrame, extractVideoFrameFiles } from "@/lib/utils/frame-extractor";
@@ -220,24 +219,33 @@ export default function DashboardPage() {
         <div className="max-w-7xl mx-0 md:mx-auto px-2 md:px-6">
           <nav className="flex gap-1 overflow-x-auto pb-px md:pb-0 -mx-2 px-2 md:mx-0 md:px-0">
             {[
-              { key: "analyze", label: t("dashboard.tabs.analyze") },
-              { key: "audio", label: t("dashboard.tabs.audio") },
-              { key: "edit", label: t("dashboard.tabs.edit") },
-              { key: "video-gen", label: t("dashboard.tabs.videoGen") },
-              { key: "history", label: t("dashboard.tabs.history") },
-              { key: "settings", label: t("dashboard.tabs.settings") }
+              { key: "analyze", label: t("dashboard.tabs.analyze"), disabled: false, status: null },
+              { key: "audio", label: t("dashboard.tabs.audio"), disabled: false, status: null },
+              { key: "edit", label: t("dashboard.tabs.edit"), disabled: true, status: t("dashboard.tabs.inDevelopment") },
+              { key: "video-gen", label: t("dashboard.tabs.videoGen"), disabled: false, status: null },
+              { key: "history", label: t("dashboard.tabs.history"), disabled: false, status: null },
+              { key: "settings", label: t("dashboard.tabs.settings"), disabled: false, status: null }
             ].map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as Tab)}
+                disabled={tab.disabled}
                 className={cn(
-                  "px-3 md:px-5 py-2 md:py-3 text-xs md:text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap min-h-[44px]",
+                  "px-3 md:px-5 py-2 md:py-3 text-xs md:text-sm font-medium rounded-t-lg transition-all duration-200 whitespace-nowrap min-h-[44px] inline-flex items-center gap-1.5",
+                  tab.disabled && "cursor-not-allowed opacity-60",
                   activeTab === tab.key
                     ? "bg-[#F5F3EC] text-[#D97757] border-t-2 border-[#D97757]"
-                    : "text-[#6B6860] hover:text-[#141413] hover:bg-[#F5F3EC]/50"
+                    : tab.disabled
+                      ? "text-[#6B6860]"
+                      : "text-[#6B6860] hover:text-[#141413] hover:bg-[#F5F3EC]/50"
                 )}
               >
                 {tab.label}
+                {tab.status && (
+                  <span className="rounded-full bg-[#D97757]/10 px-1.5 py-0.5 text-[10px] leading-none text-[#D97757]">
+                    {tab.status}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -420,13 +428,6 @@ export default function DashboardPage() {
 
         {/* 音频分析页面 */}
         <AudioAnalyzeTab activeTab={activeTab} />
-
-        {/* 视频剪辑页面 */}
-        {activeTab === "edit" && (
-          <div className="animate-fade-in">
-            <VideoEditTab />
-          </div>
-        )}
 
         {/* 视频生成页面 */}
         {activeTab === "video-gen" && (
