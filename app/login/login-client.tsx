@@ -16,22 +16,24 @@ type LoginClientProps = {
   defaultCallbackUrl?: string;
   restrictedAccess?: boolean;
   sessionAccessAllowed?: boolean;
+  suppressSessionRedirect?: boolean;
 };
 
 export function LoginClient({
   defaultCallbackUrl = "/dashboard",
   restrictedAccess = false,
   sessionAccessAllowed = false,
+  suppressSessionRedirect = false,
 }: LoginClientProps) {
   const router = useRouter();
   const locale = useLocale();
   const { data: session } = authClient.useSession();
 
   useEffect(() => {
-    if (session?.user && (!restrictedAccess || sessionAccessAllowed)) {
+    if (!suppressSessionRedirect && session?.user && (!restrictedAccess || sessionAccessAllowed)) {
       router.replace("/dashboard");
     }
-  }, [restrictedAccess, router, session?.user, sessionAccessAllowed]);
+  }, [restrictedAccess, router, session?.user, sessionAccessAllowed, suppressSessionRedirect]);
 
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");

@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "./i18n/config";
 import { isAccessEmailAllowed, isAccessRestricted } from "./lib/auth/access-policy";
-import { verifiedCachedSessionEmail } from "./lib/auth/session-cache-access";
+import {
+  ACCESS_REFRESH_MARKER,
+  inspectAccessSession,
+} from "./lib/auth/session-cache-access";
 
 const SERVER_AUTH_PATHS = [
   "/api/auth",
   "/api/cron",
   "/api/internal",
   "/api/payments/webhooks",
+  "/api/session-refresh",
 ];
 
 function isServerAuthPath(pathname: string) {
@@ -28,18 +32,31 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAccessRestricted() && request.nextUrl.pathname !== "/login" && !isServerAuthPath(request.nextUrl.pathname)) {
-    const secret = process.env.BETTER_AUTH_SECRET;
-    const cachedEmail = secret
-      ? await verifiedCachedSessionEmail(request, secret)
-      : null;
+    const accessSession = await inspectAccessSession(request, process.env.BETTER_AUTH_SECRET);
 
-    if (!isAccessEmailAllowed(cachedEmail)) {
+    if (isAccessEmailAllowed(accessSession.email)) {
+      if (request.nextUrl.searchParams.has(ACCESS_REFRESH_MARKER)) {
+        const cleanUrl = request.nextUrl.clone();
+        cleanUrl.searchParams.delete(ACCESS_REFRESH_MARKER);
+        return NextResponse.redirect(cleanUrl);
+      }
+    } else {
       if (request.nextUrl.pathname.startsWith("/api/")) {
         return restrictedApiResponse();
       }
 
+      const refreshAlreadyAttempted = request.nextUrl.searchParams.has(ACCESS_REFRESH_MARKER);
+      if (!accessSession.email && accessSession.hasSessionToken && !refreshAlreadyAttempted) {
+        const refreshUrl = new URL("/api/session-refresh", request.url);
+        refreshUrl.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
+        return NextResponse.redirect(refreshUrl);
+      }
+
       const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("next", `${request.nextUrl.pathname}${request.nextUrl.search}`);
+      const nextUrl = request.nextUrl.clone();
+      nextUrl.searchParams.delete(ACCESS_REFRESH_MARKER);
+      loginUrl.searchParams.set("next", `${nextUrl.pathname}${nextUrl.search}`);
+      if (refreshAlreadyAttempted) loginUrl.searchParams.set("sessionRefreshFailed", "1");
       return NextResponse.redirect(loginUrl);
     }
   }

@@ -17,12 +17,13 @@ function normalizeNextPath(value: string | string[] | undefined) {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = searchParams ? await searchParams : {};
   const callbackUrl = normalizeNextPath(params.next);
+  const suppressSessionRedirect = params.sessionRefreshFailed === "1";
   const headersList = await headers();
   const session = await auth.api.getSession({ headers: headersList }).catch(() => null);
   const restrictedAccess = isAccessRestricted();
   const sessionAccessAllowed = Boolean(session?.user && isAccessEmailAllowed(session.user.email));
 
-  if (sessionAccessAllowed) {
+  if (sessionAccessAllowed && !suppressSessionRedirect) {
     redirect(callbackUrl);
   }
 
@@ -31,6 +32,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
       defaultCallbackUrl={callbackUrl}
       restrictedAccess={restrictedAccess}
       sessionAccessAllowed={sessionAccessAllowed}
+      suppressSessionRedirect={suppressSessionRedirect}
     />
   );
 }
