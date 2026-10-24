@@ -1344,7 +1344,7 @@ console.log(base64Frames[0].substring(0, 50));
 ```typescript
 // ===== 文件: lib/ai/analyzer.ts =====
 
-import axios from "axios";
+import { postJson } from "@/lib/http/json-client";
 
 // API 配置
 const API_CONFIGS = {
@@ -1404,16 +1404,16 @@ async function callZhipuApi(
     temperature: 0.7,
   };
 
-  const response = await axios.post(API_CONFIGS.zhipu.url, payload, {
+  const data = await postJson<any>(API_CONFIGS.zhipu.url, payload, {
     headers,
-    timeout: 180000,  // 3 分钟超时
+    timeoutMs: 180_000,  // 3 分钟超时
   });
 
-  if (!response.data.choices || response.data.choices.length === 0) {
+  if (!data.choices || data.choices.length === 0) {
     throw new Error("API returned empty result");
   }
 
-  return response.data.choices[0].message.content;
+  return data.choices[0].message.content;
 }
 ```
 
@@ -1453,15 +1453,15 @@ async function callGeminiApi(
   };
 
   const url = `${API_CONFIGS.gemini.url}?key=${apiKey}`;
-  const response = await axios.post(url, payload, {
-    timeout: 180000,
+  const data = await postJson<any>(url, payload, {
+    timeoutMs: 180_000,
   });
 
-  if (!response.data.candidates || response.data.candidates.length === 0) {
+  if (!data.candidates || data.candidates.length === 0) {
     throw new Error("API returned empty result");
   }
 
-  return response.data.candidates[0].content.parts[0].text;
+  return data.candidates[0].content.parts[0].text;
 }
 ```
 

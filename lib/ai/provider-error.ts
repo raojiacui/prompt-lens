@@ -1,5 +1,5 @@
-import axios from "axios";
 import type { Locale } from "@/i18n/config";
+import { isJsonHttpError } from "@/lib/http/json-client";
 
 type AnalysisProvider = "zhipu" | "gemini" | "openrouter" | "kie";
 
@@ -15,8 +15,8 @@ export function describeAnalysisProviderError(
   error: unknown,
   locale: Locale = "zh",
 ): string {
-  if (axios.isAxiosError(error)) {
-    const status = error.response?.status;
+  if (isJsonHttpError(error)) {
+    const status = error.status;
     const name = PROVIDER_NAMES[provider];
 
     if (status === 401 || status === 403) {

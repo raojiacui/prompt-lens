@@ -1,4 +1,3 @@
-import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -7,6 +6,7 @@ import { ANALYSIS_PROMPTS, extractCorePrompt } from "@/lib/ai/prompts";
 import { describeAnalysisProviderError } from "@/lib/ai/provider-error";
 import { requestKieChatCompletion } from "@/lib/ai/kie-chat-client";
 import { getKieAnalysisPath } from "@/lib/ai/analysis-models";
+import { postJson } from "@/lib/http/json-client";
 import type { Locale } from "@/i18n/config";
 import { defaultLocale } from "@/i18n/config";
 
@@ -15,18 +15,12 @@ const isLocalDev = process.env.NODE_ENV === "development";
 const proxyUrl = isLocalDev ? (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897") : undefined;
 const KIE_BASE_URL = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
 
-let axiosProxy: { host: string; port: number; protocol: string } | undefined = undefined;
 if (proxyUrl) {
   try {
-    const url = new URL(proxyUrl);
-    axiosProxy = {
-      host: url.hostname,
-      port: parseInt(url.port) || (url.protocol === "https:" ? 443 : 80),
-      protocol: url.protocol.replace(":", ""),
-    };
+    new URL(proxyUrl);
     const { setGlobalDispatcher, ProxyAgent } = require("undici");
     setGlobalDispatcher(new ProxyAgent(proxyUrl));
-    console.log("[AI] Proxy enabled (local dev only):", axiosProxy);
+    console.log("[AI] Proxy enabled (local dev only)");
   } catch {
     console.warn("[AI] Failed to parse proxy URL");
   }
@@ -137,19 +131,18 @@ async function callZhipuApi(
     temperature: 0.7,
   };
 
-  const response = await axios.post(API_CONFIGS.zhipu.url, payload, {
+  const data = await postJson<any>(API_CONFIGS.zhipu.url, payload, {
     headers,
-    timeout: 180000,
-    ...(axiosProxy ? { proxy: axiosProxy } : {}),
+    timeoutMs: 180_000,
   });
 
-  if (!response.data.choices || response.data.choices.length === 0) {
+  if (!data.choices || data.choices.length === 0) {
     throw new Error("API returned empty result");
   }
 
-  const content = response.data.choices[0].message.content;
+  const content = data.choices[0].message.content;
   if (!content) {
-    const finishReason = response.data.choices[0].finish_reason;
+    const finishReason = data.choices[0].finish_reason;
     throw new Error(
       `API returned null content (finish_reason: ${finishReason}). The model may not support image input or rejected the request.`
     );
@@ -185,16 +178,15 @@ async function callGeminiApi(
   };
 
   const url = `${API_CONFIGS.gemini.url}?key=${apiKey}`;
-  const response = await axios.post(url, payload, {
-    timeout: 180000,
-    ...(axiosProxy ? { proxy: axiosProxy } : {}),
+  const data = await postJson<any>(url, payload, {
+    timeoutMs: 180_000,
   });
 
-  if (!response.data.candidates || response.data.candidates.length === 0) {
+  if (!data.candidates || data.candidates.length === 0) {
     throw new Error("API returned empty result");
   }
 
-  return response.data.candidates[0].content.parts[0].text;
+  return data.candidates[0].content.parts[0].text;
 }
 
 async function loadGeminiImage(image: string) {
@@ -259,19 +251,18 @@ async function callOpenRouterApi(
 
   console.log("[OpenRouter] Request:", { url: API_CONFIGS.openrouter.url, model, keyPrefix: apiKey.substring(0, 10) });
 
-  const response = await axios.post(API_CONFIGS.openrouter.url, payload, {
+  const data = await postJson<any>(API_CONFIGS.openrouter.url, payload, {
     headers,
-    timeout: 180000,
-    ...(axiosProxy ? { proxy: axiosProxy } : {}),
+    timeoutMs: 180_000,
   });
 
-  console.log("[OpenRouter] Response status:", response.status, response.data);
+  console.log("[OpenRouter] Response received", { model });
 
-  if (!response.data.choices || response.data.choices.length === 0) {
+  if (!data.choices || data.choices.length === 0) {
     throw new Error("API returned empty result");
   }
 
-  return response.data.choices[0].message.content;
+  return data.choices[0].message.content;
 }
 
 /**

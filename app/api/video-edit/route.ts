@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
-import axios from "axios";
 import { extractR2Key, getSignedUrlFromR2 } from "@/lib/cloudflare/r2";
+import { isJsonHttpError, postJson } from "@/lib/http/json-client";
 
 // 把 R2 公开 URL 转成签名 URL，让自托管 FFmpeg 服务能下载
 async function ensureAccessibleUrl(url: string): Promise<string> {
@@ -67,7 +67,7 @@ async function parseEditInstruction(
 只返回 JSON，不要其他内容。`;
 
   try {
-    const response = await axios.post(
+    const data = await postJson<any>(
       "https://api.deepseek.com/v1/chat/completions",
       {
         model: "deepseek-chat",
@@ -82,11 +82,11 @@ async function parseEditInstruction(
           Authorization: `Bearer ${llmApiKey}`,
           "Content-Type": "application/json",
         },
-        timeout: 60000,
+        timeoutMs: 60_000,
       }
     );
 
-    const content = response.data.choices[0]?.message?.content || "{}";
+    const content = data.choices[0]?.message?.content || "{}";
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
@@ -182,16 +182,16 @@ export async function POST(request: NextRequest) {
       endpoint = "/concat";
     }
 
-    const ffmpegResponse = await axios.post(
+    const ffmpegData = await postJson<any>(
       `${ffmpegServiceUrl.replace(/\/$/, "")}${endpoint}`,
       {
         videoUrl: accessibleVideoUrl,
         instruction,
       },
-      { timeout: 300000 } // 5 分钟超时，依赖自托管服务的处理能力
+      { timeoutMs: 300_000 } // 5 分钟超时，依赖自托管服务的处理能力
     );
 
-    const outputUrl: string = ffmpegResponse.data?.url || ffmpegResponse.data?.outputUrl;
+    const outputUrl: string = ffmpegData?.url || ffmpegData?.outputUrl;
     if (!outputUrl) {
       throw new Error("FFmpeg 服务未返回结果 URL");
     }
@@ -220,10 +220,10 @@ export async function POST(request: NextRequest) {
       instruction,
       message: "视频已剪辑完成",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("[video-edit] Error:", error);
-    const message = error?.response?.data?.error || error?.message || "Video edit failed";
-    const status = error?.response?.status || 500;
+    const message = error instanceof Error ? error.message : "Video edit failed";
+    const status = isJsonHttpError(error) ? error.status : 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

@@ -1,10 +1,9 @@
-import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 import { getDefaultWhisperModel, WhisperModelSize } from "./index";
-import path from "path";
+import { postJson } from "@/lib/http/json-client";
 
 // ============ 类型定义 ============
 
@@ -66,10 +65,6 @@ export async function transcribeAudio(
   console.log(`Starting transcription for: ${audioPath}`);
 
   try {
-    // 读取音频文件
-    const fs = await import("fs");
-    const audioBuffer = fs.readFileSync(audioPath);
-
     // 使用本地 faster-whisper 进行语音识别（免费！）
     try {
       const { execSync } = await import("child_process");
@@ -110,27 +105,6 @@ export async function transcribeAudio(
   }
 }
 
-/**
- * 创建 FormData
- */
-function createFormData(base64Audio: string, mimeType: string): FormData {
-  const byteCharacters = atob(base64Audio);
-  const byteNumbers = new Array(byteCharacters.length);
-  for (let i = 0; i < byteCharacters.length; i++) {
-    byteNumbers[i] = byteCharacters.charCodeAt(i);
-  }
-  const byteArray = new Uint8Array(byteNumbers);
-  const blob = new Blob([byteArray], { type: mimeType });
-
-  const formData = new FormData();
-  formData.append("file", blob, "audio.wav");
-  formData.append("model", "paraformer-realtime-v2");
-  formData.append("response_format", "verbose_json");
-  formData.append("language", "auto");
-
-  return formData;
-}
-
 // ============ LLM 智能分段 ============
 
 /**
@@ -167,7 +141,7 @@ async function getUserApiKey(userId: string, provider: LLMProvider): Promise<str
  * 调用智谱AI API
  */
 async function callZhipuApi(apiKey: string, messages: any[]): Promise<string> {
-  const response = await axios.post(
+  const data = await postJson<any>(
     LLM_API_CONFIGS.zhipu.url,
     {
       model: LLM_API_CONFIGS.zhipu.model,
@@ -180,22 +154,22 @@ async function callZhipuApi(apiKey: string, messages: any[]): Promise<string> {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      timeout: 120,
+      timeoutMs: 120_000,
     }
   );
 
-  if (!response.data.choices || response.data.choices.length === 0) {
+  if (!data.choices || data.choices.length === 0) {
     throw new Error("API returned empty result");
   }
 
-  return response.data.choices[0].message.content;
+  return data.choices[0].message.content;
 }
 
 /**
  * 调用 DeepSeek API
  */
 async function callDeepSeekApi(apiKey: string, messages: any[]): Promise<string> {
-  const response = await axios.post(
+  const data = await postJson<any>(
     LLM_API_CONFIGS.deepseek.url,
     {
       model: LLM_API_CONFIGS.deepseek.model,
@@ -208,15 +182,15 @@ async function callDeepSeekApi(apiKey: string, messages: any[]): Promise<string>
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      timeout: 120,
+      timeoutMs: 120_000,
     }
   );
 
-  if (!response.data.choices || response.data.choices.length === 0) {
+  if (!data.choices || data.choices.length === 0) {
     throw new Error("API returned empty result");
   }
 
-  return response.data.choices[0].message.content;
+  return data.choices[0].message.content;
 }
 
 /**

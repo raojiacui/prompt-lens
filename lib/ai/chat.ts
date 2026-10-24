@@ -1,22 +1,19 @@
-import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
 import { eq, and } from "drizzle-orm";
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
+import { postJson } from "@/lib/http/json-client";
 
 // 代理配置
 const isLocalDev = process.env.NODE_ENV === "development";
 const proxyUrl = isLocalDev ? (process.env.HTTPS_PROXY || process.env.HTTP_PROXY || "http://127.0.0.1:7897") : undefined;
 
-let axiosProxy: { host: string; port: number; protocol: string } | undefined = undefined;
 if (proxyUrl) {
   try {
-    const url = new URL(proxyUrl);
-    axiosProxy = {
-      host: url.hostname,
-      port: parseInt(url.port) || (url.protocol === "https:" ? 443 : 80),
-      protocol: url.protocol.replace(":", ""),
-    };
+    new URL(proxyUrl);
+    const { setGlobalDispatcher, ProxyAgent } = require("undici");
+    setGlobalDispatcher(new ProxyAgent(proxyUrl));
+    console.log("[Chat] Proxy enabled (local dev only)");
   } catch {
     console.warn("[Chat] Failed to parse proxy URL");
   }
@@ -139,15 +136,14 @@ export async function callAIProvider(options: ChatOptions): Promise<string> {
 
   console.log(`[Chat] Calling ${provider}:`, { url: config.url, model: config.model });
 
-  const response = await axios.post(config.url, payload, {
+  const data = await postJson<any>(config.url, payload, {
     headers,
-    timeout: 120000,
-    ...(axiosProxy ? { proxy: axiosProxy } : {}),
+    timeoutMs: 120_000,
   });
 
-  if (!response.data.choices || response.data.choices.length === 0) {
+  if (!data.choices || data.choices.length === 0) {
     throw new Error("API returned empty result");
   }
 
-  return response.data.choices[0].message.content;
+  return data.choices[0].message.content;
 }

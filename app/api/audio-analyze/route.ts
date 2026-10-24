@@ -3,8 +3,8 @@ import { auth } from "@/lib/auth";
 import { db, audioAnalysis, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { AssemblyAI } from "assemblyai";
-import axios from "axios";
 import { extractR2Key, getSignedUrlFromR2 } from "@/lib/cloudflare/r2";
+import { postJson } from "@/lib/http/json-client";
 
 // 将公开 R2 URL 转为签名 URL，否则原样返回
 async function ensureAccessibleUrl(url: string): Promise<string> {
@@ -65,7 +65,7 @@ async function segmentWithLLM(
         : "https://openrouter.ai/api/v1";
       const model = llmProvider === "deepseek" ? "deepseek-chat" : "anthropic/claude-3-haiku";
 
-      const response = await axios.post(
+      const data = await postJson<any>(
         `${baseUrl}/chat/completions`,
         {
           model,
@@ -80,11 +80,11 @@ async function segmentWithLLM(
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
-          timeout: 60000,
+          timeoutMs: 60_000,
         }
       );
 
-      const content = response.data.choices[0]?.message?.content || "[]";
+      const content = data.choices[0]?.message?.content || "[]";
       // 提取 JSON 部分
       const jsonMatch = content.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
@@ -194,13 +194,12 @@ export async function POST(request: NextRequest) {
     if (whisperModelSize === "funasr") {
       // FunASR 自托管模式
       try {
-        const funasrRes = await axios.post(
+        const funasrData = await postJson<any>(
           `${funasrUrl}/recognition`,
           { audio_url: accessibleUrl },
-          { timeout: 120000 }
+          { timeoutMs: 120_000 }
         );
 
-        const funasrData = funasrRes.data;
         // FunASR 返回格式: { text: "...", sentences: [{ start: 0, end: 5, text: "..." }] }
         const sentences = funasrData.sentences || [];
         transcriptionSegments = sentences.map((s: any) => ({

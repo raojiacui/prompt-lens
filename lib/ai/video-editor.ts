@@ -1,8 +1,8 @@
-import axios from "axios";
 import { db } from "@/lib/db";
 import { userApiKeys } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
+import { postJson } from "@/lib/http/json-client";
 
 // 时间轴片段
 export interface VideoSegment {
@@ -162,10 +162,8 @@ export async function parseEditInstruction(
   const userMessage = `视频总时长 ${videoDuration} 秒，我的剪辑需求是：${prompt}`;
 
   try {
-    let response;
-
     if (provider === "zhipu") {
-      response = await axios.post(
+      const data = await postJson<any>(
         config.url,
         {
           model: config.model,
@@ -179,10 +177,11 @@ export async function parseEditInstruction(
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
+          timeoutMs: 120_000,
         }
       );
 
-      const content = response.data.choices[0].message.content;
+      const content = data.choices[0].message.content;
       const jsonMatch = content.match(/\{[\s\S]*\}/);
 
       if (!jsonMatch) {
@@ -192,7 +191,7 @@ export async function parseEditInstruction(
       const parsed = JSON.parse(jsonMatch[0]);
       return validateAndFixInstruction(parsed, videoDuration);
     } else if (provider === "gemini") {
-      response = await axios.post(
+      const data = await postJson<any>(
         `${config.url}?key=${apiKey}`,
         {
           contents: [
@@ -206,10 +205,11 @@ export async function parseEditInstruction(
           headers: {
             "Content-Type": "application/json",
           },
+          timeoutMs: 120_000,
         }
       );
 
-      const content = response.data.candidates[0].content.parts[0].text;
+      const content = data.candidates[0].content.parts[0].text;
       const jsonMatch = content.match(/\{[\s\S]*\}/);
 
       if (!jsonMatch) {
@@ -220,7 +220,7 @@ export async function parseEditInstruction(
       return validateAndFixInstruction(parsed, videoDuration);
     } else {
       // openrouter
-      response = await axios.post(
+      const data = await postJson<any>(
         config.url,
         {
           model: config.model,
@@ -236,10 +236,11 @@ export async function parseEditInstruction(
             "HTTP-Referer": "http://localhost:3000",
             "X-Title": "Prompt Analyzer",
           },
+          timeoutMs: 120_000,
         }
       );
 
-      const content = response.data.choices[0].message.content;
+      const content = data.choices[0].message.content;
       const jsonMatch = content.match(/\{[\s\S]*\}/);
 
       if (!jsonMatch) {
@@ -249,11 +250,12 @@ export async function parseEditInstruction(
       const parsed = JSON.parse(jsonMatch[0]);
       return validateAndFixInstruction(parsed, videoDuration);
     }
-  } catch (error: any) {
-    console.error("AI 解析失败:", error.response?.data || error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "AI 调用失败";
+    console.error("AI 解析失败:", message);
     return {
       success: false,
-      error: error.response?.data?.error?.message || error.message || "AI 调用失败",
+      error: message,
     };
   }
 }

@@ -1,4 +1,3 @@
-import axios from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { findMany } = vi.hoisted(() => ({ findMany: vi.fn() }));
@@ -21,6 +20,7 @@ vi.mock("@/lib/utils/encryption", () => ({
 }));
 
 import { describeAnalysisProviderError } from "@/lib/ai/provider-error";
+import { JsonHttpError } from "@/lib/http/json-client";
 import {
   getUsableUserAnalyzeApiKeyProvider,
   resolveTrialAccess,
@@ -45,13 +45,7 @@ describe("analysis provider authentication", () => {
   });
 
   it("turns KIE 401 responses into an actionable message", () => {
-    const error = new axios.AxiosError(
-      "Request failed with status code 401",
-      "ERR_BAD_REQUEST",
-      undefined,
-      undefined,
-      { status: 401, data: { msg: "Unauthorized" } } as never,
-    );
+    const error = new JsonHttpError(401, { msg: "Unauthorized" }, "Unauthorized");
 
     expect(describeAnalysisProviderError("kie", error)).toContain(
       "IP 白名单",
