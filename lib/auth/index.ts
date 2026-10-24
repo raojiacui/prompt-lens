@@ -5,6 +5,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { admin, anonymous } from "better-auth/plugins";
 import { eq } from "drizzle-orm";
+import { getAuthBaseURL } from "@/lib/auth/origin";
 
 // 配置代理（仅本地开发环境使用，禁止在生产环境使用）
 const isLocalDev = process.env.NODE_ENV === "development";
@@ -21,21 +22,9 @@ if (proxyUrl) {
   }
 }
 
-// Get base URL - support dynamic port for development
-function getBaseURL() {
-  if (process.env.NEXT_PUBLIC_BETTER_AUTH_URL) {
-    return process.env.NEXT_PUBLIC_BETTER_AUTH_URL;
-  }
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    return process.env.NEXT_PUBLIC_SITE_URL;
-  }
-  // Fallback: detect from request headers in API routes
-  return undefined;
-}
-
 export const auth = betterAuth({
   appName: "Prompt Analyzer",
-  baseURL: getBaseURL(),
+  baseURL: getAuthBaseURL(),
   secret: process.env.BETTER_AUTH_SECRET,
   session: {
     expiresIn: 60 * 60 * 24 * 30, // Remember sign-ins for 30 days; renew on active use.
@@ -62,6 +51,9 @@ export const auth = betterAuth({
     },
   },
   account: {
+    // Keep the OAuth state and PKCE payload in one encrypted, short-lived cookie.
+    // Better Auth 1.6.2+ binds the callback state to this cookie value.
+    storeStateStrategy: "cookie",
     accountLinking: {
       enabled: true,
       trustedProviders: ["google", "github"],
@@ -116,6 +108,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     "http://localhost:3000",
     "https://prompt-lens.cc.cd",
+    process.env.BETTER_AUTH_URL || "",
     process.env.NEXT_PUBLIC_SITE_URL || "",
     process.env.NEXT_PUBLIC_BETTER_AUTH_URL || "",
   ].filter(Boolean),

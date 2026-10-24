@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "./i18n/config";
+import { getCanonicalProductionRedirect } from "./lib/auth/origin";
 
 export function middleware(request: NextRequest) {
+  const canonicalRedirect = getCanonicalProductionRedirect(request.nextUrl);
+  if (canonicalRedirect) return NextResponse.redirect(canonicalRedirect);
+
   // 1. 解析 locale：cookie 优先，未命中检测 Accept-Language
   const cookieLocale = request.cookies.get(LOCALE_COOKIE)?.value;
   const acceptLang = request.headers.get("accept-language") ?? "";

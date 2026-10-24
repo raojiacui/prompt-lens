@@ -12,6 +12,10 @@ let auth: typeof import("@/lib/auth").auth;
 beforeAll(async () => {
   vi.stubEnv("BETTER_AUTH_SECRET", "test-only-session-persistence-secret-at-least-32-chars");
   vi.stubEnv("NEXT_PUBLIC_BETTER_AUTH_URL", origin);
+  vi.stubEnv("GOOGLE_CLIENT_ID", "test-google-client-id");
+  vi.stubEnv("GOOGLE_CLIENT_SECRET", "test-google-client-secret");
+  vi.stubEnv("NEXT_PUBLIC_GITHUB_CLIENT_ID", "test-github-client-id");
+  vi.stubEnv("GITHUB_CLIENT_SECRET", "test-github-client-secret");
   vi.stubEnv("ADMIN_EMAILS", "");
   vi.useFakeTimers({ toFake: ["Date"] });
   ({ auth } = await import("@/lib/auth"));
@@ -98,5 +102,36 @@ describe("remembered authentication sessions", () => {
       value.startsWith("__Secure-better-auth.session_token=") && /Max-Age=0/i.test(value),
     )).toBe(true);
     expect(await (await getSession(tokenCookie.split(";")[0])).json()).toBeNull();
+  });
+});
+
+describe("OAuth state persistence", () => {
+  it("round-trips the encrypted state cookie through a provider callback", async () => {
+    const signInResponse = await auth.handler(new Request(`${origin}/api/auth/sign-in/social`, {
+      method: "POST",
+      headers: { origin, "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: "google", callbackURL: "/dashboard" }),
+    }));
+    expect(signInResponse.status).toBe(200);
+
+    const body = await signInResponse.json();
+    const providerURL = new URL(body.url);
+    const state = providerURL.searchParams.get("state");
+    expect(state).toBeTruthy();
+
+    const stateCookie = signInResponse.headers.getSetCookie().find((value) =>
+      value.startsWith("__Secure-better-auth.oauth_state="),
+    );
+    expect(stateCookie).toMatch(/Max-Age=600/i);
+    expect(stateCookie).toMatch(/SameSite=Lax/i);
+    expect(stateCookie).toMatch(/; Secure(?:;|$)/i);
+
+    const callbackResponse = await auth.handler(new Request(
+      `${origin}/api/auth/callback/google?state=${encodeURIComponent(state!)}&error=access_denied`,
+      { headers: { cookie: stateCookie!.split(";")[0] } },
+    ));
+    expect(callbackResponse.status).toBeGreaterThanOrEqual(300);
+    expect(callbackResponse.status).toBeLessThan(400);
+    expect(callbackResponse.headers.get("location")).not.toContain("state_mismatch");
   });
 });

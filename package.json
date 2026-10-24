@@ -26,7 +26,7 @@
     "@neondatabase/serverless": "^0.10.0",
     "@types/three": "^0.183.1",
     "assemblyai": "^4.29.0",
-    "better-auth": "^1.5.0",
+    "better-auth": "1.6.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
