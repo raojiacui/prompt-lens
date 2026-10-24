@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_PRODUCTION_ORIGIN,
   getAuthBaseURL,
+  getCanonicalOAuthStartRedirect,
   getCanonicalProductionRedirect,
 } from "@/lib/auth/origin";
 
@@ -37,6 +38,36 @@ describe("authentication origin", () => {
     expect(getCanonicalProductionRedirect(
       new URL("https://prompt-lens-preview.vercel.app/login"),
       { VERCEL_ENV: "preview", BETTER_AUTH_URL: DEFAULT_PRODUCTION_ORIGIN },
+    )).toBeNull();
+  });
+
+  it("blocks OAuth sign-in from a production alias before it can set state cookies", () => {
+    const requestURL = new URL("https://prompt-lens-git-main.vercel.app/api/auth/sign-in/social");
+
+    expect(getCanonicalOAuthStartRedirect(
+      requestURL,
+      "POST",
+      { VERCEL_ENV: "production" },
+    )?.toString()).toBe(`${DEFAULT_PRODUCTION_ORIGIN}/api/auth/sign-in/social`);
+  });
+
+  it("does not intercept unrelated, canonical, or preview auth requests", () => {
+    const production = { VERCEL_ENV: "production" };
+
+    expect(getCanonicalOAuthStartRedirect(
+      new URL("https://prompt-lens-git-main.vercel.app/api/auth/get-session"),
+      "GET",
+      production,
+    )).toBeNull();
+    expect(getCanonicalOAuthStartRedirect(
+      new URL(`${DEFAULT_PRODUCTION_ORIGIN}/api/auth/sign-in/social`),
+      "POST",
+      production,
+    )).toBeNull();
+    expect(getCanonicalOAuthStartRedirect(
+      new URL("https://prompt-lens-preview.vercel.app/api/auth/sign-in/social"),
+      "POST",
+      { VERCEL_ENV: "preview" },
     )).toBeNull();
   });
 });

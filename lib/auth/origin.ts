@@ -42,3 +42,16 @@ export function getCanonicalProductionRedirect(
 
   return new URL(`${requestURL.pathname}${requestURL.search}`, canonicalOrigin);
 }
+
+export function getCanonicalOAuthStartRedirect(
+  requestURL: URL,
+  method: string,
+  environment: AuthEnvironment = process.env,
+): URL | null {
+  const normalizedPath = requestURL.pathname.replace(/\/$/, "");
+  if (method.toUpperCase() !== "POST" || normalizedPath !== "/api/auth/sign-in/social") {
+    return null;
+  }
+
+  return getCanonicalProductionRedirect(requestURL, environment);
+}
