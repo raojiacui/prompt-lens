@@ -100,4 +100,49 @@ describe("KIE chat client", () => {
     })).rejects.toThrow("KIE API error (402): Insufficient credits");
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
+
+  it.each([500, 502, 503, 504])("recovers from transient HTTP %s", async (status) => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(new Response("Service Unavailable", { status }))
+      .mockResolvedValueOnce(streamResponse("recovered"));
+    await expect(requestKieChatCompletion({ url: "https://api.kie.ai/example", apiKey: "test", payload: {}, fetcher, delay: async () => {} })).resolves.toBe("recovered");
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries a 503 business error wrapped in HTTP 200", async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ code: 503, msg: "Service Unavailable" }))
+      .mockResolvedValueOnce(streamResponse("recovered"));
+    await expect(requestKieChatCompletion({ url: "https://api.kie.ai/example", apiKey: "test", payload: {}, fetcher, delay: async () => {} })).resolves.toBe("recovered");
+  });
+
+  it.each([400, 500, 524])("does not retry a missing media download wrapped as %s", async (code) => {
+    const fetcher = vi.fn().mockImplementation(async () => jsonResponse({ code, msg: "Failed to download fileData.fileUri: HTTP 404" }));
+    await expect(requestKieChatCompletion({ url: "https://api.kie.ai/example", apiKey: "test", payload: {}, fetcher, delay: async () => {} })).rejects.toThrow("HTTP 404");
+    expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves HTTP 503 when the upstream error body has no code", async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ error: { message: "Service Unavailable" } }, 503))
+      .mockResolvedValueOnce(streamResponse("recovered"));
+    await expect(requestKieChatCompletion({ url: "https://api.kie.ai/example", apiKey: "test", payload: {}, fetcher, delay: async () => {} })).resolves.toBe("recovered");
+  });
+
+  it("stops after a second 503", async () => {
+    const fetcher = vi.fn().mockImplementation(async () => jsonResponse({ code: 503, msg: "Service Unavailable" }));
+    await expect(requestKieChatCompletion({ url: "https://api.kie.ai/example", apiKey: "test", payload: {}, fetcher, delay: async () => {} })).rejects.toThrow("(503)");
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not retry when the shared deadline has less than 30 seconds left", async () => {
+    const clock = vi.spyOn(Date, "now").mockReturnValueOnce(0).mockReturnValueOnce(0).mockReturnValue(241_000);
+    const fetcher = vi.fn().mockImplementation(async () => jsonResponse({ code: 503, msg: "Service Unavailable" }));
+    try {
+      await expect(requestKieChatCompletion({ url: "https://api.kie.ai/example", apiKey: "test", payload: {}, fetcher, delay: async () => {} })).rejects.toThrow("(503)");
+      expect(fetcher).toHaveBeenCalledTimes(1);
+    } finally {
+      clock.mockRestore();
+    }
+  });
 });

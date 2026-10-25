@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
   KieApiError,
-  isKieGatewayTimeout,
   parseKieChatEventStream,
   parseKieChatResponse,
 } from "@/lib/ai/kie-chat-response";
@@ -11,6 +10,12 @@ describe("KIE chat response", () => {
     expect(parseKieChatResponse({
       choices: [{ message: { content: "analysis result" }, finish_reason: "stop" }],
     })).toBe("analysis result");
+  });
+
+  it("removes signed media URL credentials from provider errors", () => {
+    const error = new KieApiError(400, "The image URL<https://storage.example/file.jpg?X-Amz-Credential=SECRET&X-Amz-Signature=TOKEN> image download failed: HTTP 404");
+    expect(error.message).toContain("[media URL]>");
+    expect(error.message).not.toMatch(/SECRET|TOKEN|X-Amz/);
   });
 
   it("reads wrapped and segmented content", () => {
@@ -59,7 +64,7 @@ describe("KIE chat response", () => {
     try {
       parseKieChatEventStream('data: {"code":524,"msg":"2 times retry fail"}\n\n');
     } catch (error) {
-      expect(isKieGatewayTimeout(error)).toBe(true);
+      expect(error).toMatchObject({ code: 524 });
     }
   });
 });

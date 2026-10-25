@@ -115,27 +115,40 @@ export async function deleteFromR2(key: string): Promise<void> {
   }
 }
 
-export async function getFromR2(key: string): Promise<Buffer> {
+export async function getFromR2(
+  key: string,
+  maxBytes = Number.POSITIVE_INFINITY,
+  signal?: AbortSignal,
+): Promise<Buffer> {
   try {
     requireR2Config();
     const response = await s3Client.send(
       new GetObjectCommand({
         Bucket: bucketName,
         Key: key,
-      })
+      }),
+      { abortSignal: signal },
     );
 
     const stream = response.Body as any;
     const chunks: Buffer[] = [];
-
-    for await (const chunk of stream) {
-      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    let bytes = 0;
+    try {
+      if ((response.ContentLength ?? 0) > maxBytes) throw new RangeError("R2 object exceeds the size limit");
+      for await (const chunk of stream) {
+        const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+        bytes += buffer.byteLength;
+        if (bytes > maxBytes) throw new RangeError("R2 object exceeds the size limit");
+        chunks.push(buffer);
+      }
+    } finally {
+      stream?.destroy?.();
     }
 
     return Buffer.concat(chunks);
   } catch (error) {
     console.error("R2 get error:", error);
-    throw new Error("Failed to get file");
+    throw new Error("Failed to get file", { cause: error });
   }
 }
 

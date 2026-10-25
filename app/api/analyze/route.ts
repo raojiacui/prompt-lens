@@ -8,6 +8,7 @@ import { defaultLocale, isLocale } from "@/i18n/config";
 import { assertTrialQuota, getUsableUserAnalyzeApiKeyProvider, trialQuotaResponse } from "@/lib/usage/trial-quota";
 import { deleteFromR2, extractR2Key } from "@/lib/cloudflare/r2";
 import { AnalysisFrameInputError, resolveAnalysisFrames } from "@/lib/ai/analysis-frame-input";
+import { prepareAnalysisFrames } from "@/lib/ai/analysis-frame-access";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -111,6 +112,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Confirm the upload exists, then avoid the public r2.dev download path.
+    if (temporaryFrameKeys.length > 0) {
+      frames = await prepareAnalysisFrames(temporaryFrameKeys);
+    }
+
     // 记录分析开始
     await db.insert(operationLogs).values({
       userId: session.user.id,
@@ -171,6 +177,9 @@ export async function POST(request: NextRequest) {
       historyId: historyRecord[0].id,
     });
   } catch (error: any) {
+    if (error instanceof AnalysisFrameInputError) {
+      return NextResponse.json({ error: error.message, code: "ANALYSIS_FRAME_UNAVAILABLE" }, { status: 400 });
+    }
     console.error("Analyze error:", error);
     return NextResponse.json({ error: error.message || "Analysis failed" }, { status: 500 });
   } finally {

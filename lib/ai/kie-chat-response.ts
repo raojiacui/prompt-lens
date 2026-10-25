@@ -5,7 +5,9 @@ export class KieApiError extends Error {
     public readonly code: string | number | undefined,
     detail: string,
   ) {
-    super(code === undefined ? `KIE API error: ${detail}` : `KIE API error (${String(code)}): ${detail}`);
+    // Provider errors can echo presigned media URLs; never log their credentials.
+    const safeDetail = detail.replace(/https?:\/\/[^\s<>"']+/gi, "[media URL]").slice(0, 500);
+    super(code === undefined ? `KIE API error: ${safeDetail}` : `KIE API error (${String(code)}): ${safeDetail}`);
     this.name = "KieApiError";
   }
 }
@@ -17,7 +19,7 @@ function isRecord(value: unknown): value is JsonRecord {
 function compactMessage(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const message = value.replace(/\s+/g, " ").trim();
-  return message ? message.slice(0, 240) : null;
+  return message || null;
 }
 
 function readText(value: unknown, preserveWhitespace = false): string | null {
@@ -128,8 +130,4 @@ export function parseKieChatEventStream(stream: string): string {
 
   if (!output.trim()) throw new Error("KIE Gemini stream returned no text");
   return output.trim();
-}
-
-export function isKieGatewayTimeout(error: unknown): error is KieApiError {
-  return error instanceof KieApiError && Number(error.code) === 524;
 }
