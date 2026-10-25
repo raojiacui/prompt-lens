@@ -18,6 +18,12 @@ describe("KIE chat response", () => {
     expect(error.message).not.toMatch(/SECRET|TOKEN|X-Amz/);
   });
 
+  it("does not echo inline image data in provider errors", () => {
+    const error = new KieApiError(400, "Invalid image data:image/jpeg;base64,PRIVATEIMAGE==: unsupported input");
+    expect(error.message).toContain("[inline image]");
+    expect(error.message).not.toContain("PRIVATEIMAGE");
+  });
+
   it("reads wrapped and segmented content", () => {
     expect(parseKieChatResponse({
       code: 200,

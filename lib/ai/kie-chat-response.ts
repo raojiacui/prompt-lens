@@ -6,7 +6,10 @@ export class KieApiError extends Error {
     detail: string,
   ) {
     // Provider errors can echo presigned media URLs; never log their credentials.
-    const safeDetail = detail.replace(/https?:\/\/[^\s<>"']+/gi, "[media URL]").slice(0, 500);
+    const safeDetail = detail
+      .replace(/data:image\/[^;\s]+;base64,[A-Za-z0-9+/=]+/gi, "[inline image]")
+      .replace(/https?:\/\/[^\s<>"']+/gi, "[media URL]")
+      .slice(0, 500);
     super(code === undefined ? `KIE API error: ${safeDetail}` : `KIE API error (${String(code)}): ${safeDetail}`);
     this.name = "KieApiError";
   }
