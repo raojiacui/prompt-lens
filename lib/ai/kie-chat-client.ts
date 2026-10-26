@@ -43,7 +43,7 @@ function parseJson(body: string): unknown {
   try {
     return JSON.parse(body);
   } catch {
-    throw new Error("KIE Gemini returned invalid JSON");
+    throw new Error("KIE returned invalid JSON");
   }
 }
 
@@ -117,7 +117,7 @@ export async function requestKieChatCompletion(
         throw error;
       }
 
-      console.warn("[KIE Gemini] Transient failure; retrying once", {
+      console.warn("[KIE] Transient failure; retrying once", {
         kind: transportTimeout ? "transport-timeout" : `upstream-${(error as KieApiError).code}`,
         delayMs: retryDelayMs,
         model: typeof options.payload.model === "string" ? options.payload.model : undefined,
@@ -126,5 +126,5 @@ export async function requestKieChatCompletion(
     }
   }
 
-  throw new Error("KIE Gemini retry exhausted");
+  throw new Error("KIE retry exhausted");
 }

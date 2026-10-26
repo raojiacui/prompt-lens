@@ -7,7 +7,7 @@ function read(relativePath: string) {
 }
 
 describe("analysis provider surface", () => {
-  it("shows the actual analysis models instead of provider names", () => {
+  it("preserves the public model options and key restrictions", () => {
     const dashboard = read("app/dashboard/page.tsx");
     const modelOptions = [...dashboard.matchAll(/<option value="((?:platform|kie)-gemini-[^"]+)"[^>]*>/g)]
       .map((match) => match[1]);

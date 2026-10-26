@@ -3,7 +3,8 @@ import { describe, expect, it } from "vitest";
 import { deleteFromR2, getPresignedUploadUrl, getSignedUrlFromR2 } from "@/lib/cloudflare/r2";
 import { prepareAnalysisFrames } from "@/lib/ai/analysis-frame-access";
 import { requestKieChatCompletion } from "@/lib/ai/kie-chat-client";
-import { getKieAnalysisPath } from "@/lib/ai/analysis-models";
+import { DEFAULT_ANALYSIS_MODEL_ID, resolveAnalysisModel } from "@/lib/ai/analysis-models";
+import { buildKieAnalysisRequest } from "@/lib/ai/kie-analysis-request";
 
 // Opt-in only: uploads one isolated test object and consumes one small KIE call.
 // Use a test bucket. Never print the presigned URL or provider key.
@@ -27,20 +28,13 @@ describe.runIf(process.env.ANALYSIS_FRAME_LIVE_TEST === "1")("R2 analysis frame 
       console.log("R2 signed PUT and bounded authenticated GET verified; JPEG bytes match.");
       const apiKey = process.env.KIE_AI_API_KEY || process.env.KIE_API_KEY;
       if (!apiKey) throw new Error("KIE test key is required");
-      const model = "gemini-3-8-flash";
+      const model = resolveAnalysisModel(DEFAULT_ANALYSIS_MODEL_ID)!.providerModel;
       const base = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
       const input = process.env.FRAME_TEST_INPUT || "inline";
-      const content = input === "text" ? [{ type: "text", text: "Reply with the word OK." }] : [
-        { type: "text", text: "Name the dominant color in this image in one short sentence." },
-        ...Array.from({ length: Number(process.env.FRAME_TEST_COUNT || "1") }, () => (
-          { type: "image_url", image_url: { url: input === "inline" ? inlineFrame : signedUrl } }
-        )),
-      ];
-      const result = await requestKieChatCompletion({
-        url: `${base}${getKieAnalysisPath(model)}`,
-        apiKey,
-        payload: { model, max_tokens: 128, include_thoughts: false, messages: [{ role: "user", content }] },
-      });
+      const frames = input === "text" ? [] : Array.from({ length: Number(process.env.FRAME_TEST_COUNT || "1") }, () => input === "inline" ? inlineFrame : signedUrl);
+      const { path, payload } = buildKieAnalysisRequest(model, frames, input === "text"
+        ? "Reply with the word OK." : "Name the dominant color in this image in one short sentence.");
+      const result = await requestKieChatCompletion({ url: `${base}${path}`, apiKey, payload });
       expect(result.trim().length).toBeGreaterThan(0);
       console.log("R2 signed PUT/GET and KIE image analysis succeeded (test bucket, synthetic image).");
     } finally {

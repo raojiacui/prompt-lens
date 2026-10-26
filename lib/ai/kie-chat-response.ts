@@ -46,7 +46,7 @@ function readText(value: unknown, preserveWhitespace = false): string | null {
 
 function responseBody(data: unknown): JsonRecord | null {
   if (!isRecord(data)) return null;
-  if (Array.isArray(data.choices) || Array.isArray(data.candidates)) return data;
+  if (Array.isArray(data.choices) || Array.isArray(data.candidates) || Array.isArray(data.output)) return data;
   return isRecord(data.data) ? data.data : data;
 }
 
@@ -61,13 +61,39 @@ function throwForKieError(data: unknown) {
 
   const rootError = root && isRecord(root.error) ? root.error : null;
   const errorMessage = compactMessage(rootError?.message) || compactMessage(root?.error);
-  if (errorMessage) throw new KieApiError(undefined, errorMessage);
+  if (errorMessage) throw new KieApiError(
+    typeof rootError?.code === "number" ? rootError.code : undefined,
+    errorMessage,
+  );
+  if (root?.type === "error") {
+    throw new KieApiError(undefined, compactMessage(root.message) || "response stream failed");
+  }
+}
+
+function readResponsesText(body: JsonRecord): string | null {
+  throwForKieError(body);
+  if (["failed", "incomplete", "cancelled", "in_progress", "queued"].includes(String(body.status))) {
+    throw new KieApiError(undefined, `response ${String(body.status)}`);
+  }
+  if (!Array.isArray(body.output)) return null;
+  const text = body.output.flatMap((item) => {
+    if (!isRecord(item) || item.type !== "message" || item.role !== "assistant") return [];
+    if (item.status && item.status !== "completed") {
+      throw new KieApiError(undefined, `message ${String(item.status)}`);
+    }
+    if (!Array.isArray(item.content)) return [];
+    return item.content.flatMap((part) => isRecord(part) && part.type === "output_text" && typeof part.text === "string"
+      ? [part.text] : []);
+  }).join("");
+  return text.trim() || null;
 }
 
 export function parseKieChatResponse(data: unknown): string {
   throwForKieError(data);
 
   const body = responseBody(data);
+  const responsesText = body && readResponsesText(body);
+  if (responsesText) return responsesText;
   const choices = body && Array.isArray(body.choices) ? body.choices : [];
   const choice = isRecord(choices[0]) ? choices[0] : null;
   const message = choice && isRecord(choice.message) ? choice.message : null;
@@ -82,7 +108,7 @@ export function parseKieChatResponse(data: unknown): string {
 
   const finishReason = choice?.finish_reason ?? candidate?.finishReason;
   const reason = finishReason ? ` (finish_reason: ${String(finishReason)})` : "";
-  throw new Error(`KIE Gemini returned no text${reason}`);
+  throw new Error(`KIE returned no text${reason}`);
 }
 
 function readStreamChunk(data: unknown): string | null {
@@ -105,6 +131,9 @@ function readStreamChunk(data: unknown): string | null {
 export function parseKieChatEventStream(stream: string): string {
   let output = "";
   let dataLines: string[] = [];
+  let responsesStream = false;
+  let responsesCompleted = false;
+  let completedText: string | null = null;
 
   const flushEvent = () => {
     if (dataLines.length === 0) return;
@@ -116,9 +145,26 @@ export function parseKieChatEventStream(stream: string): string {
     try {
       data = JSON.parse(payload);
     } catch {
-      throw new Error("KIE Gemini stream returned invalid JSON");
+      throw new Error("KIE stream returned invalid JSON");
     }
 
+    throwForKieError(data);
+    if (isRecord(data) && typeof data.type === "string" && data.type.startsWith("response.")) {
+      responsesStream = true;
+      if (data.type === "response.failed" || data.type === "response.incomplete") {
+        if (isRecord(data.response)) readResponsesText(data.response);
+        throw new KieApiError(undefined, data.type);
+      }
+      if (data.type === "response.output_text.delta" && typeof data.delta === "string") output += data.delta;
+      if (data.type === "response.completed") {
+        if (!isRecord(data.response) || data.response.status !== "completed") {
+          throw new KieApiError(undefined, "response completed without a completed result");
+        }
+        completedText = readResponsesText(data.response);
+        responsesCompleted = true;
+      }
+      return;
+    }
     output += readStreamChunk(data) || "";
   };
 
@@ -131,6 +177,8 @@ export function parseKieChatEventStream(stream: string): string {
   }
   flushEvent();
 
-  if (!output.trim()) throw new Error("KIE Gemini stream returned no text");
+  if (responsesStream && !responsesCompleted) throw new Error("KIE response stream ended before completion");
+  if (completedText) return completedText;
+  if (!output.trim()) throw new Error("KIE stream returned no text");
   return output.trim();
 }

@@ -63,7 +63,7 @@ describe("KIE chat response", () => {
     expect(parseKieChatEventStream(stream)).toBe("analysis result");
   });
 
-  it("recognizes a streamed 524 as a retryable gateway timeout", () => {
+  it("preserves a streamed KIE 524 error", () => {
     expect(() => parseKieChatEventStream('data: {"code":524,"msg":"2 times retry fail"}\n\n'))
       .toThrow("KIE API error (524): 2 times retry fail");
 

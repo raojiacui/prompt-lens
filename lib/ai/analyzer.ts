@@ -5,7 +5,7 @@ import { decodeAnalyzeApiKey } from "@/lib/usage/trial-quota";
 import { ANALYSIS_PROMPTS, extractCorePrompt } from "@/lib/ai/prompts";
 import { describeAnalysisProviderError } from "@/lib/ai/provider-error";
 import { requestKieChatCompletion } from "@/lib/ai/kie-chat-client";
-import { getKieAnalysisPath } from "@/lib/ai/analysis-models";
+import { buildKieAnalysisRequest } from "@/lib/ai/kie-analysis-request";
 import { postJson } from "@/lib/http/json-client";
 import type { Locale } from "@/i18n/config";
 import { defaultLocale } from "@/i18n/config";
@@ -204,28 +204,20 @@ async function loadGeminiImage(image: string) {
 }
 
 
-/**
- * 调用 KiE Gemini Chat Completions API
- */
-async function callKieGeminiApi(
+/** 调用 KIE 对应模型的图片分析接口。 */
+async function callKieAnalysisApi(
   apiKey: string,
-  messages: any[],
+  frames: string[],
+  prompt: string,
   model: string,
 ): Promise<string> {
-  const payload = {
-    model,
-    messages,
-    max_tokens: 8192,
-    include_thoughts: false,
-  };
-
-  const channel = getKieAnalysisPath(model);
+  const { path: channel, payload } = buildKieAnalysisRequest(model, frames, prompt);
   const result = await requestKieChatCompletion({
     url: `${KIE_BASE_URL}${channel}`,
     apiKey,
     payload,
   });
-  console.log("[KIE Gemini] Response received", { model, channel });
+  console.log("[KIE] Response received", { model, channel });
   return result;
 }
 /**
@@ -308,6 +300,8 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
     } else if (provider === "gemini") {
       // Gemini
       result = await callGeminiApi(apiKey, frames, prompt);
+    } else if (provider === "kie") {
+      result = await callKieAnalysisApi(apiKey, frames, prompt, model);
     } else {
       const messages = [
         {
@@ -322,12 +316,7 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
         },
       ];
 
-      if (provider === "kie") {
-        result = await callKieGeminiApi(apiKey, messages, model);
-      } else {
-        // OpenRouter (使用类似智谱的格式)
-        result = await callOpenRouterApi(apiKey, messages, model);
-      }
+      result = await callOpenRouterApi(apiKey, messages, model);
     }
 
     // 提取核心提示词（兼容中英文格式）

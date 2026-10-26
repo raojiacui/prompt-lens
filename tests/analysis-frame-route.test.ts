@@ -35,7 +35,8 @@ describe("analysis frame lifecycle", () => {
   });
 
   it("passes verified inline frames to inference and deletes frames only after completion", async () => {
-    mocks.analyze.mockImplementation(async ({ frames }) => {
+    mocks.analyze.mockImplementation(async ({ frames, model }) => {
+      expect(model).toBe("deepseek-v4-1-flash");
       expect(frames).toEqual(["data:image/jpeg;base64,/9j/4AE="]);
       expect(mocks.remove).not.toHaveBeenCalled();
       return { success: true, prompt: "result", corePrompt: "core" };
