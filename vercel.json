@@ -1,4 +1,5 @@
 {
+  "ignoreCommand": "if [ \"$VERCEL_PROJECT_ID\" = \"prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI\" ] && { [ -z \"$VERCEL_GIT_COMMIT_REF\" ] || [ \"$VERCEL_GIT_COMMIT_REF\" = \"prompt-lens-V2\" ]; }; then exit 1; else exit 0; fi",
   "crons": [
     { "path": "/api/cron/analysis-dispatch", "schedule": "0 18 * * *" },
     { "path": "/api/cron/media-retention", "schedule": "0 19 * * *" },

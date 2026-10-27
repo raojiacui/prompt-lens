@@ -22,6 +22,13 @@ Vercel 元数据确认，这次误上线由 CLI 发起，记录为 `source: cli`
 - 正式项目 `prompt-lens` 的项目 ID 为 `prj_LA38e0saqqVw1OkQ95AyoMx5vjIV`。V2 测试期间禁止向该项目部署。
 - 只有项目负责人明确决定正式发布 V2 后，`prompt-lens` 项目才可以接收 V2 部署。
 
+### 2026-10-27：Git 自动构建的项目校验
+
+- 两个项目均连接同一个 GitHub 仓库。V2 分支中的 `vercel.json` 增加 `ignoreCommand`，只允许项目 ID 为 `prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI` 且 Git 分支为 `prompt-lens-V2` 的自动构建继续。
+- 测试项目没有 Git 分支变量的手动恢复构建仍允许执行；错误项目、非 V2 分支或缺少项目 ID 时跳过构建。该规则随 V2 代码保存，不修改正式项目设置或 `main` 分支。
+- 备选方案为只依赖项目的 Production Branch 设置；该设置仍可能为其他分支生成 Preview，因此增加代码内的项目校验。
+- 验证：在 Git Bash 中检查允许和拒绝的项目、分支组合；推送后检查实际 V2 Git 构建结果，并确认主站固定域名的部署 ID 保持不变。
+
 ## 备选方案
 
 ### 在正式项目中使用分支 Preview 部署
