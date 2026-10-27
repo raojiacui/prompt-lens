@@ -60,7 +60,7 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
   } catch (error) {
     const diagnostic = taskErrorDetails(error);
     const failureMessage = error instanceof Error ? error.message : "";
-    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED"].includes(failureMessage) ? failureMessage : "MEDIA_PREPARATION_FAILED";
+    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL"].includes(failureMessage) ? failureMessage : "MEDIA_PREPARATION_FAILED";
     await db.update(commercialTasks).set({ state: "failed", result: { code, diagnostic }, updatedAt: new Date() }).where(and(eq(commercialTasks.id, preparation.id), eq(commercialTasks.state, "running")));
     throw error;
   }

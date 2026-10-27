@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { commercialConsumptionEnabled, prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnalysisRetry } from "@/lib/billing/commercial-analysis";
+import { taskErrorDetails } from "@/lib/billing/task-diagnostics";
 
 export const maxDuration = 300;
 export async function POST(request: NextRequest) {
@@ -22,7 +23,8 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const code = error instanceof Error ? error.message : "ANALYSIS_QUOTE_UNAVAILABLE";
     const known = /^[A-Z_]+$/.test(code);
-    if (!known) console.error("[analysis quote] Request failed", { errorType: error instanceof Error ? error.name : "UnknownError" });
-    return NextResponse.json({ code: known ? code : "ANALYSIS_QUOTE_UNAVAILABLE" }, { status: known ? 400 : 503 });
+    const upstreamFailure = ["MEDIA_PREPARATION_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "MEDIA_PROBE_NOT_CONFIGURED"].includes(code);
+    if (!known || upstreamFailure) console.error("[analysis quote] Request failed", { code: known ? code : "ANALYSIS_QUOTE_UNAVAILABLE", diagnostic: taskErrorDetails(error) });
+    return NextResponse.json({ code: known ? code : "ANALYSIS_QUOTE_UNAVAILABLE" }, { status: upstreamFailure ? 503 : known ? 400 : 503 });
   }
 }

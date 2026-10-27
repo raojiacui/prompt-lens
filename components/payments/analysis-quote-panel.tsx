@@ -68,6 +68,10 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     } catch { throw invalidResponse(); }
     const data = await response.json().catch(() => null);
     if (!data || typeof data !== "object" || Array.isArray(data)) throw invalidResponse();
+    if (response.status === 401) throw new AnalysisRequestError(zh ? "登录状态已失效，请重新登录后再开始分析。" : "Your session has expired. Sign in again before starting analysis.", "AUTH_REQUIRED", false, true);
+    if (!response.ok && ["MEDIA_PREPARATION_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "MEDIA_PROBE_NOT_CONFIGURED"].includes(data.code)) throw new AnalysisRequestError(zh ? "视频预处理服务暂不可用，尚未开始分析。请稍后重新读取视频。" : "Video preparation is temporarily unavailable. Analysis has not started. Inspect the video again shortly.", data.code);
+    if (!response.ok && data.code === "COMMERCIAL_NOT_ENABLED") throw new AnalysisRequestError(zh ? "分析服务暂不可用，尚未开始分析。" : "Analysis is temporarily unavailable and has not started.", data.code, false, true);
+    if (!response.ok && data.code === "INVALID_MEDIA_URL") throw new AnalysisRequestError(zh ? "无法读取视频地址，尚未开始分析。请重新上传素材。" : "The video address could not be read. Analysis has not started. Upload the video again.", data.code, false, true);
     if (!response.ok && data.code === "SPLIT_PAYMENT_REQUIRED") throw new Error(zh ? "拆镜需要已购买的平台积分，请充值或选择整段分析。" : "Shot splitting requires purchased credits. Top up or analyze the whole video.");
     if (!response.ok && data.code === "UNSUPPORTED_VIDEO_CODEC") throw new Error(zh ? "视频编码无法解码，未开始分析。请重新导入链接以尝试其他视频版本，或上传 H.264 MP4 文件。" : "The video codec cannot be decoded. Analysis has not started. Reimport the link to try another rendition, or upload an H.264 MP4 file.");
     if (!response.ok && data.code === "INVALID_VIDEO_STREAM") throw new Error(zh ? "无法读取视频画面，未开始分析。请更换素材。" : "The video has no readable picture stream. Analysis has not started. Choose another video.");

@@ -15,6 +15,7 @@ import { inspectVideoProbe, detectWithFallback, ingestVideoCandidates } from "./
 import { probeRemoteVideoCodec } from "./remote-video-codec.mjs";
 import { startReconciliationScheduler } from "./reconciliation-scheduler.mjs";
 import { createFlyMachineSuspender } from "./fly-machine-lifecycle.mjs";
+import { configuredStorageMediaUrl } from "./storage-media-url.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
 const WORKER_SECRET = process.env.WORKER_SECRET || process.env.FFMPEG_WORKER_SECRET || "";
@@ -483,9 +484,7 @@ async function handleCommercialMedia(req, res) {
   requireEnv();
   if (commercialRequests >= 2) return json(res, 429, { error: "Media worker busy" });
   const body = await readJson(req);
-  const url = new URL(body.videoUrl);
-  const allowedHosts = [R2_PUBLIC_URL, R2_ENDPOINT].filter(Boolean).map((value) => new URL(value).hostname);
-  if (url.protocol !== "https:" || !allowedHosts.includes(url.hostname)) return json(res, 400, { error: "Only configured storage is supported" });
+  const url = configuredStorageMediaUrl(body.videoUrl, { publicUrl: R2_PUBLIC_URL, endpoint: R2_ENDPOINT });
   if (!["preview", "assets"].includes(body.mode)) return json(res, 400, { error: "Invalid media operation" });
   commercialRequests++;
   let workDir;
@@ -553,7 +552,7 @@ const server = createServer(async (req, res) => {
   } catch (error) {
     const status = error.statusCode || 500;
     console.error(error);
-    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "VIDEO_CODEC_PREFLIGHT_FAILED"].includes(error.code) ? error.code : undefined;
+    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "VIDEO_CODEC_PREFLIGHT_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL"].includes(error.code) ? error.code : undefined;
     return json(res, status, { error: error.message || "Worker error", ...(code ? { code } : {}) });
   }
 });

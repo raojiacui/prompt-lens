@@ -30,7 +30,7 @@ export async function commercialMediaRequest<T>(mediaUrl: string, body: Record<s
     try {
       const payload = await response.json() as { error?: unknown; code?: unknown };
       if (typeof payload.error === "string") reason = payload.error.slice(0, 1000);
-      if (["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED"].includes(String(payload.code))) code = String(payload.code);
+      if (["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL"].includes(String(payload.code))) code = String(payload.code);
     } catch { /* A proxy may return HTML instead of the worker's JSON response. */ }
     throw new Error(code, { cause: Object.assign(new Error(reason), { code: `MEDIA_HTTP_${response.status}` }) });
   }

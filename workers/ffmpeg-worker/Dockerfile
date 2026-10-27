@@ -13,6 +13,7 @@ COPY workers/ffmpeg-worker/reconciliation-scheduler.mjs ./reconciliation-schedul
 COPY workers/ffmpeg-worker/fly-machine-lifecycle.mjs ./fly-machine-lifecycle.mjs
 COPY workers/ffmpeg-worker/parallel-download.mjs ./parallel-download.mjs
 COPY workers/ffmpeg-worker/media-fetch.mjs ./media-fetch.mjs
+COPY workers/ffmpeg-worker/storage-media-url.mjs ./storage-media-url.mjs
 COPY workers/ffmpeg-worker/video-inspection.mjs ./video-inspection.mjs
 COPY workers/ffmpeg-worker/remote-video-codec.mjs ./remote-video-codec.mjs
 COPY workers/ffmpeg-worker/scene-segments.mjs ./scene-segments.mjs
