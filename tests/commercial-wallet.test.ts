@@ -807,10 +807,39 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
 
   it("snapshots the real analysis model without accepting a platform tier override", () => {
     expect(quotedAnalysisModel({ payer: "platform", model: "flash", modelId: "analysis-gemini-2-5-pro" })).toBe("gemini-3-8-flash-openai");
+    expect(quotedAnalysisModel({ payer: "platform", model: "flash", modelId: "analysis-deepseek-v4-1-flash" })).toBe("deepseek-v4-1-flash");
+    expect(quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "analysis-deepseek-v4-1-flash" })).toBe("deepseek-v4-1-flash");
     expect(quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "analysis-gemini-3-5-flash" })).toBe("gemini-3-5-flash-openai");
     expect(() => quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "nonexistent" })).toThrow();
     expect(() => quotedAnalysisModel({ payer: "platform", model: "pro" })).toThrow();
     expect(() => quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "analysis-gemini-2-5-pro" })).toThrow();
+  });
+
+  it("keeps queued Gemini analysis on its snapshot when a new DeepSeek quote is created", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const intervals = [{ id: "one", startUs: 0, endUs: 5_000_000 }];
+    const prepare = async (title: string) => {
+      const [project] = await testDb.insert(schema.projects).values({ userId, title }).returning();
+      vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 5_000_000, bytes: 500, metadata: {}, scenes: intervals });
+      return prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/source.mp4", mediaName: title, automaticSplit: false });
+    };
+    const first = await prepare("Existing Gemini");
+    const second = await prepare("New DeepSeek");
+    const gemini = await quoteCommercialAnalysis(userId, { preparationId: first.id, sceneIds: ["one"], payer: "platform", model: "flash", outputLanguage: "zh" });
+    await confirmCommercialTask(userId, gemini.id);
+    const deepseek = await quoteCommercialAnalysis(userId, { preparationId: second.id, sceneIds: ["one"], payer: "platform", model: "flash", modelId: "analysis-deepseek-v4-1-flash", outputLanguage: "zh" });
+    expect(deepseek).toMatchObject({ modelId: "deepseek-v4-1-flash", credits: gemini.credits });
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, gemini.id)))[0].input).toMatchObject({ modelId: "gemini-3-8-flash-openai" });
+    const assets = { metadata: {}, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: ["https://example.com/frame.jpg"] }] };
+    vi.mocked(commercialMediaRequest).mockResolvedValue(assets);
+    vi.mocked(analyzeSceneBlueprint).mockResolvedValue({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Valid result", metadata: { analysisProvider: "kie" } });
+    await drain(gemini.id);
+    await confirmCommercialTask(userId, deepseek.id);
+    await drain(deepseek.id);
+    expect(vi.mocked(analyzeSceneBlueprint).mock.calls.map(call => call[0].modelId)).toEqual(["gemini-3-8-flash-openai", "deepseek-v4-1-flash"]);
+    expect(await balance()).toMatchObject({ credits: 200 - 2 * gemini.credits, heldCredits: 0 });
   });
 
   it("recovers a stopped paid analysis without repeating inference or retaining its charge", async () => {

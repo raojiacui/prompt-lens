@@ -20,8 +20,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   const automaticSplit = source.automaticSplit;
   const payer = source.payer ?? "platform";
   const model = "flash";
-  const byokModel = source.modelId || "analysis-gemini-3-8-flash";
-  const selectedModelId = payer === "byok" ? byokModel : "analysis-gemini-3-8-flash";
+  const selectedModelId = source.modelId || "analysis-gemini-3-8-flash";
   const modelName = listModels("analysis").find(item => item.id === selectedModelId)?.displayName || selectedModelId;
   const [preparation, setPreparation] = useState<AnalysisPreparation | null>(null);
   const [downloading, setDownloading] = useState(false);
@@ -46,7 +45,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   const selectionLocked = busy || downloading || confirmationStarted;
   const selectedSeconds = selectedScenes.reduce((total, scene) => total + scene.endUs - scene.startUs, 0) / 1000000;
   const selectionKey = JSON.stringify(selected);
-  const quoteRequestKey = JSON.stringify([preparation?.id, selectionKey, payer, byokModel, automaticSplit, source.outputLanguage]);
+  const quoteRequestKey = JSON.stringify([preparation?.id, selectionKey, payer, selectedModelId, automaticSplit, source.outputLanguage]);
   const quote = savedQuote?.requestKey === quoteRequestKey ? savedQuote : null;
   useEffect(() => { onLockChange?.(selectionLocked); }, [selectionLocked, onLockChange]);
   const onCompleteRef = useRef(onComplete); onCompleteRef.current = onComplete;
@@ -114,7 +113,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     let timer: ReturnType<typeof setTimeout>;
     async function loadQuote(attempt = 0) {
       try {
-        const data = await post("/api/commercial/analysis", { action: "quote", preparationId: preparation!.id, sceneIds: selected, payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok", model, modelId: payer === "byok" ? byokModel : undefined, outputLanguage: source.outputLanguage });
+        const data = await post("/api/commercial/analysis", { action: "quote", preparationId: preparation!.id, sceneIds: selected, payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok", model, modelId: selectedModelId, outputLanguage: source.outputLanguage });
         if (!cancelled) { setQuote({ ...data, requestKey: quoteRequestKey }); setQuoting(false); }
       } catch (e) {
         if (cancelled) return;
@@ -131,7 +130,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     }
     timer = setTimeout(() => void loadQuote(), 300);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [preparation, selectionKey, refresh, taskId, payer, byokModel, automaticSplit, source.outputLanguage]);
+  }, [preparation, selectionKey, refresh, taskId, payer, selectedModelId, automaticSplit, source.outputLanguage]);
   function changeSelection(ids: string[]) {
     setQuote(null); setQuoting(ids.length > 0); setSelected(ids);
   }

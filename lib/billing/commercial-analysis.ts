@@ -20,8 +20,9 @@ export function commercialConsumptionEnabled() { return process.env.COMMERCIAL_C
 export type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; executionMode?: "scene_jobs_v1"; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
 
 export function quotedAnalysisModel(input: { payer: string; model: string; modelId?: string }) {
+  const platformFlashModel = input.modelId === "analysis-deepseek-v4-1-flash" ? input.modelId : "analysis-gemini-3-8-flash";
   const modelId = input.payer === "platform"
-    ? input.model === "flash" ? "analysis-gemini-3-8-flash" : "analysis-gemini-2-5-pro"
+    ? input.model === "flash" ? platformFlashModel : "analysis-gemini-2-5-pro"
     : input.modelId || "analysis-gemini-3-8-flash";
   return resolveModelSelection("analysis", { mode: "manual", modelId }).model.kieModelId;
 }

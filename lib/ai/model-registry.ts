@@ -140,6 +140,12 @@ export const modelRegistry: ModelRegistryEntry[] = [
     costLevel: 4,
   },
   {
+    id: "analysis-deepseek-v4-1-flash", displayName: "DeepSeek V4.1 Flash", family: "DeepSeek",
+    category: "analysis", provider: "kie", kieModelId: "deepseek-v4-1-flash",
+    enabled: true, capabilities: ["text", "image"],
+    speedLevel: 4, qualityLevel: 4, costLevel: 2,
+  },
+  {
     id: "veo-fast",
     displayName: "Veo 3.1 Fast",
     family: "Veo",

@@ -1,4 +1,5 @@
 import { getKieResponseText } from "./kie-response";
+import { kieResponsesBody, KieResponsesError, readKieResponses } from "./kie-responses";
 
 export const DEFAULT_KIE_CHAT_MODEL = "gemini-3-8-flash-openai";
 export const DEFAULT_KIE_ANALYSIS_TIMEOUT_MS = 180_000;
@@ -122,8 +123,11 @@ export async function requestKieChat(input: {
   // Preserve stored model IDs while using the documented native Gemini protocol.
   const nativeGemini = /^gemini-3-[5678]-flash(?:-openai)?$/.test(input.modelId);
   const nativeModelId = input.modelId.replace(/-openai$/, "");
-  const endpoint = nativeGemini ? `/gemini/v1/models/${nativeModelId}:streamGenerateContent` : `/${input.modelId}/v1/chat/completions`;
-  const body = nativeGemini ? nativeGeminiBody(input.messages) : { messages: input.messages };
+  const responses = input.modelId === "deepseek-v4-1-flash";
+  const endpoint = responses ? "/openai/v1/responses" : nativeGemini ? `/gemini/v1/models/${nativeModelId}:streamGenerateContent` : `/${input.modelId}/v1/chat/completions`;
+  let body: unknown;
+  try { body = responses ? kieResponsesBody(input.modelId, input.messages) : nativeGemini ? nativeGeminiBody(input.messages) : { messages: input.messages }; }
+  catch (error) { throw new KieRequestError(error instanceof Error ? error.message : "Invalid analysis input", undefined, "not_sent"); }
   // Only retry proof of an unopened connection; response loss may already have been billed.
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout>;
@@ -159,7 +163,14 @@ export async function requestKieChat(input: {
       }
       if (!response) throw new KieRequestError("KIE connection unavailable", undefined, "not_sent");
       stage = "reading_response";
-      const text = await readChatResponse(response, controller.signal);
+      let text: string;
+      try { text = responses ? await readKieResponses(response, controller.signal) : await readChatResponse(response, controller.signal); }
+      catch (error) {
+        if (!(error instanceof KieResponsesError)) throw error;
+        const failure = new KieRequestError(error.message, response.status, error.outcome);
+        failure.providerCode = error.providerCode;
+        throw failure;
+      }
       if (!text) throw new KieRequestError("KIE API returned an empty result", response.status);
       return text;
     })()]);
