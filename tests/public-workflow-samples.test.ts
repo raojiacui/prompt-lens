@@ -6,6 +6,7 @@ const mountainSampleId = "52457e72-44d6-41e1-ae89-8233ef50082c";
 it.each([
   ["1a54fb8d-254a-4867-910f-b7d4c6ae8ac0", "山海经", 14],
   ["61998c4e-4df0-405e-8200-d99a1d0d734d", "赛博神祇", 5],
+  ["6660cc92-ddcd-4836-921f-d94984eb4eb7", "巨构工业", 5],
 ] as const)("shows the complete %s sample as %s with %i shots", async (sampleId, title, count) => {
   const bundle = (await getPublicSampleBundle(sampleId))!;
   expect(bundle.project.title).toBe(title);

@@ -11984,5 +11984,814 @@
         "updatedAt": "2026-10-10T14:59:07.729Z"
       }
     ]
+  },
+  {
+    "project": {
+      "id": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+      "description": null,
+      "status": "ready",
+      "activeVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+      "createdAt": "2026-10-27T14:46:47.289Z",
+      "updatedAt": "2026-10-27T15:18:58.648Z",
+      "title": "巨构工业",
+      "metadata": {
+        "mediaType": "video",
+        "failedSceneCount": 0
+      }
+    },
+    "versions": [
+      {
+        "id": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "parentVersionId": null,
+        "versionNumber": 0,
+        "kind": "original",
+        "label": "Original",
+        "remixPrompt": null,
+        "overview": {
+          "sceneCount": 5
+        },
+        "createdAt": "2026-10-27T14:57:03.557Z",
+        "updatedAt": "2026-10-27T14:57:03.557Z",
+        "metadata": {}
+      }
+    ],
+    "activeVersion": {
+      "id": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+      "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+      "parentVersionId": null,
+      "versionNumber": 0,
+      "kind": "original",
+      "label": "Original",
+      "remixPrompt": null,
+      "overview": {
+        "sceneCount": 5
+      },
+      "createdAt": "2026-10-27T14:57:03.557Z",
+      "updatedAt": "2026-10-27T14:57:03.557Z",
+      "metadata": {}
+    },
+    "scenes": [
+      {
+        "id": "43a196e6-2a29-42ac-b876-19808e26b0f2",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "referenceVideoId": "9853d9a5-bc2f-4dc2-9593-882599ac255b",
+        "sceneIndex": 1,
+        "shotGroupId": null,
+        "startTime": 0,
+        "endTime": 1.917,
+        "duration": 1.917,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-10-27T14:57:03.557Z",
+        "updatedAt": "2026-10-27T15:13:22.407Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "eee44533-78a3-4c82-998e-3c6a3073a440",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "referenceVideoId": "9853d9a5-bc2f-4dc2-9593-882599ac255b",
+        "sceneIndex": 2,
+        "shotGroupId": null,
+        "startTime": 1.917,
+        "endTime": 4.417,
+        "duration": 2.5,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/002/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/002/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/002/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/002/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/002/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-10-27T14:57:03.557Z",
+        "updatedAt": "2026-10-27T14:57:41.919Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "188fd694-d2d3-4851-b211-5a30d78c548a",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "referenceVideoId": "9853d9a5-bc2f-4dc2-9593-882599ac255b",
+        "sceneIndex": 3,
+        "shotGroupId": null,
+        "startTime": 4.417,
+        "endTime": 6.792,
+        "duration": 2.375,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/003/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/003/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/003/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/003/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/003/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-10-27T14:57:03.557Z",
+        "updatedAt": "2026-10-27T14:58:13.839Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "3eacec36-f43f-47d8-be8a-55bc59350d23",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "referenceVideoId": "9853d9a5-bc2f-4dc2-9593-882599ac255b",
+        "sceneIndex": 4,
+        "shotGroupId": null,
+        "startTime": 6.792,
+        "endTime": 9.542,
+        "duration": 2.75,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/004/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/004/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/004/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/004/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/004/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-10-27T14:57:03.557Z",
+        "updatedAt": "2026-10-27T15:18:58.095Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "a4042bdc-ad66-45aa-a47e-ba327bf01914",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "referenceVideoId": "9853d9a5-bc2f-4dc2-9593-882599ac255b",
+        "sceneIndex": 5,
+        "shotGroupId": null,
+        "startTime": 9.542,
+        "endTime": 12.052,
+        "duration": 2.51,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/005/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/005/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/005/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/005/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a349be80-b234-45cb-a173-67e257313290/scenes/005/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-10-27T14:57:03.557Z",
+        "updatedAt": "2026-10-27T14:59:49.297Z",
+        "error": null,
+        "metadata": {}
+      }
+    ],
+    "sceneVersions": [
+      {
+        "id": "bfac2809-295d-49f8-8651-dfbf328c1897",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "projectVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "originalSceneId": "43a196e6-2a29-42ac-b876-19808e26b0f2",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 1.917,
+          "summary": "Crowds of miniature suited figures traverse high white platforms bordering a yawning abyss dominated by a massive, intricate industrial clockwork tower.",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "Muted monochrome and sepia tones, defined by high-contrast whites, metallic bronzes, and deep blacks.",
+          "style": "Surrealist dieselpunk and brutalist architectural realism with cinematic miniatures aesthetic.",
+          "action": "The miniature figures walk along the ledges casting long shadows, while the massive central metallic wheel and gears slowly churn.",
+          "camera": {
+            "angle": "High-angle bird's-eye view",
+            "focus": "Deep focus across the entire scene",
+            "speed": "Very slow",
+            "lensFeel": "Wide-angle architectural lens with deep focus",
+            "movement": "Static or extremely slow forward drift",
+            "shotSize": "Extreme long shot"
+          },
+          "motion": "Continuous pedestrian wandering along the ledge paired with slow, heavy mechanical gear rotation.",
+          "subject": "The immense gothic-industrial machinery rising from a central chasm, flanked by miniature crowds.",
+          "lighting": "Harsh, directional lighting creating stark contrast between the bright white walking surfaces and pitch-black abyssal shadows.",
+          "characters": "Numerous tiny silhouette-like figures dressed in dark formal suits and coats, appearing ant-sized compared to the architecture.",
+          "composition": {
+            "depth": "Extreme vertical and architectural depth",
+            "midground": "Massive metallic mechanical pillar with spinning gears rising from the dark abyss",
+            "background": "Dark architecture receding into shadows",
+            "foreground": "White pedestrian platform dotted with walking figures in the lower-left, striped terraces on the right",
+            "subjectPlacement": "Centered mechanical tower flanked by contrasting bright pedestrian ledges"
+          },
+          "environment": "A surreal dystopian megastructure featuring stark, blindingly white elevated platforms, multi-tiered striped walkways, and an endless deep black chasm housing colossal mechanical machinery.",
+          "sceneDescription": "A high-angle bird's-eye perspective shows tiny human figures in dark clothing walking across stark white elevated ledges and striped staircases, framing a central dark void that contains a gargantuan, complex mechanical structure with spinning metallic gears."
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "Deep ambient industrial drone, heavy mechanical hum, and distant hollow reverb."
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "Slow and deliberate",
+            "techniques": "Hard cut"
+          }
+        },
+        "generationPrompt": "Bird's-eye extreme wide shot of a surreal dystopian cityscape. In the center, a deep black abyss holds a gargantuan, intricate industrial tower of dark metal gears, wheels, and clockwork architecture. On the bright white edges and striped stairways surrounding the chasm, dozens of ant-sized miniature people in dark suits walk about, casting crisp sharp shadows. Stark high-contrast lighting, muted sepia-monochrome palette, dieselpunk brutalism, sharp architectural details, cinematic scale.\n\nScene and environment: A high-angle bird's-eye perspective shows tiny human figures in dark clothing walking across stark white elevated ledges and striped staircases, framing a central dark void that contains a gargantuan, complex mechanical structure with spinning metallic gears.; The immense gothic-industrial machinery rising from a central chasm, flanked by miniature crowds.; A surreal dystopian megastructure featuring stark, blindingly white elevated platforms, multi-tiered striped walkways, and an endless deep black chasm housing colossal mechanical machinery.\n\nCharacters and action: Numerous tiny silhouette-like figures dressed in dark formal suits and coats, appearing ant-sized compared to the architecture.; The miniature figures walk along the ledges casting long shadows, while the massive central metallic wheel and gears slowly churn.; Continuous pedestrian wandering along the ledge paired with slow, heavy mechanical gear rotation.\n\nCamera and composition: shotSize: Extreme long shot; angle: High-angle bird's-eye view; lensFeel: Wide-angle architectural lens with deep focus; movement: Static or extremely slow forward drift; focus: Deep focus across the entire scene; speed: Very slow; foreground: White pedestrian platform dotted with walking figures in the lower-left, striped terraces on the right; midground: Massive metallic mechanical pillar with spinning gears rising from the dark abyss; background: Dark architecture receding into shadows; subjectPlacement: Centered mechanical tower flanked by contrasting bright pedestrian ledges; depth: Extreme vertical and architectural depth\n\nLighting and style: Harsh, directional lighting creating stark contrast between the bright white walking surfaces and pitch-black abyssal shadows.; Muted monochrome and sepia tones, defined by high-contrast whites, metallic bronzes, and deep blacks.; Surrealist dieselpunk and brutalist architectural realism with cinematic miniatures aesthetic.\n\nAudio: style: Deep ambient industrial drone, heavy mechanical hum, and distant hollow reverb.\n\nTiming and transitions: editing: pacing: Slow and deliberate; techniques: Hard cut",
+        "duration": 1.917,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-27T14:59:10.496Z",
+        "updatedAt": "2026-10-27T15:13:22.379Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-10-27T15:13:22.266Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "86a87427-648a-45a2-8416-aeda875b01ff",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "projectVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "originalSceneId": "eee44533-78a3-4c82-998e-3c6a3073a440",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 4.417,
+          "summary": "Two tiny figures traverse a barren foreground beneath a colossal, repeating industrial megastructure.",
+          "startTime": 1.917,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "Muted palette dominated by olive green, industrial dark gray, sand beige, and pale yellow atmospheric glow.",
+          "style": "Photorealistic brutalist sci-fi cinematic render.",
+          "action": [
+            "The two silhouetted figures walk slowly from left to right across the lower edge of the frame.",
+            "The massive industrial structure behind them remains stationary."
+          ],
+          "camera": {
+            "angle": "Eye level",
+            "focus": "Deep focus across the ground plane and megastructure",
+            "speed": "Static",
+            "lensFeel": "Telephoto compression emphasizing scale disparity",
+            "movement": "Static",
+            "shotSize": "Extreme long shot"
+          },
+          "motion": "Minimal, consisting only of the subtle stride of the two distant figures.",
+          "subject": "Two diminutive human silhouettes overwhelmed by monumental sci-fi architecture.",
+          "lighting": "Diffused overcast ambient illumination casting soft shadows on machinery, with backlighting silhouetting the human figures.",
+          "characters": [
+            {
+              "pose": "Standing side-by-side, walking slowly",
+              "identity": "Unknown figures",
+              "wardrobe": "Dark full-body attire or suits",
+              "appearance": "Two small human figures in complete black silhouette",
+              "expression": "Indistinguishable due to silhouette and extreme distance"
+            }
+          ],
+          "composition": {
+            "framing": "Extreme scale contrast; ground plane occupies the lower tenth; massive mechanical structures fill the remaining frame",
+            "depthLayers": {
+              "midground": "Silhouetted figures and primary engine cowling",
+              "background": "Receding vertical array of turbines, struts, and hazy sky",
+              "foreground": "Flat beige ground plane"
+            },
+            "subjectPlacement": "Lower-left quadrant"
+          },
+          "environment": "A flat, desert-like foreground surface positioned directly beneath an enormous vertical wall of repeating engine cowlings, mechanical pistons, and brutalist framework.",
+          "sceneDescription": "Extreme wide shot of two silhouetted human figures walking on a flat beige surface beneath an immense wall of repeating industrial turbines and mechanical struts that recede into an atmospheric haze."
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "Low ambient industrial drone or quiet desert wind",
+          "transcript": []
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "Slow and steady",
+            "techniques": [
+              "Hard cut entry",
+              "Hard cut exit"
+            ]
+          }
+        },
+        "generationPrompt": "Extreme wide cinematic shot of two tiny silhouetted figures walking on a flat sand ground at the bottom-left of the frame. Looming above them is a colossal sci-fi megastructure of repeating massive jet turbine cowlings and heavy mechanical struts receding into atmospheric distance. Muted military olive-green and industrial dark grey tones with pale beige ground and hazy lighting. Monumental brutalist architecture, extreme scale contrast, deep focus, static camera.\n\nScene and environment: Extreme wide shot of two silhouetted human figures walking on a flat beige surface beneath an immense wall of repeating industrial turbines and mechanical struts that recede into an atmospheric haze.; Two diminutive human silhouettes overwhelmed by monumental sci-fi architecture.; A flat, desert-like foreground surface positioned directly beneath an enormous vertical wall of repeating engine cowlings, mechanical pistons, and brutalist framework.\n\nCharacters and action: identity: Unknown figures; appearance: Two small human figures in complete black silhouette; wardrobe: Dark full-body attire or suits; expression: Indistinguishable due to silhouette and extreme distance; pose: Standing side-by-side, walking slowly; The two silhouetted figures walk slowly from left to right across the lower edge of the frame.; The massive industrial structure behind them remains stationary.; Minimal, consisting only of the subtle stride of the two distant figures.\n\nCamera and composition: shotSize: Extreme long shot; angle: Eye level; lensFeel: Telephoto compression emphasizing scale disparity; movement: Static; focus: Deep focus across the ground plane and megastructure; speed: Static; framing: Extreme scale contrast; ground plane occupies the lower tenth; massive mechanical structures fill the remaining frame; subjectPlacement: Lower-left quadrant; depthLayers: foreground: Flat beige ground plane; midground: Silhouetted figures and primary engine cowling; background: Receding vertical array of turbines, struts, and hazy sky\n\nLighting and style: Diffused overcast ambient illumination casting soft shadows on machinery, with backlighting silhouetting the human figures.; Muted palette dominated by olive green, industrial dark gray, sand beige, and pale yellow atmospheric glow.; Photorealistic brutalist sci-fi cinematic render.\n\nAudio: soundStyle: Low ambient industrial drone or quiet desert wind\n\nTiming and transitions: editing: pacing: Slow and steady; techniques: Hard cut entry; Hard cut exit",
+        "duration": 2.5,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-27T14:57:41.802Z",
+        "updatedAt": "2026-10-27T14:57:41.802Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-10-27T14:57:41.612Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "f88ac602-1e77-4fa7-a84e-8ca5fadeeb7a",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "projectVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "originalSceneId": "188fd694-d2d3-4851-b211-5a30d78c548a",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 6.792,
+          "summary": "Two tiny suited figures walk across an endless flat desert beneath colossal, dark mechanical monoliths.",
+          "startTime": 4.417,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "Muted palette dominated by pale sand beige, dark gunmetal, bronze-gray, and deep black.",
+          "style": "Surrealist brutalist sci-fi aesthetic, reminiscent of monumental biomechanical art.",
+          "action": "The central figures walk slowly and steadily forward across the desert floor toward the viewer; background figures move faintly in varying directions.",
+          "camera": "Extreme wide shot, low-angle perspective emphasizing the scale of the monoliths, static framing with deep depth of field.",
+          "motion": "Slow, methodical forward movement of the walking characters against an otherwise stationary environment.",
+          "subject": "Two figures dressed in dark business suits walking toward the camera.",
+          "lighting": "Directional side lighting defining the ribbed textures and circular forms of the monoliths against a pitch-black background; flat, even illumination on the ground plane.",
+          "characters": "A central pair of men in black suits with obscured facial features, accompanied by sparse, identical miniature suited figures wandering in the distant background.",
+          "composition": "The pale ground fills the lower fifth of the screen, creating a sharp horizontal divider beneath monumental, dark structures that fill the upper four-fifths; subjects are centered in the lower frame.",
+          "environment": "A stark, flat beige desert plain stretching to a low horizon beneath colossal, ribbed metallic/stone structures suspended in a deep black expanse.",
+          "sceneDescription": "An extreme wide view of a vast, flat pale plain dominated by massive dark geometric and mechanical structures featuring giant rings, connecting rods, and spheres against a black void. Two small figures in black suits walk forward side-by-side in the lower-center frame, while other tiny figures dot the horizon."
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "Unknown; potentially low atmospheric drone or ambient desert wind matching the surreal scale."
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "Slow, contemplative duration of 2.375 seconds.",
+            "techniques": "Hard cut in and hard cut out."
+          }
+        },
+        "generationPrompt": "Extreme wide shot of a vast pale sand plain dwarfed by colossal, dark, ribbed monolithic machines with giant rings and connecting pillars against a pitch-black void. In the lower center, two tiny men in black business suits walk forward toward the camera. Sparse, miniature suited figures are scattered along the horizon. Surreal monumental sci-fi style, high contrast, sharp geometric textures, static camera, deep depth of field.\n\nScene and environment: An extreme wide view of a vast, flat pale plain dominated by massive dark geometric and mechanical structures featuring giant rings, connecting rods, and spheres against a black void. Two small figures in black suits walk forward side-by-side in the lower-center frame, while other tiny figures dot the horizon.; Two figures dressed in dark business suits walking toward the camera.; A stark, flat beige desert plain stretching to a low horizon beneath colossal, ribbed metallic/stone structures suspended in a deep black expanse.\n\nCharacters and action: A central pair of men in black suits with obscured facial features, accompanied by sparse, identical miniature suited figures wandering in the distant background.; The central figures walk slowly and steadily forward across the desert floor toward the viewer; background figures move faintly in varying directions.; Slow, methodical forward movement of the walking characters against an otherwise stationary environment.\n\nCamera and composition: Extreme wide shot, low-angle perspective emphasizing the scale of the monoliths, static framing with deep depth of field.; The pale ground fills the lower fifth of the screen, creating a sharp horizontal divider beneath monumental, dark structures that fill the upper four-fifths; subjects are centered in the lower frame.\n\nLighting and style: Directional side lighting defining the ribbed textures and circular forms of the monoliths against a pitch-black background; flat, even illumination on the ground plane.; Muted palette dominated by pale sand beige, dark gunmetal, bronze-gray, and deep black.; Surrealist brutalist sci-fi aesthetic, reminiscent of monumental biomechanical art.\n\nAudio: soundStyle: Unknown; potentially low atmospheric drone or ambient desert wind matching the surreal scale.\n\nTiming and transitions: editing: pacing: Slow, contemplative duration of 2.375 seconds.; techniques: Hard cut in and hard cut out.",
+        "duration": 2.375,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-27T14:58:13.719Z",
+        "updatedAt": "2026-10-27T14:58:13.719Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-10-27T14:58:13.681Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "d12c47fa-b348-4855-8dea-a50b3b7f40a4",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "projectVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "originalSceneId": "3eacec36-f43f-47d8-be8a-55bc59350d23",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 9.542,
+          "summary": "Four silhouetted figures walk across a dark foreground ridge, dwarfed by an immense industrial megastructure shrouded in mist.",
+          "startTime": 6.792,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "Muted, desaturated palette dominated by dark charcoal black, stark white fog, and dusty beige-gray industrial tones.",
+          "style": "Brutalist sci-fi realism with industrial surrealist scale, gritty matte textures, and cinematic scale disparity.",
+          "action": "The four silhouetted figures walk across the foreground ridge as the monumental megastructure looms motionless or slowly turns in the background.",
+          "camera": "Static extreme long shot, straight-on eye-level angle, deep depth of field capturing both the figures and the colossal machine in sharp contrast.",
+          "motion": "Slow, steady walking motion of the foreground silhouettes with minimal to no camera movement.",
+          "subject": "A colossal industrial sci-fi machine featuring cylindrical turbines, giant gears, and intricate mechanical greebles.",
+          "lighting": "Diffused ambient lighting on the background machine, high-contrast backlighting creating clean silhouettes of the foreground figures against the white fog.",
+          "characters": "Four human figures seen entirely in dark silhouette, dressed in suits or long coats, walking slowly from left to right.",
+          "composition": "Bottom third dominated by the dark ridge and walking silhouettes at the lower left; midground filled with horizontal white haze; upper two-thirds dominated by the immense off-center mechanical construct.",
+          "environment": "A vast, cavernous industrial space or surreal plain with a flat beige backdrop and a dense band of low-lying white mist.",
+          "sceneDescription": "Extreme wide shot featuring four silhouetted figures in business suits walking along a dark, curved foreground ridge. In the midground, a layer of white fog blankets the floor, while an enormous mechanical machine with cylindrical drums and massive gears dominates the frame against a towering beige wall."
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "Deep, ominous low-frequency industrial drone with subtle atmospheric wind."
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "Slow, contemplative hold.",
+            "techniques": "Hard cut in, hard cut out."
+          }
+        },
+        "generationPrompt": "Cinematic extreme wide shot of four silhouetted men in dark suits walking along a curved black ridge in the lower left. A thick layer of white ground fog sits in the midground. Looming over the entire scene is a colossal brutalist megastructure built from giant mechanical cylinders, massive cog wheels, and intricate dark metal machinery, set against a vast textured beige wall. Desaturated industrial color palette, striking scale disparity, deep focus, static camera, cinematic sci-fi realism.\n\nScene and environment: Extreme wide shot featuring four silhouetted figures in business suits walking along a dark, curved foreground ridge. In the midground, a layer of white fog blankets the floor, while an enormous mechanical machine with cylindrical drums and massive gears dominates the frame against a towering beige wall.; A colossal industrial sci-fi machine featuring cylindrical turbines, giant gears, and intricate mechanical greebles.; A vast, cavernous industrial space or surreal plain with a flat beige backdrop and a dense band of low-lying white mist.\n\nCharacters and action: Four human figures seen entirely in dark silhouette, dressed in suits or long coats, walking slowly from left to right.; The four silhouetted figures walk across the foreground ridge as the monumental megastructure looms motionless or slowly turns in the background.; Slow, steady walking motion of the foreground silhouettes with minimal to no camera movement.\n\nCamera and composition: Static extreme long shot, straight-on eye-level angle, deep depth of field capturing both the figures and the colossal machine in sharp contrast.; Bottom third dominated by the dark ridge and walking silhouettes at the lower left; midground filled with horizontal white haze; upper two-thirds dominated by the immense off-center mechanical construct.\n\nLighting and style: Diffused ambient lighting on the background machine, high-contrast backlighting creating clean silhouettes of the foreground figures against the white fog.; Muted, desaturated palette dominated by dark charcoal black, stark white fog, and dusty beige-gray industrial tones.; Brutalist sci-fi realism with industrial surrealist scale, gritty matte textures, and cinematic scale disparity.\n\nAudio: soundStyle: Deep, ominous low-frequency industrial drone with subtle atmospheric wind.\n\nTiming and transitions: editing: pacing: Slow, contemplative hold.; techniques: Hard cut in, hard cut out.",
+        "duration": 2.75,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-27T15:00:19.631Z",
+        "updatedAt": "2026-10-27T15:18:58.063Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-10-27T15:18:57.934Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "b8db5d51-c115-4b97-8414-1f590104b601",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "projectVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "originalSceneId": "a4042bdc-ad66-45aa-a47e-ba327bf01914",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 12.052,
+          "summary": "Miniature figures in suits descend a monumental stepped avenue toward a dark void beneath colossal mechanical gears.",
+          "startTime": 9.542,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "Warm off-white, deep charcoal grey, and pitch black in high-contrast tones.",
+          "style": "Surrealist, brutalist retro-futuristic dystopia with cinematic CGI realism.",
+          "action": "Figures walk slowly downward away from the camera along the central lane, while others stand motionless on stepped ledges under overhead machinery.",
+          "camera": "Extreme wide shot, elevated perspective looking down the central axis, deep depth of field, static with imperceptible drift.",
+          "motion": "Slow, uniform walking motion of tiny human figures against stationary or barely turning monumental machinery.",
+          "subject": "Faceless businessmen in black suits walking down a grand geometric descent.",
+          "lighting": "Harsh directional sunlight from the upper right creating stark geometric shadows across pale stone, contrasting with the dark industrial machinery.",
+          "characters": "Multiple identical miniature male figures dressed in dark formal business suits, dispersed across stone platforms and the central walkway.",
+          "composition": "Converging perspective with flanking stepped terraces leading the eye to the central black chasm, topped by massive dark mechanical structures.",
+          "environment": "Brutalist stepped architecture in pale sandstone leading into an infinite black chasm; colossal dark metal clockwork gears and linkages hang overhead.",
+          "sceneDescription": "Monumental pale-stone stepped canyon descending into a dark abyss, traversed by tiny men in black suits, beneath gargantuan industrial cogs suspended above."
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "Minimal atmospheric synth drone (inferred)",
+          "soundEffects": "Deep ambient industrial drone or heavy mechanical ticking (inferred)"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "Slow and ominous",
+            "techniques": [
+              "Hard cut",
+              "Static hold"
+            ]
+          }
+        },
+        "generationPrompt": "Wide cinematic shot of a monumental brutalist avenue with terraced pale sandstone steps descending into a black void. Scattered miniature men in black suits walk downward into the chasm. Suspended above in the dark void are colossal, detailed dark metal clockwork gears and pistons. Strong directional sunlight casts sharp geometric shadows across the bright stone surfaces, surreal dystopian scale, clean 3D render aesthetics, high contrast, deep perspective.\n\nScene and environment: Monumental pale-stone stepped canyon descending into a dark abyss, traversed by tiny men in black suits, beneath gargantuan industrial cogs suspended above.; Faceless businessmen in black suits walking down a grand geometric descent.; Brutalist stepped architecture in pale sandstone leading into an infinite black chasm; colossal dark metal clockwork gears and linkages hang overhead.\n\nCharacters and action: Multiple identical miniature male figures dressed in dark formal business suits, dispersed across stone platforms and the central walkway.; Figures walk slowly downward away from the camera along the central lane, while others stand motionless on stepped ledges under overhead machinery.; Slow, uniform walking motion of tiny human figures against stationary or barely turning monumental machinery.\n\nCamera and composition: Extreme wide shot, elevated perspective looking down the central axis, deep depth of field, static with imperceptible drift.; Converging perspective with flanking stepped terraces leading the eye to the central black chasm, topped by massive dark mechanical structures.\n\nLighting and style: Harsh directional sunlight from the upper right creating stark geometric shadows across pale stone, contrasting with the dark industrial machinery.; Warm off-white, deep charcoal grey, and pitch black in high-contrast tones.; Surrealist, brutalist retro-futuristic dystopia with cinematic CGI realism.\n\nAudio: soundEffects: Deep ambient industrial drone or heavy mechanical ticking (inferred); music: Minimal atmospheric synth drone (inferred)\n\nTiming and transitions: editing: pacing: Slow and ominous; techniques: Hard cut; Static hold",
+        "duration": 2.51,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-27T14:59:49.169Z",
+        "updatedAt": "2026-10-27T14:59:49.169Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-10-27T14:59:48.958Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      }
+    ],
+    "allSceneVersions": [
+      {
+        "id": "bfac2809-295d-49f8-8651-dfbf328c1897",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "projectVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "originalSceneId": "43a196e6-2a29-42ac-b876-19808e26b0f2",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 1.917,
+          "summary": "Crowds of miniature suited figures traverse high white platforms bordering a yawning abyss dominated by a massive, intricate industrial clockwork tower.",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "Muted monochrome and sepia tones, defined by high-contrast whites, metallic bronzes, and deep blacks.",
+          "style": "Surrealist dieselpunk and brutalist architectural realism with cinematic miniatures aesthetic.",
+          "action": "The miniature figures walk along the ledges casting long shadows, while the massive central metallic wheel and gears slowly churn.",
+          "camera": {
+            "angle": "High-angle bird's-eye view",
+            "focus": "Deep focus across the entire scene",
+            "speed": "Very slow",
+            "lensFeel": "Wide-angle architectural lens with deep focus",
+            "movement": "Static or extremely slow forward drift",
+            "shotSize": "Extreme long shot"
+          },
+          "motion": "Continuous pedestrian wandering along the ledge paired with slow, heavy mechanical gear rotation.",
+          "subject": "The immense gothic-industrial machinery rising from a central chasm, flanked by miniature crowds.",
+          "lighting": "Harsh, directional lighting creating stark contrast between the bright white walking surfaces and pitch-black abyssal shadows.",
+          "characters": "Numerous tiny silhouette-like figures dressed in dark formal suits and coats, appearing ant-sized compared to the architecture.",
+          "composition": {
+            "depth": "Extreme vertical and architectural depth",
+            "midground": "Massive metallic mechanical pillar with spinning gears rising from the dark abyss",
+            "background": "Dark architecture receding into shadows",
+            "foreground": "White pedestrian platform dotted with walking figures in the lower-left, striped terraces on the right",
+            "subjectPlacement": "Centered mechanical tower flanked by contrasting bright pedestrian ledges"
+          },
+          "environment": "A surreal dystopian megastructure featuring stark, blindingly white elevated platforms, multi-tiered striped walkways, and an endless deep black chasm housing colossal mechanical machinery.",
+          "sceneDescription": "A high-angle bird's-eye perspective shows tiny human figures in dark clothing walking across stark white elevated ledges and striped staircases, framing a central dark void that contains a gargantuan, complex mechanical structure with spinning metallic gears."
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "Deep ambient industrial drone, heavy mechanical hum, and distant hollow reverb."
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "Slow and deliberate",
+            "techniques": "Hard cut"
+          }
+        },
+        "generationPrompt": "Bird's-eye extreme wide shot of a surreal dystopian cityscape. In the center, a deep black abyss holds a gargantuan, intricate industrial tower of dark metal gears, wheels, and clockwork architecture. On the bright white edges and striped stairways surrounding the chasm, dozens of ant-sized miniature people in dark suits walk about, casting crisp sharp shadows. Stark high-contrast lighting, muted sepia-monochrome palette, dieselpunk brutalism, sharp architectural details, cinematic scale.\n\nScene and environment: A high-angle bird's-eye perspective shows tiny human figures in dark clothing walking across stark white elevated ledges and striped staircases, framing a central dark void that contains a gargantuan, complex mechanical structure with spinning metallic gears.; The immense gothic-industrial machinery rising from a central chasm, flanked by miniature crowds.; A surreal dystopian megastructure featuring stark, blindingly white elevated platforms, multi-tiered striped walkways, and an endless deep black chasm housing colossal mechanical machinery.\n\nCharacters and action: Numerous tiny silhouette-like figures dressed in dark formal suits and coats, appearing ant-sized compared to the architecture.; The miniature figures walk along the ledges casting long shadows, while the massive central metallic wheel and gears slowly churn.; Continuous pedestrian wandering along the ledge paired with slow, heavy mechanical gear rotation.\n\nCamera and composition: shotSize: Extreme long shot; angle: High-angle bird's-eye view; lensFeel: Wide-angle architectural lens with deep focus; movement: Static or extremely slow forward drift; focus: Deep focus across the entire scene; speed: Very slow; foreground: White pedestrian platform dotted with walking figures in the lower-left, striped terraces on the right; midground: Massive metallic mechanical pillar with spinning gears rising from the dark abyss; background: Dark architecture receding into shadows; subjectPlacement: Centered mechanical tower flanked by contrasting bright pedestrian ledges; depth: Extreme vertical and architectural depth\n\nLighting and style: Harsh, directional lighting creating stark contrast between the bright white walking surfaces and pitch-black abyssal shadows.; Muted monochrome and sepia tones, defined by high-contrast whites, metallic bronzes, and deep blacks.; Surrealist dieselpunk and brutalist architectural realism with cinematic miniatures aesthetic.\n\nAudio: style: Deep ambient industrial drone, heavy mechanical hum, and distant hollow reverb.\n\nTiming and transitions: editing: pacing: Slow and deliberate; techniques: Hard cut",
+        "duration": 1.917,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-27T14:59:10.496Z",
+        "updatedAt": "2026-10-27T15:13:22.379Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-10-27T15:13:22.266Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "86a87427-648a-45a2-8416-aeda875b01ff",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "projectVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "originalSceneId": "eee44533-78a3-4c82-998e-3c6a3073a440",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 4.417,
+          "summary": "Two tiny figures traverse a barren foreground beneath a colossal, repeating industrial megastructure.",
+          "startTime": 1.917,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "Muted palette dominated by olive green, industrial dark gray, sand beige, and pale yellow atmospheric glow.",
+          "style": "Photorealistic brutalist sci-fi cinematic render.",
+          "action": [
+            "The two silhouetted figures walk slowly from left to right across the lower edge of the frame.",
+            "The massive industrial structure behind them remains stationary."
+          ],
+          "camera": {
+            "angle": "Eye level",
+            "focus": "Deep focus across the ground plane and megastructure",
+            "speed": "Static",
+            "lensFeel": "Telephoto compression emphasizing scale disparity",
+            "movement": "Static",
+            "shotSize": "Extreme long shot"
+          },
+          "motion": "Minimal, consisting only of the subtle stride of the two distant figures.",
+          "subject": "Two diminutive human silhouettes overwhelmed by monumental sci-fi architecture.",
+          "lighting": "Diffused overcast ambient illumination casting soft shadows on machinery, with backlighting silhouetting the human figures.",
+          "characters": [
+            {
+              "pose": "Standing side-by-side, walking slowly",
+              "identity": "Unknown figures",
+              "wardrobe": "Dark full-body attire or suits",
+              "appearance": "Two small human figures in complete black silhouette",
+              "expression": "Indistinguishable due to silhouette and extreme distance"
+            }
+          ],
+          "composition": {
+            "framing": "Extreme scale contrast; ground plane occupies the lower tenth; massive mechanical structures fill the remaining frame",
+            "depthLayers": {
+              "midground": "Silhouetted figures and primary engine cowling",
+              "background": "Receding vertical array of turbines, struts, and hazy sky",
+              "foreground": "Flat beige ground plane"
+            },
+            "subjectPlacement": "Lower-left quadrant"
+          },
+          "environment": "A flat, desert-like foreground surface positioned directly beneath an enormous vertical wall of repeating engine cowlings, mechanical pistons, and brutalist framework.",
+          "sceneDescription": "Extreme wide shot of two silhouetted human figures walking on a flat beige surface beneath an immense wall of repeating industrial turbines and mechanical struts that recede into an atmospheric haze."
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "Low ambient industrial drone or quiet desert wind",
+          "transcript": []
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "Slow and steady",
+            "techniques": [
+              "Hard cut entry",
+              "Hard cut exit"
+            ]
+          }
+        },
+        "generationPrompt": "Extreme wide cinematic shot of two tiny silhouetted figures walking on a flat sand ground at the bottom-left of the frame. Looming above them is a colossal sci-fi megastructure of repeating massive jet turbine cowlings and heavy mechanical struts receding into atmospheric distance. Muted military olive-green and industrial dark grey tones with pale beige ground and hazy lighting. Monumental brutalist architecture, extreme scale contrast, deep focus, static camera.\n\nScene and environment: Extreme wide shot of two silhouetted human figures walking on a flat beige surface beneath an immense wall of repeating industrial turbines and mechanical struts that recede into an atmospheric haze.; Two diminutive human silhouettes overwhelmed by monumental sci-fi architecture.; A flat, desert-like foreground surface positioned directly beneath an enormous vertical wall of repeating engine cowlings, mechanical pistons, and brutalist framework.\n\nCharacters and action: identity: Unknown figures; appearance: Two small human figures in complete black silhouette; wardrobe: Dark full-body attire or suits; expression: Indistinguishable due to silhouette and extreme distance; pose: Standing side-by-side, walking slowly; The two silhouetted figures walk slowly from left to right across the lower edge of the frame.; The massive industrial structure behind them remains stationary.; Minimal, consisting only of the subtle stride of the two distant figures.\n\nCamera and composition: shotSize: Extreme long shot; angle: Eye level; lensFeel: Telephoto compression emphasizing scale disparity; movement: Static; focus: Deep focus across the ground plane and megastructure; speed: Static; framing: Extreme scale contrast; ground plane occupies the lower tenth; massive mechanical structures fill the remaining frame; subjectPlacement: Lower-left quadrant; depthLayers: foreground: Flat beige ground plane; midground: Silhouetted figures and primary engine cowling; background: Receding vertical array of turbines, struts, and hazy sky\n\nLighting and style: Diffused overcast ambient illumination casting soft shadows on machinery, with backlighting silhouetting the human figures.; Muted palette dominated by olive green, industrial dark gray, sand beige, and pale yellow atmospheric glow.; Photorealistic brutalist sci-fi cinematic render.\n\nAudio: soundStyle: Low ambient industrial drone or quiet desert wind\n\nTiming and transitions: editing: pacing: Slow and steady; techniques: Hard cut entry; Hard cut exit",
+        "duration": 2.5,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-27T14:57:41.802Z",
+        "updatedAt": "2026-10-27T14:57:41.802Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-10-27T14:57:41.612Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "f88ac602-1e77-4fa7-a84e-8ca5fadeeb7a",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "projectVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "originalSceneId": "188fd694-d2d3-4851-b211-5a30d78c548a",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 6.792,
+          "summary": "Two tiny suited figures walk across an endless flat desert beneath colossal, dark mechanical monoliths.",
+          "startTime": 4.417,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "Muted palette dominated by pale sand beige, dark gunmetal, bronze-gray, and deep black.",
+          "style": "Surrealist brutalist sci-fi aesthetic, reminiscent of monumental biomechanical art.",
+          "action": "The central figures walk slowly and steadily forward across the desert floor toward the viewer; background figures move faintly in varying directions.",
+          "camera": "Extreme wide shot, low-angle perspective emphasizing the scale of the monoliths, static framing with deep depth of field.",
+          "motion": "Slow, methodical forward movement of the walking characters against an otherwise stationary environment.",
+          "subject": "Two figures dressed in dark business suits walking toward the camera.",
+          "lighting": "Directional side lighting defining the ribbed textures and circular forms of the monoliths against a pitch-black background; flat, even illumination on the ground plane.",
+          "characters": "A central pair of men in black suits with obscured facial features, accompanied by sparse, identical miniature suited figures wandering in the distant background.",
+          "composition": "The pale ground fills the lower fifth of the screen, creating a sharp horizontal divider beneath monumental, dark structures that fill the upper four-fifths; subjects are centered in the lower frame.",
+          "environment": "A stark, flat beige desert plain stretching to a low horizon beneath colossal, ribbed metallic/stone structures suspended in a deep black expanse.",
+          "sceneDescription": "An extreme wide view of a vast, flat pale plain dominated by massive dark geometric and mechanical structures featuring giant rings, connecting rods, and spheres against a black void. Two small figures in black suits walk forward side-by-side in the lower-center frame, while other tiny figures dot the horizon."
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "Unknown; potentially low atmospheric drone or ambient desert wind matching the surreal scale."
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "Slow, contemplative duration of 2.375 seconds.",
+            "techniques": "Hard cut in and hard cut out."
+          }
+        },
+        "generationPrompt": "Extreme wide shot of a vast pale sand plain dwarfed by colossal, dark, ribbed monolithic machines with giant rings and connecting pillars against a pitch-black void. In the lower center, two tiny men in black business suits walk forward toward the camera. Sparse, miniature suited figures are scattered along the horizon. Surreal monumental sci-fi style, high contrast, sharp geometric textures, static camera, deep depth of field.\n\nScene and environment: An extreme wide view of a vast, flat pale plain dominated by massive dark geometric and mechanical structures featuring giant rings, connecting rods, and spheres against a black void. Two small figures in black suits walk forward side-by-side in the lower-center frame, while other tiny figures dot the horizon.; Two figures dressed in dark business suits walking toward the camera.; A stark, flat beige desert plain stretching to a low horizon beneath colossal, ribbed metallic/stone structures suspended in a deep black expanse.\n\nCharacters and action: A central pair of men in black suits with obscured facial features, accompanied by sparse, identical miniature suited figures wandering in the distant background.; The central figures walk slowly and steadily forward across the desert floor toward the viewer; background figures move faintly in varying directions.; Slow, methodical forward movement of the walking characters against an otherwise stationary environment.\n\nCamera and composition: Extreme wide shot, low-angle perspective emphasizing the scale of the monoliths, static framing with deep depth of field.; The pale ground fills the lower fifth of the screen, creating a sharp horizontal divider beneath monumental, dark structures that fill the upper four-fifths; subjects are centered in the lower frame.\n\nLighting and style: Directional side lighting defining the ribbed textures and circular forms of the monoliths against a pitch-black background; flat, even illumination on the ground plane.; Muted palette dominated by pale sand beige, dark gunmetal, bronze-gray, and deep black.; Surrealist brutalist sci-fi aesthetic, reminiscent of monumental biomechanical art.\n\nAudio: soundStyle: Unknown; potentially low atmospheric drone or ambient desert wind matching the surreal scale.\n\nTiming and transitions: editing: pacing: Slow, contemplative duration of 2.375 seconds.; techniques: Hard cut in and hard cut out.",
+        "duration": 2.375,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-27T14:58:13.719Z",
+        "updatedAt": "2026-10-27T14:58:13.719Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-10-27T14:58:13.681Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "d12c47fa-b348-4855-8dea-a50b3b7f40a4",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "projectVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "originalSceneId": "3eacec36-f43f-47d8-be8a-55bc59350d23",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 9.542,
+          "summary": "Four silhouetted figures walk across a dark foreground ridge, dwarfed by an immense industrial megastructure shrouded in mist.",
+          "startTime": 6.792,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "Muted, desaturated palette dominated by dark charcoal black, stark white fog, and dusty beige-gray industrial tones.",
+          "style": "Brutalist sci-fi realism with industrial surrealist scale, gritty matte textures, and cinematic scale disparity.",
+          "action": "The four silhouetted figures walk across the foreground ridge as the monumental megastructure looms motionless or slowly turns in the background.",
+          "camera": "Static extreme long shot, straight-on eye-level angle, deep depth of field capturing both the figures and the colossal machine in sharp contrast.",
+          "motion": "Slow, steady walking motion of the foreground silhouettes with minimal to no camera movement.",
+          "subject": "A colossal industrial sci-fi machine featuring cylindrical turbines, giant gears, and intricate mechanical greebles.",
+          "lighting": "Diffused ambient lighting on the background machine, high-contrast backlighting creating clean silhouettes of the foreground figures against the white fog.",
+          "characters": "Four human figures seen entirely in dark silhouette, dressed in suits or long coats, walking slowly from left to right.",
+          "composition": "Bottom third dominated by the dark ridge and walking silhouettes at the lower left; midground filled with horizontal white haze; upper two-thirds dominated by the immense off-center mechanical construct.",
+          "environment": "A vast, cavernous industrial space or surreal plain with a flat beige backdrop and a dense band of low-lying white mist.",
+          "sceneDescription": "Extreme wide shot featuring four silhouetted figures in business suits walking along a dark, curved foreground ridge. In the midground, a layer of white fog blankets the floor, while an enormous mechanical machine with cylindrical drums and massive gears dominates the frame against a towering beige wall."
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "Deep, ominous low-frequency industrial drone with subtle atmospheric wind."
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "Slow, contemplative hold.",
+            "techniques": "Hard cut in, hard cut out."
+          }
+        },
+        "generationPrompt": "Cinematic extreme wide shot of four silhouetted men in dark suits walking along a curved black ridge in the lower left. A thick layer of white ground fog sits in the midground. Looming over the entire scene is a colossal brutalist megastructure built from giant mechanical cylinders, massive cog wheels, and intricate dark metal machinery, set against a vast textured beige wall. Desaturated industrial color palette, striking scale disparity, deep focus, static camera, cinematic sci-fi realism.\n\nScene and environment: Extreme wide shot featuring four silhouetted figures in business suits walking along a dark, curved foreground ridge. In the midground, a layer of white fog blankets the floor, while an enormous mechanical machine with cylindrical drums and massive gears dominates the frame against a towering beige wall.; A colossal industrial sci-fi machine featuring cylindrical turbines, giant gears, and intricate mechanical greebles.; A vast, cavernous industrial space or surreal plain with a flat beige backdrop and a dense band of low-lying white mist.\n\nCharacters and action: Four human figures seen entirely in dark silhouette, dressed in suits or long coats, walking slowly from left to right.; The four silhouetted figures walk across the foreground ridge as the monumental megastructure looms motionless or slowly turns in the background.; Slow, steady walking motion of the foreground silhouettes with minimal to no camera movement.\n\nCamera and composition: Static extreme long shot, straight-on eye-level angle, deep depth of field capturing both the figures and the colossal machine in sharp contrast.; Bottom third dominated by the dark ridge and walking silhouettes at the lower left; midground filled with horizontal white haze; upper two-thirds dominated by the immense off-center mechanical construct.\n\nLighting and style: Diffused ambient lighting on the background machine, high-contrast backlighting creating clean silhouettes of the foreground figures against the white fog.; Muted, desaturated palette dominated by dark charcoal black, stark white fog, and dusty beige-gray industrial tones.; Brutalist sci-fi realism with industrial surrealist scale, gritty matte textures, and cinematic scale disparity.\n\nAudio: soundStyle: Deep, ominous low-frequency industrial drone with subtle atmospheric wind.\n\nTiming and transitions: editing: pacing: Slow, contemplative hold.; techniques: Hard cut in, hard cut out.",
+        "duration": 2.75,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-27T15:00:19.631Z",
+        "updatedAt": "2026-10-27T15:18:58.063Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-10-27T15:18:57.934Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "b8db5d51-c115-4b97-8414-1f590104b601",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "projectVersionId": "8303ab2d-ecb5-4dcb-948d-422cc27f0ea5",
+        "originalSceneId": "a4042bdc-ad66-45aa-a47e-ba327bf01914",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 12.052,
+          "summary": "Miniature figures in suits descend a monumental stepped avenue toward a dark void beneath colossal mechanical gears.",
+          "startTime": 9.542,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "Warm off-white, deep charcoal grey, and pitch black in high-contrast tones.",
+          "style": "Surrealist, brutalist retro-futuristic dystopia with cinematic CGI realism.",
+          "action": "Figures walk slowly downward away from the camera along the central lane, while others stand motionless on stepped ledges under overhead machinery.",
+          "camera": "Extreme wide shot, elevated perspective looking down the central axis, deep depth of field, static with imperceptible drift.",
+          "motion": "Slow, uniform walking motion of tiny human figures against stationary or barely turning monumental machinery.",
+          "subject": "Faceless businessmen in black suits walking down a grand geometric descent.",
+          "lighting": "Harsh directional sunlight from the upper right creating stark geometric shadows across pale stone, contrasting with the dark industrial machinery.",
+          "characters": "Multiple identical miniature male figures dressed in dark formal business suits, dispersed across stone platforms and the central walkway.",
+          "composition": "Converging perspective with flanking stepped terraces leading the eye to the central black chasm, topped by massive dark mechanical structures.",
+          "environment": "Brutalist stepped architecture in pale sandstone leading into an infinite black chasm; colossal dark metal clockwork gears and linkages hang overhead.",
+          "sceneDescription": "Monumental pale-stone stepped canyon descending into a dark abyss, traversed by tiny men in black suits, beneath gargantuan industrial cogs suspended above."
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "Minimal atmospheric synth drone (inferred)",
+          "soundEffects": "Deep ambient industrial drone or heavy mechanical ticking (inferred)"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "Slow and ominous",
+            "techniques": [
+              "Hard cut",
+              "Static hold"
+            ]
+          }
+        },
+        "generationPrompt": "Wide cinematic shot of a monumental brutalist avenue with terraced pale sandstone steps descending into a black void. Scattered miniature men in black suits walk downward into the chasm. Suspended above in the dark void are colossal, detailed dark metal clockwork gears and pistons. Strong directional sunlight casts sharp geometric shadows across the bright stone surfaces, surreal dystopian scale, clean 3D render aesthetics, high contrast, deep perspective.\n\nScene and environment: Monumental pale-stone stepped canyon descending into a dark abyss, traversed by tiny men in black suits, beneath gargantuan industrial cogs suspended above.; Faceless businessmen in black suits walking down a grand geometric descent.; Brutalist stepped architecture in pale sandstone leading into an infinite black chasm; colossal dark metal clockwork gears and linkages hang overhead.\n\nCharacters and action: Multiple identical miniature male figures dressed in dark formal business suits, dispersed across stone platforms and the central walkway.; Figures walk slowly downward away from the camera along the central lane, while others stand motionless on stepped ledges under overhead machinery.; Slow, uniform walking motion of tiny human figures against stationary or barely turning monumental machinery.\n\nCamera and composition: Extreme wide shot, elevated perspective looking down the central axis, deep depth of field, static with imperceptible drift.; Converging perspective with flanking stepped terraces leading the eye to the central black chasm, topped by massive dark mechanical structures.\n\nLighting and style: Harsh directional sunlight from the upper right creating stark geometric shadows across pale stone, contrasting with the dark industrial machinery.; Warm off-white, deep charcoal grey, and pitch black in high-contrast tones.; Surrealist, brutalist retro-futuristic dystopia with cinematic CGI realism.\n\nAudio: soundEffects: Deep ambient industrial drone or heavy mechanical ticking (inferred); music: Minimal atmospheric synth drone (inferred)\n\nTiming and transitions: editing: pacing: Slow and ominous; techniques: Hard cut; Static hold",
+        "duration": 2.51,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-27T14:59:49.169Z",
+        "updatedAt": "2026-10-27T14:59:49.169Z",
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-10-27T14:59:48.958Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      }
+    ],
+    "referenceVideos": [
+      {
+        "id": "9853d9a5-bc2f-4dc2-9593-882599ac255b",
+        "projectId": "6660cc92-ddcd-4836-921f-d94984eb4eb7",
+        "sourceUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/77515a14-bf2a-47ec-a899-9493b394711a-06458983cf3e9b6ab3181ff09259d649.mp4",
+        "mimeType": null,
+        "duration": 12,
+        "createdAt": "2026-10-27T14:57:03.557Z",
+        "fileName": "巨构工业.mp4",
+        "metadata": {}
+      }
+    ]
   }
 ]
