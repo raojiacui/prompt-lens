@@ -1,13 +1,15 @@
 import { auth } from "@/lib/auth";
 import { getCanonicalOAuthStartRedirect } from "@/lib/auth/origin";
+import { withOAuthAttemptState } from "@/lib/auth/oauth-attempt";
 import { toNextJsHandler } from "better-auth/next-js";
 
 export const runtime = 'nodejs';
 
 const handler = toNextJsHandler(auth);
 
-export const GET = handler.GET;
-export const POST = withCanonicalOAuthOrigin(handler.POST);
+const stateCookieName = async () => (await auth.$context).createAuthCookie("oauth_state").name;
+export const GET = withOAuthAttemptState(handler.GET, stateCookieName);
+export const POST = withCanonicalOAuthOrigin(withOAuthAttemptState(handler.POST, stateCookieName));
 export const PATCH = handler.PATCH;
 export const PUT = handler.PUT;
 export const DELETE = handler.DELETE;

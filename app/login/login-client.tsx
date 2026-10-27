@@ -11,9 +11,10 @@ import { Spinner } from "@/components/ui/spinner";
 
 type LoginClientProps = {
   authBaseURL?: string;
+  oauthError?: string;
 };
 
-export default function LoginClient({ authBaseURL }: LoginClientProps) {
+export default function LoginClient({ authBaseURL, oauthError }: LoginClientProps) {
   const router = useRouter();
   const { data: session, isPending } = useSession();
   const isSignedIn = Boolean(session?.user && !session.user.isAnonymous);
@@ -83,6 +84,11 @@ export default function LoginClient({ authBaseURL }: LoginClientProps) {
           </CardHeader>
 
           <CardContent className="space-y-4 pt-2">
+            {oauthError && <p role="alert" className="rounded-lg border border-[#D8D5CC] px-3 py-2 text-sm text-[#6B6860]">
+              {oauthError === "oauth_state"
+                ? "这次登录请求已过期或已使用，请重新点击下方按钮登录。请在同一浏览器中完成授权，并允许本站使用 Cookie。"
+                : "这次授权未完成，请重新选择登录方式。"}
+            </p>}
             {/* Google 登录 */}
             <Button
               onClick={() => handleOAuthSignIn("google")}

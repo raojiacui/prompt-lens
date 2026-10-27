@@ -51,8 +51,8 @@ export const auth = betterAuth({
     },
   },
   account: {
-    // Keep the OAuth state and PKCE payload in one encrypted, short-lived cookie.
-    // Better Auth 1.6.2+ binds the callback state to this cookie value.
+    // Keep state and PKCE encrypted. The auth route scopes this cookie per attempt
+    // before sending it to the browser and restores the expected name on callbacks.
     storeStateStrategy: "cookie",
     accountLinking: {
       enabled: true,
