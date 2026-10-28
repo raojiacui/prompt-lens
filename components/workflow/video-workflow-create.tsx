@@ -1054,6 +1054,11 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                             <p className="mt-1 text-sm text-muted-foreground">{formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}{ui.seconds}</p>
                           ) : null}
                           {scene?.error ? <p className="mt-1 max-w-3xl text-xs text-amber-700">{scene.error}</p> : null}
+                          {needsReview && !sceneVersion.generationPrompt.trim() && <p role="status" className="mt-2 max-w-3xl text-sm text-amber-700">
+                            {locale === "en"
+                              ? (sceneVersion.metadata?.analysisResultAttempts === 2 ? "No usable prompt after one automatic retry. Other successful shots are preserved; you can retry this shot later." : "This shot did not produce a usable prompt. Other successful shots are preserved; you can retry this shot later.")
+                              : (sceneVersion.metadata?.analysisResultAttempts === 2 ? "本镜头自动补试一次后仍未获得有效提示词。其他成功镜头已保留，可稍后重试本镜头。" : "本镜头尚未获得有效提示词。其他成功镜头已保留，可稍后重试本镜头。")}
+                          </p>}
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {needsReview && bundle.project.metadata?.analysisTaskKind === "analysis" && <Button size="sm" variant="outline" disabled={Boolean(commercialSource || analysisTaskId || loading || retryingSceneId || !bundle.project.metadata?.analysisTaskId || (retryConfirmationPending && retryQuote?.sceneVersionId !== sceneVersion.id))} onClick={() => void retryFailedScene(sceneVersion)}>

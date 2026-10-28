@@ -2,7 +2,8 @@ import { getUserKieApiKey } from "@/lib/byok/kie";
 import { getPlatformKieApiKey } from "@/lib/billing/platform-access";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import { FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/billing/video-analysis";
-import { DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, KieRequestError, requestKieChat } from "@/lib/ai/kie-client";
+import { DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, KieEmptyResultError, KieRequestError, requestKieChat } from "@/lib/ai/kie-client";
+import { InvalidSceneAnalysisResult, validateSceneAnalysis } from "./scene-analysis-result";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
 import { buildRecreationPrompt } from "./recreation-prompt";
@@ -53,6 +54,8 @@ type AnalysisProvider = "kie";
 
 type AnalysisChatJsonResult = {
   json: Record<string, unknown>;
+  resultAttempts: number;
+  providerAttemptUnconfirmed: boolean;
   provider: AnalysisProvider;
   modelId: string;
   modelMode: ModelSelectionMode;
@@ -155,6 +158,22 @@ function resolveAnalysisSelection(selection?: AiModelSelection, options?: { forc
 }
 
 
+class SceneAnalysisAttemptError extends Error {
+  constructor(readonly failure: unknown, readonly attempts: number, readonly providerAttemptUnconfirmed: boolean) {
+    super(failure instanceof Error ? failure.message : "Scene analysis failed", { cause: failure });
+    this.name = "SceneAnalysisAttemptError";
+  }
+}
+
+function temporaryKieFailure(error: unknown) {
+  if (!(error instanceof KieRequestError)) return false;
+  const status = Number(error.providerCode ?? error.status);
+  // Input/authentication failures need correction, not another paid request.
+  if (status >= 400 && status < 500 && status !== 408 && status !== 429) return false;
+  return error.outcome === "unknown" || status >= 500 || status === 408 || status === 429
+    || (error.outcome === "not_sent" && error.cause !== undefined);
+}
+
 async function callAnalysisChatJson(params: {
   userId: string;
   system: string;
@@ -163,6 +182,7 @@ async function callAnalysisChatJson(params: {
   allowPlatformKey?: boolean;
   keySource?: "platform" | "user";
   forceFreeTrialKie?: boolean;
+  validateJson?: (value: unknown) => void;
 }): Promise<AnalysisChatJsonResult | null> {
   const selected = resolveAnalysisSelection(params.selection, { forceFreeTrialKie: params.forceFreeTrialKie === true });
   const apiKey = params.forceFreeTrialKie
@@ -175,11 +195,48 @@ async function callAnalysisChatJson(params: {
     { role: "user", content: params.content },
   ];
 
-  const content = await requestKieChat({ apiKey, modelId: selected.modelId, messages, timeoutMs: DEFAULT_KIE_ANALYSIS_TIMEOUT_MS });
-  return { json: parseJsonObject(content), ...selected };
+  const startedAt = Date.now();
+  // Video scenes get two attempts within four minutes, leaving one minute of
+  // the 300s function for checkpointing/settlement. Other flows keep their budget.
+  const deadline = startedAt + (params.validateJson ? 240_000 : DEFAULT_KIE_ANALYSIS_TIMEOUT_MS);
+  let providerAttemptUnconfirmed = false;
+  for (let attempt = 1; attempt <= (params.validateJson ? 2 : 1); attempt++) {
+    try {
+      const content = await requestKieChat({ apiKey, modelId: selected.modelId, messages,
+        timeoutMs: Math.max(1, Math.min(DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, deadline - Date.now())),
+        // Own the retry here so transport and result retries cannot multiply.
+        retryUnopenedConnection: !params.validateJson,
+      });
+      let json: Record<string, unknown>;
+      try { json = parseJsonObject(content); }
+      catch (error) {
+        if (!params.validateJson) throw error;
+        throw new InvalidSceneAnalysisResult("KIE returned invalid JSON scene analysis");
+      }
+      params.validateJson?.(json);
+      return { json, ...selected, resultAttempts: attempt, providerAttemptUnconfirmed };
+    } catch (error) {
+      const invalid = error instanceof KieEmptyResultError ? new InvalidSceneAnalysisResult("KIE returned an empty scene analysis") : error;
+      if (!params.validateJson) throw error;
+      if (invalid instanceof KieRequestError && (invalid.outcome === "unknown" || Number(invalid.providerCode ?? invalid.status) >= 500)) providerAttemptUnconfirmed = true;
+      if (invalid instanceof InvalidSceneAnalysisResult) invalid.attempts = attempt;
+      const retryable = invalid instanceof InvalidSceneAnalysisResult || temporaryKieFailure(invalid);
+      if (!retryable || attempt === 2 || deadline - Date.now() < 30_000) {
+        throw new SceneAnalysisAttemptError(invalid, attempt, providerAttemptUnconfirmed);
+      }
+      console.warn("scene.analysis.retry", { modelId: selected.modelId, attempt: 2,
+        reason: invalid instanceof InvalidSceneAnalysisResult ? "invalid_result" : "temporary_provider_failure",
+        providerAttemptUnconfirmed, elapsedMs: Date.now() - startedAt });
+      await new Promise(resolve => setTimeout(resolve, 1_000));
+    }
+  }
+  throw new Error("Scene analysis attempts exhausted");
 }
 
-function kieFailureMetadata(error: unknown) {
+function kieFailureMetadata(error: unknown): Record<string, unknown> {
+  if (error instanceof SceneAnalysisAttemptError) return { ...kieFailureMetadata(error.failure), analysisResultAttempts: error.attempts,
+    providerAttemptUnconfirmed: error.providerAttemptUnconfirmed, ...(error.providerAttemptUnconfirmed ? { providerOutcome: "unknown" } : {}) };
+  if (error instanceof InvalidSceneAnalysisResult) return { providerOutcome: "confirmed_failure", failureCode: "KIE_INVALID_RESULT", analysisResultAttempts: error.attempts };
   if (!(error instanceof KieRequestError) || !error.outcome) return {};
   return { providerOutcome: error.outcome, failureCode: error.outcome === "unknown" ? "KIE_OUTCOME_UNKNOWN" : error.outcome === "not_sent" ? "KIE_CONNECTION_FAILED" : "KIE_REQUEST_FAILED" };
 }
@@ -233,6 +290,7 @@ export async function analyzeSceneBlueprint(params: {
   const fallback = buildFallbackSceneBlueprint(params.scene, undefined, params.context.audio, outputLanguage(params.outputLanguage));
   try {
     const raw = await callAnalysisChatJson({
+      validateJson: validateSceneAnalysis,
       userId: params.userId,
       selection: params,
       allowPlatformKey: params.allowPlatformKeyForAnalysis === true,
@@ -269,7 +327,7 @@ export async function analyzeSceneBlueprint(params: {
     });
     if (!raw) return buildFallbackSceneBlueprint(params.scene, "Selected analysis provider API key not configured", params.context.audio, outputLanguage(params.outputLanguage));
     const blueprint = normalizeBlueprint(raw.json, fallback, raw.provider, outputLanguage(params.outputLanguage));
-    return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority } };
+    return { ...blueprint, metadata: { ...(blueprint.metadata || {}), analysisModel: raw.modelId, modelMode: raw.modelMode, modelPriority: raw.modelPriority, analysisResultAttempts: raw.resultAttempts, providerAttemptUnconfirmed: raw.providerAttemptUnconfirmed } };
   } catch (error) {
     const fallback = buildFallbackSceneBlueprint(params.scene, error instanceof Error ? error.message : "Scene analysis failed", params.context.audio, outputLanguage(params.outputLanguage));
     return { ...fallback, metadata: { ...fallback.metadata, analysisError: taskErrorDetails(error), ...kieFailureMetadata(error) } };

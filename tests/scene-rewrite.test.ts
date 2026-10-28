@@ -20,7 +20,7 @@ const candidate = {
 const input = { userId: "test", scene: original, instruction: "把画面中穿汉服的女子换成穿西装的男子", outputLanguage: "zh" as const };
 function mockResponses(...values: unknown[]) {
   const fetchMock = vi.fn();
-  for (const value of values) fetchMock.mockResolvedValueOnce({ ok: true, json: async () => ({ choices: [{ message: { content: JSON.stringify(value) } }] }) });
+  for (const value of values) fetchMock.mockResolvedValueOnce(Response.json({ choices: [{ message: { content: JSON.stringify(value) } }] }));
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
@@ -43,8 +43,8 @@ describe("semantic scene rewrite", () => {
     const longScene = { ...original, generationPrompt: "长廊".repeat(3000) + "完整提示词末尾" };
     const result = await rewriteSceneBlueprint({ ...input, scene: longScene });
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-    expect(body.messages[1].content[0].text).toContain("完整提示词末尾");
-    expect(body.messages[1].content[0].text).toContain(input.instruction);
+    expect(body.contents[0].parts[0].text).toContain("完整提示词末尾");
+    expect(body.contents[0].parts[0].text).toContain(input.instruction);
     expect(result.generationPrompt).toBe(buildRecreationPrompt(candidate));
     expect(result.visual).toEqual(candidate.visual);
     expect(result.metadata?.rewriteValidated).toBe(true);
@@ -56,7 +56,7 @@ describe("semantic scene rewrite", () => {
     const result = await rewriteSceneBlueprint(input);
     expect(result.generationPrompt).toContain("西装");
     expect(result.generationPrompt).not.toContain("裙摆");
-    expect(JSON.parse(fetchMock.mock.calls[2][1].body).messages[1].content[0].text).toContain("服装仍是汉服");
+    expect(JSON.parse(fetchMock.mock.calls[2][1].body).contents[0].parts[0].text).toContain("服装仍是汉服");
   });
 
   it("does not report local word replacement as success when the provider fails", async () => {

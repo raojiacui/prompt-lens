@@ -507,6 +507,39 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(await runIndependentSceneJob(jobs[1].id)).toBe(false);
     expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(3);
   });
+  it.each([
+    { generationPrompt: "", unconfirmed: false }, { generationPrompt: "\u200b", unconfirmed: false },
+    { generationPrompt: "null", unconfirmed: false }, { generationPrompt: "Recovered usable visual prompt", unconfirmed: false },
+    { generationPrompt: "Recovered usable visual prompt", unconfirmed: true }, { generationPrompt: "", unconfirmed: true },
+  ])("settles a checkpoint $generationPrompt with earlier unknown=$unconfirmed only once", async ({ generationPrompt, unconfirmed }) => {
+    await grant();
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Validated result" }).returning();
+    const [version] = await testDb.insert(schema.projectVersions).values({ projectId: project.id, versionNumber: 0, label: "Original" }).returning();
+    const [scene] = await testDb.insert(schema.videoScenes).values({ projectId: project.id, sceneIndex: 1, startTime: 0, endTime: 5, duration: 5 }).returning();
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "running", credits: 5, expiresAt: new Date(Date.now() + 600_000),
+      input: { projectId: project.id, pricing: { payer: "platform", model: "flash", sourceDurationUs: 5_000_000, automaticSplit: false, paidSplitReusable: false, scenes: [{ id: "one", startUs: 0, endUs: 5_000_000 }] }, modelId: "gemini-3-8-flash-openai", outputLanguage: "zh", keyFingerprint: generationKeyFingerprint("platform-test-key") },
+      result: { executionId: randomUUID(), sceneJobMode: "independent_v1", versionId: version.id, sceneRecords: { one: scene.id }, assets: { scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] } },
+    }).returning();
+    await reserveCommercialTask({ userId, taskKey: `commercial:${task.id}`, credits: 5, rewrites: 0, quote: { kind: "analysis" } });
+    const [job] = await testDb.insert(schema.analysisSceneJobs).values({ taskId: task.id, sceneId: "one", sceneIndex: 1, state: "running", executionId: randomUUID(), updatedAt: new Date(Date.now() - 25_000), result: { pendingBlueprint: { story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt, metadata: { analysisProvider: "kie", analysisResultAttempts: 2, providerAttemptUnconfirmed: unconfirmed } } } }).returning();
+    await testDb.insert(schema.analysisProviderSlots).values({ sceneJobId: job.id, keyFingerprint: generationKeyFingerprint("platform-test-key"), leaseUntil: new Date(Date.now() + 360_000) });
+    const valid = generationPrompt === "Recovered usable visual prompt";
+    await recoverStaleAnalysisSceneJobs(5, task.id);
+    await reconcileTerminalIndependentAnalysis(task.id);
+    await recoverStaleAnalysisSceneJobs(5, task.id);
+    const stored = (await testDb.select().from(schema.sceneVersions))[0];
+    expect(stored).toMatchObject({ generationPrompt: valid ? generationPrompt : "", metadata: { analysisProvider: valid ? "kie" : "fallback", analysisResultAttempts: 2 } });
+    const savedJob = (await testDb.select().from(schema.analysisSceneJobs).where(eq(schema.analysisSceneJobs.id, job.id)))[0];
+    expect(savedJob.state).toBe(valid ? "completed" : "failed");
+    if (!valid) expect(savedJob.result).toMatchObject({ failureCode: "KIE_INVALID_RESULT", providerOutcome: unconfirmed ? "unknown" : "confirmed_failure" });
+    const [slot] = await testDb.select().from(schema.analysisProviderSlots).where(eq(schema.analysisProviderSlots.sceneJobId, job.id));
+    if (unconfirmed) expect(slot.releasedAt).toBeNull();
+    else expect(slot.releasedAt).toBeInstanceOf(Date);
+    expect(await balance()).toMatchObject({ credits: valid ? 197 : 200, heldCredits: 0 });
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+  });
+
   it.each(["40001", "23514"])("preserves the model answer across save error %s without repeating inference", async (code) => {
     await grant();
     vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");

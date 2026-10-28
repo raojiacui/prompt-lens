@@ -10,6 +10,7 @@ import { taskErrorDetails } from "./task-diagnostics";
 import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "./analysis-provider-limit";
 import { analysisDispatchTarget, dispatchAnalysisInvocation } from "@/lib/workflow/analysis-dispatch";
+import { hasUsablePrompt } from "@/lib/workflow/scene-analysis-result";
 
 type Progress = { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; splitDelivered?: boolean; sceneJobMode?: string };
 
@@ -78,7 +79,13 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string) {
         // A live worker must already have persisted its answer. Only stale recovery can mark an interrupted inference failed.
         if (executionId && !stored.pendingBlueprint) return null;
         const pending = stored.pendingBlueprint;
-        const blueprint = pending || buildFallbackSceneBlueprint(asset, "Analysis interrupted", undefined, input.outputLanguage);
+        let blueprint = pending || buildFallbackSceneBlueprint(asset, "Analysis interrupted", undefined, input.outputLanguage);
+        // A provider label alone cannot make an empty checkpoint billable. Recovery
+        // only saves the checkpoint; it must never resubmit inference here.
+        if (blueprint.metadata?.analysisProvider === "kie" && !hasUsablePrompt(blueprint.generationPrompt)) {
+          const failure = buildFallbackSceneBlueprint(asset, "Analysis returned no usable generation prompt", undefined, input.outputLanguage);
+          blueprint = { ...failure, metadata: { ...failure.metadata, analysisResultAttempts: blueprint.metadata.analysisResultAttempts, providerAttemptUnconfirmed: blueprint.metadata.providerAttemptUnconfirmed, providerOutcome: blueprint.metadata.providerAttemptUnconfirmed ? "unknown" : "confirmed_failure", failureCode: "KIE_INVALID_RESULT" } };
+        }
         const succeeded = blueprint.metadata?.analysisProvider === "kie";
         const interval = input.pricing.scenes[current.sceneIndex - 1];
         trace.mark("insert_scene_result");
@@ -96,13 +103,14 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string) {
         trace.mark("complete_scene_job");
         const timings = { ...stored.timings, savedAt: new Date().toISOString(), checkpointToSaveMs: Math.max(0, Date.now() - current.updatedAt.getTime()), recovered: !executionId, saveAttempt: attempt, saveStagesMs: trace.snapshot().stagesMs };
         const providerOutcome = pending ? blueprint.metadata?.providerOutcome || (succeeded ? "success" : "unknown") : "unknown";
-        await tx.update(analysisSceneJobs).set({ state: succeeded ? "completed" : "failed", result: { providerOutcome, analysisProvider: blueprint.metadata?.analysisProvider || "fallback", failureCode: pending ? null : "ANALYSIS_INTERRUPTED", timings }, updatedAt: new Date() }).where(eq(analysisSceneJobs.id, current.id));
+        await tx.update(analysisSceneJobs).set({ state: succeeded ? "completed" : "failed", result: { providerOutcome, providerAttemptUnconfirmed: blueprint.metadata?.providerAttemptUnconfirmed, analysisProvider: blueprint.metadata?.analysisProvider || "fallback", failureCode: pending ? blueprint.metadata?.failureCode ?? null : "ANALYSIS_INTERRUPTED", analysisResultAttempts: blueprint.metadata?.analysisResultAttempts, timings }, updatedAt: new Date() }).where(eq(analysisSceneJobs.id, current.id));
         const parentResult = task.result as Record<string, unknown>;
         const finished = Array.isArray(parentResult.finishedSceneIds) ? parentResult.finishedSceneIds as string[] : [];
         const successes = Array.isArray(parentResult.successfulSceneIds) ? parentResult.successfulSceneIds as string[] : [];
         trace.mark("update_parent_progress");
         const parentUpdate = tx.update(commercialTasks).set({ result: { ...parentResult, finishedSceneIds: [...new Set([...finished, current.sceneId])], successfulSceneIds: succeeded ? [...new Set([...successes, current.sceneId])] : successes }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id)).returning({ id: commercialTasks.id });
-        const knownOutcome = providerOutcome !== "unknown";
+        // A successful replacement does not prove the first request stopped.
+        const knownOutcome = providerOutcome !== "unknown" && !blueprint.metadata?.providerAttemptUnconfirmed;
         const releaseSlot = tx.update(analysisProviderSlots).set({ releasedAt: new Date() }).where(and(eq(analysisProviderSlots.sceneJobId, current.id), sql`${knownOutcome}`, sql`${analysisProviderSlots.releasedAt} IS NULL`)).returning({ id: analysisProviderSlots.sceneJobId });
         // Publish the result and free a known provider slot together, with one database round trip.
         await tx.execute(sql`WITH parent_progress AS (${parentUpdate.getSQL()}), released_provider AS (${releaseSlot.getSQL()}) SELECT id FROM parent_progress`);
@@ -213,7 +221,7 @@ export async function runIndependentSceneJob(jobId: string) {
       console.info("commercial.scene.save_finished", { taskId: task.id, sceneJobId: job.id, saved, saveMs: Date.now() - modelFinishedAt });
     }
   } finally {
-    if (!saved && blueprint.metadata?.providerOutcome !== "unknown") {
+    if (!saved && blueprint.metadata?.providerOutcome !== "unknown" && !blueprint.metadata?.providerAttemptUnconfirmed) {
       try { await releaseAnalysisProviderSlot(job.id); }
       catch (error) { console.error("commercial.scene.provider_slot_release_failed", { sceneJobId: job.id, error: taskErrorDetails(error) }); }
     }

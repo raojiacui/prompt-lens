@@ -15,6 +15,15 @@ export class KieRequestError extends Error {
   }
 }
 
+// The response protocol completed, but no usable answer was delivered. This
+// says nothing about provider billing; a new inference may cost credits again.
+export class KieEmptyResultError extends KieRequestError {
+  constructor(status: number) {
+    super("KIE API returned an empty result", status, "confirmed_failure");
+    this.name = "KieEmptyResultError";
+  }
+}
+
 function connectionNotEstablished(error: unknown, depth = 0): boolean {
   if (!error || typeof error !== "object" || depth > 4) return false;
   const value = error as { code?: string; cause?: unknown; errors?: unknown[] };
@@ -116,6 +125,7 @@ export async function requestKieChat(input: {
   modelId: string;
   messages: Array<{ role: string; content: unknown }>;
   timeoutMs?: number;
+  retryUnopenedConnection?: boolean;
 }) {
   if (!input.apiKey) throw new KieRequestError("KIE API Key is not configured");
   if (!/^[a-zA-Z0-9._-]+$/.test(input.modelId)) throw new KieRequestError("Invalid KIE chat model");
@@ -155,7 +165,7 @@ export async function requestKieChat(input: {
           break;
         } catch (error) {
           const notSent = connectionNotEstablished(error);
-          if (!notSent || attempt === 1 || controller.signal.aborted) {
+          if (!notSent || input.retryUnopenedConnection === false || attempt === 1 || controller.signal.aborted) {
             throw new KieRequestError("KIE transport failed during connecting", undefined, notSent ? "not_sent" : "unknown", error);
           }
           console.warn("kie.analysis.connection_retry", { modelId: input.modelId, attempt: 2, elapsedMs: Date.now() - startedAt });
@@ -171,7 +181,7 @@ export async function requestKieChat(input: {
         failure.providerCode = error.providerCode;
         throw failure;
       }
-      if (!text) throw new KieRequestError("KIE API returned an empty result", response.status);
+      if (!text.trim()) throw new KieEmptyResultError(response.status);
       return text;
     })()]);
   } catch (error) {
