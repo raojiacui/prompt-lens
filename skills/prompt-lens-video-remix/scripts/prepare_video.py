@@ -91,6 +91,76 @@ def probe(input_path: Path, ffprobe: str, timeout: int) -> dict[str, Any]:
     }
 
 
+def find_scenedetect_python() -> list[str] | None:
+    candidates: list[list[str]] = [[sys.executable]]
+    launcher = shutil.which("py")
+    if launcher:
+        candidates.extend([[launcher, f"-{version}"] for version in ("3.14", "3.13", "3.12", "3.11", "3.10", "3.9")])
+    for name in ("python3", "python"):
+        executable = shutil.which(name)
+        if executable:
+            candidates.append([executable])
+    seen: set[tuple[str, ...]] = set()
+    for command in candidates:
+        key = tuple(command)
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            result = subprocess.run(
+                [*command, "-c", "import scenedetect"],
+                check=False,
+                capture_output=True,
+                timeout=10,
+            )
+            if result.returncode == 0:
+                return command
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+    return None
+
+
+def detect_adaptive_scenes(
+    input_path: Path,
+    python_command: list[str],
+    fps: float,
+    adaptive_threshold: float,
+    min_content_val: float,
+    window_width: int,
+    min_scene: float,
+    timeout: int,
+) -> tuple[list[tuple[float, float]], dict[str, Any]]:
+    detector_script = Path(__file__).with_name("detect_scenes.py")
+    result = run(
+        [
+            *python_command,
+            str(detector_script),
+            "--input",
+            str(input_path),
+            "--detector",
+            "adaptive",
+            "--adaptive-threshold",
+            str(adaptive_threshold),
+            "--min-content-val",
+            str(min_content_val),
+            "--window-width",
+            str(window_width),
+            "--min-scene-seconds",
+            str(min_scene),
+            "--fps",
+            str(fps),
+        ],
+        timeout,
+    )
+    payload = json.loads(result.stdout)
+    scenes = [
+        (float(scene["start"]), float(scene["end"]))
+        for scene in payload.get("scenes", [])
+        if float(scene["end"]) > float(scene["start"])
+    ]
+    return scenes, payload
+
+
 def detect_cuts(
     input_path: Path,
     ffmpeg: str,
@@ -271,6 +341,10 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("input", help="Local video file")
     parser.add_argument("--output", required=True, help="New or empty output directory")
+    parser.add_argument("--detector", choices=["auto", "adaptive", "ffmpeg"], default="auto")
+    parser.add_argument("--adaptive-threshold", type=float, default=3.0)
+    parser.add_argument("--min-content-val", type=float, default=15.0)
+    parser.add_argument("--window-width", type=int, default=2)
     parser.add_argument("--scene-threshold", type=float, default=0.32)
     parser.add_argument("--min-scene-seconds", type=float, default=0.6)
     parser.add_argument("--max-scene-seconds", type=float, default=15.0)
@@ -291,6 +365,8 @@ def main() -> int:
         fail(f"Input exceeds --max-input-mb ({args.max_input_mb} MB).")
     if not 0.05 <= args.scene_threshold <= 0.95:
         fail("--scene-threshold must be between 0.05 and 0.95.")
+    if args.adaptive_threshold <= 0 or args.min_content_val < 0 or args.window_width < 1:
+        fail("Adaptive detector parameters are invalid.")
     if args.min_scene_seconds <= 0 or args.max_scene_seconds <= args.min_scene_seconds:
         fail("Scene duration limits are invalid.")
     if args.target_segment_seconds <= 0 or args.max_scenes <= 0 or args.timeout_seconds <= 0:
@@ -305,16 +381,40 @@ def main() -> int:
         fail("ffmpeg and ffprobe are required. Ask the user before installing missing tools.")
 
     metadata = probe(input_path, ffprobe, args.timeout_seconds)
-    cuts = detect_cuts(
-        input_path,
-        ffmpeg,
-        metadata["duration"],
-        args.scene_threshold,
-        args.min_scene_seconds,
-        args.timeout_seconds,
-    )
+    scenedetect_python = find_scenedetect_python() if args.detector != "ffmpeg" else None
+    fallback_reason = None
+    adaptive_payload: dict[str, Any] | None = None
+    if scenedetect_python:
+        shot_groups, adaptive_payload = detect_adaptive_scenes(
+            input_path,
+            scenedetect_python,
+            metadata["frameRate"] or 30.0,
+            args.adaptive_threshold,
+            args.min_content_val,
+            args.window_width,
+            args.min_scene_seconds,
+            args.timeout_seconds,
+        )
+        if not shot_groups:
+            shot_groups = [(0.0, metadata["duration"])]
+        cuts = [start for start, _ in shot_groups[1:]]
+        detector_method = "pyscenedetect-adaptive"
+    else:
+        if args.detector == "adaptive":
+            fail("PySceneDetect is unavailable. Ask the user before installing scenedetect-headless.")
+        fallback_reason = "PySceneDetect unavailable" if args.detector == "auto" else "FFmpeg explicitly selected"
+        cuts = detect_cuts(
+            input_path,
+            ffmpeg,
+            metadata["duration"],
+            args.scene_threshold,
+            args.min_scene_seconds,
+            args.timeout_seconds,
+        )
+        shot_groups = base_scenes(metadata["duration"], cuts, args.min_scene_seconds)
+        detector_method = "ffmpeg-scene-filter"
     scenes = split_long_scenes(
-        base_scenes(metadata["duration"], cuts, args.min_scene_seconds),
+        shot_groups,
         f"{input_path.name}:{metadata['bytes']}:{metadata['duration']}",
         args.max_scene_seconds,
         args.target_segment_seconds,
@@ -365,14 +465,20 @@ def main() -> int:
         "source": {"name": input_path.name, "path": str(input_path)},
         "media": metadata,
         "detection": {
-            "method": "ffmpeg-scene-filter",
+            "method": detector_method,
+            "requestedDetector": args.detector,
+            "adaptiveThreshold": args.adaptive_threshold,
+            "minContentVal": args.min_content_val,
+            "windowWidth": args.window_width,
             "sceneThreshold": args.scene_threshold,
             "minSceneSeconds": args.min_scene_seconds,
             "maxSceneSeconds": args.max_scene_seconds,
             "targetSegmentSeconds": args.target_segment_seconds,
             "detectedCuts": [round(value, 6) for value in cuts],
-            "detectedShotCount": len(base_scenes(metadata["duration"], cuts, args.min_scene_seconds)),
+            "detectedShotCount": len(shot_groups),
             "analysisSegmentCount": len(scene_entries),
+            "fallbackReason": fallback_reason,
+            "detectorDetails": adaptive_payload,
         },
         "scenes": scene_entries,
     }

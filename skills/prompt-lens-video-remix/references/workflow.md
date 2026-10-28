@@ -22,10 +22,13 @@ If the required downloader is missing, explain the dependency and ask whether th
 
 Run `scripts/check_environment.py` before preparing media.
 
-- `ffmpeg` and `ffprobe` are required for the included preparation script.
+- `ffmpeg` and `ffprobe` are required for metadata, fallback detection, and frame extraction.
 - Python 3.9 or newer is required for the scripts.
+- PySceneDetect is the preferred detector. Reuse Prompt Lens defaults: `AdaptiveDetector(adaptive_threshold=3.0, min_content_val=15.0, window_width=2)` with a minimum scene length of `0.6` seconds.
 - `yt-dlp` is optional and only relevant to supported public video-page links.
 - A multimodal agent that can inspect JPEG images is required for the no-API path.
+
+If PySceneDetect is unavailable, explain that FFmpeg's scene filter at `0.32` remains available, then ask whether to use the fallback or install `scenedetect-headless`. Never install it without approval.
 
 When native visual capability is unavailable, offer the user a choice:
 
@@ -36,7 +39,7 @@ Before sending any frame, audio, transcript, or prompt to an external API, name 
 
 ## 3. Prepare local evidence
 
-Run `scripts/prepare_video.py` into a new or empty directory. The defaults use FFmpeg's scene-change score at `0.32`, keep scenes at least `0.6` seconds apart, split continuous segments longer than `15` seconds toward roughly `8–10` seconds, and sample frames at 10%, 50%, and 90% of each segment.
+Run `scripts/prepare_video.py` into a new or empty directory. `--detector auto` prefers the tuned PySceneDetect AdaptiveDetector and falls back to FFmpeg's scene-change score at `0.32`. Both paths keep scenes at least `0.6` seconds apart. Continuous segments longer than `15` seconds are split toward roughly `8–10` seconds, and frames are sampled at 10%, 50%, and 90% of each segment.
 
 The script produces:
 
@@ -46,7 +49,7 @@ The script produces:
 
 Each analysis segment includes `shotGroupIndex` and `isDurationSplit`. Segments with the same shot group belong to one continuous detected shot; `isDurationSplit: true` means the segment was created only to keep a long continuous section manageable and must not be described as a detected edit.
 
-If cuts are too frequent, increase `--scene-threshold`. If clear cuts are missing, decrease it. Use a new output directory for every attempt so earlier evidence remains recoverable.
+For AdaptiveDetector, tune `--adaptive-threshold` only when evidence shows systematic over- or under-cutting. For the FFmpeg fallback, increase `--scene-threshold` when cuts are too frequent and decrease it when clear cuts are missing. Use a new output directory for every attempt so earlier evidence remains recoverable.
 
 ## 4. Analyze with the current agent
 

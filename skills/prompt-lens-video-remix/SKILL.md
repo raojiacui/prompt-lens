@@ -18,7 +18,7 @@ Turn a reference video into an editable shot plan and generation-ready prompts w
 ## Workflow
 
 1. Read [references/workflow.md](references/workflow.md) and select the local-file or link-input path.
-2. Run `python scripts/check_environment.py`. If a required dependency is missing, explain why it is needed and ask before installing it. Do not run an installer yourself without approval.
+2. Run `python scripts/check_environment.py`. Prefer the project's tuned PySceneDetect AdaptiveDetector. If it is unavailable, explain that FFmpeg `0.32` is the fallback and ask whether to use the fallback or install PySceneDetect. Do not run an installer yourself without approval.
 3. Resolve the input to a local media file. For link handling, follow the boundaries in `references/workflow.md`.
 4. Run:
 
@@ -26,7 +26,7 @@ Turn a reference video into an editable shot plan and generation-ready prompts w
    python scripts/prepare_video.py INPUT --output OUTPUT_DIRECTORY
    ```
 
-   This produces `manifest.json`, `storyboard.md`, and three representative frames per analysis segment. The manifest distinguishes detected shot groups from duration-only subdivisions. If scene detection is noisy, adjust `--scene-threshold` within `0.20` to `0.50` and rerun into a different empty directory.
+   This produces `manifest.json`, `storyboard.md`, and three representative frames per analysis segment. By default it reuses the project settings: PySceneDetect AdaptiveDetector with adaptive threshold `3.0`, minimum content value `15.0`, window width `2`, and minimum scene length `0.6` seconds; FFmpeg scene threshold `0.32` is the fallback. The manifest records the detector and distinguishes detected shot groups from duration-only subdivisions.
 5. Read `manifest.json`, then inspect every extracted frame. Analyze each scene with [references/shot-analysis-schema.md](references/shot-analysis-schema.md). Treat motion, sound, dialogue, identity, and off-frame events as uncertain unless the available evidence supports them.
 6. Present the overall structure, shot table, and generation prompts before proposing further action.
 7. Ask whether the user wants to keep the analysis, rewrite a new story, or create a same-structure remake. For either creative branch, read [references/prompt-and-remix-guide.md](references/prompt-and-remix-guide.md).
