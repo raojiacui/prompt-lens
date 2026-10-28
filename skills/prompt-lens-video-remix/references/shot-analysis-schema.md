@@ -26,6 +26,8 @@ Produce one entry for every scene in `manifest.json`:
 ```json
 {
   "sceneIndex": 1,
+  "shotGroupIndex": 1,
+  "isDurationSplit": false,
   "start": 0.0,
   "end": 2.4,
   "duration": 2.4,
@@ -63,6 +65,7 @@ Produce one entry for every scene in `manifest.json`:
 ## Evidence rules
 
 - Three sampled frames establish visible appearance and change across the segment; they do not prove every intermediate action.
+- `isDurationSplit: true` marks a processing subdivision inside one continuous detected shot. Keep it in the same edit group and do not claim that its boundary is a camera cut.
 - Describe a camera move only when relative framing across frames supports it. Otherwise write `static or motion not established`.
 - Treat exact lens focal length, camera model, LUT, celebrity identity, brand, location, and copyrighted character identity as unknown unless clearly established and relevant.
 - Do not turn uncertainty into decorative specificity. A useful prompt can state the visible result without inventing production facts.

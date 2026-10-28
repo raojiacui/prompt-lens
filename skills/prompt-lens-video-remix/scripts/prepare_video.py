@@ -152,12 +152,20 @@ def split_long_scenes(
     seed: str,
     max_duration: float,
     target_duration: float,
-) -> list[tuple[float, float]]:
-    result: list[tuple[float, float]] = []
-    for start, end in scenes:
+) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for shot_group_index, (start, end) in enumerate(scenes, 1):
         duration = end - start
         if duration <= max_duration:
-            result.append((start, end))
+            result.append(
+                {
+                    "start": start,
+                    "end": end,
+                    "shotGroupIndex": shot_group_index,
+                    "segmentIndexInShot": 1,
+                    "isDurationSplit": False,
+                }
+            )
             continue
         minimum_count = math.ceil(duration / 10.0)
         maximum_count = math.floor(duration / 8.0)
@@ -179,7 +187,15 @@ def split_long_scenes(
                 f"{seed}:{start:.6f}:{end:.6f}:{index}"
             ) * max(0.0, upper - lower)
             next_time = min(end, cursor + length)
-            result.append((cursor, next_time))
+            result.append(
+                {
+                    "start": cursor,
+                    "end": next_time,
+                    "shotGroupIndex": shot_group_index,
+                    "segmentIndexInShot": index + 1,
+                    "isDurationSplit": True,
+                }
+            )
             cursor = next_time
     return result
 
@@ -227,14 +243,15 @@ def write_storyboard(output_dir: Path, manifest: dict[str, Any]) -> None:
         f"- Size: {metadata.get('width')}×{metadata.get('height')}",
         f"- Scenes: {len(manifest['scenes'])}",
         "",
-        "| Scene | Time | Duration | Frames |",
-        "| ---: | --- | ---: | --- |",
+        "| Segment | Shot group | Boundary | Time | Duration | Frames |",
+        "| ---: | ---: | --- | --- | ---: | --- |",
     ]
     for scene in manifest["scenes"]:
         links = " · ".join(f"[{frame['label']}]({frame['path']})" for frame in scene["frames"])
         lines.append(
-            f"| {scene['sceneIndex']} | {scene['start']:.3f}–{scene['end']:.3f}s | "
-            f"{scene['duration']:.3f}s | {links} |"
+            f"| {scene['sceneIndex']} | {scene['shotGroupIndex']} | "
+            f"{'duration split' if scene['isDurationSplit'] else 'detected shot'} | "
+            f"{scene['start']:.3f}–{scene['end']:.3f}s | {scene['duration']:.3f}s | {links} |"
         )
     for scene in manifest["scenes"]:
         lines.extend(["", f"## Scene {scene['sceneIndex']}", ""])
@@ -313,7 +330,9 @@ def main() -> int:
     frames_dir.mkdir()
     scene_entries: list[dict[str, Any]] = []
     samples = [("opening", 0.10), ("middle", 0.50), ("closing", 0.90)]
-    for index, (start, end) in enumerate(scenes, 1):
+    for index, scene in enumerate(scenes, 1):
+        start = scene["start"]
+        end = scene["end"]
         duration = end - start
         frame_entries = []
         for label, fraction in samples:
@@ -331,6 +350,9 @@ def main() -> int:
         scene_entries.append(
             {
                 "sceneIndex": index,
+                "shotGroupIndex": scene["shotGroupIndex"],
+                "segmentIndexInShot": scene["segmentIndexInShot"],
+                "isDurationSplit": scene["isDurationSplit"],
                 "start": round(start, 6),
                 "end": round(end, 6),
                 "duration": round(duration, 6),
@@ -349,6 +371,8 @@ def main() -> int:
             "maxSceneSeconds": args.max_scene_seconds,
             "targetSegmentSeconds": args.target_segment_seconds,
             "detectedCuts": [round(value, 6) for value in cuts],
+            "detectedShotCount": len(base_scenes(metadata["duration"], cuts, args.min_scene_seconds)),
+            "analysisSegmentCount": len(scene_entries),
         },
         "scenes": scene_entries,
     }

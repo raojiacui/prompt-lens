@@ -26,7 +26,7 @@ Turn a reference video into an editable shot plan and generation-ready prompts w
    python scripts/prepare_video.py INPUT --output OUTPUT_DIRECTORY
    ```
 
-   This produces `manifest.json`, `storyboard.md`, and three representative frames per detected scene. If scene detection is noisy, adjust `--scene-threshold` within `0.20` to `0.50` and rerun into a different empty directory.
+   This produces `manifest.json`, `storyboard.md`, and three representative frames per analysis segment. The manifest distinguishes detected shot groups from duration-only subdivisions. If scene detection is noisy, adjust `--scene-threshold` within `0.20` to `0.50` and rerun into a different empty directory.
 5. Read `manifest.json`, then inspect every extracted frame. Analyze each scene with [references/shot-analysis-schema.md](references/shot-analysis-schema.md). Treat motion, sound, dialogue, identity, and off-frame events as uncertain unless the available evidence supports them.
 6. Present the overall structure, shot table, and generation prompts before proposing further action.
 7. Ask whether the user wants to keep the analysis, rewrite a new story, or create a same-structure remake. For either creative branch, read [references/prompt-and-remix-guide.md](references/prompt-and-remix-guide.md).

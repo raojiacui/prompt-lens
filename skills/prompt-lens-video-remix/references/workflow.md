@@ -44,11 +44,13 @@ The script produces:
 - `storyboard.md`: a browsable timeline and embedded frame index.
 - `frames/`: three JPEGs per scene.
 
+Each analysis segment includes `shotGroupIndex` and `isDurationSplit`. Segments with the same shot group belong to one continuous detected shot; `isDurationSplit: true` means the segment was created only to keep a long continuous section manageable and must not be described as a detected edit.
+
 If cuts are too frequent, increase `--scene-threshold`. If clear cuts are missing, decrease it. Use a new output directory for every attempt so earlier evidence remains recoverable.
 
 ## 4. Analyze with the current agent
 
-Read the manifest first and inspect every frame. Use `shot-analysis-schema.md` for the result structure. Infer motion by comparing the opening, middle, and closing frames, and label the inference. Do not claim exact dialogue, music, lens focal length, or unseen actions without direct evidence.
+Read the manifest first and inspect every frame. Use `shot-analysis-schema.md` for the result structure. Keep duration-split segments in the same shot group when explaining edits and narrative rhythm. Infer motion by comparing the opening, middle, and closing frames, and label the inference. Do not claim exact dialogue, music, lens focal length, or unseen actions without direct evidence.
 
 If the agent can inspect or transcribe the original video natively, use that capability to improve motion and audio notes. If it cannot, complete the visual analysis and mark audio fields unavailable. Optional transcription software or APIs require the same install/data/cost approval rules.
 
