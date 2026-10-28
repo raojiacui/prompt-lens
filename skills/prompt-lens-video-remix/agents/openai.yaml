@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prompt Lens Video Remix"
+  short_description: "Local reference-video breakdown, prompts, and remix planning"
+  default_prompt: "Use $prompt-lens-video-remix to break down this reference video and help me rewrite or recreate it."
+policy:
+  allow_implicit_invocation: true
