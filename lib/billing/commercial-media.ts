@@ -17,12 +17,12 @@ export async function isOwnedLinkedVideo(userId: string, mediaUrl: string) {
   const [imported] = await db.select({ id: operationLogs.id }).from(operationLogs).where(and(eq(operationLogs.userId, userId), eq(operationLogs.action, "file.upload"), eq(operationLogs.resourceType, "video"), sql`${operationLogs.metadata}->>'url' = ${mediaUrl}`, sql`${operationLogs.metadata}->>'storageKey' = ${extractR2Key(mediaUrl)}`, sql`${operationLogs.metadata}->>'source' = 'linked-media'`, sql`${operationLogs.metadata}->>'phase' IN ('completed','server-upload')`)).limit(1);
   return Boolean(imported);
 }
-export async function commercialMediaRequest<T>(mediaUrl: string, body: Record<string, unknown>): Promise<T> {
+export async function commercialMediaRequest<T>(mediaUrl: string, body: Record<string, unknown>, options?: { timeoutMs?: number }): Promise<T> {
   const worker = process.env.FFMPEG_WORKER_URL?.replace(/\/$/, "");
   const secret = process.env.FFMPEG_WORKER_SECRET;
   const key = extractR2Key(mediaUrl);
   if (!worker || !secret || !key) throw new Error("MEDIA_PROBE_NOT_CONFIGURED");
-  const response = await fetch(`${worker}/commercial-media`, { method: "POST", headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" }, body: JSON.stringify({ ...body, videoUrl: await getSignedUrlFromR2(key, 600) }), signal: AbortSignal.timeout(240000) });
+  const response = await fetch(`${worker}/commercial-media`, { method: "POST", headers: { Authorization: `Bearer ${secret}`, "Content-Type": "application/json" }, body: JSON.stringify({ ...body, videoUrl: await getSignedUrlFromR2(key, 600) }), signal: AbortSignal.timeout(options?.timeoutMs ?? 240000) });
   if (!response.ok) {
     // Keep a bounded worker explanation in the cause so task diagnostics can redact it.
     let reason = "Media worker rejected the request";

@@ -33,7 +33,7 @@ import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileC
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
 import { acknowledgeCommercialReview, escalateOverdueCommercialReviews, notifyDueCommercialReviews, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
-import { reconcileTerminalIndependentAnalysis, recoverStaleAnalysisSceneJobs, resumeIndependentAnalysis, resumeLocalIndependentAnalyses, runIndependentSceneJob } from "@/lib/billing/independent-scene-analysis";
+import { flushReadyAnalysisSceneResults, reconcileTerminalIndependentAnalysis, recoverStaleAnalysisSceneJobs, resumeIndependentAnalysis, resumeLocalIndependentAnalyses, runIndependentSceneJob } from "@/lib/billing/independent-scene-analysis";
 import { generationKeyFingerprint } from "@/lib/billing/generation-key";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "@/lib/billing/analysis-provider-limit";
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
@@ -105,6 +105,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   });
   beforeEach(async () => {
     vi.unstubAllEnvs();
+    vi.stubEnv("ANALYSIS_SCENE_PREPARATION_MODE", "batch");
     vi.unstubAllGlobals();
     vi.mocked(rewriteSceneBlueprint).mockReset();
     vi.mocked(analyzeSceneBlueprint).mockReset();
@@ -434,6 +435,118 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await settlePaidCreditOrder({ provider: "alipay", lookupOrderId: row.providerOrderId, rawPayload: { out_trade_no: row.providerOrderId, total_amount: "19.90", trade_status: "TRADE_SUCCESS" }, verifiedAlipayQuery: true });
     return row;
   }
+  async function pipelineFixture(count = 3) {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("ANALYSIS_SCENE_PREPARATION_MODE", "pipeline");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Scene pipeline" }).returning();
+    const scenes = Array.from({ length: count }, (_, i) => ({ id: `shot-${i + 1}`, startUs: i * 2_000_000, endUs: (i + 1) * 2_000_000 }));
+    const mediaUrl = "https://example.com/pipeline.mp4";
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: count * 2_000_000, bytes: 500, metadata: {}, scenes });
+    const preparation = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl, mediaName: "Pipeline", automaticSplit: true });
+    const quote = await quoteCommercialAnalysis(userId, { preparationId: preparation.id, sceneIds: scenes.map(s => s.id), payer: "platform", model: "flash", outputLanguage: "zh" });
+    await confirmCommercialTask(userId, quote.id);
+    await runCommercialTask(quote.id);
+    const jobs = await testDb.select().from(schema.analysisSceneJobs).orderBy(schema.analysisSceneJobs.sceneIndex);
+    expect(jobs).toHaveLength(count);
+    expect(commercialMediaRequest).toHaveBeenCalledTimes(1); // Only the original boundary detection, no batch extraction.
+    return { project, preparation, quote, jobs, scenes };
+  }
+  const pipelineAnswer = { story: { summary: "A shot" }, visual: { subject: "A subject" }, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "A usable shot prompt", metadata: { analysisProvider: "kie" } };
+  const pipelineAsset = (scene: { startUs: number; endUs: number }) => ({ sceneIndex: 1, startTime: scene.startUs / 1e6, endTime: scene.endUs / 1e6, duration: 2, clipUrl: "https://example.com/clip.mp4", keyframeUrls: ["https://example.com/0.jpg", "https://example.com/1.jpg", "https://example.com/2.jpg"] });
+
+  it("prepares the next scene during first-scene inference and publishes the first result without a batch barrier", async () => {
+    const { quote, jobs, scenes } = await pipelineFixture();
+    let firstAnswer!: (value: typeof pipelineAnswer) => void;
+    let secondAssets!: (value: unknown) => void;
+    vi.mocked(analyzeSceneBlueprint).mockImplementationOnce(() => new Promise(resolve => { firstAnswer = resolve; })).mockResolvedValue(pipelineAnswer);
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [pipelineAsset(scenes[0])] })
+      .mockImplementationOnce(() => new Promise(resolve => { secondAssets = resolve; }))
+      .mockResolvedValueOnce({ metadata: {}, scenes: [pipelineAsset(scenes[2])] });
+    const first = runIndependentSceneJob(jobs[0].id);
+    await vi.waitFor(() => expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(1));
+    const second = runIndependentSceneJob(jobs[1].id);
+    await vi.waitFor(() => expect(commercialMediaRequest).toHaveBeenCalledTimes(3));
+    expect(await runIndependentSceneJob(jobs[2].id)).toBe(false); // Still exactly two active lanes.
+    expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(1);
+    firstAnswer(pipelineAnswer);
+    await first;
+    expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(1);
+    expect((await testDb.select().from(schema.analysisSceneJobs).where(eq(schema.analysisSceneJobs.id, jobs[0].id)))[0]).toMatchObject({ state: "completed", result: { timings: { recovered: false } } });
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0].state).toBe("running");
+    secondAssets({ metadata: {}, scenes: [pipelineAsset(scenes[1])] });
+    await second;
+    await runIndependentSceneJob(jobs[2].id);
+    expect(vi.mocked(commercialMediaRequest).mock.calls.slice(1).every(call => (call[1].scenes as unknown[]).length === 1)).toBe(true);
+    expect(vi.mocked(analyzeSceneBlueprint).mock.calls.map(call => call[0].scene.sceneIndex)).toEqual([1, 2, 3]);
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0]).toMatchObject({ state: "completed", result: { splitDelivered: true } });
+    expect((await balance()).heldCredits).toBe(0);
+  });
+
+  it.each(["valid", "wrong-hash", "wrong-interval"])("reuses only exact preview assets: %s", async mode => {
+    const { project, preparation, jobs, scenes } = await pipelineFixture(1);
+    const files = [{ type: "scene_clip" as const, url: "https://example.com/cached.mp4" }, ...[0, 1, 2].map(i => ({ type: "keyframe" as const, url: `https://example.com/cached-${i}.jpg` }))];
+    await testDb.insert(schema.projectAssets).values(files.map(file => ({ ...file, projectId: project.id, metadata: { downloadPreparationId: preparation.id, sceneId: scenes[0].id } })));
+    if (mode !== "valid") {
+      const [saved] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, preparation.id));
+      const source = saved.input as { preview: Record<string, unknown> };
+      await testDb.update(schema.commercialTasks).set({ input: { ...source, preview: { ...source.preview, ...(mode === "wrong-hash" ? { sourceHash: "b".repeat(64) } : { scenes: [{ ...scenes[0], endUs: 1_000_000 }] }) } } }).where(eq(schema.commercialTasks.id, preparation.id));
+    }
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [pipelineAsset(scenes[0])] });
+    vi.mocked(analyzeSceneBlueprint).mockResolvedValue(pipelineAnswer);
+    await runIndependentSceneJob(jobs[0].id);
+    expect(commercialMediaRequest).toHaveBeenCalledTimes(mode === "valid" ? 1 : 2);
+    expect(vi.mocked(analyzeSceneBlueprint).mock.calls[0][0].scene.clipUrl).toBe(mode === "valid" ? "https://example.com/cached.mp4" : "https://example.com/clip.mp4");
+  });
+
+  it("fails only an unavailable scene without calling its model or charging undelivered splitting", async () => {
+    const { quote, jobs } = await pipelineFixture(1);
+    vi.mocked(commercialMediaRequest).mockRejectedValueOnce(new Error("worker unavailable"));
+    await runIndependentSceneJob(jobs[0].id);
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0]).toMatchObject({ state: "failed", result: { totalChargedCredits: 0, splitDelivered: false } });
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+  });
+
+  it("publishes a fresh persisted answer immediately without the stale recovery window or another inference", async () => {
+    const { quote, jobs, scenes } = await pipelineFixture(1);
+    const [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+    const progress = task.result as Record<string, unknown>;
+    await testDb.update(schema.commercialTasks).set({ result: { ...progress, splitDelivered: true, assets: { metadata: {}, scenes: [pipelineAsset(scenes[0])] } } }).where(eq(schema.commercialTasks.id, quote.id));
+    await testDb.update(schema.analysisSceneJobs).set({ state: "running", executionId: randomUUID(), result: { pendingBlueprint: pipelineAnswer }, updatedAt: new Date() }).where(eq(schema.analysisSceneJobs.id, jobs[0].id));
+    expect(await recoverStaleAnalysisSceneJobs(5, quote.id)).toBe(0);
+    await Promise.all([flushReadyAnalysisSceneResults(quote.id), flushReadyAnalysisSceneResults(quote.id)]);
+    expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(1);
+    await reconcileTerminalIndependentAnalysis(quote.id);
+    expect((await testDb.select().from(schema.analysisSceneJobs))[0]).toMatchObject({ state: "completed", result: { timings: { deliveryFlush: true, recovered: false } } });
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0].state).toBe("completed");
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+    expect(await flushReadyAnalysisSceneResults(quote.id)).toBe(0);
+  });
+
+  it("keeps a completed shot when a later asset preparation fails and releases the unused fees", async () => {
+    const { quote, jobs, scenes } = await pipelineFixture(2);
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [pipelineAsset(scenes[0])] }).mockRejectedValueOnce(new Error("worker unavailable"));
+    vi.mocked(analyzeSceneBlueprint).mockResolvedValue(pipelineAnswer);
+    await runIndependentSceneJob(jobs[0].id);
+    await runIndependentSceneJob(jobs[1].id);
+    expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(1);
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0]).toMatchObject({ state: "completed", result: { splitDelivered: false, successfulSceneIds: [scenes[0].id] } });
+    expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(2);
+    expect((await balance()).heldCredits).toBe(0);
+    const retry = await quoteCommercialAnalysisRetry(userId, quote.id);
+    await confirmCommercialTask(userId, retry.id);
+    await runCommercialTask(retry.id);
+    const [retryJob] = await testDb.select().from(schema.analysisSceneJobs).where(eq(schema.analysisSceneJobs.taskId, retry.id));
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [pipelineAsset(scenes[1])] });
+    await runIndependentSceneJob(retryJob.id);
+    expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(2);
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, retry.id)))[0]).toMatchObject({ state: "completed", result: { splitDelivered: true, successfulSceneIds: scenes.map(s => s.id) } });
+    expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(2);
+    expect((await balance()).heldCredits).toBe(0);
+  });
+
   it("runs paid analysis from server probe through partial settlement with no duplicate inference", async () => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");

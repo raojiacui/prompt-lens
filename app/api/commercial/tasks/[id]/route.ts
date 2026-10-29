@@ -7,7 +7,7 @@ import { confirmCommercialTask, runCommercialTask } from "@/lib/billing/commerci
 import { reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { recoverAnalysisTasks, runAnalysisTask } from "@/lib/workflow/analysis-tasks";
 import { analysisNeedsRecovery } from "@/lib/billing/analysis-execution";
-import { resumeIndependentAnalysis } from "@/lib/billing/independent-scene-analysis";
+import { flushReadyAnalysisSceneResults, resumeIndependentAnalysis } from "@/lib/billing/independent-scene-analysis";
 import { wakeReconciliationWorker } from "@/lib/billing/reconciliation-worker";
 
 export const maxDuration = 300;
@@ -41,6 +41,9 @@ export async function GET(request: NextRequest, { params }: Context) {
   let task = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) });
   if (!task) return NextResponse.json({ code: "TASK_NOT_FOUND" }, { status: 404 });
   if (task.kind === "analysis" && task.state === "running" && (task.result as { sceneJobMode?: string }).sceneJobMode === "independent_v1") {
+    try { await flushReadyAnalysisSceneResults(id); }
+    catch (error) { console.error("commercial.scene.delivery_failed", { taskId: id, message: error instanceof Error ? error.message : "Unknown error" }); }
+    task = (await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) }))!;
     after(async () => {
       try { await resumeIndependentAnalysis(id); }
       catch (error) { console.error("commercial.scene.poll_recovery_failed", { taskId: id, message: error instanceof Error ? error.message : "Unknown error" }); }

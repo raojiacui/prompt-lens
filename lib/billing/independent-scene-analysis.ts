@@ -11,6 +11,7 @@ import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "./analysis-provider-limit";
 import { analysisDispatchTarget, dispatchAnalysisInvocation } from "@/lib/workflow/analysis-dispatch";
 import { hasUsablePrompt } from "@/lib/workflow/scene-analysis-result";
+import { prepareIndependentSceneAsset } from "./scene-assets";
 
 type Progress = { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; splitDelivered?: boolean; sceneJobMode?: string };
 
@@ -48,7 +49,7 @@ function traceSceneSave(sceneJobId: string, attempt: number, recovery: boolean, 
   };
 }
 
-async function saveSceneCheckpoint(jobId: string, executionId?: string) {
+async function saveSceneCheckpoint(jobId: string, executionId?: string, deliveryFlush = false) {
   for (let attempt = 1; attempt <= 2; attempt++) {
     const trace = traceSceneSave(jobId, attempt, !executionId);
     try {
@@ -58,11 +59,11 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string) {
         trace.mark("lock_scene_job");
         const [current] = await tx.select().from(analysisSceneJobs).where(and(
           eq(analysisSceneJobs.id, jobId), eq(analysisSceneJobs.state, "running"),
-          executionId ? eq(analysisSceneJobs.executionId, executionId) : recoveryDue,
+          executionId ? eq(analysisSceneJobs.executionId, executionId) : deliveryFlush ? sql`jsonb_typeof(${analysisSceneJobs.result}->'pendingBlueprint') = 'object'` : recoveryDue,
         )).for("update", executionId ? undefined : { skipLocked: true });
         if (!current) return null;
         trace.mark("lock_parent_task");
-        const [task] = await tx.select().from(commercialTasks).where(eq(commercialTasks.id, current.taskId)).for("update");
+        const [task] = await tx.select().from(commercialTasks).where(eq(commercialTasks.id, current.taskId)).for("update", deliveryFlush ? { skipLocked: true } : undefined);
         if (!task || task.state !== "running" || (task.result as Progress).sceneJobMode !== "independent_v1") return null;
         const input = task.input as AnalysisInput;
         const progress = task.result as Progress;
@@ -101,7 +102,7 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string) {
         trace.mark("update_scene_status");
         await tx.update(videoScenes).set({ status: succeeded ? "completed" : "failed", error: succeeded ? null : String(blueprint.metadata?.fallbackReason || "Analysis interrupted"), updatedAt: new Date() }).where(eq(videoScenes.id, sceneRecord));
         trace.mark("complete_scene_job");
-        const timings = { ...stored.timings, savedAt: new Date().toISOString(), checkpointToSaveMs: Math.max(0, Date.now() - current.updatedAt.getTime()), recovered: !executionId, saveAttempt: attempt, saveStagesMs: trace.snapshot().stagesMs };
+        const timings = { ...stored.timings, savedAt: new Date().toISOString(), checkpointToSaveMs: Math.max(0, Date.now() - current.updatedAt.getTime()), recovered: !executionId && !deliveryFlush, deliveryFlush, saveAttempt: attempt, saveStagesMs: trace.snapshot().stagesMs };
         const providerOutcome = pending ? blueprint.metadata?.providerOutcome || (succeeded ? "success" : "unknown") : "unknown";
         await tx.update(analysisSceneJobs).set({ state: succeeded ? "completed" : "failed", result: { providerOutcome, providerAttemptUnconfirmed: blueprint.metadata?.providerAttemptUnconfirmed, analysisProvider: blueprint.metadata?.analysisProvider || "fallback", failureCode: pending ? blueprint.metadata?.failureCode ?? null : "ANALYSIS_INTERRUPTED", analysisResultAttempts: blueprint.metadata?.analysisResultAttempts, timings }, updatedAt: new Date() }).where(eq(analysisSceneJobs.id, current.id));
         const parentResult = task.result as Record<string, unknown>;
@@ -181,25 +182,32 @@ export async function runIndependentSceneJob(jobId: string) {
   const { job, task } = claimed;
   const input = task.input as AnalysisInput;
   const progress = task.result as Progress;
-  const asset = progress.assets?.scenes[job.sceneIndex - 1];
+  let asset = progress.assets?.scenes[job.sceneIndex - 1];
   const sceneRecord = progress.sceneRecords?.[job.sceneId];
   if (!asset || !progress.versionId || !sceneRecord) { await quarantineInvalidCheckpoint(task.id, job.id, executionId); return false; }
-  const modelStartedAt = Date.now();
-  console.info("commercial.scene.model_started", { taskId: task.id, sceneJobId: job.id, sceneIndex: job.sceneIndex, queueMs: modelStartedAt - job.createdAt.getTime() });
+  let modelStartedAt = Date.now();
+  let preparationMs = 0;
   let blueprint: SceneBlueprintDraft;
   let requestStarted = false;
   try {
     const apiKey = input.pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(task.userId);
     if (!apiKey || generationKeyFingerprint(apiKey) !== input.keyFingerprint) throw new Error("KIE_KEY_CHANGED");
+    if (input.executionMode === "scene_pipeline_v1") {
+      const preparingAt = Date.now();
+      asset = await prepareIndependentSceneAsset(task, job, executionId);
+      preparationMs = Date.now() - preparingAt;
+    }
+    modelStartedAt = Date.now();
+    console.info("commercial.scene.model_started", { taskId: task.id, sceneJobId: job.id, sceneIndex: job.sceneIndex, preparationMs, queueMs: modelStartedAt - job.createdAt.getTime() });
     requestStarted = true;
-    blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false });
+    blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, analysisBudgetMs: Math.max(1, startedAt + 270_000 - Date.now()), allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false });
   } catch (error) {
     console.error("commercial.scene.model_failed", { taskId: task.id, sceneId: job.sceneId, error: taskErrorDetails(error) });
     const fallback = buildFallbackSceneBlueprint(asset, "Analysis unavailable", undefined, input.outputLanguage);
     blueprint = { ...fallback, metadata: { ...fallback.metadata, providerOutcome: requestStarted ? "unknown" : "not_sent" } };
   }
   const modelFinishedAt = Date.now();
-  const timings = { startedAt: new Date(startedAt).toISOString(), modelFinishedAt: new Date(modelFinishedAt).toISOString(), queueMs: modelStartedAt - job.createdAt.getTime(), modelMs: modelFinishedAt - modelStartedAt };
+  const timings = { startedAt: new Date(startedAt).toISOString(), modelFinishedAt: new Date(modelFinishedAt).toISOString(), preparationMs, queueMs: startedAt - job.createdAt.getTime(), modelMs: requestStarted ? modelFinishedAt - modelStartedAt : 0 };
   console.info("commercial.scene.model_finished", { taskId: task.id, sceneJobId: job.id, sceneIndex: job.sceneIndex, ...timings });
   // Persist the response before any optional cleanup so a cleanup failure cannot lose it.
   const checkpointTrace = traceSceneSave(job.id, 1, false, "persist_model_checkpoint");
@@ -248,6 +256,23 @@ export async function recoverStaleAnalysisSceneJobs(limit = 5, taskId?: string) 
     }
   }
   return stale.length;
+}
+
+// Deliver already persisted answers on the next status read, without the 20s
+// stale-recovery delay. This never starts inference or claims queued jobs.
+export async function flushReadyAnalysisSceneResults(taskId: string) {
+  const ready = await db.select({ id: analysisSceneJobs.id }).from(analysisSceneJobs).where(and(
+    eq(analysisSceneJobs.taskId, taskId), eq(analysisSceneJobs.state, "running"),
+    sql`jsonb_typeof(${analysisSceneJobs.result}->'pendingBlueprint') = 'object'`,
+  )).limit(2);
+  let saved = 0;
+  for (const job of ready) {
+    try { if (await saveSceneCheckpoint(job.id, undefined, true)) saved++; }
+    catch (error) { console.error("commercial.scene.delivery_flush_failed", { taskId, sceneJobId: job.id, error: taskErrorDetails(error) }); }
+  }
+  // Settlement/next dispatch belongs to the existing after-response continuation.
+  // Rendering a saved answer must not wait for another parent-task transaction.
+  return saved;
 }
 
 // Task status polling also runs in local development, where Vercel Cron is absent.

@@ -38,13 +38,15 @@ describe("analysis continuation", () => {
     expect(await dispatchQueuedAnalysis("task-id")).toBe(true);
     expect(fetchMock.mock.calls[0][0].toString()).toBe("http://127.0.0.1:3002/api/internal/analysis-run");
   });
-  it.each([200, 503])("releases the acknowledgement body for HTTP %s", async status => {
+  it.each([200, 503])("drains the acknowledgement without cancelling the invocation for HTTP %s", async status => {
     vi.stubEnv("LOCAL_ANALYSIS_BASE_URL", "http://localhost:3001");
     vi.stubEnv("CRON_SECRET", "test-secret");
     const cancel = vi.fn(async () => {});
-    mocks.localFetch.mockResolvedValue({ ok: status === 200, status, body: { cancel } });
+    const text = vi.fn(async () => "{}");
+    mocks.localFetch.mockResolvedValue({ ok: status === 200, status, text, body: { cancel } });
     expect(await dispatchQueuedAnalysis("task-id")).toBe(status === 200);
-    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(text).toHaveBeenCalledTimes(1);
+    expect(cancel).not.toHaveBeenCalled();
   });
   it("uses the deployment fetch for a production HTTPS target", async () => {
     vi.stubEnv("NODE_ENV", "production");

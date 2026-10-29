@@ -33,8 +33,9 @@ export async function dispatchAnalysisInvocation(input: { taskId: string } | { s
     const response = baseUrl.protocol === "http:"
       ? await directFetch(url, { ...request, dispatcher: localDispatchAgent })
       : await fetch(url, request);
-    // Acknowledgement content is unused. Release its connection before dispatching more work.
-    try { await response.body?.cancel(); }
+    // Read the small acknowledgement to completion. Cancelling a live response
+    // can disconnect the invocation that still owns model/save work in after().
+    try { await response.text(); }
     catch (error) { console.warn("analysis.dispatch.response_cleanup_failed", { ...input, error: taskErrorDetails(error) }); }
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     console.info("analysis.dispatch.accepted", { ...input, requestMs: Date.now() - startedAt });

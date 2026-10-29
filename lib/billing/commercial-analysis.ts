@@ -17,7 +17,7 @@ import { dispatchQueuedAnalysis } from "@/lib/workflow/analysis-dispatch";
 import { dispatchQueuedSceneJobs } from "./independent-scene-analysis";
 
 export function commercialConsumptionEnabled() { return process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true"; }
-export type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; executionMode?: "scene_jobs_v1"; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
+export type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; executionMode?: "scene_jobs_v1" | "scene_pipeline_v1"; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
 
 const PREPARATION_RETENTION_MS = 7 * 86400000;
 type PreparationSource = { projectId: string; mediaUrl: string; mediaName: string; automaticSplit: boolean; preview: MediaPreview; retentionExpired?: boolean };
@@ -110,7 +110,7 @@ export async function quoteCommercialAnalysis(userId: string, input: { preparati
   const apiKey = pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(userId);
   if (!apiKey) throw new Error("KIE_KEY_REQUIRED");
   const modelId = quotedAnalysisModel(input);
-  const snapshot: AnalysisInput = { ...source, pricing, modelId, pricingVersion: PRICING_VERSION, outputLanguage: input.outputLanguage === "zh" ? "zh" : "en", keyFingerprint: generationKeyFingerprint(apiKey), executionMode: "scene_jobs_v1" };
+  const snapshot: AnalysisInput = { ...source, pricing, modelId, pricingVersion: PRICING_VERSION, outputLanguage: input.outputLanguage === "zh" ? "zh" : "en", keyFingerprint: generationKeyFingerprint(apiKey), executionMode: source.automaticSplit && process.env.ANALYSIS_SCENE_PREPARATION_MODE !== "batch" ? "scene_pipeline_v1" : "scene_jobs_v1" };
   const [task] = await db.insert(commercialTasks).values({ userId, kind: "analysis", input: snapshot, credits: quote.credits, expiresAt: new Date(Date.now() + 600000) }).returning();
   return { id: task.id, ...quote, modelId, payer: pricing.payer, expiresAt: task.expiresAt };
 }
@@ -131,7 +131,11 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
     await dispatchQueuedSceneJobs(task.id);
     return;
   }
+  const pipeline = input.executionMode === "scene_pipeline_v1";
   let assets = progress.assets;
+  if (!assets && pipeline && !input.retry) {
+    assets = { metadata: input.preview.metadata, scenes: input.pricing.scenes.map((s, index) => ({ sceneIndex: index + 1, startTime: s.startUs / 1e6, endTime: s.endUs / 1e6, duration: (s.endUs - s.startUs) / 1e6, keyframeUrls: [] })) };
+  }
   if (!assets) {
     if (input.retry) throw new Error("ANALYSIS_CHECKPOINT_MISSING");
     await recordAnalysisPhase(task, "extracting_assets");
@@ -182,7 +186,7 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
         executionId: pending ? randomUUID() : null, result: pending ? { pendingBlueprint: pending } : {},
         updatedAt: pending ? new Date(Date.now() - 25_000) : new Date() };
     }));
-    await tx.update(commercialTasks).set({ state: "running", input: { ...input, executionMode: "scene_jobs_v1" }, result: { ...progress, assets: extracted, pendingResult: null, splitDelivered: progress.splitDelivered ?? input.pricing.automaticSplit, versionId, sceneRecords, successfulSceneIds: successes, finishedSceneIds: finished, executionPhase: "scene_jobs_waiting", sceneJobMode: "independent_v1" }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+    await tx.update(commercialTasks).set({ state: "running", input: { ...input, executionMode: pipeline ? "scene_pipeline_v1" : "scene_jobs_v1" }, result: { ...progress, assets: extracted, pendingResult: null, splitDelivered: progress.splitDelivered ?? (pipeline ? false : input.pricing.automaticSplit), versionId, sceneRecords, successfulSceneIds: successes, finishedSceneIds: finished, executionPhase: "scene_jobs_waiting", sceneJobMode: "independent_v1" }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
   });
   try { await dispatchQueuedSceneJobs(task.id); }
   catch (error) { console.error("commercial.analysis.initial_dispatch_failed", { taskId: task.id, error: taskErrorDetails(error) }); }
@@ -190,7 +194,12 @@ export async function executeCommercialAnalysis(task: typeof commercialTasks.$in
 
 export async function finishCommercialAnalysis(task: typeof commercialTasks.$inferSelect, success: string[], splitDelivered: boolean, state: "completed" | "failed", transaction?: Parameters<Parameters<typeof db.transaction>[0]>[0], finishedSceneIds?: string[]) {
   const input = task.input as AnalysisInput;
-  const totalChargedCredits = settleAnalysis(input.pricing, success, splitDelivered);
+  // Valid analyzed shots remain billable if another shot's preparation failed;
+  // refund the splitting fee when its complete assets were not delivered.
+  const partialPreparation = input.executionMode === "scene_pipeline_v1" && input.pricing.automaticSplit && !splitDelivered && success.length > 0;
+  const totalChargedCredits = partialPreparation
+    ? Math.max(0, settleAnalysis(input.pricing, success, true) - quoteAnalysis(input.pricing).splitCredits)
+    : settleAnalysis(input.pricing, success, splitDelivered);
   const credits = totalChargedCredits - (input.retry?.previousCharged || 0);
   const hadReview = Boolean((task.result as Record<string, unknown>).review);
   const finish = async (tx: Parameters<Parameters<typeof db.transaction>[0]>[0]) => {
@@ -287,7 +296,7 @@ export async function quoteCommercialAnalysisRetry(userId: string, parentId: str
   const apiKey = source.pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(userId);
   if (!apiKey) throw new Error("KIE_KEY_REQUIRED");
   const credits = settleAnalysis(source.pricing, [...previousSuccess, ...remaining.map(scene => scene.id)], true) - result.totalChargedCredits!;
-  const snapshot: AnalysisInput = { ...source, executionMode: "scene_jobs_v1", keyFingerprint: generationKeyFingerprint(apiKey), retry: { parentId, previousSuccess, previousCharged: result.totalChargedCredits!, sceneVersions } };
-  const [task] = await db.insert(commercialTasks).values({ userId, kind: "analysis", input: snapshot, credits, result: { assets: result.assets, splitDelivered: source.pricing.automaticSplit }, expiresAt: new Date(Date.now() + 600000) }).returning();
+  const snapshot: AnalysisInput = { ...source, executionMode: source.executionMode || "scene_jobs_v1", keyFingerprint: generationKeyFingerprint(apiKey), retry: { parentId, previousSuccess, previousCharged: result.totalChargedCredits!, sceneVersions } };
+  const [task] = await db.insert(commercialTasks).values({ userId, kind: "analysis", input: snapshot, credits, result: { assets: result.assets, splitDelivered: (result as Record<string, unknown>).splitDelivered ?? source.pricing.automaticSplit }, expiresAt: new Date(Date.now() + 600000) }).returning();
   return { id: task.id, credits, sceneCount: remaining.length, expiresAt: task.expiresAt };
 }

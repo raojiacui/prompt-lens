@@ -37,6 +37,7 @@ export interface AiModelSelection {
   allowPlatformKeyForAnalysis?: boolean;
   analysisKeySource?: "platform" | "user";
   analysisApiKey?: string;
+  analysisBudgetMs?: number;
   forceFreeTrialKie?: boolean;
 }
 
@@ -198,7 +199,7 @@ async function callAnalysisChatJson(params: {
   const startedAt = Date.now();
   // Video scenes get two attempts within four minutes, leaving one minute of
   // the 300s function for checkpointing/settlement. Other flows keep their budget.
-  const deadline = startedAt + (params.validateJson ? 240_000 : DEFAULT_KIE_ANALYSIS_TIMEOUT_MS);
+  const deadline = startedAt + (params.validateJson ? Math.max(1, Math.min(240_000, params.selection?.analysisBudgetMs ?? 240_000)) : DEFAULT_KIE_ANALYSIS_TIMEOUT_MS);
   let providerAttemptUnconfirmed = false;
   for (let attempt = 1; attempt <= (params.validateJson ? 2 : 1); attempt++) {
     try {
