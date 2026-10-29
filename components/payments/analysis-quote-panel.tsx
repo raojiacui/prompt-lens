@@ -68,6 +68,8 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     const data = await response.json().catch(() => null);
     if (!data || typeof data !== "object" || Array.isArray(data)) throw invalidResponse();
     if (response.status === 401) throw new AnalysisRequestError(zh ? "登录状态已失效，请重新登录后再开始分析。" : "Your session has expired. Sign in again before starting analysis.", "AUTH_REQUIRED", false, true);
+    if (!response.ok && data.code === "PREVIEW_EXPIRED") throw new AnalysisRequestError(zh ? "拆镜预览已超出素材保留期或不可用，请返回后重新上传素材。" : "This shot preview is unavailable or past media retention. Go back and upload the reference again.", data.code, false, true);
+    if (!response.ok && data.code === "PREVIEW_PREPARING") throw new AnalysisRequestError(zh ? "同一视频仍在读取中，请稍后重试，将复用读取结果。" : "This video is still being inspected. Retry shortly to reuse its result.", data.code);
     if (!response.ok && ["MEDIA_PREPARATION_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "MEDIA_PROBE_NOT_CONFIGURED"].includes(data.code)) throw new AnalysisRequestError(zh ? "视频预处理服务暂不可用，尚未开始分析。请稍后重新读取视频。" : "Video preparation is temporarily unavailable. Analysis has not started. Inspect the video again shortly.", data.code);
     if (!response.ok && data.code === "COMMERCIAL_NOT_ENABLED") throw new AnalysisRequestError(zh ? "分析服务暂不可用，尚未开始分析。" : "Analysis is temporarily unavailable and has not started.", data.code, false, true);
     if (!response.ok && data.code === "INVALID_MEDIA_URL") throw new AnalysisRequestError(zh ? "无法读取视频地址，尚未开始分析。请重新上传素材。" : "The video address could not be read. Analysis has not started. Upload the video again.", data.code, false, true);
@@ -123,9 +125,8 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
           return;
         }
         setError(e instanceof Error ? e.message : "Error"); setQuoting(false);
-        if (e instanceof AnalysisRequestError && e.code === "QUOTE_EXPIRED") {
-          preparationRequest.current = null; setPreparation(null);
-        }
+        // Quote failures must never discard detected boundaries or shot selection.
+        // Refreshing cost reuses this preparation and cannot invoke the worker.
       }
     }
     timer = setTimeout(() => void loadQuote(), 300);

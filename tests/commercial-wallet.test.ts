@@ -1010,6 +1010,80 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await recoverCommercialAnalysisTasks();
     expect((await testDb.select().from(schema.commercialTasks)).every(t => t.state === "failed")).toBe(true);
   });
+  it.each(["quoted", "failed"])("reuses a complete %s preview beyond its old expiry and refreshes only quotes", async state => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Retained splitting" }).returning();
+    const source = { projectId: project.id, mediaUrl: "https://example.com/retained.mp4", mediaName: "Retained", automaticSplit: true };
+    const scenes = [{ id: "1", startUs: 0, endUs: 2_000_000 }, { id: "2", startUs: 2_000_000, endUs: 5_000_000 }];
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 5_000_000, bytes: 500, metadata: {}, scenes });
+    const prepared = await prepareCommercialAnalysis(userId, source);
+    const [saved] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, prepared.id));
+    expect(saved.expiresAt.getTime() - saved.createdAt.getTime()).toBe(7 * 86400000);
+    await testDb.update(schema.commercialTasks).set({ state, createdAt: new Date(Date.now() - 20 * 60_000), expiresAt: new Date(Date.now() - 60_000), result: state === "failed" ? { code: "PREVIEW_EXPIRED" } : {} }).where(eq(schema.commercialTasks.id, prepared.id));
+    await recoverCommercialAnalysisTasks();
+    const quoteInput = { preparationId: prepared.id, sceneIds: ["2"], payer: "platform", model: "flash", outputLanguage: "zh" };
+    const originalQuote = await quoteCommercialAnalysis(userId, quoteInput);
+    await testDb.update(schema.commercialTasks).set({ expiresAt: new Date(Date.now() - 1) }).where(eq(schema.commercialTasks.id, originalQuote.id));
+    await expect(confirmCommercialTask(userId, originalQuote.id)).rejects.toThrow("QUOTE_EXPIRED");
+    const refreshed = await quoteCommercialAnalysis(userId, quoteInput);
+    expect(refreshed.id).not.toBe(originalQuote.id);
+    const [snapshot] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, refreshed.id));
+    expect(snapshot.input).toMatchObject({ preview: { sourceHash: "a".repeat(64), scenes }, pricing: { scenes: [scenes[1]] } });
+    for (let index = 0; index < 12; index++) expect(await prepareCommercialAnalysis(userId, source)).toEqual(prepared);
+    expect(await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.kind, "analysis_preview"))).toHaveLength(1);
+    expect(commercialMediaRequest).toHaveBeenCalledTimes(1);
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+  });
+
+  it("does not quote snapshots past retention, cleared snapshots or another owner's snapshots", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Retention boundary" }).returning();
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis_preview", state: "quoted", expiresAt: new Date(Date.now() + 600_000), createdAt: new Date(Date.now() - 8 * 86400000), input: { projectId: project.id, mediaUrl: "https://example.com/old.mp4", automaticSplit: false, preview: { scenes: [{ id: "1", startUs: 0, endUs: 1_000_000 }], durationUs: 1_000_000 } } }).returning();
+    const quoteInput = { preparationId: task.id, sceneIds: ["1"], payer: "platform", model: "flash", outputLanguage: "zh" };
+    await expect(quoteCommercialAnalysis(userId, quoteInput)).rejects.toThrow("PREVIEW_EXPIRED");
+    await testDb.update(schema.commercialTasks).set({ createdAt: new Date(), input: { projectId: project.id, retentionExpired: true } }).where(eq(schema.commercialTasks.id, task.id));
+    await expect(quoteCommercialAnalysis(userId, quoteInput)).rejects.toThrow("PREVIEW_EXPIRED");
+    await expect(quoteCommercialAnalysis(randomUUID(), quoteInput)).rejects.toThrow("PREVIEW_EXPIRED");
+    expect(commercialMediaRequest).not.toHaveBeenCalled();
+  });
+
+  it("scopes cached previews to the same project, media and splitting mode", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const projects = await testDb.insert(schema.projects).values([{ userId, title: "First" }, { userId, title: "Second" }]).returning();
+    vi.mocked(commercialMediaRequest).mockResolvedValue({ sourceHash: "a".repeat(64), durationUs: 1_000_000, bytes: 500, metadata: {}, scenes: [{ id: "1", startUs: 0, endUs: 1_000_000 }] });
+    const input = { projectId: projects[0].id, mediaUrl: "https://example.com/a.mp4", mediaName: "Original", automaticSplit: true };
+    const first = await prepareCommercialAnalysis(userId, input);
+    expect((await prepareCommercialAnalysis(userId, input)).id).toBe(first.id);
+    for (const changed of [{ mediaUrl: "https://example.com/b.mp4" }, { automaticSplit: false }, { projectId: projects[1].id }]) {
+      expect((await prepareCommercialAnalysis(userId, { ...input, ...changed })).id).not.toBe(first.id);
+    }
+    expect(commercialMediaRequest).toHaveBeenCalledTimes(4);
+    await testDb.update(schema.projects).set({ status: "analyzing" }).where(eq(schema.projects.id, input.projectId));
+    await expect(prepareCommercialAnalysis(userId, input)).rejects.toThrow("PROJECT_NOT_READY");
+    await expect(quoteCommercialAnalysis(userId, { preparationId: first.id, sceneIds: ["1"], payer: "platform", model: "flash", outputLanguage: "zh" })).rejects.toThrow("PROJECT_NOT_READY");
+    expect(commercialMediaRequest).toHaveBeenCalledTimes(4);
+  });
+
+  it("does not start a second worker probe while the same source is still preparing", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Concurrent preparation" }).returning();
+    const input = { projectId: project.id, mediaUrl: "https://example.com/same.mp4", mediaName: "Same", automaticSplit: false };
+    let finish!: (value: unknown) => void;
+    vi.mocked(commercialMediaRequest).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const first = prepareCommercialAnalysis(userId, input);
+    await vi.waitFor(() => expect(commercialMediaRequest).toHaveBeenCalledTimes(1));
+    await expect(prepareCommercialAnalysis(userId, input)).rejects.toThrow("PREVIEW_PREPARING");
+    finish({ sourceHash: "a".repeat(64), durationUs: 1_000_000, bytes: 500, metadata: {}, scenes: [{ id: "1", startUs: 0, endUs: 1_000_000 }] });
+    const prepared = await first;
+    expect(await prepareCommercialAnalysis(userId, input)).toEqual(prepared);
+    expect(commercialMediaRequest).toHaveBeenCalledTimes(1);
+  });
+
   it("reserves a multi-output batch atomically or starts none", async () => {
     await grant(57, 20);
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
