@@ -3,9 +3,9 @@ name: prompt-lens-video-remix
 description: Analyze a user-provided reference video locally, detect shots, extract representative frames, reverse-engineer generation prompts, and optionally rewrite the concept or create a remake plan. Use when the user asks to break down, reverse-prompt, rewrite, or recreate a video; do not use for ordinary playback or unrelated writing.
 ---
 
-# Prompt Lens Video Remix
+# Prompt Lens: Auto Shot Detection & Prompt Reconstruction
 
-Turn a reference video into an editable shot plan and generation-ready prompts while keeping media local by default.
+Automatically split a reference video into real shots and reverse-engineer a generation-ready prompt for every scene while keeping media local by default. After the factual breakdown, optionally rewrite the story or create an original remake using the same shot structure.
 
 ## Operating rules
 

@@ -1,6 +1,6 @@
 interface:
-  display_name: "Prompt Lens Video Remix"
-  short_description: "Local reference-video breakdown, prompts, and remix planning"
-  default_prompt: "Use $prompt-lens-video-remix to break down this reference video and help me rewrite or recreate it."
+  display_name: "Prompt Lens: Auto Shot Detection & Prompt Reconstruction"
+  short_description: "Automatically detect shots and reverse-engineer a prompt for every scene"
+  default_prompt: "Use $prompt-lens-video-remix to automatically detect every shot in this reference video and reverse-engineer a generation-ready prompt for each scene."
 policy:
   allow_implicit_invocation: true
