@@ -9,16 +9,12 @@ function read(relativePath: string) {
 describe("analysis provider surface", () => {
   it("preserves the public model options and key restrictions", () => {
     const dashboard = read("app/dashboard/page.tsx");
-    const modelOptions = [...dashboard.matchAll(/<option value="((?:platform|kie)-gemini-[^"]+)"[^>]*>/g)]
-      .map((match) => match[1]);
+    const modelOptions = [...dashboard.matchAll(/<option value="((?:deepseek|gemini)-[^"]+)"[^>]*>/g)].map(match => match[1]);
+    expect(modelOptions).toEqual(["deepseek-v4-flash", "gemini-3.8-flash"]);
+    expect(dashboard).toContain('>("platform-deepseek-v4-flash")');
+    expect(dashboard).toContain('value="kie" disabled={!trialAccess?.hasOwnApiKey}');
+    expect(dashboard).toContain('disabled={isLoading || trialAccessLoading}');
 
-    expect(modelOptions).toEqual([
-      "platform-gemini-3.8-flash",
-      "kie-gemini-3.8-flash",
-      "kie-gemini-3.5-flash",
-      "kie-gemini-2.5-pro",
-    ]);
-    expect(dashboard).toContain("disabled={!trialAccess?.hasOwnApiKey}");
   });
 
   it("only lets users configure KIE in settings", () => {

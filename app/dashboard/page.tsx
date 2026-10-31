@@ -48,8 +48,8 @@ export default function DashboardPage() {
   const [frameCount, setFrameCount] = useState(8);
   const [analyzeMode, setAnalyzeMode] = useState<"single" | "batch">("single");
   const [analysisModel, setAnalysisModel] = useState<
-    "platform-gemini-3.8-flash" | "kie-gemini-3.8-flash" | "kie-gemini-3.5-flash" | "kie-gemini-2.5-pro"
-  >("platform-gemini-3.8-flash");
+    "platform-deepseek-v4-flash" | "kie-deepseek-v4-flash" | "platform-gemini-3.8-flash" | "kie-gemini-3.8-flash"
+  >("platform-deepseek-v4-flash");
   const [progress, setProgress] = useState("");
   const [historyRefreshTrigger, setHistoryRefreshTrigger] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -72,7 +72,8 @@ export default function DashboardPage() {
     if (activeTab === "analyze") void refreshTrialAccess();
   }, [activeTab, refreshTrialAccess]);
 
-  const usesPlatformKey = analysisModel === "platform-gemini-3.8-flash";
+  const usesPlatformKey = analysisModel.startsWith("platform-");
+  const selectedModelFamily = analysisModel.includes("deepseek") ? "deepseek-v4-flash" : "gemini-3.8-flash";
   const platformTrialExhausted = Boolean(
     trialAccess && !trialAccess.isAdmin && trialAccess.remaining === 0,
   );
@@ -345,16 +346,21 @@ export default function DashboardPage() {
               <div>
                 <label className="text-sm font-medium text-[#141413] block mb-2">{t("analyze.model")}</label>
                 <select
-                  value={analysisModel}
-                  onChange={(e) => setAnalysisModel(e.target.value as typeof analysisModel)}
-                  disabled={!trialAccess?.hasOwnApiKey}
+                  aria-label={t("analyze.model")}
+                  value={selectedModelFamily}
+                  onChange={(e) => setAnalysisModel(`${usesPlatformKey ? "platform" : "kie"}-${e.target.value}` as typeof analysisModel)}
+                  disabled={isLoading || trialAccessLoading}
                   className="w-full h-10 px-3 border border-[#C8C4BC] rounded-lg focus:border-[#D97757] outline-none bg-white text-[#141413]"
                 >
-                  <option value="platform-gemini-3.8-flash" disabled={platformTrialExhausted}>{t("analyze.modelPlatformFlash")}</option>
-                  <option value="kie-gemini-3.8-flash">{t("analyze.modelKie38Flash")}</option>
-                  <option value="kie-gemini-3.5-flash">{t("analyze.modelKieFlash")}</option>
-                  <option value="kie-gemini-2.5-pro">{t("analyze.modelKiePro")}</option>
+                  <option value="deepseek-v4-flash">{t("analyze.modelDeepseek")}</option>
+                  <option value="gemini-3.8-flash">{t("analyze.modelGemini")}</option>
                 </select>
+                <label className="mt-3 block text-sm font-medium text-[#141413]">{t("analyze.keySource")}
+                  <select aria-label={t("analyze.keySource")} value={usesPlatformKey ? "platform" : "kie"} onChange={e => setAnalysisModel(`${e.target.value}-${selectedModelFamily}` as typeof analysisModel)} disabled={isLoading || trialAccessLoading} className="mt-2 w-full h-10 px-3 border border-[#C8C4BC] rounded-lg bg-white text-[#141413]">
+                    <option value="platform" disabled={platformTrialExhausted}>{t("analyze.keyPlatform")}</option>
+                    <option value="kie" disabled={!trialAccess?.hasOwnApiKey}>{t("analyze.keyOwn")}</option>
+                  </select>
+                </label>
                 {!trialAccessLoading && trialAccess && (
                   <div className={`mt-2 flex flex-wrap items-center justify-between gap-2 text-sm ${platformTrialExhausted ? "text-[#C0453A]" : "text-[#6B6860]"}`}>
                     <span>

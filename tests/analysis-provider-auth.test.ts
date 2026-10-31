@@ -21,12 +21,23 @@ vi.mock("@/lib/utils/encryption", () => ({
 
 import { describeAnalysisProviderError } from "@/lib/ai/provider-error";
 import { JsonHttpError } from "@/lib/http/json-client";
+import { KieApiError } from "@/lib/ai/kie-chat-response";
 import {
   getUsableUserAnalyzeApiKeyProvider,
   resolveTrialAccess,
 } from "@/lib/usage/trial-quota";
 
 describe("analysis provider authentication", () => {
+  it.each([503, 504, 524, 500, 429])("explains KIE %s failures and offers a model switch", status => {
+    expect(describeAnalysisProviderError("kie", new KieApiError(status, "Service Unavailable"))).toContain("切换其他模型");
+    expect(describeAnalysisProviderError("kie", new KieApiError(status, "Service Unavailable"), "en")).toContain("switching");
+  });
+  it("explains final KIE timeouts without blaming unrelated failures on its gateway", () => {
+    expect(describeAnalysisProviderError("kie", new Error("KIE request timed out after 2 attempts"))).toContain("上游网关");
+    for (const error of [new KieApiError(524, "Failed to download fileData.fileUri: HTTP 404"), new KieApiError(401, "Unauthorized"), new Error("Database save failed")]) {
+      expect(describeAnalysisProviderError("kie", error)).not.toContain("上游网关");
+    }
+  });
   beforeEach(() => {
     findMany.mockReset();
   });

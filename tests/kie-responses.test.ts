@@ -11,7 +11,17 @@ const completed = (text: string) => ({ status: "completed", output: [
 const event = (type: string, value: Record<string, unknown> = {}) => `event: ${type}\ndata: ${JSON.stringify({ type, ...value })}\n\n`;
 
 describe("DeepSeek image analysis over KIE Responses", () => {
-  it.each(["platform-gemini-3.8-flash", "kie-gemini-3.8-flash"])("routes %s to Responses and preserves all image inputs", (id) => {
+  it("sends Gemini 3.8 frames to its own channel and reads its answer", async () => {
+    const request = buildKieAnalysisRequest("gemini-3-8-flash", ["data:image/jpeg;base64,TEST"], "Analyze");
+    expect(request.path).toBe("/gemini-3-8-flash-openai/v1/chat/completions");
+    expect(request.payload).toMatchObject({ model: "gemini-3-8-flash", messages: [{ content: [
+      { type: "text", text: "Analyze" }, { type: "image_url", image_url: { url: "data:image/jpeg;base64,TEST" } },
+    ] }] });
+    const fetcher = vi.fn(async () => Response.json({ choices: [{ message: { content: "Gemini result" } }] }));
+    expect(await requestKieChatCompletion({ url: `https://api.kie.ai${request.path}`, apiKey: "test", payload: request.payload, fetcher })).toBe("Gemini result");
+    expect(fetcher.mock.calls).toHaveLength(1);
+  });
+  it.each(["platform-deepseek-v4-flash", "kie-deepseek-v4-flash"])("routes %s to Responses and preserves all image inputs", (id) => {
     const selected = resolveAnalysisModel(id)!;
     const images = ["data:image/jpeg;base64,ONE", "data:image/jpeg;base64,TWO"];
     const request = buildKieAnalysisRequest(selected.providerModel, images, "Analyze these frames");

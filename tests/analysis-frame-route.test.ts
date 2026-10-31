@@ -23,7 +23,7 @@ import { POST } from "@/app/api/analyze/route";
 
 const key = "analysis-frames/user-1/run-1/frame-01.jpg";
 const request = () => new NextRequest("https://site.example/api/analyze", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({
-  mediaUrl: "https://media.example/video.mp4", mediaType: "video", frameUrls: [`https://media.example/${key}`], analysisModel: "kie-gemini-3.8-flash",
+  mediaUrl: "https://media.example/video.mp4", mediaType: "video", frameUrls: [`https://media.example/${key}`], analysisModel: "kie-deepseek-v4-flash",
 }) });
 
 describe("analysis frame lifecycle", () => {

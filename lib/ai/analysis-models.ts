@@ -1,14 +1,16 @@
 export const ANALYSIS_MODELS = [
+  { id: "platform-deepseek-v4-flash", provider: "kie", providerModel: "deepseek-v4-1-flash", keySource: "platform" },
+  { id: "kie-deepseek-v4-flash", provider: "kie", providerModel: "deepseek-v4-1-flash", keySource: "user" },
   {
     id: "platform-gemini-3.8-flash",
     provider: "kie",
-    providerModel: "deepseek-v4-1-flash",
+    providerModel: "gemini-3-8-flash",
     keySource: "platform",
   },
   {
     id: "kie-gemini-3.8-flash",
     provider: "kie",
-    providerModel: "deepseek-v4-1-flash",
+    providerModel: "gemini-3-8-flash",
     keySource: "user",
   },
   {
@@ -28,11 +30,12 @@ export const ANALYSIS_MODELS = [
 export type AnalysisModel = (typeof ANALYSIS_MODELS)[number];
 export type AnalysisModelId = AnalysisModel["id"];
 
-export const DEFAULT_ANALYSIS_MODEL_ID: AnalysisModelId = "platform-gemini-3.8-flash";
+export const DEFAULT_ANALYSIS_MODEL_ID: AnalysisModelId = "platform-deepseek-v4-flash";
 
 // KIE channel paths are not interchangeable with request model names.
 export function getKieAnalysisPath(model: string): string {
   if (model === "deepseek-v4-1-flash") return "/openai/v1/responses";
+  if (model === "gemini-3-8-flash") return "/gemini-3-8-flash-openai/v1/chat/completions";
   if (model === "gemini-3-5-flash-thinking") return "/gemini-3-5-flash-openai/v1/chat/completions";
   if (model === "gemini-2.5-pro") return "/gemini-2.5-pro/v1/chat/completions";
   throw new Error(`Unsupported KIE analysis model: ${model}`);
