@@ -2,6 +2,16 @@ import { describe, expect, it } from "vitest";
 import { resolveAnalysisFrames } from "@/lib/ai/analysis-frame-input";
 
 describe("resolveAnalysisFrames", () => {
+  it.each(["urls", "legacy"])("accepts ten %s frames and rejects eleven before provider inference", mode => {
+    const resolve = (count: number) => resolveAnalysisFrames({
+      userId: "user-1",
+      frameUrls: mode === "urls" ? Array.from({ length: count }, (_, index) => `https://media.example/analysis-frames/user-1/run-1/frame-${index}.jpg`) : undefined,
+      clientFrames: mode === "legacy" ? Array.from({ length: count }, () => "data:image/jpeg;base64,TEST") : undefined,
+      extractKey: url => new URL(url).pathname.slice(1),
+    });
+    expect(resolve(10).frames).toHaveLength(10);
+    expect(() => resolve(11)).toThrow("Maximum: 10");
+  });
   it("accepts only frame URLs owned by the current user", () => {
     const result = resolveAnalysisFrames({
       userId: "user-1",

@@ -12,6 +12,7 @@ import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
 import { VideoGenerateTab } from "@/components/video-generate-tab";
 import { FloatingChat } from "@/components/floating-chat";
 import { createImageAnalysisFrame, extractVideoFrameFiles } from "@/lib/utils/frame-extractor";
+import { MAX_ANALYSIS_FRAMES } from "@/lib/ai/analysis-frame-input";
 import { uploadAnalysisFrames, uploadMediaToR2 } from "@/lib/r2-client";
 import { cn } from "@/lib/utils";
 import { useTranslations, useLocale } from "next-intl";
@@ -324,9 +325,11 @@ export default function DashboardPage() {
                   <Input
                     type="number"
                     min={1}
-                    max={30}
+                    max={MAX_ANALYSIS_FRAMES}
+                    step={1}
                     value={frameCount}
-                    onChange={(e) => setFrameCount(Number(e.target.value))}
+                    onChange={(e) => setFrameCount(Math.max(1, Math.min(MAX_ANALYSIS_FRAMES, Math.trunc(Number(e.target.value) || 1))))}
+                    disabled={isLoading}
                     className="border-[#C8C4BC] focus:border-[#D97757] bg-white"
                   />
                 </div>
