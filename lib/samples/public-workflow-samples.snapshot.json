@@ -12793,5 +12793,1686 @@
         "metadata": {}
       }
     ]
+  },
+  {
+    "project": {
+      "id": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+      "description": null,
+      "status": "ready",
+      "activeVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+      "createdAt": "2026-10-29T09:10:32.728901+00:00",
+      "updatedAt": "2026-10-29T09:55:00.861+00:00",
+      "title": "纪实感",
+      "metadata": {
+        "mediaType": "video",
+        "failedSceneCount": 0
+      }
+    },
+    "versions": [
+      {
+        "id": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "parentVersionId": null,
+        "versionNumber": 0,
+        "kind": "original",
+        "label": "原始版本",
+        "remixPrompt": null,
+        "overview": {
+          "sceneCount": 11
+        },
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:47:58.453465+00:00",
+        "metadata": {}
+      }
+    ],
+    "activeVersion": {
+      "id": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+      "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+      "parentVersionId": null,
+      "versionNumber": 0,
+      "kind": "original",
+      "label": "原始版本",
+      "remixPrompt": null,
+      "overview": {
+        "sceneCount": 11
+      },
+      "createdAt": "2026-10-29T09:47:58.453465+00:00",
+      "updatedAt": "2026-10-29T09:47:58.453465+00:00",
+      "metadata": {}
+    },
+    "scenes": [
+      {
+        "id": "e5b35f27-4d15-4e86-aacb-044006f34e45",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 1,
+        "shotGroupId": null,
+        "startTime": 0,
+        "endTime": 0.75,
+        "duration": 0.75,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:49:04.847+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "23dccf4f-0b7c-43c6-b96d-cb736f807e86",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 2,
+        "shotGroupId": null,
+        "startTime": 0.75,
+        "endTime": 4.583,
+        "duration": 3.833,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/002/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/002/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/002/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/002/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/002/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:50:38.742+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "70720c27-6ba4-49e3-b571-b5f8851b69e0",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 3,
+        "shotGroupId": null,
+        "startTime": 4.583,
+        "endTime": 6.625,
+        "duration": 2.042,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/003/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/003/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/003/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/003/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/003/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:50:03.737+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "8ae1fed2-892f-4f19-a1df-e16c4df7c318",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 4,
+        "shotGroupId": null,
+        "startTime": 7.375,
+        "endTime": 8.125,
+        "duration": 0.75,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/004/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/004/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/004/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/004/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/004/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:51:13.719+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "6e96a7a2-16dc-4630-b723-0bb0ca6b3f34",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 5,
+        "shotGroupId": null,
+        "startTime": 8.125,
+        "endTime": 11.333,
+        "duration": 3.208,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/005/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/005/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/005/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/005/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/005/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:51:54.187+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "c9bee7bb-14d8-44f5-8a33-62af25c7577d",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 6,
+        "shotGroupId": null,
+        "startTime": 11.333,
+        "endTime": 14.75,
+        "duration": 3.417,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/006/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/006/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/006/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/006/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/006/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:51:49.809+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "e4fc1f1b-5d7d-4957-892d-2e9470f057b2",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 7,
+        "shotGroupId": null,
+        "startTime": 14.75,
+        "endTime": 15.75,
+        "duration": 1,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/007/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/007/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/007/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/007/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/007/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:53:58.074+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "1ef5a1a7-5b3d-40b7-977c-f4f5802cff3d",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 8,
+        "shotGroupId": null,
+        "startTime": 15.75,
+        "endTime": 18.333,
+        "duration": 2.583,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/008/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/008/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/008/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/008/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/008/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:52:36.256+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "bbc9306f-89b0-4f62-9427-dc19c9bd6046",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 9,
+        "shotGroupId": null,
+        "startTime": 18.333,
+        "endTime": 20.292,
+        "duration": 1.959,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/009/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/009/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/009/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/009/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/009/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:55:00.337+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "6f71494c-9a87-41bd-92b2-55a5b6d9f239",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 10,
+        "shotGroupId": null,
+        "startTime": 20.292,
+        "endTime": 21.625,
+        "duration": 1.333,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/010/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/010/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/010/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/010/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/010/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:54:23.726+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "bf1dbde0-b27f-4aa0-b0b6-703cc64b4662",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "referenceVideoId": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "sceneIndex": 11,
+        "shotGroupId": null,
+        "startTime": 21.625,
+        "endTime": 24.334,
+        "duration": 2.709,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/011/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/011/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/011/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/011/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/a18d1096-4dec-4731-a5d0-f8649c9167ea/scenes/011/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "error": null,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "updatedAt": "2026-10-29T09:54:53.862+00:00",
+        "metadata": {}
+      }
+    ],
+    "sceneVersions": [
+      {
+        "id": "f33c7d24-c1f3-442c-a0c7-7fa7cac45e1a",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "e5b35f27-4d15-4e86-aacb-044006f34e45",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 0.75,
+          "summary": "在热闹的市集中，一人将一枚硬币交给另一人，交付者的手随即收回。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖棕色、土黄与暗红为主的温润胶片色调。",
+          "style": "真实纪实风格，带细腻胶片质感与自然颗粒度。",
+          "action": "交付者的手从接收者手心撤开，接收者的手指轻微弯曲放松，露出掌心的硬币。",
+          "camera": "特写，微距平拍略俯，固定镜头，焦点精准锁定在掌心与硬币上，浅景深。",
+          "motion": "左侧手部平稳离场，右侧手掌指节微幅舒展。",
+          "subject": "托着硬币的成年人手掌",
+          "lighting": "柔和的暖黄侧光，明暗反差自然，突显皮肤纹理与硬币金属光泽。",
+          "characters": "画面仅见两人手部与衣袖。接收者皮肤偏深、掌纹明显，袖口有几何民族刺绣；交付者着条纹衣物，仅露手指边缘。",
+          "composition": "手掌居中偏右为主体，左侧留给撤离的手，背景虚焦营造层次。",
+          "environment": "户外传统集市，背景高度虚化，隐约可见箩筐中的蔬菜与暗色织物。",
+          "sceneDescription": "特写镜头下，两只手在微弱的暖光中交接。交付者的手移开后，接收者粗糙的掌心展露出一枚圆形金属硬币，背景是虚化的市集摊位。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "环境中有低沉模糊的集市人声杂音与微弱的钱币碰触声。"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快速直接",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "电影质感特写。温暖昏暗的集市背景完全虚化。画面核心为一只皮肤粗糙、肤色较深的右手掌心，另一只手刚刚抽离，掌中静置一枚双色金属硬币。手腕处可见色彩斑斓的民族纹样织物袖口。柔和侧光勾勒出掌纹与硬币轮廓，浅景深，写实市井氛围，复古胶片颗粒感。\n\n画面与环境: 特写镜头下，两只手在微弱的暖光中交接。交付者的手移开后，接收者粗糙的掌心展露出一枚圆形金属硬币，背景是虚化的市集摊位。；托着硬币的成年人手掌；户外传统集市，背景高度虚化，隐约可见箩筐中的蔬菜与暗色织物。\n\n人物与动作: 画面仅见两人手部与衣袖。接收者皮肤偏深、掌纹明显，袖口有几何民族刺绣；交付者着条纹衣物，仅露手指边缘。；交付者的手从接收者手心撤开，接收者的手指轻微弯曲放松，露出掌心的硬币。；左侧手部平稳离场，右侧手掌指节微幅舒展。\n\n镜头与构图: 特写，微距平拍略俯，固定镜头，焦点精准锁定在掌心与硬币上，浅景深。；手掌居中偏右为主体，左侧留给撤离的手，背景虚焦营造层次。\n\n光影与质感: 柔和的暖黄侧光，明暗反差自然，突显皮肤纹理与硬币金属光泽。；暖棕色、土黄与暗红为主的温润胶片色调。；真实纪实风格，带细腻胶片质感与自然颗粒度。\n\n声音: soundStyle: 环境中有低沉模糊的集市人声杂音与微弱的钱币碰触声。\n\n节奏与转场: editing: pacing: 快速直接; techniques: 硬切",
+        "duration": 0.75,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:49:04.718457+00:00",
+        "updatedAt": "2026-10-29T09:49:04.718457+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "6d5a0c0a-a9ba-48f3-8c74-f52aaf2427fc",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "23dccf4f-0b7c-43c6-b96d-cb736f807e86",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 4.583,
+          "summary": "一名非裔女性乘坐行驶中的小型客车，在微颠的车厢内若有所思地凝望车窗外掠过的繁忙东非街景与路边水果摊。",
+          "startTime": 0.75,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "暖黄与大地色调风格调色（Ochre & Earthy tone）。外部街道充满日光暖金、香蕉黄与砖红色；车内以深灰、墨绿阴影为主，女主角服饰与头巾融入复古红棕色，色彩层次饱满而自然克制。",
+          "style": "写实主义电影风格（Cinematic Realism），逼真的胶片质感与细腻暗部颗粒，纪录片式的纪实人文抓拍美感。",
+          "action": [
+            {
+              "timeframe": "0.00s - 1.50s",
+              "description": "客车以恒定速度平缓前行，车身带有轻柔悬挂颠簸；前景女性侧脸静止入神，目光专注凝视窗外，车窗外露出一处彩色遮阳伞与杂货摊位。"
+            },
+            {
+              "timeframe": "1.50s - 3.00s",
+              "description": "随着车辆继续向前滑行，窗外景物向后位移，一位头顶装满香蕉托盘的蓝衣小贩及一辆摩托车从车窗视野中掠过；女性眼眸微转，视线跟随掠过的街景流转。"
+            },
+            {
+              "timeframe": "3.00s - 3.83s",
+              "description": "镜头焦点持续锁定在女性脸庞，窗外显现出写有阿姆哈拉语招牌的临街店铺与摊位前挑选香蕉的顾客；女性依旧保持宁静若有所思的面容，画面至此结束。"
+            }
+          ],
+          "camera": {
+            "angle": "平视微仰角（Eye-level with subtle low angle）",
+            "focus": "浅景深，焦点精准锁定在右侧前景女性的侧面轮廓、眼部及发带边缘，窗外景物呈现中等清晰度并伴随运动模糊",
+            "speed": "标准24fps实时正常拍摄速度",
+            "lensFeel": "35mm至50mm电影定焦镜头感，透视自然，背景具有适度运动虚焦与景深压缩感",
+            "movement": "车内固定机位，带有随车行驶产生的自然平稳细微手持微晃与车体共振",
+            "shotSize": "侧面中近景（Medium Close-Up）过渡至局部侧面特写"
+          },
+          "motion": "车辆匀速向前移动引发的窗外景物视差后移，车厢内部微幅低频颠簸，人物微小的呼吸与神态微动。",
+          "subject": "画面右侧的非裔女性乘客，侧面朝向窗外，构成画面的视觉锚点与情绪核心。",
+          "lighting": "混合自然环境光。车外为明亮的正午至午后阳光漫射，带有沙尘折射出的暖黄光质；车内整体处于低照度阴影背光环境，强烈的天光透过窗户为女性右侧面部轮廓、颧骨、眼眶与发带勾勒出细腻的轮廓光与高光边缘。",
+          "characters": [
+            {
+              "pose": "背靠座椅侧身端坐，头部朝左微仰望向窗外流动的人流与街景，身体随车体行进保持轻微自然的微幅晃动。",
+              "identity": "主要乘客（非裔女性）",
+              "wardrobe": "头戴一条浅褐偏暗玫瑰色的宽织物发带包覆发际，身穿带有红褐色、土黄色几何图腾印花领口的民族风日常上衣。",
+              "appearance": "约35至45岁，深褐色细腻皮肤，深邃专注的双眸，五官轮廓分明，留贴头深色短卷发。",
+              "expression": "神态从容沉静，目光略带思索与淡淡的怀旧感，嘴唇轻合，面部放松。"
+            },
+            {
+              "pose": "面朝前方及窗外端坐。",
+              "identity": "车内次要乘客（虚焦背景）",
+              "wardrobe": "朴素日常便服。",
+              "appearance": "车厢前排可见背对镜头的男性乘客，身着灰绿色衬衫；更前方隐约可见另一位佩戴发饰、同样注视窗外的乘客侧影。",
+              "expression": "无法完全看清，呈现静止乘坐状态。"
+            },
+            {
+              "pose": "在路旁驻足买卖、骑行穿梭或沿街漫步。",
+              "identity": "街景行人与摊贩（窗外动态背景）",
+              "wardrobe": "各色休闲衬衫、长裤及工作服饰。",
+              "appearance": "当地街头小贩、顾客与过路市民，包含头顶香蕉木托盘的小贩及头戴头盔的摩托车骑手。",
+              "expression": "日常市井劳作与匆匆赶路神态。"
+            }
+          ],
+          "composition": {
+            "depth": "车厢内部低光暗调空间与车窗外阳光烈焰的室外空间形成鲜明的前后层次与反差纵深。",
+            "midground": "车窗框架、滑锁、车内前排乘客座席与暗部空间。",
+            "background": "透过窗框透视展开的明亮街景、香蕉水果摊位、沿街建筑、招牌与来往行人。",
+            "foreground": "占据画面右侧约三分之一至二分之一画幅的女性侧脸轮廓、颈部与发带，左侧边缘为车窗立柱暗部框架。",
+            "subjectPlacement": "主角紧密依附于右侧纵向黄金分割区域，视线朝左延伸穿透画框，构建出充满纵深感的外向视线空间。"
+          },
+          "environment": {
+            "exterior": "具有典型埃塞俄比亚风格的日间繁华市井街道，柏油路面微泛尘土，路边支起简易遮阳棚，木架与塑料箱上堆满成串的熟香蕉与农产品，沿街排列着土黄与红砖色的两层商铺建筑，外墙悬挂有清晰的阿姆哈拉文字体招牌。",
+            "interior": "老旧小型客车车厢内部，深色车壁内衬，略显斑驳的扶手与座椅靠背，半开的侧面推拉车窗带有明显的金属滑轨立柱与黑色锁扣，车厢空间相对狭窄幽暗。"
+          },
+          "sceneDescription": "镜头置于一辆正在行驶的老旧小型客车（小巴）车厢内部。画面右侧前景是一位非裔中年女性的侧脸及肩部近景，她头戴复古粉褐宽发带，面带平静深沉的神情凝视着车窗外。车窗带有深色金属框及中央竖向滑轨锁扣。透过车窗，外部是阳光明媚、略带扬尘的东非城市街道，路边整齐摆放着堆满金黄色香蕉与热带蔬果的木质摊位，头顶货物的行人和骑乘摩托车的市民穿梭其间，背景是带有阿姆哈拉文字招牌与铁皮屋顶的砖土色两层街边店铺。车内阴影与车外烈日形成鲜明的光比反差，营造出充满生活质感的写实电影氛围。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知或无明显配乐，以沉浸式现场环境音效与低频氛围铺底为主。",
+          "soundStyle": "主观纪实风格音效设计，车内沉闷封闭声场与外部明亮开放街声形成声学对比。",
+          "transcript": "",
+          "ambientSound": "低沉平缓的小型巴士柴油发动机轰鸣声、车辆行驶于路面的轻微底盘共振与震颤杂音；透过车窗滤进的微弱街道环境杂音（远处市井人声、摩托车排气声、隐约的摊贩交流声）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓沉稳，单镜头写实长镜头节奏",
+            "techniques": "硬切接入镜头，机位随车平稳伴随，硬切接出至下一镜头"
+          },
+          "transitionIn": "硬切",
+          "transitionOut": "硬切"
+        },
+        "generationPrompt": "电影质感特写镜头，行驶中的东非公共小巴车厢内。画面右侧前景是一位35至45岁的非裔女性侧面近景特写，深褐色皮肤，佩戴一条泛旧的暗粉褐色宽发带包裹发际线，身穿带有红棕色几何图腾与民族刺绣领口的上衣。她神情沉静专注，若有所思地凝视着左侧的车窗外。车窗带有深色金属边框与中央竖向黑色锁扣，车内光线昏暗，阳光从车窗照入，在女子的颧骨、额头和鼻梁勾勒出细腻温暖的高光轮廓。透过车窗，外部是日光明亮、略带尘土的埃塞俄比亚繁华街景，路边摆放着堆积如山的金黄香蕉木质水果摊，头顶木托盘的小贩、行人和骑摩托车的人穿行在砖土色外墙与铁皮屋顶的商铺前，店铺挂有阿姆哈拉语招牌。镜头保持在车内右侧平视角度，浅景深，焦点始终锐利地锁在女子的侧脸上，车外的街景随着车辆匀速平稳前行而向后流动，带有自然的行车微弱颠簸感。整体色调呈温暖的沙土黄、大地赭石与胶片色调，具有逼真细腻的纪实电影质感与高动态光影反差。音频约束：车内无对白，仅有低沉的柴油发动机轰鸣与外界隐约的市井环境音；剪辑约束：两端硬切，保持单一长镜头连贯性。\n\n画面与环境: 镜头置于一辆正在行驶的老旧小型客车（小巴）车厢内部。画面右侧前景是一位非裔中年女性的侧脸及肩部近景，她头戴复古粉褐宽发带，面带平静深沉的神情凝视着车窗外。车窗带有深色金属框及中央竖向滑轨锁扣。透过车窗，外部是阳光明媚、略带扬尘的东非城市街道，路边整齐摆放着堆满金黄色香蕉与热带蔬果的木质摊位，头顶货物的行人和骑乘摩托车的市民穿梭其间，背景是带有阿姆哈拉文字招牌与铁皮屋顶的砖土色两层街边店铺。车内阴影与车外烈日形成鲜明的光比反差，营造出充满生活质感的写实电影氛围。；画面右侧的非裔女性乘客，侧面朝向窗外，构成画面的视觉锚点与情绪核心。；interior: 老旧小型客车车厢内部，深色车壁内衬，略显斑驳的扶手与座椅靠背，半开的侧面推拉车窗带有明显的金属滑轨立柱与黑色锁扣，车厢空间相对狭窄幽暗。; exterior: 具有典型埃塞俄比亚风格的日间繁华市井街道，柏油路面微泛尘土，路边支起简易遮阳棚，木架与塑料箱上堆满成串的熟香蕉与农产品，沿街排列着土黄与红砖色的两层商铺建筑，外墙悬挂有清晰的阿姆哈拉文字体招牌。\n\n人物与动作: identity: 主要乘客（非裔女性）; appearance: 约35至45岁，深褐色细腻皮肤，深邃专注的双眸，五官轮廓分明，留贴头深色短卷发。; wardrobe: 头戴一条浅褐偏暗玫瑰色的宽织物发带包覆发际，身穿带有红褐色、土黄色几何图腾印花领口的民族风日常上衣。; expression: 神态从容沉静，目光略带思索与淡淡的怀旧感，嘴唇轻合，面部放松。; pose: 背靠座椅侧身端坐，头部朝左微仰望向窗外流动的人流与街景，身体随车体行进保持轻微自然的微幅晃动。; identity: 车内次要乘客（虚焦背景）; appearance: 车厢前排可见背对镜头的男性乘客，身着灰绿色衬衫；更前方隐约可见另一位佩戴发饰、同样注视窗外的乘客侧影。; wardrobe: 朴素日常便服。; expression: 无法完全看清，呈现静止乘坐状态。; pose: 面朝前方及窗外端坐。; identity: 街景行人与摊贩（窗外动态背景）; appearance: 当地街头小贩、顾客与过路市民，包含头顶香蕉木托盘的小贩及头戴头盔的摩托车骑手。; wardrobe: 各色休闲衬衫、长裤及工作服饰。; expression: 日常市井劳作与匆匆赶路神态。; pose: 在路旁驻足买卖、骑行穿梭或沿街漫步。；timeframe: 0.00s - 1.50s; description: 客车以恒定速度平缓前行，车身带有轻柔悬挂颠簸；前景女性侧脸静止入神，目光专注凝视窗外，车窗外露出一处彩色遮阳伞与杂货摊位。; timeframe: 1.50s - 3.00s; description: 随着车辆继续向前滑行，窗外景物向后位移，一位头顶装满香蕉托盘的蓝衣小贩及一辆摩托车从车窗视野中掠过；女性眼眸微转，视线跟随掠过的街景流转。; timeframe: 3.00s - 3.83s; description: 镜头焦点持续锁定在女性脸庞，窗外显现出写有阿姆哈拉语招牌的临街店铺与摊位前挑选香蕉的顾客；女性依旧保持宁静若有所思的面容，画面至此结束。；车辆匀速向前移动引发的窗外景物视差后移，车厢内部微幅低频颠簸，人物微小的呼吸与神态微动。\n\n镜头与构图: shotSize: 侧面中近景（Medium Close-Up）过渡至局部侧面特写; angle: 平视微仰角（Eye-level with subtle low angle）; lensFeel: 35mm至50mm电影定焦镜头感，透视自然，背景具有适度运动虚焦与景深压缩感; movement: 车内固定机位，带有随车行驶产生的自然平稳细微手持微晃与车体共振; focus: 浅景深，焦点精准锁定在右侧前景女性的侧面轮廓、眼部及发带边缘，窗外景物呈现中等清晰度并伴随运动模糊; speed: 标准24fps实时正常拍摄速度；foreground: 占据画面右侧约三分之一至二分之一画幅的女性侧脸轮廓、颈部与发带，左侧边缘为车窗立柱暗部框架。; midground: 车窗框架、滑锁、车内前排乘客座席与暗部空间。; background: 透过窗框透视展开的明亮街景、香蕉水果摊位、沿街建筑、招牌与来往行人。; subjectPlacement: 主角紧密依附于右侧纵向黄金分割区域，视线朝左延伸穿透画框，构建出充满纵深感的外向视线空间。; depth: 车厢内部低光暗调空间与车窗外阳光烈焰的室外空间形成鲜明的前后层次与反差纵深。\n\n光影与质感: 混合自然环境光。车外为明亮的正午至午后阳光漫射，带有沙尘折射出的暖黄光质；车内整体处于低照度阴影背光环境，强烈的天光透过窗户为女性右侧面部轮廓、颧骨、眼眶与发带勾勒出细腻的轮廓光与高光边缘。；暖黄与大地色调风格调色（Ochre & Earthy tone）。外部街道充满日光暖金、香蕉黄与砖红色；车内以深灰、墨绿阴影为主，女主角服饰与头巾融入复古红棕色，色彩层次饱满而自然克制。；写实主义电影风格（Cinematic Realism），逼真的胶片质感与细腻暗部颗粒，纪录片式的纪实人文抓拍美感。\n\n声音: ambientSound: 低沉平缓的小型巴士柴油发动机轰鸣声、车辆行驶于路面的轻微底盘共振与震颤杂音；透过车窗滤进的微弱街道环境杂音（远处市井人声、摩托车排气声、隐约的摊贩交流声）。; music: 未知或无明显配乐，以沉浸式现场环境音效与低频氛围铺底为主。; soundStyle: 主观纪实风格音效设计，车内沉闷封闭声场与外部明亮开放街声形成声学对比。\n\n节奏与转场: editing: pacing: 舒缓沉稳，单镜头写实长镜头节奏; techniques: 硬切接入镜头，机位随车平稳伴随，硬切接出至下一镜头; transitionIn: 硬切; transitionOut: 硬切",
+        "duration": 3.833,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:50:38.597265+00:00",
+        "updatedAt": "2026-10-29T09:50:38.597265+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "b152af6e-db4d-4564-b23f-6c4eda46ba07",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "70720c27-6ba4-49e3-b571-b5f8851b69e0",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 6.625,
+          "summary": "一名年长的黑人裁缝在工作坊内专注地使用老式胜家缝纫机缝制蓝色布料。",
+          "startTime": 4.583,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": {
+            "palette": "暖褐色、军绿、深邃蓝、金属青蓝与点缀的亮红亮黄色"
+          },
+          "style": "纪实写实风格，高质感胶片质地与工匠生活气息",
+          "action": [
+            {
+              "time": "00:00 - 02.04",
+              "description": "裁缝双手微调并匀速向前推送深蓝色布料，缝纫机针头规律起落，男子保持低头专注姿势微幅前倾。"
+            }
+          ],
+          "camera": {
+            "angle": "平视微侧角",
+            "focus": "焦点落在裁缝手部与缝纫机针板缝合区域",
+            "lensFeel": "中焦人像镜头，背景自然虚化",
+            "movement": "几乎静止，带极微弱的手持呼吸感",
+            "shotSize": "中近景"
+          },
+          "motion": "机械针脚高速垂直微动，人物手部平缓移动，整体动态克制平稳",
+          "subject": "专注缝纫的成熟黑人裁缝与老式蓝色缝纫机。",
+          "lighting": {
+            "style": "室内暖调侧顶光",
+            "description": "暖黄光束照亮裁缝的面部轮廓和手臂肌肉，背景阴影深邃，明暗对比强烈。"
+          },
+          "characters": [
+            {
+              "pose": "身体前倾，双臂自然弯曲置于台面，双手按压并推移布料。",
+              "identity": "年长黑人裁缝",
+              "wardrobe": "军绿色圆领短袖T恤，右手手腕戴有红黑相间的串珠手链。",
+              "appearance": "寸头黑灰相间短发，络腮胡斑白，深棕色皮肤，面部轮廓硬朗且肌肉线条明显。",
+              "expression": "神情极为专注，眼神低垂紧盯针脚。"
+            }
+          ],
+          "composition": {
+            "framing": "前景为机头与缝纫动作，右侧为主体人物，左上方及后景为货架与杂物，形成右重左轻的对角线平衡深度。"
+          },
+          "environment": {
+            "props": "墨蓝色老式Singer缝纫机、深蓝色布料、红色与黄色缝纫线线轴、金属小盒、红色塑料收纳筐、背景货架及成叠蜡染布料。",
+            "setting": "传统裁缝工作坊"
+          },
+          "sceneDescription": "裁缝铺室内，右侧一位身材结实的年长非洲裔男子侧身俯首，双手引导深蓝色织物穿过左前方墨绿偏蓝的老式胜家（Singer）手摇/电动缝纫机压脚。背景是陈旧木架，堆放着非洲蜡染花布与线轴。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "室内工坊安静的低频环境白噪音",
+          "soundEffects": "老式缝纫机有节奏的机械运转咔哒声与微弱布料摩擦声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉稳缓慢",
+            "techniques": "前后均为硬切"
+          }
+        },
+        "generationPrompt": "中近景侧拍，纪实写实风格。昏暗温暖的传统裁缝铺里，一位黑灰色短发、留有花白络腮胡的年长非洲裔健壮裁缝身穿军绿色短袖T恤，右手戴红色串珠手绳。他专注地低头操作一台复古墨蓝色的胜家缝纫机，双手正推引一块深蓝色布料经过机械压脚。暖黄色顶光勾勒出他紧绷的手臂线条与专注侧脸，背景木架上整齐堆叠着彩色蜡染布匹与高线轴。画面带有自然的景深虚化与机械针脚的微动态，色彩浓郁温暖，质感质朴真实。\n\n画面与环境: 裁缝铺室内，右侧一位身材结实的年长非洲裔男子侧身俯首，双手引导深蓝色织物穿过左前方墨绿偏蓝的老式胜家（Singer）手摇/电动缝纫机压脚。背景是陈旧木架，堆放着非洲蜡染花布与线轴。；专注缝纫的成熟黑人裁缝与老式蓝色缝纫机。；setting: 传统裁缝工作坊; props: 墨蓝色老式Singer缝纫机、深蓝色布料、红色与黄色缝纫线线轴、金属小盒、红色塑料收纳筐、背景货架及成叠蜡染布料。\n\n人物与动作: identity: 年长黑人裁缝; appearance: 寸头黑灰相间短发，络腮胡斑白，深棕色皮肤，面部轮廓硬朗且肌肉线条明显。; wardrobe: 军绿色圆领短袖T恤，右手手腕戴有红黑相间的串珠手链。; expression: 神情极为专注，眼神低垂紧盯针脚。; pose: 身体前倾，双臂自然弯曲置于台面，双手按压并推移布料。；time: 00:00 - 02.04; description: 裁缝双手微调并匀速向前推送深蓝色布料，缝纫机针头规律起落，男子保持低头专注姿势微幅前倾。；机械针脚高速垂直微动，人物手部平缓移动，整体动态克制平稳\n\n镜头与构图: shotSize: 中近景; angle: 平视微侧角; lensFeel: 中焦人像镜头，背景自然虚化; movement: 几乎静止，带极微弱的手持呼吸感; focus: 焦点落在裁缝手部与缝纫机针板缝合区域；framing: 前景为机头与缝纫动作，右侧为主体人物，左上方及后景为货架与杂物，形成右重左轻的对角线平衡深度。\n\n光影与质感: style: 室内暖调侧顶光; description: 暖黄光束照亮裁缝的面部轮廓和手臂肌肉，背景阴影深邃，明暗对比强烈。；palette: 暖褐色、军绿、深邃蓝、金属青蓝与点缀的亮红亮黄色；纪实写实风格，高质感胶片质地与工匠生活气息\n\n声音: soundEffects: 老式缝纫机有节奏的机械运转咔哒声与微弱布料摩擦声; ambient: 室内工坊安静的低频环境白噪音\n\n节奏与转场: editing: pacing: 沉稳缓慢; techniques: 前后均为硬切",
+        "duration": 2.042,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:50:03.609319+00:00",
+        "updatedAt": "2026-10-29T09:50:03.609319+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "79695079-d378-4555-9bf9-3b036dc81369",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "8ae1fed2-892f-4f19-a1df-e16c4df7c318",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 8.125,
+          "summary": "裁缝在昏暗的工作室内专注地用老式缝纫机缝合一块蓝色花纹布料。",
+          "startTime": 7.375,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "深褐暖调为主，蓝色布料形成鲜明视觉焦点，辅以机械的金属黑色与铜黄高光。",
+          "style": "现实主义写实纪录片质感，胶片颗粒细腻，光影对比自然。",
+          "action": "双手平稳推送蓝色布料向前滑动，缝纫机压脚与机针快速上下起落缝线。",
+          "camera": "特写镜头，低机位平拍，浅景深聚焦于手部与缝纫针接触面，静止无位移。",
+          "motion": "手部平稳向前推布的微动作与针头高频往复运动形成动静对比。",
+          "subject": "裁缝熟练操作缝纫机的双手，深色皮肤，青筋微凸。",
+          "lighting": "左侧柔和自然侧逆光，勾勒手部边缘轮廓，室内整体暖调微暗。",
+          "characters": "一位深肤色裁缝，身穿橙褐色上衣，上身微俯，面部大部分出框。",
+          "composition": "主体手部位于画面中下部，右上方为黑色缝纫机头，左上方留白展示窗户与背景空间。",
+          "environment": "杂乱而富有生活气息的传统缝纫作坊，背景有挂历、窗户及各色线轴架。",
+          "sceneDescription": "特写裁缝布满纹理的双手正引导蓝色印花织物通过复古黑色老式缝纫机的针脚。左侧有自然窗光，背景为带有阿姆哈拉语日历和线轴杂物的作坊。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "老式缝纫机节奏均匀的清脆机械嗒嗒声，夹杂微弱的室内环境底噪。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快速平稳切入，镜头持续0.75秒",
+            "techniques": "硬切进出"
+          }
+        },
+        "generationPrompt": "特写镜头，微俯平视角度。一位深色皮肤的老裁缝双手正引导一块蓝色碎花布料穿过复古黑色铸铁缝纫机的压脚。缝纫机针快速平稳地上下跳动。左侧窗户透入温暖自然的侧光，勾勒出双手粗糙的皮肤纹理。背景是昏暗杂乱的传统缝纫工坊，墙上贴有泛黄日历，架上陈列着线轴，浅景深虚化。纪实电影质感，温暖沉稳色调，画面细腻逼真。\n\n画面与环境: 特写裁缝布满纹理的双手正引导蓝色印花织物通过复古黑色老式缝纫机的针脚。左侧有自然窗光，背景为带有阿姆哈拉语日历和线轴杂物的作坊。；裁缝熟练操作缝纫机的双手，深色皮肤，青筋微凸。；杂乱而富有生活气息的传统缝纫作坊，背景有挂历、窗户及各色线轴架。\n\n人物与动作: 一位深肤色裁缝，身穿橙褐色上衣，上身微俯，面部大部分出框。；双手平稳推送蓝色布料向前滑动，缝纫机压脚与机针快速上下起落缝线。；手部平稳向前推布的微动作与针头高频往复运动形成动静对比。\n\n镜头与构图: 特写镜头，低机位平拍，浅景深聚焦于手部与缝纫针接触面，静止无位移。；主体手部位于画面中下部，右上方为黑色缝纫机头，左上方留白展示窗户与背景空间。\n\n光影与质感: 左侧柔和自然侧逆光，勾勒手部边缘轮廓，室内整体暖调微暗。；深褐暖调为主，蓝色布料形成鲜明视觉焦点，辅以机械的金属黑色与铜黄高光。；现实主义写实纪录片质感，胶片颗粒细腻，光影对比自然。\n\n声音: soundStyle: 老式缝纫机节奏均匀的清脆机械嗒嗒声，夹杂微弱的室内环境底噪。\n\n节奏与转场: editing: pacing: 快速平稳切入，镜头持续0.75秒; techniques: 硬切进出",
+        "duration": 0.75,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:51:13.592517+00:00",
+        "updatedAt": "2026-10-29T09:51:13.592517+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "6efb46fa-809b-4c7d-8d74-0babd93f3ca9",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "6e96a7a2-16dc-4630-b723-0bb0ca6b3f34",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 11.333,
+          "summary": "一位年长非洲妇女在门前专注地为活泼的小女孩编发，小女孩表情灵动地望向镜头后转头微笑。",
+          "startTime": 8.125,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "暖色温高饱和，粉红衣裳、鲜红门帘与风化蓝绿墙面形成生活质感强烈的互补色调。",
+          "style": "温情人文纪实电影质感，细腻纯真。",
+          "action": "长辈双手持续穿梭编织细发辫；小女孩先是做鬼脸直视镜头，随后缓缓转头看向右方侧面微笑。",
+          "camera": "特写到中近景，平视视角，浅景深对焦于小女孩面部，伴有轻微有机手持微晃。",
+          "motion": "编发指尖的连续微动作与小女孩头部轻微转动，节奏舒缓日常。",
+          "subject": "约6-8岁的非洲小女孩，短辫带有彩色发夹，脖戴彩珠项链，眼神灵动机敏。",
+          "lighting": "柔和自然的漫射日光，人物肤色呈现温暖油润的高光细节。",
+          "characters": "小女孩（主角，着粉色T恤，神情活泼）与左侧长辈妇女（穿花纹长衫，手上戴戒，低头专注于编发动作）。",
+          "composition": "双人中景偏侧构图，左侧为长辈与动作手势，中右侧为主体女孩生动的面部轮廓。",
+          "environment": "朴素民居门外，浅薄荷绿色的风化墙面，张贴有阿姆哈拉语海报，门边悬挂红色布帘，右侧隐约可见另一名儿童剪影。",
+          "sceneDescription": "阳光明亮的室外门廊前，一位年长非洲妇女在左侧用双手娴熟地为身穿粉衣的女孩编发。女孩神情俏皮，眼神从镜头前转为侧脸微笑，背景为挂着红帘的斑驳浅绿墙面。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "环境自然环境音，可能带有轻微室外微风或极微弱的背景人声（无明确对白）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓平稳",
+            "techniques": "硬切进入，硬切退出"
+          }
+        },
+        "generationPrompt": "中近景纪实摄影，温暖柔和的自然日光。左侧一位非洲长辈妇人低头专注地为一个小女孩编细小发辫，手上戴着金色戒指。正中偏右的小女孩约七岁，身穿粉红T恤，佩戴彩色串珠项链，头发扎着精致细辫，脸上洋溢着机灵可爱的微笑，眼神调皮地从镜头转向侧方。背景是斑驳褪色的薄荷绿泥墙与红色布帘，贴有微卷的旧海报。浅景深，胶片电影质感，写实质朴，色彩饱满温润。\n\n画面与环境: 阳光明亮的室外门廊前，一位年长非洲妇女在左侧用双手娴熟地为身穿粉衣的女孩编发。女孩神情俏皮，眼神从镜头前转为侧脸微笑，背景为挂着红帘的斑驳浅绿墙面。；约6-8岁的非洲小女孩，短辫带有彩色发夹，脖戴彩珠项链，眼神灵动机敏。；朴素民居门外，浅薄荷绿色的风化墙面，张贴有阿姆哈拉语海报，门边悬挂红色布帘，右侧隐约可见另一名儿童剪影。\n\n人物与动作: 小女孩（主角，着粉色T恤，神情活泼）与左侧长辈妇女（穿花纹长衫，手上戴戒，低头专注于编发动作）。；长辈双手持续穿梭编织细发辫；小女孩先是做鬼脸直视镜头，随后缓缓转头看向右方侧面微笑。；编发指尖的连续微动作与小女孩头部轻微转动，节奏舒缓日常。\n\n镜头与构图: 特写到中近景，平视视角，浅景深对焦于小女孩面部，伴有轻微有机手持微晃。；双人中景偏侧构图，左侧为长辈与动作手势，中右侧为主体女孩生动的面部轮廓。\n\n光影与质感: 柔和自然的漫射日光，人物肤色呈现温暖油润的高光细节。；暖色温高饱和，粉红衣裳、鲜红门帘与风化蓝绿墙面形成生活质感强烈的互补色调。；温情人文纪实电影质感，细腻纯真。\n\n声音: style: 环境自然环境音，可能带有轻微室外微风或极微弱的背景人声（无明确对白）。\n\n节奏与转场: editing: pacing: 舒缓平稳; techniques: 硬切进入，硬切退出",
+        "duration": 3.208,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:51:54.059806+00:00",
+        "updatedAt": "2026-10-29T09:51:54.059806+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "b975b36b-8eab-4faf-96eb-1c566b309018",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "c9bee7bb-14d8-44f5-8a33-62af25c7577d",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 14.75,
+          "summary": "在阳光强烈的古老石砌建筑入口处，一位身穿深色长袍的老妇人拄着拐杖从漆黑的门道缓步走出，门边站着两位正在交谈的妇女。",
+          "startTime": 11.333,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "暖土黄石壁基调，门洞深邃纯黑，红橙与橄榄绿服饰形成温和冷暖对比，纪实自然饱和度。",
+          "style": "真实纪实人文摄影风格，质朴厚重，质感粗糙风化。",
+          "action": "老妇人拄拐缓缓从漆黑门洞迈出至明亮石阶；右侧两名妇女静立闲谈；门内阴影中男孩走动后停留。",
+          "camera": "中全景固定镜头，水平平视视线，中焦镜头，景深较大，无运镜动作。",
+          "motion": "主体动作极其缓慢平稳，固定机位，环境人物微幅自然动作。",
+          "subject": "拄拐从黑暗门洞走出的黑袍老妇人。",
+          "lighting": "极强烈的侧逆顶光日光形成高反差明暗对照，门内漆黑无光，室外石阶与人物受强硬日光照射，阴影边缘锐利。",
+          "characters": [
+            {
+              "action": "右手拄着弯曲木拐杖，微曲身躯从门内阴影迈步走向台阶光亮处。",
+              "identity": "老妇人",
+              "wardrobe": "深灰色至黑色一体式长袍及同色头巾裹头。"
+            },
+            {
+              "action": "靠墙侧立，面对面低声交谈互动。",
+              "identity": "右侧两位女性",
+              "wardrobe": "一人身穿红橙色印花长裙系浅色头巾，另一人身穿橄榄绿长裙系橙红头巾。"
+            },
+            {
+              "identity": "门内男孩",
+              "wardrobe": "深色短袖配红色书包，身处门内阴影中短暂停留穿过。"
+            }
+          ],
+          "composition": "门洞居中偏左构成天然明暗画框；老妇人位于左中景主体位置；两名交谈妇女居右侧前景侧墙；纵深层次由内至外明暗分明。",
+          "environment": "埃塞俄比亚风格的古老雕花石砌门廊，墙面斑驳带有风化石雕与残存字迹海报，地面为粗粝石阶。",
+          "sceneDescription": "阳光直射下的古老石砌建筑大门，门内极度黑暗。一位包裹黑头巾和长袍的老妇人手拄木杖慢步走出。门边右侧石墙贴着旧海报，两名包头巾的当地妇女面对面站立交谈，背景深处隐约有一名背书包的男孩走过。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "安静的户外自然环境音，可能带有轻微脚步声、衣物摩擦声及远处的自然环境杂音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉稳",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "固定中全景纪实镜头，强烈的非洲高原烈日。一座风化雕刻的古老石砌建筑大门，门内是一片深黑的阴影。一位身材佝偻的老年东非妇女，全身包裹着黑色头巾与厚实长袍，右手握着细长木拐杖，正缓慢沉稳地从漆黑门洞跨向门外阳光照耀的石阶。门右侧斑驳石墙上张贴着残破白纸海报，两名包着头巾的当地妇女面对面站立在石壁边交谈，一人着橙红色长袍，一人着橄榄绿长裙。门洞暗部深处隐约有一名背红色小包的男孩走动。高对比度硬质自然光，明暗交界清晰，粗糙岩石与织物纹理质感，色彩自然古朴。\n\n画面与环境: 阳光直射下的古老石砌建筑大门，门内极度黑暗。一位包裹黑头巾和长袍的老妇人手拄木杖慢步走出。门边右侧石墙贴着旧海报，两名包头巾的当地妇女面对面站立交谈，背景深处隐约有一名背书包的男孩走过。；拄拐从黑暗门洞走出的黑袍老妇人。；埃塞俄比亚风格的古老雕花石砌门廊，墙面斑驳带有风化石雕与残存字迹海报，地面为粗粝石阶。\n\n人物与动作: identity: 老妇人; wardrobe: 深灰色至黑色一体式长袍及同色头巾裹头。; action: 右手拄着弯曲木拐杖，微曲身躯从门内阴影迈步走向台阶光亮处。; identity: 右侧两位女性; wardrobe: 一人身穿红橙色印花长裙系浅色头巾，另一人身穿橄榄绿长裙系橙红头巾。; action: 靠墙侧立，面对面低声交谈互动。; identity: 门内男孩; wardrobe: 深色短袖配红色书包，身处门内阴影中短暂停留穿过。；老妇人拄拐缓缓从漆黑门洞迈出至明亮石阶；右侧两名妇女静立闲谈；门内阴影中男孩走动后停留。；主体动作极其缓慢平稳，固定机位，环境人物微幅自然动作。\n\n镜头与构图: 中全景固定镜头，水平平视视线，中焦镜头，景深较大，无运镜动作。；门洞居中偏左构成天然明暗画框；老妇人位于左中景主体位置；两名交谈妇女居右侧前景侧墙；纵深层次由内至外明暗分明。\n\n光影与质感: 极强烈的侧逆顶光日光形成高反差明暗对照，门内漆黑无光，室外石阶与人物受强硬日光照射，阴影边缘锐利。；暖土黄石壁基调，门洞深邃纯黑，红橙与橄榄绿服饰形成温和冷暖对比，纪实自然饱和度。；真实纪实人文摄影风格，质朴厚重，质感粗糙风化。\n\n声音: style: 安静的户外自然环境音，可能带有轻微脚步声、衣物摩擦声及远处的自然环境杂音。\n\n节奏与转场: editing: pacing: 缓慢沉稳; techniques: 硬切",
+        "duration": 3.417,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:51:49.692803+00:00",
+        "updatedAt": "2026-10-29T09:51:49.692803+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "97700655-ba67-40fb-9686-35db046f6037",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "e4fc1f1b-5d7d-4957-892d-2e9470f057b2",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 15.75,
+          "summary": "一对老年夫妇在门廊前温情对视，女子轻抚男子肩头，尽显相濡以沫的爱意。",
+          "startTime": 14.75,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "暖金阳光色调，搭配人物皮肤质感与背景深墨绿、黑色阴影。",
+          "style": "纪实电影质感，写实且细腻的情感表现。",
+          "action": "妇人将手轻抚在男子肩头，两人微微颔首对视，面带微笑，神态舒展温馨。",
+          "camera": "双人近景特写，平视角度，固定机位，浅景深聚焦两人面部表情。",
+          "motion": "极其轻微的呼吸感与面部微笑微动。",
+          "subject": "相视微笑的老年夫妇亲密互动。",
+          "lighting": "高反差自然侧光，明亮暖阳光照亮面颊与肩颈，阴影浓重立体。",
+          "characters": "左侧为非洲老年女性，扎发巾，穿暖色印花衣物，面带慈祥笑容；右侧为非洲老年男性，花白短发与胡须，穿浅色衬衫，表情温柔专注。",
+          "composition": "左右对称呼应的双人侧面构图，人物位于视觉中心，暗部包围高光。",
+          "environment": "带有绿色门框和剥落字纸的简陋屋门前，背景深邃暗黑。",
+          "sceneDescription": "近景特写，一对非洲老年夫妇在暗色门前侧身相对。老妇人在左微笑抬头，手轻搭在右侧丈夫肩头；丈夫低头凝视妻子，嘴角带笑，强烈的自然侧光勾勒出面部轮廓。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "安静或微弱的现场自然环境音，氛围温暖宁静。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓平稳",
+            "techniques": "前后均为硬切。"
+          }
+        },
+        "generationPrompt": "写实电影画质，近景镜头。一对埃塞俄比亚老年夫妻在暗色门廊前深情对视。左侧老妇人头发盘起，面带温情微笑，手搭在右侧丈夫肩上；老汉满头花白短发与短胡茬，身穿浅色亚麻衬衫，微微低头含笑注视老伴。明亮的暖色自然光从侧方照亮两人的侧脸轮廓，皮肤质感真实细腻，背景深暗质朴，情绪宁静温馨，固定摄影机机位。\n\n画面与环境: 近景特写，一对非洲老年夫妇在暗色门前侧身相对。老妇人在左微笑抬头，手轻搭在右侧丈夫肩头；丈夫低头凝视妻子，嘴角带笑，强烈的自然侧光勾勒出面部轮廓。；相视微笑的老年夫妇亲密互动。；带有绿色门框和剥落字纸的简陋屋门前，背景深邃暗黑。\n\n人物与动作: 左侧为非洲老年女性，扎发巾，穿暖色印花衣物，面带慈祥笑容；右侧为非洲老年男性，花白短发与胡须，穿浅色衬衫，表情温柔专注。；妇人将手轻抚在男子肩头，两人微微颔首对视，面带微笑，神态舒展温馨。；极其轻微的呼吸感与面部微笑微动。\n\n镜头与构图: 双人近景特写，平视角度，固定机位，浅景深聚焦两人面部表情。；左右对称呼应的双人侧面构图，人物位于视觉中心，暗部包围高光。\n\n光影与质感: 高反差自然侧光，明亮暖阳光照亮面颊与肩颈，阴影浓重立体。；暖金阳光色调，搭配人物皮肤质感与背景深墨绿、黑色阴影。；纪实电影质感，写实且细腻的情感表现。\n\n声音: soundStyle: 安静或微弱的现场自然环境音，氛围温暖宁静。\n\n节奏与转场: editing: pacing: 舒缓平稳; techniques: 前后均为硬切。",
+        "duration": 1,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:53:57.961275+00:00",
+        "updatedAt": "2026-10-29T09:53:57.961275+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "cf657d97-3279-48a4-84e2-120d913f6416",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "1ef5a1a7-5b3d-40b7-977c-f4f5802cff3d",
+        "sceneIndex": 8,
+        "story": {
+          "endTime": 18.333,
+          "summary": "在阳光充足的露天市集中，一位满脸岁月风霜的老人侧身与面前的人平和交谈。",
+          "startTime": 15.75,
+          "sceneIndex": 8
+        },
+        "visual": {
+          "color": "暖调大地色系，老人的深色皮肤与暗红、橄榄绿及木质色调相互呼应。",
+          "style": "电影纪实写实风格，强调真实的老年皮肤纹理与岁月沧桑质感。",
+          "action": "老人嘴唇微动轻声说话，随后神情收敛，流露出一丝淡然舒缓的微笑。",
+          "camera": "过肩特写镜头，固定机位，浅景深虚化前后景，精准聚焦于老人眼睛与面部纹理。",
+          "motion": "人物微表情变化，仅有轻微唇部运动与眼神微动，无大幅肢体位移。",
+          "subject": "年迈的东非老人，面部布满深刻皱纹，蓄短灰白胡茬，头戴彩色编织圆帽，身穿做旧橄榄绿衬衫。",
+          "lighting": "明亮且高反差的自然侧逆光，强烈阳光勾勒出老人深刻的面部轮廓和发丝质感。",
+          "characters": [
+            {
+              "name": "老人",
+              "role": "说话者",
+              "appearance": "老年男性，黑肤色，极富质感的面部皱纹，灰白毛发，目光温和沧桑。"
+            }
+          ],
+          "composition": "三分构图，左侧前景负空间由虚化背影遮挡，右侧充实展现老人面容，层次分明。",
+          "environment": "热闹但被虚化的露天集市，可见木架、遮阳铁皮、悬挂布料和杂物，光影交错。",
+          "sceneDescription": "过肩近景特写。左侧为虚化的听者后肩，画面主体为右侧深肤色老人侧脸，背景为模糊的非洲传统街市摊位与遮阳棚。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "环境市集人声杂音、可能的微弱环境风声或柔和的原声音乐（未知）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢舒缓，注重人物神态观察",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "纪实电影质感，过肩近景特写。一位满脸深邃皱纹的东非老爷爷侧身面向左侧交谈。他留着灰白短胡茬，戴着传统针织小帽，身着做旧橄榄绿衬衫。画面左侧为虚化的交谈者肩背部前景。背景为阳光下虚化的非洲露天集市摊位。强烈自然侧光精细刻画老人极为真实的皮肤纹理与沧桑神情，浅景深，静态固定镜头，老人神情安详微动。\n\n画面与环境: 过肩近景特写。左侧为虚化的听者后肩，画面主体为右侧深肤色老人侧脸，背景为模糊的非洲传统街市摊位与遮阳棚。；年迈的东非老人，面部布满深刻皱纹，蓄短灰白胡茬，头戴彩色编织圆帽，身穿做旧橄榄绿衬衫。；热闹但被虚化的露天集市，可见木架、遮阳铁皮、悬挂布料和杂物，光影交错。\n\n人物与动作: name: 老人; role: 说话者; appearance: 老年男性，黑肤色，极富质感的面部皱纹，灰白毛发，目光温和沧桑。；老人嘴唇微动轻声说话，随后神情收敛，流露出一丝淡然舒缓的微笑。；人物微表情变化，仅有轻微唇部运动与眼神微动，无大幅肢体位移。\n\n镜头与构图: 过肩特写镜头，固定机位，浅景深虚化前后景，精准聚焦于老人眼睛与面部纹理。；三分构图，左侧前景负空间由虚化背影遮挡，右侧充实展现老人面容，层次分明。\n\n光影与质感: 明亮且高反差的自然侧逆光，强烈阳光勾勒出老人深刻的面部轮廓和发丝质感。；暖调大地色系，老人的深色皮肤与暗红、橄榄绿及木质色调相互呼应。；电影纪实写实风格，强调真实的老年皮肤纹理与岁月沧桑质感。\n\n声音: style: 环境市集人声杂音、可能的微弱环境风声或柔和的原声音乐（未知）。\n\n节奏与转场: editing: pacing: 缓慢舒缓，注重人物神态观察; techniques: 硬切入，硬切出",
+        "duration": 2.583,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:52:36.157904+00:00",
+        "updatedAt": "2026-10-29T09:52:36.157904+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "76ca565b-f4ee-49d9-97f1-ebee43d5e4ed",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "bbc9306f-89b0-4f62-9427-dc19c9bd6046",
+        "sceneIndex": 9,
+        "story": {
+          "endTime": 20.292,
+          "summary": "在非洲乡村庭院的明媚阳光下，一名妇女使用编织簸箕专注地筛分谷物。",
+          "startTime": 18.333,
+          "sceneIndex": 9
+        },
+        "visual": {
+          "color": "暖黄色与土红基调，服饰带有鲜明的民族彩色点缀。",
+          "style": "真实纪录片写实风格，粗糙泥土与布料质感明显。",
+          "action": "妇女双手平稳颠动簸箕进行除杂筛粮，背景人物静坐或缓慢活动。",
+          "camera": "中近景侧拍，浅景深虚化背景，主体对焦清晰，轻微手持微晃感。",
+          "motion": "人物双手小幅匀速抖动簸箕，轻微的衣料与身体联动动作。",
+          "subject": "操作编织簸箕筛粮的妇女",
+          "lighting": "明亮且高对比度的自然暖阳侧逆光，勾勒人物轮廓。",
+          "characters": [
+            {
+              "pose": "站姿微倾，双手端托大型浅底编织簸箕",
+              "identity": "非洲妇女",
+              "wardrobe": "彩色条纹传统上衣，外披红色几何图腾披肩",
+              "appearance": "深色皮肤，面部轮廓清晰，佩戴金色耳圈，专注低头"
+            }
+          ],
+          "composition": "右侧前景突出人物与簸箕，左侧背景延伸展示乡村环境与深度层次。",
+          "environment": "阳光斜照的泥土房屋外墙，挂着彩色布料，墙角放有编织篮、麻袋与简易木质农具。",
+          "sceneDescription": "非洲传统乡村泥房院落。前景右侧一名妇女身着红色彩绘披巾与条纹服装，低头操作扁平竹编簸箕；背景为明黄色泥墙、悬挂的晾晒衣物及堆放的粮袋和坐着的村民。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知或轻微自然原声",
+          "ambient": "轻微的谷物摩擦声及乡村环境底噪"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "平缓",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "写实纪录片风格，中近景。一位深肤色的非洲妇女身穿鲜艳的彩色条纹上衣和红底几何印花披巾，神情专注，双手端着巨大的扁平编织簸箕筛理粮食。明亮的午后阳光洒在她身上与身后的黄色泥土墙壁上，墙边晾晒着布料并堆放着装满粮食的麻袋。暖色调，强自然光影质感，构图饱满真实。\n\n画面与环境: 非洲传统乡村泥房院落。前景右侧一名妇女身着红色彩绘披巾与条纹服装，低头操作扁平竹编簸箕；背景为明黄色泥墙、悬挂的晾晒衣物及堆放的粮袋和坐着的村民。；操作编织簸箕筛粮的妇女；阳光斜照的泥土房屋外墙，挂着彩色布料，墙角放有编织篮、麻袋与简易木质农具。\n\n人物与动作: identity: 非洲妇女; appearance: 深色皮肤，面部轮廓清晰，佩戴金色耳圈，专注低头; wardrobe: 彩色条纹传统上衣，外披红色几何图腾披肩; pose: 站姿微倾，双手端托大型浅底编织簸箕；妇女双手平稳颠动簸箕进行除杂筛粮，背景人物静坐或缓慢活动。；人物双手小幅匀速抖动簸箕，轻微的衣料与身体联动动作。\n\n镜头与构图: 中近景侧拍，浅景深虚化背景，主体对焦清晰，轻微手持微晃感。；右侧前景突出人物与簸箕，左侧背景延伸展示乡村环境与深度层次。\n\n光影与质感: 明亮且高对比度的自然暖阳侧逆光，勾勒人物轮廓。；暖黄色与土红基调，服饰带有鲜明的民族彩色点缀。；真实纪录片写实风格，粗糙泥土与布料质感明显。\n\n声音: ambient: 轻微的谷物摩擦声及乡村环境底噪; music: 未知或轻微自然原声\n\n节奏与转场: editing: pacing: 平缓; techniques: 硬切",
+        "duration": 1.959,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:55:00.225981+00:00",
+        "updatedAt": "2026-10-29T09:55:00.225981+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "365897d0-2791-4976-ae82-808555a9626d",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "6f71494c-9a87-41bd-92b2-55a5b6d9f239",
+        "sceneIndex": 10,
+        "story": {
+          "endTime": 21.625,
+          "summary": "烈日下的集市街道上，一名当地少年抬手遮阳，凝神注视远方。",
+          "startTime": 20.292,
+          "sceneIndex": 10
+        },
+        "visual": {
+          "color": {
+            "tone": "暖棕色与焦糖色调，带有浓郁的市集尘土与暖阳色彩"
+          },
+          "style": {
+            "texture": "写实纪录片质感，电影感颗粒度，皮肤纹理细腻清晰"
+          },
+          "action": [
+            {
+              "order": 1,
+              "description": "男孩保持手搭额头遮光的姿态，视线微动眺望镜头侧方，神情沉静。"
+            }
+          ],
+          "camera": {
+            "angle": "微仰角",
+            "focus": "聚焦在男孩的面部与手部",
+            "speed": "静止",
+            "lensFeel": "中长焦，浅景深",
+            "movement": "轻微手持固定",
+            "shotSize": "面部特写"
+          },
+          "motion": {
+            "continuity": "动作微幅，保持凝望状态"
+          },
+          "subject": "抬手遮阳凝望的非洲少年。",
+          "lighting": {
+            "type": "强烈自然直射日光",
+            "characteristics": "硬光，在男孩前额与眼窝投下清晰的手部阴影，皮肤受光面高光鲜明"
+          },
+          "characters": [
+            {
+              "name": "少年",
+              "pose": "侧身微仰，右手搭在额头遮挡强光",
+              "identity": "当地男孩",
+              "wardrobe": "橘色短袖上衣",
+              "appearance": "深色皮肤，黑色短发，眼神深邃，手腕戴红色串珠手绳",
+              "expression": "若有所思，神情专注平静"
+            }
+          ],
+          "composition": {
+            "depth": "前景为主体面部及手部，背景高度虚化",
+            "framing": "主体偏左三分构图，右手横跨画面上方，右侧留白展示虚化背景"
+          },
+          "environment": {
+            "props": "麻袋粮食堆、塑料筐、远处的简易遮阳棚与招牌",
+            "setting": "户外日间集市街道",
+            "background": "模糊的市集小店，背景中有头顶重物的行人与停靠的三轮车"
+          },
+          "sceneDescription": "阳光刺眼的非洲乡村市集，近景特写一名年轻深肤色男孩抬起右手横在额前遮阳，背景是虚化的杂货铺与往来行人。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "集市人声远鸣、环境杂音",
+          "soundStyle": "市集环境嘈杂声，微风声与低沉远处的环境底噪"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢平稳",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "特写镜头，烈日下的非洲集市街道。一名深色皮肤的年轻男孩侧身站立，右手腕戴着一串红色小珠手绳，正抬起右手横在额头上方遮挡刺眼的日光，目光平静专注地凝望右前方。强烈的自然硬光在男孩眉眼间投下手掌的阴影，面颊与脖颈沐浴在金色阳光下。背景为浅景深虚化的热闹集市，可见杂货麻袋和走动的摊贩。暖色调胶片质感，细腻写实，镜头平稳固定。\n\n画面与环境: 阳光刺眼的非洲乡村市集，近景特写一名年轻深肤色男孩抬起右手横在额前遮阳，背景是虚化的杂货铺与往来行人。；抬手遮阳凝望的非洲少年。；setting: 户外日间集市街道; props: 麻袋粮食堆、塑料筐、远处的简易遮阳棚与招牌; background: 模糊的市集小店，背景中有头顶重物的行人与停靠的三轮车\n\n人物与动作: name: 少年; identity: 当地男孩; appearance: 深色皮肤，黑色短发，眼神深邃，手腕戴红色串珠手绳; wardrobe: 橘色短袖上衣; expression: 若有所思，神情专注平静; pose: 侧身微仰，右手搭在额头遮挡强光；order: 1; description: 男孩保持手搭额头遮光的姿态，视线微动眺望镜头侧方，神情沉静。；continuity: 动作微幅，保持凝望状态\n\n镜头与构图: shotSize: 面部特写; angle: 微仰角; lensFeel: 中长焦，浅景深; movement: 轻微手持固定; focus: 聚焦在男孩的面部与手部; speed: 静止；framing: 主体偏左三分构图，右手横跨画面上方，右侧留白展示虚化背景; depth: 前景为主体面部及手部，背景高度虚化\n\n光影与质感: type: 强烈自然直射日光; characteristics: 硬光，在男孩前额与眼窝投下清晰的手部阴影，皮肤受光面高光鲜明；tone: 暖棕色与焦糖色调，带有浓郁的市集尘土与暖阳色彩；texture: 写实纪录片质感，电影感颗粒度，皮肤纹理细腻清晰\n\n声音: soundStyle: 市集环境嘈杂声，微风声与低沉远处的环境底噪; ambient: 集市人声远鸣、环境杂音\n\n节奏与转场: editing: pacing: 缓慢平稳; techniques: 硬切",
+        "duration": 1.333,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:54:23.605654+00:00",
+        "updatedAt": "2026-10-29T09:54:23.605654+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "2f169f51-e057-46ff-9a5b-d7b6ea26fc77",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "bf1dbde0-b27f-4aa0-b0b6-703cc64b4662",
+        "sceneIndex": 11,
+        "story": {
+          "endTime": 24.334,
+          "summary": "俯拍视角下，非洲城镇阳光斑驳的斜坡街道上，人们日常劳作与行走，充满市井烟火气。",
+          "startTime": 21.625,
+          "sceneIndex": 11
+        },
+        "visual": {
+          "color": "暖黄、土褐与金黄色为主调，辅以杂货铺彩色商品及前景风化蓝绿色的对比色彩。",
+          "style": "写实纪录片风格，带有胶片颗粒感与温润的纪实影调。",
+          "action": "拉车男子沿街下坡移动；两名儿童向前行走；两名女子在店铺前闲聊；远景零星行人走动。",
+          "camera": "高角度俯拍（俯角约45度），中远景，使用中焦镜头，带有固定机位的窥视感，前景窗框形成自然画框。",
+          "motion": "画面内主体平稳移动，镜头基本保持稳定。",
+          "subject": "斜坡街道上的居民日常生活图景，重点为拉货车男子、交谈妇女与走下斜坡的儿童。",
+          "lighting": "强烈的直射顶侧日光，高对比度，地面投射出清晰浓重的斜长阴影。",
+          "characters": [
+            {
+              "action": "背对镜头俯身拉着装满纸箱与饮料的板车沿斜坡向下走去。",
+              "identity": "拉货男子",
+              "appearance": "黑人成年男性，深色短发，身穿灰绿色外套与深色长裤。"
+            },
+            {
+              "action": "在杂货铺门前面对面站立交谈。",
+              "identity": "交谈妇女",
+              "appearance": "两位黑人妇女，一人着橙红色碎花长袍配白色头巾，另一人着绿色长裙配头巾。"
+            },
+            {
+              "action": "并排沿街道左侧向下步行。",
+              "identity": "儿童",
+              "appearance": "一男一女两名黑人幼童，男孩穿红衣蓝短裤，女孩穿粉色裙子。"
+            }
+          ],
+          "composition": "左侧前景为深色及蓝色窗框遮挡，中央为开阔土路对角线延伸，右侧为排列整齐的杂货铺，形成纵深透视。",
+          "environment": "典型的东非小镇街道，两旁为土黄色泥墙与木质结构民房，二楼有木栏杆阳台，晾晒着衣物。街道旁停放着数辆摩托车，地面为干燥沙土路面。",
+          "sceneDescription": "高角度俯拍埃塞俄比亚风格小镇街道。右侧为挂满货物的杂货铺，门牌标有阿姆哈拉语及'SHOP'；左侧带有风化蓝色窗框的前景遮挡。街道为斜坡土路，阳光强烈拉出长影。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "小镇集市的低沉环境嘈杂声、板车木轮滚动声与微弱的风声。",
+          "transcript": "无对白"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "舒缓平实，留白式生活记录节奏。",
+            "techniques": "硬切接入，作为场景尾声平稳淡出或硬切结束。"
+          }
+        },
+        "generationPrompt": "高角度俯拍，纪实风格。阳光炽烈干燥的非洲斜坡土路街道，土黄色泥砖房旁排列着标有阿姆哈拉语及'SHOP'字样的小杂货铺。左侧前景有斑驳风化的蓝色木窗框虚化遮挡。一名穿灰绿外套的黑人男子正拉着装满货物与纸箱的手拉车沿街下行；两名包头巾的长裙妇女在商铺门前站立闲聊；两名分别穿红衣蓝裤和粉裙的黑人小孩沿街慢行。金色阳光洒落，地面投下长影，暖黄土褐色调，电影质感，写实光影，镜头平稳固定。\n\n画面与环境: 高角度俯拍埃塞俄比亚风格小镇街道。右侧为挂满货物的杂货铺，门牌标有阿姆哈拉语及'SHOP'；左侧带有风化蓝色窗框的前景遮挡。街道为斜坡土路，阳光强烈拉出长影。；斜坡街道上的居民日常生活图景，重点为拉货车男子、交谈妇女与走下斜坡的儿童。；典型的东非小镇街道，两旁为土黄色泥墙与木质结构民房，二楼有木栏杆阳台，晾晒着衣物。街道旁停放着数辆摩托车，地面为干燥沙土路面。\n\n人物与动作: identity: 拉货男子; appearance: 黑人成年男性，深色短发，身穿灰绿色外套与深色长裤。; action: 背对镜头俯身拉着装满纸箱与饮料的板车沿斜坡向下走去。; identity: 交谈妇女; appearance: 两位黑人妇女，一人着橙红色碎花长袍配白色头巾，另一人着绿色长裙配头巾。; action: 在杂货铺门前面对面站立交谈。; identity: 儿童; appearance: 一男一女两名黑人幼童，男孩穿红衣蓝短裤，女孩穿粉色裙子。; action: 并排沿街道左侧向下步行。；拉车男子沿街下坡移动；两名儿童向前行走；两名女子在店铺前闲聊；远景零星行人走动。；画面内主体平稳移动，镜头基本保持稳定。\n\n镜头与构图: 高角度俯拍（俯角约45度），中远景，使用中焦镜头，带有固定机位的窥视感，前景窗框形成自然画框。；左侧前景为深色及蓝色窗框遮挡，中央为开阔土路对角线延伸，右侧为排列整齐的杂货铺，形成纵深透视。\n\n光影与质感: 强烈的直射顶侧日光，高对比度，地面投射出清晰浓重的斜长阴影。；暖黄、土褐与金黄色为主调，辅以杂货铺彩色商品及前景风化蓝绿色的对比色彩。；写实纪录片风格，带有胶片颗粒感与温润的纪实影调。\n\n声音: transcript: 无对白; soundStyle: 小镇集市的低沉环境嘈杂声、板车木轮滚动声与微弱的风声。\n\n节奏与转场: editing: pacing: 舒缓平实，留白式生活记录节奏。; techniques: 硬切接入，作为场景尾声平稳淡出或硬切结束。",
+        "duration": 2.709,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:54:53.752534+00:00",
+        "updatedAt": "2026-10-29T09:54:53.752534+00:00",
+        "metadata": {}
+      }
+    ],
+    "allSceneVersions": [
+      {
+        "id": "f33c7d24-c1f3-442c-a0c7-7fa7cac45e1a",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "e5b35f27-4d15-4e86-aacb-044006f34e45",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 0.75,
+          "summary": "在热闹的市集中，一人将一枚硬币交给另一人，交付者的手随即收回。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖棕色、土黄与暗红为主的温润胶片色调。",
+          "style": "真实纪实风格，带细腻胶片质感与自然颗粒度。",
+          "action": "交付者的手从接收者手心撤开，接收者的手指轻微弯曲放松，露出掌心的硬币。",
+          "camera": "特写，微距平拍略俯，固定镜头，焦点精准锁定在掌心与硬币上，浅景深。",
+          "motion": "左侧手部平稳离场，右侧手掌指节微幅舒展。",
+          "subject": "托着硬币的成年人手掌",
+          "lighting": "柔和的暖黄侧光，明暗反差自然，突显皮肤纹理与硬币金属光泽。",
+          "characters": "画面仅见两人手部与衣袖。接收者皮肤偏深、掌纹明显，袖口有几何民族刺绣；交付者着条纹衣物，仅露手指边缘。",
+          "composition": "手掌居中偏右为主体，左侧留给撤离的手，背景虚焦营造层次。",
+          "environment": "户外传统集市，背景高度虚化，隐约可见箩筐中的蔬菜与暗色织物。",
+          "sceneDescription": "特写镜头下，两只手在微弱的暖光中交接。交付者的手移开后，接收者粗糙的掌心展露出一枚圆形金属硬币，背景是虚化的市集摊位。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "环境中有低沉模糊的集市人声杂音与微弱的钱币碰触声。"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快速直接",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "电影质感特写。温暖昏暗的集市背景完全虚化。画面核心为一只皮肤粗糙、肤色较深的右手掌心，另一只手刚刚抽离，掌中静置一枚双色金属硬币。手腕处可见色彩斑斓的民族纹样织物袖口。柔和侧光勾勒出掌纹与硬币轮廓，浅景深，写实市井氛围，复古胶片颗粒感。\n\n画面与环境: 特写镜头下，两只手在微弱的暖光中交接。交付者的手移开后，接收者粗糙的掌心展露出一枚圆形金属硬币，背景是虚化的市集摊位。；托着硬币的成年人手掌；户外传统集市，背景高度虚化，隐约可见箩筐中的蔬菜与暗色织物。\n\n人物与动作: 画面仅见两人手部与衣袖。接收者皮肤偏深、掌纹明显，袖口有几何民族刺绣；交付者着条纹衣物，仅露手指边缘。；交付者的手从接收者手心撤开，接收者的手指轻微弯曲放松，露出掌心的硬币。；左侧手部平稳离场，右侧手掌指节微幅舒展。\n\n镜头与构图: 特写，微距平拍略俯，固定镜头，焦点精准锁定在掌心与硬币上，浅景深。；手掌居中偏右为主体，左侧留给撤离的手，背景虚焦营造层次。\n\n光影与质感: 柔和的暖黄侧光，明暗反差自然，突显皮肤纹理与硬币金属光泽。；暖棕色、土黄与暗红为主的温润胶片色调。；真实纪实风格，带细腻胶片质感与自然颗粒度。\n\n声音: soundStyle: 环境中有低沉模糊的集市人声杂音与微弱的钱币碰触声。\n\n节奏与转场: editing: pacing: 快速直接; techniques: 硬切",
+        "duration": 0.75,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:49:04.718457+00:00",
+        "updatedAt": "2026-10-29T09:49:04.718457+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "6d5a0c0a-a9ba-48f3-8c74-f52aaf2427fc",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "23dccf4f-0b7c-43c6-b96d-cb736f807e86",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 4.583,
+          "summary": "一名非裔女性乘坐行驶中的小型客车，在微颠的车厢内若有所思地凝望车窗外掠过的繁忙东非街景与路边水果摊。",
+          "startTime": 0.75,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "暖黄与大地色调风格调色（Ochre & Earthy tone）。外部街道充满日光暖金、香蕉黄与砖红色；车内以深灰、墨绿阴影为主，女主角服饰与头巾融入复古红棕色，色彩层次饱满而自然克制。",
+          "style": "写实主义电影风格（Cinematic Realism），逼真的胶片质感与细腻暗部颗粒，纪录片式的纪实人文抓拍美感。",
+          "action": [
+            {
+              "timeframe": "0.00s - 1.50s",
+              "description": "客车以恒定速度平缓前行，车身带有轻柔悬挂颠簸；前景女性侧脸静止入神，目光专注凝视窗外，车窗外露出一处彩色遮阳伞与杂货摊位。"
+            },
+            {
+              "timeframe": "1.50s - 3.00s",
+              "description": "随着车辆继续向前滑行，窗外景物向后位移，一位头顶装满香蕉托盘的蓝衣小贩及一辆摩托车从车窗视野中掠过；女性眼眸微转，视线跟随掠过的街景流转。"
+            },
+            {
+              "timeframe": "3.00s - 3.83s",
+              "description": "镜头焦点持续锁定在女性脸庞，窗外显现出写有阿姆哈拉语招牌的临街店铺与摊位前挑选香蕉的顾客；女性依旧保持宁静若有所思的面容，画面至此结束。"
+            }
+          ],
+          "camera": {
+            "angle": "平视微仰角（Eye-level with subtle low angle）",
+            "focus": "浅景深，焦点精准锁定在右侧前景女性的侧面轮廓、眼部及发带边缘，窗外景物呈现中等清晰度并伴随运动模糊",
+            "speed": "标准24fps实时正常拍摄速度",
+            "lensFeel": "35mm至50mm电影定焦镜头感，透视自然，背景具有适度运动虚焦与景深压缩感",
+            "movement": "车内固定机位，带有随车行驶产生的自然平稳细微手持微晃与车体共振",
+            "shotSize": "侧面中近景（Medium Close-Up）过渡至局部侧面特写"
+          },
+          "motion": "车辆匀速向前移动引发的窗外景物视差后移，车厢内部微幅低频颠簸，人物微小的呼吸与神态微动。",
+          "subject": "画面右侧的非裔女性乘客，侧面朝向窗外，构成画面的视觉锚点与情绪核心。",
+          "lighting": "混合自然环境光。车外为明亮的正午至午后阳光漫射，带有沙尘折射出的暖黄光质；车内整体处于低照度阴影背光环境，强烈的天光透过窗户为女性右侧面部轮廓、颧骨、眼眶与发带勾勒出细腻的轮廓光与高光边缘。",
+          "characters": [
+            {
+              "pose": "背靠座椅侧身端坐，头部朝左微仰望向窗外流动的人流与街景，身体随车体行进保持轻微自然的微幅晃动。",
+              "identity": "主要乘客（非裔女性）",
+              "wardrobe": "头戴一条浅褐偏暗玫瑰色的宽织物发带包覆发际，身穿带有红褐色、土黄色几何图腾印花领口的民族风日常上衣。",
+              "appearance": "约35至45岁，深褐色细腻皮肤，深邃专注的双眸，五官轮廓分明，留贴头深色短卷发。",
+              "expression": "神态从容沉静，目光略带思索与淡淡的怀旧感，嘴唇轻合，面部放松。"
+            },
+            {
+              "pose": "面朝前方及窗外端坐。",
+              "identity": "车内次要乘客（虚焦背景）",
+              "wardrobe": "朴素日常便服。",
+              "appearance": "车厢前排可见背对镜头的男性乘客，身着灰绿色衬衫；更前方隐约可见另一位佩戴发饰、同样注视窗外的乘客侧影。",
+              "expression": "无法完全看清，呈现静止乘坐状态。"
+            },
+            {
+              "pose": "在路旁驻足买卖、骑行穿梭或沿街漫步。",
+              "identity": "街景行人与摊贩（窗外动态背景）",
+              "wardrobe": "各色休闲衬衫、长裤及工作服饰。",
+              "appearance": "当地街头小贩、顾客与过路市民，包含头顶香蕉木托盘的小贩及头戴头盔的摩托车骑手。",
+              "expression": "日常市井劳作与匆匆赶路神态。"
+            }
+          ],
+          "composition": {
+            "depth": "车厢内部低光暗调空间与车窗外阳光烈焰的室外空间形成鲜明的前后层次与反差纵深。",
+            "midground": "车窗框架、滑锁、车内前排乘客座席与暗部空间。",
+            "background": "透过窗框透视展开的明亮街景、香蕉水果摊位、沿街建筑、招牌与来往行人。",
+            "foreground": "占据画面右侧约三分之一至二分之一画幅的女性侧脸轮廓、颈部与发带，左侧边缘为车窗立柱暗部框架。",
+            "subjectPlacement": "主角紧密依附于右侧纵向黄金分割区域，视线朝左延伸穿透画框，构建出充满纵深感的外向视线空间。"
+          },
+          "environment": {
+            "exterior": "具有典型埃塞俄比亚风格的日间繁华市井街道，柏油路面微泛尘土，路边支起简易遮阳棚，木架与塑料箱上堆满成串的熟香蕉与农产品，沿街排列着土黄与红砖色的两层商铺建筑，外墙悬挂有清晰的阿姆哈拉文字体招牌。",
+            "interior": "老旧小型客车车厢内部，深色车壁内衬，略显斑驳的扶手与座椅靠背，半开的侧面推拉车窗带有明显的金属滑轨立柱与黑色锁扣，车厢空间相对狭窄幽暗。"
+          },
+          "sceneDescription": "镜头置于一辆正在行驶的老旧小型客车（小巴）车厢内部。画面右侧前景是一位非裔中年女性的侧脸及肩部近景，她头戴复古粉褐宽发带，面带平静深沉的神情凝视着车窗外。车窗带有深色金属框及中央竖向滑轨锁扣。透过车窗，外部是阳光明媚、略带扬尘的东非城市街道，路边整齐摆放着堆满金黄色香蕉与热带蔬果的木质摊位，头顶货物的行人和骑乘摩托车的市民穿梭其间，背景是带有阿姆哈拉文字招牌与铁皮屋顶的砖土色两层街边店铺。车内阴影与车外烈日形成鲜明的光比反差，营造出充满生活质感的写实电影氛围。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知或无明显配乐，以沉浸式现场环境音效与低频氛围铺底为主。",
+          "soundStyle": "主观纪实风格音效设计，车内沉闷封闭声场与外部明亮开放街声形成声学对比。",
+          "transcript": "",
+          "ambientSound": "低沉平缓的小型巴士柴油发动机轰鸣声、车辆行驶于路面的轻微底盘共振与震颤杂音；透过车窗滤进的微弱街道环境杂音（远处市井人声、摩托车排气声、隐约的摊贩交流声）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓沉稳，单镜头写实长镜头节奏",
+            "techniques": "硬切接入镜头，机位随车平稳伴随，硬切接出至下一镜头"
+          },
+          "transitionIn": "硬切",
+          "transitionOut": "硬切"
+        },
+        "generationPrompt": "电影质感特写镜头，行驶中的东非公共小巴车厢内。画面右侧前景是一位35至45岁的非裔女性侧面近景特写，深褐色皮肤，佩戴一条泛旧的暗粉褐色宽发带包裹发际线，身穿带有红棕色几何图腾与民族刺绣领口的上衣。她神情沉静专注，若有所思地凝视着左侧的车窗外。车窗带有深色金属边框与中央竖向黑色锁扣，车内光线昏暗，阳光从车窗照入，在女子的颧骨、额头和鼻梁勾勒出细腻温暖的高光轮廓。透过车窗，外部是日光明亮、略带尘土的埃塞俄比亚繁华街景，路边摆放着堆积如山的金黄香蕉木质水果摊，头顶木托盘的小贩、行人和骑摩托车的人穿行在砖土色外墙与铁皮屋顶的商铺前，店铺挂有阿姆哈拉语招牌。镜头保持在车内右侧平视角度，浅景深，焦点始终锐利地锁在女子的侧脸上，车外的街景随着车辆匀速平稳前行而向后流动，带有自然的行车微弱颠簸感。整体色调呈温暖的沙土黄、大地赭石与胶片色调，具有逼真细腻的纪实电影质感与高动态光影反差。音频约束：车内无对白，仅有低沉的柴油发动机轰鸣与外界隐约的市井环境音；剪辑约束：两端硬切，保持单一长镜头连贯性。\n\n画面与环境: 镜头置于一辆正在行驶的老旧小型客车（小巴）车厢内部。画面右侧前景是一位非裔中年女性的侧脸及肩部近景，她头戴复古粉褐宽发带，面带平静深沉的神情凝视着车窗外。车窗带有深色金属框及中央竖向滑轨锁扣。透过车窗，外部是阳光明媚、略带扬尘的东非城市街道，路边整齐摆放着堆满金黄色香蕉与热带蔬果的木质摊位，头顶货物的行人和骑乘摩托车的市民穿梭其间，背景是带有阿姆哈拉文字招牌与铁皮屋顶的砖土色两层街边店铺。车内阴影与车外烈日形成鲜明的光比反差，营造出充满生活质感的写实电影氛围。；画面右侧的非裔女性乘客，侧面朝向窗外，构成画面的视觉锚点与情绪核心。；interior: 老旧小型客车车厢内部，深色车壁内衬，略显斑驳的扶手与座椅靠背，半开的侧面推拉车窗带有明显的金属滑轨立柱与黑色锁扣，车厢空间相对狭窄幽暗。; exterior: 具有典型埃塞俄比亚风格的日间繁华市井街道，柏油路面微泛尘土，路边支起简易遮阳棚，木架与塑料箱上堆满成串的熟香蕉与农产品，沿街排列着土黄与红砖色的两层商铺建筑，外墙悬挂有清晰的阿姆哈拉文字体招牌。\n\n人物与动作: identity: 主要乘客（非裔女性）; appearance: 约35至45岁，深褐色细腻皮肤，深邃专注的双眸，五官轮廓分明，留贴头深色短卷发。; wardrobe: 头戴一条浅褐偏暗玫瑰色的宽织物发带包覆发际，身穿带有红褐色、土黄色几何图腾印花领口的民族风日常上衣。; expression: 神态从容沉静，目光略带思索与淡淡的怀旧感，嘴唇轻合，面部放松。; pose: 背靠座椅侧身端坐，头部朝左微仰望向窗外流动的人流与街景，身体随车体行进保持轻微自然的微幅晃动。; identity: 车内次要乘客（虚焦背景）; appearance: 车厢前排可见背对镜头的男性乘客，身着灰绿色衬衫；更前方隐约可见另一位佩戴发饰、同样注视窗外的乘客侧影。; wardrobe: 朴素日常便服。; expression: 无法完全看清，呈现静止乘坐状态。; pose: 面朝前方及窗外端坐。; identity: 街景行人与摊贩（窗外动态背景）; appearance: 当地街头小贩、顾客与过路市民，包含头顶香蕉木托盘的小贩及头戴头盔的摩托车骑手。; wardrobe: 各色休闲衬衫、长裤及工作服饰。; expression: 日常市井劳作与匆匆赶路神态。; pose: 在路旁驻足买卖、骑行穿梭或沿街漫步。；timeframe: 0.00s - 1.50s; description: 客车以恒定速度平缓前行，车身带有轻柔悬挂颠簸；前景女性侧脸静止入神，目光专注凝视窗外，车窗外露出一处彩色遮阳伞与杂货摊位。; timeframe: 1.50s - 3.00s; description: 随着车辆继续向前滑行，窗外景物向后位移，一位头顶装满香蕉托盘的蓝衣小贩及一辆摩托车从车窗视野中掠过；女性眼眸微转，视线跟随掠过的街景流转。; timeframe: 3.00s - 3.83s; description: 镜头焦点持续锁定在女性脸庞，窗外显现出写有阿姆哈拉语招牌的临街店铺与摊位前挑选香蕉的顾客；女性依旧保持宁静若有所思的面容，画面至此结束。；车辆匀速向前移动引发的窗外景物视差后移，车厢内部微幅低频颠簸，人物微小的呼吸与神态微动。\n\n镜头与构图: shotSize: 侧面中近景（Medium Close-Up）过渡至局部侧面特写; angle: 平视微仰角（Eye-level with subtle low angle）; lensFeel: 35mm至50mm电影定焦镜头感，透视自然，背景具有适度运动虚焦与景深压缩感; movement: 车内固定机位，带有随车行驶产生的自然平稳细微手持微晃与车体共振; focus: 浅景深，焦点精准锁定在右侧前景女性的侧面轮廓、眼部及发带边缘，窗外景物呈现中等清晰度并伴随运动模糊; speed: 标准24fps实时正常拍摄速度；foreground: 占据画面右侧约三分之一至二分之一画幅的女性侧脸轮廓、颈部与发带，左侧边缘为车窗立柱暗部框架。; midground: 车窗框架、滑锁、车内前排乘客座席与暗部空间。; background: 透过窗框透视展开的明亮街景、香蕉水果摊位、沿街建筑、招牌与来往行人。; subjectPlacement: 主角紧密依附于右侧纵向黄金分割区域，视线朝左延伸穿透画框，构建出充满纵深感的外向视线空间。; depth: 车厢内部低光暗调空间与车窗外阳光烈焰的室外空间形成鲜明的前后层次与反差纵深。\n\n光影与质感: 混合自然环境光。车外为明亮的正午至午后阳光漫射，带有沙尘折射出的暖黄光质；车内整体处于低照度阴影背光环境，强烈的天光透过窗户为女性右侧面部轮廓、颧骨、眼眶与发带勾勒出细腻的轮廓光与高光边缘。；暖黄与大地色调风格调色（Ochre & Earthy tone）。外部街道充满日光暖金、香蕉黄与砖红色；车内以深灰、墨绿阴影为主，女主角服饰与头巾融入复古红棕色，色彩层次饱满而自然克制。；写实主义电影风格（Cinematic Realism），逼真的胶片质感与细腻暗部颗粒，纪录片式的纪实人文抓拍美感。\n\n声音: ambientSound: 低沉平缓的小型巴士柴油发动机轰鸣声、车辆行驶于路面的轻微底盘共振与震颤杂音；透过车窗滤进的微弱街道环境杂音（远处市井人声、摩托车排气声、隐约的摊贩交流声）。; music: 未知或无明显配乐，以沉浸式现场环境音效与低频氛围铺底为主。; soundStyle: 主观纪实风格音效设计，车内沉闷封闭声场与外部明亮开放街声形成声学对比。\n\n节奏与转场: editing: pacing: 舒缓沉稳，单镜头写实长镜头节奏; techniques: 硬切接入镜头，机位随车平稳伴随，硬切接出至下一镜头; transitionIn: 硬切; transitionOut: 硬切",
+        "duration": 3.833,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:50:38.597265+00:00",
+        "updatedAt": "2026-10-29T09:50:38.597265+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "b152af6e-db4d-4564-b23f-6c4eda46ba07",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "70720c27-6ba4-49e3-b571-b5f8851b69e0",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 6.625,
+          "summary": "一名年长的黑人裁缝在工作坊内专注地使用老式胜家缝纫机缝制蓝色布料。",
+          "startTime": 4.583,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": {
+            "palette": "暖褐色、军绿、深邃蓝、金属青蓝与点缀的亮红亮黄色"
+          },
+          "style": "纪实写实风格，高质感胶片质地与工匠生活气息",
+          "action": [
+            {
+              "time": "00:00 - 02.04",
+              "description": "裁缝双手微调并匀速向前推送深蓝色布料，缝纫机针头规律起落，男子保持低头专注姿势微幅前倾。"
+            }
+          ],
+          "camera": {
+            "angle": "平视微侧角",
+            "focus": "焦点落在裁缝手部与缝纫机针板缝合区域",
+            "lensFeel": "中焦人像镜头，背景自然虚化",
+            "movement": "几乎静止，带极微弱的手持呼吸感",
+            "shotSize": "中近景"
+          },
+          "motion": "机械针脚高速垂直微动，人物手部平缓移动，整体动态克制平稳",
+          "subject": "专注缝纫的成熟黑人裁缝与老式蓝色缝纫机。",
+          "lighting": {
+            "style": "室内暖调侧顶光",
+            "description": "暖黄光束照亮裁缝的面部轮廓和手臂肌肉，背景阴影深邃，明暗对比强烈。"
+          },
+          "characters": [
+            {
+              "pose": "身体前倾，双臂自然弯曲置于台面，双手按压并推移布料。",
+              "identity": "年长黑人裁缝",
+              "wardrobe": "军绿色圆领短袖T恤，右手手腕戴有红黑相间的串珠手链。",
+              "appearance": "寸头黑灰相间短发，络腮胡斑白，深棕色皮肤，面部轮廓硬朗且肌肉线条明显。",
+              "expression": "神情极为专注，眼神低垂紧盯针脚。"
+            }
+          ],
+          "composition": {
+            "framing": "前景为机头与缝纫动作，右侧为主体人物，左上方及后景为货架与杂物，形成右重左轻的对角线平衡深度。"
+          },
+          "environment": {
+            "props": "墨蓝色老式Singer缝纫机、深蓝色布料、红色与黄色缝纫线线轴、金属小盒、红色塑料收纳筐、背景货架及成叠蜡染布料。",
+            "setting": "传统裁缝工作坊"
+          },
+          "sceneDescription": "裁缝铺室内，右侧一位身材结实的年长非洲裔男子侧身俯首，双手引导深蓝色织物穿过左前方墨绿偏蓝的老式胜家（Singer）手摇/电动缝纫机压脚。背景是陈旧木架，堆放着非洲蜡染花布与线轴。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "室内工坊安静的低频环境白噪音",
+          "soundEffects": "老式缝纫机有节奏的机械运转咔哒声与微弱布料摩擦声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉稳缓慢",
+            "techniques": "前后均为硬切"
+          }
+        },
+        "generationPrompt": "中近景侧拍，纪实写实风格。昏暗温暖的传统裁缝铺里，一位黑灰色短发、留有花白络腮胡的年长非洲裔健壮裁缝身穿军绿色短袖T恤，右手戴红色串珠手绳。他专注地低头操作一台复古墨蓝色的胜家缝纫机，双手正推引一块深蓝色布料经过机械压脚。暖黄色顶光勾勒出他紧绷的手臂线条与专注侧脸，背景木架上整齐堆叠着彩色蜡染布匹与高线轴。画面带有自然的景深虚化与机械针脚的微动态，色彩浓郁温暖，质感质朴真实。\n\n画面与环境: 裁缝铺室内，右侧一位身材结实的年长非洲裔男子侧身俯首，双手引导深蓝色织物穿过左前方墨绿偏蓝的老式胜家（Singer）手摇/电动缝纫机压脚。背景是陈旧木架，堆放着非洲蜡染花布与线轴。；专注缝纫的成熟黑人裁缝与老式蓝色缝纫机。；setting: 传统裁缝工作坊; props: 墨蓝色老式Singer缝纫机、深蓝色布料、红色与黄色缝纫线线轴、金属小盒、红色塑料收纳筐、背景货架及成叠蜡染布料。\n\n人物与动作: identity: 年长黑人裁缝; appearance: 寸头黑灰相间短发，络腮胡斑白，深棕色皮肤，面部轮廓硬朗且肌肉线条明显。; wardrobe: 军绿色圆领短袖T恤，右手手腕戴有红黑相间的串珠手链。; expression: 神情极为专注，眼神低垂紧盯针脚。; pose: 身体前倾，双臂自然弯曲置于台面，双手按压并推移布料。；time: 00:00 - 02.04; description: 裁缝双手微调并匀速向前推送深蓝色布料，缝纫机针头规律起落，男子保持低头专注姿势微幅前倾。；机械针脚高速垂直微动，人物手部平缓移动，整体动态克制平稳\n\n镜头与构图: shotSize: 中近景; angle: 平视微侧角; lensFeel: 中焦人像镜头，背景自然虚化; movement: 几乎静止，带极微弱的手持呼吸感; focus: 焦点落在裁缝手部与缝纫机针板缝合区域；framing: 前景为机头与缝纫动作，右侧为主体人物，左上方及后景为货架与杂物，形成右重左轻的对角线平衡深度。\n\n光影与质感: style: 室内暖调侧顶光; description: 暖黄光束照亮裁缝的面部轮廓和手臂肌肉，背景阴影深邃，明暗对比强烈。；palette: 暖褐色、军绿、深邃蓝、金属青蓝与点缀的亮红亮黄色；纪实写实风格，高质感胶片质地与工匠生活气息\n\n声音: soundEffects: 老式缝纫机有节奏的机械运转咔哒声与微弱布料摩擦声; ambient: 室内工坊安静的低频环境白噪音\n\n节奏与转场: editing: pacing: 沉稳缓慢; techniques: 前后均为硬切",
+        "duration": 2.042,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:50:03.609319+00:00",
+        "updatedAt": "2026-10-29T09:50:03.609319+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "79695079-d378-4555-9bf9-3b036dc81369",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "8ae1fed2-892f-4f19-a1df-e16c4df7c318",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 8.125,
+          "summary": "裁缝在昏暗的工作室内专注地用老式缝纫机缝合一块蓝色花纹布料。",
+          "startTime": 7.375,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "深褐暖调为主，蓝色布料形成鲜明视觉焦点，辅以机械的金属黑色与铜黄高光。",
+          "style": "现实主义写实纪录片质感，胶片颗粒细腻，光影对比自然。",
+          "action": "双手平稳推送蓝色布料向前滑动，缝纫机压脚与机针快速上下起落缝线。",
+          "camera": "特写镜头，低机位平拍，浅景深聚焦于手部与缝纫针接触面，静止无位移。",
+          "motion": "手部平稳向前推布的微动作与针头高频往复运动形成动静对比。",
+          "subject": "裁缝熟练操作缝纫机的双手，深色皮肤，青筋微凸。",
+          "lighting": "左侧柔和自然侧逆光，勾勒手部边缘轮廓，室内整体暖调微暗。",
+          "characters": "一位深肤色裁缝，身穿橙褐色上衣，上身微俯，面部大部分出框。",
+          "composition": "主体手部位于画面中下部，右上方为黑色缝纫机头，左上方留白展示窗户与背景空间。",
+          "environment": "杂乱而富有生活气息的传统缝纫作坊，背景有挂历、窗户及各色线轴架。",
+          "sceneDescription": "特写裁缝布满纹理的双手正引导蓝色印花织物通过复古黑色老式缝纫机的针脚。左侧有自然窗光，背景为带有阿姆哈拉语日历和线轴杂物的作坊。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "老式缝纫机节奏均匀的清脆机械嗒嗒声，夹杂微弱的室内环境底噪。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "快速平稳切入，镜头持续0.75秒",
+            "techniques": "硬切进出"
+          }
+        },
+        "generationPrompt": "特写镜头，微俯平视角度。一位深色皮肤的老裁缝双手正引导一块蓝色碎花布料穿过复古黑色铸铁缝纫机的压脚。缝纫机针快速平稳地上下跳动。左侧窗户透入温暖自然的侧光，勾勒出双手粗糙的皮肤纹理。背景是昏暗杂乱的传统缝纫工坊，墙上贴有泛黄日历，架上陈列着线轴，浅景深虚化。纪实电影质感，温暖沉稳色调，画面细腻逼真。\n\n画面与环境: 特写裁缝布满纹理的双手正引导蓝色印花织物通过复古黑色老式缝纫机的针脚。左侧有自然窗光，背景为带有阿姆哈拉语日历和线轴杂物的作坊。；裁缝熟练操作缝纫机的双手，深色皮肤，青筋微凸。；杂乱而富有生活气息的传统缝纫作坊，背景有挂历、窗户及各色线轴架。\n\n人物与动作: 一位深肤色裁缝，身穿橙褐色上衣，上身微俯，面部大部分出框。；双手平稳推送蓝色布料向前滑动，缝纫机压脚与机针快速上下起落缝线。；手部平稳向前推布的微动作与针头高频往复运动形成动静对比。\n\n镜头与构图: 特写镜头，低机位平拍，浅景深聚焦于手部与缝纫针接触面，静止无位移。；主体手部位于画面中下部，右上方为黑色缝纫机头，左上方留白展示窗户与背景空间。\n\n光影与质感: 左侧柔和自然侧逆光，勾勒手部边缘轮廓，室内整体暖调微暗。；深褐暖调为主，蓝色布料形成鲜明视觉焦点，辅以机械的金属黑色与铜黄高光。；现实主义写实纪录片质感，胶片颗粒细腻，光影对比自然。\n\n声音: soundStyle: 老式缝纫机节奏均匀的清脆机械嗒嗒声，夹杂微弱的室内环境底噪。\n\n节奏与转场: editing: pacing: 快速平稳切入，镜头持续0.75秒; techniques: 硬切进出",
+        "duration": 0.75,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:51:13.592517+00:00",
+        "updatedAt": "2026-10-29T09:51:13.592517+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "6efb46fa-809b-4c7d-8d74-0babd93f3ca9",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "6e96a7a2-16dc-4630-b723-0bb0ca6b3f34",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 11.333,
+          "summary": "一位年长非洲妇女在门前专注地为活泼的小女孩编发，小女孩表情灵动地望向镜头后转头微笑。",
+          "startTime": 8.125,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "暖色温高饱和，粉红衣裳、鲜红门帘与风化蓝绿墙面形成生活质感强烈的互补色调。",
+          "style": "温情人文纪实电影质感，细腻纯真。",
+          "action": "长辈双手持续穿梭编织细发辫；小女孩先是做鬼脸直视镜头，随后缓缓转头看向右方侧面微笑。",
+          "camera": "特写到中近景，平视视角，浅景深对焦于小女孩面部，伴有轻微有机手持微晃。",
+          "motion": "编发指尖的连续微动作与小女孩头部轻微转动，节奏舒缓日常。",
+          "subject": "约6-8岁的非洲小女孩，短辫带有彩色发夹，脖戴彩珠项链，眼神灵动机敏。",
+          "lighting": "柔和自然的漫射日光，人物肤色呈现温暖油润的高光细节。",
+          "characters": "小女孩（主角，着粉色T恤，神情活泼）与左侧长辈妇女（穿花纹长衫，手上戴戒，低头专注于编发动作）。",
+          "composition": "双人中景偏侧构图，左侧为长辈与动作手势，中右侧为主体女孩生动的面部轮廓。",
+          "environment": "朴素民居门外，浅薄荷绿色的风化墙面，张贴有阿姆哈拉语海报，门边悬挂红色布帘，右侧隐约可见另一名儿童剪影。",
+          "sceneDescription": "阳光明亮的室外门廊前，一位年长非洲妇女在左侧用双手娴熟地为身穿粉衣的女孩编发。女孩神情俏皮，眼神从镜头前转为侧脸微笑，背景为挂着红帘的斑驳浅绿墙面。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "环境自然环境音，可能带有轻微室外微风或极微弱的背景人声（无明确对白）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓平稳",
+            "techniques": "硬切进入，硬切退出"
+          }
+        },
+        "generationPrompt": "中近景纪实摄影，温暖柔和的自然日光。左侧一位非洲长辈妇人低头专注地为一个小女孩编细小发辫，手上戴着金色戒指。正中偏右的小女孩约七岁，身穿粉红T恤，佩戴彩色串珠项链，头发扎着精致细辫，脸上洋溢着机灵可爱的微笑，眼神调皮地从镜头转向侧方。背景是斑驳褪色的薄荷绿泥墙与红色布帘，贴有微卷的旧海报。浅景深，胶片电影质感，写实质朴，色彩饱满温润。\n\n画面与环境: 阳光明亮的室外门廊前，一位年长非洲妇女在左侧用双手娴熟地为身穿粉衣的女孩编发。女孩神情俏皮，眼神从镜头前转为侧脸微笑，背景为挂着红帘的斑驳浅绿墙面。；约6-8岁的非洲小女孩，短辫带有彩色发夹，脖戴彩珠项链，眼神灵动机敏。；朴素民居门外，浅薄荷绿色的风化墙面，张贴有阿姆哈拉语海报，门边悬挂红色布帘，右侧隐约可见另一名儿童剪影。\n\n人物与动作: 小女孩（主角，着粉色T恤，神情活泼）与左侧长辈妇女（穿花纹长衫，手上戴戒，低头专注于编发动作）。；长辈双手持续穿梭编织细发辫；小女孩先是做鬼脸直视镜头，随后缓缓转头看向右方侧面微笑。；编发指尖的连续微动作与小女孩头部轻微转动，节奏舒缓日常。\n\n镜头与构图: 特写到中近景，平视视角，浅景深对焦于小女孩面部，伴有轻微有机手持微晃。；双人中景偏侧构图，左侧为长辈与动作手势，中右侧为主体女孩生动的面部轮廓。\n\n光影与质感: 柔和自然的漫射日光，人物肤色呈现温暖油润的高光细节。；暖色温高饱和，粉红衣裳、鲜红门帘与风化蓝绿墙面形成生活质感强烈的互补色调。；温情人文纪实电影质感，细腻纯真。\n\n声音: style: 环境自然环境音，可能带有轻微室外微风或极微弱的背景人声（无明确对白）。\n\n节奏与转场: editing: pacing: 舒缓平稳; techniques: 硬切进入，硬切退出",
+        "duration": 3.208,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:51:54.059806+00:00",
+        "updatedAt": "2026-10-29T09:51:54.059806+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "b975b36b-8eab-4faf-96eb-1c566b309018",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "c9bee7bb-14d8-44f5-8a33-62af25c7577d",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 14.75,
+          "summary": "在阳光强烈的古老石砌建筑入口处，一位身穿深色长袍的老妇人拄着拐杖从漆黑的门道缓步走出，门边站着两位正在交谈的妇女。",
+          "startTime": 11.333,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "暖土黄石壁基调，门洞深邃纯黑，红橙与橄榄绿服饰形成温和冷暖对比，纪实自然饱和度。",
+          "style": "真实纪实人文摄影风格，质朴厚重，质感粗糙风化。",
+          "action": "老妇人拄拐缓缓从漆黑门洞迈出至明亮石阶；右侧两名妇女静立闲谈；门内阴影中男孩走动后停留。",
+          "camera": "中全景固定镜头，水平平视视线，中焦镜头，景深较大，无运镜动作。",
+          "motion": "主体动作极其缓慢平稳，固定机位，环境人物微幅自然动作。",
+          "subject": "拄拐从黑暗门洞走出的黑袍老妇人。",
+          "lighting": "极强烈的侧逆顶光日光形成高反差明暗对照，门内漆黑无光，室外石阶与人物受强硬日光照射，阴影边缘锐利。",
+          "characters": [
+            {
+              "action": "右手拄着弯曲木拐杖，微曲身躯从门内阴影迈步走向台阶光亮处。",
+              "identity": "老妇人",
+              "wardrobe": "深灰色至黑色一体式长袍及同色头巾裹头。"
+            },
+            {
+              "action": "靠墙侧立，面对面低声交谈互动。",
+              "identity": "右侧两位女性",
+              "wardrobe": "一人身穿红橙色印花长裙系浅色头巾，另一人身穿橄榄绿长裙系橙红头巾。"
+            },
+            {
+              "identity": "门内男孩",
+              "wardrobe": "深色短袖配红色书包，身处门内阴影中短暂停留穿过。"
+            }
+          ],
+          "composition": "门洞居中偏左构成天然明暗画框；老妇人位于左中景主体位置；两名交谈妇女居右侧前景侧墙；纵深层次由内至外明暗分明。",
+          "environment": "埃塞俄比亚风格的古老雕花石砌门廊，墙面斑驳带有风化石雕与残存字迹海报，地面为粗粝石阶。",
+          "sceneDescription": "阳光直射下的古老石砌建筑大门，门内极度黑暗。一位包裹黑头巾和长袍的老妇人手拄木杖慢步走出。门边右侧石墙贴着旧海报，两名包头巾的当地妇女面对面站立交谈，背景深处隐约有一名背书包的男孩走过。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "安静的户外自然环境音，可能带有轻微脚步声、衣物摩擦声及远处的自然环境杂音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉稳",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "固定中全景纪实镜头，强烈的非洲高原烈日。一座风化雕刻的古老石砌建筑大门，门内是一片深黑的阴影。一位身材佝偻的老年东非妇女，全身包裹着黑色头巾与厚实长袍，右手握着细长木拐杖，正缓慢沉稳地从漆黑门洞跨向门外阳光照耀的石阶。门右侧斑驳石墙上张贴着残破白纸海报，两名包着头巾的当地妇女面对面站立在石壁边交谈，一人着橙红色长袍，一人着橄榄绿长裙。门洞暗部深处隐约有一名背红色小包的男孩走动。高对比度硬质自然光，明暗交界清晰，粗糙岩石与织物纹理质感，色彩自然古朴。\n\n画面与环境: 阳光直射下的古老石砌建筑大门，门内极度黑暗。一位包裹黑头巾和长袍的老妇人手拄木杖慢步走出。门边右侧石墙贴着旧海报，两名包头巾的当地妇女面对面站立交谈，背景深处隐约有一名背书包的男孩走过。；拄拐从黑暗门洞走出的黑袍老妇人。；埃塞俄比亚风格的古老雕花石砌门廊，墙面斑驳带有风化石雕与残存字迹海报，地面为粗粝石阶。\n\n人物与动作: identity: 老妇人; wardrobe: 深灰色至黑色一体式长袍及同色头巾裹头。; action: 右手拄着弯曲木拐杖，微曲身躯从门内阴影迈步走向台阶光亮处。; identity: 右侧两位女性; wardrobe: 一人身穿红橙色印花长裙系浅色头巾，另一人身穿橄榄绿长裙系橙红头巾。; action: 靠墙侧立，面对面低声交谈互动。; identity: 门内男孩; wardrobe: 深色短袖配红色书包，身处门内阴影中短暂停留穿过。；老妇人拄拐缓缓从漆黑门洞迈出至明亮石阶；右侧两名妇女静立闲谈；门内阴影中男孩走动后停留。；主体动作极其缓慢平稳，固定机位，环境人物微幅自然动作。\n\n镜头与构图: 中全景固定镜头，水平平视视线，中焦镜头，景深较大，无运镜动作。；门洞居中偏左构成天然明暗画框；老妇人位于左中景主体位置；两名交谈妇女居右侧前景侧墙；纵深层次由内至外明暗分明。\n\n光影与质感: 极强烈的侧逆顶光日光形成高反差明暗对照，门内漆黑无光，室外石阶与人物受强硬日光照射，阴影边缘锐利。；暖土黄石壁基调，门洞深邃纯黑，红橙与橄榄绿服饰形成温和冷暖对比，纪实自然饱和度。；真实纪实人文摄影风格，质朴厚重，质感粗糙风化。\n\n声音: style: 安静的户外自然环境音，可能带有轻微脚步声、衣物摩擦声及远处的自然环境杂音。\n\n节奏与转场: editing: pacing: 缓慢沉稳; techniques: 硬切",
+        "duration": 3.417,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:51:49.692803+00:00",
+        "updatedAt": "2026-10-29T09:51:49.692803+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "97700655-ba67-40fb-9686-35db046f6037",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "e4fc1f1b-5d7d-4957-892d-2e9470f057b2",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 15.75,
+          "summary": "一对老年夫妇在门廊前温情对视，女子轻抚男子肩头，尽显相濡以沫的爱意。",
+          "startTime": 14.75,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "暖金阳光色调，搭配人物皮肤质感与背景深墨绿、黑色阴影。",
+          "style": "纪实电影质感，写实且细腻的情感表现。",
+          "action": "妇人将手轻抚在男子肩头，两人微微颔首对视，面带微笑，神态舒展温馨。",
+          "camera": "双人近景特写，平视角度，固定机位，浅景深聚焦两人面部表情。",
+          "motion": "极其轻微的呼吸感与面部微笑微动。",
+          "subject": "相视微笑的老年夫妇亲密互动。",
+          "lighting": "高反差自然侧光，明亮暖阳光照亮面颊与肩颈，阴影浓重立体。",
+          "characters": "左侧为非洲老年女性，扎发巾，穿暖色印花衣物，面带慈祥笑容；右侧为非洲老年男性，花白短发与胡须，穿浅色衬衫，表情温柔专注。",
+          "composition": "左右对称呼应的双人侧面构图，人物位于视觉中心，暗部包围高光。",
+          "environment": "带有绿色门框和剥落字纸的简陋屋门前，背景深邃暗黑。",
+          "sceneDescription": "近景特写，一对非洲老年夫妇在暗色门前侧身相对。老妇人在左微笑抬头，手轻搭在右侧丈夫肩头；丈夫低头凝视妻子，嘴角带笑，强烈的自然侧光勾勒出面部轮廓。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "安静或微弱的现场自然环境音，氛围温暖宁静。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓平稳",
+            "techniques": "前后均为硬切。"
+          }
+        },
+        "generationPrompt": "写实电影画质，近景镜头。一对埃塞俄比亚老年夫妻在暗色门廊前深情对视。左侧老妇人头发盘起，面带温情微笑，手搭在右侧丈夫肩上；老汉满头花白短发与短胡茬，身穿浅色亚麻衬衫，微微低头含笑注视老伴。明亮的暖色自然光从侧方照亮两人的侧脸轮廓，皮肤质感真实细腻，背景深暗质朴，情绪宁静温馨，固定摄影机机位。\n\n画面与环境: 近景特写，一对非洲老年夫妇在暗色门前侧身相对。老妇人在左微笑抬头，手轻搭在右侧丈夫肩头；丈夫低头凝视妻子，嘴角带笑，强烈的自然侧光勾勒出面部轮廓。；相视微笑的老年夫妇亲密互动。；带有绿色门框和剥落字纸的简陋屋门前，背景深邃暗黑。\n\n人物与动作: 左侧为非洲老年女性，扎发巾，穿暖色印花衣物，面带慈祥笑容；右侧为非洲老年男性，花白短发与胡须，穿浅色衬衫，表情温柔专注。；妇人将手轻抚在男子肩头，两人微微颔首对视，面带微笑，神态舒展温馨。；极其轻微的呼吸感与面部微笑微动。\n\n镜头与构图: 双人近景特写，平视角度，固定机位，浅景深聚焦两人面部表情。；左右对称呼应的双人侧面构图，人物位于视觉中心，暗部包围高光。\n\n光影与质感: 高反差自然侧光，明亮暖阳光照亮面颊与肩颈，阴影浓重立体。；暖金阳光色调，搭配人物皮肤质感与背景深墨绿、黑色阴影。；纪实电影质感，写实且细腻的情感表现。\n\n声音: soundStyle: 安静或微弱的现场自然环境音，氛围温暖宁静。\n\n节奏与转场: editing: pacing: 舒缓平稳; techniques: 前后均为硬切。",
+        "duration": 1,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:53:57.961275+00:00",
+        "updatedAt": "2026-10-29T09:53:57.961275+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "cf657d97-3279-48a4-84e2-120d913f6416",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "1ef5a1a7-5b3d-40b7-977c-f4f5802cff3d",
+        "sceneIndex": 8,
+        "story": {
+          "endTime": 18.333,
+          "summary": "在阳光充足的露天市集中，一位满脸岁月风霜的老人侧身与面前的人平和交谈。",
+          "startTime": 15.75,
+          "sceneIndex": 8
+        },
+        "visual": {
+          "color": "暖调大地色系，老人的深色皮肤与暗红、橄榄绿及木质色调相互呼应。",
+          "style": "电影纪实写实风格，强调真实的老年皮肤纹理与岁月沧桑质感。",
+          "action": "老人嘴唇微动轻声说话，随后神情收敛，流露出一丝淡然舒缓的微笑。",
+          "camera": "过肩特写镜头，固定机位，浅景深虚化前后景，精准聚焦于老人眼睛与面部纹理。",
+          "motion": "人物微表情变化，仅有轻微唇部运动与眼神微动，无大幅肢体位移。",
+          "subject": "年迈的东非老人，面部布满深刻皱纹，蓄短灰白胡茬，头戴彩色编织圆帽，身穿做旧橄榄绿衬衫。",
+          "lighting": "明亮且高反差的自然侧逆光，强烈阳光勾勒出老人深刻的面部轮廓和发丝质感。",
+          "characters": [
+            {
+              "name": "老人",
+              "role": "说话者",
+              "appearance": "老年男性，黑肤色，极富质感的面部皱纹，灰白毛发，目光温和沧桑。"
+            }
+          ],
+          "composition": "三分构图，左侧前景负空间由虚化背影遮挡，右侧充实展现老人面容，层次分明。",
+          "environment": "热闹但被虚化的露天集市，可见木架、遮阳铁皮、悬挂布料和杂物，光影交错。",
+          "sceneDescription": "过肩近景特写。左侧为虚化的听者后肩，画面主体为右侧深肤色老人侧脸，背景为模糊的非洲传统街市摊位与遮阳棚。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "环境市集人声杂音、可能的微弱环境风声或柔和的原声音乐（未知）。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢舒缓，注重人物神态观察",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "纪实电影质感，过肩近景特写。一位满脸深邃皱纹的东非老爷爷侧身面向左侧交谈。他留着灰白短胡茬，戴着传统针织小帽，身着做旧橄榄绿衬衫。画面左侧为虚化的交谈者肩背部前景。背景为阳光下虚化的非洲露天集市摊位。强烈自然侧光精细刻画老人极为真实的皮肤纹理与沧桑神情，浅景深，静态固定镜头，老人神情安详微动。\n\n画面与环境: 过肩近景特写。左侧为虚化的听者后肩，画面主体为右侧深肤色老人侧脸，背景为模糊的非洲传统街市摊位与遮阳棚。；年迈的东非老人，面部布满深刻皱纹，蓄短灰白胡茬，头戴彩色编织圆帽，身穿做旧橄榄绿衬衫。；热闹但被虚化的露天集市，可见木架、遮阳铁皮、悬挂布料和杂物，光影交错。\n\n人物与动作: name: 老人; role: 说话者; appearance: 老年男性，黑肤色，极富质感的面部皱纹，灰白毛发，目光温和沧桑。；老人嘴唇微动轻声说话，随后神情收敛，流露出一丝淡然舒缓的微笑。；人物微表情变化，仅有轻微唇部运动与眼神微动，无大幅肢体位移。\n\n镜头与构图: 过肩特写镜头，固定机位，浅景深虚化前后景，精准聚焦于老人眼睛与面部纹理。；三分构图，左侧前景负空间由虚化背影遮挡，右侧充实展现老人面容，层次分明。\n\n光影与质感: 明亮且高反差的自然侧逆光，强烈阳光勾勒出老人深刻的面部轮廓和发丝质感。；暖调大地色系，老人的深色皮肤与暗红、橄榄绿及木质色调相互呼应。；电影纪实写实风格，强调真实的老年皮肤纹理与岁月沧桑质感。\n\n声音: style: 环境市集人声杂音、可能的微弱环境风声或柔和的原声音乐（未知）。\n\n节奏与转场: editing: pacing: 缓慢舒缓，注重人物神态观察; techniques: 硬切入，硬切出",
+        "duration": 2.583,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:52:36.157904+00:00",
+        "updatedAt": "2026-10-29T09:52:36.157904+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "76ca565b-f4ee-49d9-97f1-ebee43d5e4ed",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "bbc9306f-89b0-4f62-9427-dc19c9bd6046",
+        "sceneIndex": 9,
+        "story": {
+          "endTime": 20.292,
+          "summary": "在非洲乡村庭院的明媚阳光下，一名妇女使用编织簸箕专注地筛分谷物。",
+          "startTime": 18.333,
+          "sceneIndex": 9
+        },
+        "visual": {
+          "color": "暖黄色与土红基调，服饰带有鲜明的民族彩色点缀。",
+          "style": "真实纪录片写实风格，粗糙泥土与布料质感明显。",
+          "action": "妇女双手平稳颠动簸箕进行除杂筛粮，背景人物静坐或缓慢活动。",
+          "camera": "中近景侧拍，浅景深虚化背景，主体对焦清晰，轻微手持微晃感。",
+          "motion": "人物双手小幅匀速抖动簸箕，轻微的衣料与身体联动动作。",
+          "subject": "操作编织簸箕筛粮的妇女",
+          "lighting": "明亮且高对比度的自然暖阳侧逆光，勾勒人物轮廓。",
+          "characters": [
+            {
+              "pose": "站姿微倾，双手端托大型浅底编织簸箕",
+              "identity": "非洲妇女",
+              "wardrobe": "彩色条纹传统上衣，外披红色几何图腾披肩",
+              "appearance": "深色皮肤，面部轮廓清晰，佩戴金色耳圈，专注低头"
+            }
+          ],
+          "composition": "右侧前景突出人物与簸箕，左侧背景延伸展示乡村环境与深度层次。",
+          "environment": "阳光斜照的泥土房屋外墙，挂着彩色布料，墙角放有编织篮、麻袋与简易木质农具。",
+          "sceneDescription": "非洲传统乡村泥房院落。前景右侧一名妇女身着红色彩绘披巾与条纹服装，低头操作扁平竹编簸箕；背景为明黄色泥墙、悬挂的晾晒衣物及堆放的粮袋和坐着的村民。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知或轻微自然原声",
+          "ambient": "轻微的谷物摩擦声及乡村环境底噪"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "平缓",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "写实纪录片风格，中近景。一位深肤色的非洲妇女身穿鲜艳的彩色条纹上衣和红底几何印花披巾，神情专注，双手端着巨大的扁平编织簸箕筛理粮食。明亮的午后阳光洒在她身上与身后的黄色泥土墙壁上，墙边晾晒着布料并堆放着装满粮食的麻袋。暖色调，强自然光影质感，构图饱满真实。\n\n画面与环境: 非洲传统乡村泥房院落。前景右侧一名妇女身着红色彩绘披巾与条纹服装，低头操作扁平竹编簸箕；背景为明黄色泥墙、悬挂的晾晒衣物及堆放的粮袋和坐着的村民。；操作编织簸箕筛粮的妇女；阳光斜照的泥土房屋外墙，挂着彩色布料，墙角放有编织篮、麻袋与简易木质农具。\n\n人物与动作: identity: 非洲妇女; appearance: 深色皮肤，面部轮廓清晰，佩戴金色耳圈，专注低头; wardrobe: 彩色条纹传统上衣，外披红色几何图腾披肩; pose: 站姿微倾，双手端托大型浅底编织簸箕；妇女双手平稳颠动簸箕进行除杂筛粮，背景人物静坐或缓慢活动。；人物双手小幅匀速抖动簸箕，轻微的衣料与身体联动动作。\n\n镜头与构图: 中近景侧拍，浅景深虚化背景，主体对焦清晰，轻微手持微晃感。；右侧前景突出人物与簸箕，左侧背景延伸展示乡村环境与深度层次。\n\n光影与质感: 明亮且高对比度的自然暖阳侧逆光，勾勒人物轮廓。；暖黄色与土红基调，服饰带有鲜明的民族彩色点缀。；真实纪录片写实风格，粗糙泥土与布料质感明显。\n\n声音: ambient: 轻微的谷物摩擦声及乡村环境底噪; music: 未知或轻微自然原声\n\n节奏与转场: editing: pacing: 平缓; techniques: 硬切",
+        "duration": 1.959,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:55:00.225981+00:00",
+        "updatedAt": "2026-10-29T09:55:00.225981+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "365897d0-2791-4976-ae82-808555a9626d",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "6f71494c-9a87-41bd-92b2-55a5b6d9f239",
+        "sceneIndex": 10,
+        "story": {
+          "endTime": 21.625,
+          "summary": "烈日下的集市街道上，一名当地少年抬手遮阳，凝神注视远方。",
+          "startTime": 20.292,
+          "sceneIndex": 10
+        },
+        "visual": {
+          "color": {
+            "tone": "暖棕色与焦糖色调，带有浓郁的市集尘土与暖阳色彩"
+          },
+          "style": {
+            "texture": "写实纪录片质感，电影感颗粒度，皮肤纹理细腻清晰"
+          },
+          "action": [
+            {
+              "order": 1,
+              "description": "男孩保持手搭额头遮光的姿态，视线微动眺望镜头侧方，神情沉静。"
+            }
+          ],
+          "camera": {
+            "angle": "微仰角",
+            "focus": "聚焦在男孩的面部与手部",
+            "speed": "静止",
+            "lensFeel": "中长焦，浅景深",
+            "movement": "轻微手持固定",
+            "shotSize": "面部特写"
+          },
+          "motion": {
+            "continuity": "动作微幅，保持凝望状态"
+          },
+          "subject": "抬手遮阳凝望的非洲少年。",
+          "lighting": {
+            "type": "强烈自然直射日光",
+            "characteristics": "硬光，在男孩前额与眼窝投下清晰的手部阴影，皮肤受光面高光鲜明"
+          },
+          "characters": [
+            {
+              "name": "少年",
+              "pose": "侧身微仰，右手搭在额头遮挡强光",
+              "identity": "当地男孩",
+              "wardrobe": "橘色短袖上衣",
+              "appearance": "深色皮肤，黑色短发，眼神深邃，手腕戴红色串珠手绳",
+              "expression": "若有所思，神情专注平静"
+            }
+          ],
+          "composition": {
+            "depth": "前景为主体面部及手部，背景高度虚化",
+            "framing": "主体偏左三分构图，右手横跨画面上方，右侧留白展示虚化背景"
+          },
+          "environment": {
+            "props": "麻袋粮食堆、塑料筐、远处的简易遮阳棚与招牌",
+            "setting": "户外日间集市街道",
+            "background": "模糊的市集小店，背景中有头顶重物的行人与停靠的三轮车"
+          },
+          "sceneDescription": "阳光刺眼的非洲乡村市集，近景特写一名年轻深肤色男孩抬起右手横在额前遮阳，背景是虚化的杂货铺与往来行人。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "集市人声远鸣、环境杂音",
+          "soundStyle": "市集环境嘈杂声，微风声与低沉远处的环境底噪"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢平稳",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "特写镜头，烈日下的非洲集市街道。一名深色皮肤的年轻男孩侧身站立，右手腕戴着一串红色小珠手绳，正抬起右手横在额头上方遮挡刺眼的日光，目光平静专注地凝望右前方。强烈的自然硬光在男孩眉眼间投下手掌的阴影，面颊与脖颈沐浴在金色阳光下。背景为浅景深虚化的热闹集市，可见杂货麻袋和走动的摊贩。暖色调胶片质感，细腻写实，镜头平稳固定。\n\n画面与环境: 阳光刺眼的非洲乡村市集，近景特写一名年轻深肤色男孩抬起右手横在额前遮阳，背景是虚化的杂货铺与往来行人。；抬手遮阳凝望的非洲少年。；setting: 户外日间集市街道; props: 麻袋粮食堆、塑料筐、远处的简易遮阳棚与招牌; background: 模糊的市集小店，背景中有头顶重物的行人与停靠的三轮车\n\n人物与动作: name: 少年; identity: 当地男孩; appearance: 深色皮肤，黑色短发，眼神深邃，手腕戴红色串珠手绳; wardrobe: 橘色短袖上衣; expression: 若有所思，神情专注平静; pose: 侧身微仰，右手搭在额头遮挡强光；order: 1; description: 男孩保持手搭额头遮光的姿态，视线微动眺望镜头侧方，神情沉静。；continuity: 动作微幅，保持凝望状态\n\n镜头与构图: shotSize: 面部特写; angle: 微仰角; lensFeel: 中长焦，浅景深; movement: 轻微手持固定; focus: 聚焦在男孩的面部与手部; speed: 静止；framing: 主体偏左三分构图，右手横跨画面上方，右侧留白展示虚化背景; depth: 前景为主体面部及手部，背景高度虚化\n\n光影与质感: type: 强烈自然直射日光; characteristics: 硬光，在男孩前额与眼窝投下清晰的手部阴影，皮肤受光面高光鲜明；tone: 暖棕色与焦糖色调，带有浓郁的市集尘土与暖阳色彩；texture: 写实纪录片质感，电影感颗粒度，皮肤纹理细腻清晰\n\n声音: soundStyle: 市集环境嘈杂声，微风声与低沉远处的环境底噪; ambient: 集市人声远鸣、环境杂音\n\n节奏与转场: editing: pacing: 缓慢平稳; techniques: 硬切",
+        "duration": 1.333,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:54:23.605654+00:00",
+        "updatedAt": "2026-10-29T09:54:23.605654+00:00",
+        "metadata": {}
+      },
+      {
+        "id": "2f169f51-e057-46ff-9a5b-d7b6ea26fc77",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "projectVersionId": "9e02c1e4-796a-4d75-ac5a-6d8c5b0f88f1",
+        "originalSceneId": "bf1dbde0-b27f-4aa0-b0b6-703cc64b4662",
+        "sceneIndex": 11,
+        "story": {
+          "endTime": 24.334,
+          "summary": "俯拍视角下，非洲城镇阳光斑驳的斜坡街道上，人们日常劳作与行走，充满市井烟火气。",
+          "startTime": 21.625,
+          "sceneIndex": 11
+        },
+        "visual": {
+          "color": "暖黄、土褐与金黄色为主调，辅以杂货铺彩色商品及前景风化蓝绿色的对比色彩。",
+          "style": "写实纪录片风格，带有胶片颗粒感与温润的纪实影调。",
+          "action": "拉车男子沿街下坡移动；两名儿童向前行走；两名女子在店铺前闲聊；远景零星行人走动。",
+          "camera": "高角度俯拍（俯角约45度），中远景，使用中焦镜头，带有固定机位的窥视感，前景窗框形成自然画框。",
+          "motion": "画面内主体平稳移动，镜头基本保持稳定。",
+          "subject": "斜坡街道上的居民日常生活图景，重点为拉货车男子、交谈妇女与走下斜坡的儿童。",
+          "lighting": "强烈的直射顶侧日光，高对比度，地面投射出清晰浓重的斜长阴影。",
+          "characters": [
+            {
+              "action": "背对镜头俯身拉着装满纸箱与饮料的板车沿斜坡向下走去。",
+              "identity": "拉货男子",
+              "appearance": "黑人成年男性，深色短发，身穿灰绿色外套与深色长裤。"
+            },
+            {
+              "action": "在杂货铺门前面对面站立交谈。",
+              "identity": "交谈妇女",
+              "appearance": "两位黑人妇女，一人着橙红色碎花长袍配白色头巾，另一人着绿色长裙配头巾。"
+            },
+            {
+              "action": "并排沿街道左侧向下步行。",
+              "identity": "儿童",
+              "appearance": "一男一女两名黑人幼童，男孩穿红衣蓝短裤，女孩穿粉色裙子。"
+            }
+          ],
+          "composition": "左侧前景为深色及蓝色窗框遮挡，中央为开阔土路对角线延伸，右侧为排列整齐的杂货铺，形成纵深透视。",
+          "environment": "典型的东非小镇街道，两旁为土黄色泥墙与木质结构民房，二楼有木栏杆阳台，晾晒着衣物。街道旁停放着数辆摩托车，地面为干燥沙土路面。",
+          "sceneDescription": "高角度俯拍埃塞俄比亚风格小镇街道。右侧为挂满货物的杂货铺，门牌标有阿姆哈拉语及'SHOP'；左侧带有风化蓝色窗框的前景遮挡。街道为斜坡土路，阳光强烈拉出长影。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "小镇集市的低沉环境嘈杂声、板车木轮滚动声与微弱的风声。",
+          "transcript": "无对白"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "舒缓平实，留白式生活记录节奏。",
+            "techniques": "硬切接入，作为场景尾声平稳淡出或硬切结束。"
+          }
+        },
+        "generationPrompt": "高角度俯拍，纪实风格。阳光炽烈干燥的非洲斜坡土路街道，土黄色泥砖房旁排列着标有阿姆哈拉语及'SHOP'字样的小杂货铺。左侧前景有斑驳风化的蓝色木窗框虚化遮挡。一名穿灰绿外套的黑人男子正拉着装满货物与纸箱的手拉车沿街下行；两名包头巾的长裙妇女在商铺门前站立闲聊；两名分别穿红衣蓝裤和粉裙的黑人小孩沿街慢行。金色阳光洒落，地面投下长影，暖黄土褐色调，电影质感，写实光影，镜头平稳固定。\n\n画面与环境: 高角度俯拍埃塞俄比亚风格小镇街道。右侧为挂满货物的杂货铺，门牌标有阿姆哈拉语及'SHOP'；左侧带有风化蓝色窗框的前景遮挡。街道为斜坡土路，阳光强烈拉出长影。；斜坡街道上的居民日常生活图景，重点为拉货车男子、交谈妇女与走下斜坡的儿童。；典型的东非小镇街道，两旁为土黄色泥墙与木质结构民房，二楼有木栏杆阳台，晾晒着衣物。街道旁停放着数辆摩托车，地面为干燥沙土路面。\n\n人物与动作: identity: 拉货男子; appearance: 黑人成年男性，深色短发，身穿灰绿色外套与深色长裤。; action: 背对镜头俯身拉着装满纸箱与饮料的板车沿斜坡向下走去。; identity: 交谈妇女; appearance: 两位黑人妇女，一人着橙红色碎花长袍配白色头巾，另一人着绿色长裙配头巾。; action: 在杂货铺门前面对面站立交谈。; identity: 儿童; appearance: 一男一女两名黑人幼童，男孩穿红衣蓝短裤，女孩穿粉色裙子。; action: 并排沿街道左侧向下步行。；拉车男子沿街下坡移动；两名儿童向前行走；两名女子在店铺前闲聊；远景零星行人走动。；画面内主体平稳移动，镜头基本保持稳定。\n\n镜头与构图: 高角度俯拍（俯角约45度），中远景，使用中焦镜头，带有固定机位的窥视感，前景窗框形成自然画框。；左侧前景为深色及蓝色窗框遮挡，中央为开阔土路对角线延伸，右侧为排列整齐的杂货铺，形成纵深透视。\n\n光影与质感: 强烈的直射顶侧日光，高对比度，地面投射出清晰浓重的斜长阴影。；暖黄、土褐与金黄色为主调，辅以杂货铺彩色商品及前景风化蓝绿色的对比色彩。；写实纪录片风格，带有胶片颗粒感与温润的纪实影调。\n\n声音: transcript: 无对白; soundStyle: 小镇集市的低沉环境嘈杂声、板车木轮滚动声与微弱的风声。\n\n节奏与转场: editing: pacing: 舒缓平实，留白式生活记录节奏。; techniques: 硬切接入，作为场景尾声平稳淡出或硬切结束。",
+        "duration": 2.709,
+        "generatedVideoUrl": null,
+        "createdAt": "2026-10-29T09:54:53.752534+00:00",
+        "updatedAt": "2026-10-29T09:54:53.752534+00:00",
+        "metadata": {}
+      }
+    ],
+    "referenceVideos": [
+      {
+        "id": "49e13921-3301-4b63-8867-4070d3e15e3a",
+        "projectId": "8fd0a095-50e4-4397-b955-1f63572fe48e",
+        "sourceUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/27cdac77-ab30-4952-9631-d7f1463eb3fb-e0a11ef86a8dc1dbb6127fabfae79efe.mp4",
+        "mimeType": null,
+        "duration": 24,
+        "createdAt": "2026-10-29T09:47:58.453465+00:00",
+        "fileName": "纪实感.mp4",
+        "metadata": {}
+      }
+    ]
   }
 ]

@@ -29,6 +29,10 @@ export const PUBLIC_WORKFLOW_SAMPLES = [
     id: "6660cc92-ddcd-4836-921f-d94984eb4eb7",
     title: "巨构工业",
   },
+  {
+    id: "8fd0a095-50e4-4397-b955-1f63572fe48e",
+    title: "纪实感",
+  },
 ] as const;
 
 type PublicProject = {
