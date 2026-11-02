@@ -10,22 +10,22 @@ export function HeroSection({ isAuthenticated = false }: { isAuthenticated?: boo
   const appHref = isAuthenticated ? "/dashboard" : "/login";
 
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative isolate min-h-[620px] overflow-hidden md:min-h-0">
       {/* 背景图 - 完整显示，不裁剪 */}
       <img
         src="/images/hero-text-fishing.jpg"
         alt="PromptLens hero background"
-        className="w-full h-auto block"
+        className="absolute inset-0 h-full w-full object-cover object-center md:static md:block md:h-auto md:object-contain"
       />
 
       {/* 内容 */}
-      <div className="absolute inset-0 flex flex-col items-center justify-start pt-40 md:pt-48 pb-12 px-4 md:px-6 lg:px-8">
+      <div className="relative z-10 flex min-h-[620px] flex-col items-center justify-center px-5 pb-14 pt-28 md:absolute md:inset-0 md:min-h-0 md:justify-start md:px-6 md:pb-12 md:pt-48 lg:px-8">
         <div className="max-w-5xl mx-auto text-center">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-normal font-serif-display text-white leading-[1.1] mb-6 animate-fade-in" style={{ animationDelay: "80ms", textShadow: '0 2px 30px rgba(0,0,0,0.45)' }}>
+        <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-normal font-serif-display text-white leading-[1.1] mb-6 animate-fade-in" style={{ animationDelay: "80ms", textShadow: '0 2px 30px rgba(0,0,0,0.45)' }}>
           {t("heroTitle")}
         </h1>
 
-        <p className="text-lg md:text-xl text-white max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in" style={{ animationDelay: "160ms", textShadow: '0 1px 16px rgba(0,0,0,0.5)' }}>
+        <p className="text-base sm:text-lg md:text-xl text-white max-w-2xl mx-auto mb-10 leading-relaxed animate-fade-in" style={{ animationDelay: "160ms", textShadow: '0 1px 16px rgba(0,0,0,0.5)' }}>
           {t("heroSubtitle")}
         </p>
 
