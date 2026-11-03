@@ -5,7 +5,7 @@ const timestamp = (value: unknown) => {
   return Number.isFinite(time) ? time : undefined;
 };
 const duration = (value: unknown) => typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.round(value) : undefined;
-const errorCodes = new Set(["MEDIA_PREPARATION_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "MEDIA_HTTP_500", "SPLIT_ASSET_MISMATCH", "ANALYSIS_INTERRUPTED", "ANALYSIS_SCENE_CHECKPOINT_MISSING", "KIE_KEY_CHANGED", "KIE_KEY_REQUIRED", "KIE_INVALID_RESULT", "TASK_REQUIRES_RECONCILIATION", "ANALYSIS_FAILED"]);
+const errorCodes = new Set(["MEDIA_PREPARATION_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "MEDIA_HTTP_500", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE", "SPLIT_ASSET_MISMATCH", "ANALYSIS_INTERRUPTED", "ANALYSIS_SCENE_CHECKPOINT_MISSING", "KIE_KEY_CHANGED", "KIE_KEY_REQUIRED", "KIE_INVALID_RESULT", "TASK_REQUIRES_RECONCILIATION", "ANALYSIS_FAILED"]);
 const errorCode = (value: unknown) => typeof value === "string" ? errorCodes.has(value) ? value : "ANALYSIS_FAILED" : undefined;
 
 export type AnalysisStage = "quoted" | "queued" | "preparing" | "analyzing" | "saving" | "completed" | "failed" | "review";

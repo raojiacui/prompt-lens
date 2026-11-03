@@ -7,6 +7,7 @@ import { getPlatformKieApiKey } from "./platform-access";
 import { generationKeyFingerprint } from "./generation-key";
 import { finishCommercialAnalysis, savedAnalysisModel, type AnalysisInput } from "./commercial-analysis";
 import { taskErrorDetails } from "./task-diagnostics";
+import { analysisFailureMessage } from "./analysis-failure-message";
 import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "./analysis-provider-limit";
 import { analysisDispatchTarget, dispatchAnalysisInvocation } from "@/lib/workflow/analysis-dispatch";
@@ -211,9 +212,9 @@ export async function runIndependentSceneJob(jobId: string) {
     blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, analysisBudgetMs: Math.max(1, startedAt + 270_000 - Date.now()), allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false });
   } catch (error) {
     console.error("commercial.scene.model_failed", { taskId: task.id, sceneId: job.sceneId, error: taskErrorDetails(error) });
-    const fallback = buildFallbackSceneBlueprint(asset, "Analysis unavailable", undefined, input.outputLanguage);
     const message = error instanceof Error ? error.message : "";
-    const failureCode = ["KIE_KEY_CHANGED", "KIE_KEY_REQUIRED", "SPLIT_ASSET_MISMATCH", "MEDIA_STORAGE_CONFIG_INVALID"].includes(message) ? message : requestStarted ? "ANALYSIS_FAILED" : "MEDIA_PREPARATION_FAILED";
+    const failureCode = ["KIE_KEY_CHANGED", "KIE_KEY_REQUIRED", "SPLIT_ASSET_MISMATCH", "MEDIA_STORAGE_CONFIG_INVALID", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE"].includes(message) ? message : requestStarted ? "ANALYSIS_FAILED" : "MEDIA_PREPARATION_FAILED";
+    const fallback = buildFallbackSceneBlueprint(asset, analysisFailureMessage(failureCode, input.outputLanguage) || "Analysis unavailable", undefined, input.outputLanguage);
     blueprint = { ...fallback, metadata: { ...fallback.metadata, providerOutcome: requestStarted ? "unknown" : "not_sent", failureCode } };
   }
   const modelFinishedAt = Date.now();

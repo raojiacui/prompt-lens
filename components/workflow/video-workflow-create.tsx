@@ -6,6 +6,7 @@ import { AnalysisQuotePanel } from "@/components/payments/analysis-quote-panel";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
+import { analysisFailureMessage } from "@/lib/billing/analysis-failure-message";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 import { fetchProjectList } from "@/lib/workflow/project-list-client";
 import { listModels } from "@/lib/ai/model-registry";
@@ -1053,7 +1054,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                           {projectMediaType === "video" ? (
                             <p className="mt-1 text-sm text-muted-foreground">{formatTime(scene?.startTime || 0)} - {formatTime(scene?.endTime || sceneVersion.duration)} · {sceneVersion.duration.toFixed(1)}{ui.seconds}</p>
                           ) : null}
-                          {scene?.error ? <p className="mt-1 max-w-3xl text-xs text-amber-700">{scene.error}</p> : null}
+                          {scene?.error ? <p className="mt-1 max-w-3xl text-xs text-amber-700">{analysisFailureMessage(sceneVersion.metadata?.failureCode, locale) || scene.error}</p> : null}
                           {needsReview && !sceneVersion.generationPrompt.trim() && <p role="status" className="mt-2 max-w-3xl text-sm text-amber-700">
                             {locale === "en"
                               ? (sceneVersion.metadata?.analysisResultAttempts === 2 ? "No usable prompt after one automatic retry. Other successful shots are preserved; you can retry this shot later." : "This shot did not produce a usable prompt. Other successful shots are preserved; you can retry this shot later.")

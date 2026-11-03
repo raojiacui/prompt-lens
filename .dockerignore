@@ -11,6 +11,8 @@ workers/ffmpeg-worker/*
 !workers/ffmpeg-worker/fly-machine-lifecycle.mjs
 !workers/ffmpeg-worker/parallel-download.mjs
 !workers/ffmpeg-worker/media-fetch.mjs
+!workers/ffmpeg-worker/storage-media-url.mjs
+!workers/ffmpeg-worker/storage-media-download.mjs
 !workers/ffmpeg-worker/video-inspection.mjs
 !workers/ffmpeg-worker/remote-video-codec.mjs
 !workers/ffmpeg-worker/scene-segments.mjs

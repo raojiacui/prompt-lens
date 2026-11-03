@@ -29,7 +29,7 @@ it("retains the HTTP status when the proxy responds with HTML", async () => {
   expect(taskErrorDetails(failure)).toMatchObject({ cause: { code: "MEDIA_HTTP_502" } });
 });
 
-it.each(["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED"])("preserves a known media failure code: %s", async (code) => {
+it.each(["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE"])("preserves a known media failure code: %s", async (code) => {
   vi.stubEnv("FFMPEG_WORKER_URL", "https://worker.example");
   vi.stubEnv("FFMPEG_WORKER_SECRET", "worker-test-secret");
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code, error: "Cannot inspect video" }, { status: 422 })));

@@ -6,7 +6,7 @@ import path from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Transform } from "node:stream";
 import { spawn } from "node:child_process";
-import { randomUUID, createHash } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { downloadStreamsInParallel } from "./parallel-download.mjs";
 import { splitLongScenes, sampleSceneFrameTimes } from "./scene-segments.mjs";
@@ -16,6 +16,7 @@ import { probeRemoteVideoCodec } from "./remote-video-codec.mjs";
 import { startReconciliationScheduler } from "./reconciliation-scheduler.mjs";
 import { createFlyMachineSuspender } from "./fly-machine-lifecycle.mjs";
 import { configuredStorageMediaUrl } from "./storage-media-url.mjs";
+import { downloadStorageMedia } from "./storage-media-download.mjs";
 
 const PORT = Number(process.env.PORT || 8080);
 const WORKER_SECRET = process.env.WORKER_SECRET || process.env.FFMPEG_WORKER_SECRET || "";
@@ -491,17 +492,10 @@ async function handleCommercialMedia(req, res) {
   try {
     workDir = await mkdtemp(path.join(tmpdir(), "prompt-lens-commercial-"));
     const inputPath = path.join(workDir, "input.mp4");
-    const response = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(60000) });
-    if (!response.ok || !response.body) throw new Error("Media download failed");
-    let bytes = 0;
-    const hash = createHash("sha256");
-    const limiter = new Transform({ transform(chunk, _encoding, callback) {
-      bytes += chunk.length;
-      if (bytes > 100 * 1024 * 1024) return callback(new Error("Media exceeds 100MB"));
-      hash.update(chunk); callback(null, chunk);
-    } });
-    await pipeline(response.body, limiter, createWriteStream(inputPath));
-    const sourceHash = hash.digest("hex");
+    const { bytes, sourceHash, attempts } = await downloadStorageMedia(url, inputPath, {
+      onRetry: detail => console.warn("commercial.media.download_retry", { mode: body.mode, ...detail }),
+    });
+    console.info("commercial.media.download_ready", { mode: body.mode, attempts, bytes });
     const metadata = await probeVideo(inputPath);
     const durationUs = Math.round(metadata.duration * 1000000);
     if (!metadata.width || !Number.isSafeInteger(durationUs) || durationUs <= 0) throw new Error("Invalid video duration");
@@ -552,7 +546,7 @@ const server = createServer(async (req, res) => {
   } catch (error) {
     const status = error.statusCode || 500;
     console.error(error);
-    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "VIDEO_CODEC_PREFLIGHT_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL"].includes(error.code) ? error.code : undefined;
+    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "VIDEO_CODEC_PREFLIGHT_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE"].includes(error.code) ? error.code : undefined;
     return json(res, status, { error: error.message || "Worker error", ...(code ? { code } : {}) });
   }
 });
