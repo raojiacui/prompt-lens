@@ -4,6 +4,7 @@ import { getPublicSampleBundle, getPublicWorkflowSamples, hasPublicSampleMedia }
 const id = "e3a4aa5b-976d-4dd7-a906-c818f55c4a54";
 const mountainSampleId = "52457e72-44d6-41e1-ae89-8233ef50082c";
 it.each([
+  ["bad27466-22a9-43d8-9f7e-ae0d0182dcac", "西藏人文纪录片", 10],
   ["1a54fb8d-254a-4867-910f-b7d4c6ae8ac0", "山海经", 14],
   ["61998c4e-4df0-405e-8200-d99a1d0d734d", "赛博神祇", 5],
   ["6660cc92-ddcd-4836-921f-d94984eb4eb7", "巨构工业", 5],

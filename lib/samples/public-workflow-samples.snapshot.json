@@ -14474,5 +14474,1508 @@
         "metadata": {}
       }
     ]
+  },
+  {
+    "project": {
+      "id": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+      "status": "ready",
+      "activeVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+      "createdAt": "2026-11-03T09:34:53.530Z",
+      "updatedAt": "2026-11-03T14:56:10.182Z",
+      "description": null,
+      "title": "西藏人文纪录片",
+      "metadata": {
+        "mediaType": "video",
+        "failedSceneCount": 0
+      }
+    },
+    "versions": [
+      {
+        "id": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "versionNumber": 0,
+        "kind": "original",
+        "overview": {
+          "sceneCount": 10
+        },
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T09:35:08.801Z",
+        "parentVersionId": null,
+        "label": "原始分析",
+        "remixPrompt": null,
+        "metadata": {}
+      }
+    ],
+    "activeVersion": {
+      "id": "2e193842-0395-4088-9e0c-681d50d6b619",
+      "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+      "versionNumber": 0,
+      "kind": "original",
+      "overview": {
+        "sceneCount": 10
+      },
+      "createdAt": "2026-11-03T09:35:08.801Z",
+      "updatedAt": "2026-11-03T09:35:08.801Z",
+      "parentVersionId": null,
+      "label": "原始分析",
+      "remixPrompt": null,
+      "metadata": {}
+    },
+    "scenes": [
+      {
+        "id": "43fe0dcd-2558-4692-9a72-17932e5901ff",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "referenceVideoId": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "sceneIndex": 1,
+        "shotGroupId": null,
+        "startTime": 0,
+        "endTime": 2.417,
+        "duration": 2.417,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/c8f65166-60d5-441a-a9fc-ba3165a18958/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/c8f65166-60d5-441a-a9fc-ba3165a18958/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/c8f65166-60d5-441a-a9fc-ba3165a18958/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/c8f65166-60d5-441a-a9fc-ba3165a18958/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/c8f65166-60d5-441a-a9fc-ba3165a18958/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T13:21:59.393Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "2aeaef08-222e-474b-bf35-f417c2ecc753",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "referenceVideoId": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "sceneIndex": 2,
+        "shotGroupId": null,
+        "startTime": 2.417,
+        "endTime": 4.458,
+        "duration": 2.041,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9dfe4058-670d-4e07-9dff-25b4a50a5e0e/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9dfe4058-670d-4e07-9dff-25b4a50a5e0e/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9dfe4058-670d-4e07-9dff-25b4a50a5e0e/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9dfe4058-670d-4e07-9dff-25b4a50a5e0e/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9dfe4058-670d-4e07-9dff-25b4a50a5e0e/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T09:35:50.095Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "37addf2e-b87e-4eda-9af5-000ce4c2e300",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "referenceVideoId": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "sceneIndex": 3,
+        "shotGroupId": null,
+        "startTime": 4.458,
+        "endTime": 4.958,
+        "duration": 0.5,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/9cdf8e5f-1093-47e1-8f35-94ddcab93ab4-309dc0945fbc1c87a15840f87b2cc085.mp4#t=4.458,4.958",
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T09:36:14.604Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "10accf79-8f14-4695-a435-1ca341b874c0",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "referenceVideoId": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "sceneIndex": 4,
+        "shotGroupId": null,
+        "startTime": 4.958,
+        "endTime": 7.5,
+        "duration": 2.542,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0090d95d-d9b5-417e-a46b-90bc14ff68de/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0090d95d-d9b5-417e-a46b-90bc14ff68de/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0090d95d-d9b5-417e-a46b-90bc14ff68de/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0090d95d-d9b5-417e-a46b-90bc14ff68de/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0090d95d-d9b5-417e-a46b-90bc14ff68de/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T09:36:54.802Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "b5457104-2e51-4977-9f7e-3045318b6231",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "referenceVideoId": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "sceneIndex": 5,
+        "shotGroupId": null,
+        "startTime": 7.5,
+        "endTime": 8.875,
+        "duration": 1.375,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/9cdf8e5f-1093-47e1-8f35-94ddcab93ab4-309dc0945fbc1c87a15840f87b2cc085.mp4#t=7.5,8.875",
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T09:37:10.900Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "e9e33b8b-7d5e-4acb-ba64-0febba3502b7",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "referenceVideoId": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "sceneIndex": 6,
+        "shotGroupId": null,
+        "startTime": 8.875,
+        "endTime": 13.083,
+        "duration": 4.208,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/556d4db1-1ae3-46d3-a942-090a2c52324d/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/556d4db1-1ae3-46d3-a942-090a2c52324d/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/556d4db1-1ae3-46d3-a942-090a2c52324d/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/556d4db1-1ae3-46d3-a942-090a2c52324d/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/556d4db1-1ae3-46d3-a942-090a2c52324d/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T09:37:41.635Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "cebeb5ee-de12-4877-a5d1-ec4aca4e2be4",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "referenceVideoId": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "sceneIndex": 7,
+        "shotGroupId": null,
+        "startTime": 13.083,
+        "endTime": 18.875,
+        "duration": 5.792,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/4a3fd921-a8c9-4347-bc10-f3baa4311798/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/4a3fd921-a8c9-4347-bc10-f3baa4311798/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/4a3fd921-a8c9-4347-bc10-f3baa4311798/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/4a3fd921-a8c9-4347-bc10-f3baa4311798/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/4a3fd921-a8c9-4347-bc10-f3baa4311798/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T09:37:58.811Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "131cd0a3-d16a-4056-96da-4767d5d12a10",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "referenceVideoId": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "sceneIndex": 8,
+        "shotGroupId": null,
+        "startTime": 18.875,
+        "endTime": 22.083,
+        "duration": 3.208,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9679a353-8eb8-4271-aafe-bd7443dfd539/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9679a353-8eb8-4271-aafe-bd7443dfd539/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9679a353-8eb8-4271-aafe-bd7443dfd539/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9679a353-8eb8-4271-aafe-bd7443dfd539/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9679a353-8eb8-4271-aafe-bd7443dfd539/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T09:38:27.396Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "e9b46f9e-efb7-429a-b44f-61d673c2f9c7",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "referenceVideoId": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "sceneIndex": 9,
+        "shotGroupId": null,
+        "startTime": 22.083,
+        "endTime": 25.042,
+        "duration": 2.959,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/9cdf8e5f-1093-47e1-8f35-94ddcab93ab4-309dc0945fbc1c87a15840f87b2cc085.mp4#t=22.083,25.042",
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T09:38:52.385Z",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "89a12a24-24c6-4f53-95d1-bdef6f5d267c",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "referenceVideoId": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "sceneIndex": 10,
+        "shotGroupId": null,
+        "startTime": 25.042,
+        "endTime": 28.77,
+        "duration": 3.728,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/95383126-3293-48d7-903c-39c97c1dd792/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/95383126-3293-48d7-903c-39c97c1dd792/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/95383126-3293-48d7-903c-39c97c1dd792/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/95383126-3293-48d7-903c-39c97c1dd792/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/95383126-3293-48d7-903c-39c97c1dd792/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "updatedAt": "2026-11-03T09:39:18.386Z",
+        "error": null,
+        "metadata": {}
+      }
+    ],
+    "sceneVersions": [
+      {
+        "id": "e25cc227-0062-4fc5-b0e3-f69fb5bf45ad",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "43fe0dcd-2558-4692-9a72-17932e5901ff",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 2.417,
+          "summary": "在阴霾风雪的高原群山深处，一座孤零零的覆雪石砌小屋立于荒原，烟囱升起缕缕微烟，经幡在寒风中翻飞。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "偏暗青绿与灰白色冷色调，低饱和度，带有厚重阴沉的雪地冷调质感。",
+          "style": "电影写实纪实风格，画质带有自然胶片颗粒感。",
+          "action": "烟囱持续升起极淡的微烟并被风吹散；木杆上的经幡随寒风快速翻卷摆动；风雪微弱掠过地表。",
+          "camera": "全景/远景，视线微俯至平视，中焦段，镜头缓慢向前推移，深焦大景深。",
+          "motion": "微幅匀速前推运动，伴随风动旗帜与微弱烟气动态。",
+          "subject": "一座覆雪的古朴石砌小屋与左侧随风飘扬的藏式经幡。",
+          "lighting": "阴天全漫射冷光，光线暗淡柔和，无明显硬阴影与定向光源。",
+          "characters": "无人物出镜。",
+          "composition": "石屋位于画面中央偏右中景，左侧经幡杆形成视觉平衡，远山与阴云占据上部三分之二，具有荒凉孤立感。",
+          "environment": "荒凉高原雪山，地面覆有薄雪与冻土杂石，背景为被大片浓云大雾遮蔽的雪山山体。",
+          "sceneDescription": "全景展现寒冷阴郁的高原雪原。一座带烟囱的粗砺石砌矮房孤立在雪地上，房顶积雪厚重，烟囱冒出淡烟。左侧立着挂有经幡的木杆，远景雪山在阴云浓雾中若隐若现。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "低沉呼啸的旷野风声与经幡布料在寒风中拍打的微弱猎猎声，环境寂静肃穆。",
+          "transcript": "无"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉静",
+            "techniques": "硬切接入，硬切接出"
+          }
+        },
+        "generationPrompt": "电影级质感，高原雪原全景。一座石砌孤立小屋坐落在荒野中，斜坡屋顶覆满积雪，白色砖石烟囱飘出淡淡细烟。小屋左前方竖立着木杆，上面挂着藏式经幡风马旗，在刺骨寒风中快速摆动翻卷。远景为被重度阴云和大雾笼罩的苍茫雪山群。冷青与灰白色调，低饱和度，阴天柔和漫射光线，真实胶片颗粒感。摄像机保持平视缓慢向前推进。音效为呼啸寒风声（可能），无人物，无对话。\n\n画面与环境: 全景展现寒冷阴郁的高原雪原。一座带烟囱的粗砺石砌矮房孤立在雪地上，房顶积雪厚重，烟囱冒出淡烟。左侧立着挂有经幡的木杆，远景雪山在阴云浓雾中若隐若现。；一座覆雪的古朴石砌小屋与左侧随风飘扬的藏式经幡。；荒凉高原雪山，地面覆有薄雪与冻土杂石，背景为被大片浓云大雾遮蔽的雪山山体。\n\n人物与动作: 无人物出镜。；烟囱持续升起极淡的微烟并被风吹散；木杆上的经幡随寒风快速翻卷摆动；风雪微弱掠过地表。；微幅匀速前推运动，伴随风动旗帜与微弱烟气动态。\n\n镜头与构图: 全景/远景，视线微俯至平视，中焦段，镜头缓慢向前推移，深焦大景深。；石屋位于画面中央偏右中景，左侧经幡杆形成视觉平衡，远山与阴云占据上部三分之二，具有荒凉孤立感。\n\n光影与质感: 阴天全漫射冷光，光线暗淡柔和，无明显硬阴影与定向光源。；偏暗青绿与灰白色冷色调，低饱和度，带有厚重阴沉的雪地冷调质感。；电影写实纪实风格，画质带有自然胶片颗粒感。\n\n声音: style: 低沉呼啸的旷野风声与经幡布料在寒风中拍打的微弱猎猎声，环境寂静肃穆。; transcript: 无\n\n节奏与转场: editing: pacing: 缓慢沉静; techniques: 硬切接入，硬切接出",
+        "duration": 2.417,
+        "createdAt": "2026-11-03T09:35:11.732Z",
+        "updatedAt": "2026-11-03T13:58:58.944Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T13:21:59.239Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "ed28ce45-eb98-4938-90ed-b4feb8f774f6",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "2aeaef08-222e-474b-bf35-f417c2ecc753",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 4.458,
+          "summary": "在昏暗的藏式居所内，一位年迈的长者俯身将柴火添入燃烧的铁炉中。",
+          "startTime": 2.417,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "暖黑调为主，沉稳的深褐、炭黑与明亮橙红火光形成鲜明冷暖明暗反差。",
+          "style": "真实纪实电影质感，烟火气与生活质感浓厚。",
+          "action": "老人原本坐着整理柴火，随后身体前倾，双手握着几根细木柴精准地送入铁炉的进柴口中。",
+          "camera": "中景侧面机位，视线水平，镜头缓慢轻微向前推进，焦点落在老人与火炉之间。",
+          "motion": "人物缓慢俯身前送手臂，火光轻微摇曳跳动。",
+          "subject": "年迈的藏族老人，白发稀疏，面容沧桑，身穿厚重深褐色藏袍。",
+          "lighting": "低调写实照明，主要由炉膛内跃动的橙红色火光提供局部暖光源，面部及手部带有微弱边缘光，背景处于阴影中。",
+          "characters": "一位老人，侧身朝向画面右侧的炉火，神情专注平静，动作迟缓自然。",
+          "composition": "老人位于画面左侧，铁炉位于中右侧，炉火形成视觉中心，背景深暗压低，明暗对比强烈。",
+          "environment": "典型的藏区暗室内，背景挂有彩色经幡和卷轴唐卡，炉旁堆放着引火柴草，整体环境朴素昏暗。",
+          "sceneDescription": "光线昏暗的传统藏式室内，背景悬挂经幡与唐卡。一位身着深褐色藏袍的白发老人坐在木榻上，正俯身往身旁的黑色铁皮火炉膛口添加干燥木条，炉内透出橙红色火光。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "环境音为主，伴随木柴轻微碎裂声、炉火燃烧的噼啪声与沉闷的室内呼吸底噪。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢凝重",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "中景，低调电影质感。昏暗的藏式居室内，背景隐约可见经幡与唐卡壁画。一位满头白发、身着厚重深褐色藏袍的年迈藏族老人侧身而坐，正缓缓前倾身体，双手将一把干燥木柴送入黑色铁皮炉子的炉膛中。炉内燃着明亮的橙红色炭火，火光映亮了老人的手部与苍老的面孔。写实光影，胶片颗粒，宁静温暖的生活纪实风格。\n\n画面与环境: 光线昏暗的传统藏式室内，背景悬挂经幡与唐卡。一位身着深褐色藏袍的白发老人坐在木榻上，正俯身往身旁的黑色铁皮火炉膛口添加干燥木条，炉内透出橙红色火光。；年迈的藏族老人，白发稀疏，面容沧桑，身穿厚重深褐色藏袍。；典型的藏区暗室内，背景挂有彩色经幡和卷轴唐卡，炉旁堆放着引火柴草，整体环境朴素昏暗。\n\n人物与动作: 一位老人，侧身朝向画面右侧的炉火，神情专注平静，动作迟缓自然。；老人原本坐着整理柴火，随后身体前倾，双手握着几根细木柴精准地送入铁炉的进柴口中。；人物缓慢俯身前送手臂，火光轻微摇曳跳动。\n\n镜头与构图: 中景侧面机位，视线水平，镜头缓慢轻微向前推进，焦点落在老人与火炉之间。；老人位于画面左侧，铁炉位于中右侧，炉火形成视觉中心，背景深暗压低，明暗对比强烈。\n\n光影与质感: 低调写实照明，主要由炉膛内跃动的橙红色火光提供局部暖光源，面部及手部带有微弱边缘光，背景处于阴影中。；暖黑调为主，沉稳的深褐、炭黑与明亮橙红火光形成鲜明冷暖明暗反差。；真实纪实电影质感，烟火气与生活质感浓厚。\n\n声音: style: 环境音为主，伴随木柴轻微碎裂声、炉火燃烧的噼啪声与沉闷的室内呼吸底噪。\n\n节奏与转场: editing: pacing: 缓慢凝重; techniques: 硬切",
+        "duration": 2.041,
+        "createdAt": "2026-11-03T09:35:49.977Z",
+        "updatedAt": "2026-11-03T09:35:49.977Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:35:49.931Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "3d424480-db66-4dcf-8493-793dacbe9a90",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "37addf2e-b87e-4eda-9af5-000ce4c2e300",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 4.958,
+          "summary": "昏暗屋内，一位藏族老人正向铁皮火炉中添柴。",
+          "startTime": 4.458,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "暖黑基调，以深红、焦褐与炽红火光为主。",
+          "style": "真实纪录片质感，电影感写实质朴风格。",
+          "action": "老人动作缓慢地将手中木柴递入炉火中，炉内火光微动。",
+          "camera": "中景，微俯平视，固定机位，浅景深。",
+          "motion": "老人双手轻微摆动送柴，炉火微颤。",
+          "subject": "藏族老年僧人或长者，身形佝偻，神情专注于添柴。",
+          "lighting": "低照度明暗对照法，炉内橙红火光作为主光源照亮人物面部和手部。",
+          "characters": [
+            {
+              "name": "藏族老人",
+              "pose": "前倾躬坐，双手伸向炉膛口。",
+              "appearance": "白发稀疏，皮肤黝黑皱褶，身穿厚重暗红色藏袍。"
+            }
+          ],
+          "composition": "老人位于画面左侧，右侧为垂直延伸的铁火炉，焦点集中在炉膛火光与老人双手处。",
+          "environment": "光线暗淡的传统藏式房间，背景悬挂风马旗或唐卡织物，右侧立着黑色铁皮烟囱火炉。",
+          "sceneDescription": "简陋昏暗的藏式室内，一位穿厚藏袍的老人躬身在金属柴炉前，伸手将碎木柴添入炉内，炉膛闪烁着橙红色火光。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "静音或低沉氛围音",
+          "ambient": "微弱柴火噼啪声",
+          "soundEffects": "木柴摩擦撞击轻响"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "舒缓凝重",
+            "techniques": "实景固定机位短切"
+          }
+        },
+        "generationPrompt": "电影质感中景，固定机位。昏暗质朴的藏式木屋内，一位白发稀疏、神情沧桑的藏族老人身穿厚重深红色藏袍，弯腰坐在黑色铁皮炉旁，伸手向炉膛中添入木柴。炉火散发橙红色暖光，映照老人侧脸与粗糙双手，背景隐现经幡织物，明暗对比强烈，具有写实纪录片氛围。\n\n画面与环境: 简陋昏暗的藏式室内，一位穿厚藏袍的老人躬身在金属柴炉前，伸手将碎木柴添入炉内，炉膛闪烁着橙红色火光。；藏族老年僧人或长者，身形佝偻，神情专注于添柴。；光线暗淡的传统藏式房间，背景悬挂风马旗或唐卡织物，右侧立着黑色铁皮烟囱火炉。\n\n人物与动作: name: 藏族老人; appearance: 白发稀疏，皮肤黝黑皱褶，身穿厚重暗红色藏袍。; pose: 前倾躬坐，双手伸向炉膛口。；老人动作缓慢地将手中木柴递入炉火中，炉内火光微动。；老人双手轻微摆动送柴，炉火微颤。\n\n镜头与构图: 中景，微俯平视，固定机位，浅景深。；老人位于画面左侧，右侧为垂直延伸的铁火炉，焦点集中在炉膛火光与老人双手处。\n\n光影与质感: 低照度明暗对照法，炉内橙红火光作为主光源照亮人物面部和手部。；暖黑基调，以深红、焦褐与炽红火光为主。；真实纪录片质感，电影感写实质朴风格。\n\n声音: ambient: 微弱柴火噼啪声; music: 静音或低沉氛围音; soundEffects: 木柴摩擦撞击轻响\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 舒缓凝重; techniques: 实景固定机位短切",
+        "duration": 0.5,
+        "createdAt": "2026-11-03T09:36:14.492Z",
+        "updatedAt": "2026-11-03T09:36:14.492Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:36:14.449Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "a261a7b7-9ff3-482b-86f0-f8666758f8a1",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "10accf79-8f14-4695-a435-1ca341b874c0",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 7.5,
+          "summary": "昏暗质朴的藏式屋内，一位满脸深邃皱纹的藏族老者坐在火炉旁，专注地低头添柴烤火。",
+          "startTime": 4.958,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "暖棕色与焦黑构成的低调暗部基调，点缀炉火的微橙红色。",
+          "style": "人文纪实电影质感，写实质朴，颗粒感自然。",
+          "action": [
+            "老者身体微微俯倾，双手在下方拨弄柴火或物件，神情安详静穆。",
+            "镜头平稳向前缓慢推入，景别从半身逐渐收窄为侧面面部特写。"
+          ],
+          "camera": {
+            "angle": "平视侧拍",
+            "focus": "焦点持续锁定在老人布满皱纹的侧脸与额头",
+            "speed": "匀速极其平缓",
+            "lensFeel": "中焦人像镜头，浅景深",
+            "movement": "缓慢平稳向前推镜（Dolly In）",
+            "shotSize": "中景推进至特写"
+          },
+          "motion": "人物微幅动作，摄影机平滑低速前推。",
+          "subject": "一位饱经风霜的藏族老者，侧脸特写展示出极深的皱纹与专注的表情。",
+          "lighting": "低照度自然主义布光，左上方微弱侧光勾勒老人面部轮廓，右下方伴有微弱炉火暖光。",
+          "characters": [
+            {
+              "pose": "侧对镜头微俯身坐立。",
+              "identity": "藏族高龄老人",
+              "wardrobe": "质朴厚重的暗红色藏袍，内衬带有传统花纹领口。",
+              "appearance": "头发灰白稀疏，皮肤黝黑干瘦，额头与眼角布满极深纵横的皱纹，高鼻梁，微凸的下巴。",
+              "expression": "宁静、沉敛，双眼微闭或低垂专注。"
+            }
+          ],
+          "composition": "老者居于画面偏左至中景，右侧为炉火暗部，形成经典的低调明暗侧光构图。",
+          "environment": "典型的传统藏式简陋室内，深色木墙，右侧立着黑铁柴火炉，炉膛透着暗红火苗，背景模糊可见唐卡挂饰及杂物。",
+          "sceneDescription": "昏暗的木质藏式民居内部，一位藏族老者侧身坐在铁皮炉旁，火炉底部透出暖红色微光，背景挂着唐卡与织物。镜头缓慢推近老者沧桑的面容。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "极度安静的环境底噪，夹杂微弱的木柴轻微噼啪声或炉火微鸣。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉静",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "人文纪实电影镜头，昏暗古朴的藏族木屋内。一位满头白发、面部布满极深苍老皱纹的藏族老者侧坐着，身穿厚重暗红色藏袍。右侧柴火铁炉透出隐约的暖红火光，背景挂有斑驳的传统藏式布幔。摄影机以中焦浅景深平视机位，缓慢而平稳地向前推移，从半身景慢慢推向老人宁静苍老的面部特写。低照度侧光照明，雕塑感的高反差光影，真实的皮肤细节质感，整体色调沉稳古朴。\n\n画面与环境: 昏暗的木质藏式民居内部，一位藏族老者侧身坐在铁皮炉旁，火炉底部透出暖红色微光，背景挂着唐卡与织物。镜头缓慢推近老者沧桑的面容。；一位饱经风霜的藏族老者，侧脸特写展示出极深的皱纹与专注的表情。；典型的传统藏式简陋室内，深色木墙，右侧立着黑铁柴火炉，炉膛透着暗红火苗，背景模糊可见唐卡挂饰及杂物。\n\n人物与动作: identity: 藏族高龄老人; appearance: 头发灰白稀疏，皮肤黝黑干瘦，额头与眼角布满极深纵横的皱纹，高鼻梁，微凸的下巴。; wardrobe: 质朴厚重的暗红色藏袍，内衬带有传统花纹领口。; expression: 宁静、沉敛，双眼微闭或低垂专注。; pose: 侧对镜头微俯身坐立。；老者身体微微俯倾，双手在下方拨弄柴火或物件，神情安详静穆。; 镜头平稳向前缓慢推入，景别从半身逐渐收窄为侧面面部特写。；人物微幅动作，摄影机平滑低速前推。\n\n镜头与构图: shotSize: 中景推进至特写; angle: 平视侧拍; lensFeel: 中焦人像镜头，浅景深; movement: 缓慢平稳向前推镜（Dolly In）; focus: 焦点持续锁定在老人布满皱纹的侧脸与额头; speed: 匀速极其平缓；老者居于画面偏左至中景，右侧为炉火暗部，形成经典的低调明暗侧光构图。\n\n光影与质感: 低照度自然主义布光，左上方微弱侧光勾勒老人面部轮廓，右下方伴有微弱炉火暖光。；暖棕色与焦黑构成的低调暗部基调，点缀炉火的微橙红色。；人文纪实电影质感，写实质朴，颗粒感自然。\n\n声音: soundStyle: 极度安静的环境底噪，夹杂微弱的木柴轻微噼啪声或炉火微鸣。\n\n节奏与转场: editing: pacing: 缓慢沉静; techniques: 硬切入，硬切出",
+        "duration": 2.542,
+        "createdAt": "2026-11-03T09:36:54.690Z",
+        "updatedAt": "2026-11-03T09:36:54.690Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:36:54.648Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "8fcb9685-c527-4c59-b34a-c1e6e0755bec",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "b5457104-2e51-4977-9f7e-3045318b6231",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 8.875,
+          "summary": "高龄藏族老人微微低头沉思，面容沧桑静穆。",
+          "startTime": 7.5,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "暖金褐、暗红棕与深黑交织的暗调色系，饱和度较低。",
+          "style": "人文纪录片质感，粗糙写实的皮肤纹理与电影胶片质感。",
+          "action": "老人保持低头微闭双眼的沉思姿态，几乎静止，伴随极微弱的呼吸起伏。",
+          "camera": "大特写，微俯侧面机位，浅景深聚焦于额头与鼻梁皱纹，镜头近乎固定或带有极细微的缓移。",
+          "motion": "极低动态，微弱呼吸感。",
+          "subject": "面容苍老的高龄藏族老人侧脸特写。",
+          "lighting": "单侧暖调硬光，自左上方斜射，阴影深沉，明暗对比强烈，具古典油画光影感。",
+          "characters": "一位高龄老人，灰白发丝，额头与眼周密布深邃皱纹，神情内敛沉静，身着深色传统立领藏袍。",
+          "composition": "主体面部占据画面中左侧，右侧为大面积暗部留白，形成强烈的明暗结构。",
+          "environment": "极度暗调的室内背景，隐约可见模糊的深色织物或帘幔纹理。",
+          "sceneDescription": "昏暗室内，一位布满极深皱纹的老年藏人侧身低头，神情庄重而宁静，强烈的侧光突显出皮肤与面部沟壑般的质感。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "寂静氛围，伴随微弱深沉的环境底噪或轻微呼吸声。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "凝滞沉缓",
+            "techniques": "硬切导入，硬切导出"
+          }
+        },
+        "generationPrompt": "电影质感大特写，一位面容如风化岩石般沧桑的高龄藏族老人侧脸。老人发丝灰白稀疏，双眼低垂微闭，神情肃穆宁静。身着厚重粗糙的传统藏袍。左上方射入一束低调暖光，将额头、眼窝和脸颊上刀刻般的深长皱纹勾勒得分毫毕现。背景沉入幽暗，景深极浅，画面几乎静止仅具细微呼吸感，写实油画质感，8k高细节。\n\n画面与环境: 昏暗室内，一位布满极深皱纹的老年藏人侧身低头，神情庄重而宁静，强烈的侧光突显出皮肤与面部沟壑般的质感。；面容苍老的高龄藏族老人侧脸特写。；极度暗调的室内背景，隐约可见模糊的深色织物或帘幔纹理。\n\n人物与动作: 一位高龄老人，灰白发丝，额头与眼周密布深邃皱纹，神情内敛沉静，身着深色传统立领藏袍。；老人保持低头微闭双眼的沉思姿态，几乎静止，伴随极微弱的呼吸起伏。；极低动态，微弱呼吸感。\n\n镜头与构图: 大特写，微俯侧面机位，浅景深聚焦于额头与鼻梁皱纹，镜头近乎固定或带有极细微的缓移。；主体面部占据画面中左侧，右侧为大面积暗部留白，形成强烈的明暗结构。\n\n光影与质感: 单侧暖调硬光，自左上方斜射，阴影深沉，明暗对比强烈，具古典油画光影感。；暖金褐、暗红棕与深黑交织的暗调色系，饱和度较低。；人文纪录片质感，粗糙写实的皮肤纹理与电影胶片质感。\n\n声音: style: 寂静氛围，伴随微弱深沉的环境底噪或轻微呼吸声。\n\n节奏与转场: editing: pacing: 凝滞沉缓; techniques: 硬切导入，硬切导出",
+        "duration": 1.375,
+        "createdAt": "2026-11-03T09:37:10.779Z",
+        "updatedAt": "2026-11-03T09:37:10.779Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:37:10.725Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "24071d82-93d7-4e5a-9e0b-9e726060f0ab",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "e9e33b8b-7d5e-4acb-ba64-0febba3502b7",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 13.083,
+          "summary": "高原寒风中，一名身穿藏袍的牧民手持套绳在冻土碎石地上前行，身后是一群在寒气中吃草的牦牛。",
+          "startTime": 8.875,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "大地色系主导，暗褐、土黄、黑褐牦牛与灰白残雪构成立体冷色冷调。",
+          "style": "写实纪录片质感，颗粒细腻，具高度真实感。",
+          "action": "牧民手持套绳自画面中央右侧向左前侧迈步快走，中景牦牛群低头咀嚼、散发白色热气呼吸，背景风雪微扬。",
+          "camera": {
+            "angle": "低角度仰拍",
+            "focus": "焦点锁定在牧民身上，中远景景深适度虚化",
+            "speed": "匀速跟随",
+            "lensFeel": "广角镜头，透视感开阔",
+            "movement": "低机位跟随移动拍摄",
+            "shotSize": "中景"
+          },
+          "motion": "人物沉稳有力的脚步晃动，牦牛缓慢摆动与口鼻热气升腾。",
+          "subject": "手持绳索在冻原上走动的藏族牧民，以及后方吃草的牦牛群。",
+          "lighting": "冷色调自然漫射光，缺乏直射阳光，整体偏向阴郁的高原风暴前夕质感。",
+          "characters": [
+            {
+              "pose": "身体前倾迈步疾行，双手握着套牛绳索",
+              "identity": "藏族牧民",
+              "wardrobe": "厚重的深棕色藏式皮袍（楚巴）、保暖护耳帽、皮质高筒雪地靴",
+              "appearance": "肤色黝黑、面容沧桑的高原男性",
+              "expression": "坚毅、沉静，目光注视地面与牛群"
+            }
+          ],
+          "composition": "牧民占据画面左中前景主导位置，牛群横向分布于中景，远山与阴霾天空形成上层压迫感背景。",
+          "environment": "高海拔冻土高地，地面散布碎石、残雪与牛粪痕迹，背景为缓坡与阴云密布的苍凉天空。",
+          "sceneDescription": "开阔的高原冻土斜坡，阴郁天色下，前景牧民侧身快步前行，中景大群黑色牦牛低头觅食并冒着白雾水汽，远景为被薄雪覆盖的连绵山丘。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "dialogue": "无",
+          "soundStyle": "呼啸的寒风声、沉重的踩踏碎石脚步声、牦牛粗重的喘息与隐约叫声。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "稳健沉着，节奏缓慢",
+            "techniques": "硬切（进出均为直接切换）"
+          }
+        },
+        "generationPrompt": "电影写实中景，低角度跟拍。一位身穿厚重深棕色藏袍、头戴保暖帽的藏族牧民手持套绳，在满布碎石与残雪的高原冻土上大步前行。中景处，一群黑色长毛牦牛在寒冷空气中低头吃草并散发缕缕白气。背景是阴沉苍茫的雪山与连绵缓坡。自然阴天冷漫射光，粗粝纪实质感，大地色与灰白色调，画面沉稳且富有纪实张力。\n\n画面与环境: 开阔的高原冻土斜坡，阴郁天色下，前景牧民侧身快步前行，中景大群黑色牦牛低头觅食并冒着白雾水汽，远景为被薄雪覆盖的连绵山丘。；手持绳索在冻原上走动的藏族牧民，以及后方吃草的牦牛群。；高海拔冻土高地，地面散布碎石、残雪与牛粪痕迹，背景为缓坡与阴云密布的苍凉天空。\n\n人物与动作: identity: 藏族牧民; appearance: 肤色黝黑、面容沧桑的高原男性; wardrobe: 厚重的深棕色藏式皮袍（楚巴）、保暖护耳帽、皮质高筒雪地靴; expression: 坚毅、沉静，目光注视地面与牛群; pose: 身体前倾迈步疾行，双手握着套牛绳索；牧民手持套绳自画面中央右侧向左前侧迈步快走，中景牦牛群低头咀嚼、散发白色热气呼吸，背景风雪微扬。；人物沉稳有力的脚步晃动，牦牛缓慢摆动与口鼻热气升腾。\n\n镜头与构图: shotSize: 中景; angle: 低角度仰拍; lensFeel: 广角镜头，透视感开阔; movement: 低机位跟随移动拍摄; focus: 焦点锁定在牧民身上，中远景景深适度虚化; speed: 匀速跟随；牧民占据画面左中前景主导位置，牛群横向分布于中景，远山与阴霾天空形成上层压迫感背景。\n\n光影与质感: 冷色调自然漫射光，缺乏直射阳光，整体偏向阴郁的高原风暴前夕质感。；大地色系主导，暗褐、土黄、黑褐牦牛与灰白残雪构成立体冷色冷调。；写实纪录片质感，颗粒细腻，具高度真实感。\n\n声音: dialogue: 无; soundStyle: 呼啸的寒风声、沉重的踩踏碎石脚步声、牦牛粗重的喘息与隐约叫声。\n\n节奏与转场: editing: pacing: 稳健沉着，节奏缓慢; techniques: 硬切（进出均为直接切换）",
+        "duration": 4.208,
+        "createdAt": "2026-11-03T09:37:41.523Z",
+        "updatedAt": "2026-11-03T09:37:41.523Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:37:41.481Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "93e00423-5377-459e-b707-042c9a6c0ba2",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "cebeb5ee-de12-4877-a5d1-ec4aca4e2be4",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 18.875,
+          "summary": "清晨温馨的藏式屋内，一位藏族母亲正用茶壶向碗中倒酥油茶，身旁桌边刚睡醒的小女孩正揉眼打哈欠。",
+          "startTime": 13.083,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "暖赭石与冷灰蓝调和，室内以木质深褐、砖红与暖金火光为主，窗外呈现柔和蓝调。",
+          "style": "电影写实民俗风格，胶片颗粒细腻，质感质朴醇厚。",
+          "action": [
+            "母亲手持铜壶，将热奶茶缓缓倾注入彩绘瓷碗中，热气轻微蒸腾。",
+            "小女孩趴在桌上，一边揉着眼睛一边打哈欠，随后放下手呆呆看着前方。"
+          ],
+          "camera": {
+            "angle": "平视略俯",
+            "focus": "合焦于母亲与小女孩",
+            "speed": "正常速度",
+            "lensFeel": "标准焦段，具有柔和浅景深",
+            "movement": "固定镜头，微幅手持呼吸感",
+            "shotSize": "中景"
+          },
+          "motion": "微幅倒茶动作与液体流动，小女孩揉眼打哈欠的自然动作，炉火轻微闪烁。",
+          "subject": "斟茶的藏族母亲与刚醒揉眼的小女孩。",
+          "lighting": "冷暖双色温对比布光。左侧炉火提供温暖跳动的火光，右后方窗户透入清冷柔和的漫射晨光。",
+          "characters": [
+            {
+              "pose": "侧身坐于矮凳，右手提壶倾倒，左手端碗接茶。",
+              "identity": "藏族母亲",
+              "wardrobe": "传统暗红色藏袍配围裙，肩搭深色披肩。",
+              "appearance": "中年藏族女性，盘发编有彩色发绳，神态安详专注。",
+              "expression": "温和慈爱，目光注视手中的茶碗。"
+            },
+            {
+              "pose": "倚在木桌边，抬手揉揉眼睛。",
+              "identity": "藏族小女孩",
+              "wardrobe": "暖棕色厚棉服。",
+              "appearance": "扎着双马尾辫，面颊泛红的幼童。",
+              "expression": "困倦，张嘴打哈欠。"
+            }
+          ],
+          "composition": "三分法水平构图，左侧为火炉形成前景侧边，中央为主体母亲，右侧为小女孩与木桌，背景为窗户与厨具架，纵深层次丰富。",
+          "environment": "典型的藏式民居室内，陈列有木质厨柜、铜质锅具、铁制柴火炉、木质餐桌，窗前挂着彩色经幡与垂帘。",
+          "sceneDescription": "充满烟火气的传统藏式民居厨房内，左侧炉火正旺，中间藏族妇女手持铜壶斟茶，右侧小女孩趴在木桌旁睡眼惺忪地揉眼，背景窗户透进清冷晨光。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "musicStyle": "可能伴有舒缓悠扬的原声器乐或静音环境（以现场声为主）。",
+          "soundEffects": "柴火燃烧的噼啪声、倒奶茶的细微水流声、清晨安静的环境底噪。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓平和",
+            "techniques": "硬切入，硬切出，单镜头长镜头生活切片。"
+          }
+        },
+        "generationPrompt": "电影质感中景，温馨清晨的传统藏式民居厨房内。画面中央，一位身穿深红色传统藏袍与围裙的藏族母亲坐在矮凳上，右手提着老式金属茶壶，将热腾腾的酥油茶缓缓倒入左手捧着的彩绘碗中，冒出袅袅热气。画面右侧木桌旁，扎着双马尾辫的年幼藏族小女孩穿着厚棉服，睡眼惺忪地抬手揉眼睛打哈欠。左侧铁炉内明亮木柴火光熊熊燃烧，照亮室内。背景为挂有经幡的木窗，透入清冷的晨光，形成暖黄火光与冷蓝晨光的双色温光影。写实电影胶片质感，温暖安详的日常生活氛围，固定机位平视拍摄。\n\n画面与环境: 充满烟火气的传统藏式民居厨房内，左侧炉火正旺，中间藏族妇女手持铜壶斟茶，右侧小女孩趴在木桌旁睡眼惺忪地揉眼，背景窗户透进清冷晨光。；斟茶的藏族母亲与刚醒揉眼的小女孩。；典型的藏式民居室内，陈列有木质厨柜、铜质锅具、铁制柴火炉、木质餐桌，窗前挂着彩色经幡与垂帘。\n\n人物与动作: identity: 藏族母亲; appearance: 中年藏族女性，盘发编有彩色发绳，神态安详专注。; wardrobe: 传统暗红色藏袍配围裙，肩搭深色披肩。; expression: 温和慈爱，目光注视手中的茶碗。; pose: 侧身坐于矮凳，右手提壶倾倒，左手端碗接茶。; identity: 藏族小女孩; appearance: 扎着双马尾辫，面颊泛红的幼童。; wardrobe: 暖棕色厚棉服。; expression: 困倦，张嘴打哈欠。; pose: 倚在木桌边，抬手揉揉眼睛。；母亲手持铜壶，将热奶茶缓缓倾注入彩绘瓷碗中，热气轻微蒸腾。; 小女孩趴在桌上，一边揉着眼睛一边打哈欠，随后放下手呆呆看着前方。；微幅倒茶动作与液体流动，小女孩揉眼打哈欠的自然动作，炉火轻微闪烁。\n\n镜头与构图: shotSize: 中景; angle: 平视略俯; lensFeel: 标准焦段，具有柔和浅景深; movement: 固定镜头，微幅手持呼吸感; focus: 合焦于母亲与小女孩; speed: 正常速度；三分法水平构图，左侧为火炉形成前景侧边，中央为主体母亲，右侧为小女孩与木桌，背景为窗户与厨具架，纵深层次丰富。\n\n光影与质感: 冷暖双色温对比布光。左侧炉火提供温暖跳动的火光，右后方窗户透入清冷柔和的漫射晨光。；暖赭石与冷灰蓝调和，室内以木质深褐、砖红与暖金火光为主，窗外呈现柔和蓝调。；电影写实民俗风格，胶片颗粒细腻，质感质朴醇厚。\n\n声音: soundEffects: 柴火燃烧的噼啪声、倒奶茶的细微水流声、清晨安静的环境底噪。; musicStyle: 可能伴有舒缓悠扬的原声器乐或静音环境（以现场声为主）。\n\n节奏与转场: editing: pacing: 舒缓平和; techniques: 硬切入，硬切出，单镜头长镜头生活切片。",
+        "duration": 5.792,
+        "createdAt": "2026-11-03T09:37:58.690Z",
+        "updatedAt": "2026-11-03T09:37:58.690Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:37:58.650Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "b8ac486a-c079-4fca-903f-b57f4bc80fbe",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "131cd0a3-d16a-4056-96da-4767d5d12a10",
+        "sceneIndex": 8,
+        "story": {
+          "endTime": 22.083,
+          "summary": "在巍峨雪山掩映的广阔金色高原草甸上，一名身着红袍的牧民骑马驱赶着牦牛群前行。",
+          "startTime": 18.875,
+          "sceneIndex": 8
+        },
+        "visual": {
+          "color": "草甸金黄、牛群黑褐与红袍形成对比，背景为冷青灰山体与雪白。",
+          "style": "史诗风光纪录片风格，写实自然，电影级质感。",
+          "action": "牦牛群步履沉稳地向前走动，红衣骑手随马缓行押后，前景草丛受风吹拂。",
+          "camera": "广角远景，水平视线，镜头近乎静止或微幅平移，深焦大景深呈现全景环境。",
+          "motion": "牛群散漫前行，马匹缓步，前景草叶受风摆动。",
+          "subject": "高原草甸上行进的牦牛群与红衣骑马牧民。",
+          "lighting": "自然多云天光，漫射侧光突显雪山轮廓与草甸质感。",
+          "characters": "一名牧民，身穿醒目红色传统藏袍，背向镜头端坐于棕红马背上。",
+          "composition": "下部为金色草场，中景分布牦牛与骑马牧民，上部横跨雪山山体与天空，层次开阔。",
+          "environment": "高山草甸、荒原、远景为耸立的积雪岩石山脉和多云青灰天空。",
+          "sceneDescription": "广角远景，秋季高原草甸上枯草泛金，近处草叶随风摇曳。成群黑褐色的牦牛向右前方行进，后方一名穿亮红衣袍的牧人骑着棕马放牧，背景是壮丽的连绵雪山与多云天空。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [
+          {
+            "text": "天地之间",
+            "endTime": 22.083,
+            "startTime": 18.875
+          }
+        ],
+        "audio": {
+          "soundStyle": "自然风声与低沉环境音，伴随悠扬舒缓的背景氛围音乐。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓悠长",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "电影质感广角全景。秋季连绵积雪群山前的金色高山草甸上，身穿鲜艳红袍的藏族骑手骑在棕马背上，正驱赶一群毛色厚重的黑褐色牦牛向远方缓步前行。前景枯黄草叶在高原寒风中摇曳，远方雪峰耸立，天空云层厚重，光影深沉辽阔。自然光照，色彩真实浓郁，构图极具纵深感与史诗感。\n\n画面与环境: 广角远景，秋季高原草甸上枯草泛金，近处草叶随风摇曳。成群黑褐色的牦牛向右前方行进，后方一名穿亮红衣袍的牧人骑着棕马放牧，背景是壮丽的连绵雪山与多云天空。；高原草甸上行进的牦牛群与红衣骑马牧民。；高山草甸、荒原、远景为耸立的积雪岩石山脉和多云青灰天空。\n\n人物与动作: 一名牧民，身穿醒目红色传统藏袍，背向镜头端坐于棕红马背上。；牦牛群步履沉稳地向前走动，红衣骑手随马缓行押后，前景草丛受风吹拂。；牛群散漫前行，马匹缓步，前景草叶受风摆动。\n\n镜头与构图: 广角远景，水平视线，镜头近乎静止或微幅平移，深焦大景深呈现全景环境。；下部为金色草场，中景分布牦牛与骑马牧民，上部横跨雪山山体与天空，层次开阔。\n\n光影与质感: 自然多云天光，漫射侧光突显雪山轮廓与草甸质感。；草甸金黄、牛群黑褐与红袍形成对比，背景为冷青灰山体与雪白。；史诗风光纪录片风格，写实自然，电影级质感。\n\n字幕: text: 天地之间; startTime: 18.875; endTime: 22.083\n\n声音: soundStyle: 自然风声与低沉环境音，伴随悠扬舒缓的背景氛围音乐。\n\n节奏与转场: editing: pacing: 舒缓悠长; techniques: 硬切入，硬切出",
+        "duration": 3.208,
+        "createdAt": "2026-11-03T09:38:27.273Z",
+        "updatedAt": "2026-11-03T09:38:27.273Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:38:27.230Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "ca2cf6dc-6c3f-48ef-aa28-f6e99553296e",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "e9b46f9e-efb7-429a-b44f-61d673c2f9c7",
+        "sceneIndex": 9,
+        "story": {
+          "endTime": 25.042,
+          "summary": "黄昏时分，一位饱经风霜的藏族老人静静伫立在石屋门前，凝望远方暮色笼罩下的雪山。",
+          "startTime": 22.083,
+          "sceneIndex": 9
+        },
+        "visual": {
+          "color": "暖金、深红与冷蓝暮色对比，高饱和暖色轮廓与清冷背景相融。",
+          "style": "人文纪录片写实风格，电影质感，细节丰富且真实。",
+          "action": "老人静立在门前，目光远眺，微风吹拂发丝与经幡，老人微微颔首注视着雪山天际。",
+          "camera": "中景逐渐过渡至面部侧面特写，缓慢侧向微平移运镜，浅景深虚化背景雪山。",
+          "motion": "人物几乎静止，经幡随高山微风轻微晃动，镜头极其平稳慢速移动。",
+          "subject": "年长藏族男性，白发蓄须，面容深刻沧桑，散发沉静悠远的气质。",
+          "lighting": "冷暖对比侧光，落日余晖呈暖橙色勾勒老人面部与身躯边缘，天空与阴影处呈冷调暗蓝。",
+          "characters": "独角老人，身着传统暗红色厚藏袍，神态安详自然，侧身面朝远方。",
+          "composition": "主体位于画面右侧，石门框架形成视觉压迫感，左侧留白展现广阔的暮色天空与雪山层峦。",
+          "environment": "高海拔藏区村落，石木结构的传统民居门廊，门头挂着风马旗，背景为渐暗的天空与远处的连绵雪峰。",
+          "sceneDescription": "暮色中，一位身穿深红藏袍的白发老人站在粗糙石砌藏房门廊下，侧脸注视远方群山，门框悬挂彩色经幡，远景为雪山余晖。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "未知，环境音可能包含高原风声或悠远的低鸣氛围音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓静谧",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "电影质感，高海拔高原暮色。一位白发白须、皮肤黝黑带有深刻皱纹的藏族老人站在石木砌成的民居门前，身穿厚重深红色传统藏袍。门头挂着微动的彩色经幡。镜头从中景平滑移动至老人面部侧景，暖红色的落日余晖打在老人的侧脸与肩膀上，勾勒出胡须与发丝轮廓。背景为深邃的冷蓝色薄暮天空与远处覆雪的山峦，形成鲜明的冷暖色调对比，氛围沉静、安详而苍凉。\n\n画面与环境: 暮色中，一位身穿深红藏袍的白发老人站在粗糙石砌藏房门廊下，侧脸注视远方群山，门框悬挂彩色经幡，远景为雪山余晖。；年长藏族男性，白发蓄须，面容深刻沧桑，散发沉静悠远的气质。；高海拔藏区村落，石木结构的传统民居门廊，门头挂着风马旗，背景为渐暗的天空与远处的连绵雪峰。\n\n人物与动作: 独角老人，身着传统暗红色厚藏袍，神态安详自然，侧身面朝远方。；老人静立在门前，目光远眺，微风吹拂发丝与经幡，老人微微颔首注视着雪山天际。；人物几乎静止，经幡随高山微风轻微晃动，镜头极其平稳慢速移动。\n\n镜头与构图: 中景逐渐过渡至面部侧面特写，缓慢侧向微平移运镜，浅景深虚化背景雪山。；主体位于画面右侧，石门框架形成视觉压迫感，左侧留白展现广阔的暮色天空与雪山层峦。\n\n光影与质感: 冷暖对比侧光，落日余晖呈暖橙色勾勒老人面部与身躯边缘，天空与阴影处呈冷调暗蓝。；暖金、深红与冷蓝暮色对比，高饱和暖色轮廓与清冷背景相融。；人文纪录片写实风格，电影质感，细节丰富且真实。\n\n声音: style: 未知，环境音可能包含高原风声或悠远的低鸣氛围音。\n\n节奏与转场: editing: pacing: 舒缓静谧; techniques: 硬切入，硬切出",
+        "duration": 2.959,
+        "createdAt": "2026-11-03T09:38:52.264Z",
+        "updatedAt": "2026-11-03T09:38:52.264Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:38:52.221Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "cf07f43e-db35-4b72-9f7e-8791368e58f1",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "89a12a24-24c6-4f53-95d1-bdef6f5d267c",
+        "sceneIndex": 10,
+        "story": {
+          "endTime": 28.77,
+          "summary": "一位身穿深红僧袍的长者伫立在高原山顶，背对镜头凝视着壮阔的雪山日落，经幡在暮风中微晃，画面最终渐隐至黑。",
+          "startTime": 25.042,
+          "sceneIndex": 10
+        },
+        "visual": {
+          "color": "天空深蓝灰与落日金橙形成冷暖对比，人物与地面呈沉郁暗红与黑褐色调。",
+          "style": "写实纪录片质感，庄严沉静的高原电影影调。",
+          "action": "人物静立凝望落日，微风拂动发丝与经幡，镜头平稳后撤或微调角度，夕阳余光渐弱，画面最终黑屏。",
+          "camera": "中景至远景，略微仰角后平视，缓慢向后拉开并微幅摇摄，景深开阔，最后渐隐至黑。",
+          "motion": "微风带动发丝与经幡轻缓摆动，运镜沉稳克制，镜头末端逐渐变暗。",
+          "subject": "背对镜头的藏族长者或僧人，身披暗红或深色粗呢藏袍，头发花白蓬松。",
+          "lighting": "逆光与暮色自然光，夕阳金橙色切光勾勒人物边缘与远山轮廓，整体呈低调大光比剪影效果。",
+          "characters": "一名老年藏族人物，仅见背影与侧脸剪影，神态静穆沉思。",
+          "composition": "人物居中偏后景剪影构图，左侧落日余晖打破平衡，右侧经幡斜向延伸，形成纵深与层次感。",
+          "environment": "喜马拉雅高海拔山巅，视野开阔，远方为雪山群峰，近处有石砌建筑遗存及悬挂的五彩经幡，天空布满暮色厚云。",
+          "sceneDescription": "黄昏时分的高原山巅，前景是身着深色藏袍的人物背影及飘动的彩色经幡；远景为落日余晖映照下的连绵雪山与深邃云层，光线逐渐变暗并渐隐至黑。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "空旷的高原风声伴随低沉悠远的器乐或吟诵声，结尾处声音随画面渐弱隐退。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "舒缓凝重",
+            "techniques": "硬切入，结尾缓慢渐隐至黑屏（Fade to black）"
+          }
+        },
+        "generationPrompt": "电影质感，写实纪录片风格。喜马拉雅高原山顶，一位身穿暗红粗呢藏袍的老者背对镜头伫立，凝视远方雪山日落。金色晚霞将山脊线与云层染成炽烈橙黄，天空呈现冷灰蓝色。右侧五彩经幡在微风中轻微摆动。低光比剪影，自然逆光勾勒人物轮廓。镜头缓慢后拉展示苍茫全景，暮色渐深，整段画面最终缓慢黑沉渐隐结束。画面沉静、史诗感、超清细节。\n\n画面与环境: 黄昏时分的高原山巅，前景是身着深色藏袍的人物背影及飘动的彩色经幡；远景为落日余晖映照下的连绵雪山与深邃云层，光线逐渐变暗并渐隐至黑。；背对镜头的藏族长者或僧人，身披暗红或深色粗呢藏袍，头发花白蓬松。；喜马拉雅高海拔山巅，视野开阔，远方为雪山群峰，近处有石砌建筑遗存及悬挂的五彩经幡，天空布满暮色厚云。\n\n人物与动作: 一名老年藏族人物，仅见背影与侧脸剪影，神态静穆沉思。；人物静立凝望落日，微风拂动发丝与经幡，镜头平稳后撤或微调角度，夕阳余光渐弱，画面最终黑屏。；微风带动发丝与经幡轻缓摆动，运镜沉稳克制，镜头末端逐渐变暗。\n\n镜头与构图: 中景至远景，略微仰角后平视，缓慢向后拉开并微幅摇摄，景深开阔，最后渐隐至黑。；人物居中偏后景剪影构图，左侧落日余晖打破平衡，右侧经幡斜向延伸，形成纵深与层次感。\n\n光影与质感: 逆光与暮色自然光，夕阳金橙色切光勾勒人物边缘与远山轮廓，整体呈低调大光比剪影效果。；天空深蓝灰与落日金橙形成冷暖对比，人物与地面呈沉郁暗红与黑褐色调。；写实纪录片质感，庄严沉静的高原电影影调。\n\n声音: soundStyle: 空旷的高原风声伴随低沉悠远的器乐或吟诵声，结尾处声音随画面渐弱隐退。\n\n节奏与转场: editing: pacing: 舒缓凝重; techniques: 硬切入，结尾缓慢渐隐至黑屏（Fade to black）",
+        "duration": 3.728,
+        "createdAt": "2026-11-03T09:39:18.273Z",
+        "updatedAt": "2026-11-03T09:39:18.273Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:39:16.229Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      }
+    ],
+    "allSceneVersions": [
+      {
+        "id": "e25cc227-0062-4fc5-b0e3-f69fb5bf45ad",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "43fe0dcd-2558-4692-9a72-17932e5901ff",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 2.417,
+          "summary": "在阴霾风雪的高原群山深处，一座孤零零的覆雪石砌小屋立于荒原，烟囱升起缕缕微烟，经幡在寒风中翻飞。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "偏暗青绿与灰白色冷色调，低饱和度，带有厚重阴沉的雪地冷调质感。",
+          "style": "电影写实纪实风格，画质带有自然胶片颗粒感。",
+          "action": "烟囱持续升起极淡的微烟并被风吹散；木杆上的经幡随寒风快速翻卷摆动；风雪微弱掠过地表。",
+          "camera": "全景/远景，视线微俯至平视，中焦段，镜头缓慢向前推移，深焦大景深。",
+          "motion": "微幅匀速前推运动，伴随风动旗帜与微弱烟气动态。",
+          "subject": "一座覆雪的古朴石砌小屋与左侧随风飘扬的藏式经幡。",
+          "lighting": "阴天全漫射冷光，光线暗淡柔和，无明显硬阴影与定向光源。",
+          "characters": "无人物出镜。",
+          "composition": "石屋位于画面中央偏右中景，左侧经幡杆形成视觉平衡，远山与阴云占据上部三分之二，具有荒凉孤立感。",
+          "environment": "荒凉高原雪山，地面覆有薄雪与冻土杂石，背景为被大片浓云大雾遮蔽的雪山山体。",
+          "sceneDescription": "全景展现寒冷阴郁的高原雪原。一座带烟囱的粗砺石砌矮房孤立在雪地上，房顶积雪厚重，烟囱冒出淡烟。左侧立着挂有经幡的木杆，远景雪山在阴云浓雾中若隐若现。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "低沉呼啸的旷野风声与经幡布料在寒风中拍打的微弱猎猎声，环境寂静肃穆。",
+          "transcript": "无"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉静",
+            "techniques": "硬切接入，硬切接出"
+          }
+        },
+        "generationPrompt": "电影级质感，高原雪原全景。一座石砌孤立小屋坐落在荒野中，斜坡屋顶覆满积雪，白色砖石烟囱飘出淡淡细烟。小屋左前方竖立着木杆，上面挂着藏式经幡风马旗，在刺骨寒风中快速摆动翻卷。远景为被重度阴云和大雾笼罩的苍茫雪山群。冷青与灰白色调，低饱和度，阴天柔和漫射光线，真实胶片颗粒感。摄像机保持平视缓慢向前推进。音效为呼啸寒风声（可能），无人物，无对话。\n\n画面与环境: 全景展现寒冷阴郁的高原雪原。一座带烟囱的粗砺石砌矮房孤立在雪地上，房顶积雪厚重，烟囱冒出淡烟。左侧立着挂有经幡的木杆，远景雪山在阴云浓雾中若隐若现。；一座覆雪的古朴石砌小屋与左侧随风飘扬的藏式经幡。；荒凉高原雪山，地面覆有薄雪与冻土杂石，背景为被大片浓云大雾遮蔽的雪山山体。\n\n人物与动作: 无人物出镜。；烟囱持续升起极淡的微烟并被风吹散；木杆上的经幡随寒风快速翻卷摆动；风雪微弱掠过地表。；微幅匀速前推运动，伴随风动旗帜与微弱烟气动态。\n\n镜头与构图: 全景/远景，视线微俯至平视，中焦段，镜头缓慢向前推移，深焦大景深。；石屋位于画面中央偏右中景，左侧经幡杆形成视觉平衡，远山与阴云占据上部三分之二，具有荒凉孤立感。\n\n光影与质感: 阴天全漫射冷光，光线暗淡柔和，无明显硬阴影与定向光源。；偏暗青绿与灰白色冷色调，低饱和度，带有厚重阴沉的雪地冷调质感。；电影写实纪实风格，画质带有自然胶片颗粒感。\n\n声音: style: 低沉呼啸的旷野风声与经幡布料在寒风中拍打的微弱猎猎声，环境寂静肃穆。; transcript: 无\n\n节奏与转场: editing: pacing: 缓慢沉静; techniques: 硬切接入，硬切接出",
+        "duration": 2.417,
+        "createdAt": "2026-11-03T09:35:11.732Z",
+        "updatedAt": "2026-11-03T13:58:58.944Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T13:21:59.239Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "ed28ce45-eb98-4938-90ed-b4feb8f774f6",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "2aeaef08-222e-474b-bf35-f417c2ecc753",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 4.458,
+          "summary": "在昏暗的藏式居所内，一位年迈的长者俯身将柴火添入燃烧的铁炉中。",
+          "startTime": 2.417,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "暖黑调为主，沉稳的深褐、炭黑与明亮橙红火光形成鲜明冷暖明暗反差。",
+          "style": "真实纪实电影质感，烟火气与生活质感浓厚。",
+          "action": "老人原本坐着整理柴火，随后身体前倾，双手握着几根细木柴精准地送入铁炉的进柴口中。",
+          "camera": "中景侧面机位，视线水平，镜头缓慢轻微向前推进，焦点落在老人与火炉之间。",
+          "motion": "人物缓慢俯身前送手臂，火光轻微摇曳跳动。",
+          "subject": "年迈的藏族老人，白发稀疏，面容沧桑，身穿厚重深褐色藏袍。",
+          "lighting": "低调写实照明，主要由炉膛内跃动的橙红色火光提供局部暖光源，面部及手部带有微弱边缘光，背景处于阴影中。",
+          "characters": "一位老人，侧身朝向画面右侧的炉火，神情专注平静，动作迟缓自然。",
+          "composition": "老人位于画面左侧，铁炉位于中右侧，炉火形成视觉中心，背景深暗压低，明暗对比强烈。",
+          "environment": "典型的藏区暗室内，背景挂有彩色经幡和卷轴唐卡，炉旁堆放着引火柴草，整体环境朴素昏暗。",
+          "sceneDescription": "光线昏暗的传统藏式室内，背景悬挂经幡与唐卡。一位身着深褐色藏袍的白发老人坐在木榻上，正俯身往身旁的黑色铁皮火炉膛口添加干燥木条，炉内透出橙红色火光。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "环境音为主，伴随木柴轻微碎裂声、炉火燃烧的噼啪声与沉闷的室内呼吸底噪。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢凝重",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "中景，低调电影质感。昏暗的藏式居室内，背景隐约可见经幡与唐卡壁画。一位满头白发、身着厚重深褐色藏袍的年迈藏族老人侧身而坐，正缓缓前倾身体，双手将一把干燥木柴送入黑色铁皮炉子的炉膛中。炉内燃着明亮的橙红色炭火，火光映亮了老人的手部与苍老的面孔。写实光影，胶片颗粒，宁静温暖的生活纪实风格。\n\n画面与环境: 光线昏暗的传统藏式室内，背景悬挂经幡与唐卡。一位身着深褐色藏袍的白发老人坐在木榻上，正俯身往身旁的黑色铁皮火炉膛口添加干燥木条，炉内透出橙红色火光。；年迈的藏族老人，白发稀疏，面容沧桑，身穿厚重深褐色藏袍。；典型的藏区暗室内，背景挂有彩色经幡和卷轴唐卡，炉旁堆放着引火柴草，整体环境朴素昏暗。\n\n人物与动作: 一位老人，侧身朝向画面右侧的炉火，神情专注平静，动作迟缓自然。；老人原本坐着整理柴火，随后身体前倾，双手握着几根细木柴精准地送入铁炉的进柴口中。；人物缓慢俯身前送手臂，火光轻微摇曳跳动。\n\n镜头与构图: 中景侧面机位，视线水平，镜头缓慢轻微向前推进，焦点落在老人与火炉之间。；老人位于画面左侧，铁炉位于中右侧，炉火形成视觉中心，背景深暗压低，明暗对比强烈。\n\n光影与质感: 低调写实照明，主要由炉膛内跃动的橙红色火光提供局部暖光源，面部及手部带有微弱边缘光，背景处于阴影中。；暖黑调为主，沉稳的深褐、炭黑与明亮橙红火光形成鲜明冷暖明暗反差。；真实纪实电影质感，烟火气与生活质感浓厚。\n\n声音: style: 环境音为主，伴随木柴轻微碎裂声、炉火燃烧的噼啪声与沉闷的室内呼吸底噪。\n\n节奏与转场: editing: pacing: 缓慢凝重; techniques: 硬切",
+        "duration": 2.041,
+        "createdAt": "2026-11-03T09:35:49.977Z",
+        "updatedAt": "2026-11-03T09:35:49.977Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:35:49.931Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "3d424480-db66-4dcf-8493-793dacbe9a90",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "37addf2e-b87e-4eda-9af5-000ce4c2e300",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 4.958,
+          "summary": "昏暗屋内，一位藏族老人正向铁皮火炉中添柴。",
+          "startTime": 4.458,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "暖黑基调，以深红、焦褐与炽红火光为主。",
+          "style": "真实纪录片质感，电影感写实质朴风格。",
+          "action": "老人动作缓慢地将手中木柴递入炉火中，炉内火光微动。",
+          "camera": "中景，微俯平视，固定机位，浅景深。",
+          "motion": "老人双手轻微摆动送柴，炉火微颤。",
+          "subject": "藏族老年僧人或长者，身形佝偻，神情专注于添柴。",
+          "lighting": "低照度明暗对照法，炉内橙红火光作为主光源照亮人物面部和手部。",
+          "characters": [
+            {
+              "name": "藏族老人",
+              "pose": "前倾躬坐，双手伸向炉膛口。",
+              "appearance": "白发稀疏，皮肤黝黑皱褶，身穿厚重暗红色藏袍。"
+            }
+          ],
+          "composition": "老人位于画面左侧，右侧为垂直延伸的铁火炉，焦点集中在炉膛火光与老人双手处。",
+          "environment": "光线暗淡的传统藏式房间，背景悬挂风马旗或唐卡织物，右侧立着黑色铁皮烟囱火炉。",
+          "sceneDescription": "简陋昏暗的藏式室内，一位穿厚藏袍的老人躬身在金属柴炉前，伸手将碎木柴添入炉内，炉膛闪烁着橙红色火光。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "静音或低沉氛围音",
+          "ambient": "微弱柴火噼啪声",
+          "soundEffects": "木柴摩擦撞击轻响"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "舒缓凝重",
+            "techniques": "实景固定机位短切"
+          }
+        },
+        "generationPrompt": "电影质感中景，固定机位。昏暗质朴的藏式木屋内，一位白发稀疏、神情沧桑的藏族老人身穿厚重深红色藏袍，弯腰坐在黑色铁皮炉旁，伸手向炉膛中添入木柴。炉火散发橙红色暖光，映照老人侧脸与粗糙双手，背景隐现经幡织物，明暗对比强烈，具有写实纪录片氛围。\n\n画面与环境: 简陋昏暗的藏式室内，一位穿厚藏袍的老人躬身在金属柴炉前，伸手将碎木柴添入炉内，炉膛闪烁着橙红色火光。；藏族老年僧人或长者，身形佝偻，神情专注于添柴。；光线暗淡的传统藏式房间，背景悬挂风马旗或唐卡织物，右侧立着黑色铁皮烟囱火炉。\n\n人物与动作: name: 藏族老人; appearance: 白发稀疏，皮肤黝黑皱褶，身穿厚重暗红色藏袍。; pose: 前倾躬坐，双手伸向炉膛口。；老人动作缓慢地将手中木柴递入炉火中，炉内火光微动。；老人双手轻微摆动送柴，炉火微颤。\n\n镜头与构图: 中景，微俯平视，固定机位，浅景深。；老人位于画面左侧，右侧为垂直延伸的铁火炉，焦点集中在炉膛火光与老人双手处。\n\n光影与质感: 低照度明暗对照法，炉内橙红火光作为主光源照亮人物面部和手部。；暖黑基调，以深红、焦褐与炽红火光为主。；真实纪录片质感，电影感写实质朴风格。\n\n声音: ambient: 微弱柴火噼啪声; music: 静音或低沉氛围音; soundEffects: 木柴摩擦撞击轻响\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 舒缓凝重; techniques: 实景固定机位短切",
+        "duration": 0.5,
+        "createdAt": "2026-11-03T09:36:14.492Z",
+        "updatedAt": "2026-11-03T09:36:14.492Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:36:14.449Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "a261a7b7-9ff3-482b-86f0-f8666758f8a1",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "10accf79-8f14-4695-a435-1ca341b874c0",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 7.5,
+          "summary": "昏暗质朴的藏式屋内，一位满脸深邃皱纹的藏族老者坐在火炉旁，专注地低头添柴烤火。",
+          "startTime": 4.958,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "暖棕色与焦黑构成的低调暗部基调，点缀炉火的微橙红色。",
+          "style": "人文纪实电影质感，写实质朴，颗粒感自然。",
+          "action": [
+            "老者身体微微俯倾，双手在下方拨弄柴火或物件，神情安详静穆。",
+            "镜头平稳向前缓慢推入，景别从半身逐渐收窄为侧面面部特写。"
+          ],
+          "camera": {
+            "angle": "平视侧拍",
+            "focus": "焦点持续锁定在老人布满皱纹的侧脸与额头",
+            "speed": "匀速极其平缓",
+            "lensFeel": "中焦人像镜头，浅景深",
+            "movement": "缓慢平稳向前推镜（Dolly In）",
+            "shotSize": "中景推进至特写"
+          },
+          "motion": "人物微幅动作，摄影机平滑低速前推。",
+          "subject": "一位饱经风霜的藏族老者，侧脸特写展示出极深的皱纹与专注的表情。",
+          "lighting": "低照度自然主义布光，左上方微弱侧光勾勒老人面部轮廓，右下方伴有微弱炉火暖光。",
+          "characters": [
+            {
+              "pose": "侧对镜头微俯身坐立。",
+              "identity": "藏族高龄老人",
+              "wardrobe": "质朴厚重的暗红色藏袍，内衬带有传统花纹领口。",
+              "appearance": "头发灰白稀疏，皮肤黝黑干瘦，额头与眼角布满极深纵横的皱纹，高鼻梁，微凸的下巴。",
+              "expression": "宁静、沉敛，双眼微闭或低垂专注。"
+            }
+          ],
+          "composition": "老者居于画面偏左至中景，右侧为炉火暗部，形成经典的低调明暗侧光构图。",
+          "environment": "典型的传统藏式简陋室内，深色木墙，右侧立着黑铁柴火炉，炉膛透着暗红火苗，背景模糊可见唐卡挂饰及杂物。",
+          "sceneDescription": "昏暗的木质藏式民居内部，一位藏族老者侧身坐在铁皮炉旁，火炉底部透出暖红色微光，背景挂着唐卡与织物。镜头缓慢推近老者沧桑的面容。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "极度安静的环境底噪，夹杂微弱的木柴轻微噼啪声或炉火微鸣。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉静",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "人文纪实电影镜头，昏暗古朴的藏族木屋内。一位满头白发、面部布满极深苍老皱纹的藏族老者侧坐着，身穿厚重暗红色藏袍。右侧柴火铁炉透出隐约的暖红火光，背景挂有斑驳的传统藏式布幔。摄影机以中焦浅景深平视机位，缓慢而平稳地向前推移，从半身景慢慢推向老人宁静苍老的面部特写。低照度侧光照明，雕塑感的高反差光影，真实的皮肤细节质感，整体色调沉稳古朴。\n\n画面与环境: 昏暗的木质藏式民居内部，一位藏族老者侧身坐在铁皮炉旁，火炉底部透出暖红色微光，背景挂着唐卡与织物。镜头缓慢推近老者沧桑的面容。；一位饱经风霜的藏族老者，侧脸特写展示出极深的皱纹与专注的表情。；典型的传统藏式简陋室内，深色木墙，右侧立着黑铁柴火炉，炉膛透着暗红火苗，背景模糊可见唐卡挂饰及杂物。\n\n人物与动作: identity: 藏族高龄老人; appearance: 头发灰白稀疏，皮肤黝黑干瘦，额头与眼角布满极深纵横的皱纹，高鼻梁，微凸的下巴。; wardrobe: 质朴厚重的暗红色藏袍，内衬带有传统花纹领口。; expression: 宁静、沉敛，双眼微闭或低垂专注。; pose: 侧对镜头微俯身坐立。；老者身体微微俯倾，双手在下方拨弄柴火或物件，神情安详静穆。; 镜头平稳向前缓慢推入，景别从半身逐渐收窄为侧面面部特写。；人物微幅动作，摄影机平滑低速前推。\n\n镜头与构图: shotSize: 中景推进至特写; angle: 平视侧拍; lensFeel: 中焦人像镜头，浅景深; movement: 缓慢平稳向前推镜（Dolly In）; focus: 焦点持续锁定在老人布满皱纹的侧脸与额头; speed: 匀速极其平缓；老者居于画面偏左至中景，右侧为炉火暗部，形成经典的低调明暗侧光构图。\n\n光影与质感: 低照度自然主义布光，左上方微弱侧光勾勒老人面部轮廓，右下方伴有微弱炉火暖光。；暖棕色与焦黑构成的低调暗部基调，点缀炉火的微橙红色。；人文纪实电影质感，写实质朴，颗粒感自然。\n\n声音: soundStyle: 极度安静的环境底噪，夹杂微弱的木柴轻微噼啪声或炉火微鸣。\n\n节奏与转场: editing: pacing: 缓慢沉静; techniques: 硬切入，硬切出",
+        "duration": 2.542,
+        "createdAt": "2026-11-03T09:36:54.690Z",
+        "updatedAt": "2026-11-03T09:36:54.690Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:36:54.648Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "8fcb9685-c527-4c59-b34a-c1e6e0755bec",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "b5457104-2e51-4977-9f7e-3045318b6231",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 8.875,
+          "summary": "高龄藏族老人微微低头沉思，面容沧桑静穆。",
+          "startTime": 7.5,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "暖金褐、暗红棕与深黑交织的暗调色系，饱和度较低。",
+          "style": "人文纪录片质感，粗糙写实的皮肤纹理与电影胶片质感。",
+          "action": "老人保持低头微闭双眼的沉思姿态，几乎静止，伴随极微弱的呼吸起伏。",
+          "camera": "大特写，微俯侧面机位，浅景深聚焦于额头与鼻梁皱纹，镜头近乎固定或带有极细微的缓移。",
+          "motion": "极低动态，微弱呼吸感。",
+          "subject": "面容苍老的高龄藏族老人侧脸特写。",
+          "lighting": "单侧暖调硬光，自左上方斜射，阴影深沉，明暗对比强烈，具古典油画光影感。",
+          "characters": "一位高龄老人，灰白发丝，额头与眼周密布深邃皱纹，神情内敛沉静，身着深色传统立领藏袍。",
+          "composition": "主体面部占据画面中左侧，右侧为大面积暗部留白，形成强烈的明暗结构。",
+          "environment": "极度暗调的室内背景，隐约可见模糊的深色织物或帘幔纹理。",
+          "sceneDescription": "昏暗室内，一位布满极深皱纹的老年藏人侧身低头，神情庄重而宁静，强烈的侧光突显出皮肤与面部沟壑般的质感。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "寂静氛围，伴随微弱深沉的环境底噪或轻微呼吸声。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "凝滞沉缓",
+            "techniques": "硬切导入，硬切导出"
+          }
+        },
+        "generationPrompt": "电影质感大特写，一位面容如风化岩石般沧桑的高龄藏族老人侧脸。老人发丝灰白稀疏，双眼低垂微闭，神情肃穆宁静。身着厚重粗糙的传统藏袍。左上方射入一束低调暖光，将额头、眼窝和脸颊上刀刻般的深长皱纹勾勒得分毫毕现。背景沉入幽暗，景深极浅，画面几乎静止仅具细微呼吸感，写实油画质感，8k高细节。\n\n画面与环境: 昏暗室内，一位布满极深皱纹的老年藏人侧身低头，神情庄重而宁静，强烈的侧光突显出皮肤与面部沟壑般的质感。；面容苍老的高龄藏族老人侧脸特写。；极度暗调的室内背景，隐约可见模糊的深色织物或帘幔纹理。\n\n人物与动作: 一位高龄老人，灰白发丝，额头与眼周密布深邃皱纹，神情内敛沉静，身着深色传统立领藏袍。；老人保持低头微闭双眼的沉思姿态，几乎静止，伴随极微弱的呼吸起伏。；极低动态，微弱呼吸感。\n\n镜头与构图: 大特写，微俯侧面机位，浅景深聚焦于额头与鼻梁皱纹，镜头近乎固定或带有极细微的缓移。；主体面部占据画面中左侧，右侧为大面积暗部留白，形成强烈的明暗结构。\n\n光影与质感: 单侧暖调硬光，自左上方斜射，阴影深沉，明暗对比强烈，具古典油画光影感。；暖金褐、暗红棕与深黑交织的暗调色系，饱和度较低。；人文纪录片质感，粗糙写实的皮肤纹理与电影胶片质感。\n\n声音: style: 寂静氛围，伴随微弱深沉的环境底噪或轻微呼吸声。\n\n节奏与转场: editing: pacing: 凝滞沉缓; techniques: 硬切导入，硬切导出",
+        "duration": 1.375,
+        "createdAt": "2026-11-03T09:37:10.779Z",
+        "updatedAt": "2026-11-03T09:37:10.779Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:37:10.725Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "24071d82-93d7-4e5a-9e0b-9e726060f0ab",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "e9e33b8b-7d5e-4acb-ba64-0febba3502b7",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 13.083,
+          "summary": "高原寒风中，一名身穿藏袍的牧民手持套绳在冻土碎石地上前行，身后是一群在寒气中吃草的牦牛。",
+          "startTime": 8.875,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "大地色系主导，暗褐、土黄、黑褐牦牛与灰白残雪构成立体冷色冷调。",
+          "style": "写实纪录片质感，颗粒细腻，具高度真实感。",
+          "action": "牧民手持套绳自画面中央右侧向左前侧迈步快走，中景牦牛群低头咀嚼、散发白色热气呼吸，背景风雪微扬。",
+          "camera": {
+            "angle": "低角度仰拍",
+            "focus": "焦点锁定在牧民身上，中远景景深适度虚化",
+            "speed": "匀速跟随",
+            "lensFeel": "广角镜头，透视感开阔",
+            "movement": "低机位跟随移动拍摄",
+            "shotSize": "中景"
+          },
+          "motion": "人物沉稳有力的脚步晃动，牦牛缓慢摆动与口鼻热气升腾。",
+          "subject": "手持绳索在冻原上走动的藏族牧民，以及后方吃草的牦牛群。",
+          "lighting": "冷色调自然漫射光，缺乏直射阳光，整体偏向阴郁的高原风暴前夕质感。",
+          "characters": [
+            {
+              "pose": "身体前倾迈步疾行，双手握着套牛绳索",
+              "identity": "藏族牧民",
+              "wardrobe": "厚重的深棕色藏式皮袍（楚巴）、保暖护耳帽、皮质高筒雪地靴",
+              "appearance": "肤色黝黑、面容沧桑的高原男性",
+              "expression": "坚毅、沉静，目光注视地面与牛群"
+            }
+          ],
+          "composition": "牧民占据画面左中前景主导位置，牛群横向分布于中景，远山与阴霾天空形成上层压迫感背景。",
+          "environment": "高海拔冻土高地，地面散布碎石、残雪与牛粪痕迹，背景为缓坡与阴云密布的苍凉天空。",
+          "sceneDescription": "开阔的高原冻土斜坡，阴郁天色下，前景牧民侧身快步前行，中景大群黑色牦牛低头觅食并冒着白雾水汽，远景为被薄雪覆盖的连绵山丘。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "dialogue": "无",
+          "soundStyle": "呼啸的寒风声、沉重的踩踏碎石脚步声、牦牛粗重的喘息与隐约叫声。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "稳健沉着，节奏缓慢",
+            "techniques": "硬切（进出均为直接切换）"
+          }
+        },
+        "generationPrompt": "电影写实中景，低角度跟拍。一位身穿厚重深棕色藏袍、头戴保暖帽的藏族牧民手持套绳，在满布碎石与残雪的高原冻土上大步前行。中景处，一群黑色长毛牦牛在寒冷空气中低头吃草并散发缕缕白气。背景是阴沉苍茫的雪山与连绵缓坡。自然阴天冷漫射光，粗粝纪实质感，大地色与灰白色调，画面沉稳且富有纪实张力。\n\n画面与环境: 开阔的高原冻土斜坡，阴郁天色下，前景牧民侧身快步前行，中景大群黑色牦牛低头觅食并冒着白雾水汽，远景为被薄雪覆盖的连绵山丘。；手持绳索在冻原上走动的藏族牧民，以及后方吃草的牦牛群。；高海拔冻土高地，地面散布碎石、残雪与牛粪痕迹，背景为缓坡与阴云密布的苍凉天空。\n\n人物与动作: identity: 藏族牧民; appearance: 肤色黝黑、面容沧桑的高原男性; wardrobe: 厚重的深棕色藏式皮袍（楚巴）、保暖护耳帽、皮质高筒雪地靴; expression: 坚毅、沉静，目光注视地面与牛群; pose: 身体前倾迈步疾行，双手握着套牛绳索；牧民手持套绳自画面中央右侧向左前侧迈步快走，中景牦牛群低头咀嚼、散发白色热气呼吸，背景风雪微扬。；人物沉稳有力的脚步晃动，牦牛缓慢摆动与口鼻热气升腾。\n\n镜头与构图: shotSize: 中景; angle: 低角度仰拍; lensFeel: 广角镜头，透视感开阔; movement: 低机位跟随移动拍摄; focus: 焦点锁定在牧民身上，中远景景深适度虚化; speed: 匀速跟随；牧民占据画面左中前景主导位置，牛群横向分布于中景，远山与阴霾天空形成上层压迫感背景。\n\n光影与质感: 冷色调自然漫射光，缺乏直射阳光，整体偏向阴郁的高原风暴前夕质感。；大地色系主导，暗褐、土黄、黑褐牦牛与灰白残雪构成立体冷色冷调。；写实纪录片质感，颗粒细腻，具高度真实感。\n\n声音: dialogue: 无; soundStyle: 呼啸的寒风声、沉重的踩踏碎石脚步声、牦牛粗重的喘息与隐约叫声。\n\n节奏与转场: editing: pacing: 稳健沉着，节奏缓慢; techniques: 硬切（进出均为直接切换）",
+        "duration": 4.208,
+        "createdAt": "2026-11-03T09:37:41.523Z",
+        "updatedAt": "2026-11-03T09:37:41.523Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:37:41.481Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "93e00423-5377-459e-b707-042c9a6c0ba2",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "cebeb5ee-de12-4877-a5d1-ec4aca4e2be4",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 18.875,
+          "summary": "清晨温馨的藏式屋内，一位藏族母亲正用茶壶向碗中倒酥油茶，身旁桌边刚睡醒的小女孩正揉眼打哈欠。",
+          "startTime": 13.083,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "暖赭石与冷灰蓝调和，室内以木质深褐、砖红与暖金火光为主，窗外呈现柔和蓝调。",
+          "style": "电影写实民俗风格，胶片颗粒细腻，质感质朴醇厚。",
+          "action": [
+            "母亲手持铜壶，将热奶茶缓缓倾注入彩绘瓷碗中，热气轻微蒸腾。",
+            "小女孩趴在桌上，一边揉着眼睛一边打哈欠，随后放下手呆呆看着前方。"
+          ],
+          "camera": {
+            "angle": "平视略俯",
+            "focus": "合焦于母亲与小女孩",
+            "speed": "正常速度",
+            "lensFeel": "标准焦段，具有柔和浅景深",
+            "movement": "固定镜头，微幅手持呼吸感",
+            "shotSize": "中景"
+          },
+          "motion": "微幅倒茶动作与液体流动，小女孩揉眼打哈欠的自然动作，炉火轻微闪烁。",
+          "subject": "斟茶的藏族母亲与刚醒揉眼的小女孩。",
+          "lighting": "冷暖双色温对比布光。左侧炉火提供温暖跳动的火光，右后方窗户透入清冷柔和的漫射晨光。",
+          "characters": [
+            {
+              "pose": "侧身坐于矮凳，右手提壶倾倒，左手端碗接茶。",
+              "identity": "藏族母亲",
+              "wardrobe": "传统暗红色藏袍配围裙，肩搭深色披肩。",
+              "appearance": "中年藏族女性，盘发编有彩色发绳，神态安详专注。",
+              "expression": "温和慈爱，目光注视手中的茶碗。"
+            },
+            {
+              "pose": "倚在木桌边，抬手揉揉眼睛。",
+              "identity": "藏族小女孩",
+              "wardrobe": "暖棕色厚棉服。",
+              "appearance": "扎着双马尾辫，面颊泛红的幼童。",
+              "expression": "困倦，张嘴打哈欠。"
+            }
+          ],
+          "composition": "三分法水平构图，左侧为火炉形成前景侧边，中央为主体母亲，右侧为小女孩与木桌，背景为窗户与厨具架，纵深层次丰富。",
+          "environment": "典型的藏式民居室内，陈列有木质厨柜、铜质锅具、铁制柴火炉、木质餐桌，窗前挂着彩色经幡与垂帘。",
+          "sceneDescription": "充满烟火气的传统藏式民居厨房内，左侧炉火正旺，中间藏族妇女手持铜壶斟茶，右侧小女孩趴在木桌旁睡眼惺忪地揉眼，背景窗户透进清冷晨光。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "musicStyle": "可能伴有舒缓悠扬的原声器乐或静音环境（以现场声为主）。",
+          "soundEffects": "柴火燃烧的噼啪声、倒奶茶的细微水流声、清晨安静的环境底噪。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓平和",
+            "techniques": "硬切入，硬切出，单镜头长镜头生活切片。"
+          }
+        },
+        "generationPrompt": "电影质感中景，温馨清晨的传统藏式民居厨房内。画面中央，一位身穿深红色传统藏袍与围裙的藏族母亲坐在矮凳上，右手提着老式金属茶壶，将热腾腾的酥油茶缓缓倒入左手捧着的彩绘碗中，冒出袅袅热气。画面右侧木桌旁，扎着双马尾辫的年幼藏族小女孩穿着厚棉服，睡眼惺忪地抬手揉眼睛打哈欠。左侧铁炉内明亮木柴火光熊熊燃烧，照亮室内。背景为挂有经幡的木窗，透入清冷的晨光，形成暖黄火光与冷蓝晨光的双色温光影。写实电影胶片质感，温暖安详的日常生活氛围，固定机位平视拍摄。\n\n画面与环境: 充满烟火气的传统藏式民居厨房内，左侧炉火正旺，中间藏族妇女手持铜壶斟茶，右侧小女孩趴在木桌旁睡眼惺忪地揉眼，背景窗户透进清冷晨光。；斟茶的藏族母亲与刚醒揉眼的小女孩。；典型的藏式民居室内，陈列有木质厨柜、铜质锅具、铁制柴火炉、木质餐桌，窗前挂着彩色经幡与垂帘。\n\n人物与动作: identity: 藏族母亲; appearance: 中年藏族女性，盘发编有彩色发绳，神态安详专注。; wardrobe: 传统暗红色藏袍配围裙，肩搭深色披肩。; expression: 温和慈爱，目光注视手中的茶碗。; pose: 侧身坐于矮凳，右手提壶倾倒，左手端碗接茶。; identity: 藏族小女孩; appearance: 扎着双马尾辫，面颊泛红的幼童。; wardrobe: 暖棕色厚棉服。; expression: 困倦，张嘴打哈欠。; pose: 倚在木桌边，抬手揉揉眼睛。；母亲手持铜壶，将热奶茶缓缓倾注入彩绘瓷碗中，热气轻微蒸腾。; 小女孩趴在桌上，一边揉着眼睛一边打哈欠，随后放下手呆呆看着前方。；微幅倒茶动作与液体流动，小女孩揉眼打哈欠的自然动作，炉火轻微闪烁。\n\n镜头与构图: shotSize: 中景; angle: 平视略俯; lensFeel: 标准焦段，具有柔和浅景深; movement: 固定镜头，微幅手持呼吸感; focus: 合焦于母亲与小女孩; speed: 正常速度；三分法水平构图，左侧为火炉形成前景侧边，中央为主体母亲，右侧为小女孩与木桌，背景为窗户与厨具架，纵深层次丰富。\n\n光影与质感: 冷暖双色温对比布光。左侧炉火提供温暖跳动的火光，右后方窗户透入清冷柔和的漫射晨光。；暖赭石与冷灰蓝调和，室内以木质深褐、砖红与暖金火光为主，窗外呈现柔和蓝调。；电影写实民俗风格，胶片颗粒细腻，质感质朴醇厚。\n\n声音: soundEffects: 柴火燃烧的噼啪声、倒奶茶的细微水流声、清晨安静的环境底噪。; musicStyle: 可能伴有舒缓悠扬的原声器乐或静音环境（以现场声为主）。\n\n节奏与转场: editing: pacing: 舒缓平和; techniques: 硬切入，硬切出，单镜头长镜头生活切片。",
+        "duration": 5.792,
+        "createdAt": "2026-11-03T09:37:58.690Z",
+        "updatedAt": "2026-11-03T09:37:58.690Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:37:58.650Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "b8ac486a-c079-4fca-903f-b57f4bc80fbe",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "131cd0a3-d16a-4056-96da-4767d5d12a10",
+        "sceneIndex": 8,
+        "story": {
+          "endTime": 22.083,
+          "summary": "在巍峨雪山掩映的广阔金色高原草甸上，一名身着红袍的牧民骑马驱赶着牦牛群前行。",
+          "startTime": 18.875,
+          "sceneIndex": 8
+        },
+        "visual": {
+          "color": "草甸金黄、牛群黑褐与红袍形成对比，背景为冷青灰山体与雪白。",
+          "style": "史诗风光纪录片风格，写实自然，电影级质感。",
+          "action": "牦牛群步履沉稳地向前走动，红衣骑手随马缓行押后，前景草丛受风吹拂。",
+          "camera": "广角远景，水平视线，镜头近乎静止或微幅平移，深焦大景深呈现全景环境。",
+          "motion": "牛群散漫前行，马匹缓步，前景草叶受风摆动。",
+          "subject": "高原草甸上行进的牦牛群与红衣骑马牧民。",
+          "lighting": "自然多云天光，漫射侧光突显雪山轮廓与草甸质感。",
+          "characters": "一名牧民，身穿醒目红色传统藏袍，背向镜头端坐于棕红马背上。",
+          "composition": "下部为金色草场，中景分布牦牛与骑马牧民，上部横跨雪山山体与天空，层次开阔。",
+          "environment": "高山草甸、荒原、远景为耸立的积雪岩石山脉和多云青灰天空。",
+          "sceneDescription": "广角远景，秋季高原草甸上枯草泛金，近处草叶随风摇曳。成群黑褐色的牦牛向右前方行进，后方一名穿亮红衣袍的牧人骑着棕马放牧，背景是壮丽的连绵雪山与多云天空。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [
+          {
+            "text": "天地之间",
+            "endTime": 22.083,
+            "startTime": 18.875
+          }
+        ],
+        "audio": {
+          "soundStyle": "自然风声与低沉环境音，伴随悠扬舒缓的背景氛围音乐。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓悠长",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "电影质感广角全景。秋季连绵积雪群山前的金色高山草甸上，身穿鲜艳红袍的藏族骑手骑在棕马背上，正驱赶一群毛色厚重的黑褐色牦牛向远方缓步前行。前景枯黄草叶在高原寒风中摇曳，远方雪峰耸立，天空云层厚重，光影深沉辽阔。自然光照，色彩真实浓郁，构图极具纵深感与史诗感。\n\n画面与环境: 广角远景，秋季高原草甸上枯草泛金，近处草叶随风摇曳。成群黑褐色的牦牛向右前方行进，后方一名穿亮红衣袍的牧人骑着棕马放牧，背景是壮丽的连绵雪山与多云天空。；高原草甸上行进的牦牛群与红衣骑马牧民。；高山草甸、荒原、远景为耸立的积雪岩石山脉和多云青灰天空。\n\n人物与动作: 一名牧民，身穿醒目红色传统藏袍，背向镜头端坐于棕红马背上。；牦牛群步履沉稳地向前走动，红衣骑手随马缓行押后，前景草丛受风吹拂。；牛群散漫前行，马匹缓步，前景草叶受风摆动。\n\n镜头与构图: 广角远景，水平视线，镜头近乎静止或微幅平移，深焦大景深呈现全景环境。；下部为金色草场，中景分布牦牛与骑马牧民，上部横跨雪山山体与天空，层次开阔。\n\n光影与质感: 自然多云天光，漫射侧光突显雪山轮廓与草甸质感。；草甸金黄、牛群黑褐与红袍形成对比，背景为冷青灰山体与雪白。；史诗风光纪录片风格，写实自然，电影级质感。\n\n字幕: text: 天地之间; startTime: 18.875; endTime: 22.083\n\n声音: soundStyle: 自然风声与低沉环境音，伴随悠扬舒缓的背景氛围音乐。\n\n节奏与转场: editing: pacing: 舒缓悠长; techniques: 硬切入，硬切出",
+        "duration": 3.208,
+        "createdAt": "2026-11-03T09:38:27.273Z",
+        "updatedAt": "2026-11-03T09:38:27.273Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:38:27.230Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "ca2cf6dc-6c3f-48ef-aa28-f6e99553296e",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "e9b46f9e-efb7-429a-b44f-61d673c2f9c7",
+        "sceneIndex": 9,
+        "story": {
+          "endTime": 25.042,
+          "summary": "黄昏时分，一位饱经风霜的藏族老人静静伫立在石屋门前，凝望远方暮色笼罩下的雪山。",
+          "startTime": 22.083,
+          "sceneIndex": 9
+        },
+        "visual": {
+          "color": "暖金、深红与冷蓝暮色对比，高饱和暖色轮廓与清冷背景相融。",
+          "style": "人文纪录片写实风格，电影质感，细节丰富且真实。",
+          "action": "老人静立在门前，目光远眺，微风吹拂发丝与经幡，老人微微颔首注视着雪山天际。",
+          "camera": "中景逐渐过渡至面部侧面特写，缓慢侧向微平移运镜，浅景深虚化背景雪山。",
+          "motion": "人物几乎静止，经幡随高山微风轻微晃动，镜头极其平稳慢速移动。",
+          "subject": "年长藏族男性，白发蓄须，面容深刻沧桑，散发沉静悠远的气质。",
+          "lighting": "冷暖对比侧光，落日余晖呈暖橙色勾勒老人面部与身躯边缘，天空与阴影处呈冷调暗蓝。",
+          "characters": "独角老人，身着传统暗红色厚藏袍，神态安详自然，侧身面朝远方。",
+          "composition": "主体位于画面右侧，石门框架形成视觉压迫感，左侧留白展现广阔的暮色天空与雪山层峦。",
+          "environment": "高海拔藏区村落，石木结构的传统民居门廊，门头挂着风马旗，背景为渐暗的天空与远处的连绵雪峰。",
+          "sceneDescription": "暮色中，一位身穿深红藏袍的白发老人站在粗糙石砌藏房门廊下，侧脸注视远方群山，门框悬挂彩色经幡，远景为雪山余晖。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "未知，环境音可能包含高原风声或悠远的低鸣氛围音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓静谧",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "电影质感，高海拔高原暮色。一位白发白须、皮肤黝黑带有深刻皱纹的藏族老人站在石木砌成的民居门前，身穿厚重深红色传统藏袍。门头挂着微动的彩色经幡。镜头从中景平滑移动至老人面部侧景，暖红色的落日余晖打在老人的侧脸与肩膀上，勾勒出胡须与发丝轮廓。背景为深邃的冷蓝色薄暮天空与远处覆雪的山峦，形成鲜明的冷暖色调对比，氛围沉静、安详而苍凉。\n\n画面与环境: 暮色中，一位身穿深红藏袍的白发老人站在粗糙石砌藏房门廊下，侧脸注视远方群山，门框悬挂彩色经幡，远景为雪山余晖。；年长藏族男性，白发蓄须，面容深刻沧桑，散发沉静悠远的气质。；高海拔藏区村落，石木结构的传统民居门廊，门头挂着风马旗，背景为渐暗的天空与远处的连绵雪峰。\n\n人物与动作: 独角老人，身着传统暗红色厚藏袍，神态安详自然，侧身面朝远方。；老人静立在门前，目光远眺，微风吹拂发丝与经幡，老人微微颔首注视着雪山天际。；人物几乎静止，经幡随高山微风轻微晃动，镜头极其平稳慢速移动。\n\n镜头与构图: 中景逐渐过渡至面部侧面特写，缓慢侧向微平移运镜，浅景深虚化背景雪山。；主体位于画面右侧，石门框架形成视觉压迫感，左侧留白展现广阔的暮色天空与雪山层峦。\n\n光影与质感: 冷暖对比侧光，落日余晖呈暖橙色勾勒老人面部与身躯边缘，天空与阴影处呈冷调暗蓝。；暖金、深红与冷蓝暮色对比，高饱和暖色轮廓与清冷背景相融。；人文纪录片写实风格，电影质感，细节丰富且真实。\n\n声音: style: 未知，环境音可能包含高原风声或悠远的低鸣氛围音。\n\n节奏与转场: editing: pacing: 舒缓静谧; techniques: 硬切入，硬切出",
+        "duration": 2.959,
+        "createdAt": "2026-11-03T09:38:52.264Z",
+        "updatedAt": "2026-11-03T09:38:52.264Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:38:52.221Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "cf07f43e-db35-4b72-9f7e-8791368e58f1",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "projectVersionId": "2e193842-0395-4088-9e0c-681d50d6b619",
+        "originalSceneId": "89a12a24-24c6-4f53-95d1-bdef6f5d267c",
+        "sceneIndex": 10,
+        "story": {
+          "endTime": 28.77,
+          "summary": "一位身穿深红僧袍的长者伫立在高原山顶，背对镜头凝视着壮阔的雪山日落，经幡在暮风中微晃，画面最终渐隐至黑。",
+          "startTime": 25.042,
+          "sceneIndex": 10
+        },
+        "visual": {
+          "color": "天空深蓝灰与落日金橙形成冷暖对比，人物与地面呈沉郁暗红与黑褐色调。",
+          "style": "写实纪录片质感，庄严沉静的高原电影影调。",
+          "action": "人物静立凝望落日，微风拂动发丝与经幡，镜头平稳后撤或微调角度，夕阳余光渐弱，画面最终黑屏。",
+          "camera": "中景至远景，略微仰角后平视，缓慢向后拉开并微幅摇摄，景深开阔，最后渐隐至黑。",
+          "motion": "微风带动发丝与经幡轻缓摆动，运镜沉稳克制，镜头末端逐渐变暗。",
+          "subject": "背对镜头的藏族长者或僧人，身披暗红或深色粗呢藏袍，头发花白蓬松。",
+          "lighting": "逆光与暮色自然光，夕阳金橙色切光勾勒人物边缘与远山轮廓，整体呈低调大光比剪影效果。",
+          "characters": "一名老年藏族人物，仅见背影与侧脸剪影，神态静穆沉思。",
+          "composition": "人物居中偏后景剪影构图，左侧落日余晖打破平衡，右侧经幡斜向延伸，形成纵深与层次感。",
+          "environment": "喜马拉雅高海拔山巅，视野开阔，远方为雪山群峰，近处有石砌建筑遗存及悬挂的五彩经幡，天空布满暮色厚云。",
+          "sceneDescription": "黄昏时分的高原山巅，前景是身着深色藏袍的人物背影及飘动的彩色经幡；远景为落日余晖映照下的连绵雪山与深邃云层，光线逐渐变暗并渐隐至黑。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "空旷的高原风声伴随低沉悠远的器乐或吟诵声，结尾处声音随画面渐弱隐退。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "舒缓凝重",
+            "techniques": "硬切入，结尾缓慢渐隐至黑屏（Fade to black）"
+          }
+        },
+        "generationPrompt": "电影质感，写实纪录片风格。喜马拉雅高原山顶，一位身穿暗红粗呢藏袍的老者背对镜头伫立，凝视远方雪山日落。金色晚霞将山脊线与云层染成炽烈橙黄，天空呈现冷灰蓝色。右侧五彩经幡在微风中轻微摆动。低光比剪影，自然逆光勾勒人物轮廓。镜头缓慢后拉展示苍茫全景，暮色渐深，整段画面最终缓慢黑沉渐隐结束。画面沉静、史诗感、超清细节。\n\n画面与环境: 黄昏时分的高原山巅，前景是身着深色藏袍的人物背影及飘动的彩色经幡；远景为落日余晖映照下的连绵雪山与深邃云层，光线逐渐变暗并渐隐至黑。；背对镜头的藏族长者或僧人，身披暗红或深色粗呢藏袍，头发花白蓬松。；喜马拉雅高海拔山巅，视野开阔，远方为雪山群峰，近处有石砌建筑遗存及悬挂的五彩经幡，天空布满暮色厚云。\n\n人物与动作: 一名老年藏族人物，仅见背影与侧脸剪影，神态静穆沉思。；人物静立凝望落日，微风拂动发丝与经幡，镜头平稳后撤或微调角度，夕阳余光渐弱，画面最终黑屏。；微风带动发丝与经幡轻缓摆动，运镜沉稳克制，镜头末端逐渐变暗。\n\n镜头与构图: 中景至远景，略微仰角后平视，缓慢向后拉开并微幅摇摄，景深开阔，最后渐隐至黑。；人物居中偏后景剪影构图，左侧落日余晖打破平衡，右侧经幡斜向延伸，形成纵深与层次感。\n\n光影与质感: 逆光与暮色自然光，夕阳金橙色切光勾勒人物边缘与远山轮廓，整体呈低调大光比剪影效果。；天空深蓝灰与落日金橙形成冷暖对比，人物与地面呈沉郁暗红与黑褐色调。；写实纪录片质感，庄严沉静的高原电影影调。\n\n声音: soundStyle: 空旷的高原风声伴随低沉悠远的器乐或吟诵声，结尾处声音随画面渐弱隐退。\n\n节奏与转场: editing: pacing: 舒缓凝重; techniques: 硬切入，结尾缓慢渐隐至黑屏（Fade to black）",
+        "duration": 3.728,
+        "createdAt": "2026-11-03T09:39:18.273Z",
+        "updatedAt": "2026-11-03T09:39:18.273Z",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-03T09:39:16.229Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      }
+    ],
+    "referenceVideos": [
+      {
+        "id": "8e94c005-603e-4dc3-9aaf-dce7d9809cce",
+        "projectId": "bad27466-22a9-43d8-9f7e-ae0d0182dcac",
+        "sourceUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/9cdf8e5f-1093-47e1-8f35-94ddcab93ab4-309dc0945fbc1c87a15840f87b2cc085.mp4",
+        "mimeType": null,
+        "duration": 29,
+        "createdAt": "2026-11-03T09:35:08.801Z",
+        "fileName": "西藏人文纪录片.mp4",
+        "metadata": {}
+      }
+    ]
   }
 ]
