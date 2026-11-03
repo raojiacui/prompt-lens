@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { rewriteSceneBlueprint, type SceneBlueprintDraft } from "@/lib/workflow/scene-analysis";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
+import { REWRITE_BUDGET_MS } from "@/lib/workflow/rewrite-execution";
 
 vi.mock("@/lib/byok/kie", () => ({ getUserKieApiKey: vi.fn(async () => "test-key") }));
 vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "platform-test-key" }));
@@ -24,7 +25,7 @@ function mockResponses(...values: unknown[]) {
   vi.stubGlobal("fetch", fetchMock);
   return fetchMock;
 }
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); vi.useRealTimers(); });
 
 describe("semantic scene rewrite", () => {
   it("uses the platform key for every included rewrite call even when BYOK exists", async () => {
@@ -67,5 +68,24 @@ describe("semantic scene rewrite", () => {
   it("rejects incomplete or repeatedly unapproved results", async () => {
     mockResponses({ generationPrompt: "男子" }, candidate, { accepted: false, issues: ["未完成用户要求"] });
     await expect(rewriteSceneBlueprint(input)).rejects.toThrow("原版本已保留");
+  });
+  it("preserves the failed stage and provider cause without returning a fake rewrite", async () => {
+    const failure = new Error("provider unavailable");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(failure));
+    await expect(rewriteSceneBlueprint(input)).rejects.toMatchObject({ code: "REWRITE_PROVIDER_FAILED", stage: "generating", cause: expect.any(Error) });
+  });
+  it("distinguishes semantic review rejection from provider failure", async () => {
+    mockResponses(candidate, { accepted: false, issues: ["未满足改动要求"] }, candidate, { accepted: false, issues: ["仍未满足"] });
+    await expect(rewriteSceneBlueprint(input)).rejects.toMatchObject({ code: "REWRITE_REVIEW_FAILED", stage: "reviewing" });
+  });
+  it("shares one budget across generation and review, without starting a correction after expiry", async () => {
+    vi.useFakeTimers();
+    const start = Date.now();
+    const fetchMock = vi.fn()
+      .mockImplementationOnce(async () => { vi.setSystemTime(start + 190000); return Response.json({ choices: [{ message: { content: JSON.stringify(candidate) } }] }); })
+      .mockImplementationOnce(async () => { vi.setSystemTime(start + REWRITE_BUDGET_MS + 1); return Response.json({ choices: [{ message: { content: JSON.stringify({ accepted: false, issues: ["需要修正"] }) } }] }); });
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(rewriteSceneBlueprint(input)).rejects.toMatchObject({ code: "REWRITE_TIMEOUT", stage: "correcting" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

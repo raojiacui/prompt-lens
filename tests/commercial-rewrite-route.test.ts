@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { POST } from "@/app/api/workflow/projects/[id]/scenes/[sceneVersionId]/rewrite/route";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
+import { SceneRewriteError } from "@/lib/workflow/rewrite-execution";
 
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: vi.fn(async () => ({ user: { id: "owner" } })) } } }));
 vi.mock("@/lib/billing/commercial-rewrite", () => ({ commercialRewriteEnabled: () => true }));
@@ -40,5 +41,13 @@ describe("Commercial rewrite payer contract", () => {
     const failed = await call({ payer: "included" });
     expect(failed.status).toBe(502);
     expect((await failed.json()).final).toBe(true);
+  });
+  it("reports the failed stage and a safe timeout reason after the allowance is released", async () => {
+    vi.mocked(rewriteSceneVersion).mockRejectedValueOnce(new Error("REWRITE_PROVIDER_FAILED", { cause: new SceneRewriteError("private-provider-detail", "REWRITE_TIMEOUT", "reviewing") }));
+    const response = await call({ payer: "included", outputLanguage: "zh" });
+    const body = await response.json();
+    expect(body).toMatchObject({ code: "REWRITE_PROVIDER_FAILED", reasonCode: "REWRITE_TIMEOUT", stage: "reviewing", final: true, requestId });
+    expect(body.error).toContain("超时");
+    expect(JSON.stringify(body)).not.toContain("private-provider-detail");
   });
 });

@@ -78,6 +78,10 @@ export async function reserveCommercialTaskInTransaction(tx: Transaction, input:
       const storedQuote = { ...(existing.quote as Record<string, unknown>) };
       delete storedQuote.linkImportOrderId;
       delete storedQuote.linkImportDelivered;
+      if (input.taskKey.startsWith("rewrite:")) {
+        delete storedQuote.rewriteFailure;
+        delete storedQuote.rewriteRecovery;
+      }
       if (existing.credits !== input.credits || existing.rewrites !== input.rewrites || canonical(storedQuote) !== canonical(quote)) throw new Error("Task quote replay mismatch");
       return { reservation: existing, created: false };
     }

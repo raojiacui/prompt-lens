@@ -1,5 +1,8 @@
-import { db, commercialTasks, mediaCleanupJobs, projectAssets, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
-import { reserveCommercialTask, settleCommercialTask, settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
+import { db, commercialTasks, commercialReservations, mediaCleanupJobs, projectAssets, projectVersions, projects, referenceVideos, sceneVersions, videoScenes, workflowJobs } from "@/lib/db";
+import { recoverExpiredCommercialRewrites } from "@/lib/billing/rewrite-recovery";
+import { SceneRewriteError } from "./rewrite-execution";
+import { taskErrorDetails } from "@/lib/billing/task-diagnostics";
+import { reserveCommercialTask, settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { PRICING_VERSION } from "@/lib/billing/pricing-v6";
 import { extractR2Key } from "@/lib/cloudflare/r2";
 import { processMediaCleanupJobs } from "./media-cleanup";
@@ -345,6 +348,7 @@ export async function rewriteSceneVersion(params: {
   if (!scene) throw new Error("Scene version not found");
 
   if (params.commercialTaskKey) {
+    await recoverExpiredCommercialRewrites({ userId: params.userId, taskKey: params.commercialTaskKey, limit: 1 });
     const reserved = await reserveCommercialTask({
       userId: params.userId, taskKey: params.commercialTaskKey, credits: 0, rewrites: 1,
       quote: { version: PRICING_VERSION, projectId: params.projectId, sceneVersionId: scene.id,
@@ -380,7 +384,13 @@ export async function rewriteSceneVersion(params: {
   });
   } catch (error) {
     if (params.commercialTaskKey) {
-      await settleCommercialTask({ userId: params.userId, taskKey: params.commercialTaskKey, credits: 0, rewrites: 0 });
+      const code = error instanceof SceneRewriteError ? error.code : "REWRITE_PROVIDER_FAILED";
+      const stage = error instanceof SceneRewriteError ? error.stage : "unknown";
+      console.error("commercial.rewrite.failed", { taskKey: params.commercialTaskKey, projectId: params.projectId, sceneVersionId: scene.id, code, stage, error: taskErrorDetails(error) });
+      await db.transaction(async tx => {
+        const settled = await settleCommercialTaskInTransaction(tx, { userId: params.userId, taskKey: params.commercialTaskKey!, credits: 0, rewrites: 0 });
+        await tx.update(commercialReservations).set({ quote: sql`${commercialReservations.quote} || ${JSON.stringify({ rewriteFailure: { code, stage, at: new Date().toISOString() } })}::jsonb` }).where(eq(commercialReservations.id, settled.reservation.id));
+      });
       throw new Error("REWRITE_PROVIDER_FAILED", { cause: error });
     }
     throw error;

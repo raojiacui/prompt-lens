@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { commercialWallets, db } from "@/lib/db";
+import { recoverExpiredCommercialRewrites } from "./rewrite-recovery";
 
 // Enable only after 0010 is applied and the rewrite integration is accepted.
 export function commercialRewriteEnabled() {
@@ -7,6 +8,7 @@ export function commercialRewriteEnabled() {
 }
 
 export async function getCommercialRewriteBalance(userId: string) {
+  if (commercialRewriteEnabled()) await recoverExpiredCommercialRewrites({ userId });
   // Display purchased balances even while paid task execution is disabled.
   const [wallet] = await db.select().from(commercialWallets).where(eq(commercialWallets.userId, userId));
   return { enabled: commercialRewriteEnabled(), frozen: wallet?.frozen ?? false, credits: wallet?.credits ?? 0, rewrites: wallet?.rewrites ?? 0, heldCredits: wallet?.heldCredits ?? 0, heldRewrites: wallet?.heldRewrites ?? 0 };

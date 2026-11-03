@@ -37,6 +37,7 @@ import { flushReadyAnalysisSceneResults, reconcileTerminalIndependentAnalysis, r
 import { generationKeyFingerprint } from "@/lib/billing/generation-key";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "@/lib/billing/analysis-provider-limit";
 import { LINK_IMPORT_PRICING_VERSION } from "@/lib/billing/link-import-pricing";
+import { recoverExpiredCommercialRewrites } from "@/lib/billing/rewrite-recovery";
 import { createAlipayCreditCheckout, settlePaidCreditOrder } from "@/lib/payments/credit-checkout";
 import { PRICING_VERSION, settleAnalysis, type AnalysisPriceInput } from "@/lib/billing/pricing-v6";
 import { reconcileCommercialRefund, requestCommercialRefund, updateCommercialRefundRequest, reviewCommercialRefund } from "@/lib/payments/commercial-refunds";
@@ -1719,6 +1720,46 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(1);
     await expect(rewriteSceneVersion(input)).rejects.toThrow("REWRITE_PREVIOUSLY_FAILED");
     expect(rewriteSceneBlueprint).toHaveBeenCalledTimes(1);
+  });
+  it("recovers an expired rewrite reservation once, without another model call", async () => {
+    await grant();
+    const input = await rewriteInput();
+    vi.mocked(rewriteSceneBlueprint).mockRejectedValue(new Error("Model failure"));
+    // Reserve a genuine wallet allocation, then simulate the function terminating before settlement.
+    await reserveCommercialTask({ userId, taskKey: input.commercialTaskKey!, credits: 0, rewrites: 1, quote: { projectId: input.projectId } });
+    expect(await recoverExpiredCommercialRewrites({ userId })).toBe(0);
+    await testDb.update(schema.commercialReservations).set({ createdAt: new Date(Date.now() - 7 * 60000) });
+    expect(await recoverExpiredCommercialRewrites({ userId: randomUUID() })).toBe(0);
+    const results = await Promise.all([recoverExpiredCommercialRewrites({ userId }), recoverExpiredCommercialRewrites({ userId })]);
+    expect(results.reduce((a, b) => a + b, 0)).toBe(1);
+    expect(await balance()).toMatchObject({ rewrites: 20, heldRewrites: 0 });
+    expect(rewriteSceneBlueprint).not.toHaveBeenCalled();
+    expect((await testDb.select().from(schema.commercialReservations))[0]).toMatchObject({ state: "settled", settledRewrites: 0 });
+  });
+  it("settles an existing saved rewrite instead of refunding or generating it again", async () => {
+    await grant();
+    const input = await rewriteInput();
+    await reserveCommercialTask({ userId, taskKey: input.commercialTaskKey!, credits: 0, rewrites: 1, quote: { projectId: input.projectId } });
+    await testDb.update(schema.commercialReservations).set({ createdAt: new Date(Date.now() - 7 * 60000) });
+    await testDb.update(schema.sceneVersions).set({ metadata: { commercialTaskKey: input.commercialTaskKey } }).where(eq(schema.sceneVersions.id, input.sceneVersionId));
+    expect(await recoverExpiredCommercialRewrites({ userId })).toBe(1);
+    expect(await balance()).toMatchObject({ rewrites: 19, heldRewrites: 0 });
+    expect(rewriteSceneBlueprint).not.toHaveBeenCalled();
+    expect(await recoverExpiredCommercialRewrites({ userId })).toBe(0);
+  });
+  it("prevents a late rewrite from saving or charging after its expired allowance is released", async () => {
+    await grant();
+    const input = await rewriteInput();
+    let finish!: (answer: Awaited<ReturnType<typeof rewriteSceneBlueprint>>) => void;
+    vi.mocked(rewriteSceneBlueprint).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+    const running = rewriteSceneVersion(input);
+    await vi.waitFor(() => expect(rewriteSceneBlueprint).toHaveBeenCalledOnce());
+    await testDb.update(schema.commercialReservations).set({ createdAt: new Date(Date.now() - 7 * 60000) });
+    expect(await recoverExpiredCommercialRewrites({ userId })).toBe(1);
+    finish(pipelineAnswer);
+    await expect(running).rejects.toThrow("Settlement replay mismatch");
+    expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(1);
+    expect(await balance()).toMatchObject({ rewrites: 20, heldRewrites: 0 });
   });
   it("never invokes a model when the user lacks allowance or project ownership", async () => {
     const input = await rewriteInput();

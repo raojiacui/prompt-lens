@@ -771,6 +771,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     } finally {
       rewriteBusyRef.current = false;
       setRewritingSceneId("");
+      void loadCreditStatus();
     }
   }
 

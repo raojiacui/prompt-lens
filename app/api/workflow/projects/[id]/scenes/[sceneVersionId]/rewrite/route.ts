@@ -7,6 +7,10 @@ import { getUserKieApiKey } from "@/lib/byok/kie";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 import { defaultLocale, isLocale } from "@/i18n/config";
+import { SceneRewriteError } from "@/lib/workflow/rewrite-execution";
+import { taskErrorDetails } from "@/lib/billing/task-diagnostics";
+
+export const maxDuration = 300;
 
 export async function POST(
   request: NextRequest,
@@ -44,6 +48,7 @@ export async function POST(
       });
       return NextResponse.json({ scene, keySource: payer === "included" ? "platform_paid" : "user", billing: { payer, chargedCredits: 0, includedRewrites: payer === "included" ? 1 : 0 } });
     } catch (error) {
+      console.error("commercial.rewrite.request_failed", { requestId, sceneVersionId, error: taskErrorDetails(error) });
       const code = error instanceof Error ? error.message : "REWRITE_FAILED";
       const zh = body?.outputLanguage !== "en";
       const errors: Record<string, { status: number; final: boolean; message: string }> = {
@@ -53,7 +58,10 @@ export async function POST(
         REWRITE_PROVIDER_FAILED: { status: 502, final: true, message: zh ? "AI 改写失败，次数已退回，原版本已保留。" : "AI rewrite failed. Your allowance was returned and the original is preserved." },
       };
       const known = errors[code];
-      return NextResponse.json({ code: known ? code : "REWRITE_STATUS_UNKNOWN", final: known?.final ?? false, error: known?.message ?? (zh ? "暂时无法确认改写结果，请稍后重试查询。" : "Unable to confirm the rewrite result. Retry later to retrieve it.") }, { status: known?.status ?? 500 });
+      const cause = error instanceof Error && error.cause instanceof SceneRewriteError ? error.cause : undefined;
+      const detail = cause?.code === "REWRITE_TIMEOUT" ? (zh ? "AI 改写超时，次数已退回，原版本已保留。" : "AI rewrite timed out. Your allowance was returned and the original is preserved.")
+        : cause?.code === "REWRITE_REVIEW_FAILED" ? (zh ? "改写结果未通过要求校验，次数已退回，原版本已保留。" : "The rewrite did not pass validation. Your allowance was returned and the original is preserved.") : undefined;
+      return NextResponse.json({ code: known ? code : "REWRITE_STATUS_UNKNOWN", reasonCode: cause?.code, stage: cause?.stage, requestId, final: known?.final ?? false, error: detail ?? known?.message ?? (zh ? "暂时无法确认改写结果，请稍后重试查询。" : "Unable to confirm the rewrite result. Retry later to retrieve it.") }, { status: known?.status ?? 500 });
     }
   }
 
