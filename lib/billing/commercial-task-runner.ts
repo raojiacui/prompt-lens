@@ -44,6 +44,7 @@ export async function confirmCommercialTaskInTransaction(tx: Parameters<Paramete
 export async function runCommercialTask(taskId: string) {
   const [task] = await db.update(commercialTasks).set({ state: "running", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionId: randomUUID() })}::jsonb`, updatedAt: new Date() }).where(and(eq(commercialTasks.id, taskId), eq(commercialTasks.state, "queued"), sql`${commercialTasks.kind} IN ('analysis', 'generation')`, sql`${commercialTasks.result}->>'sceneJobMode' IS DISTINCT FROM 'independent_v1'`)).returning();
   if (!task) return;
+  console.info("commercial.task.started", { taskId: task.id, kind: task.kind });
   try {
     if (task.kind === "analysis") await executeCommercialAnalysis(task);
     else if (task.kind === "generation") await executeCommercialGeneration(task);

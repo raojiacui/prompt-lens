@@ -19,6 +19,7 @@ export function getAnalysisProgressPercent({ state, phase, total, finished, elap
   state: string; phase: string; total: number; finished: number; elapsedSinceCheckpoint: number;
 }) {
   if (state === "completed") return 100;
+  if (state === "quoted") return 0;
   const terminal = ["failed", "review"].includes(state);
   const count = Math.max(1, total);
   const done = Math.min(count, Math.max(0, finished));
@@ -38,17 +39,18 @@ export function getAnalysisProgressPercent({ state, phase, total, finished, elap
   return roundedPercent(2 + Math.min(checkpointElapsed / 120, 1) * 16);
 }
 
-export function AnalysisTaskProgress({ zh, state, phase, total, finished, startedAt, checkpointAt }: {
+export function AnalysisTaskProgress({ zh, state, phase, total, finished, startedAt, checkpointAt, connection = "ok" }: {
   zh: boolean; state: string; phase: string; total: number; finished: number; startedAt: number; checkpointAt?: number;
+  connection?: "ok" | "error" | "auth";
 }) {
   const [now, setNow] = useState(startedAt);
   const terminal = ["completed", "failed", "review"].includes(state);
   useEffect(() => {
-    if (terminal) return;
+    if (terminal || connection !== "ok") return;
     setNow(Date.now());
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [startedAt, terminal]);
+  }, [startedAt, terminal, connection]);
   const elapsed = Math.max(0, Math.floor((now - startedAt) / 1000));
   const elapsedSinceCheckpoint = Math.max(0, (now - (checkpointAt || startedAt)) / 1000);
   const count = Math.max(1, total);
@@ -56,9 +58,12 @@ export function AnalysisTaskProgress({ zh, state, phase, total, finished, starte
   // Server checkpoints define the floor. The current stage advances smoothly but
   // never reaches the next checkpoint until the server confirms it.
   const percent = getAnalysisProgressPercent({ state, phase, total, finished, elapsedSinceCheckpoint });
-  const label = state === "review" ? (zh ? "任务需要核对" : "Task needs review")
+  const label = connection !== "ok" ? (zh ? "后台进展尚未同步" : "Background progress not synced")
+    : state === "review" ? (zh ? "任务需要核对" : "Task needs review")
     : state === "failed" ? (zh ? "分析未完成" : "Analysis incomplete")
     : state === "completed" ? (zh ? "分析完成" : "Analysis complete")
+    : state === "quoted" ? (zh ? "等待确认，分析尚未启动" : "Awaiting confirmation; analysis has not started")
+    : phase === "queued" ? (zh ? "等待后台调度" : "Waiting for a worker")
     : phase === "saving" ? (zh ? "正在保存分析结果" : "Saving results")
     : phase === "analyzing" ? (zh ? "正在分析镜头" : "Analyzing shots")
     : (zh ? "正在准备镜头素材" : "Preparing shot media");
@@ -73,7 +78,7 @@ export function AnalysisTaskProgress({ zh, state, phase, total, finished, starte
       <div className="h-full bg-primary transition-[width] duration-1000 ease-linear" style={{ width: `${percent}%` }} />
     </div>
     <p className="text-sm text-muted-foreground">{zh ? `已等待 ${minutes}:${seconds}` : `Elapsed ${minutes}:${seconds}`}</p>
-    {!terminal && <p className="text-sm text-muted-foreground">{elapsed > count * 180 + 60
+    {!terminal && connection === "ok" && <p className="text-sm text-muted-foreground">{elapsed > count * 180 + 60
       ? (zh ? "等待已超过参考时间，仍在查询任务状态，请勿重复提交。" : "Taking longer than estimated. Still checking status; do not resubmit.")
       : (zh ? `预计约 ${count}–${count * 3 + 1} 分钟（参考估计，受素材处理及模型响应影响）。` : `Estimated ${count}–${count * 3 + 1} minutes (approximate; media processing and model response may vary).`)}</p>}
     {state === "review" && <p className="text-sm">{zh ? "额度保持预留，不会重复扣款。" : "Credits remain reserved and will not be charged twice."}</p>}

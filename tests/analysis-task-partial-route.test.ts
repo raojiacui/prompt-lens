@@ -2,25 +2,43 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { PgDialect } from "drizzle-orm/pg-core";
 
-const mocks = vi.hoisted(() => ({ session: vi.fn(), find: vi.fn(), bundle: vi.fn(), after: vi.fn(), recover: vi.fn(), resumeScenes: vi.fn() }));
+const mocks = vi.hoisted(() => ({ session: vi.fn(), find: vi.fn(), bundle: vi.fn(), after: vi.fn(), recover: vi.fn(), resumeScenes: vi.fn(), select: vi.fn(), orderBy: vi.fn(), where: vi.fn() }));
 vi.mock("next/server", async importOriginal => ({ ...await importOriginal<typeof import("next/server")>(), after: mocks.after }));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
-vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { query: { commercialTasks: { findFirst: mocks.find } } } }));
+vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { select: mocks.select, query: { commercialTasks: { findFirst: mocks.find } } } }));
 vi.mock("@/lib/billing/commercial-analysis", () => ({ commercialAnalysisBundle: mocks.bundle, recoverCommercialAnalysisTasks: mocks.recover }));
 vi.mock("@/lib/billing/commercial-task-runner", () => ({ confirmCommercialTask: vi.fn(), runCommercialTask: vi.fn() }));
 vi.mock("@/lib/billing/commercial-generation", () => ({ reconcileCommercialGeneration: vi.fn() }));
-vi.mock("@/lib/billing/independent-scene-analysis", () => ({ resumeIndependentAnalysis: mocks.resumeScenes }));
+vi.mock("@/lib/billing/independent-scene-analysis", () => ({ resumeIndependentAnalysis: mocks.resumeScenes, flushReadyAnalysisSceneResults: vi.fn() }));
 vi.mock("@/lib/workflow/analysis-tasks", () => ({ recoverAnalysisTasks: vi.fn(), runAnalysisTask: vi.fn() }));
 import { GET } from "@/app/api/commercial/tasks/[id]/route";
 
 const id = "22222222-2222-4222-8222-222222222222";
-const call = () => GET(new NextRequest(`http://localhost/api/commercial/tasks/${id}`), { params: Promise.resolve({ id }) });
+const call = (diagnostics = false) => GET(new NextRequest(`http://localhost/api/commercial/tasks/${id}${diagnostics ? "?diagnostics=1" : ""}`), { params: Promise.resolve({ id }) });
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.after.mockImplementation(() => undefined);
   mocks.session.mockResolvedValue({ user: { id: "alice" } });
   mocks.find.mockResolvedValue({ id, userId: "alice", kind: "analysis", state: "running", updatedAt: new Date(), expiresAt: new Date(Date.now() + 60000), input: { pricing: { scenes: [1, 2] } }, result: { assets: { scenes: [1, 2] }, finishedSceneIds: ["1"], successfulSceneIds: ["1"] } });
   mocks.bundle.mockResolvedValue({ sceneVersions: [{ id: "completed-shot" }] });
+  mocks.select.mockReturnValue({ from: () => ({ where: mocks.where }) });
+  mocks.where.mockReturnValue({ orderBy: mocks.orderBy });
+  mocks.orderBy.mockResolvedValue([]);
+});
+it("returns diagnostics only when requested, scoped to the owned task", async () => {
+  expect((await (await call()).json()).diagnostics).toBeUndefined();
+  expect(mocks.select).not.toHaveBeenCalled();
+  mocks.orderBy.mockResolvedValue([{ sceneIndex: 1, state: "running", updatedAt: new Date(), result: { phase: "analyzing", timings: { modelMs: 42000, secret: "private-key" } } }]);
+  const response = await call(true);
+  const body = await response.json();
+  expect(body.diagnostics.scenes[0]).toMatchObject({ index: 1, stage: "analyzing", modelMs: 42000 });
+  expect(JSON.stringify(body.diagnostics)).not.toContain("private-key");
+  expect(new PgDialect().sqlToQuery(mocks.where.mock.calls[0][0]).params).toEqual([id]);
+});
+it("does not query diagnostics for another user's task", async () => {
+  mocks.find.mockResolvedValue(undefined);
+  expect((await call(true)).status).toBe(404);
+  expect(mocks.select).not.toHaveBeenCalled();
 });
 it.each(["running", "queued"])("returns saved results while commercial analysis is %s", async state => {
   const task = await mocks.find();

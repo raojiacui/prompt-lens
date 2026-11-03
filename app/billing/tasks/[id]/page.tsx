@@ -4,7 +4,9 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useLocale } from "next-intl";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-type Task = { id: string; kind: string; state: string; credits: number; chargedCredits?: number; videoUrl?: string; nextTaskId?: string; retryAvailable?: boolean; bundle?: { sceneVersions: { id: string; sceneIndex: number; duration: number; generationPrompt: string }[] } };
+import { AnalysisTaskDetails } from "@/components/payments/analysis-task-details";
+import type { AnalysisDiagnostics } from "@/lib/billing/analysis-diagnostics";
+type Task = { id: string; kind: string; state: string; credits: number; diagnostics?: AnalysisDiagnostics; chargedCredits?: number; videoUrl?: string; nextTaskId?: string; retryAvailable?: boolean; bundle?: { sceneVersions: { id: string; sceneIndex: number; duration: number; generationPrompt: string }[] } };
 export default function BillingTaskPage() {
   const { id } = useParams<{ id: string }>();
   const zh = useLocale() === "zh";
@@ -13,18 +15,20 @@ export default function BillingTaskPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number>();
+  const [connection, setConnection] = useState<"ok" | "error" | "auth">("ok");
   useEffect(() => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
     async function load() {
       try {
-        const response = await fetch(`/api/commercial/tasks/${id}`, { cache: "no-store", signal: controller.signal });
+        const response = await fetch(`/api/commercial/tasks/${id}?diagnostics=1`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
         if (response.status === 401) { window.location.href = `/login?next=${encodeURIComponent(`/billing/tasks/${id}`)}`; return; }
         if (!response.ok) throw new Error();
         const data = await response.json();
-        if (!controller.signal.aborted) { setTask(data); setError(""); }
+        if (!controller.signal.aborted) { setTask(data); setError(""); setLastSyncedAt(Date.now()); setConnection("ok"); }
         if (["queued", "running"].includes(data.state) && !controller.signal.aborted) timer = setTimeout(load, 5000);
-      } catch { if (!controller.signal.aborted) setError(zh ? "暂时无法查询，请稍后刷新。" : "Status unavailable. Refresh later."); }
+      } catch { if (!controller.signal.aborted) { setConnection("error"); setError(zh ? "后台状态同步中断，显示的是上次记录。正在重新查询。" : "Status sync interrupted. Showing the last snapshot and reconnecting."); timer = setTimeout(load, 5000); } }
     }
     void load(); return () => { controller.abort(); clearTimeout(timer); };
   }, [id, zh, refresh]);
@@ -48,6 +52,7 @@ export default function BillingTaskPage() {
     {task && <>
       <p role="status" className="mt-6">{zh ? ({ quoted: "等待确认", queued: "排队中", running: "处理中", completed: "已完成", failed: "未完成", review: "结果待核对，额度仍在预留中" }[state || ""] || "待确认") : state}</p>
       <p className="mt-2 text-sm">{task.chargedCredits === undefined ? (zh ? "预留" : "Reserved") : (zh ? "已结算" : "Settled")}: {task.chargedCredits ?? task.credits} {zh ? "积分" : "credits"}</p>
+      {task.kind === "analysis" && <AnalysisTaskDetails taskId={task.id} diagnostics={task.diagnostics} zh={zh} lastSyncedAt={lastSyncedAt} connection={connection} expanded />}
       {task.videoUrl && <video className="mt-6 w-full rounded-lg" controls playsInline src={task.videoUrl} />}
       {task.nextTaskId && <Link href={`/billing/tasks/${task.nextTaskId}`} className="mt-5 inline-block underline">{zh ? "查看后续重试" : "View subsequent retry"}</Link>}
       {task.retryAvailable && <div className="my-6 border-y border-border py-5">{quote && <p className="mb-3">{quote.sceneCount} {zh ? "个失败镜头，本次最多" : "failed shots, up to"} {quote.credits} {zh ? "积分" : "credits"}</p>}<button disabled={busy} onClick={() => void retry()} className="min-h-11 rounded-lg border border-border px-4 disabled:opacity-50">{quote ? (zh ? "确认费用并重试" : "Confirm cost and retry") : (zh ? "获取失败镜头重试报价" : "Quote failed-shot retry")}</button></div>}

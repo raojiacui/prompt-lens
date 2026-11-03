@@ -189,22 +189,32 @@ export async function runIndependentSceneJob(jobId: string) {
   let preparationMs = 0;
   let blueprint: SceneBlueprintDraft;
   let requestStarted = false;
+  async function recordPhase(phase: "preparing" | "analyzing") {
+    const marker = { phase, phaseStartedAt: new Date().toISOString(), timings: { startedAt: new Date(startedAt).toISOString(), queueMs: startedAt - job.createdAt.getTime(), preparationMs } };
+    const [current] = await db.update(analysisSceneJobs).set({ result: sql`${analysisSceneJobs.result} || ${JSON.stringify(marker)}::jsonb`, updatedAt: new Date() })
+      .where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), eq(analysisSceneJobs.executionId, executionId))).returning({ id: analysisSceneJobs.id });
+    if (!current) throw new Error("ANALYSIS_EXECUTION_LOST");
+  }
   try {
     const apiKey = input.pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(task.userId);
     if (!apiKey || generationKeyFingerprint(apiKey) !== input.keyFingerprint) throw new Error("KIE_KEY_CHANGED");
     if (input.executionMode === "scene_pipeline_v1") {
+      await recordPhase("preparing");
       const preparingAt = Date.now();
       asset = await prepareIndependentSceneAsset(task, job, executionId);
       preparationMs = Date.now() - preparingAt;
     }
     modelStartedAt = Date.now();
+    await recordPhase("analyzing");
     console.info("commercial.scene.model_started", { taskId: task.id, sceneJobId: job.id, sceneIndex: job.sceneIndex, preparationMs, queueMs: modelStartedAt - job.createdAt.getTime() });
     requestStarted = true;
     blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, analysisBudgetMs: Math.max(1, startedAt + 270_000 - Date.now()), allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false });
   } catch (error) {
     console.error("commercial.scene.model_failed", { taskId: task.id, sceneId: job.sceneId, error: taskErrorDetails(error) });
     const fallback = buildFallbackSceneBlueprint(asset, "Analysis unavailable", undefined, input.outputLanguage);
-    blueprint = { ...fallback, metadata: { ...fallback.metadata, providerOutcome: requestStarted ? "unknown" : "not_sent" } };
+    const message = error instanceof Error ? error.message : "";
+    const failureCode = ["KIE_KEY_CHANGED", "KIE_KEY_REQUIRED", "SPLIT_ASSET_MISMATCH", "MEDIA_STORAGE_CONFIG_INVALID"].includes(message) ? message : requestStarted ? "ANALYSIS_FAILED" : "MEDIA_PREPARATION_FAILED";
+    blueprint = { ...fallback, metadata: { ...fallback.metadata, providerOutcome: requestStarted ? "unknown" : "not_sent", failureCode } };
   }
   const modelFinishedAt = Date.now();
   const timings = { startedAt: new Date(startedAt).toISOString(), modelFinishedAt: new Date(modelFinishedAt).toISOString(), preparationMs, queueMs: startedAt - job.createdAt.getTime(), modelMs: requestStarted ? modelFinishedAt - modelStartedAt : 0 };
@@ -213,7 +223,7 @@ export async function runIndependentSceneJob(jobId: string) {
   const checkpointTrace = traceSceneSave(job.id, 1, false, "persist_model_checkpoint");
   let checkpointed: { id: string } | undefined;
   try {
-    [checkpointed] = await db.update(analysisSceneJobs).set({ result: { pendingBlueprint: blueprint, timings }, updatedAt: new Date() })
+    [checkpointed] = await db.update(analysisSceneJobs).set({ result: { phase: "saving", phaseStartedAt: new Date().toISOString(), pendingBlueprint: blueprint, timings }, updatedAt: new Date() })
       .where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), eq(analysisSceneJobs.executionId, executionId))).returning({ id: analysisSceneJobs.id });
     console.info("commercial.scene.checkpoint_finished", { sceneJobId: job.id, checkpointed: Boolean(checkpointed), ...checkpointTrace.snapshot() });
   } catch (error) {

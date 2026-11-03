@@ -1,7 +1,8 @@
 import { after, NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, asc, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
-import { db, commercialTasks } from "@/lib/db";
+import { db, commercialTasks, analysisSceneJobs } from "@/lib/db";
+import { buildAnalysisDiagnostics } from "@/lib/billing/analysis-diagnostics";
 import { commercialAnalysisBundle, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { confirmCommercialTask, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest, { params }: Context) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ code: "INVALID_TASK" }, { status: 400 });
   try {
     let task = await confirmCommercialTask(session.user.id, id);
+    console.info("commercial.task.confirmed", { taskId: task.id, kind: task.kind, state: task.state });
     if (["queued", "running", "review"].includes(task.state)) {
       await wakeReconciliationWorker("commercial_task_confirm");
     }
@@ -88,5 +90,11 @@ export async function GET(request: NextRequest, { params }: Context) {
   const partial = task.kind === "workflow_analysis" ? Boolean(result.partial) : success > 0 && success < (input.pricing?.scenes.length || 0);
   const phase = task.kind === "analysis" ? !result.assets ? "preparing" : completedScenes < totalScenes ? "analyzing" : "saving" : undefined;
   const saveRecoveryPending = task.kind === "analysis" && task.state === "review" && Boolean(result.pendingResult);
-  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, progressUpdatedAt: task.updatedAt.getTime(), saveRecoveryPending, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error, reviewReason: (result.review as { reason?: string } | undefined)?.reason }, { headers: { "Cache-Control": "private, no-store" } });
+  const diagnostics = request.nextUrl.searchParams.get("diagnostics") === "1" && task.kind === "analysis"
+    ? buildAnalysisDiagnostics(task, await db.select({
+      sceneIndex: analysisSceneJobs.sceneIndex, state: analysisSceneJobs.state,
+      createdAt: analysisSceneJobs.createdAt, updatedAt: analysisSceneJobs.updatedAt,
+      result: sql<Record<string, unknown>>`jsonb_build_object('phase', ${analysisSceneJobs.result}->'phase', 'phaseStartedAt', ${analysisSceneJobs.result}->'phaseStartedAt', 'hasPendingBlueprint', jsonb_typeof(${analysisSceneJobs.result}->'pendingBlueprint') = 'object', 'timings', ${analysisSceneJobs.result}->'timings', 'failureCode', ${analysisSceneJobs.result}->'failureCode')`,
+    }).from(analysisSceneJobs).where(eq(analysisSceneJobs.taskId, id)).orderBy(asc(analysisSceneJobs.sceneIndex))) : undefined;
+  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, diagnostics, progressUpdatedAt: task.updatedAt.getTime(), saveRecoveryPending, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error, reviewReason: (result.review as { reason?: string } | undefined)?.reason }, { headers: { "Cache-Control": "private, no-store" } });
 }

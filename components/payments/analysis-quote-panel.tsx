@@ -7,6 +7,8 @@ import { listModels } from "@/lib/ai/model-registry";
 import { SceneVideoPreview } from "@/components/workflow/scene-video-preview";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
 import { AnalysisTaskProgress } from "./analysis-task-progress";
+import { AnalysisTaskDetails } from "./analysis-task-details";
+import type { AnalysisDiagnostics } from "@/lib/billing/analysis-diagnostics";
 
 type AnalysisPreparation = { id: string; scenes: SceneInterval[]; durationUs: number };
 
@@ -28,6 +30,9 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   const [selected, setSelected] = useState<string[]>([]);
   const [savedQuote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number; expiresAt?: string; requestKey: string } | null>(null);
   const [taskId, setTaskId] = useState("");
+  const [diagnostics, setDiagnostics] = useState<AnalysisDiagnostics>();
+  const [lastSyncedAt, setLastSyncedAt] = useState<number>();
+  const [connection, setConnection] = useState<"ok" | "error" | "auth">("ok");
   const [state, setState] = useState("");
   const [taskProgress, setTaskProgress] = useState({ phase: "preparing", total: 0, finished: 0, startedAt: 0, checkpointAt: 0 });
   const [busy, setBusy] = useState(false);
@@ -152,6 +157,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         const startedAt = Date.now();
         setTaskProgress({ phase: "preparing", total: selectedScenes.length, finished: 0, startedAt, checkpointAt: startedAt });
         setTaskId(data.id); setState(data.state);
+        setLastSyncedAt(Date.now());
     } catch (e) {
       setError(e instanceof Error ? e.message : "Error");
       if (e instanceof AnalysisRequestError && e.rejected) {
@@ -168,15 +174,22 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     let missingTerminalBundle = 0;
     async function poll() {
       try {
-        const response = await fetch(`/api/commercial/tasks/${taskId}`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
+        const response = await fetch(`/api/commercial/tasks/${taskId}?diagnostics=1`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
+        if (response.status === 401) {
+          if (!controller.signal.aborted) { setConnection("auth"); setError(zh ? "登录校验失败，无法同步分析进展。请打开任务详情重新验证登录，勿重复提交分析。" : "Session check failed. Open task details to verify your session; do not resubmit analysis."); }
+          timer = setTimeout(poll, 15000);
+          return;
+        }
         if (!response.ok) throw new Error();
         const data = await response.json();
+        if (data.id !== taskId || typeof data.state !== "string") throw new Error("Invalid task response");
         if (controller.signal.aborted) return;
+        setDiagnostics(data.diagnostics); setLastSyncedAt(Date.now()); setConnection("ok");
         setState(data.state);
         setError("");
         setTaskProgress(previous => ({
           ...previous,
-          phase: data.phase || previous.phase,
+          phase: data.diagnostics?.stage || data.phase || previous.phase,
           total: data.totalScenes ?? previous.total,
           finished: data.completedScenes ?? previous.finished,
           checkpointAt: Number.isFinite(data.progressUpdatedAt) ? data.progressUpdatedAt : previous.checkpointAt,
@@ -191,7 +204,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
             return;
           }
         }
-      } catch { if (!controller.signal.aborted) setError(zh ? "查询暂时中断，任务仍保留在账户中。" : "Status temporarily unavailable. Your task remains in your account."); }
+      } catch { if (!controller.signal.aborted) { setConnection("error"); setError(zh ? "后台状态同步中断，当前进展尚未确认。任务仍保留在账户中，请勿重复提交。" : "Status sync interrupted. Progress is unconfirmed. Your task remains in your account; do not resubmit."); } }
       if (!controller.signal.aborted) timer = setTimeout(poll, 4000);
     }
     void poll();
@@ -235,7 +248,9 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         <button disabled={busy || downloading || preparing || quoting || (!quote && (!error || (preparation !== null && !selected.length)))} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : error ? (preparation ? (zh ? "重新获取费用" : "Refresh cost") : (zh ? "重新读取视频" : "Inspect video again")) : (zh ? "确认分析" : "Confirm analysis")}</button>
       </div>
     </>}
-    {taskId && <AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} checkpointAt={taskProgress.checkpointAt} />}
+    {taskId && <><AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} checkpointAt={taskProgress.checkpointAt} connection={connection} />
+      <AnalysisTaskDetails taskId={taskId} diagnostics={diagnostics} zh={zh} lastSyncedAt={lastSyncedAt} connection={connection} />
+    </>}
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
   </section>;
 }
