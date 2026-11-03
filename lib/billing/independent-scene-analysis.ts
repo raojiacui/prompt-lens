@@ -8,6 +8,7 @@ import { generationKeyFingerprint } from "./generation-key";
 import { finishCommercialAnalysis, savedAnalysisModel, type AnalysisInput } from "./commercial-analysis";
 import { taskErrorDetails } from "./task-diagnostics";
 import { analysisFailureMessage } from "./analysis-failure-message";
+import { AnalysisExecutionLost } from "./analysis-execution";
 import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "./analysis-provider-limit";
 import { analysisDispatchTarget, dispatchAnalysisInvocation } from "@/lib/workflow/analysis-dispatch";
@@ -194,7 +195,7 @@ export async function runIndependentSceneJob(jobId: string) {
     const marker = { phase, phaseStartedAt: new Date().toISOString(), timings: { startedAt: new Date(startedAt).toISOString(), queueMs: startedAt - job.createdAt.getTime(), preparationMs } };
     const [current] = await db.update(analysisSceneJobs).set({ result: sql`${analysisSceneJobs.result} || ${JSON.stringify(marker)}::jsonb`, updatedAt: new Date() })
       .where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), eq(analysisSceneJobs.executionId, executionId))).returning({ id: analysisSceneJobs.id });
-    if (!current) throw new Error("ANALYSIS_EXECUTION_LOST");
+    if (!current) throw new AnalysisExecutionLost();
   }
   try {
     const apiKey = input.pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(task.userId);
@@ -211,6 +212,10 @@ export async function runIndependentSceneJob(jobId: string) {
     requestStarted = true;
     blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, analysisBudgetMs: Math.max(1, startedAt + 270_000 - Date.now()), allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false });
   } catch (error) {
+    if (error instanceof AnalysisExecutionLost) {
+      console.info("commercial.scene.execution_lost", { taskId: task.id, sceneJobId: job.id });
+      return false;
+    }
     console.error("commercial.scene.model_failed", { taskId: task.id, sceneId: job.sceneId, error: taskErrorDetails(error) });
     const message = error instanceof Error ? error.message : "";
     const failureCode = ["KIE_KEY_CHANGED", "KIE_KEY_REQUIRED", "SPLIT_ASSET_MISMATCH", "MEDIA_STORAGE_CONFIG_INVALID", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE"].includes(message) ? message : requestStarted ? "ANALYSIS_FAILED" : "MEDIA_PREPARATION_FAILED";
@@ -233,6 +238,8 @@ export async function runIndependentSceneJob(jobId: string) {
   } finally {
     checkpointTrace.stop();
   }
+  // Another execution owns this job; do not release its provider slot or publish a fallback.
+  if (!checkpointed) return false;
   let saved = false;
   try {
     if (checkpointed) {

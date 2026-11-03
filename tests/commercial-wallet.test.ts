@@ -509,6 +509,34 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
   });
 
+  it("leaves the current execution and its provider slot intact when asset preparation loses ownership", async () => {
+    const { jobs, scenes } = await pipelineFixture(1);
+    const replacement = randomUUID();
+    vi.mocked(commercialMediaRequest).mockImplementationOnce(async () => {
+      await testDb.update(schema.analysisSceneJobs).set({ executionId: replacement }).where(eq(schema.analysisSceneJobs.id, jobs[0].id));
+      return { metadata: {}, scenes: [pipelineAsset(scenes[0])] };
+    });
+    expect(await runIndependentSceneJob(jobs[0].id)).toBe(false);
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+    expect((await testDb.select().from(schema.analysisSceneJobs))[0]).toMatchObject({ state: "running", executionId: replacement });
+    expect((await testDb.select().from(schema.analysisProviderSlots))[0].releasedAt).toBeNull();
+    expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(0);
+  });
+
+  it("does not release another execution's slot when its answer checkpoint is fenced", async () => {
+    const { jobs, scenes } = await pipelineFixture(1);
+    const replacement = randomUUID();
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ metadata: {}, scenes: [pipelineAsset(scenes[0])] });
+    vi.mocked(analyzeSceneBlueprint).mockImplementationOnce(async () => {
+      await testDb.update(schema.analysisSceneJobs).set({ executionId: replacement }).where(eq(schema.analysisSceneJobs.id, jobs[0].id));
+      return pipelineAnswer;
+    });
+    expect(await runIndependentSceneJob(jobs[0].id)).toBe(false);
+    expect(analyzeSceneBlueprint).toHaveBeenCalledOnce();
+    expect((await testDb.select().from(schema.analysisProviderSlots))[0].releasedAt).toBeNull();
+    expect(await testDb.select().from(schema.sceneVersions)).toHaveLength(0);
+  });
+
   it("publishes a fresh persisted answer immediately without the stale recovery window or another inference", async () => {
     const { quote, jobs, scenes } = await pipelineFixture(1);
     const [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
@@ -791,8 +819,11 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(await recoverStaleAnalysisSceneJobs()).toBe(1);
     finishFirst({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "First result", metadata: { analysisProvider: "kie" } });
     finishSecond({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Second result", metadata: { analysisProvider: "kie" } });
-    expect(await first).toBe(true);
+    // Recovery already fenced the first invocation; it must exit without publishing its late answer.
+    expect(await first).toBe(false);
     expect(await second).toBe(true);
+    expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(2);
+    expect((await testDb.select().from(schema.analysisProviderSlots).where(eq(schema.analysisProviderSlots.sceneJobId, jobs[0].id)))[0].releasedAt).toBeNull();
     expect((await testDb.select().from(schema.analysisSceneJobs).orderBy(schema.analysisSceneJobs.sceneIndex)).map(job => job.state)).toEqual(["failed", "completed", "queued"]);
     expect((await testDb.select().from(schema.sceneVersions).where(eq(schema.sceneVersions.originalSceneId, firstScene.id)))).toHaveLength(1);
     expect((await testDb.select().from(schema.sceneVersions).where(eq(schema.sceneVersions.originalSceneId, firstScene.id)))[0].generationPrompt).not.toBe("First result");

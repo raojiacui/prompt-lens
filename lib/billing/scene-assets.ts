@@ -3,6 +3,7 @@ import { analysisSceneJobs, commercialTasks, db, projectAssets, videoScenes } fr
 import { commercialMediaRequest, type MediaPreview } from "./commercial-media";
 import type { AnalysisInput } from "./commercial-analysis";
 import type { FfmpegBreakdownResult, FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
+import { AnalysisExecutionLost } from "./analysis-execution";
 
 type Task = typeof commercialTasks.$inferSelect;
 type Job = typeof analysisSceneJobs.$inferSelect;
@@ -58,9 +59,9 @@ export async function prepareIndependentSceneAsset(task: Task, job: Job, executi
     transitionOut: job.sceneIndex === input.pricing.scenes.length ? "end" : "hard_cut" };
   await db.transaction(async tx => {
     const [current] = await tx.select().from(analysisSceneJobs).where(and(eq(analysisSceneJobs.id, job.id), eq(analysisSceneJobs.state, "running"), eq(analysisSceneJobs.executionId, executionId))).for("update");
-    if (!current) throw new Error("ANALYSIS_EXECUTION_LOST");
+    if (!current) throw new AnalysisExecutionLost();
     const [parent] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, "running"))).for("update");
-    if (!parent) throw new Error("ANALYSIS_EXECUTION_LOST");
+    if (!parent) throw new AnalysisExecutionLost();
     const latest = parent.result as Progress;
     const scenes = [...latest.assets.scenes];
     scenes[job.sceneIndex - 1] = result;
