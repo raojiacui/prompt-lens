@@ -1,0 +1,6 @@
+interface:
+  display_name: "Prompt Lens: Video Analysis & Prompt Reverse Engineering"
+  short_description: "Analyze videos shot by shot and reverse-engineer generation prompts"
+  default_prompt: "Use $prompt-lens-video-remix to analyze this reference video shot by shot, automatically detect its real edits, and reverse-engineer a generation-ready prompt for every scene."
+policy:
+  allow_implicit_invocation: true
