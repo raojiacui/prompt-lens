@@ -7,7 +7,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./tests/setup.ts"],
     testTimeout: 30000,
-    exclude: ["tests/e2e/**", "node_modules/**", ".next/**", ".worktrees/**"],
+    exclude: ["tests/e2e/**", "node_modules/**", ".next/**", ".worktrees/**", "tmp/**", "temp/**"],
   },
   resolve: {
     alias: {
