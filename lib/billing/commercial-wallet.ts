@@ -48,7 +48,14 @@ export async function getIncludedLinkImportUsage(userId: string, connection: Pic
   let used = 0;
   let nextOrderId: string | undefined;
   for (const lot of lots) {
-    const grant = grants.find((item) => item.eventKey === `purchase:${lot.orderId}`);
+    const grant = grants.find((item) => item.eventKey === `purchase:${lot.orderId}`) || grants.find((item) => {
+      // Explicit server-issued V2 test entitlements use the same reservation and
+      // settlement rules without fabricating a paid purchase or payment order.
+      const metadata = item.metadata as Record<string, unknown>;
+      return item.eventKey === `test-grant:v2:link-imports:${lot.id}` && item.credits === 0 && item.rewrites === 0
+        && metadata.source === "v2-invited-testing" && metadata.environment === "prompt-lens-v2-test"
+        && metadata.noRealPayment === true && metadata.lotId === lot.id && metadata.testGrantReference === lot.orderId;
+    });
     const allowance = Number((grant?.metadata as Record<string, unknown> | undefined)?.linkImports ?? 0);
     if (!Number.isSafeInteger(allowance) || allowance <= 0) continue;
     const attempts = reservations.filter((item) => {

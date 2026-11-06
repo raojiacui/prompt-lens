@@ -164,7 +164,7 @@ async function handleImport(request: NextRequest, reportStage: (stage: LinkImpor
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "视频链接解析失败";
-    if (message === "LINK_IMPORT_ALLOWANCE_EXHAUSTED") return NextResponse.json({ code: message, error: "套餐链接解析次数已用完，请充值或改用本地文件上传。" }, { status: 402 });
+    if (message === "LINK_IMPORT_ALLOWANCE_EXHAUSTED") return NextResponse.json({ code: message, error: "当前账号的套餐视频链接导入次数已用完，请充值或改用本地文件上传。" }, { status: 402 });
     if (message === "INSUFFICIENT_COMMERCIAL_BALANCE") return NextResponse.json({ code: "INSUFFICIENT_COMMERCIAL_BALANCE", error: `余额不足，导入视频链接需 ${LINK_IMPORT_CREDITS} 积分。` }, { status: 402 });
     if (message === "COMMERCIAL_WALLET_UNDER_REVIEW") return NextResponse.json({ error: "账户余额暂不可用，请联系客服。" }, { status: 403 });
     if (message === "Task quote replay mismatch") return NextResponse.json({ error: "请求标识已用于其他视频链接，请刷新后重试。" }, { status: 409 });

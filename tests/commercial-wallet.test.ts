@@ -163,6 +163,50 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await expect(reserveCommercialTask({ userId, taskKey: "link-import:unpaid", credits: 0, rewrites: 0, quote: { kind: "link_import", pricingVersion: LINK_IMPORT_PRICING_VERSION } })).rejects.toThrow("LINK_IMPORT_ALLOWANCE_EXHAUSTED");
   });
 
+  async function grantTestImports() {
+    await testDb.insert(schema.commercialWallets).values({ userId });
+    const [lot] = await testDb.insert(schema.commercialLots).values({ userId, orderId: randomUUID(), credits: 0, rewrites: 0, availableCredits: 0, availableRewrites: 0 }).returning();
+    const [entry] = await testDb.insert(schema.commercialLedger).values({ userId, eventKey: `test-grant:v2:link-imports:${lot.id}`, credits: 0, rewrites: 0,
+      metadata: { source: "v2-invited-testing", environment: "prompt-lens-v2-test", noRealPayment: true, lotId: lot.id, testGrantReference: lot.orderId, linkImports: 12 } }).returning();
+    return { lot, entry };
+  }
+
+  it("uses explicit V2 test imports with normal reservation and settlement without a fake purchase", async () => {
+    await grantTestImports();
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ total: 12, used: 0, remaining: 12 });
+    const input = { userId, taskKey: "link-import:test-grant", credits: 0, rewrites: 0, quote: { kind: "link_import", pricingVersion: LINK_IMPORT_PRICING_VERSION } };
+    await reserveCommercialTask(input);
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ used: 1, remaining: 11 });
+    await settleCommercialTask(input);
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ used: 0, remaining: 12 });
+    await reserveCommercialTask({ ...input, taskKey: "link-import:test-grant-success" });
+    await settleCommercialTask({ ...input, taskKey: "link-import:test-grant-success", linkImportDelivered: true });
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ used: 1, remaining: 11 });
+    expect(await balance()).toMatchObject({ credits: 0, rewrites: 0, heldCredits: 0, heldRewrites: 0 });
+    expect(await testDb.select().from(schema.paymentOrders)).toHaveLength(0);
+    expect(await getIncludedLinkImportUsage(randomUUID())).toMatchObject({ total: 0, remaining: 0 });
+    await testDb.update(schema.commercialLots).set({ state: "refunded" });
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ total: 0, remaining: 0 });
+  });
+
+  it.each([
+    { source: "client" }, { environment: "production" }, { noRealPayment: false },
+    { lotId: "wrong-lot" }, { testGrantReference: "wrong-reference" }, { linkImports: -1 }, { linkImports: 0.5 },
+  ])("rejects an invalid V2 test import grant %j", async (invalid) => {
+    const { entry } = await grantTestImports();
+    await testDb.update(schema.commercialLedger).set({ metadata: { ...entry.metadata as Record<string, unknown>, ...invalid } });
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ total: 0, remaining: 0 });
+  });
+
+  it("does not accept arbitrary event keys or combine test imports with a purchase on the same lot", async () => {
+    const { lot, entry } = await grantTestImports();
+    await testDb.update(schema.commercialLedger).set({ eventKey: "unapproved-import-grant" });
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ total: 0, remaining: 0 });
+    await testDb.update(schema.commercialLedger).set({ eventKey: entry.eventKey });
+    await testDb.insert(schema.commercialLedger).values({ userId, eventKey: `purchase:${lot.orderId}`, credits: 0, rewrites: 0, metadata: { linkImports: 3 } });
+    expect(await getIncludedLinkImportUsage(userId)).toMatchObject({ total: 3, remaining: 3 });
+  });
+
   it("releases the import slot on failure without spending credits or changing replay outcome", async () => {
     await grant();
     const input = { userId, taskKey: "link-import:failed", credits: 0, rewrites: 0, quote: { kind: "link_import", pricingVersion: LINK_IMPORT_PRICING_VERSION } };

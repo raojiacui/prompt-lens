@@ -631,7 +631,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         throw new Error(locale === "en" ? "Configure your own KIE Key in Settings first." : "请先在设置中配置自己的 KIE Key。");
       }
       if (isLinkedMedia && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.linkImports?.remaining ?? 0) < 1)) {
-        throw new Error(locale === "en" ? "No included link parsing attempts remain. Top up or upload a file." : "套餐链接解析次数不足，请充值或改用本地文件上传。");
+        throw new Error(locale === "en" ? "Your account has no included video link imports remaining. Top up or upload a file." : "当前账号的套餐视频链接导入次数不足，请充值或改用本地文件上传。");
       }
       if (selectedMediaType === "image" && latestStatus?.mode === "trial" && (latestStatus.trial.remaining || 0) <= 0) {
         throw new Error(locale === "zh" ? "两次免费试用已用完，请先到设置中配置自己的 KIE Key。" : "Your two free trials are used. Add your own KIE key in Settings to continue.");
