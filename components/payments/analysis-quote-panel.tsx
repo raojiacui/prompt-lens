@@ -37,10 +37,12 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   const [taskProgress, setTaskProgress] = useState({ phase: "preparing", total: 0, finished: 0, startedAt: 0, checkpointAt: 0 });
   const [busy, setBusy] = useState(false);
   const [preparing, setPreparing] = useState(true);
+  const [needsPreparation, setNeedsPreparation] = useState(false);
   const [quoting, setQuoting] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [confirmationStarted, setConfirmationStarted] = useState(false);
   const preparationRequest = useRef<Promise<AnalysisPreparation> | null>(null);
+  const selectionToRestore = useRef<SceneInterval[] | null>(null);
   const [error, setError] = useState("");
   const completed = useRef(false);
   const selectAll = useRef<HTMLInputElement>(null);
@@ -73,7 +75,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     const data = await response.json().catch(() => null);
     if (!data || typeof data !== "object" || Array.isArray(data)) throw invalidResponse();
     if (response.status === 401) throw new AnalysisRequestError(zh ? "登录状态已失效，请重新登录后再开始分析。" : "Your session has expired. Sign in again before starting analysis.", "AUTH_REQUIRED", false, true);
-    if (!response.ok && data.code === "PREVIEW_EXPIRED") throw new AnalysisRequestError(zh ? "拆镜预览已超出素材保留期或不可用，请返回后重新上传素材。" : "This shot preview is unavailable or past media retention. Go back and upload the reference again.", data.code, false, true);
+    if (!response.ok && ["PREVIEW_EXPIRED", "PREVIEW_PREPARATION_INTERRUPTED"].includes(data.code)) throw new AnalysisRequestError(zh ? "拆镜预览暂不可用，请点击“重新读取视频”。将复用当前素材，无需再次导入链接或上传。" : "The shot preview is unavailable. Choose Inspect video again to reuse this reference without importing or uploading it again.", data.code, false, true);
     if (!response.ok && data.code === "PREVIEW_PREPARING") throw new AnalysisRequestError(zh ? "同一视频仍在读取中，请稍后重试，将复用读取结果。" : "This video is still being inspected. Retry shortly to reuse its result.", data.code);
     if (!response.ok && ["MEDIA_PREPARATION_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "MEDIA_PROBE_NOT_CONFIGURED"].includes(data.code)) throw new AnalysisRequestError(zh ? "视频预处理服务暂不可用，尚未开始分析。请稍后重新读取视频。" : "Video preparation is temporarily unavailable. Analysis has not started. Inspect the video again shortly.", data.code);
     if (!response.ok && data.code === "COMMERCIAL_NOT_ENABLED") throw new AnalysisRequestError(zh ? "分析服务暂不可用，尚未开始分析。" : "Analysis is temporarily unavailable and has not started.", data.code, false, true);
@@ -105,7 +107,11 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     if (!preparationRequest.current) preparationRequest.current = post("/api/commercial/analysis", { action: "prepare", ...source, automaticSplit });
     void preparationRequest.current.then(data => {
       if (cancelled) return;
-      setPreparation(data); setSelected(data.scenes.map(scene => scene.id)); setError("");
+      const previous = selectionToRestore.current;
+      setPreparation(data);
+      setSelected(data.scenes.filter(scene => previous === null || previous.some(selected => selected.startUs === scene.startUs && selected.endUs === scene.endUs)).map(scene => scene.id));
+      selectionToRestore.current = null;
+      setNeedsPreparation(false); setError("");
     }).catch(e => {
       if (!cancelled) { preparationRequest.current = null; setError(e instanceof Error ? e.message : "Error"); }
     }).finally(() => { if (!cancelled) setPreparing(false); });
@@ -121,7 +127,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     async function loadQuote(attempt = 0) {
       try {
         const data = await post("/api/commercial/analysis", { action: "quote", preparationId: preparation!.id, sceneIds: selected, payer: payer === "platform" ? "platform" : automaticSplit ? "byok_split" : "byok", model, modelId: selectedModelId, outputLanguage: source.outputLanguage });
-        if (!cancelled) { setQuote({ ...data, requestKey: quoteRequestKey }); setQuoting(false); }
+        if (!cancelled) { setQuote({ ...data, requestKey: quoteRequestKey }); setNeedsPreparation(false); setQuoting(false); }
       } catch (e) {
         if (cancelled) return;
         // Only recover unpaid quotes; never retry model inference here.
@@ -130,8 +136,9 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
           return;
         }
         setError(e instanceof Error ? e.message : "Error"); setQuoting(false);
-        // Quote failures must never discard detected boundaries or shot selection.
-        // Refreshing cost reuses this preparation and cannot invoke the worker.
+        if (e instanceof AnalysisRequestError && ["PREVIEW_EXPIRED", "PREVIEW_PREPARATION_INTERRUPTED"].includes(e.code || "")) setNeedsPreparation(true);
+        // Ordinary price failures keep boundaries and selection. An unavailable
+        // preview is explicitly re-read from the same source when the user asks.
       }
     }
     timer = setTimeout(() => void loadQuote(), 300);
@@ -148,7 +155,14 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   }, [quote, taskId, confirmationStarted]);
   async function confirmAnalysis() {
     if (busy || preparing || quoting) return;
-    if (!quote) { setError(""); setRefresh(value => value + 1); return; }
+    if (!quote) {
+      if (needsPreparation) {
+        selectionToRestore.current = selectedScenes;
+        preparationRequest.current = null;
+        setPreparation(null); setQuote(null); setQuoting(false); setNeedsPreparation(false);
+      }
+      setError(""); setRefresh(value => value + 1); return;
+    }
     setConfirmationStarted(true);
     setBusy(true); setError("");
     try {
@@ -245,7 +259,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
       </div>}
       {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
       <div className="mt-5 flex items-stretch">
-        <button disabled={busy || downloading || preparing || quoting || (!quote && (!error || (preparation !== null && !selected.length)))} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : error ? (preparation ? (zh ? "重新获取费用" : "Refresh cost") : (zh ? "重新读取视频" : "Inspect video again")) : (zh ? "确认分析" : "Confirm analysis")}</button>
+        <button disabled={busy || downloading || preparing || quoting || (!quote && (!error || (preparation !== null && !selected.length && !needsPreparation)))} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : error ? (preparation && !needsPreparation ? (zh ? "重新获取费用" : "Refresh cost") : (zh ? "重新读取视频" : "Inspect video again")) : (zh ? "确认分析" : "Confirm analysis")}</button>
       </div>
     </>}
     {taskId && <><AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} checkpointAt={taskProgress.checkpointAt} connection={connection} />

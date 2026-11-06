@@ -1199,6 +1199,23 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await recoverCommercialAnalysisTasks();
     expect((await testDb.select().from(schema.commercialTasks)).every(t => t.state === "failed")).toBe(true);
   });
+  it("reports a lost preparation lease as interrupted while keeping the existing source reusable", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Interrupted preparation" }).returning();
+    const input = { projectId: project.id, mediaUrl: "https://example.com/retained-source.mp4", mediaName: "Source", automaticSplit: false };
+    const preview = { sourceHash: "a".repeat(64), durationUs: 1_000_000, bytes: 500, metadata: {}, scenes: [{ id: "1", startUs: 0, endUs: 1_000_000 }] };
+    vi.mocked(commercialMediaRequest).mockImplementationOnce(async () => {
+      await testDb.update(schema.commercialTasks).set({ state: "failed", result: { code: "PREVIEW_EXPIRED" } });
+      return preview;
+    });
+    await expect(prepareCommercialAnalysis(userId, input)).rejects.toThrow("PREVIEW_PREPARATION_INTERRUPTED");
+    expect((await testDb.select().from(schema.projects))[0].metadata).not.toHaveProperty("retentionExpiredAt");
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce(preview);
+    const recovered = await prepareCommercialAnalysis(userId, input);
+    expect(recovered.scenes).toEqual(preview.scenes);
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+    expect(await testDb.select().from(schema.commercialReservations)).toHaveLength(0);
+  });
   it.each(["quoted", "failed"])("reuses a complete %s preview beyond its old expiry and refreshes only quotes", async state => {
     await grant();
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");

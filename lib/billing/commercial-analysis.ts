@@ -87,7 +87,7 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
   quoteAnalysis({ payer: input.automaticSplit ? "byok_split" : "byok", model: "flash", sourceDurationUs: preview.durationUs, automaticSplit: input.automaticSplit, paidSplitReusable: false, scenes: preview.scenes });
   if (!/^[0-9a-f]{64}$/.test(preview.sourceHash) || !Number.isSafeInteger(preview.bytes) || preview.bytes <= 0 || preview.bytes > 100 * 1024 * 1024) throw new Error("INVALID_MEDIA_PROBE");
   const [task] = await db.update(commercialTasks).set({ state: "quoted", input: { ...input, preview }, expiresAt: new Date(preparation.createdAt.getTime() + PREPARATION_RETENTION_MS), updatedAt: new Date() }).where(and(eq(commercialTasks.id, preparation.id), eq(commercialTasks.state, "running"), sql`${commercialTasks.expiresAt} > now()`)).returning();
-  if (!task) throw new Error("PREVIEW_EXPIRED");
+  if (!task) throw new Error("PREVIEW_PREPARATION_INTERRUPTED");
   return { id: task.id, durationUs: preview.durationUs, scenes: preview.scenes };
   } catch (error) {
     const diagnostic = taskErrorDetails(error);

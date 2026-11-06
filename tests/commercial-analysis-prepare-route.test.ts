@@ -35,3 +35,13 @@ it("preserves purchase checks instead of converting them into service failures",
   expect(response.status).toBe(400);
   expect(await response.json()).toEqual({ code: "SPLIT_PAYMENT_REQUIRED" });
 });
+
+it.each(["PREVIEW_EXPIRED", "PREVIEW_PREPARATION_INTERRUPTED"])("records a traceable %s without claiming the reference expired", async code => {
+  const logged = vi.spyOn(console, "warn").mockImplementation(() => {});
+  mocks.prepare.mockRejectedValueOnce(new Error(code));
+  const response = await POST(request());
+  expect(response.status).toBe(code === "PREVIEW_EXPIRED" ? 400 : 409);
+  expect(await response.json()).toMatchObject({ code, requestId: expect.any(String) });
+  expect(logged).toHaveBeenCalledWith("[analysis quote] Preview unavailable", expect.objectContaining({ action: "prepare", code, requestId: expect.any(String) }));
+  expect(JSON.stringify(logged.mock.calls)).not.toContain("https://media.example");
+});
