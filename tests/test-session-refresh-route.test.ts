@@ -10,7 +10,7 @@ vi.mock("@/lib/auth", () => ({
   },
 }));
 
-import { GET } from "@/app/api/session-refresh/route";
+import { GET, POST } from "@/app/api/session-refresh/route";
 
 const previousAllowedEmails = process.env.ACCESS_ALLOWED_EMAILS;
 
@@ -21,6 +21,18 @@ afterEach(() => {
 });
 
 describe("V2 test session refresh route", () => {
+  it("rejects cross-origin JSON renewal before reading a session", async () => {
+    const response = await POST(new Request("https://test.example/api/session-refresh", { method: "POST", headers: { origin: "https://other.example" } }));
+    expect(response.status).toBe(403);
+    expect(getSessionMock).not.toHaveBeenCalled();
+  });
+  it("reports a transient JSON renewal lookup failure as unavailable", async () => {
+    getSessionMock.mockRejectedValueOnce(new Error("Temporary database failure"));
+    const response = await POST(new Request("https://test.example/api/session-refresh", { method: "POST", headers: { origin: "https://test.example" } }));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ code: "SESSION_REFRESH_UNAVAILABLE" });
+    expect(response.headers.get("cache-control")).toContain("no-store");
+  });
   it("refreshes an allowed database session and returns to the requested page", async () => {
     process.env.ACCESS_ALLOWED_EMAILS = "raojiacui@gmail.com";
     getSessionMock.mockResolvedValue({

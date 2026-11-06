@@ -68,6 +68,17 @@ afterEach(() => {
 });
 
 describe("V2 test access policy", () => {
+  it("only challenges an API cache when a session token exists", async () => {
+    process.env.ACCESS_ALLOWED_EMAILS = "raojiacui@gmail.com,raojinbo@gmail.com";
+    const url = "https://test.example/api/commercial/tasks/task";
+    const anonymous = await middleware(new NextRequest(url));
+    expect(anonymous.status).toBe(401);
+    expect(await anonymous.json()).not.toHaveProperty("code");
+    const tokenOnly = await middleware(new NextRequest(url, { headers: { cookie: "__Secure-better-auth.session_token=requires-server-verification" } }));
+    expect(tokenOnly.status).toBe(401);
+    expect(await tokenOnly.json()).toHaveProperty("code", "ACCESS_SESSION_REFRESH_REQUIRED");
+    expect(tokenOnly.headers.get("x-middleware-next")).toBeNull();
+  });
   it.each(["http://test.example", "https://test.example"])("refreshes an expired cache using the cookie Better Auth actually issues on %s", async (origin) => {
     process.env.ACCESS_ALLOWED_EMAILS = "raojiacui@gmail.com,raojinbo@gmail.com";
     process.env.BETTER_AUTH_SECRET = "test-secret-test-secret-test-secret";
@@ -111,7 +122,11 @@ describe("V2 test access policy", () => {
     expect(await verifiedCachedSessionEmail(request, secret)).toBe("raojinbo@gmail.com");
 
     const parsed = JSON.parse(decodeBase64Url(value)) as { signature: string };
-    parsed.signature = `${parsed.signature.slice(0, -1)}${parsed.signature.endsWith("A") ? "B" : "A"}`;
+    // The final base64url symbol can contain unused padding bits. Change the
+    // first symbol so the decoded HMAC bytes always differ.
+    const originalSignature = Buffer.from(parsed.signature, "base64url");
+    parsed.signature = `${parsed.signature.startsWith("A") ? "B" : "A"}${parsed.signature.slice(1)}`;
+    expect(Buffer.from(parsed.signature, "base64url").equals(originalSignature)).toBe(false);
     const tamperedValue = encodeBase64Url(JSON.stringify(parsed));
     const tampered = new Request("https://test.example/dashboard", {
       headers: { cookie: `__Secure-better-auth.session_data=${tamperedValue}` },

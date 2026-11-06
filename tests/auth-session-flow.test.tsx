@@ -16,13 +16,14 @@ vi.mock("next/navigation", () => ({ redirect }));
 vi.mock("@/app/login/login-client", () => ({ LoginClient: () => null }));
 
 import { middleware } from "@/middleware";
-import { GET as refreshSession } from "@/app/api/session-refresh/route";
+import { GET as refreshSession, POST as refreshFetchSession } from "@/app/api/session-refresh/route";
+import { ACCESS_SESSION_REFRESH_REQUIRED } from "@/lib/auth/session-cookies";
 import LoginPage from "@/app/login/page";
 
 const secret = "real-cookie-regression-test-secret-32-characters";
 const email = "raojiacui@gmail.com";
 
-async function fixture(origin: string) {
+async function fixture(origin: string, identity = email) {
   const data = { user: [], session: [], account: [], verification: [] };
   const auth = betterAuth({
     baseURL: origin,
@@ -33,7 +34,7 @@ async function fixture(origin: string) {
     session: { cookieCache: { enabled: true, maxAge: 600 } },
   });
   const signedIn = await auth.api.signUpEmail({
-    body: { email, name: "Session fixture", password: "fixture-password-123456" },
+    body: { email: identity, name: "Session fixture", password: "fixture-password-123456" },
     returnHeaders: true,
   });
   const jar = new Map<string, string>();
@@ -72,6 +73,35 @@ afterEach(() => {
 });
 
 describe("access redirects with real Better Auth sessions", () => {
+  it.each(["http://test.example", "https://test.example"])("renews an API cache from a valid database session without leaving the task on %s", async origin => {
+    const f = await fixture(origin);
+    f.expireCache();
+    const path = "/api/commercial/tasks/11111111-1111-4111-8111-111111111111?diagnostics=1";
+    const blocked = await middleware(new NextRequest(`${origin}${path}`, { headers: f.headers() }));
+    expect(blocked.status).toBe(401);
+    expect(await blocked.json()).toMatchObject({ code: ACCESS_SESSION_REFRESH_REQUIRED });
+    const headers = f.headers(); headers.set("origin", origin);
+    const renewed = await refreshFetchSession(new Request(`${origin}/api/session-refresh`, { method: "POST", headers }));
+    expect(renewed.status).toBe(200);
+    expect(renewed.headers.get("location")).toBeNull();
+    f.applyCookies(renewed.headers);
+    expect((await middleware(new NextRequest(`${origin}${path}`, { headers: f.headers() }))).headers.get("x-middleware-next")).toBe("1");
+    expect(f.data.session).toHaveLength(1);
+    expect(getSession).toHaveBeenCalledWith(expect.objectContaining({ query: { disableCookieCache: true }, returnHeaders: true }));
+  });
+
+  it.each(["revoked", "uninvited", "forged"])("does not renew a %s session for API callers", async kind => {
+    const origin = "https://test.example";
+    const f = await fixture(origin, kind === "uninvited" ? "someone@example.com" : email);
+    f.expireCache();
+    if (kind === "revoked") f.data.session.length = 0;
+    if (kind === "forged") f.jar.set(f.names.sessionToken.name, "forged-session-token");
+    const headers = f.headers(); headers.set("origin", origin);
+    const denied = await refreshFetchSession(new Request(`${origin}/api/session-refresh`, { method: "POST", headers }));
+    expect(denied.status).toBe(401);
+    expect(await denied.json()).toEqual({ code: "AUTH_REQUIRED" });
+  });
+
   it.each(["http://test.example", "https://test.example"])("restores an expired cache and reaches the original page on %s", async origin => {
     const f = await fixture(origin);
     expect(f.jar.has(f.names.sessionToken.name)).toBe(true);

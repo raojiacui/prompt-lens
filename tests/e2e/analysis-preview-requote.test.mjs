@@ -170,3 +170,62 @@ for (const failedAction of ["prepare", "quote"]) test(`recovers ${failedAction} 
     await page.close();
   } finally { await browser.close(); }
 });
+
+for (const validSession of [true, false]) test(`task polling renews an expired access cache with validSession=${validSession}`, { timeout: 60000 }, async () => {
+  const bundle = await buildPanel();
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    let confirmations = 0;
+    let preparations = 0;
+    let renewals = 0;
+    let polls = 0;
+    const scenes = [{ id: "1", startUs: 0, endUs: 5_000_000 }];
+    await page.route("https://preview.test/", route => route.fulfill({ contentType: "text/html", body: '<div id="root"></div>' }));
+    await page.route("https://preview.test/api/**", async route => {
+      const path = new URL(route.request().url()).pathname;
+      if (path === "/api/session-refresh") {
+        renewals++;
+        assert.equal(route.request().method(), "POST");
+        assert.equal(route.request().headers().origin, "https://preview.test");
+        await route.fulfill(validSession
+          ? { json: { refreshed: true }, headers: { "set-cookie": "access-renewed=1; Path=/; HttpOnly; SameSite=Lax" } }
+          : { status: 401, json: { code: "AUTH_REQUIRED" } });
+      } else if (path === "/api/commercial/analysis") {
+        if (route.request().postDataJSON().action === "prepare") {
+          preparations++;
+          await route.fulfill({ json: { id: "preview", durationUs: 5_000_000, scenes } });
+        } else await route.fulfill({ json: { id: "original-task", credits: 4, splitCredits: 1, analysisCredits: 3 } });
+      } else if (path === "/api/commercial/tasks/original-task") {
+        if (route.request().method() === "POST") {
+          confirmations++;
+          await route.fulfill({ json: { id: "original-task", state: "queued" } });
+        } else {
+          polls++;
+          assert.equal(new URL(route.request().url()).searchParams.get("diagnostics"), "1");
+          if (polls === 1) await route.fulfill({ status: 401, json: { code: "ACCESS_SESSION_REFRESH_REQUIRED" } });
+          else {
+            assert.ok(route.request().headers().cookie?.includes("access-renewed=1"));
+            await route.fulfill({ json: { id: "original-task", state: "completed", totalScenes: 1, completedScenes: 1,
+              bundle: { sceneVersions: [{ id: "result", generationPrompt: "Original task result after session renewal" }] } } });
+          }
+        }
+      } else assert.fail(`Unexpected request: ${path}`);
+    });
+    await page.goto("https://preview.test/");
+    await page.addScriptTag({ content: bundle.outputFiles[0].text });
+    await page.getByRole("button", { name: "确认分析 · 4 积分", exact: true }).click();
+    if (validSession) {
+      await page.getByText("Original task result after session renewal", { exact: true }).waitFor();
+      assert.equal(polls, 2);
+      assert.equal((await page.locator("body").innerText()).includes("登录校验失败"), false);
+    } else {
+      await page.getByText("登录校验失败，无法同步分析进展。请打开任务详情重新验证登录，勿重复提交分析。", { exact: true }).waitFor();
+      assert.equal(polls, 1);
+    }
+    assert.equal(confirmations, 1, "cache renewal must never submit another paid task");
+    assert.equal(preparations, 1);
+    assert.equal(renewals, 1);
+    await page.close();
+  } finally { await browser.close(); }
+});

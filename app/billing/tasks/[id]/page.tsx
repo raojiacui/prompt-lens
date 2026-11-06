@@ -6,6 +6,7 @@ import { useLocale } from "next-intl";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { AnalysisTaskDetails } from "@/components/payments/analysis-task-details";
 import type { AnalysisDiagnostics } from "@/lib/billing/analysis-diagnostics";
+import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
 type Task = { id: string; kind: string; state: string; credits: number; diagnostics?: AnalysisDiagnostics; chargedCredits?: number; videoUrl?: string; nextTaskId?: string; retryAvailable?: boolean; bundle?: { sceneVersions: { id: string; sceneIndex: number; duration: number; generationPrompt: string }[] } };
 export default function BillingTaskPage() {
   const { id } = useParams<{ id: string }>();
@@ -22,7 +23,7 @@ export default function BillingTaskPage() {
     let timer: ReturnType<typeof setTimeout>;
     async function load() {
       try {
-        const response = await fetch(`/api/commercial/tasks/${id}?diagnostics=1`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
+        const response = await fetchWithSessionRefresh(`/api/commercial/tasks/${id}?diagnostics=1`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
         if (response.status === 401) { window.location.href = `/login?next=${encodeURIComponent(`/billing/tasks/${id}`)}`; return; }
         if (!response.ok) throw new Error();
         const data = await response.json();
@@ -36,7 +37,7 @@ export default function BillingTaskPage() {
     if (busy) return;
     setBusy(true); setError("");
     try {
-      const response = await fetch(quote ? `/api/commercial/tasks/${quote.id}` : "/api/commercial/analysis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(quote ? {} : { action: "retry", taskId: id }) });
+      const response = await fetchWithSessionRefresh(quote ? `/api/commercial/tasks/${quote.id}` : "/api/commercial/analysis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(quote ? {} : { action: "retry", taskId: id }) });
       if (!response.ok) throw new Error();
       const data = await response.json();
       if (quote) window.location.href = `/billing/tasks/${quote.id}`;

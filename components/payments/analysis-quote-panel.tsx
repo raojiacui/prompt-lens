@@ -9,6 +9,7 @@ import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
 import { AnalysisTaskProgress } from "./analysis-task-progress";
 import { AnalysisTaskDetails } from "./analysis-task-details";
 import type { AnalysisDiagnostics } from "@/lib/billing/analysis-diagnostics";
+import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
 
 type AnalysisPreparation = { id: string; scenes: SceneInterval[]; durationUs: number };
 
@@ -70,7 +71,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         : (zh ? "费用报价响应不完整，尚未开始分析。" : "The cost response was incomplete; analysis has not started."), undefined, true);
     let response: Response;
     try {
-      response = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(action === "prepare" ? 270000 : 30000) });
+      response = await fetchWithSessionRefresh(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: AbortSignal.timeout(action === "prepare" ? 270000 : 30000) });
     } catch { throw invalidResponse(); }
     const data = await response.json().catch(() => null);
     if (!data || typeof data !== "object" || Array.isArray(data)) throw invalidResponse();
@@ -97,7 +98,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     downloadController.current = controller;
     setDownloading(true);
     try {
-      return await fetch(`/api/commercial/analysis/${preparation.id}/shots/${encodeURIComponent(sceneId)}`, { method: "POST", cache: "no-store", signal: controller.signal });
+      return await fetchWithSessionRefresh(`/api/commercial/analysis/${preparation.id}/shots/${encodeURIComponent(sceneId)}`, { method: "POST", cache: "no-store", signal: controller.signal });
     } finally { if (!controller.signal.aborted) setDownloading(false); }
   }
   useEffect(() => {
@@ -188,7 +189,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     let missingTerminalBundle = 0;
     async function poll() {
       try {
-        const response = await fetch(`/api/commercial/tasks/${taskId}?diagnostics=1`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
+        const response = await fetchWithSessionRefresh(`/api/commercial/tasks/${taskId}?diagnostics=1`, { cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(20000)]) });
         if (response.status === 401) {
           if (!controller.signal.aborted) { setConnection("auth"); setError(zh ? "登录校验失败，无法同步分析进展。请打开任务详情重新验证登录，勿重复提交分析。" : "Session check failed. Open task details to verify your session; do not resubmit analysis."); }
           timer = setTimeout(poll, 15000);

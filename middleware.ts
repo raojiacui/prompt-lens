@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { defaultLocale, isLocale, LOCALE_COOKIE } from "./i18n/config";
 import { isAccessEmailAllowed, isAccessRestricted } from "./lib/auth/access-policy";
+import { ACCESS_SESSION_REFRESH_REQUIRED } from "./lib/auth/session-cookies";
 import {
   ACCESS_REFRESH_MARKER,
   inspectAccessSession,
@@ -19,10 +20,10 @@ function isServerAuthPath(pathname: string) {
   return SERVER_AUTH_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
 
-function restrictedApiResponse() {
+function restrictedApiResponse(refreshable = false) {
   return NextResponse.json(
-    { error: "Authorized test account required" },
-    { status: 401 },
+    { error: "Authorized test account required", ...(refreshable ? { code: ACCESS_SESSION_REFRESH_REQUIRED } : {}) },
+    { status: 401, headers: { "Cache-Control": "private, no-store" } },
   );
 }
 
@@ -46,7 +47,7 @@ export async function middleware(request: NextRequest) {
       }
     } else {
       if (request.nextUrl.pathname.startsWith("/api/")) {
-        return restrictedApiResponse();
+        return restrictedApiResponse(!accessSession.email && accessSession.hasSessionToken);
       }
 
       const refreshAlreadyAttempted = request.nextUrl.searchParams.has(ACCESS_REFRESH_MARKER);

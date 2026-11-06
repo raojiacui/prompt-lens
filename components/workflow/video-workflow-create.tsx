@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { AnalysisQuotePanel } from "@/components/payments/analysis-quote-panel";
+import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
@@ -414,7 +415,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
   async function loadCreditStatus() {
     try {
-      const response = await fetch("/api/credits/me", { cache: "no-store" });
+      const response = await fetchWithSessionRefresh("/api/credits/me", { cache: "no-store" });
       if (!response.ok) throw new Error("Credit status unavailable");
       const data = await response.json().catch(() => null);
       if (!data) throw new Error("Invalid credit status");
@@ -458,7 +459,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   async function loadProject(projectId: string) {
     if (retryBusy.current || retryConfirmationPending || analysisTaskId) return;
     setError("");
-    const response = await fetch(`/api/workflow/projects/${projectId}`);
+    const response = await fetchWithSessionRefresh(`/api/workflow/projects/${projectId}`);
     const data = await response.json();
     if (!response.ok) {
       setError(data.error || "Failed to load project");
@@ -476,7 +477,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     setLoading(true);
     async function poll() {
       try {
-        const response = await fetch(`/api/commercial/tasks/${analysisTaskId}`, { cache: "no-store", signal: controller.signal });
+        const response = await fetchWithSessionRefresh(`/api/commercial/tasks/${analysisTaskId}`, { cache: "no-store", signal: controller.signal });
         const data = await response.json();
         if (controller.signal.aborted) return;
         if (!response.ok) {
@@ -510,7 +511,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }, [analysisTaskId]);
 
   async function handleDeleteProject(projectId: string) {
-    const response = await fetch(`/api/workflow/projects/${projectId}`, { method: "DELETE" });
+    const response = await fetchWithSessionRefresh(`/api/workflow/projects/${projectId}`, { method: "DELETE" });
     const data = await response.json().catch(() => null);
     if (!response.ok) throw new Error(data?.error || "Failed to delete project");
   }
@@ -583,7 +584,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     reportStage("checking-worker");
     let data: Record<string, unknown>;
     try {
-      const response = await fetch("/api/media/resolve-link", {
+      const response = await fetchWithSessionRefresh("/api/media/resolve-link", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
         body: JSON.stringify({ url, requestId: linkImportRequestRef.current.id }),
@@ -662,7 +663,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         label: locale === "en" ? "Create project" : "创建项目",
         detail: locale === "en" ? "Setting up your analysis project." : "正在创建可编辑的分析项目",
       });
-      const projectRes = await fetch("/api/workflow/projects", {
+      const projectRes = await fetchWithSessionRefresh("/api/workflow/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title: preparedTitle }),
@@ -683,7 +684,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         label: locale === "en" ? "Analyze reference" : (prepared.mediaType === "image" ? "图片分析" : "视频分析"),
         detail: locale === "en" ? "Extracting visual details, camera movement and recreation prompts." : (prepared.mediaType === "image" ? "正在提取画面结构和复刻提示词" : "正在提取画面、动作、光线和复刻提示词"),
       });
-      const breakdownRes = await fetch(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
+      const breakdownRes = await fetchWithSessionRefresh(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mediaUrl: prepared.url, mediaName: prepared.filename, storageKey: prepared.key, mediaType: prepared.mediaType, ...analysisSelectionPayload() }),
@@ -722,7 +723,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     if (!bundle) return;
     setError("");
     try {
-      const response = await fetch(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}`, {
+      const response = await fetchWithSessionRefresh(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ generationPrompt: prompt || scene.generationPrompt }),
@@ -748,7 +749,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       try { const saved = JSON.parse(localStorage.getItem(pendingStorageKey) || "null"); if (saved?.fingerprint === fingerprint && typeof saved.id === "string") rewriteRequestsRef.current[scene.id] = saved; } catch { /* Storage may be unavailable. */ }
       if (rewriteRequestsRef.current[scene.id]?.fingerprint !== fingerprint) rewriteRequestsRef.current[scene.id] = { fingerprint, id: crypto.randomUUID() };
       try { localStorage.setItem(pendingStorageKey, JSON.stringify(rewriteRequestsRef.current[scene.id])); } catch { /* Keep the in-memory request. */ }
-      const response = await fetch(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}/rewrite`, {
+      const response = await fetchWithSessionRefresh(`/api/workflow/projects/${bundle.project.id}/scenes/${scene.id}/rewrite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...payload, requestId: rewriteRequestsRef.current[scene.id].id }),
@@ -784,14 +785,14 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     setRetryingSceneId(scene.id); setError("");
     try {
       if (!retryQuote || retryQuote.sceneVersionId !== scene.id || retryQuote.projectId !== bundle.project.id) {
-        const response = await fetch("/api/commercial/analysis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "retry", taskId: parentId, sceneVersionId: scene.id }) });
+        const response = await fetchWithSessionRefresh("/api/commercial/analysis", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "retry", taskId: parentId, sceneVersionId: scene.id }) });
         const data = await readJsonResponse(response, locale === "en" ? "Unable to quote this shot." : "暂时无法获取此镜头的重试费用。");
         if (!data || typeof data.id !== "string" || !Number.isSafeInteger(data.credits) || data.credits < 0) throw new Error(locale === "en" ? "Incomplete retry quote." : "重试报价不完整，尚未提交分析。");
         setRetryQuote({ ...data, sceneVersionId: scene.id, projectId: bundle.project.id });
         return;
       }
       setRetryConfirmationPending(true);
-      const response = await fetch(`/api/commercial/tasks/${retryQuote.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const response = await fetchWithSessionRefresh(`/api/commercial/tasks/${retryQuote.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.id || !data?.state) {
         if (data?.code === "QUOTE_EXPIRED") setRetryQuote(null);
