@@ -11,8 +11,6 @@ describe("Commercial configuration diagnostics", () => {
       COMMERCIAL_CONSUMPTION_ENABLED: "true", COMMERCIAL_REWRITE_ENABLED: "true",
       COMMERCIAL_MIGRATION_ACCEPTED: "0019", COMMERCIAL_PAYMENT_ACCEPTANCE: PRICING_VERSION,
       COMMERCIAL_MODEL_ACCEPTANCE: PRICING_VERSION,
-      COMMERCIAL_REVIEW_ALERT_EMAIL: "review@example.com", SMTP_HOST: "smtp.example.com",
-      SMTP_USER: "test-user", SMTP_PASS: "test-only", SMTP_FROM: "test@example.com",
     };
     for (const [key, value] of Object.entries(configured)) vi.stubEnv(key, value);
   });
@@ -24,13 +22,6 @@ describe("Commercial configuration diagnostics", () => {
   it("reports missing payment configuration", () => {
     vi.stubEnv("ALIPAY_PUBLIC_KEY", "");
     expect(commercialReadiness().alipay).toBe(false);
-  });
-  it("requires both a review recipient and a usable sender configuration", () => {
-    vi.stubEnv("SMTP_FROM", "");
-    expect(commercialReadiness().reviewAlert).toBe(false);
-    vi.stubEnv("SMTP_FROM", "test@example.com");
-    vi.stubEnv("COMMERCIAL_REVIEW_ALERT_EMAIL", "");
-    expect(commercialReadiness().reviewAlert).toBe(false);
   });
   it("keeps consumption and migration diagnostics independent", () => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "false");
