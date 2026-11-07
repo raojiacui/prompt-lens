@@ -17258,5 +17258,1686 @@
         "metadata": {}
       }
     ]
+  },
+  {
+    "project": {
+      "id": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+      "title": "圆缺",
+      "description": null,
+      "status": "ready",
+      "activeVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+      "metadata": {
+        "mediaType": "video",
+        "failedSceneCount": 0
+      },
+      "createdAt": "2026-11-07T13:14:37.510Z",
+      "updatedAt": "2026-11-07T14:11:46.173Z"
+    },
+    "versions": [
+      {
+        "id": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "parentVersionId": null,
+        "versionNumber": 0,
+        "kind": "original",
+        "label": "原始分析",
+        "remixPrompt": null,
+        "overview": {
+          "sceneCount": 10
+        },
+        "metadata": {},
+        "createdAt": "2026-11-07T13:14:37.510Z",
+        "updatedAt": "2026-11-07T14:11:46.173Z"
+      }
+    ],
+    "activeVersion": {
+      "id": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+      "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+      "parentVersionId": null,
+      "versionNumber": 0,
+      "kind": "original",
+      "label": "原始分析",
+      "remixPrompt": null,
+      "overview": {
+        "sceneCount": 10
+      },
+      "metadata": {},
+      "createdAt": "2026-11-07T13:14:37.510Z",
+      "updatedAt": "2026-11-07T14:11:46.173Z"
+    },
+    "scenes": [
+      {
+        "startTime": 0,
+        "endTime": 4.433,
+        "duration": 4.433,
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/8e701ec4-f136-4457-a100-c23402c26ad6/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/8e701ec4-f136-4457-a100-c23402c26ad6/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/8e701ec4-f136-4457-a100-c23402c26ad6/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/8e701ec4-f136-4457-a100-c23402c26ad6/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "createdAt": "2026-11-07T13:15:44.302Z",
+        "updatedAt": "2026-11-07T13:46:26.327Z",
+        "id": "728385a5-fcb1-4009-80c2-7a29c1b7bc3c",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "referenceVideoId": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "sceneIndex": 1,
+        "shotGroupId": null,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/8e701ec4-f136-4457-a100-c23402c26ad6/scenes/001/clip.mp4",
+        "status": "completed",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "startTime": 4.433,
+        "endTime": 6.5,
+        "duration": 2.067,
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9da72aac-2e2d-4ed1-bfa4-4e780eb87808/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9da72aac-2e2d-4ed1-bfa4-4e780eb87808/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9da72aac-2e2d-4ed1-bfa4-4e780eb87808/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9da72aac-2e2d-4ed1-bfa4-4e780eb87808/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "createdAt": "2026-11-07T13:15:44.302Z",
+        "updatedAt": "2026-11-07T13:46:26.327Z",
+        "id": "0f8c9ef9-3999-41bd-93cc-8df2f47e72e6",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "referenceVideoId": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "sceneIndex": 2,
+        "shotGroupId": null,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9da72aac-2e2d-4ed1-bfa4-4e780eb87808/scenes/001/clip.mp4",
+        "status": "completed",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "startTime": 6.5,
+        "endTime": 10.467,
+        "duration": 3.967,
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/2381e182-cb8f-4995-a8b5-f0f0e108b686/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/2381e182-cb8f-4995-a8b5-f0f0e108b686/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/2381e182-cb8f-4995-a8b5-f0f0e108b686/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/2381e182-cb8f-4995-a8b5-f0f0e108b686/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "createdAt": "2026-11-07T13:15:44.302Z",
+        "updatedAt": "2026-11-07T13:46:26.327Z",
+        "id": "52c7b41e-f1a5-47e8-b3df-a25b097a4c62",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "referenceVideoId": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "sceneIndex": 3,
+        "shotGroupId": null,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/2381e182-cb8f-4995-a8b5-f0f0e108b686/scenes/001/clip.mp4",
+        "status": "completed",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "startTime": 10.467,
+        "endTime": 12,
+        "duration": 1.533,
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f704aa5b-a26a-4ed5-89ab-ec9913da018a/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f704aa5b-a26a-4ed5-89ab-ec9913da018a/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f704aa5b-a26a-4ed5-89ab-ec9913da018a/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f704aa5b-a26a-4ed5-89ab-ec9913da018a/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "createdAt": "2026-11-07T13:15:44.302Z",
+        "updatedAt": "2026-11-07T13:46:26.327Z",
+        "id": "b7ba52ae-329a-4b64-a49c-cc734310b3ea",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "referenceVideoId": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "sceneIndex": 4,
+        "shotGroupId": null,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f704aa5b-a26a-4ed5-89ab-ec9913da018a/scenes/001/clip.mp4",
+        "status": "completed",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "startTime": 12,
+        "endTime": 14.4,
+        "duration": 2.4,
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/cfa1bd3e-e8d2-48ee-806c-55073f507bdd/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/cfa1bd3e-e8d2-48ee-806c-55073f507bdd/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/cfa1bd3e-e8d2-48ee-806c-55073f507bdd/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/cfa1bd3e-e8d2-48ee-806c-55073f507bdd/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "createdAt": "2026-11-07T13:15:44.302Z",
+        "updatedAt": "2026-11-07T13:17:55.434Z",
+        "id": "c0e32553-7ed3-467d-b077-e4fc3c1b1715",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "referenceVideoId": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "sceneIndex": 5,
+        "shotGroupId": null,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/cfa1bd3e-e8d2-48ee-806c-55073f507bdd/scenes/001/clip.mp4",
+        "status": "completed",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "startTime": 14.4,
+        "endTime": 15.867,
+        "duration": 1.467,
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f0323eef-fcf2-481e-8d33-731e5cdf2f76/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f0323eef-fcf2-481e-8d33-731e5cdf2f76/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f0323eef-fcf2-481e-8d33-731e5cdf2f76/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f0323eef-fcf2-481e-8d33-731e5cdf2f76/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "createdAt": "2026-11-07T13:15:44.302Z",
+        "updatedAt": "2026-11-07T13:46:26.327Z",
+        "id": "6c7c4468-28d9-4069-944d-a9a9f78b31f1",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "referenceVideoId": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "sceneIndex": 6,
+        "shotGroupId": null,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f0323eef-fcf2-481e-8d33-731e5cdf2f76/scenes/001/clip.mp4",
+        "status": "completed",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "startTime": 15.867,
+        "endTime": 19.467,
+        "duration": 3.6,
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "createdAt": "2026-11-07T14:09:50.435Z",
+        "updatedAt": "2026-11-07T14:10:43.253Z",
+        "id": "6b3742c5-609e-483a-b1f4-75558af07136",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "referenceVideoId": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "sceneIndex": 7,
+        "shotGroupId": null,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/linked-media/douyin/63b46e07-59ba-4f26-a263-55070d7f529a.mp4#t=15.867,19.467",
+        "status": "completed",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "startTime": 19.467,
+        "endTime": 21.567,
+        "duration": 2.1,
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "createdAt": "2026-11-07T14:09:50.435Z",
+        "updatedAt": "2026-11-07T14:10:47.556Z",
+        "id": "4a8ec0a7-8824-44ce-9137-b5caf6ca69de",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "referenceVideoId": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "sceneIndex": 8,
+        "shotGroupId": null,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/linked-media/douyin/63b46e07-59ba-4f26-a263-55070d7f529a.mp4#t=19.467,21.567",
+        "status": "completed",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "startTime": 21.567,
+        "endTime": 23.1,
+        "duration": 1.533,
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "createdAt": "2026-11-07T14:09:50.435Z",
+        "updatedAt": "2026-11-07T14:11:37.954Z",
+        "id": "c41d3015-01a4-4893-88c7-ff5ed09782e2",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "referenceVideoId": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "sceneIndex": 9,
+        "shotGroupId": null,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/linked-media/douyin/63b46e07-59ba-4f26-a263-55070d7f529a.mp4#t=21.567,23.1",
+        "status": "completed",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "startTime": 23.1,
+        "endTime": 24.467,
+        "duration": 1.367,
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "createdAt": "2026-11-07T14:09:50.435Z",
+        "updatedAt": "2026-11-07T14:11:38.491Z",
+        "id": "a7d2de09-f8b6-4978-9742-43b6101fa5e6",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "referenceVideoId": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "sceneIndex": 10,
+        "shotGroupId": null,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/linked-media/douyin/63b46e07-59ba-4f26-a263-55070d7f529a.mp4#t=23.1,24.467",
+        "status": "completed",
+        "error": null,
+        "metadata": {}
+      }
+    ],
+    "sceneVersions": [
+      {
+        "story": {
+          "endTime": 4.433,
+          "summary": "阳光明媚的公园草坪上，小女孩坐在秋千上开心地摆动，身后的小男孩微笑着推她并比心，许下纯真的承诺。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖阳清新色调，翠绿草坪、蔚蓝天空与粉色裙装对比鲜艳自然。",
+          "style": "电影写实风格，温情治愈的童年影像质感。",
+          "action": "秋千轻缓荡起，女孩抓着绳索笑着说话；男孩在后方守护，推着秋千并抬手做出单手比心手势。",
+          "camera": "正前方平视中景，固定镜头，主体对焦清晰，背景轻度虚化。",
+          "motion": "人物与秋千平缓摆动，幅度自然柔和。",
+          "subject": "荡秋千的小女孩与身后推秋千的小男孩",
+          "lighting": "明朗的晴天日光，顺光照射，色调明快清澈。",
+          "characters": "女孩约5-6岁，黑色齐肩发，穿粉色白蕾丝边连衣裙，神情欢快纯真；男孩约7-8岁，短发，穿蓝白横条纹Polo衫，笑容温暖，右手比心。",
+          "composition": "居中对称构图，秋千立柱形成自然画框，人物位于中心，层次分明。",
+          "environment": "城市公园草坪，开阔平整，后方为成排绿树及现代高层建筑，蓝天无云。",
+          "sceneDescription": "晴空下的公园绿地，两侧微斑驳的秋千架框住画面。小女孩身穿粉色裙子荡秋千，身后小男孩推着秋千并对着镜头比心，背景为树林与高楼。"
+        },
+        "dialogue": [
+          {
+            "end": 2.8,
+            "text": "那你会一直在这推我吗",
+            "start": 1.2,
+            "speaker": "女孩"
+          },
+          {
+            "end": 4.4,
+            "text": "永远都在这",
+            "start": 3,
+            "speaker": "男孩"
+          }
+        ],
+        "narration": [],
+        "subtitle": [
+          {
+            "end": 2.8,
+            "text": "那你会一直在这推我吗",
+            "start": 1.2
+          },
+          {
+            "end": 4.4,
+            "text": "永远都在这",
+            "start": 3
+          }
+        ],
+        "audio": {
+          "soundStyle": "清脆纯真的儿童对话，伴有轻柔的公园微风环境声与温暖舒缓的配乐。"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓平稳",
+            "techniques": "单镜头固定拍摄，片尾硬切进入下一镜头。"
+          }
+        },
+        "generationPrompt": "电影质感实拍，明媚晴天。正面平视中景，开阔公园草坪上，秋千金属架框住画面。一个5岁穿粉白蕾丝边连衣裙的东亚小女孩坐在秋千上开怀大笑并前后摆动；身后站着一个7岁穿蓝白条纹Polo衫的东亚小男孩，笑着推秋千并抬起右手比心。背景是宽阔的绿草地、茂密树木和远处的现代大厦，蓝天清朗。自然阳光漫射，色彩明快鲜活，浅景深，充满童年温暖纯真氛围。\n\n画面与环境: 晴空下的公园绿地，两侧微斑驳的秋千架框住画面。小女孩身穿粉色裙子荡秋千，身后小男孩推着秋千并对着镜头比心，背景为树林与高楼。；荡秋千的小女孩与身后推秋千的小男孩；城市公园草坪，开阔平整，后方为成排绿树及现代高层建筑，蓝天无云。\n\n人物与动作: 女孩约5-6岁，黑色齐肩发，穿粉色白蕾丝边连衣裙，神情欢快纯真；男孩约7-8岁，短发，穿蓝白横条纹Polo衫，笑容温暖，右手比心。；秋千轻缓荡起，女孩抓着绳索笑着说话；男孩在后方守护，推着秋千并抬手做出单手比心手势。；人物与秋千平缓摆动，幅度自然柔和。\n\n镜头与构图: 正前方平视中景，固定镜头，主体对焦清晰，背景轻度虚化。；居中对称构图，秋千立柱形成自然画框，人物位于中心，层次分明。\n\n光影与质感: 明朗的晴天日光，顺光照射，色调明快清澈。；暖阳清新色调，翠绿草坪、蔚蓝天空与粉色裙装对比鲜艳自然。；电影写实风格，温情治愈的童年影像质感。\n\n对白: speaker: 女孩; text: 那你会一直在这推我吗; start: 1.2; end: 2.8; speaker: 男孩; text: 永远都在这; start: 3; end: 4.4\n\n字幕: text: 那你会一直在这推我吗; start: 1.2; end: 2.8; text: 永远都在这; start: 3; end: 4.4\n\n声音: soundStyle: 清脆纯真的儿童对话，伴有轻柔的公园微风环境声与温暖舒缓的配乐。\n\n节奏与转场: editing: pacing: 舒缓平稳; techniques: 单镜头固定拍摄，片尾硬切进入下一镜头。",
+        "duration": 4.433,
+        "createdAt": "2026-11-07T13:16:31.490Z",
+        "updatedAt": "2026-11-07T13:16:31.490Z",
+        "id": "8947c9aa-c24d-41dc-b8ca-46f02521c67a",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "728385a5-fcb1-4009-80c2-7a29c1b7bc3c",
+        "sceneIndex": 1,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:16:23.663Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 6.5,
+          "summary": "阴郁天空下的荒凉草地上，一架锈蚀斑斑的秋千孤零零伫立，透出寂寥压抑的氛围。",
+          "startTime": 4.433,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "青灰、墨绿、锈铁褐色的低饱和冷感冷调。",
+          "style": "电影质感，写实废弃美学，孤寂压抑。",
+          "action": "秋千座椅在微风中产生极微小的轻摆。",
+          "camera": "平视正对中景，固定机位，中央对称构图，景深聚焦于秋千链条与底座。",
+          "motion": "镜头静止，画面仅有极轻微的风吹秋千摆动。",
+          "subject": "金属秋千架与空荡的黄色秋千座椅",
+          "lighting": "冷色调漫射自然光，阴天无直射光，整体影调偏暗。",
+          "characters": [],
+          "composition": "秋千支架在画面两侧形成框架，黄色座椅居中，背景呈现树林与高楼的前后层次。",
+          "environment": "荒芜、杂草丛生的空地，背景有树丛与朦胧灰色城市建筑，天气阴沉。",
+          "sceneDescription": "城市边缘的荒地上立着生锈的A字形铁制秋千架，中间悬挂着单张黄色软兜座椅，背景为暗绿树林与远处的住宅高楼，天空布满阴云。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "空旷旷野的风声，伴随极微弱的金属摩擦声",
+          "musicStyle": "低沉悬疑的氛围暗乐"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉静",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "电影质感中景固定镜头。阴云密布的灰冷天空下，一片长满枯黄杂草的荒凉空地。中央是一架锈蚀斑斑的双A字金属秋千架，铁链上悬挂着一条单人黄色弧形软胶座椅，在微风中近乎静止地微晃。背景是一排暗色树木和远处模糊的高层住宅楼。冷色调漫射光，暗青与灰褐色调，写实且压抑孤独的氛围，镜头固定无位移。\n\n画面与环境: 城市边缘的荒地上立着生锈的A字形铁制秋千架，中间悬挂着单张黄色软兜座椅，背景为暗绿树林与远处的住宅高楼，天空布满阴云。；金属秋千架与空荡的黄色秋千座椅；荒芜、杂草丛生的空地，背景有树丛与朦胧灰色城市建筑，天气阴沉。\n\n人物与动作: 秋千座椅在微风中产生极微小的轻摆。；镜头静止，画面仅有极轻微的风吹秋千摆动。\n\n镜头与构图: 平视正对中景，固定机位，中央对称构图，景深聚焦于秋千链条与底座。；秋千支架在画面两侧形成框架，黄色座椅居中，背景呈现树林与高楼的前后层次。\n\n光影与质感: 冷色调漫射自然光，阴天无直射光，整体影调偏暗。；青灰、墨绿、锈铁褐色的低饱和冷感冷调。；电影质感，写实废弃美学，孤寂压抑。\n\n声音: ambient: 空旷旷野的风声，伴随极微弱的金属摩擦声; musicStyle: 低沉悬疑的氛围暗乐\n\n节奏与转场: editing: pacing: 缓慢沉静; techniques: 硬切",
+        "duration": 2.067,
+        "createdAt": "2026-11-07T13:16:27.605Z",
+        "updatedAt": "2026-11-07T13:16:27.605Z",
+        "id": "ce559555-5a98-4aaf-b740-4c9607654073",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "0f8c9ef9-3999-41bd-93cc-8df2f47e72e6",
+        "sceneIndex": 2,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:16:23.839Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 10.467,
+          "summary": "在传统中式堂屋中，小男孩面向正座的爷爷奶奶作揖祝寿，两侧站满了微笑注视的家族亲人，场面温馨庄重。",
+          "startTime": 6.5,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "深木色、素色墙面与水泥灰构成主色调，点缀男孩明亮的绿色T恤与红色门联。",
+          "style": "真实纪实风格，生活质感浓厚，色调朴素自然。",
+          "action": "小男孩站立在中央向前躬身施礼作揖祝寿；祖母激动落泪擦拭眼泪，祖父与周围亲属微笑注视。",
+          "camera": "全景固定镜头，视线平视偏高，广角镜头展现开阔对称的室内大堂布局，全景深。",
+          "motion": "人物主体微小躬身动作，背景多数亲人保持站立微笑，画面稳定无摄像机位移。",
+          "subject": "背对镜头的短发小男孩，身穿浅绿短袖T恤、深色牛仔短裤，正向前躬身作揖祝寿。",
+          "lighting": "顶部单盏暖黄色吊灯提供中心顶光，门外自然散射光提供正面泛光，整体质朴温和。",
+          "characters": "堂中央坐着祖父（穿浅蓝T恤面带微笑）和祖母（穿深花衣、低头用纸巾擦拭眼泪）。两侧分列十余位各年龄段的亲属，穿着朴素常服，神情和善欣慰地注视着男孩。",
+          "composition": "对称式透视构图。正堂木椅与祖父母居于中景视觉中心，男孩处于中轴线前景偏中，亲友分立左右形成环抱式视觉引导。",
+          "environment": "高挑传统中式老木屋堂屋，地面为水泥地，墙壁悬挂多幅字画与奖状，正堂设有传统中式木质条案与八仙桌椅。",
+          "sceneDescription": "中式乡村老宅堂屋，挑高木梁屋顶正中垂下一盏裸灯泡。正墙悬挂“祖德流芳”匾额与中堂山水画及对联。正中八仙桌两侧坐着祖父母，中央一名背对镜头的男童正在躬身作揖。亲属分立左右两侧观礼。"
+        },
+        "dialogue": [
+          {
+            "end": 8.5,
+            "text": "爷爷奶奶福如东海",
+            "start": 7,
+            "speaker": "男孩"
+          },
+          {
+            "end": 10,
+            "text": "寿比南山",
+            "start": 8.6,
+            "speaker": "男孩"
+          }
+        ],
+        "narration": [],
+        "subtitle": [
+          {
+            "end": 8.5,
+            "text": "爷爷奶奶福如东海",
+            "start": 7
+          },
+          {
+            "end": 10,
+            "text": "寿比南山",
+            "start": 8.6
+          }
+        ],
+        "audio": {
+          "soundStyle": "清脆纯真的孩童祝福声，伴有环境背景人声与安静祥和的气氛。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓平稳",
+            "techniques": "固定机位长镜头，硬切入硬切出"
+          }
+        },
+        "generationPrompt": "全景固定镜头，纪实风格。宽敞的中式传统农村老宅堂屋内，挑高深色木梁屋顶下挂着一盏暖光裸灯泡，正墙挂有“祖德流芳”横匾与传统中堂山水对联。画面中央一名背对镜头的男童（穿浅绿色T恤和牛仔短裤）正恭敬地向正前方躬身作揖。正中八仙桌旁坐着慈祥微笑的爷爷，以及手拿纸巾轻拭眼泪的奶奶。大厅左右两侧对称站着一众微笑注视的男女亲友，身着质朴便服。对称平衡构图，水泥地面，室内漫反射自然光与柔和顶光交融，氛围感人而庄重。\n\n画面与环境: 中式乡村老宅堂屋，挑高木梁屋顶正中垂下一盏裸灯泡。正墙悬挂“祖德流芳”匾额与中堂山水画及对联。正中八仙桌两侧坐着祖父母，中央一名背对镜头的男童正在躬身作揖。亲属分立左右两侧观礼。；背对镜头的短发小男孩，身穿浅绿短袖T恤、深色牛仔短裤，正向前躬身作揖祝寿。；高挑传统中式老木屋堂屋，地面为水泥地，墙壁悬挂多幅字画与奖状，正堂设有传统中式木质条案与八仙桌椅。\n\n人物与动作: 堂中央坐着祖父（穿浅蓝T恤面带微笑）和祖母（穿深花衣、低头用纸巾擦拭眼泪）。两侧分列十余位各年龄段的亲属，穿着朴素常服，神情和善欣慰地注视着男孩。；小男孩站立在中央向前躬身施礼作揖祝寿；祖母激动落泪擦拭眼泪，祖父与周围亲属微笑注视。；人物主体微小躬身动作，背景多数亲人保持站立微笑，画面稳定无摄像机位移。\n\n镜头与构图: 全景固定镜头，视线平视偏高，广角镜头展现开阔对称的室内大堂布局，全景深。；对称式透视构图。正堂木椅与祖父母居于中景视觉中心，男孩处于中轴线前景偏中，亲友分立左右形成环抱式视觉引导。\n\n光影与质感: 顶部单盏暖黄色吊灯提供中心顶光，门外自然散射光提供正面泛光，整体质朴温和。；深木色、素色墙面与水泥灰构成主色调，点缀男孩明亮的绿色T恤与红色门联。；真实纪实风格，生活质感浓厚，色调朴素自然。\n\n对白: speaker: 男孩; text: 爷爷奶奶福如东海; start: 7; end: 8.5; speaker: 男孩; text: 寿比南山; start: 8.6; end: 10\n\n字幕: text: 爷爷奶奶福如东海; start: 7; end: 8.5; text: 寿比南山; start: 8.6; end: 10\n\n声音: soundStyle: 清脆纯真的孩童祝福声，伴有环境背景人声与安静祥和的气氛。\n\n节奏与转场: editing: pacing: 舒缓平稳; techniques: 固定机位长镜头，硬切入硬切出",
+        "duration": 3.967,
+        "createdAt": "2026-11-07T13:17:12.997Z",
+        "updatedAt": "2026-11-07T13:17:12.997Z",
+        "id": "a36610a3-b142-481d-b311-06e603bfcf16",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "52c7b41e-f1a5-47e8-b3df-a25b097a4c62",
+        "sceneIndex": 3,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:17:12.964Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 12,
+          "summary": "阴森昏暗的中式传统老宅堂屋，正中肃穆陈设着神台、供桌与祖先像，青烟袅袅。",
+          "startTime": 10.467,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "青黑与墨绿色调为主，对比暗沉，阴冷压抑。",
+          "style": "中式悬疑惊悚电影写实风格，质感粗糙昏暗。",
+          "action": "供桌上的香炉缓缓升起一缕轻烟，其余环境全无动态。",
+          "camera": "全景，平视正前方，对称构图，固定机位无运镜，大景深保持前后清晰。",
+          "motion": "画面近乎定格，仅有微弱青烟垂直飘动。",
+          "subject": "堂屋中央的神案供桌与太师椅",
+          "lighting": "极低调弱光，偏青绿冷色调，仅从上方洒下微弱受限的顶光照亮供桌区域。",
+          "characters": "无人物出现",
+          "composition": "经典的严谨中轴对称构图，前景为开阔空旷的地面，中景为桌椅，背景为神龛画像。",
+          "environment": "中国南方传统老式农宅正厅，斑驳水泥地面，两侧带有幽暗房门与老式家具，气氛阴冷破败。",
+          "sceneDescription": "全景固定镜头拍摄的老旧中式堂屋。正中央严格对称地陈列着长条木供桌与两把中式木椅，供桌上香炉升起一缕细烟。后墙悬挂着泛黄的山水字画轴及下方两幅黑白遗像。整体笼罩在幽绿沉郁的低光照中。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "极低沉的恐怖悬疑氛围铺底（推测）",
+          "ambient": "死寂微弱的室内低频环境声",
+          "soundEffects": "无"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "凝滞压抑",
+            "techniques": "硬切进入，硬切退出"
+          }
+        },
+        "generationPrompt": "电影质感，中式惊悚悬疑氛围。昏暗的老旧乡村住宅堂屋，正面中心对称构图。正中央整齐摆放着一张陈旧木制供桌与两把雕花木椅，桌上香炉冒出微细青烟。背景墙挂着褪色的传统中式字画轴及下方两张黑白肖像相框。水泥地面微泛冷光，两侧分布着老式柜子与幽深暗门。幽暗青绿冷色调，微弱顶光，固定全景机位，静止压抑。\n\n画面与环境: 全景固定镜头拍摄的老旧中式堂屋。正中央严格对称地陈列着长条木供桌与两把中式木椅，供桌上香炉升起一缕细烟。后墙悬挂着泛黄的山水字画轴及下方两幅黑白遗像。整体笼罩在幽绿沉郁的低光照中。；堂屋中央的神案供桌与太师椅；中国南方传统老式农宅正厅，斑驳水泥地面，两侧带有幽暗房门与老式家具，气氛阴冷破败。\n\n人物与动作: 无人物出现；供桌上的香炉缓缓升起一缕轻烟，其余环境全无动态。；画面近乎定格，仅有微弱青烟垂直飘动。\n\n镜头与构图: 全景，平视正前方，对称构图，固定机位无运镜，大景深保持前后清晰。；经典的严谨中轴对称构图，前景为开阔空旷的地面，中景为桌椅，背景为神龛画像。\n\n光影与质感: 极低调弱光，偏青绿冷色调，仅从上方洒下微弱受限的顶光照亮供桌区域。；青黑与墨绿色调为主，对比暗沉，阴冷压抑。；中式悬疑惊悚电影写实风格，质感粗糙昏暗。\n\n声音: ambient: 死寂微弱的室内低频环境声; music: 极低沉的恐怖悬疑氛围铺底（推测）; soundEffects: 无\n\n节奏与转场: editing: pacing: 凝滞压抑; techniques: 硬切进入，硬切退出",
+        "duration": 1.533,
+        "createdAt": "2026-11-07T13:17:26.098Z",
+        "updatedAt": "2026-11-07T13:17:26.098Z",
+        "id": "487d9643-5db0-433f-ad9a-9efe5bddd824",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "b7ba52ae-329a-4b64-a49c-cc734310b3ea",
+        "sceneIndex": 4,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:17:25.325Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 14.4,
+          "summary": "昏暗的教室中，学生们面朝前方投影屏幕，前景处一只手悄悄伸入桌肚拿取一包黄色薯片。",
+          "startTime": 12,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "青蓝色暗调为主，配以黄色零食包装袋的局部暖色跳跃及反光亮片细微闪烁。",
+          "style": "写实青春校园题材，带有微弱胶片噪点与影视写实滤镜质感。",
+          "action": "右手从画面右下角平稳伸入课桌桌斗内部，手指握住黄色零食包装袋边缘并向外拖出拉起。",
+          "camera": "固定机位，中景偏特写视点，水平视线对准前景课桌与桌斗，后景带有大景深虚化效果。",
+          "motion": "手部伸展并抓取薯片的连贯动作，背景学生整体保持静止凝视前方。",
+          "subject": "前景课桌、桌肚内的黄色薯片袋以及伸出拿取薯片的手臂。",
+          "lighting": "冷调微弱环境光，主要由远端投影屏幕提供逆光轮廓，课桌内部处于幽暗阴影区。",
+          "characters": "多名背对镜头的初高中学生，身穿白色短袖校服；右侧可见伸出拿零食的学生手臂与部分躯干。",
+          "composition": "前景为木桌及桌斗内的手部动作，中景为坐在椅子上的学生背影，远景正中为发光的投影幕布，呈纵深透视构图。",
+          "environment": "典型的暗光学校教室，前方有发光的投影白板，课桌椅成排摆放，桌面上散落着彩色亮片点缀。",
+          "sceneDescription": "昏暗的多媒体教室，讲台投影泛着微光。多名身穿白色校服的学生背对镜头坐着。前景是一张散落着细碎彩片亮片的木质课桌，桌洞内放着一包黄色膨化食品包装袋。一只右手自画面右下方伸入桌洞将其抓出。"
+        },
+        "dialogue": [
+          {
+            "text": "诶...吃....",
+            "endTime": "14.4s",
+            "speaker": "画外学生",
+            "startTime": "13.8s"
+          }
+        ],
+        "narration": [],
+        "subtitle": [
+          {
+            "text": "诶...吃....",
+            "endTime": "14.4s",
+            "startTime": "13.8s"
+          }
+        ],
+        "audio": {
+          "music": "未知或轻微背景铺垫音。",
+          "ambient": "安静沉闷的室内课堂环境音。",
+          "soundEffects": "极轻微的手部抓取塑料包装袋沙沙声。"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "缓慢平稳，时长2.4秒短镜头展示偷吃零食细节。",
+            "techniques": "固定景深镜头，以动作承接叙事。"
+          }
+        },
+        "generationPrompt": "写实电影镜头，昏暗的学校教室环境。远景前方是发光的投影屏幕，多名身穿白色短袖校服的学生背对镜头端坐。中前景是一张木质课桌，桌面上散落着碎彩色闪光纸片。课桌桌肚幽暗，里面放着一包黄色膨化零食袋。一只年轻学生的手从画面右侧轻悄伸入桌肚，手指抓住黄色包装袋并向外拉动。固定机位微俯拍，低照度青冷色调，冷光源来自屏幕，桌斗内部呈自然暗部阴影，画面写实细腻，带有青春片纪实氛围。\n\n画面与环境: 昏暗的多媒体教室，讲台投影泛着微光。多名身穿白色校服的学生背对镜头坐着。前景是一张散落着细碎彩片亮片的木质课桌，桌洞内放着一包黄色膨化食品包装袋。一只右手自画面右下方伸入桌洞将其抓出。；前景课桌、桌肚内的黄色薯片袋以及伸出拿取薯片的手臂。；典型的暗光学校教室，前方有发光的投影白板，课桌椅成排摆放，桌面上散落着彩色亮片点缀。\n\n人物与动作: 多名背对镜头的初高中学生，身穿白色短袖校服；右侧可见伸出拿零食的学生手臂与部分躯干。；右手从画面右下角平稳伸入课桌桌斗内部，手指握住黄色零食包装袋边缘并向外拖出拉起。；手部伸展并抓取薯片的连贯动作，背景学生整体保持静止凝视前方。\n\n镜头与构图: 固定机位，中景偏特写视点，水平视线对准前景课桌与桌斗，后景带有大景深虚化效果。；前景为木桌及桌斗内的手部动作，中景为坐在椅子上的学生背影，远景正中为发光的投影幕布，呈纵深透视构图。\n\n光影与质感: 冷调微弱环境光，主要由远端投影屏幕提供逆光轮廓，课桌内部处于幽暗阴影区。；青蓝色暗调为主，配以黄色零食包装袋的局部暖色跳跃及反光亮片细微闪烁。；写实青春校园题材，带有微弱胶片噪点与影视写实滤镜质感。\n\n对白: speaker: 画外学生; text: 诶...吃....; startTime: 13.8s; endTime: 14.4s\n\n字幕: text: 诶...吃....; startTime: 13.8s; endTime: 14.4s\n\n声音: ambient: 安静沉闷的室内课堂环境音。; soundEffects: 极轻微的手部抓取塑料包装袋沙沙声。; music: 未知或轻微背景铺垫音。\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 缓慢平稳，时长2.4秒短镜头展示偷吃零食细节。; techniques: 固定景深镜头，以动作承接叙事。",
+        "duration": 2.4,
+        "createdAt": "2026-11-07T13:17:55.331Z",
+        "updatedAt": "2026-11-07T13:17:55.331Z",
+        "id": "66627296-ba70-47cd-bd39-cb58941c8d0f",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "c0e32553-7ed3-467d-b077-e4fc3c1b1715",
+        "sceneIndex": 5,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:17:52.277Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 15.867,
+          "summary": "第一人称主观视角下，学生坐在满地亮片彩纸的空荡教室内，凝视讲台黑板上写着的'毕业快乐'。",
+          "startTime": 14.4,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "米白墙面与深绿黑板构成冷暖基底，点缀桌面上缤纷高反光的红金紫色亮片碎片。",
+          "style": "青春写实，略带离别伤感的电影质感。",
+          "action": "主角保持静止坐姿，右手微屈置于课桌下沿前方，视线定格于讲台与黑板，无大幅度动作。",
+          "camera": {
+            "angle": "平视微俯",
+            "focus": "景深较深，前景课桌及背景黑板均较清晰",
+            "speed": "静止",
+            "lensFeel": "广角镜头，略有纵深拉伸感",
+            "movement": "静止微弱手持呼吸感",
+            "shotSize": "第一人称主观中特写（前景课桌与手）兼顾全景（教室前侧背景）"
+          },
+          "motion": "画面近乎静止，仅有微弱的第一人称呼吸晃动。",
+          "subject": "第一人称主角的右手手臂及双膝，以及面前铺满彩屑的书桌与前方的'毕业快乐'黑板。",
+          "lighting": "室内自然散射光，左侧大窗户提供柔和侧光，整体明亮清透。",
+          "characters": [
+            {
+              "pose": "端坐在课桌前，右手自然抬起置于课桌边缘。",
+              "identity": "毕业生（第一人称视角主角）",
+              "wardrobe": "黑色长裤，白色或浅色上衣袖口。",
+              "appearance": "仅露出右手腕、手掌及穿黑色裤子的双膝，肤色偏白。",
+              "expression": "不可见"
+            }
+          ],
+          "composition": "居中对称构图，前景为操作者双手与课桌，中景为多排空书桌，背景正中央为讲台与粉笔字黑板，透视线汇聚于中央黑板。",
+          "environment": "中国典型中学教室。前方有绿色大黑板，板书'毕业快乐'，下方有木质讲台；左侧靠窗透入明亮自然光；地面与多张课桌上铺满彩色反光亮片纸屑。",
+          "sceneDescription": "第一人称视角拍摄空荡的学校教室。课桌表面与地面散落着庆祝用的彩色亮片纸屑。正前方黑板中央用粉笔写着大字'毕业快乐'，两侧排列整齐的书桌已空无一人，前景可见拍摄者的膝盖与右手。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "安静空旷的室内微弱白噪音，伴随轻微的情感背景音乐余音",
+          "soundStyle": "宁静、怀旧、伤感"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "极慢且静止的尾声节奏",
+            "techniques": "硬切进入，定格收尾"
+          }
+        },
+        "generationPrompt": "电影质感，第一人称主观视角（POV），置身于空无一人的明亮高中教室内。前景露出主角穿黑裤的双腿和搭在课桌边缘的一只右手。课桌桌面与地面上散落着大量彩色反光礼花碎片。正前方的绿色大黑板上用白色粉笔端正写着'毕业快乐'四个大字。左侧排窗透入清晨柔和的自然光线。对称居中构图，广角深景深，画面充满青春散场后的宁静与伤感氛围，微弱手持呼吸感，超写实细节。\n\n画面与环境: 第一人称视角拍摄空荡的学校教室。课桌表面与地面散落着庆祝用的彩色亮片纸屑。正前方黑板中央用粉笔写着大字'毕业快乐'，两侧排列整齐的书桌已空无一人，前景可见拍摄者的膝盖与右手。；第一人称主角的右手手臂及双膝，以及面前铺满彩屑的书桌与前方的'毕业快乐'黑板。；中国典型中学教室。前方有绿色大黑板，板书'毕业快乐'，下方有木质讲台；左侧靠窗透入明亮自然光；地面与多张课桌上铺满彩色反光亮片纸屑。\n\n人物与动作: identity: 毕业生（第一人称视角主角）; appearance: 仅露出右手腕、手掌及穿黑色裤子的双膝，肤色偏白。; wardrobe: 黑色长裤，白色或浅色上衣袖口。; expression: 不可见; pose: 端坐在课桌前，右手自然抬起置于课桌边缘。；主角保持静止坐姿，右手微屈置于课桌下沿前方，视线定格于讲台与黑板，无大幅度动作。；画面近乎静止，仅有微弱的第一人称呼吸晃动。\n\n镜头与构图: shotSize: 第一人称主观中特写（前景课桌与手）兼顾全景（教室前侧背景）; angle: 平视微俯; lensFeel: 广角镜头，略有纵深拉伸感; movement: 静止微弱手持呼吸感; focus: 景深较深，前景课桌及背景黑板均较清晰; speed: 静止；居中对称构图，前景为操作者双手与课桌，中景为多排空书桌，背景正中央为讲台与粉笔字黑板，透视线汇聚于中央黑板。\n\n光影与质感: 室内自然散射光，左侧大窗户提供柔和侧光，整体明亮清透。；米白墙面与深绿黑板构成冷暖基底，点缀桌面上缤纷高反光的红金紫色亮片碎片。；青春写实，略带离别伤感的电影质感。\n\n声音: ambient: 安静空旷的室内微弱白噪音，伴随轻微的情感背景音乐余音; soundStyle: 宁静、怀旧、伤感\n\n节奏与转场: editing: pacing: 极慢且静止的尾声节奏; techniques: 硬切进入，定格收尾",
+        "duration": 1.467,
+        "createdAt": "2026-11-07T13:18:06.226Z",
+        "updatedAt": "2026-11-07T13:18:06.226Z",
+        "id": "78813615-ecdf-4464-b07b-1bfb7c2cfebd",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "6c7c4468-28d9-4069-944d-a9a9f78b31f1",
+        "sceneIndex": 6,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:18:04.008Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 19.467,
+          "summary": "农村大院里热烈举办升学宴，父亲带着戴大红花的儿子向满院宾客敬酒答谢。",
+          "startTime": 15.867,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖色与质朴色调结合，喜庆大红色（横幅、桌布、大红花）与院落灰砖灰瓦、沙土地形成鲜明对比。",
+          "style": "现实主义乡土写实纪实风格，生活质感浓厚。",
+          "action": "父亲搂着儿子的肩膀向前走动，举起手中的小酒杯向在座亲友致谢致意；部分围坐宾客陆续起身举杯相应碰杯。",
+          "camera": "全景远景，正平视固定镜头，全景深，清晰收录整个院落与所有席位。",
+          "motion": "人物自然动作与走动，镜头保持平稳静止。",
+          "subject": "中央站立的年轻学子（胸戴红花）与其身旁热情敬酒的父亲与母亲。",
+          "lighting": "室外阴天散射自然光，光线均匀柔和无强阴影。",
+          "characters": "父亲身着灰短袖polo衫与深色长裤，神情自豪欢喜；儿子穿浅色T恤和牛仔裤，神态青涩；母亲穿浅色上衣，端酒杯陪同；周围坐满老少乡邻，身着朴素常服。",
+          "composition": "对称均衡的大全景构图，前景两侧为背对镜头的食客桌席，视觉中心为中景中央站立敬酒的主角家庭，背景为正房与喜庆横幅。",
+          "environment": "典型的中国北方乡村农家院落，泥土地面，老旧灰砖瓦房，上方有绿树树冠，门前挂红灯笼与对联，气氛喧闹喜庆。",
+          "sceneDescription": "北方农村砖瓦四合院天井，摆满铺红桌布的圆桌与木凳。正房门头悬挂“热烈祝贺金榜题名”横幅，右侧墙壁挂“升学宴”海报。院内坐满乡邻，中央站着庆祝的主角一家三口。"
+        },
+        "dialogue": [
+          {
+            "text": "老李",
+            "endTime": 16.8,
+            "speaker": "画外宾客",
+            "startTime": 15.867
+          },
+          {
+            "text": "你儿子有出息啊考上211",
+            "endTime": 18.2,
+            "speaker": "画外宾客",
+            "startTime": 16.8
+          },
+          {
+            "text": "大家别客气吃好....",
+            "endTime": 19.467,
+            "speaker": "父亲",
+            "startTime": 18.2
+          }
+        ],
+        "narration": [],
+        "subtitle": [
+          {
+            "text": "老李",
+            "endTime": 16.8,
+            "startTime": 15.867
+          },
+          {
+            "text": "你儿子有出息啊考上211",
+            "endTime": 18.2,
+            "startTime": 16.8
+          },
+          {
+            "text": "大家别客气吃好....",
+            "endTime": 19.467,
+            "startTime": 18.2
+          }
+        ],
+        "audio": {
+          "musicStyle": "无明显配乐或低沉自然环境音为主。",
+          "ambientSound": "农村流水席宴会的杯盘碰撞声、多人谈笑喧闹声。",
+          "dialogueSound": "嘈杂的人声中夹杂着洪亮的乡音赞许与热情的招呼声。"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "平缓舒展的叙事开场节奏。",
+            "techniques": "硬切入，固定镜头长景展现完整生活场景。"
+          }
+        },
+        "generationPrompt": "全景固定镜头，展现中国北方农村大院里热闹的升学宴现场。院中摆放着多张铺着大红桌布的圆桌，坐满了穿朴素常服的村民与亲友。背景是老旧灰砖平房，正门上方挂着红底黄字“热烈祝贺金榜题名”横幅，院墙贴着“升学宴”红色海报，挂有红灯笼。画面中央，一位穿灰色T恤的朴实父亲搂着胸前戴大红花的青年儿子，两人举着小酒杯笑着向宾客敬酒，母亲在旁陪同，宾客们纷纷转头或起身回应。阴天柔和漫射光，乡土纪实电影质感，细节真实质朴。\n\n画面与环境: 北方农村砖瓦四合院天井，摆满铺红桌布的圆桌与木凳。正房门头悬挂“热烈祝贺金榜题名”横幅，右侧墙壁挂“升学宴”海报。院内坐满乡邻，中央站着庆祝的主角一家三口。；中央站立的年轻学子（胸戴红花）与其身旁热情敬酒的父亲与母亲。；典型的中国北方乡村农家院落，泥土地面，老旧灰砖瓦房，上方有绿树树冠，门前挂红灯笼与对联，气氛喧闹喜庆。\n\n人物与动作: 父亲身着灰短袖polo衫与深色长裤，神情自豪欢喜；儿子穿浅色T恤和牛仔裤，神态青涩；母亲穿浅色上衣，端酒杯陪同；周围坐满老少乡邻，身着朴素常服。；父亲搂着儿子的肩膀向前走动，举起手中的小酒杯向在座亲友致谢致意；部分围坐宾客陆续起身举杯相应碰杯。；人物自然动作与走动，镜头保持平稳静止。\n\n镜头与构图: 全景远景，正平视固定镜头，全景深，清晰收录整个院落与所有席位。；对称均衡的大全景构图，前景两侧为背对镜头的食客桌席，视觉中心为中景中央站立敬酒的主角家庭，背景为正房与喜庆横幅。\n\n光影与质感: 室外阴天散射自然光，光线均匀柔和无强阴影。；暖色与质朴色调结合，喜庆大红色（横幅、桌布、大红花）与院落灰砖灰瓦、沙土地形成鲜明对比。；现实主义乡土写实纪实风格，生活质感浓厚。\n\n对白: speaker: 画外宾客; text: 老李; startTime: 15.867; endTime: 16.8; speaker: 画外宾客; text: 你儿子有出息啊考上211; startTime: 16.8; endTime: 18.2; speaker: 父亲; text: 大家别客气吃好....; startTime: 18.2; endTime: 19.467\n\n字幕: text: 老李; startTime: 15.867; endTime: 16.8; text: 你儿子有出息啊考上211; startTime: 16.8; endTime: 18.2; text: 大家别客气吃好....; startTime: 18.2; endTime: 19.467\n\n声音: dialogueSound: 嘈杂的人声中夹杂着洪亮的乡音赞许与热情的招呼声。; ambientSound: 农村流水席宴会的杯盘碰撞声、多人谈笑喧闹声。; musicStyle: 无明显配乐或低沉自然环境音为主。\n\n节奏与转场: editing: pacing: 平缓舒展的叙事开场节奏。; techniques: 硬切入，固定镜头长景展现完整生活场景。",
+        "duration": 3.6,
+        "createdAt": "2026-11-07T14:10:43.115Z",
+        "updatedAt": "2026-11-07T14:10:43.115Z",
+        "id": "5f637dd0-cbb6-4337-8a47-34682d15a44c",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "6b3742c5-609e-483a-b1f4-75558af07136",
+        "sceneIndex": 7,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T14:10:43.067Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 21.567,
+          "summary": "升学宴客散后的深夜农村院落，一名中年男子独自在狼藉的红色宴席桌椅间收拾残局。",
+          "startTime": 19.467,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "暗沉黑夜与泥土灰褐，对比桌布与横幅的饱和正红色。",
+          "style": "现实主义乡土电影质感，写实且富有落寞叙事氛围。",
+          "action": "男子弯腰扶起中央圆桌旁倒地的木凳，随后直起身体，伸手触碰右侧圆桌边沿稍作停顿收拾。",
+          "camera": {
+            "lens": "标准镜头，大景深",
+            "angle": "平视微俯",
+            "focus": "全景深，焦点覆盖中央男子与近景红桌",
+            "speed": "静止",
+            "movement": "固定镜头",
+            "shotSize": "全景"
+          },
+          "motion": "主体动作缓和沉稳，环境静态无风。",
+          "subject": "背对镜头的收拾者，身形普通，穿着简朴灰短袖与深色长裤。",
+          "lighting": "夜景低调顶光。院中悬挂的一盏高亮裸灯为核心光源，产生硬直高对比投影，四周建筑隐入黑暗。",
+          "characters": [
+            {
+              "pose": "背对镜头站立并俯身整理木凳",
+              "identity": "中年男子（疑似家长）",
+              "wardrobe": "灰蓝色短袖T恤，深色长裤",
+              "appearance": "寸发，中等身材，微胖微弓背",
+              "expression": "背对镜头，面部不可见"
+            }
+          ],
+          "composition": "纵深对称构图。主体男子位于下半部中心，红桌在两侧及纵深延伸，背景直指堂屋大门，形成开阔但孤寂的空间感。",
+          "environment": "北方农村老瓦房庭院，夜幕低垂。右侧墙面悬挂红色‘升学宴’条幅，正中堂屋门楣挂有‘热烈祝贺金榜题名’红色横幅。院中排列大红圆桌、实木方凳，地面为硬化土坪，散落废纸。",
+          "sceneDescription": "深夜中式农村庭院，摆放数十张铺红桌布的宴席圆桌，桌上留有残羹剩饭与酒水，地面满是丢弃的白色纸巾。一名身着灰短袖的中年男子背对镜头，在中央圆桌旁俯身收拾倾倒的木凳。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "极简写实",
+          "ambient": "深夜乡村静寂底噪，伴随木凳挪动与轻微摩擦声",
+          "transcript": "无对白"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉缓凝重",
+            "techniques": "硬切（进出）"
+          }
+        },
+        "generationPrompt": "电影写实全景，深夜农村四合院。院子里整齐摆满十多张铺着大红桌布的宴席圆桌，桌上摆满残羹剩饭和饮料瓶，地面散落着大量白色纸团垃圾。右侧墙壁挂着‘升学宴’红幅，正对面的老式平房挂着‘热烈祝贺金榜题名’横幅。上方吊着一盏白炽灯投下刺眼的顶光硬影。画面中央偏下方，一名身穿浅灰短袖T恤、深色长裤的中年男子背对镜头，正弯腰扶正倒在地上的实木矮凳并收拾桌椅。固定机位，景深开阔，沉重落寞的电影质感，画面稳定无晃动。\n\n画面与环境: 深夜中式农村庭院，摆放数十张铺红桌布的宴席圆桌，桌上留有残羹剩饭与酒水，地面满是丢弃的白色纸巾。一名身着灰短袖的中年男子背对镜头，在中央圆桌旁俯身收拾倾倒的木凳。；背对镜头的收拾者，身形普通，穿着简朴灰短袖与深色长裤。；北方农村老瓦房庭院，夜幕低垂。右侧墙面悬挂红色‘升学宴’条幅，正中堂屋门楣挂有‘热烈祝贺金榜题名’红色横幅。院中排列大红圆桌、实木方凳，地面为硬化土坪，散落废纸。\n\n人物与动作: identity: 中年男子（疑似家长）; appearance: 寸发，中等身材，微胖微弓背; wardrobe: 灰蓝色短袖T恤，深色长裤; expression: 背对镜头，面部不可见; pose: 背对镜头站立并俯身整理木凳；男子弯腰扶起中央圆桌旁倒地的木凳，随后直起身体，伸手触碰右侧圆桌边沿稍作停顿收拾。；主体动作缓和沉稳，环境静态无风。\n\n镜头与构图: shotSize: 全景; angle: 平视微俯; lens: 标准镜头，大景深; movement: 固定镜头; focus: 全景深，焦点覆盖中央男子与近景红桌; speed: 静止；纵深对称构图。主体男子位于下半部中心，红桌在两侧及纵深延伸，背景直指堂屋大门，形成开阔但孤寂的空间感。\n\n光影与质感: 夜景低调顶光。院中悬挂的一盏高亮裸灯为核心光源，产生硬直高对比投影，四周建筑隐入黑暗。；暗沉黑夜与泥土灰褐，对比桌布与横幅的饱和正红色。；现实主义乡土电影质感，写实且富有落寞叙事氛围。\n\n声音: transcript: 无对白; ambient: 深夜乡村静寂底噪，伴随木凳挪动与轻微摩擦声; style: 极简写实\n\n节奏与转场: editing: pacing: 沉缓凝重; techniques: 硬切（进出）",
+        "duration": 2.1,
+        "createdAt": "2026-11-07T14:10:47.422Z",
+        "updatedAt": "2026-11-07T14:10:47.422Z",
+        "id": "c734726e-e5cd-410b-86d4-b2fe696fbb9b",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "4a8ec0a7-8824-44ce-9137-b5caf6ca69de",
+        "sceneIndex": 8,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T14:10:47.375Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 23.1,
+          "summary": "推门视角展现男生大学宿舍，三名室友分别在整理行李、看书和听音乐，同时转头看向门口露出欢迎笑容。",
+          "startTime": 21.567,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "暖木色家具搭配米白色墙面，自然采光带有温暖阳光色调。",
+          "style": "写实青春校园纪实风格，画质清晰干净。",
+          "action": "镜头定格，三名室友停下手头动作（整理衣物、抱书、取耳机），齐齐转向门口视线交汇并露出笑容。",
+          "camera": "广角镜头，视平固定机位，门框作为前景掩映，进深感强，全景景深清晰。",
+          "motion": "微幅人物动作，摄影机静止无位移。",
+          "subject": "三名正在宿舍内整理物品并转头看向门口的男大学生。",
+          "lighting": "室外自然日光透过阳台射入，形成地面反光，室内光线明亮柔和。",
+          "characters": [
+            {
+              "pose": "半蹲在地板上，双手扶着打开的金属行李箱",
+              "identity": "蹲在地上的男学生",
+              "wardrobe": "深灰色短袖T恤、短裤、黑白帆布鞋",
+              "appearance": "年轻短发男生",
+              "expression": "抬头微笑，神情热情"
+            },
+            {
+              "pose": "侧坐在书桌前椅子上，伸手摘下挂在脖子上的头戴式耳机",
+              "identity": "坐在椅子上的男学生",
+              "wardrobe": "深灰T恤、长裤",
+              "appearance": "戴黑框眼镜的短发男生",
+              "expression": "微笑注视门口"
+            },
+            {
+              "pose": "站立在右侧床梯旁，手中抱着一摞书",
+              "identity": "站立的男学生",
+              "wardrobe": "米白宽松T恤",
+              "appearance": "身材匀称的年轻男生",
+              "expression": "开朗欢快微笑"
+            }
+          ],
+          "composition": "居中对称透视构图，门框形成框式前景，地面行李箱居左下，人物呈前蹲后坐站三角分布。",
+          "environment": "中国高校四人间学生宿舍，左右为上床下桌一体柜，中间浅色瓷砖过道，尽头带落地窗及浅黄色窗帘。",
+          "sceneDescription": "从宿舍门口向内张望的全景。两侧为上床下桌的木质组合家具，尽头是阳台玻璃门。三名男大学生在各自位置停下动作，朝向镜头方向微笑迎接。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [
+          {
+            "text": "来了齐人了",
+            "endTime": 23.1,
+            "startTime": 22
+          }
+        ],
+        "audio": {
+          "ambient": "明亮安静的宿舍室内空间环境音",
+          "soundtrack": "欢快轻松的青春风格背景音乐",
+          "soundEffects": "衣物翻动声、耳机微弱摩擦音"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "节奏平缓自然，短暂定格展示空间与人物状态",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "标准中国大学男生宿舍内景全景，框式构图。正午阳光透过尽头阳台落地窗洒在瓷砖地面上。左右两侧为上床下桌木质组合床。左侧一名穿灰T短裤的男生正蹲在地上收拾银色行李箱，抬头向门口灿烂微笑；右侧桌前一名戴眼镜穿黑衣男生正摘下头戴耳机微笑着看过来；其身后站着一名穿白T恤捧着一摞课本的阳光男生同样面向门口欢笑。自然日光，暖色调，写实电影感，固定广角机位，画质细腻高清。\n\n画面与环境: 从宿舍门口向内张望的全景。两侧为上床下桌的木质组合家具，尽头是阳台玻璃门。三名男大学生在各自位置停下动作，朝向镜头方向微笑迎接。；三名正在宿舍内整理物品并转头看向门口的男大学生。；中国高校四人间学生宿舍，左右为上床下桌一体柜，中间浅色瓷砖过道，尽头带落地窗及浅黄色窗帘。\n\n人物与动作: identity: 蹲在地上的男学生; appearance: 年轻短发男生; wardrobe: 深灰色短袖T恤、短裤、黑白帆布鞋; expression: 抬头微笑，神情热情; pose: 半蹲在地板上，双手扶着打开的金属行李箱; identity: 坐在椅子上的男学生; appearance: 戴黑框眼镜的短发男生; wardrobe: 深灰T恤、长裤; expression: 微笑注视门口; pose: 侧坐在书桌前椅子上，伸手摘下挂在脖子上的头戴式耳机; identity: 站立的男学生; appearance: 身材匀称的年轻男生; wardrobe: 米白宽松T恤; expression: 开朗欢快微笑; pose: 站立在右侧床梯旁，手中抱着一摞书；镜头定格，三名室友停下手头动作（整理衣物、抱书、取耳机），齐齐转向门口视线交汇并露出笑容。；微幅人物动作，摄影机静止无位移。\n\n镜头与构图: 广角镜头，视平固定机位，门框作为前景掩映，进深感强，全景景深清晰。；居中对称透视构图，门框形成框式前景，地面行李箱居左下，人物呈前蹲后坐站三角分布。\n\n光影与质感: 室外自然日光透过阳台射入，形成地面反光，室内光线明亮柔和。；暖木色家具搭配米白色墙面，自然采光带有温暖阳光色调。；写实青春校园纪实风格，画质清晰干净。\n\n字幕: text: 来了齐人了; startTime: 22; endTime: 23.1\n\n声音: soundtrack: 欢快轻松的青春风格背景音乐; soundEffects: 衣物翻动声、耳机微弱摩擦音; ambient: 明亮安静的宿舍室内空间环境音\n\n节奏与转场: editing: pacing: 节奏平缓自然，短暂定格展示空间与人物状态; techniques: 硬切入，硬切出",
+        "duration": 1.533,
+        "createdAt": "2026-11-07T14:11:37.830Z",
+        "updatedAt": "2026-11-07T14:11:37.830Z",
+        "id": "1e8525eb-b4c9-45f3-90f5-102c91f40155",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "c41d3015-01a4-4893-88c7-ff5ed09782e2",
+        "sceneIndex": 9,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T14:11:37.608Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 24.467,
+          "summary": "第一人称视角驻足在空旷的大学宿舍门口，地面上放着银色拉杆箱，晨光穿透尽头窗户洒满寂静的房间。",
+          "startTime": 23.1,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "青灰冷色调主导，暗部木质家具呈现深棕色，窗外高光区纯白通透。",
+          "style": "电影感、现实主义写实风格，带有开学或离别情绪的青春怀旧氛围。",
+          "action": "镜头静止凝视，室内光线微泛光尘，整体呈现静态凝滞感。",
+          "camera": "主观视点（POV），固定机位，中景偏全景，视线平视并略微下倾，单点透视居中构图。",
+          "motion": "画面近乎静止，仅有空气中微弱的光尘漂浮感。",
+          "subject": "位于画面前景正下方的银色金属拉杆行李箱。",
+          "lighting": "高反差逆光照明，自然日光穿透薄雾形成丁达尔光效，前景与两侧家具呈暗调剪影状态。",
+          "characters": "无可见人物，呈第一人称主观视角。",
+          "composition": "严格的纵深对称构图。前景为行李箱拉杆，中景为两侧床位与中央过道，背景聚焦于强光的阳台门。",
+          "environment": "中国高校标准宿舍，包含木质书桌衣柜组合、钢架床、金属爬梯、瓷砖地面及尽头挂着窗帘的阳台玻璃门。",
+          "sceneDescription": "空旷整洁的高校四人间宿舍。右侧为半开的宿舍门，前景正中是一只银色拉杆箱拉杆。两侧为对称的标准上床下桌家具与铁质爬梯，尽头阳台门透入强烈的白色逆光，在地板上形成明亮反光和丁达尔光束。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "轻柔、缓慢且略带感怀的氛围弦乐或钢琴音乐。",
+          "ambient": "微弱寂静的室内空气流动底噪。",
+          "soundEffects": "无显著音效。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "pacing": "缓慢凝固，节奏平稳。",
+          "techniques": "硬切入，静止定格后切出。"
+        },
+        "generationPrompt": "电影质感，主观视角镜头。前景正中矗立着一个银色金属拉杆箱的拉杆，右侧露出半开的房门边缘。正前方是一间空旷整洁的大学四人间宿舍，中央过道笔直延伸，两侧是对称排列的上床下桌与铁梯。正对面的阳台玻璃门射入刺眼而柔和的晨光，形成清晰的丁达尔光束，地面倒映出窗户的高光。室内光线幽暗，暗部沉重，冷蓝与暗棕色调对比强烈，空气中隐约可见微尘浮动，整体氛围静谧、孤独而充满怀旧感，8k分辨率，写实胶片质感。\n\n画面与环境: 空旷整洁的高校四人间宿舍。右侧为半开的宿舍门，前景正中是一只银色拉杆箱拉杆。两侧为对称的标准上床下桌家具与铁质爬梯，尽头阳台门透入强烈的白色逆光，在地板上形成明亮反光和丁达尔光束。；位于画面前景正下方的银色金属拉杆行李箱。；中国高校标准宿舍，包含木质书桌衣柜组合、钢架床、金属爬梯、瓷砖地面及尽头挂着窗帘的阳台玻璃门。\n\n人物与动作: 无可见人物，呈第一人称主观视角。；镜头静止凝视，室内光线微泛光尘，整体呈现静态凝滞感。；画面近乎静止，仅有空气中微弱的光尘漂浮感。\n\n镜头与构图: 主观视点（POV），固定机位，中景偏全景，视线平视并略微下倾，单点透视居中构图。；严格的纵深对称构图。前景为行李箱拉杆，中景为两侧床位与中央过道，背景聚焦于强光的阳台门。\n\n光影与质感: 高反差逆光照明，自然日光穿透薄雾形成丁达尔光效，前景与两侧家具呈暗调剪影状态。；青灰冷色调主导，暗部木质家具呈现深棕色，窗外高光区纯白通透。；电影感、现实主义写实风格，带有开学或离别情绪的青春怀旧氛围。\n\n声音: ambient: 微弱寂静的室内空气流动底噪。; soundEffects: 无显著音效。; music: 轻柔、缓慢且略带感怀的氛围弦乐或钢琴音乐。\n\n节奏与转场: pacing: 缓慢凝固，节奏平稳。; techniques: 硬切入，静止定格后切出。",
+        "duration": 1.367,
+        "createdAt": "2026-11-07T14:11:38.368Z",
+        "updatedAt": "2026-11-07T14:11:38.368Z",
+        "id": "4a07015d-818b-441d-b7e7-f1accac87312",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "a7d2de09-f8b6-4978-9742-43b6101fa5e6",
+        "sceneIndex": 10,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T14:11:32.774Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      }
+    ],
+    "allSceneVersions": [
+      {
+        "story": {
+          "endTime": 4.433,
+          "summary": "阳光明媚的公园草坪上，小女孩坐在秋千上开心地摆动，身后的小男孩微笑着推她并比心，许下纯真的承诺。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖阳清新色调，翠绿草坪、蔚蓝天空与粉色裙装对比鲜艳自然。",
+          "style": "电影写实风格，温情治愈的童年影像质感。",
+          "action": "秋千轻缓荡起，女孩抓着绳索笑着说话；男孩在后方守护，推着秋千并抬手做出单手比心手势。",
+          "camera": "正前方平视中景，固定镜头，主体对焦清晰，背景轻度虚化。",
+          "motion": "人物与秋千平缓摆动，幅度自然柔和。",
+          "subject": "荡秋千的小女孩与身后推秋千的小男孩",
+          "lighting": "明朗的晴天日光，顺光照射，色调明快清澈。",
+          "characters": "女孩约5-6岁，黑色齐肩发，穿粉色白蕾丝边连衣裙，神情欢快纯真；男孩约7-8岁，短发，穿蓝白横条纹Polo衫，笑容温暖，右手比心。",
+          "composition": "居中对称构图，秋千立柱形成自然画框，人物位于中心，层次分明。",
+          "environment": "城市公园草坪，开阔平整，后方为成排绿树及现代高层建筑，蓝天无云。",
+          "sceneDescription": "晴空下的公园绿地，两侧微斑驳的秋千架框住画面。小女孩身穿粉色裙子荡秋千，身后小男孩推着秋千并对着镜头比心，背景为树林与高楼。"
+        },
+        "dialogue": [
+          {
+            "end": 2.8,
+            "text": "那你会一直在这推我吗",
+            "start": 1.2,
+            "speaker": "女孩"
+          },
+          {
+            "end": 4.4,
+            "text": "永远都在这",
+            "start": 3,
+            "speaker": "男孩"
+          }
+        ],
+        "narration": [],
+        "subtitle": [
+          {
+            "end": 2.8,
+            "text": "那你会一直在这推我吗",
+            "start": 1.2
+          },
+          {
+            "end": 4.4,
+            "text": "永远都在这",
+            "start": 3
+          }
+        ],
+        "audio": {
+          "soundStyle": "清脆纯真的儿童对话，伴有轻柔的公园微风环境声与温暖舒缓的配乐。"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓平稳",
+            "techniques": "单镜头固定拍摄，片尾硬切进入下一镜头。"
+          }
+        },
+        "generationPrompt": "电影质感实拍，明媚晴天。正面平视中景，开阔公园草坪上，秋千金属架框住画面。一个5岁穿粉白蕾丝边连衣裙的东亚小女孩坐在秋千上开怀大笑并前后摆动；身后站着一个7岁穿蓝白条纹Polo衫的东亚小男孩，笑着推秋千并抬起右手比心。背景是宽阔的绿草地、茂密树木和远处的现代大厦，蓝天清朗。自然阳光漫射，色彩明快鲜活，浅景深，充满童年温暖纯真氛围。\n\n画面与环境: 晴空下的公园绿地，两侧微斑驳的秋千架框住画面。小女孩身穿粉色裙子荡秋千，身后小男孩推着秋千并对着镜头比心，背景为树林与高楼。；荡秋千的小女孩与身后推秋千的小男孩；城市公园草坪，开阔平整，后方为成排绿树及现代高层建筑，蓝天无云。\n\n人物与动作: 女孩约5-6岁，黑色齐肩发，穿粉色白蕾丝边连衣裙，神情欢快纯真；男孩约7-8岁，短发，穿蓝白横条纹Polo衫，笑容温暖，右手比心。；秋千轻缓荡起，女孩抓着绳索笑着说话；男孩在后方守护，推着秋千并抬手做出单手比心手势。；人物与秋千平缓摆动，幅度自然柔和。\n\n镜头与构图: 正前方平视中景，固定镜头，主体对焦清晰，背景轻度虚化。；居中对称构图，秋千立柱形成自然画框，人物位于中心，层次分明。\n\n光影与质感: 明朗的晴天日光，顺光照射，色调明快清澈。；暖阳清新色调，翠绿草坪、蔚蓝天空与粉色裙装对比鲜艳自然。；电影写实风格，温情治愈的童年影像质感。\n\n对白: speaker: 女孩; text: 那你会一直在这推我吗; start: 1.2; end: 2.8; speaker: 男孩; text: 永远都在这; start: 3; end: 4.4\n\n字幕: text: 那你会一直在这推我吗; start: 1.2; end: 2.8; text: 永远都在这; start: 3; end: 4.4\n\n声音: soundStyle: 清脆纯真的儿童对话，伴有轻柔的公园微风环境声与温暖舒缓的配乐。\n\n节奏与转场: editing: pacing: 舒缓平稳; techniques: 单镜头固定拍摄，片尾硬切进入下一镜头。",
+        "duration": 4.433,
+        "createdAt": "2026-11-07T13:16:31.490Z",
+        "updatedAt": "2026-11-07T13:16:31.490Z",
+        "id": "8947c9aa-c24d-41dc-b8ca-46f02521c67a",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "728385a5-fcb1-4009-80c2-7a29c1b7bc3c",
+        "sceneIndex": 1,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:16:23.663Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 6.5,
+          "summary": "阴郁天空下的荒凉草地上，一架锈蚀斑斑的秋千孤零零伫立，透出寂寥压抑的氛围。",
+          "startTime": 4.433,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "青灰、墨绿、锈铁褐色的低饱和冷感冷调。",
+          "style": "电影质感，写实废弃美学，孤寂压抑。",
+          "action": "秋千座椅在微风中产生极微小的轻摆。",
+          "camera": "平视正对中景，固定机位，中央对称构图，景深聚焦于秋千链条与底座。",
+          "motion": "镜头静止，画面仅有极轻微的风吹秋千摆动。",
+          "subject": "金属秋千架与空荡的黄色秋千座椅",
+          "lighting": "冷色调漫射自然光，阴天无直射光，整体影调偏暗。",
+          "characters": [],
+          "composition": "秋千支架在画面两侧形成框架，黄色座椅居中，背景呈现树林与高楼的前后层次。",
+          "environment": "荒芜、杂草丛生的空地，背景有树丛与朦胧灰色城市建筑，天气阴沉。",
+          "sceneDescription": "城市边缘的荒地上立着生锈的A字形铁制秋千架，中间悬挂着单张黄色软兜座椅，背景为暗绿树林与远处的住宅高楼，天空布满阴云。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "空旷旷野的风声，伴随极微弱的金属摩擦声",
+          "musicStyle": "低沉悬疑的氛围暗乐"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉静",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "电影质感中景固定镜头。阴云密布的灰冷天空下，一片长满枯黄杂草的荒凉空地。中央是一架锈蚀斑斑的双A字金属秋千架，铁链上悬挂着一条单人黄色弧形软胶座椅，在微风中近乎静止地微晃。背景是一排暗色树木和远处模糊的高层住宅楼。冷色调漫射光，暗青与灰褐色调，写实且压抑孤独的氛围，镜头固定无位移。\n\n画面与环境: 城市边缘的荒地上立着生锈的A字形铁制秋千架，中间悬挂着单张黄色软兜座椅，背景为暗绿树林与远处的住宅高楼，天空布满阴云。；金属秋千架与空荡的黄色秋千座椅；荒芜、杂草丛生的空地，背景有树丛与朦胧灰色城市建筑，天气阴沉。\n\n人物与动作: 秋千座椅在微风中产生极微小的轻摆。；镜头静止，画面仅有极轻微的风吹秋千摆动。\n\n镜头与构图: 平视正对中景，固定机位，中央对称构图，景深聚焦于秋千链条与底座。；秋千支架在画面两侧形成框架，黄色座椅居中，背景呈现树林与高楼的前后层次。\n\n光影与质感: 冷色调漫射自然光，阴天无直射光，整体影调偏暗。；青灰、墨绿、锈铁褐色的低饱和冷感冷调。；电影质感，写实废弃美学，孤寂压抑。\n\n声音: ambient: 空旷旷野的风声，伴随极微弱的金属摩擦声; musicStyle: 低沉悬疑的氛围暗乐\n\n节奏与转场: editing: pacing: 缓慢沉静; techniques: 硬切",
+        "duration": 2.067,
+        "createdAt": "2026-11-07T13:16:27.605Z",
+        "updatedAt": "2026-11-07T13:16:27.605Z",
+        "id": "ce559555-5a98-4aaf-b740-4c9607654073",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "0f8c9ef9-3999-41bd-93cc-8df2f47e72e6",
+        "sceneIndex": 2,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:16:23.839Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 10.467,
+          "summary": "在传统中式堂屋中，小男孩面向正座的爷爷奶奶作揖祝寿，两侧站满了微笑注视的家族亲人，场面温馨庄重。",
+          "startTime": 6.5,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "深木色、素色墙面与水泥灰构成主色调，点缀男孩明亮的绿色T恤与红色门联。",
+          "style": "真实纪实风格，生活质感浓厚，色调朴素自然。",
+          "action": "小男孩站立在中央向前躬身施礼作揖祝寿；祖母激动落泪擦拭眼泪，祖父与周围亲属微笑注视。",
+          "camera": "全景固定镜头，视线平视偏高，广角镜头展现开阔对称的室内大堂布局，全景深。",
+          "motion": "人物主体微小躬身动作，背景多数亲人保持站立微笑，画面稳定无摄像机位移。",
+          "subject": "背对镜头的短发小男孩，身穿浅绿短袖T恤、深色牛仔短裤，正向前躬身作揖祝寿。",
+          "lighting": "顶部单盏暖黄色吊灯提供中心顶光，门外自然散射光提供正面泛光，整体质朴温和。",
+          "characters": "堂中央坐着祖父（穿浅蓝T恤面带微笑）和祖母（穿深花衣、低头用纸巾擦拭眼泪）。两侧分列十余位各年龄段的亲属，穿着朴素常服，神情和善欣慰地注视着男孩。",
+          "composition": "对称式透视构图。正堂木椅与祖父母居于中景视觉中心，男孩处于中轴线前景偏中，亲友分立左右形成环抱式视觉引导。",
+          "environment": "高挑传统中式老木屋堂屋，地面为水泥地，墙壁悬挂多幅字画与奖状，正堂设有传统中式木质条案与八仙桌椅。",
+          "sceneDescription": "中式乡村老宅堂屋，挑高木梁屋顶正中垂下一盏裸灯泡。正墙悬挂“祖德流芳”匾额与中堂山水画及对联。正中八仙桌两侧坐着祖父母，中央一名背对镜头的男童正在躬身作揖。亲属分立左右两侧观礼。"
+        },
+        "dialogue": [
+          {
+            "end": 8.5,
+            "text": "爷爷奶奶福如东海",
+            "start": 7,
+            "speaker": "男孩"
+          },
+          {
+            "end": 10,
+            "text": "寿比南山",
+            "start": 8.6,
+            "speaker": "男孩"
+          }
+        ],
+        "narration": [],
+        "subtitle": [
+          {
+            "end": 8.5,
+            "text": "爷爷奶奶福如东海",
+            "start": 7
+          },
+          {
+            "end": 10,
+            "text": "寿比南山",
+            "start": 8.6
+          }
+        ],
+        "audio": {
+          "soundStyle": "清脆纯真的孩童祝福声，伴有环境背景人声与安静祥和的气氛。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓平稳",
+            "techniques": "固定机位长镜头，硬切入硬切出"
+          }
+        },
+        "generationPrompt": "全景固定镜头，纪实风格。宽敞的中式传统农村老宅堂屋内，挑高深色木梁屋顶下挂着一盏暖光裸灯泡，正墙挂有“祖德流芳”横匾与传统中堂山水对联。画面中央一名背对镜头的男童（穿浅绿色T恤和牛仔短裤）正恭敬地向正前方躬身作揖。正中八仙桌旁坐着慈祥微笑的爷爷，以及手拿纸巾轻拭眼泪的奶奶。大厅左右两侧对称站着一众微笑注视的男女亲友，身着质朴便服。对称平衡构图，水泥地面，室内漫反射自然光与柔和顶光交融，氛围感人而庄重。\n\n画面与环境: 中式乡村老宅堂屋，挑高木梁屋顶正中垂下一盏裸灯泡。正墙悬挂“祖德流芳”匾额与中堂山水画及对联。正中八仙桌两侧坐着祖父母，中央一名背对镜头的男童正在躬身作揖。亲属分立左右两侧观礼。；背对镜头的短发小男孩，身穿浅绿短袖T恤、深色牛仔短裤，正向前躬身作揖祝寿。；高挑传统中式老木屋堂屋，地面为水泥地，墙壁悬挂多幅字画与奖状，正堂设有传统中式木质条案与八仙桌椅。\n\n人物与动作: 堂中央坐着祖父（穿浅蓝T恤面带微笑）和祖母（穿深花衣、低头用纸巾擦拭眼泪）。两侧分列十余位各年龄段的亲属，穿着朴素常服，神情和善欣慰地注视着男孩。；小男孩站立在中央向前躬身施礼作揖祝寿；祖母激动落泪擦拭眼泪，祖父与周围亲属微笑注视。；人物主体微小躬身动作，背景多数亲人保持站立微笑，画面稳定无摄像机位移。\n\n镜头与构图: 全景固定镜头，视线平视偏高，广角镜头展现开阔对称的室内大堂布局，全景深。；对称式透视构图。正堂木椅与祖父母居于中景视觉中心，男孩处于中轴线前景偏中，亲友分立左右形成环抱式视觉引导。\n\n光影与质感: 顶部单盏暖黄色吊灯提供中心顶光，门外自然散射光提供正面泛光，整体质朴温和。；深木色、素色墙面与水泥灰构成主色调，点缀男孩明亮的绿色T恤与红色门联。；真实纪实风格，生活质感浓厚，色调朴素自然。\n\n对白: speaker: 男孩; text: 爷爷奶奶福如东海; start: 7; end: 8.5; speaker: 男孩; text: 寿比南山; start: 8.6; end: 10\n\n字幕: text: 爷爷奶奶福如东海; start: 7; end: 8.5; text: 寿比南山; start: 8.6; end: 10\n\n声音: soundStyle: 清脆纯真的孩童祝福声，伴有环境背景人声与安静祥和的气氛。\n\n节奏与转场: editing: pacing: 舒缓平稳; techniques: 固定机位长镜头，硬切入硬切出",
+        "duration": 3.967,
+        "createdAt": "2026-11-07T13:17:12.997Z",
+        "updatedAt": "2026-11-07T13:17:12.997Z",
+        "id": "a36610a3-b142-481d-b311-06e603bfcf16",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "52c7b41e-f1a5-47e8-b3df-a25b097a4c62",
+        "sceneIndex": 3,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:17:12.964Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 12,
+          "summary": "阴森昏暗的中式传统老宅堂屋，正中肃穆陈设着神台、供桌与祖先像，青烟袅袅。",
+          "startTime": 10.467,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "青黑与墨绿色调为主，对比暗沉，阴冷压抑。",
+          "style": "中式悬疑惊悚电影写实风格，质感粗糙昏暗。",
+          "action": "供桌上的香炉缓缓升起一缕轻烟，其余环境全无动态。",
+          "camera": "全景，平视正前方，对称构图，固定机位无运镜，大景深保持前后清晰。",
+          "motion": "画面近乎定格，仅有微弱青烟垂直飘动。",
+          "subject": "堂屋中央的神案供桌与太师椅",
+          "lighting": "极低调弱光，偏青绿冷色调，仅从上方洒下微弱受限的顶光照亮供桌区域。",
+          "characters": "无人物出现",
+          "composition": "经典的严谨中轴对称构图，前景为开阔空旷的地面，中景为桌椅，背景为神龛画像。",
+          "environment": "中国南方传统老式农宅正厅，斑驳水泥地面，两侧带有幽暗房门与老式家具，气氛阴冷破败。",
+          "sceneDescription": "全景固定镜头拍摄的老旧中式堂屋。正中央严格对称地陈列着长条木供桌与两把中式木椅，供桌上香炉升起一缕细烟。后墙悬挂着泛黄的山水字画轴及下方两幅黑白遗像。整体笼罩在幽绿沉郁的低光照中。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "极低沉的恐怖悬疑氛围铺底（推测）",
+          "ambient": "死寂微弱的室内低频环境声",
+          "soundEffects": "无"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "凝滞压抑",
+            "techniques": "硬切进入，硬切退出"
+          }
+        },
+        "generationPrompt": "电影质感，中式惊悚悬疑氛围。昏暗的老旧乡村住宅堂屋，正面中心对称构图。正中央整齐摆放着一张陈旧木制供桌与两把雕花木椅，桌上香炉冒出微细青烟。背景墙挂着褪色的传统中式字画轴及下方两张黑白肖像相框。水泥地面微泛冷光，两侧分布着老式柜子与幽深暗门。幽暗青绿冷色调，微弱顶光，固定全景机位，静止压抑。\n\n画面与环境: 全景固定镜头拍摄的老旧中式堂屋。正中央严格对称地陈列着长条木供桌与两把中式木椅，供桌上香炉升起一缕细烟。后墙悬挂着泛黄的山水字画轴及下方两幅黑白遗像。整体笼罩在幽绿沉郁的低光照中。；堂屋中央的神案供桌与太师椅；中国南方传统老式农宅正厅，斑驳水泥地面，两侧带有幽暗房门与老式家具，气氛阴冷破败。\n\n人物与动作: 无人物出现；供桌上的香炉缓缓升起一缕轻烟，其余环境全无动态。；画面近乎定格，仅有微弱青烟垂直飘动。\n\n镜头与构图: 全景，平视正前方，对称构图，固定机位无运镜，大景深保持前后清晰。；经典的严谨中轴对称构图，前景为开阔空旷的地面，中景为桌椅，背景为神龛画像。\n\n光影与质感: 极低调弱光，偏青绿冷色调，仅从上方洒下微弱受限的顶光照亮供桌区域。；青黑与墨绿色调为主，对比暗沉，阴冷压抑。；中式悬疑惊悚电影写实风格，质感粗糙昏暗。\n\n声音: ambient: 死寂微弱的室内低频环境声; music: 极低沉的恐怖悬疑氛围铺底（推测）; soundEffects: 无\n\n节奏与转场: editing: pacing: 凝滞压抑; techniques: 硬切进入，硬切退出",
+        "duration": 1.533,
+        "createdAt": "2026-11-07T13:17:26.098Z",
+        "updatedAt": "2026-11-07T13:17:26.098Z",
+        "id": "487d9643-5db0-433f-ad9a-9efe5bddd824",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "b7ba52ae-329a-4b64-a49c-cc734310b3ea",
+        "sceneIndex": 4,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:17:25.325Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 14.4,
+          "summary": "昏暗的教室中，学生们面朝前方投影屏幕，前景处一只手悄悄伸入桌肚拿取一包黄色薯片。",
+          "startTime": 12,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "青蓝色暗调为主，配以黄色零食包装袋的局部暖色跳跃及反光亮片细微闪烁。",
+          "style": "写实青春校园题材，带有微弱胶片噪点与影视写实滤镜质感。",
+          "action": "右手从画面右下角平稳伸入课桌桌斗内部，手指握住黄色零食包装袋边缘并向外拖出拉起。",
+          "camera": "固定机位，中景偏特写视点，水平视线对准前景课桌与桌斗，后景带有大景深虚化效果。",
+          "motion": "手部伸展并抓取薯片的连贯动作，背景学生整体保持静止凝视前方。",
+          "subject": "前景课桌、桌肚内的黄色薯片袋以及伸出拿取薯片的手臂。",
+          "lighting": "冷调微弱环境光，主要由远端投影屏幕提供逆光轮廓，课桌内部处于幽暗阴影区。",
+          "characters": "多名背对镜头的初高中学生，身穿白色短袖校服；右侧可见伸出拿零食的学生手臂与部分躯干。",
+          "composition": "前景为木桌及桌斗内的手部动作，中景为坐在椅子上的学生背影，远景正中为发光的投影幕布，呈纵深透视构图。",
+          "environment": "典型的暗光学校教室，前方有发光的投影白板，课桌椅成排摆放，桌面上散落着彩色亮片点缀。",
+          "sceneDescription": "昏暗的多媒体教室，讲台投影泛着微光。多名身穿白色校服的学生背对镜头坐着。前景是一张散落着细碎彩片亮片的木质课桌，桌洞内放着一包黄色膨化食品包装袋。一只右手自画面右下方伸入桌洞将其抓出。"
+        },
+        "dialogue": [
+          {
+            "text": "诶...吃....",
+            "endTime": "14.4s",
+            "speaker": "画外学生",
+            "startTime": "13.8s"
+          }
+        ],
+        "narration": [],
+        "subtitle": [
+          {
+            "text": "诶...吃....",
+            "endTime": "14.4s",
+            "startTime": "13.8s"
+          }
+        ],
+        "audio": {
+          "music": "未知或轻微背景铺垫音。",
+          "ambient": "安静沉闷的室内课堂环境音。",
+          "soundEffects": "极轻微的手部抓取塑料包装袋沙沙声。"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "缓慢平稳，时长2.4秒短镜头展示偷吃零食细节。",
+            "techniques": "固定景深镜头，以动作承接叙事。"
+          }
+        },
+        "generationPrompt": "写实电影镜头，昏暗的学校教室环境。远景前方是发光的投影屏幕，多名身穿白色短袖校服的学生背对镜头端坐。中前景是一张木质课桌，桌面上散落着碎彩色闪光纸片。课桌桌肚幽暗，里面放着一包黄色膨化零食袋。一只年轻学生的手从画面右侧轻悄伸入桌肚，手指抓住黄色包装袋并向外拉动。固定机位微俯拍，低照度青冷色调，冷光源来自屏幕，桌斗内部呈自然暗部阴影，画面写实细腻，带有青春片纪实氛围。\n\n画面与环境: 昏暗的多媒体教室，讲台投影泛着微光。多名身穿白色校服的学生背对镜头坐着。前景是一张散落着细碎彩片亮片的木质课桌，桌洞内放着一包黄色膨化食品包装袋。一只右手自画面右下方伸入桌洞将其抓出。；前景课桌、桌肚内的黄色薯片袋以及伸出拿取薯片的手臂。；典型的暗光学校教室，前方有发光的投影白板，课桌椅成排摆放，桌面上散落着彩色亮片点缀。\n\n人物与动作: 多名背对镜头的初高中学生，身穿白色短袖校服；右侧可见伸出拿零食的学生手臂与部分躯干。；右手从画面右下角平稳伸入课桌桌斗内部，手指握住黄色零食包装袋边缘并向外拖出拉起。；手部伸展并抓取薯片的连贯动作，背景学生整体保持静止凝视前方。\n\n镜头与构图: 固定机位，中景偏特写视点，水平视线对准前景课桌与桌斗，后景带有大景深虚化效果。；前景为木桌及桌斗内的手部动作，中景为坐在椅子上的学生背影，远景正中为发光的投影幕布，呈纵深透视构图。\n\n光影与质感: 冷调微弱环境光，主要由远端投影屏幕提供逆光轮廓，课桌内部处于幽暗阴影区。；青蓝色暗调为主，配以黄色零食包装袋的局部暖色跳跃及反光亮片细微闪烁。；写实青春校园题材，带有微弱胶片噪点与影视写实滤镜质感。\n\n对白: speaker: 画外学生; text: 诶...吃....; startTime: 13.8s; endTime: 14.4s\n\n字幕: text: 诶...吃....; startTime: 13.8s; endTime: 14.4s\n\n声音: ambient: 安静沉闷的室内课堂环境音。; soundEffects: 极轻微的手部抓取塑料包装袋沙沙声。; music: 未知或轻微背景铺垫音。\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 缓慢平稳，时长2.4秒短镜头展示偷吃零食细节。; techniques: 固定景深镜头，以动作承接叙事。",
+        "duration": 2.4,
+        "createdAt": "2026-11-07T13:17:55.331Z",
+        "updatedAt": "2026-11-07T13:17:55.331Z",
+        "id": "66627296-ba70-47cd-bd39-cb58941c8d0f",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "c0e32553-7ed3-467d-b077-e4fc3c1b1715",
+        "sceneIndex": 5,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:17:52.277Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 15.867,
+          "summary": "第一人称主观视角下，学生坐在满地亮片彩纸的空荡教室内，凝视讲台黑板上写着的'毕业快乐'。",
+          "startTime": 14.4,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "米白墙面与深绿黑板构成冷暖基底，点缀桌面上缤纷高反光的红金紫色亮片碎片。",
+          "style": "青春写实，略带离别伤感的电影质感。",
+          "action": "主角保持静止坐姿，右手微屈置于课桌下沿前方，视线定格于讲台与黑板，无大幅度动作。",
+          "camera": {
+            "angle": "平视微俯",
+            "focus": "景深较深，前景课桌及背景黑板均较清晰",
+            "speed": "静止",
+            "lensFeel": "广角镜头，略有纵深拉伸感",
+            "movement": "静止微弱手持呼吸感",
+            "shotSize": "第一人称主观中特写（前景课桌与手）兼顾全景（教室前侧背景）"
+          },
+          "motion": "画面近乎静止，仅有微弱的第一人称呼吸晃动。",
+          "subject": "第一人称主角的右手手臂及双膝，以及面前铺满彩屑的书桌与前方的'毕业快乐'黑板。",
+          "lighting": "室内自然散射光，左侧大窗户提供柔和侧光，整体明亮清透。",
+          "characters": [
+            {
+              "pose": "端坐在课桌前，右手自然抬起置于课桌边缘。",
+              "identity": "毕业生（第一人称视角主角）",
+              "wardrobe": "黑色长裤，白色或浅色上衣袖口。",
+              "appearance": "仅露出右手腕、手掌及穿黑色裤子的双膝，肤色偏白。",
+              "expression": "不可见"
+            }
+          ],
+          "composition": "居中对称构图，前景为操作者双手与课桌，中景为多排空书桌，背景正中央为讲台与粉笔字黑板，透视线汇聚于中央黑板。",
+          "environment": "中国典型中学教室。前方有绿色大黑板，板书'毕业快乐'，下方有木质讲台；左侧靠窗透入明亮自然光；地面与多张课桌上铺满彩色反光亮片纸屑。",
+          "sceneDescription": "第一人称视角拍摄空荡的学校教室。课桌表面与地面散落着庆祝用的彩色亮片纸屑。正前方黑板中央用粉笔写着大字'毕业快乐'，两侧排列整齐的书桌已空无一人，前景可见拍摄者的膝盖与右手。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "安静空旷的室内微弱白噪音，伴随轻微的情感背景音乐余音",
+          "soundStyle": "宁静、怀旧、伤感"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "极慢且静止的尾声节奏",
+            "techniques": "硬切进入，定格收尾"
+          }
+        },
+        "generationPrompt": "电影质感，第一人称主观视角（POV），置身于空无一人的明亮高中教室内。前景露出主角穿黑裤的双腿和搭在课桌边缘的一只右手。课桌桌面与地面上散落着大量彩色反光礼花碎片。正前方的绿色大黑板上用白色粉笔端正写着'毕业快乐'四个大字。左侧排窗透入清晨柔和的自然光线。对称居中构图，广角深景深，画面充满青春散场后的宁静与伤感氛围，微弱手持呼吸感，超写实细节。\n\n画面与环境: 第一人称视角拍摄空荡的学校教室。课桌表面与地面散落着庆祝用的彩色亮片纸屑。正前方黑板中央用粉笔写着大字'毕业快乐'，两侧排列整齐的书桌已空无一人，前景可见拍摄者的膝盖与右手。；第一人称主角的右手手臂及双膝，以及面前铺满彩屑的书桌与前方的'毕业快乐'黑板。；中国典型中学教室。前方有绿色大黑板，板书'毕业快乐'，下方有木质讲台；左侧靠窗透入明亮自然光；地面与多张课桌上铺满彩色反光亮片纸屑。\n\n人物与动作: identity: 毕业生（第一人称视角主角）; appearance: 仅露出右手腕、手掌及穿黑色裤子的双膝，肤色偏白。; wardrobe: 黑色长裤，白色或浅色上衣袖口。; expression: 不可见; pose: 端坐在课桌前，右手自然抬起置于课桌边缘。；主角保持静止坐姿，右手微屈置于课桌下沿前方，视线定格于讲台与黑板，无大幅度动作。；画面近乎静止，仅有微弱的第一人称呼吸晃动。\n\n镜头与构图: shotSize: 第一人称主观中特写（前景课桌与手）兼顾全景（教室前侧背景）; angle: 平视微俯; lensFeel: 广角镜头，略有纵深拉伸感; movement: 静止微弱手持呼吸感; focus: 景深较深，前景课桌及背景黑板均较清晰; speed: 静止；居中对称构图，前景为操作者双手与课桌，中景为多排空书桌，背景正中央为讲台与粉笔字黑板，透视线汇聚于中央黑板。\n\n光影与质感: 室内自然散射光，左侧大窗户提供柔和侧光，整体明亮清透。；米白墙面与深绿黑板构成冷暖基底，点缀桌面上缤纷高反光的红金紫色亮片碎片。；青春写实，略带离别伤感的电影质感。\n\n声音: ambient: 安静空旷的室内微弱白噪音，伴随轻微的情感背景音乐余音; soundStyle: 宁静、怀旧、伤感\n\n节奏与转场: editing: pacing: 极慢且静止的尾声节奏; techniques: 硬切进入，定格收尾",
+        "duration": 1.467,
+        "createdAt": "2026-11-07T13:18:06.226Z",
+        "updatedAt": "2026-11-07T13:18:06.226Z",
+        "id": "78813615-ecdf-4464-b07b-1bfb7c2cfebd",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "6c7c4468-28d9-4069-944d-a9a9f78b31f1",
+        "sceneIndex": 6,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T13:18:04.008Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 19.467,
+          "summary": "农村大院里热烈举办升学宴，父亲带着戴大红花的儿子向满院宾客敬酒答谢。",
+          "startTime": 15.867,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暖色与质朴色调结合，喜庆大红色（横幅、桌布、大红花）与院落灰砖灰瓦、沙土地形成鲜明对比。",
+          "style": "现实主义乡土写实纪实风格，生活质感浓厚。",
+          "action": "父亲搂着儿子的肩膀向前走动，举起手中的小酒杯向在座亲友致谢致意；部分围坐宾客陆续起身举杯相应碰杯。",
+          "camera": "全景远景，正平视固定镜头，全景深，清晰收录整个院落与所有席位。",
+          "motion": "人物自然动作与走动，镜头保持平稳静止。",
+          "subject": "中央站立的年轻学子（胸戴红花）与其身旁热情敬酒的父亲与母亲。",
+          "lighting": "室外阴天散射自然光，光线均匀柔和无强阴影。",
+          "characters": "父亲身着灰短袖polo衫与深色长裤，神情自豪欢喜；儿子穿浅色T恤和牛仔裤，神态青涩；母亲穿浅色上衣，端酒杯陪同；周围坐满老少乡邻，身着朴素常服。",
+          "composition": "对称均衡的大全景构图，前景两侧为背对镜头的食客桌席，视觉中心为中景中央站立敬酒的主角家庭，背景为正房与喜庆横幅。",
+          "environment": "典型的中国北方乡村农家院落，泥土地面，老旧灰砖瓦房，上方有绿树树冠，门前挂红灯笼与对联，气氛喧闹喜庆。",
+          "sceneDescription": "北方农村砖瓦四合院天井，摆满铺红桌布的圆桌与木凳。正房门头悬挂“热烈祝贺金榜题名”横幅，右侧墙壁挂“升学宴”海报。院内坐满乡邻，中央站着庆祝的主角一家三口。"
+        },
+        "dialogue": [
+          {
+            "text": "老李",
+            "endTime": 16.8,
+            "speaker": "画外宾客",
+            "startTime": 15.867
+          },
+          {
+            "text": "你儿子有出息啊考上211",
+            "endTime": 18.2,
+            "speaker": "画外宾客",
+            "startTime": 16.8
+          },
+          {
+            "text": "大家别客气吃好....",
+            "endTime": 19.467,
+            "speaker": "父亲",
+            "startTime": 18.2
+          }
+        ],
+        "narration": [],
+        "subtitle": [
+          {
+            "text": "老李",
+            "endTime": 16.8,
+            "startTime": 15.867
+          },
+          {
+            "text": "你儿子有出息啊考上211",
+            "endTime": 18.2,
+            "startTime": 16.8
+          },
+          {
+            "text": "大家别客气吃好....",
+            "endTime": 19.467,
+            "startTime": 18.2
+          }
+        ],
+        "audio": {
+          "musicStyle": "无明显配乐或低沉自然环境音为主。",
+          "ambientSound": "农村流水席宴会的杯盘碰撞声、多人谈笑喧闹声。",
+          "dialogueSound": "嘈杂的人声中夹杂着洪亮的乡音赞许与热情的招呼声。"
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "平缓舒展的叙事开场节奏。",
+            "techniques": "硬切入，固定镜头长景展现完整生活场景。"
+          }
+        },
+        "generationPrompt": "全景固定镜头，展现中国北方农村大院里热闹的升学宴现场。院中摆放着多张铺着大红桌布的圆桌，坐满了穿朴素常服的村民与亲友。背景是老旧灰砖平房，正门上方挂着红底黄字“热烈祝贺金榜题名”横幅，院墙贴着“升学宴”红色海报，挂有红灯笼。画面中央，一位穿灰色T恤的朴实父亲搂着胸前戴大红花的青年儿子，两人举着小酒杯笑着向宾客敬酒，母亲在旁陪同，宾客们纷纷转头或起身回应。阴天柔和漫射光，乡土纪实电影质感，细节真实质朴。\n\n画面与环境: 北方农村砖瓦四合院天井，摆满铺红桌布的圆桌与木凳。正房门头悬挂“热烈祝贺金榜题名”横幅，右侧墙壁挂“升学宴”海报。院内坐满乡邻，中央站着庆祝的主角一家三口。；中央站立的年轻学子（胸戴红花）与其身旁热情敬酒的父亲与母亲。；典型的中国北方乡村农家院落，泥土地面，老旧灰砖瓦房，上方有绿树树冠，门前挂红灯笼与对联，气氛喧闹喜庆。\n\n人物与动作: 父亲身着灰短袖polo衫与深色长裤，神情自豪欢喜；儿子穿浅色T恤和牛仔裤，神态青涩；母亲穿浅色上衣，端酒杯陪同；周围坐满老少乡邻，身着朴素常服。；父亲搂着儿子的肩膀向前走动，举起手中的小酒杯向在座亲友致谢致意；部分围坐宾客陆续起身举杯相应碰杯。；人物自然动作与走动，镜头保持平稳静止。\n\n镜头与构图: 全景远景，正平视固定镜头，全景深，清晰收录整个院落与所有席位。；对称均衡的大全景构图，前景两侧为背对镜头的食客桌席，视觉中心为中景中央站立敬酒的主角家庭，背景为正房与喜庆横幅。\n\n光影与质感: 室外阴天散射自然光，光线均匀柔和无强阴影。；暖色与质朴色调结合，喜庆大红色（横幅、桌布、大红花）与院落灰砖灰瓦、沙土地形成鲜明对比。；现实主义乡土写实纪实风格，生活质感浓厚。\n\n对白: speaker: 画外宾客; text: 老李; startTime: 15.867; endTime: 16.8; speaker: 画外宾客; text: 你儿子有出息啊考上211; startTime: 16.8; endTime: 18.2; speaker: 父亲; text: 大家别客气吃好....; startTime: 18.2; endTime: 19.467\n\n字幕: text: 老李; startTime: 15.867; endTime: 16.8; text: 你儿子有出息啊考上211; startTime: 16.8; endTime: 18.2; text: 大家别客气吃好....; startTime: 18.2; endTime: 19.467\n\n声音: dialogueSound: 嘈杂的人声中夹杂着洪亮的乡音赞许与热情的招呼声。; ambientSound: 农村流水席宴会的杯盘碰撞声、多人谈笑喧闹声。; musicStyle: 无明显配乐或低沉自然环境音为主。\n\n节奏与转场: editing: pacing: 平缓舒展的叙事开场节奏。; techniques: 硬切入，固定镜头长景展现完整生活场景。",
+        "duration": 3.6,
+        "createdAt": "2026-11-07T14:10:43.115Z",
+        "updatedAt": "2026-11-07T14:10:43.115Z",
+        "id": "5f637dd0-cbb6-4337-8a47-34682d15a44c",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "6b3742c5-609e-483a-b1f4-75558af07136",
+        "sceneIndex": 7,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T14:10:43.067Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 21.567,
+          "summary": "升学宴客散后的深夜农村院落，一名中年男子独自在狼藉的红色宴席桌椅间收拾残局。",
+          "startTime": 19.467,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "暗沉黑夜与泥土灰褐，对比桌布与横幅的饱和正红色。",
+          "style": "现实主义乡土电影质感，写实且富有落寞叙事氛围。",
+          "action": "男子弯腰扶起中央圆桌旁倒地的木凳，随后直起身体，伸手触碰右侧圆桌边沿稍作停顿收拾。",
+          "camera": {
+            "lens": "标准镜头，大景深",
+            "angle": "平视微俯",
+            "focus": "全景深，焦点覆盖中央男子与近景红桌",
+            "speed": "静止",
+            "movement": "固定镜头",
+            "shotSize": "全景"
+          },
+          "motion": "主体动作缓和沉稳，环境静态无风。",
+          "subject": "背对镜头的收拾者，身形普通，穿着简朴灰短袖与深色长裤。",
+          "lighting": "夜景低调顶光。院中悬挂的一盏高亮裸灯为核心光源，产生硬直高对比投影，四周建筑隐入黑暗。",
+          "characters": [
+            {
+              "pose": "背对镜头站立并俯身整理木凳",
+              "identity": "中年男子（疑似家长）",
+              "wardrobe": "灰蓝色短袖T恤，深色长裤",
+              "appearance": "寸发，中等身材，微胖微弓背",
+              "expression": "背对镜头，面部不可见"
+            }
+          ],
+          "composition": "纵深对称构图。主体男子位于下半部中心，红桌在两侧及纵深延伸，背景直指堂屋大门，形成开阔但孤寂的空间感。",
+          "environment": "北方农村老瓦房庭院，夜幕低垂。右侧墙面悬挂红色‘升学宴’条幅，正中堂屋门楣挂有‘热烈祝贺金榜题名’红色横幅。院中排列大红圆桌、实木方凳，地面为硬化土坪，散落废纸。",
+          "sceneDescription": "深夜中式农村庭院，摆放数十张铺红桌布的宴席圆桌，桌上留有残羹剩饭与酒水，地面满是丢弃的白色纸巾。一名身着灰短袖的中年男子背对镜头，在中央圆桌旁俯身收拾倾倒的木凳。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "极简写实",
+          "ambient": "深夜乡村静寂底噪，伴随木凳挪动与轻微摩擦声",
+          "transcript": "无对白"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉缓凝重",
+            "techniques": "硬切（进出）"
+          }
+        },
+        "generationPrompt": "电影写实全景，深夜农村四合院。院子里整齐摆满十多张铺着大红桌布的宴席圆桌，桌上摆满残羹剩饭和饮料瓶，地面散落着大量白色纸团垃圾。右侧墙壁挂着‘升学宴’红幅，正对面的老式平房挂着‘热烈祝贺金榜题名’横幅。上方吊着一盏白炽灯投下刺眼的顶光硬影。画面中央偏下方，一名身穿浅灰短袖T恤、深色长裤的中年男子背对镜头，正弯腰扶正倒在地上的实木矮凳并收拾桌椅。固定机位，景深开阔，沉重落寞的电影质感，画面稳定无晃动。\n\n画面与环境: 深夜中式农村庭院，摆放数十张铺红桌布的宴席圆桌，桌上留有残羹剩饭与酒水，地面满是丢弃的白色纸巾。一名身着灰短袖的中年男子背对镜头，在中央圆桌旁俯身收拾倾倒的木凳。；背对镜头的收拾者，身形普通，穿着简朴灰短袖与深色长裤。；北方农村老瓦房庭院，夜幕低垂。右侧墙面悬挂红色‘升学宴’条幅，正中堂屋门楣挂有‘热烈祝贺金榜题名’红色横幅。院中排列大红圆桌、实木方凳，地面为硬化土坪，散落废纸。\n\n人物与动作: identity: 中年男子（疑似家长）; appearance: 寸发，中等身材，微胖微弓背; wardrobe: 灰蓝色短袖T恤，深色长裤; expression: 背对镜头，面部不可见; pose: 背对镜头站立并俯身整理木凳；男子弯腰扶起中央圆桌旁倒地的木凳，随后直起身体，伸手触碰右侧圆桌边沿稍作停顿收拾。；主体动作缓和沉稳，环境静态无风。\n\n镜头与构图: shotSize: 全景; angle: 平视微俯; lens: 标准镜头，大景深; movement: 固定镜头; focus: 全景深，焦点覆盖中央男子与近景红桌; speed: 静止；纵深对称构图。主体男子位于下半部中心，红桌在两侧及纵深延伸，背景直指堂屋大门，形成开阔但孤寂的空间感。\n\n光影与质感: 夜景低调顶光。院中悬挂的一盏高亮裸灯为核心光源，产生硬直高对比投影，四周建筑隐入黑暗。；暗沉黑夜与泥土灰褐，对比桌布与横幅的饱和正红色。；现实主义乡土电影质感，写实且富有落寞叙事氛围。\n\n声音: transcript: 无对白; ambient: 深夜乡村静寂底噪，伴随木凳挪动与轻微摩擦声; style: 极简写实\n\n节奏与转场: editing: pacing: 沉缓凝重; techniques: 硬切（进出）",
+        "duration": 2.1,
+        "createdAt": "2026-11-07T14:10:47.422Z",
+        "updatedAt": "2026-11-07T14:10:47.422Z",
+        "id": "c734726e-e5cd-410b-86d4-b2fe696fbb9b",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "4a8ec0a7-8824-44ce-9137-b5caf6ca69de",
+        "sceneIndex": 8,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T14:10:47.375Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 23.1,
+          "summary": "推门视角展现男生大学宿舍，三名室友分别在整理行李、看书和听音乐，同时转头看向门口露出欢迎笑容。",
+          "startTime": 21.567,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "暖木色家具搭配米白色墙面，自然采光带有温暖阳光色调。",
+          "style": "写实青春校园纪实风格，画质清晰干净。",
+          "action": "镜头定格，三名室友停下手头动作（整理衣物、抱书、取耳机），齐齐转向门口视线交汇并露出笑容。",
+          "camera": "广角镜头，视平固定机位，门框作为前景掩映，进深感强，全景景深清晰。",
+          "motion": "微幅人物动作，摄影机静止无位移。",
+          "subject": "三名正在宿舍内整理物品并转头看向门口的男大学生。",
+          "lighting": "室外自然日光透过阳台射入，形成地面反光，室内光线明亮柔和。",
+          "characters": [
+            {
+              "pose": "半蹲在地板上，双手扶着打开的金属行李箱",
+              "identity": "蹲在地上的男学生",
+              "wardrobe": "深灰色短袖T恤、短裤、黑白帆布鞋",
+              "appearance": "年轻短发男生",
+              "expression": "抬头微笑，神情热情"
+            },
+            {
+              "pose": "侧坐在书桌前椅子上，伸手摘下挂在脖子上的头戴式耳机",
+              "identity": "坐在椅子上的男学生",
+              "wardrobe": "深灰T恤、长裤",
+              "appearance": "戴黑框眼镜的短发男生",
+              "expression": "微笑注视门口"
+            },
+            {
+              "pose": "站立在右侧床梯旁，手中抱着一摞书",
+              "identity": "站立的男学生",
+              "wardrobe": "米白宽松T恤",
+              "appearance": "身材匀称的年轻男生",
+              "expression": "开朗欢快微笑"
+            }
+          ],
+          "composition": "居中对称透视构图，门框形成框式前景，地面行李箱居左下，人物呈前蹲后坐站三角分布。",
+          "environment": "中国高校四人间学生宿舍，左右为上床下桌一体柜，中间浅色瓷砖过道，尽头带落地窗及浅黄色窗帘。",
+          "sceneDescription": "从宿舍门口向内张望的全景。两侧为上床下桌的木质组合家具，尽头是阳台玻璃门。三名男大学生在各自位置停下动作，朝向镜头方向微笑迎接。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [
+          {
+            "text": "来了齐人了",
+            "endTime": 23.1,
+            "startTime": 22
+          }
+        ],
+        "audio": {
+          "ambient": "明亮安静的宿舍室内空间环境音",
+          "soundtrack": "欢快轻松的青春风格背景音乐",
+          "soundEffects": "衣物翻动声、耳机微弱摩擦音"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "节奏平缓自然，短暂定格展示空间与人物状态",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "标准中国大学男生宿舍内景全景，框式构图。正午阳光透过尽头阳台落地窗洒在瓷砖地面上。左右两侧为上床下桌木质组合床。左侧一名穿灰T短裤的男生正蹲在地上收拾银色行李箱，抬头向门口灿烂微笑；右侧桌前一名戴眼镜穿黑衣男生正摘下头戴耳机微笑着看过来；其身后站着一名穿白T恤捧着一摞课本的阳光男生同样面向门口欢笑。自然日光，暖色调，写实电影感，固定广角机位，画质细腻高清。\n\n画面与环境: 从宿舍门口向内张望的全景。两侧为上床下桌的木质组合家具，尽头是阳台玻璃门。三名男大学生在各自位置停下动作，朝向镜头方向微笑迎接。；三名正在宿舍内整理物品并转头看向门口的男大学生。；中国高校四人间学生宿舍，左右为上床下桌一体柜，中间浅色瓷砖过道，尽头带落地窗及浅黄色窗帘。\n\n人物与动作: identity: 蹲在地上的男学生; appearance: 年轻短发男生; wardrobe: 深灰色短袖T恤、短裤、黑白帆布鞋; expression: 抬头微笑，神情热情; pose: 半蹲在地板上，双手扶着打开的金属行李箱; identity: 坐在椅子上的男学生; appearance: 戴黑框眼镜的短发男生; wardrobe: 深灰T恤、长裤; expression: 微笑注视门口; pose: 侧坐在书桌前椅子上，伸手摘下挂在脖子上的头戴式耳机; identity: 站立的男学生; appearance: 身材匀称的年轻男生; wardrobe: 米白宽松T恤; expression: 开朗欢快微笑; pose: 站立在右侧床梯旁，手中抱着一摞书；镜头定格，三名室友停下手头动作（整理衣物、抱书、取耳机），齐齐转向门口视线交汇并露出笑容。；微幅人物动作，摄影机静止无位移。\n\n镜头与构图: 广角镜头，视平固定机位，门框作为前景掩映，进深感强，全景景深清晰。；居中对称透视构图，门框形成框式前景，地面行李箱居左下，人物呈前蹲后坐站三角分布。\n\n光影与质感: 室外自然日光透过阳台射入，形成地面反光，室内光线明亮柔和。；暖木色家具搭配米白色墙面，自然采光带有温暖阳光色调。；写实青春校园纪实风格，画质清晰干净。\n\n字幕: text: 来了齐人了; startTime: 22; endTime: 23.1\n\n声音: soundtrack: 欢快轻松的青春风格背景音乐; soundEffects: 衣物翻动声、耳机微弱摩擦音; ambient: 明亮安静的宿舍室内空间环境音\n\n节奏与转场: editing: pacing: 节奏平缓自然，短暂定格展示空间与人物状态; techniques: 硬切入，硬切出",
+        "duration": 1.533,
+        "createdAt": "2026-11-07T14:11:37.830Z",
+        "updatedAt": "2026-11-07T14:11:37.830Z",
+        "id": "1e8525eb-b4c9-45f3-90f5-102c91f40155",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "c41d3015-01a4-4893-88c7-ff5ed09782e2",
+        "sceneIndex": 9,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T14:11:37.608Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "story": {
+          "endTime": 24.467,
+          "summary": "第一人称视角驻足在空旷的大学宿舍门口，地面上放着银色拉杆箱，晨光穿透尽头窗户洒满寂静的房间。",
+          "startTime": 23.1,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "青灰冷色调主导，暗部木质家具呈现深棕色，窗外高光区纯白通透。",
+          "style": "电影感、现实主义写实风格，带有开学或离别情绪的青春怀旧氛围。",
+          "action": "镜头静止凝视，室内光线微泛光尘，整体呈现静态凝滞感。",
+          "camera": "主观视点（POV），固定机位，中景偏全景，视线平视并略微下倾，单点透视居中构图。",
+          "motion": "画面近乎静止，仅有空气中微弱的光尘漂浮感。",
+          "subject": "位于画面前景正下方的银色金属拉杆行李箱。",
+          "lighting": "高反差逆光照明，自然日光穿透薄雾形成丁达尔光效，前景与两侧家具呈暗调剪影状态。",
+          "characters": "无可见人物，呈第一人称主观视角。",
+          "composition": "严格的纵深对称构图。前景为行李箱拉杆，中景为两侧床位与中央过道，背景聚焦于强光的阳台门。",
+          "environment": "中国高校标准宿舍，包含木质书桌衣柜组合、钢架床、金属爬梯、瓷砖地面及尽头挂着窗帘的阳台玻璃门。",
+          "sceneDescription": "空旷整洁的高校四人间宿舍。右侧为半开的宿舍门，前景正中是一只银色拉杆箱拉杆。两侧为对称的标准上床下桌家具与铁质爬梯，尽头阳台门透入强烈的白色逆光，在地板上形成明亮反光和丁达尔光束。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "轻柔、缓慢且略带感怀的氛围弦乐或钢琴音乐。",
+          "ambient": "微弱寂静的室内空气流动底噪。",
+          "soundEffects": "无显著音效。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "pacing": "缓慢凝固，节奏平稳。",
+          "techniques": "硬切入，静止定格后切出。"
+        },
+        "generationPrompt": "电影质感，主观视角镜头。前景正中矗立着一个银色金属拉杆箱的拉杆，右侧露出半开的房门边缘。正前方是一间空旷整洁的大学四人间宿舍，中央过道笔直延伸，两侧是对称排列的上床下桌与铁梯。正对面的阳台玻璃门射入刺眼而柔和的晨光，形成清晰的丁达尔光束，地面倒映出窗户的高光。室内光线幽暗，暗部沉重，冷蓝与暗棕色调对比强烈，空气中隐约可见微尘浮动，整体氛围静谧、孤独而充满怀旧感，8k分辨率，写实胶片质感。\n\n画面与环境: 空旷整洁的高校四人间宿舍。右侧为半开的宿舍门，前景正中是一只银色拉杆箱拉杆。两侧为对称的标准上床下桌家具与铁质爬梯，尽头阳台门透入强烈的白色逆光，在地板上形成明亮反光和丁达尔光束。；位于画面前景正下方的银色金属拉杆行李箱。；中国高校标准宿舍，包含木质书桌衣柜组合、钢架床、金属爬梯、瓷砖地面及尽头挂着窗帘的阳台玻璃门。\n\n人物与动作: 无可见人物，呈第一人称主观视角。；镜头静止凝视，室内光线微泛光尘，整体呈现静态凝滞感。；画面近乎静止，仅有空气中微弱的光尘漂浮感。\n\n镜头与构图: 主观视点（POV），固定机位，中景偏全景，视线平视并略微下倾，单点透视居中构图。；严格的纵深对称构图。前景为行李箱拉杆，中景为两侧床位与中央过道，背景聚焦于强光的阳台门。\n\n光影与质感: 高反差逆光照明，自然日光穿透薄雾形成丁达尔光效，前景与两侧家具呈暗调剪影状态。；青灰冷色调主导，暗部木质家具呈现深棕色，窗外高光区纯白通透。；电影感、现实主义写实风格，带有开学或离别情绪的青春怀旧氛围。\n\n声音: ambient: 微弱寂静的室内空气流动底噪。; soundEffects: 无显著音效。; music: 轻柔、缓慢且略带感怀的氛围弦乐或钢琴音乐。\n\n节奏与转场: pacing: 缓慢凝固，节奏平稳。; techniques: 硬切入，静止定格后切出。",
+        "duration": 1.367,
+        "createdAt": "2026-11-07T14:11:38.368Z",
+        "updatedAt": "2026-11-07T14:11:38.368Z",
+        "id": "4a07015d-818b-441d-b7e7-f1accac87312",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "projectVersionId": "44e6282e-8ae6-455b-99cf-49fe7f2ff124",
+        "originalSceneId": "a7d2de09-f8b6-4978-9742-43b6101fa5e6",
+        "sceneIndex": 10,
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-07T14:11:32.774Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      }
+    ],
+    "referenceVideos": [
+      {
+        "sourceUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/linked-media/douyin/63b46e07-59ba-4f26-a263-55070d7f529a.mp4",
+        "mimeType": null,
+        "duration": 70,
+        "createdAt": "2026-11-07T13:15:44.302Z",
+        "id": "c5a270f1-4707-465d-9f80-9be928d18a45",
+        "projectId": "5c698174-5a21-48cf-9fe5-93cbe2136280",
+        "fileName": "圆缺.mp4",
+        "metadata": {}
+      }
+    ]
   }
 ]

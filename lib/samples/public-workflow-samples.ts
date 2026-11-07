@@ -2,6 +2,10 @@ import snapshot from "./public-workflow-samples.snapshot.json";
 
 export const PUBLIC_WORKFLOW_SAMPLES = [
   {
+    id: "5c698174-5a21-48cf-9fe5-93cbe2136280",
+    title: "圆缺",
+  },
+  {
     id: "da42d280-4d6a-48d6-a7bd-0f1366fb9bb0",
     title: "无论我走多远，我永远是我母亲的孩子",
   },
