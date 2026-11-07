@@ -5,6 +5,7 @@ import { useLocale } from "next-intl";
 import { AnalysisQuotePanel } from "@/components/payments/analysis-quote-panel";
 import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
+import { AnalyzedShotPreview } from "@/components/workflow/analyzed-shot-preview";
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { analysisFailureMessage } from "@/lib/billing/analysis-failure-message";
@@ -25,7 +26,7 @@ import { Check, ChevronLeft, ChevronRight, Copy, FileUp, Link2, Play, RefreshCw,
 
 type Project = { id: string; title: string; status: string; updatedAt: string; activeVersionId?: string | null; metadata?: Record<string, unknown> };
 type Version = { id: string; label: string; versionNumber: number; kind: string; overview: Record<string, unknown>; remixPrompt?: string | null };
-type Scene = { id: string; sceneIndex: number; startTime: number; endTime: number; duration: number; clipUrl?: string | null; keyframeUrls: string[]; status: string; error?: string | null };
+type Scene = { id: string; sceneIndex: number; referenceVideoId?: string | null; startTime: number; endTime: number; duration: number; clipUrl?: string | null; keyframeUrls: string[]; status: string; error?: string | null };
 type SceneVersion = {
   id: string;
   projectVersionId: string;
@@ -49,6 +50,7 @@ type Bundle = {
   scenes: Scene[];
   sceneVersions: SceneVersion[];
   allSceneVersions: SceneVersion[];
+  referenceVideos?: Array<{ id?: string; sourceUrl: string }>;
 };
 
 type ModelOption = { id: string; displayName: string; family: string; provider: string; kieModelId: string; enabled: boolean; experimental?: boolean };
@@ -1095,8 +1097,8 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
 
                       {projectMediaType === "image" && scene?.keyframeUrls?.[0] ? (
                         <img src={scene.keyframeUrls[0]} alt="Analyzed" className="mt-3 max-h-64 w-full rounded-xl object-contain" />
-                      ) : scene?.clipUrl ? (
-                        <video src={scene.clipUrl} controls className="mt-3 max-h-64 w-full rounded-xl bg-black object-contain" />
+                      ) : projectMediaType === "video" ? (
+                        <AnalyzedShotPreview scene={scene} references={bundle.referenceVideos} zh={locale !== "en"} />
                       ) : null}
 
                       <div className="mt-4 grid gap-3 lg:grid-cols-[1.2fr_0.8fr]">
