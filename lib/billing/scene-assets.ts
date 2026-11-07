@@ -39,11 +39,13 @@ export async function prepareIndependentSceneAsset(task: Task, job: Job, executi
   const input = task.input as AnalysisInput;
   const progress = task.result as Progress;
   const existing = progress.assets?.scenes[job.sceneIndex - 1];
-  if (existing?.keyframeUrls?.length) return existing;
   const interval = input.pricing.scenes[job.sceneIndex - 1];
   if (!interval || !existing) throw new Error("ANALYSIS_SCENE_CHECKPOINT_MISSING");
   const startedAt = Date.now();
-  const cached = await cachedPreviewAsset(task, job, input);
+  const checkpoint = (job.result as { preparedAsset?: FfmpegSceneAsset }).preparedAsset;
+  const complete = (asset?: FfmpegSceneAsset) => Boolean(asset?.clipUrl && asset.keyframeUrls?.length === 3
+    && Math.abs(asset.startTime * 1e6 - interval.startUs) <= 1000 && Math.abs(asset.endTime * 1e6 - interval.endUs) <= 1000);
+  const cached = complete(checkpoint) ? checkpoint! : complete(existing) ? existing : await cachedPreviewAsset(task, job, input);
   let result: FfmpegSceneAsset;
   if (cached) result = { ...existing, ...cached };
   else {
@@ -65,8 +67,16 @@ export async function prepareIndependentSceneAsset(task: Task, job: Job, executi
     const latest = parent.result as Progress;
     const scenes = [...latest.assets.scenes];
     scenes[job.sceneIndex - 1] = result;
-    await tx.update(videoScenes).set({ clipUrl: result.clipUrl, keyframeUrls: result.keyframeUrls, audioUrl: result.audioUrl, updatedAt: new Date() }).where(eq(videoScenes.id, latest.sceneRecords[job.sceneId]));
-    await tx.update(commercialTasks).set({ result: { ...parent.result as object, assets: { ...latest.assets, scenes }, splitDelivered: input.pricing.automaticSplit && scenes.every(s => s.keyframeUrls.length > 0) }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+    const sceneRecordId = latest.sceneRecords[job.sceneId];
+    if (!sceneRecordId) throw new Error("ANALYSIS_SCENE_CHECKPOINT_MISSING");
+    const [saved] = await tx.update(videoScenes).set({ clipUrl: result.clipUrl, keyframeUrls: result.keyframeUrls, audioUrl: result.audioUrl, updatedAt: new Date() })
+      .where(and(eq(videoScenes.id, sceneRecordId), eq(videoScenes.projectId, input.projectId), eq(videoScenes.sceneIndex, job.sceneIndex))).returning({ id: videoScenes.id });
+    if (!saved) throw new Error("ANALYSIS_SCENE_CHECKPOINT_MISSING");
+    await tx.update(analysisSceneJobs).set({ result: sql`${analysisSceneJobs.result} || ${JSON.stringify({ preparedAsset: result })}::jsonb`, updatedAt: new Date() }).where(eq(analysisSceneJobs.id, current.id));
+    // Change this shot only; never replace another lane's asset array from a snapshot.
+    const assetUpdate = sql`jsonb_set(${commercialTasks.result}, ARRAY['assets', 'scenes', ${String(job.sceneIndex - 1)}]::text[], ${JSON.stringify(result)}::jsonb, false)`;
+    const splitDelivered = input.pricing.automaticSplit && scenes.every(s => s.clipUrl && s.keyframeUrls.length === 3);
+    await tx.update(commercialTasks).set({ result: sql`${assetUpdate} || ${JSON.stringify({ splitDelivered })}::jsonb`, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
   });
   console.info("commercial.scene.assets_ready", { taskId: task.id, sceneJobId: job.id, sceneIndex: job.sceneIndex, cacheHit: Boolean(cached), preparationMs: Date.now() - startedAt });
   return result;

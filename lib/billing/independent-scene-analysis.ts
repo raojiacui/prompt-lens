@@ -9,7 +9,7 @@ import { finishCommercialAnalysis, savedAnalysisModel, type AnalysisInput } from
 import { taskErrorDetails } from "./task-diagnostics";
 import { analysisFailureMessage } from "./analysis-failure-message";
 import { AnalysisExecutionLost } from "./analysis-execution";
-import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
+import type { FfmpegBreakdownResult, FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "./analysis-provider-limit";
 import { analysisDispatchTarget, dispatchAnalysisInvocation } from "@/lib/workflow/analysis-dispatch";
 import { hasUsablePrompt } from "@/lib/workflow/scene-analysis-result";
@@ -69,7 +69,8 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string, delivery
         if (!task || task.state !== "running" || (task.result as Progress).sceneJobMode !== "independent_v1") return null;
         const input = task.input as AnalysisInput;
         const progress = task.result as Progress;
-        const asset = progress.assets?.scenes[current.sceneIndex - 1];
+        const stored = current.result as { pendingBlueprint?: SceneBlueprintDraft; preparedAsset?: FfmpegSceneAsset; timings?: Record<string, unknown> };
+        const asset = stored.preparedAsset || progress.assets?.scenes[current.sceneIndex - 1];
         const sceneRecord = progress.sceneRecords?.[current.sceneId];
         if (!asset || !sceneRecord || !progress.versionId) {
           const at = new Date();
@@ -78,7 +79,6 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string, delivery
           await tx.update(commercialTasks).set({ state: "review", result: sql`${commercialTasks.result} || ${JSON.stringify({ review, code: "TASK_REQUIRES_RECONCILIATION" })}::jsonb`, updatedAt: at }).where(eq(commercialTasks.id, task.id));
           return task.id;
         }
-        const stored = current.result as { pendingBlueprint?: SceneBlueprintDraft; timings?: Record<string, unknown> };
         // A live worker must already have persisted its answer. Only stale recovery can mark an interrupted inference failed.
         if (executionId && !stored.pendingBlueprint) return null;
         const pending = stored.pendingBlueprint;
@@ -102,16 +102,20 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string, delivery
           await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId, originalSceneId: sceneRecord, sceneIndex: current.sceneIndex, duration: (interval.endUs - interval.startUs) / 1_000_000, ...blueprint, metadata });
         }
         trace.mark("update_scene_status");
-        await tx.update(videoScenes).set({ status: succeeded ? "completed" : "failed", error: succeeded ? null : String(blueprint.metadata?.fallbackReason || "Analysis interrupted"), updatedAt: new Date() }).where(eq(videoScenes.id, sceneRecord));
+        const [savedScene] = await tx.update(videoScenes).set({
+          ...(asset.clipUrl && asset.keyframeUrls.length === 3 ? { clipUrl: asset.clipUrl, keyframeUrls: asset.keyframeUrls, audioUrl: asset.audioUrl } : {}),
+          status: succeeded ? "completed" : "failed", error: succeeded ? null : String(blueprint.metadata?.fallbackReason || "Analysis interrupted"), updatedAt: new Date(),
+        }).where(and(eq(videoScenes.id, sceneRecord), eq(videoScenes.projectId, input.projectId))).returning({ id: videoScenes.id });
+        if (!savedScene) throw new Error("ANALYSIS_SCENE_CHECKPOINT_MISSING");
         trace.mark("complete_scene_job");
         const timings = { ...stored.timings, savedAt: new Date().toISOString(), checkpointToSaveMs: Math.max(0, Date.now() - current.updatedAt.getTime()), recovered: !executionId && !deliveryFlush, deliveryFlush, saveAttempt: attempt, saveStagesMs: trace.snapshot().stagesMs };
         const providerOutcome = pending ? blueprint.metadata?.providerOutcome || (succeeded ? "success" : "unknown") : "unknown";
-        await tx.update(analysisSceneJobs).set({ state: succeeded ? "completed" : "failed", result: { providerOutcome, providerAttemptUnconfirmed: blueprint.metadata?.providerAttemptUnconfirmed, analysisProvider: blueprint.metadata?.analysisProvider || "fallback", failureCode: pending ? blueprint.metadata?.failureCode ?? null : "ANALYSIS_INTERRUPTED", analysisResultAttempts: blueprint.metadata?.analysisResultAttempts, timings }, updatedAt: new Date() }).where(eq(analysisSceneJobs.id, current.id));
+        await tx.update(analysisSceneJobs).set({ state: succeeded ? "completed" : "failed", result: sql`(${analysisSceneJobs.result} - 'pendingBlueprint') || ${JSON.stringify({ providerOutcome, providerAttemptUnconfirmed: blueprint.metadata?.providerAttemptUnconfirmed, analysisProvider: blueprint.metadata?.analysisProvider || "fallback", failureCode: pending ? blueprint.metadata?.failureCode ?? null : "ANALYSIS_INTERRUPTED", analysisResultAttempts: blueprint.metadata?.analysisResultAttempts, timings })}::jsonb`, updatedAt: new Date() }).where(eq(analysisSceneJobs.id, current.id));
         const parentResult = task.result as Record<string, unknown>;
         const finished = Array.isArray(parentResult.finishedSceneIds) ? parentResult.finishedSceneIds as string[] : [];
         const successes = Array.isArray(parentResult.successfulSceneIds) ? parentResult.successfulSceneIds as string[] : [];
         trace.mark("update_parent_progress");
-        const parentUpdate = tx.update(commercialTasks).set({ result: { ...parentResult, finishedSceneIds: [...new Set([...finished, current.sceneId])], successfulSceneIds: succeeded ? [...new Set([...successes, current.sceneId])] : successes }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id)).returning({ id: commercialTasks.id });
+        const parentUpdate = tx.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ finishedSceneIds: [...new Set([...finished, current.sceneId])], successfulSceneIds: succeeded ? [...new Set([...successes, current.sceneId])] : successes })}::jsonb`, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id)).returning({ id: commercialTasks.id });
         // A successful replacement does not prove the first request stopped.
         const knownOutcome = providerOutcome !== "unknown" && !blueprint.metadata?.providerAttemptUnconfirmed;
         const releaseSlot = tx.update(analysisProviderSlots).set({ releasedAt: new Date() }).where(and(eq(analysisProviderSlots.sceneJobId, current.id), sql`${knownOutcome}`, sql`${analysisProviderSlots.releasedAt} IS NULL`)).returning({ id: analysisProviderSlots.sceneJobId });
