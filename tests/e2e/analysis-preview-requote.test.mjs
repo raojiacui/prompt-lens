@@ -136,7 +136,7 @@ for (const failedAction of ["prepare", "quote"]) test(`recovers ${failedAction} 
       if (body.action === "prepare") {
         preparations++;
         if (preparations === 1 && failedAction === "prepare") {
-          await route.fulfill({ status: 400, json: { code: "PREVIEW_EXPIRED" } });
+          await route.fulfill({ status: 409, json: { code: "PREVIEW_PREPARATION_INTERRUPTED" } });
         } else {
           await route.fulfill({ json: { id: `preparation-${preparations}`, durationUs: 5_000_000, scenes: scenes.map(s => ({ ...s, id: preparations > 1 ? `restored-${s.id}` : s.id })) } });
         }
@@ -155,11 +155,8 @@ for (const failedAction of ["prepare", "quote"]) test(`recovers ${failedAction} 
       failNextQuote = true;
       await page.getByRole("checkbox", { name: "镜头 1", exact: true }).uncheck();
     }
-    const reread = page.getByRole("button", { name: "重新读取视频", exact: true });
-    await reread.waitFor();
-    assert.ok((await page.locator("body").innerText()).includes("无需再次导入链接或上传"));
-    await reread.click();
     await confirm.waitFor();
+    assert.equal(await page.getByRole("button", { name: "重新读取视频", exact: true }).count(), 0, "recoverable failures should not require another click");
     assert.equal(preparations, 2);
     const lastQuote = requests.filter(r => r.body.action === "quote").at(-1).body;
     assert.equal(lastQuote.preparationId, "preparation-2");
@@ -168,6 +165,28 @@ for (const failedAction of ["prepare", "quote"]) test(`recovers ${failedAction} 
     assert.ok(prepareBodies.every(body => body.projectId === "project" && body.mediaUrl === "https://preview.test/source.mp4"));
     assert.equal(await page.getByRole("article").count(), 2);
     await page.close();
+  } finally { await browser.close(); }
+});
+
+test("preview recovery stops after two automatic retries and keeps paid execution manual", { timeout: 60000 }, async () => {
+  const bundle = await buildPanel();
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    let preparations = 0;
+    await page.route("https://preview.test/", route => route.fulfill({ contentType: "text/html", body: '<div id="root"></div>' }));
+    await page.route("https://preview.test/api/**", async route => {
+      assert.equal(new URL(route.request().url()).pathname, "/api/commercial/analysis");
+      assert.equal(route.request().postDataJSON().action, "prepare");
+      preparations++;
+      await route.fulfill({ status: 409, json: { code: "PREVIEW_PREPARATION_INTERRUPTED" } });
+    });
+    await page.goto("https://preview.test/");
+    await page.addScriptTag({ content: bundle.outputFiles[0].text });
+    await page.getByRole("button", { name: "重新读取视频", exact: true }).waitFor();
+    assert.equal(preparations, 3);
+    await page.waitForTimeout(2200);
+    assert.equal(preparations, 3, "recovery must not loop indefinitely");
   } finally { await browser.close(); }
 });
 

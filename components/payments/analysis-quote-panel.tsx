@@ -43,6 +43,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   const [refresh, setRefresh] = useState(0);
   const [confirmationStarted, setConfirmationStarted] = useState(false);
   const preparationRequest = useRef<Promise<AnalysisPreparation> | null>(null);
+  const automaticPreviewRetries = useRef(0);
   const selectionToRestore = useRef<SceneInterval[] | null>(null);
   const [error, setError] = useState("");
   const completed = useRef(false);
@@ -104,19 +105,37 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   useEffect(() => {
     if (preparation) return;
     let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout>;
+    let pendingPolls = 0;
     setPreparing(true);
-    if (!preparationRequest.current) preparationRequest.current = post("/api/commercial/analysis", { action: "prepare", ...source, automaticSplit });
-    void preparationRequest.current.then(data => {
-      if (cancelled) return;
-      const previous = selectionToRestore.current;
-      setPreparation(data);
-      setSelected(data.scenes.filter(scene => previous === null || previous.some(selected => selected.startUs === scene.startUs && selected.endUs === scene.endUs)).map(scene => scene.id));
-      selectionToRestore.current = null;
-      setNeedsPreparation(false); setError("");
-    }).catch(e => {
-      if (!cancelled) { preparationRequest.current = null; setError(e instanceof Error ? e.message : "Error"); }
-    }).finally(() => { if (!cancelled) setPreparing(false); });
-    return () => { cancelled = true; };
+    async function loadPreparation() {
+      try {
+        if (!preparationRequest.current) preparationRequest.current = post("/api/commercial/analysis", { action: "prepare", ...source, automaticSplit });
+        const data = await preparationRequest.current;
+        if (cancelled) return;
+        const previous = selectionToRestore.current;
+        setPreparation(data);
+        setSelected(data.scenes.filter(scene => previous === null || previous.some(selected => selected.startUs === scene.startUs && selected.endUs === scene.endUs)).map(scene => scene.id));
+        selectionToRestore.current = null;
+        setNeedsPreparation(false); setError(""); setPreparing(false);
+      } catch (e) {
+        if (cancelled) return;
+        preparationRequest.current = null;
+        // Re-read only unpaid metadata from this same owned reference. Paid confirmation is never retried here.
+        if (e instanceof AnalysisRequestError && e.code === "PREVIEW_PREPARING" && pendingPolls++ < 10) {
+          retryTimer = setTimeout(() => void loadPreparation(), 2000);
+          return;
+        }
+        if (e instanceof AnalysisRequestError && (e.retryable || ["PREVIEW_EXPIRED", "PREVIEW_PREPARATION_INTERRUPTED"].includes(e.code || "")) && automaticPreviewRetries.current < 2) {
+          automaticPreviewRetries.current++;
+          retryTimer = setTimeout(() => void loadPreparation(), automaticPreviewRetries.current * 1000);
+          return;
+        }
+        setError(e instanceof Error ? e.message : "Error"); setPreparing(false);
+      }
+    }
+    void loadPreparation();
+    return () => { cancelled = true; clearTimeout(retryTimer); };
   }, [refresh]);
   useEffect(() => {
     if (!preparation || taskId || confirmationStarted) return;
@@ -131,6 +150,14 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         if (!cancelled) { setQuote({ ...data, requestKey: quoteRequestKey }); setNeedsPreparation(false); setQuoting(false); }
       } catch (e) {
         if (cancelled) return;
+        if (e instanceof AnalysisRequestError && ["PREVIEW_EXPIRED", "PREVIEW_PREPARATION_INTERRUPTED"].includes(e.code || "") && automaticPreviewRetries.current < 2) {
+          automaticPreviewRetries.current++;
+          selectionToRestore.current = selectedScenes;
+          preparationRequest.current = null;
+          setPreparation(null); setQuote(null); setQuoting(false); setNeedsPreparation(false);
+          setPreparing(true); setError(""); setRefresh(value => value + 1);
+          return;
+        }
         // Only recover unpaid quotes; never retry model inference here.
         if (e instanceof AnalysisRequestError && e.retryable && attempt < 2) {
           timer = setTimeout(() => void loadQuote(attempt + 1), 1000 * (attempt + 1));
@@ -138,8 +165,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         }
         setError(e instanceof Error ? e.message : "Error"); setQuoting(false);
         if (e instanceof AnalysisRequestError && ["PREVIEW_EXPIRED", "PREVIEW_PREPARATION_INTERRUPTED"].includes(e.code || "")) setNeedsPreparation(true);
-        // Ordinary price failures keep boundaries and selection. An unavailable
-        // preview is explicitly re-read from the same source when the user asks.
+        // Keep ordinary price failures and exhausted recovery available for manual retry.
       }
     }
     timer = setTimeout(() => void loadQuote(), 300);
@@ -157,6 +183,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   async function confirmAnalysis() {
     if (busy || preparing || quoting) return;
     if (!quote) {
+      if (!preparation || needsPreparation) automaticPreviewRetries.current = 0;
       if (needsPreparation) {
         selectionToRestore.current = selectedScenes;
         preparationRequest.current = null;
