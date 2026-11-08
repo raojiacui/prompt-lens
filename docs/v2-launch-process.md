@@ -87,6 +87,35 @@
 - GitHub 曾发生网络超时；先确认 Release 仍为草稿，再通过项目既有本地代理完成发布，未重复创建版本。
 - 本地只提交本项记录及 ADR，不推送文档分支，以免产生额外测试部署。临时打包脚本及归档文件保存在被忽略的 `temp/`，实际备份附件已上传 Release。
 
+## 003：对比并补齐正式站的 V2 环境变量
+
+- 确认及执行日期：2026-11-08。
+- 状态：配置补缺已执行并验证；正式部署及业务验收未执行。
+- 授权范围：负责人明确要求助手对比 V2 与正式站环境变量并补齐缺失项；本项不切换分支、不部署、不更新 Worker 或数据库。
+- 决策记录及逐项清单：[ADR 0033](decisions/0033-production-env-preparation-without-deployment.md)。
+
+### 补齐结果
+
+- 比较两项目的 Production 变量：正式原有 44 项，测试有 45 项；测试侧有 13 个名称在正式侧缺失。
+- 正式新增 10 项：`EASYDOWN_API_KEY`、`SMTP_FROM`、`SMTP_SECURE`、`DATABASE_MAX_CONNECTIONS`、`EMAIL_PUBLIC_SITE_URL`、`EMAIL_ASSET_BASE_URL`、`COMMERCIAL_REVIEW_ALERT_EMAIL`、`COMMERCIAL_CONSUMPTION_ENABLED`、`COMMERCIAL_REWRITE_ENABLED`、`WELCOME_EMAIL_ENABLED`。
+- 邮件链接使用正式域名，发件人使用正式 SMTP 认证邮箱；邮件图片验证可达。EasyDown 沿用已测试的第三方账号，保存为 sensitive，未额外调用解析服务。
+- 正式当前共 54 项。9 项新增非敏感配置回读一致；新增敏感凭据确认创建成功、名称、目标及类型，不回读明文。
+- 原有正式 44 项及测试 45 项的 ID、类型、目标、更新时间和分支元数据保持一致，未覆盖原值；数据库、认证、存储、Worker、Cron 和支付绑定保持原状。
+- 3 项有意不照搬：`ACCESS_ALLOWED_EMAILS` 仅供邀请测试；`ADMIN_EMAILS` 未参与当前权限判断；`BYOK_ENCRYPTION_KEY` 会改变旧用户密钥的解密路径，继续沿用正式认证密钥的既有回退行为。
+
+### 待处理及验证边界
+
+1. **正式 SMTP 已有认证故障**：只读连接及登录验证返回 `EAUTH / AUTH PLAIN`，没有发邮件。正式 SMTP 与本地另一组配置不同，本次没有替换凭据。后续核正正式 Gmail 应用专用密码，再验证验证码送达及完整登录。
+2. **支付宝公钥待核正**：11 月 7 日核查记录的正式验签失败尚未处理，本项保留既有支付变量；后续从控制台核正并重新验签，再做真实支付验收。
+3. Worker、存储、数据库、支付和模型验收仍按后续步骤处理；未修改 `COMMERCIAL_SCHEDULER_ACCEPTED` 等既有验收标记。
+4. 计费和改写开关已按 V2 预期行为配置，供后续部署采用；本项完成不代表正式站业务验收已通过。
+
+### 线上影响核验
+
+- 正式域名操作前后均指向 `dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV`，未触发部署、提升或回退，旧站继续运行原部署。
+- 工作区 `.vercel/project.json` 仍绑定 `prompt-lens-v2-test`；使用明确正式项目 ID 完成本次获授权的变量新增，未重新绑定项目。
+- 未调整 GitHub 默认分支、正式跟踪分支、数据库、存储、Worker 或域名。本项文档仅本地提交，不额外推送 V2 触发测试部署。
+
 ## 后续事项
 
 后续按讨论顺序追加。未经项目负责人确认的事项不放入“已确认安排”，也不据此执行上线操作。
