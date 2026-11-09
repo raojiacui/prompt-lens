@@ -1,0 +1,74 @@
+# ADR 0050：日志巡检触发间隔核查及外部触发方案
+
+- 日期：2026-11-09
+- 状态：只读排查完成；现有 schedule 覆盖不通过。外部触发方案为建议，待负责人确认，尚未实现或部署。
+- 关联：ADR 0048、0049；上线记录第 020 项。
+
+## 背景
+
+V2 已迁入原有日志邮件巡检，但近期 GitHub schedule 创建的运行相隔数小时，脚本只查询执行时点前 30 分钟，无法覆盖中间时段。负责人要求继续处理此项上线准备，需要区分计划触发、任务排队与脚本执行失败，避免把文件迁移当作按时运行验证。
+
+## 已执行的核查
+
+2026-11-09 23:51（Asia/Shanghai），通过 GitHub API 读取工作流全部现存 83 次运行及最近三次运行的 job/step 元数据，未触发任何工作流：
+
+| 检查 | 结果 |
+| --- | --- |
+| 工作流 | 394138210，active |
+| 仓库 | public、非 archived、非 disabled，默认 main，最近有推送活动 |
+| Actions 配置 | enabled=true，allowed_actions=all |
+| 当前计划 | 每小时第 7、37 分钟，无 push 触发；运行超时 15 分钟 |
+| 返回记录 | 共 83 条，完整一页：schedule 78、workflow_dispatch 5 |
+| schedule 结果 | 78 条均 success、run_attempt=1，无 queued/running 记录 |
+| 创建到 run_started_at | 所有现存 schedule 记录均为 0 秒；最近三个 job 在创建后 2–3 秒开始 |
+| 创建到完成 | 最短 21 秒、中位 26 秒、最长 45 秒 |
+| 相邻 schedule 创建间隔 | 77 个间隔全部超过 35 分钟；最短约 125 分钟、中位约 301 分钟、最长约 587 分钟 |
+| 按北京时间分日 | 10 月 24 日至 11 月 9 日每天约 3–7 次，远低于计划 48 次；首尾日未必为完整观察日 |
+
+- 最近三次步骤均成功，日志查询用时约数秒，安装工具约十余秒，邮件处理步骤成功。此证据不能区分静默完成与实际发信，也不证明收件箱收到。
+- main 的工作流与已迁移 V2 均为每小时第 7/37 分钟；项目 ID、production 筛选、并发组和滚动窗口已经核对。默认分支存在文件，仓库近期活动及 active 状态也不符合“闲置自动禁用”的情况。
+- 根据现存记录，长间隔发生在运行记录创建这一侧，不能归因于已执行脚本慢、runner 长时间排队、任务超时或失败重试。GitHub 内部调度队列、未创建/未保留的事件无法从这些接口还原，具体内部原因未确认，不宣称已证明某次事件被丢弃。
+- 官方 [schedule 说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)承认计划事件可能延迟，高负载下可能丢弃；这说明其不提供本方案所需的严格执行间隔，但不直接证明本仓库本次延迟的内部根因。
+- 查询 GitHub 官方未解决事件接口时无事件；这不足以排除特定仓库或历史调度异常，也不据此宣称平台一切正常。
+- 忽略的 temp/log-monitor-schedule-audit.safe.json 保存脱敏运行、步骤及统计元数据，未保存凭据或用户业务日志。
+
+## 本轮决定
+
+- 将现有 GitHub schedule 标为“工作流可运行、按时覆盖未通过”，不修改任何业务或监控验收标记。
+- 不盲目反复启停工作流，不仅修改 cron 数字就声称修复；不把查询扩大为 1/24 小时来掩盖执行缺口，历史上更长窗口曾被日志 API 拒绝，本轮没有重新验证更长范围可用。
+- 本轮只完成证据和可审阅的替代方案，不新建云服务、放置新凭据、改默认分支、触发真实邮件或部署。实施新增外部触发需要负责人确认。
+
+## 建议方案（待确认）
+
+使用一个独立 Cloudflare Worker Cron，**每 15 分钟触发现有 GitHub 日志巡检**，每日计划 96 次。Vercel 日志采集、解析、邮件通道继续在原工作流执行：
+
+1. Worker 仅接受定时事件，不提供公开 HTTP 触发入口，不接触 R2 素材、数据库、Vercel 密钥、SMTP 密钥或 Fly 媒体 Worker。
+2. 固定仓库 raojiacui/prompt-lens 和工作流路径 vercel-log-email-monitor.yml；从 GitHub 读取当前默认分支，避免最终默认分支切换时遗忘更新触发 ref。
+3. 使用专用、只限该仓库且 Actions write 权限的 GitHub 凭据，通过 Worker Secret 配置；最小权限范围仍需由 GitHub 实际令牌页面确认。不得从已有连接器或本地 CLI 导出凭据，不在聊天发送 Token。
+4. 调用 GitHub [workflow_dispatch API](https://docs.github.com/en/rest/actions/workflows#create-a-workflow-dispatch-event)，inputs.send_test_email=false。正常无错误继续静默；实际发现错误或采集失败时沿用已有异常邮件行为。网络未知结果不立即重试 dispatch，避免重复启动。
+5. 正式启用前明确唯一主触发来源。在外部触发连续验证后，按确定提交移除对应默认分支上的 GitHub schedule，保留 workflow_dispatch，避免长期同时运行两套定时入口。现有按部署/错误签名的单次运行聚合不等于跨运行邮件去重；15 分钟查询 30 分钟会有重叠，实施时一并明确并验证跨运行去重策略。
+6. Worker 配置先不启用定时触发；代码按本地验证、提交、推送仓库后才部署。不得为实施这项监控提前把正式 Web 发布为 V2，或把所有 main 合入 V2。何时切换主触发以及如何保留旧巡检需列入具体实施记录。
+7. 当前 main 仍提供旧巡检，V2 已备好迁移文件。外部触发可以使用当前默认分支，最终切换 V2 后仍需核对 dispatch 的 head_branch/head_sha；对默认分支的任何工作流改动另行限定，不触发旧站源码部署来验证监控。
+
+### 成本和能力边界
+
+- Cloudflare [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/)支持 scheduled handler；修改触发器传播可能需最多约 15 分钟，不承诺保存即立刻执行。
+- 官方 [Workers Free 限额](https://developers.cloudflare.com/workers/platform/limits/)列每日 100,000 请求和每账号 5 个 Cron Triggers。该触发规模很小，但账户是否启用 Workers Free、剩余 Cron 配额及实际 CPU 用量还需实查；不擅自升级或承诺账单永久为零。
+- 外部定时器减轻对 GitHub schedule 的依赖，GitHub runner 和日志服务依旧可能延迟，不能宣称绝对不漏报或实时告警。需依据实际任务开始时间、采集时间和供应商保留范围验收。
+- Vercel 官方 [Hobby Cron 限制](https://vercel.com/docs/schedules/cron-jobs/usage-and-pricing)为每天一次，不作为现有套餐下每 15/30 分钟日志巡检的替代；不因本项擅自升级套餐。
+- 这项方案仅改善 Vercel 巡检触发，不自动解决 Fly 独立日志、失联通知或 SMTP 自身故障告警。
+
+## 备选方案
+
+- 保持 GitHub schedule：无新增服务和凭据，代价是已证实的覆盖缺口。若负责人接受暂缓修复，应明确作为已知限制记录，发布窗口人工观察不能补回已过保留期的日志。
+- GitHub schedule 改每 5/15 分钟：无法用当前证据证明能消除平台创建运行的长间隔，也增加重复通知风险，不作为已验证修复。
+- 使用常驻 Fly 定时器：会破坏既有媒体 Worker 的按需挂起和成本安排，不采用。
+- 付费日志持久化/独立监控服务：可另行评估更完整的采集、保存和失联通知，需要新的费用及配置选择，本轮不实施。
+
+## 实施后的验证计划
+
+1. 无网络单元测试覆盖固定仓库/工作流、默认分支读取、输入及权限边界、异常/未知 dispatch 不重复发送、无公开入口及跨运行去重。
+2. 在不发送真实测试邮件的模拟调用中确认不会打印 Secret；真实 dispatch 可能按原规则发送异常邮件，实施授权须包含这项既有通知行为。
+3. 外部触发启用后至少观察三个连续周期，核对 Worker 定时事件、GitHub dispatch 的创建/开始时间、目标 ref、日志采集状态和去重；触发 204 仅表示 API 接受请求，不能替代后续运行证据。
+4. 确认只有约定的主触发来源、原采集/邮件行为和收件通道未被破坏；main/V2 及正式 Web 边界分别核验。
+5. 未取得负责人选择和实际证据前，本项保持“覆盖未通过”，继续保留现有已启用巡检，不将建议写成已完成。

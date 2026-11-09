@@ -51,4 +51,5 @@ Vercel Token 和邮箱授权码只存入 GitHub Secrets。不要写入仓库文�
 - 2026-11-09 核查的最近四次计划运行都成功，但间隔数小时；本次代码迁移不证明调度延迟已经解决，原因及更稳定的调度方案继续核查。
 - 工作流 success 可能是无错误时静默完成，也可能发送了摘要；应结合具体步骤输出及收件箱判断，不能据 success 推定邮件送达。
 - 邮件服务失败会使工作流失败；不能依靠同一故障 SMTP 通道发送其自身故障提醒。
+- 2026-11-09 完整只读核查：78 次 schedule 均成功，耗时中位 26 秒，但相邻运行创建间隔中位约五小时。缺口出现在运行创建一侧，具体内部原因未确认；外部触发及重叠窗口去重方案见 [ADR 0050](../decisions/0050-log-monitor-schedule-gap-investigation.md)，尚未实施。
 - 官方规则：[GitHub schedule](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)。
