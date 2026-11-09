@@ -1,12 +1,14 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import * as schema from "./schema";
+import { getDatabaseTlsOptions } from "./tls";
 
 const connectionString = process.env.DATABASE_URL!;
 
 const maxConnections = Number.parseInt(process.env.DATABASE_MAX_CONNECTIONS || "5", 10);
 
 const client = postgres(connectionString, {
+  ...getDatabaseTlsOptions(connectionString),
   max: Number.isFinite(maxConnections) && maxConnections > 0 ? maxConnections : 5,
   connect_timeout: 10,
   idle_timeout: 20,
