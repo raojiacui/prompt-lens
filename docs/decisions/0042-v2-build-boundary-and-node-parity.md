@@ -1,7 +1,7 @@
 # ADR 0042：为独立 V2 正式发布准备构建边界并固定 Node 22
 
 - 日期：2026-11-09
-- 状态：上线准备实施中；正式项目分支切换和正式 V2 发布未执行。
+- 状态：仓库准备及本地/测试 Git 构建验证完成；正式项目分支切换和正式 V2 发布未执行。
 - 关联：ADR 0031、0041；上线记录第 011 项。
 
 ## 背景
@@ -37,7 +37,11 @@
 - 20 项本地检查通过：18 个实际子进程退出码场景、ignoreCommand 长度/脚本指向、Node 主版本声明。两项目 V2/production 均返回 1，禁止组合均返回 0。
 - 本地 Next.js 生产构建通过；本机为 Node 24.13.0，不将此称为 Node 22 运行验证。保留既有本地 OAuth 凭据、上级锁文件和 Browserslist 警告；Node 22 由随后测试项目 Git 构建核验。
 - 推送前已 fetch 核对：远端 V2 为前一轮已验收的 38db29d211222c372b283326bcf310d97fff67e3，本地此前仅有一条部署证据文档提交，无未集成远端提交。已有无关文件不纳入本项。
-- Git 自动构建与固定域名证据待完成后追加。
+- 提交 bda7fc0f5a81400aa44c3d13476281fb865e055e 已先本地验证/提交，再推送 GitHub prompt-lens-V2；远端 SHA 回读一致，main 保持 75eb611f8759745ec743818bce24350691d6ab8d。此前一条本地提交仅补写上一模块部署证据，一并正常推送。
+- 2026-11-09 15:08（Asia/Shanghai）：测试固定域名 prompt-lens-v2-test.vercel.app 指向 dpl_7Mnebb8EXA8vy2qfitNwZEk946Ui，READY、source=git、gitSource.ref=prompt-lens-V2、SHA=bda7fc0f5a81400aa44c3d13476281fb865e055e，deployment.projectSettings.nodeVersion=22.x。正常 Git 构建通过新规则，未手动跳过 Ignored Build Step。
+- 正式项目面板仍为 main、Node 24，旧 main 的源代码没有 engines 变更；正式域名仍指向 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV。V2 源码中的 22.x 声明仅供以后正式 V2 部署采用，不将准备工作表述为正式运行环境已切换。
+- 没有 Vercel 项目设置写入、CLI 上传、手动提升、正式分支/默认分支切换、数据库/Worker/付费模型操作；未提交已有无关工作区修改。新规则是构建范围准备，不能替代后续正式站业务验收。
+- 具体部署证据补作本地提交，不为补写记录额外触发第二次测试构建。临时只读脚本和脱敏快照保存在忽略的 temp/。
 
 ## 官方依据
 
