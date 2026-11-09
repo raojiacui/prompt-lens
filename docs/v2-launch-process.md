@@ -287,6 +287,7 @@
 
 - 负责人允许删除额外备用配置或将备用模型改为 Seedance 2.0 Fast，采用后者：页面默认继续 Mini，底层缺少模型参数时使用代码常量 Fast；删除该处 KIE_VIDEO_MODEL 环境覆盖及示例项，不自动切模型重试。
 - 本次不修改 Vercel 变量、密钥或正式部署。功能变更按本地验证/提交 → 推送 V2 → 测试项目 Git 自动部署进行，发布证据见 [ADR 0041](decisions/0041-code-managed-video-fallback-seedance-fast.md)。前述“无需功能改动”指确认页面默认 Mini 时的结论，此次按负责人新增要求调整底层备用路径。
+- 已完成：本地 26 项既有测试及生产构建通过，功能提交 38db29d211222c372b283326bcf310d97fff67e3 已推送 V2；14:56 核验测试固定域名指向 Git 自动部署 dpl_Fm4FL8MAsqKcwRsj5PSTKu9LikYh（READY），Git 来源 SHA 一致。正式站仍为 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV。
 
 ## 后续事项
 

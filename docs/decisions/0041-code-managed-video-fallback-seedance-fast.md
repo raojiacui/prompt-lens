@@ -1,7 +1,7 @@
 # ADR 0041：底层缺省视频模型采用代码中的 Seedance 2.0 Fast
 
 - 日期：2026-11-09
-- 状态：已确认，实施及验证结果见下方。
+- 状态：已实施，本地验证及 V2 测试项目 Git 自动部署核验完成；正式 Web 未发布。
 - 关联：ADR 0040、上线记录第 010 项。
 
 ## 背景
@@ -35,3 +35,7 @@
 - 本地 Next.js 生产构建通过（编译、类型检查、55 页静态生成及 traces）。构建提示本地缺 GitHub OAuth 凭据、上级目录多锁文件和 Browserslist 数据较旧；没有隐藏警告或将其扩展为正式 OAuth 故障。
 - diff 检查通过；页面 Mini 常量和显式模型提交路径保持原样，已删除旧环境变量读取及导出名称；未纳入已有无关工作区修改。
 - 推送前只读核实：测试项目跟踪 prompt-lens-V2、固定域名指向 Git 来源 aa11e5c4cd079400e6aa36c16f371cbb9cde6610；正式域名仍指向 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV。部署后 SHA 与域名证据在确认完成后追加。
+- 功能提交 38db29d211222c372b283326bcf310d97fff67e3 已先提交再推送 GitHub prompt-lens-V2；远端 SHA 回读一致。远端 main 保持 75eb611f8759745ec743818bce24350691d6ab8d。随本次正常推送带上的此前本地提交仅为上线准备文档，无额外业务代码。
+- 2026-11-09 14:56（Asia/Shanghai）：测试部署 dpl_Fm4FL8MAsqKcwRsj5PSTKu9LikYh 为 READY、source=git，gitSource.ref=prompt-lens-V2，Git SHA 与上述提交一致；固定域名 prompt-lens-v2-test.vercel.app 已指向该部署。
+- 同次回读正式域名仍指向 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV，未切换正式分支或发布正式 Web。没有 CLI 上传、手动提升、模型推理或业务数据写入；本地已有无关修改未提交。
+- 部署证据另作本地记录提交，不再为补写记录触发第二次测试构建。部署成功不代替真实付费模型交付验收。
