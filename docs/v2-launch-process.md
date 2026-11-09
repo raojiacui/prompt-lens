@@ -335,13 +335,24 @@
 
 ## 015：仅统一正式 KIE 地址，模型实测安排在上线后
 
-- 执行时间：2026-11-09 23:50（Asia/Shanghai）。
+- 执行时间：2026-11-09 22:50（Asia/Shanghai）。
 - 授权：负责人明确选择“只统一地址，模型实测放到上线后”。
 - 状态：正式项目现有 KIE_API_BASE_URL 已保存实际值 https://api.kie.ai，保留 sensitive 类型及原 Preview/Production 范围；将在下次正式部署生效，尚未做运行时模型验收。
 - 决策及验证证据：[ADR 0040 后续更新](decisions/0040-production-model-readonly-readiness.md)。原密钥、页面 Mini 默认及代码 Fast 备用选择保持原状。
 - 已核对更新响应、变量 ID/范围和 updatedAt；正式其他变量、测试变量、两站分支与域名部署 ID 均未变。隐藏值无法回读，不将成功保存记为真实模型调用通过。
 - 未调用付费模型、扣用户积分、写业务数据或部署。正式仍为 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV，测试仍为 dpl_BjFMYok7GDBSwDeUdLDu56yGVrtD；COMMERCIAL_MODEL_ACCEPTANCE 保持未设置。
 - 下一项整理正式历史任务、调度恢复顺序和故障告警；最终版本固定、备份刷新及分支/部署切换继续留在获授权的发布窗口。
+
+## 016：历史任务、调度入口与故障提醒只读核查
+
+- 日期：2026-11-09，约 22:58–22:59（Asia/Shanghai）。
+- 状态：只读盘点完成；历史处理范围待确认，实际调度、告警及邮件送达待正式发布后验收。
+- 决策、影响清单与发布操作单：[ADR 0046](decisions/0046-production-queue-and-scheduler-cutover-scope.md)。
+- 无 queued/running 商业任务或分镜作业；存在 9 笔 pending 支付宝订单、1 个逾期待复核生成任务、2 条 held 预留合计 8 积分。未查单、关单、释放额度、重试生成或发提醒。
+- 保留期只读统计发现 5 个分析项目、32 条生成历史及 1 条商业生成内容符合现有规则；另有 1 条 pending 清理项尚未到期。这些候选不代表已删除，正式部署授权前需确认处理范围并刷新备份。
+- V2 有三个每日 Vercel Cron，COMMERCIAL_SCHEDULER_ACCEPTED=false 不阻止路由执行；Web 切换后可能处理历史数据，即使 Fly 回调尚未恢复。应将所有入口及对应影响一起纳入切换和回退安排，不能将验收标记当总开关。
+- 正式 Worker 仍为 v14、suspended、无回调地址，镜像和规格与测试一致；未唤醒。正式提醒邮箱为 raojiacui@gmail.com，SMTP 名称齐全；业务复核邮件实际送达与独立离线告警尚未验收，未宣称平台已配置自动监控。
+- 本轮无线上修改、部署、业务执行或邮件发送，正式 Web 部署保持 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV。下一小节点先确认历史数据处理范围和上线观察方式，再进入最终版本及发布窗口准备；不据“下一步”提前切换正式站。
 
 ## 后续事项
 
