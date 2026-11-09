@@ -270,7 +270,7 @@
 ## 010：正式模型配置、凭据与余额预检
 
 - 日期：2026-11-09。
-- 状态：只读配置及余额检查完成；隐藏配置处理方式待明确，实际模型交付与结算待验收。
+- 状态：只读配置及余额检查完成；页面默认 Seedance 2.0 Mini 已按代码核对，服务地址尚未回读验证，实际模型交付与结算待验收。
 - 决策及验证边界：[ADR 0040](decisions/0040-production-model-readonly-readiness.md)。
 
 ### 已确认结果
@@ -278,10 +278,10 @@
 - 正式/测试有效平台密钥均为 KIE_API_KEY，没有 KIE_AI_API_KEY 覆盖；两把密钥不同，保留各自值。
 - 分别调用官方只读余额 GET，均返回 HTTP 200、code=200、812.86 个 KIE 积分（本次时点快照），没有付费推理或用户素材传输。
 - 正式分析计费与改写开关均为 true。分析/套餐改写模型由源码和注册表选择；默认视频模型变量并不控制所有功能的模型。
-- 正式 KIE_API_BASE_URL、KIE_VIDEO_MODEL 为不可回读的 sensitive；测试分别为 https://api.kie.ai、wan/2-7-text-to-video。已提出统一这两项的方案，负责人询问含义，尚未确认修改，本轮保留原值。
+- 正式 KIE_API_BASE_URL、KIE_VIDEO_MODEL 为不可回读的 sensitive；测试分别为 https://api.kie.ai、wan/2-7-text-to-video。页面默认已明确使用代码中的 Seedance 2.0 Mini，撤回将 Wan 统一为产品默认模型的建议；KIE_VIDEO_MODEL 可选，不作为页面默认模型的必填项。线上原值未改，服务地址继续独立核查。
 - KIE_AI_BASE_URL 两边均无配置。平台商业视频按源码回退官方地址；分析客户端仍可能使用上述隐藏地址，不能用官方余额查询代替正式运行时地址验证。
 - 4 个既有本地测试文件、46 项通过，仅为 mock 行为证据。COMMERCIAL_MODEL_ACCEPTANCE 保持未设置，实际模型权限、交付、结果保存及结算未提前记为通过。
-- 无线上配置或数据修改、付费任务、分支推送或部署；正式域名仍为旧部署 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV。后续先明确两项配置处理方式，再安排真实模型验收。
+- 无线上配置或数据修改、付费任务、分支推送或部署；正式域名仍为旧部署 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV。后续继续核对服务地址并安排真实模型验收；页面默认 Mini 已符合负责人确认的成本优先选择，无需功能改动。
 
 ## 后续事项
 
