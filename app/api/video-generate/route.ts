@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import {
   createVideoProvider,
-  KIE_VIDEO_MODEL,
+  DEFAULT_KIE_VIDEO_MODEL,
   DEFAULT_VIDEO_PROVIDER,
 } from "@/lib/ai/video-generator";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     const aspectRatio = parseAspectRatio(body?.aspectRatio, selectedModel);
     const resolution = typeof body?.resolution === "string" ? body.resolution : undefined;
     const negativePrompt = typeof body?.negativePrompt === "string" ? body.negativePrompt : undefined;
-    const model = selectedModel?.kieModelId || KIE_VIDEO_MODEL;
+    const model = selectedModel?.kieModelId || DEFAULT_KIE_VIDEO_MODEL;
 
     const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { allowPaidPlatformKey: false });
     if (!keyAccess.apiKey || (commercialEnabled && keyAccess.source !== "user")) {

@@ -50,6 +50,7 @@
 - 验证：ReferenceVideoComposer.tsx 的 defaultGenerationModelId 和 model 状态初始化均为 Mini，页面提交显式 model 给服务端，平台生成保存报价模型快照。底层 video-provider.ts 的环境变量/Wan 兜底不等同于此页面默认；生成接口的 auto 路由也与显式默认选择分别看待。
 - 替代方案：将页面改成 Wan，或把模型默认作为必须设置的环境变量；均与负责人确认的产品默认及现有页面行为不符，不采用。
 - 后果：页面默认无需功能修复，不增加线上变更或额外测试部署；记录修正后由代码审查与文档 diff 核对验证，不将只读配置检查扩大为模型/路由重构，也不声称 Mini 在所有配置下都绝对最低价。
+- 后续新增要求：负责人允许删除备用配置或改成 Fast，实际采用代码常量 Fast 并删除该处环境覆盖，见 [ADR 0041](0041-code-managed-video-fallback-seedance-fast.md)。本节关于 Wan/环境变量的内容保留为调整前核查背景，页面 Mini 默认仍保留。
 
 ## 官方依据（余额接口）
 

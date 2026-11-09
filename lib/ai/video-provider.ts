@@ -62,7 +62,7 @@ export async function getUserProviderApiKey(
 
 // ============ Kie.ai Provider ============
 
-export const KIE_VIDEO_MODEL = process.env.KIE_VIDEO_MODEL || "wan/2-7-text-to-video";
+export const DEFAULT_KIE_VIDEO_MODEL = "bytedance/seedance-2-fast";
 
 export class KieVideoProvider implements VideoProvider {
   readonly name = "kie" as const;
@@ -78,7 +78,7 @@ export class KieVideoProvider implements VideoProvider {
       duration: input.duration,
       resolution: input.resolution,
       negativePrompt: input.negativePrompt,
-      model: input.model || KIE_VIDEO_MODEL,
+      model: input.model || DEFAULT_KIE_VIDEO_MODEL,
       aspectRatio: input.aspectRatio,
     }, this.apiKey);
 
