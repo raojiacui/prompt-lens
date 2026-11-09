@@ -1,12 +1,14 @@
 # ADR 0048：先准备可执行的上线观察与故障操作单
 
 - 日期：2026-11-09
-- 状态：操作单编写及源码核对完成；人工观察安排待负责人确认，实际业务、邮件和调度验收未执行。
+- 状态：操作单完成；经负责人提醒，已核实 main 的 GitHub Actions 日志邮件巡检启用且最近运行成功。V2 缺少对应工作流及脚本，切换默认分支前须补齐；实时覆盖及 Fly 失联告警仍未验收。
 - 关联：ADR 0031、0032、0037、0046、0047；上线记录第 018 项。
 
 ## 背景
 
 负责人要求继续上线准备。现有任务详情、Web 日志、Worker 调度状态及业务复核邮件可用于定位问题，但源码没有已验证的独立调度失联告警。需要明确每个入口能证明什么，以及遇到故障时先保存哪些证据，避免重复付费请求或误判登录/页面同步失败为后台失败。
+
+后续负责人指出已有每半小时扫描 Vercel 日志的机制。初次核查只看当前 V2，漏看 main 分支的外部 GitHub Actions 巡检，不应据此让负责人在“人工观察”和“从零新增自动提醒”之间二选一。下方补充为当前核查结论；原操作单未执行的业务验收状态继续保留。
 
 ## 决策
 
@@ -28,3 +30,14 @@
 - 查阅 Vercel Runtime Logs、Instant Rollback 及 Fly logs 官方文档，操作单附对应来源；未操作平台回退或改变发布规则。
 - 操作单已区分静态准备和真实验收，所有验收模板保持未执行；首小时人工观察及独立告警选择仍待负责人确认，不能将本项完成视为整体上线条件已通过。
 - 本轮仅文档变更，执行差异/格式检查并本地提交；无需构建应用或触发测试部署。不改生产数据、线上配置、自动化、Worker、GitHub 分支或正式部署，不发送邮件或请求付费模型。
+
+## 修正：复用已有 GitHub Actions 日志邮件巡检
+
+- 已在 main 的 75eb611f8759745ec743818bce24350691d6ab8d 核实 .github/workflows/vercel-log-email-monitor.yml、scripts/vercel-log-report.mjs、tests/vercel-log-report.test.mjs 及 docs/operations/vercel-log-email-monitor.md。操作文档仍写每天两次，已经过时；当前工作流实际安排每小时第 7、37 分钟执行，回看执行时点前 30 分钟。
+- 监控固定正式项目 prj_LA38e0saqqVw1OkQ95AyoMx5vjIV / production，查询 error/fatal 和 HTTP 5xx；有可操作错误或采集失败时通过 SMTP 发摘要，无错误则静默。不检查 Fly 应用日志，也没有“没有任何新日志即告警”的失联判断。
+- GitHub 工作流 ID 394138210 当前 state=active；8 项所需 Secret 名称存在。只读取名称及更新时间，没有读取 Secret 值，不能据此确认 ALERT_EMAIL_TO 的实际收件地址。
+- 最近一次 [运行 42599323948](https://github.com/raojiacui/prompt-lens/actions/runs/42599323948)为 schedule/main，2026-11-09 18:13:40 开始、18:14:06 完成（Asia/Shanghai），采集和邮件处理步骤均 success。success 可能为静默完成，不能直接证明本次发送了邮件或邮箱已收到。
+- 最近四次创建时间分别为 11 月 9 日 18:13、10:33、06:46、02:45（Asia/Shanghai），均 success。实际间隔明显超过 30 分钟，说明配置周期不等于当前按时覆盖；仅回看最近 30 分钟会有未覆盖时段。本次未确定延迟原因，不归因为某个 GitHub 故障，也未改为越过 Vercel 保留期的长窗口。
+- 本地 HEAD 及 origin/prompt-lens-V2 均没有上述工作流及配套脚本。GitHub [schedule 官方说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)要求定时工作流来自默认分支；按 ADR 0031 将默认分支改成 V2 前，必须先迁移工作流、脚本及测试并验证，避免切换后丢失巡检。该实际缺口列为发布前待办，不宣称已经迁移。
+- 无需重新从零搭建一套相同 Vercel 邮件巡检。撤回先前二选一问题；先保留并迁移现有方案，再分别确认调度延迟/覆盖、真实邮件通道及 Fly 故障范围。人工观察仍是发布窗口的补充建议，不替代已有巡检。
+- 本轮只读 GitHub 工作流、运行/步骤及 Secret 元数据并修正文档；没有触发 workflow_dispatch、重跑、发测试邮件、修改自动化或发布。

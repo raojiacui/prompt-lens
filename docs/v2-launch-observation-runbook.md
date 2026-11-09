@@ -1,7 +1,7 @@
 # V2 上线观察与故障处理操作单
 
 - 整理日期：2026-11-09。
-- 状态：操作单已完成源码核对；以下为待负责人确认和发布后执行的安排，当前未部署、未配置独立自动告警、未进行故障演练。
+- 状态：操作单已完成源码核对；已确认 main 上存在启用的 GitHub Actions Vercel 日志邮件巡检，V2 迁移及覆盖验证待完成。以下发布观察仍未执行，未进行故障演练。
 - 关联：[上线过程记录](v2-launch-process.md)、[ADR 0048](decisions/0048-launch-observation-and-incident-runbook.md)。
 
 ## 观察入口
@@ -27,6 +27,8 @@ fly machine list --app prompt-lens-ffmpeg-worker --json
 ## 建议的发布后观察顺序
 
 这是人工执行建议，不是已启动的定时监控，不产生新的监控订阅。
+
+已有云端日志巡检另行运行：main 的 Monitor Vercel production errors 按每小时第 7、37 分钟配置，查询正式项目最近 30 分钟 error/fatal/5xx，有错误或查询失败时发邮件，无错误静默。最近成功运行见 [运行记录](https://github.com/raojiacui/prompt-lens/actions/runs/42599323948)。实际最近几次相隔数小时，尚不能认定稳定半小时覆盖；不检查 Fly 日志或无日志失联。V2 当前缺少工作流及配套脚本，切换 GitHub 默认分支前必须补齐并验证。详见 [ADR 0048 修正](decisions/0048-launch-observation-and-incident-runbook.md)。
 
 1. **正式 Web 切换后立即**：记录域名对应的部署 ID 和 Git SHA，确认 Google/GitHub、邮箱验证码、旧会话及工作台访问。实际验证码邮件测试随正常验收执行，本次没有发邮件。
 2. **恢复 Worker 调度时**：按 ADR 0037/0046 恢复正式回调，核对真实鉴权及返回结果。启动后约 1 秒可能开始扫描，已有测试订单、复核及清理候选会进入现有规则，不能当作空机器操作。
@@ -87,4 +89,4 @@ Worker 健康快照中的 lastSuccessAt、lastStatus、consecutiveFailures 等�
 | 业务复核邮件实际送达 | 待填 | 待填 | 待填 | 未执行 |
 | 每日 Cron / 内容清理 / 样例保护 | 待填 | 待填 | 待填 | 未执行 |
 
-当前仅有任务可视化、日志和业务复核邮件机制的源码及配置证据。独立的调度失联自动告警尚未配置或验收；人工观察建议须由负责人确认并实际安排，不能用本操作单代替值守或称为全天自动监控。
+现有能力包括任务可视化、日志、业务复核邮件，以及 main 上独立运行的 GitHub Actions Vercel 日志邮件巡检。当前 V2 缺少该巡检文件、实际定时覆盖存在缺口，Fly 日志和无日志失联未覆盖。先迁移并验证现有方案；人工观察作为发布窗口的补充建议，仍须实际安排，不能把操作单或工作流 active 状态称为全天监控已验收。
