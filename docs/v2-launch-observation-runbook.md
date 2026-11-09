@@ -1,7 +1,7 @@
 # V2 上线观察与故障处理操作单
 
 - 整理日期：2026-11-09。
-- 状态：操作单已完成源码核对；main 上既有 GitHub Actions Vercel 日志邮件巡检已确认，V2 文件迁移本地验证完成，发布证据见 ADR 0049。切换后的 schedule、覆盖验证和下列发布观察仍未执行。
+- 状态：操作单已完成源码核对；main 上既有 GitHub Actions Vercel 日志邮件巡检已确认，V2 文件迁移已验证并推送，Git 测试部署通过，见 ADR 0049。切换后的 schedule、覆盖验证和下列发布观察仍未执行。
 - 关联：[上线过程记录](v2-launch-process.md)、[ADR 0048](decisions/0048-launch-observation-and-incident-runbook.md)。
 
 ## 观察入口
@@ -28,7 +28,7 @@ fly machine list --app prompt-lens-ffmpeg-worker --json
 
 这是人工执行建议，不是已启动的定时监控，不产生新的监控订阅。
 
-已有云端日志巡检另行运行：main 的 Monitor Vercel production errors 按每小时第 7、37 分钟配置，查询正式项目最近 30 分钟 error/fatal/5xx，有错误或查询失败时发邮件，无错误静默。最近成功运行见 [运行记录](https://github.com/raojiacui/prompt-lens/actions/runs/42599323948)。实际最近几次相隔数小时，尚不能认定稳定半小时覆盖；不检查 Fly 日志或无日志失联。V2 迁移本地验证完成，推送及部署证据见 [ADR 0049](decisions/0049-migrate-existing-log-monitor-to-v2.md)；切换默认分支后确认 schedule 的实际来源及运行情况。
+已有云端日志巡检另行运行：main 的 Monitor Vercel production errors 按每小时第 7、37 分钟配置，查询正式项目最近 30 分钟 error/fatal/5xx，有错误或查询失败时发邮件，无错误静默。最近成功运行见 [运行记录](https://github.com/raojiacui/prompt-lens/actions/runs/42599323948)。实际最近几次相隔数小时，尚不能认定稳定半小时覆盖；不检查 Fly 日志或无日志失联。V2 迁移已验证、推送并核验 Git 测试部署，见 [ADR 0049](decisions/0049-migrate-existing-log-monitor-to-v2.md)；切换默认分支后确认 schedule 的实际来源及运行情况。
 
 1. **正式 Web 切换后立即**：记录域名对应的部署 ID 和 Git SHA，确认 Google/GitHub、邮箱验证码、旧会话及工作台访问。实际验证码邮件测试随正常验收执行，本次没有发邮件。
 2. **恢复 Worker 调度时**：按 ADR 0037/0046 恢复正式回调，核对真实鉴权及返回结果。启动后约 1 秒可能开始扫描，已有测试订单、复核及清理候选会进入现有规则，不能当作空机器操作。

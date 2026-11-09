@@ -1,7 +1,7 @@
 # ADR 0049：将既有正式日志邮件巡检迁入 V2
 
 - 日期：2026-11-09
-- 状态：本地迁移与验证完成，待推送及 Git 测试部署核验；默认分支切换后的 schedule 运行和邮件实际送达仍待验收。
+- 状态：本地迁移、验证、GitHub V2 推送及 Git 测试部署核验完成；默认分支切换后的 schedule 运行和邮件实际送达仍待验收。
 - 关联：ADR 0031、0048；上线记录第 019 项。
 
 ## 背景
@@ -38,3 +38,12 @@
 - 最近计划运行相隔数小时，仅查询最近 30 分钟存在覆盖缺口；调度原因及是否需要更可靠的触发来源继续保留待办，不在本轮引入新平台或费用。
 - 仍不覆盖 Fly 独立日志或无新日志的失联场景。SMTP 接受、用户实际收到及巡检自身失败告警分别验证，不提前记录为通过。
 - 本次推送包含此前已本地提交的上线记录及旧密钥兼容测试；未提交工作区无关 ADR 0001 修改或 R2 辅助脚本。远端及部署核验完成后补充执行结果。
+
+## Git 推送与部署核验
+
+- 功能提交 [31e99f05fe57ef9566bec77d399b20c61505b4b2](https://github.com/raojiacui/prompt-lens/commit/31e99f05fe57ef9566bec77d399b20c61505b4b2) 先完成本地验证及提交，再推送 origin/prompt-lens-V2；远端实读 SHA 一致，GitHub 固定提交的工作流文件已确认存在。
+- 2026-11-09 23:43（Asia/Shanghai），测试域名 prompt-lens-v2-test.vercel.app 对应 dpl_3sNpkX11WoxMV7EA7frB78hHrnbo（READY）。来源为 git / GitHub prompt-lens-V2，gitSource.sha 和 githubCommitSha 均为上述功能提交，未通过 CLI 上传或手动提升。
+- 匿名只读检查：/login=200、/api/auth/ok=200 且认证健康正文正常、/samples=307 到登录页，符合邀请白名单；没有以此宣称完整业务验收通过。
+- 迁移前后正式域名仍为 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV，main 远端仍为 75eb611f8759745ec743818bce24350691d6ab8d，GitHub 默认分支仍为 main。未修改正式项目部署来源、环境变量、Secret、Worker 或业务数据，未发邮件。
+- GitHub Actions 在 V2 上的 schedule 接续需等待最终默认分支切换后验证。本次没有运行 V2 邮件工作流，也未解决已有调度延迟；迁移完成与实际定时覆盖分别记录。
+- 脱敏部署报告和公开页面检查留在忽略的 temp/。仅本地补充执行证据，不为文档再推送触发一次无应用变动的测试部署。
