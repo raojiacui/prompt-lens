@@ -44,8 +44,8 @@ describe("Vercel release build boundary", () => {
     expect(config.ignoreCommand.length).toBeLessThanOrEqual(256);
   });
 
-  it("pins the next V2 deployment to the tested Node major", () => {
+  it("pins the next V2 deployment to the approved Node 24 major", () => {
     const pkg = JSON.parse(readFileSync("package.json", "utf8"));
-    expect(pkg.engines.node).toBe("22.x");
+    expect(pkg.engines.node).toBe("24.x");
   });
 });

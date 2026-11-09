@@ -292,13 +292,12 @@
 ## 011：正式 V2 构建规则与 Node 版本准备
 
 - 日期：2026-11-09。
-- 状态：仓库准备、本地规则验证/构建及测试项目 Git 自动部署验证完成；正式切换未执行。
+- 状态：构建边界验证完成；负责人确认统一 Node 24，版本纠正及测试构建验证中；正式切换未执行。
 - 决策：[ADR 0042](decisions/0042-v2-build-boundary-and-node-parity.md)。
 - 仓库旧规则只允许测试项目，准备改为只放行两个指定项目的 prompt-lens-V2 / production 构建，拒绝其他项目、分支、Preview 和缺分支来源；保持正式项目当前 main 跟踪不变。
-- 当前正式项目 Node 24、测试项目 Node 22。V2 通过 engines.node=22.x 固定到已测试主版本；不修改旧 main 或旧正式部署，后续正式 V2 构建才采用此声明。
+- 正式项目当前已经使用 Node 24；负责人纠正初次固定 22 的选择，V2 通过 engines.node=24.x 声明使用 24，并将测试项目设置同步到 24。旧 main 和旧正式部署保持不变，后续正式 V2 沿用 24。
 - 本项只为最终发布准备条件，不切换 GitHub 默认分支、正式跟踪分支或正式域名，不执行生产数据库/Worker/支付操作。
-- 已完成 20 项本地构建规则/Node 声明检查及本地生产构建；本机 Node 24 验证不冒充 Node 22 运行验证，后续核对测试项目的 Node 22 Git 构建及正式域名基线。
-- 15:08 已核对测试 Git 部署 dpl_7Mnebb8EXA8vy2qfitNwZEk946Ui 为 READY，固定测试域名与远端 bda7fc0f5a81400aa44c3d13476281fb865e055e 一致，构建配置为 Node 22.x；正式项目仍 main/Node 24，正式域名仍指向 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV。以后发布 V2 时才由 engines 声明采用 Node 22。
+- 首轮已完成 20 项本地检查及 Node 24.13.0 上的本地生产构建。15:08 测试 Git 部署 dpl_7Mnebb8EXA8vy2qfitNwZEk946Ui 为 READY，SHA=bda7fc0f5a81400aa44c3d13476281fb865e055e、Node 22；保留为历史快照，后续以 Node 24 纠正结果为准。正式域名仍为 dpl_AhKmkGrgiKoL25A8KfS8jcLGcBAV。
 - 后续继续数据库连接 TLS 与备份/恢复准备，旧用户/权益兼容及运维事项；本项通过不代表这些项目或模型服务待验证项已通过。
 
 ## 后续事项
