@@ -1,7 +1,7 @@
 # ADR 0048：先准备可执行的上线观察与故障操作单
 
 - 日期：2026-11-09
-- 状态：操作单完成；经负责人提醒，已核实 main 的 GitHub Actions 日志邮件巡检启用且最近运行成功。V2 缺少对应工作流及脚本，切换默认分支前须补齐；实时覆盖及 Fly 失联告警仍未验收。
+- 状态：操作单完成；经负责人提醒，已核实 main 的 GitHub Actions 日志邮件巡检启用且最近运行成功。负责人随后授权 V2 迁移，本地已补齐并验证，发布结果见 ADR 0049；实时覆盖及 Fly 失联告警仍未验收。
 - 关联：ADR 0031、0032、0037、0046、0047；上线记录第 018 项。
 
 ## 背景
@@ -41,3 +41,4 @@
 - 本地 HEAD 及 origin/prompt-lens-V2 均没有上述工作流及配套脚本。GitHub [schedule 官方说明](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule)要求定时工作流来自默认分支；按 ADR 0031 将默认分支改成 V2 前，必须先迁移工作流、脚本及测试并验证，避免切换后丢失巡检。该实际缺口列为发布前待办，不宣称已经迁移。
 - 无需重新从零搭建一套相同 Vercel 邮件巡检。撤回先前二选一问题；先保留并迁移现有方案，再分别确认调度延迟/覆盖、真实邮件通道及 Fly 故障范围。人工观察仍是发布窗口的补充建议，不替代已有巡检。
 - 本轮只读 GitHub 工作流、运行/步骤及 Secret 元数据并修正文档；没有触发 workflow_dispatch、重跑、发测试邮件、修改自动化或发布。
+- 后续迁移授权与执行另记 [ADR 0049](0049-migrate-existing-log-monitor-to-v2.md)，上文“V2 缺少文件”为迁移前快照；切换后的 schedule 实际运行仍须另行验收。
