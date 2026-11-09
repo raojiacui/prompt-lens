@@ -13,7 +13,8 @@ import { completeTrialAnalysis, getUserTrialUsage, releaseTrialAnalysis, reserve
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 
 const client = new PGlite();
-isolated.db = drizzle(client, { schema });
+const testDb = drizzle(client, { schema });
+isolated.db = testDb;
 const userId = randomUUID();
 let reservationId: string;
 
@@ -30,6 +31,26 @@ describe("trial reservation", () => {
   it("does not count a completed BYOK project as a trial", async () => {
     await client.query('INSERT INTO projects (user_id, title, status) VALUES ($1, $2, $3)', [userId, "Own KIE key", "ready"]);
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0, remaining: 2 });
+  });
+
+  it("grants existing accounts two V2 trials without importing legacy usage", async () => {
+    const existingUserId = randomUUID();
+    await client.query('INSERT INTO "user" (id, email, email_verified, created_at) VALUES ($1, $2, true, $3)',
+      [existingUserId, `${existingUserId}@example.com`, new Date("2025-01-01")]);
+    for (const metadata of [{ apiKeySource: "platform" }, { billingMode: "trial" }]) {
+      await testDb.insert(schema.operationLogs).values({
+        userId: existingUserId, action: "analysis.complete", resourceType: "video", metadata,
+      });
+    }
+    expect(await getUserTrialUsage(existingUserId)).toMatchObject({ limit: 2, used: 0, remaining: 2 });
+    for (const task of ["v2-first", "v2-second"]) {
+      const reservation = await reserveTrialAnalysis(existingUserId, task);
+      await completeTrialAnalysis(reservation);
+    }
+    expect(await getUserTrialUsage(existingUserId)).toMatchObject({ used: 2, remaining: 0 });
+    await expect(reserveTrialAnalysis(existingUserId, "v2-third")).rejects.toBeInstanceOf(TrialQuotaError);
+    expect(await getUserTrialUsage(existingUserId)).toMatchObject({ used: 2, remaining: 0 });
+    expect((await client.query("SELECT id FROM operation_logs WHERE user_id = $1", [existingUserId])).rows).toHaveLength(2);
   });
 
   it.each([

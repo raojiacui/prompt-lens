@@ -1,4 +1,4 @@
-import { and, count, eq, lt, sql } from "drizzle-orm";
+import { and, eq, lt, sql } from "drizzle-orm";
 import { commercialTasks, db, operationLogs, trialAnalysisReservations, trialAnalysisUsage, user } from "@/lib/db";
 import { randomUUID } from "node:crypto";
 import { isAdminProfile } from "@/lib/auth";
@@ -40,15 +40,8 @@ export async function getUserTrialUsage(userId: string) {
   const usage = await db.query.trialAnalysisUsage.findFirst({ where: eq(trialAnalysisUsage.userId, userId) });
   if (usage) return { limit, used: usage.used, remaining: Math.max(0, limit - usage.used), isAdmin: false };
 
-  const [trialRows] = await db.select({ count: count() }).from(operationLogs).where(and(
-    eq(operationLogs.userId, userId),
-    eq(operationLogs.action, "analysis.complete"),
-    sql`${operationLogs.metadata}->>'billingMode' = 'trial'`,
-  ));
-
-  const used = trialRows?.count || 0;
-
-  return { limit, used, remaining: Math.max(0, limit - used), isAdmin: false };
+  // V2 grants every account a fresh allowance, independent of pre-V2 analysis logs.
+  return { limit, used: 0, remaining: limit, isAdmin: false };
 }
 
 export async function reserveTrialAnalysis(userId: string, taskKey: string = randomUUID()) {
