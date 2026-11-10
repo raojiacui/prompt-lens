@@ -7,7 +7,7 @@ describe("KIE analysis models", () => {
   it("locks the free trial to KIE Gemini 3.8 Flash", () => {
     expect(FREE_TRIAL_ANALYSIS_PROVIDER).toBe("kie");
     expect(FREE_TRIAL_ANALYSIS_MODEL).toBe("gemini-3-8-flash-openai");
-    expect(getModelById("analysis-gemini-3-8-flash")?.kieModelId).toBe(FREE_TRIAL_ANALYSIS_MODEL);
+    expect(getModelById("analysis-gemini-3-8-flash")?.providerModelId).toBe(FREE_TRIAL_ANALYSIS_MODEL);
   });
 
   it("uses the current KIE model for automatic analysis", () => {

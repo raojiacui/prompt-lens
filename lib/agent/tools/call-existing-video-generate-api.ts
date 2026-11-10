@@ -8,14 +8,14 @@ const inputSchema = z.object({
   negativePrompt: z.string().max(2000).optional(),
   duration: z.number().int().min(3).max(15).optional(),
   resolution: z.string().max(20).optional(),
-  provider: z.enum(["kie"]).optional(),
+  provider: z.enum(["infistar", "kie"]).optional(),
 });
 
 /**
  * call_existing_video_generate_api —— 加分项工具
  *
  * 复用项目已有的视频生成 Provider 抽象（lib/ai/video-provider.ts）：
- *   - 走 getUserProviderApiKey / createVideoProvider，不另起调用逻辑
+ *   - 走 getUserCredential / createVideoProvider，不另起调用逻辑
  *   - 复用 checkRateLimit，遵守与 /api/video-generate 相同的速率限制
  *   - 无 API key 时不报错中断，而是返回一个"去视频生成标签页"的 next action
  *
@@ -25,7 +25,7 @@ const inputSchema = z.object({
 export const callExistingVideoGenerateApiTool: ToolDefinition = {
   name: "call_existing_video_generate_api",
   description:
-    "Create a real video-generation task using the existing Kie.ai provider abstraction (reuses API key lookup and rate limits). Only use when the user explicitly asks to generate a video. If no API key is configured, returns a next-action instead of failing.",
+    "Create a real video-generation task using the existing provider abstraction (reuses API key lookup and rate limits). Only use when the user explicitly asks to generate a video. If no API key is configured, returns a next-action instead of failing.",
   inputSchema,
   async execute(raw, ctx) {
     const parsed = inputSchema.safeParse(raw);
@@ -44,22 +44,22 @@ export const callExistingVideoGenerateApiTool: ToolDefinition = {
     try {
       const [providerMod, keyMod] = await Promise.all([
         import("@/lib/ai/video-provider"),
-        import("@/lib/ai/video-generator"),
+        import("@/lib/byok/credentials"),
       ]);
-      const providerName = parsed.data.provider || providerMod.DEFAULT_VIDEO_PROVIDER;
-      const userKey = await keyMod.getUserProviderApiKey(ctx.userId, providerName);
-      // Agent generation has no paid quote/reservation flow, so it must be BYOK-only.
-      const effectiveKey = userKey;
+      const credential = await keyMod.getUserCredential(ctx.userId, parsed.data.provider);
+      const providerName = credential?.provider || parsed.data.provider || providerMod.DEFAULT_VIDEO_PROVIDER;
+      // Agent generation is BYOK-only and must never use paid platform keys.
+      const effectiveKey = credential?.apiKey;
 
       if (!effectiveKey) {
         const nextAction = {
           created: false,
           reason: "no_api_key",
           nextAction: {
-            label: "Configure Kie API key & generate",
+            label: "Configure API key & generate",
             action: "open_tab",
             tab: "settings",
-            description: "Add a Kie.ai API key in Settings, then generate from the Video Generate tab.",
+            description: "Add an Infistar or KIE API key in Settings, then generate from the Video Generate tab.",
           },
         };
         await ctx.saveArtifact({ type: "other", title: "Video Generation (needs API key)", content: nextAction, metadata: {} });
@@ -72,6 +72,14 @@ export const callExistingVideoGenerateApiTool: ToolDefinition = {
         negativePrompt: parsed.data.negativePrompt,
         duration: parsed.data.duration ?? 5,
         resolution: parsed.data.resolution ?? "720p",
+      });
+      const { db, videoGeneration } = await import("@/lib/db");
+      const { generationKeyFingerprint } = await import("@/lib/billing/generation-key");
+      await db.insert(videoGeneration).values({
+        userId: ctx.userId, taskId: result.taskId, provider: providerName,
+        prompt: parsed.data.prompt, model: providerName === "infistar" ? "doubao-seedance-2.0-mini" : "bytedance/seedance-2-fast",
+        duration: parsed.data.duration ?? 5, resolution: parsed.data.resolution ?? "720p", status: "pending",
+        rawResponse: { ...(result.raw as Record<string, unknown>), billing: { provider: providerName, keySource: "user", keyFingerprint: generationKeyFingerprint(effectiveKey), chargedCredits: 0 } },
       });
 
       const output = {

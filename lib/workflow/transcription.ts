@@ -143,7 +143,7 @@ export async function transcribeMediaWithKie(input: KieTranscriptionInput): Prom
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: selected.model.kieModelId,
+      model: selected.model.providerModelId,
       input: {
         audio_url: mediaUrl,
         video_url: mediaUrl,
@@ -159,7 +159,7 @@ export async function transcribeMediaWithKie(input: KieTranscriptionInput): Prom
   if (!taskId) throw new Error("KIE transcription response did not include taskId");
 
   if (input.poll === false) {
-    return { provider: "kie", modelId: selected.model.kieModelId, taskId, recordId, status: "submitted", segments: [], raw: createPayload };
+    return { provider: "kie", modelId: selected.model.providerModelId, taskId, recordId, status: "submitted", segments: [], raw: createPayload };
   }
 
   const deadline = Date.now() + (input.timeoutMs || DEFAULT_TIMEOUT_MS);
@@ -169,7 +169,7 @@ export async function transcribeMediaWithKie(input: KieTranscriptionInput): Prom
     const status = statusFrom(latest);
     const segments = collectSegments(latest).sort((a, b) => a.start - b.start);
     if (segments.length || status === "success" || status === "completed") {
-      return { provider: "kie", modelId: selected.model.kieModelId, taskId, recordId, status: "completed", segments, raw: latest };
+      return { provider: "kie", modelId: selected.model.providerModelId, taskId, recordId, status: "completed", segments, raw: latest };
     }
     if (status === "fail" || status === "failed" || status === "error") throw new Error("KIE transcription failed");
     await new Promise((resolve) => setTimeout(resolve, 2500));

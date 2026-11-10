@@ -1,5 +1,7 @@
 "use client";
 
+import type { UserProvider } from "@/lib/ai/providers";
+
 import type { GenerationVariant } from "@/lib/reference-video/types";
 import {
   ChevronDown,
@@ -84,13 +86,12 @@ const maxKieReferenceImageDimension = 6000;
 
 function generationOption(entry: ModelRegistryEntry) {
   return {
-    id: entry.kieModelId,
-    label: generationDisplayName(entry.kieModelId),
+    id: entry.providerModelId,
+    label: generationDisplayName(entry.providerModelId),
     supportedDurations: (entry.durationOptions || [0]).map(s => `${s}s` as Duration),
     supportedAspectRatios: (entry.aspectRatios || ["16:9"]) as AspectRatio[],
   };
 }
-const models = generationChoices().map(generationOption);
 
 const initialVariants: GenerationVariant[] = [
   {
@@ -315,9 +316,27 @@ export function ReferenceVideoComposer({
   const [error, setError] = useState("");
   const zh = useLocale() === "zh";
   const [commercialEnabled, setCommercialEnabled] = useState<boolean | null>(null);
-  const [creditStatus, setCreditStatus] = useState<{ balance: number; commercial?: { credits?: number; heldCredits?: number } } | null>(null);
+  const [creditStatus, setCreditStatus] = useState<{ balance: number; byokProvider?: UserProvider; commercial?: { credits?: number; heldCredits?: number } } | null>(null);
   const [balanceRefresh, setBalanceRefresh] = useState(0);
   const [generationPayer, setGenerationPayer] = useState("platform");
+  const activeProvider = generationPayer === "byok" ? creditStatus?.byokProvider || "kie" : "kie";
+  const [infistarModelIds, setInfistarModelIds] = useState<string[] | null>(null);
+  const [modelLoadError, setModelLoadError] = useState("");
+  const models = useMemo(() => generationChoices(activeProvider)
+    .filter(entry => activeProvider !== "infistar" || !infistarModelIds || infistarModelIds.includes(entry.providerModelId)).map(generationOption), [activeProvider, infistarModelIds]);
+  useEffect(() => {
+    if (activeProvider !== "infistar") return;
+    let cancelled = false;
+    setInfistarModelIds(null); setModelLoadError("");
+    void fetch("/api/models?category=video_generation&provider=infistar", { cache: "no-store" })
+      .then(async response => { const body = await response.json(); if (!response.ok) throw new Error(body.error || "Model list unavailable"); return body; })
+      .then(body => { if (!cancelled) setInfistarModelIds(body.models.map((entry: ModelRegistryEntry) => entry.providerModelId)); })
+      .catch(error => { if (!cancelled) { setInfistarModelIds([]); setModelLoadError(error.message); } });
+    return () => { cancelled = true; };
+  }, [activeProvider]);
+  useEffect(() => {
+    if (!models.some(item => item.id === model)) setModel(models[0]?.id || defaultGenerationModelId);
+  }, [models, model]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submissionInFlight = useRef(false);
   const commercialBatchRef = useRef<GenerationSubmissionBatch | null>(null);
@@ -1138,6 +1157,7 @@ export function ReferenceVideoComposer({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             payer: "byok",
+            provider: activeProvider,
             userPrompt: promptWithInlineReferences,
             prompt: [
               `Selected public model: ${model}.`,
@@ -1685,7 +1705,7 @@ export function ReferenceVideoComposer({
               <button
                 type="button"
                 onClick={() => void createVideo()}
-                disabled={isRunning || (!pendingConfirmation && (!resolvedModel || (generationPayer === "platform" && (commercialEnabled !== true || creditPreview.state === "unavailable"))))}
+                disabled={isRunning || (!pendingConfirmation && (!resolvedModel || (activeProvider === "infistar" && (!infistarModelIds?.length || Boolean(modelLoadError))) || (generationPayer === "platform" && (commercialEnabled !== true || creditPreview.state === "unavailable"))))}
                 className="flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-lg bg-[#D97757] px-2 py-1 text-sm font-semibold leading-tight text-white transition-colors hover:bg-[#C96848] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 <WandSparkles className="h-5 w-5 shrink-0" />
@@ -1695,7 +1715,7 @@ export function ReferenceVideoComposer({
                   : t("create.button") || "Generate Video"}
                 {!isRunning && !pendingConfirmation && <span aria-live="polite">· {generationCostLabel}</span>}</span>
               </button>
-              <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning || pendingConfirmation} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform" disabled={commercialEnabled === false}>{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? "自带 Key" : "Own key"}</option></select>
+              <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning || pendingConfirmation} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform" disabled={commercialEnabled === false}>{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? `自带 Key · ${creditStatus?.byokProvider === "infistar" ? "Infistar" : "KIE"}` : `Own key · ${creditStatus?.byokProvider === "infistar" ? "Infistar" : "KIE"}`}</option></select>
               </div>
             </div>
           </section>
@@ -1763,6 +1783,7 @@ export function ReferenceVideoComposer({
           </div>
         </div>
       </div>
+      {modelLoadError && <p role="alert" className="mx-auto max-w-[1680px] px-4 pb-4 text-sm text-destructive">{modelLoadError}</p>}
       <div className="mx-auto max-w-[1680px] px-4 pb-8 lg:px-6"><GenerationHistory refreshKey={variants.map(variant => `${variant.providerTaskId}:${variant.status}`).join("|")} /></div>
     </main>
   );

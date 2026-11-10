@@ -27,10 +27,10 @@ export function buildCommercialGenerationPayload(body: Record<string, unknown>, 
   if (images.length > 9 || [...images, ...(video ? [video] : [])].some((url) => { try { const u = new URL(url); return u.protocol !== "https:" || Boolean(u.username || u.password); } catch { return true; } })) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
   const requested = typeof body.model === "string" ? body.model : "";
   const registry = requested && requested !== "auto" ? getModelById(requested) : undefined;
-  if (requested && requested !== "auto" && (!registry?.enabled || !["video_generation", "video_edit"].includes(registry.category))) throw new Error("PAID_MODEL_NOT_VERIFIED");
-  const selected = registry?.kieModelId || (video ? "bytedance/seedance-2-fast" : images.length ? "wan/2-6-image-to-video" : "wan/2-6-text-to-video");
+  if (requested && requested !== "auto" && (!registry?.enabled || registry.provider !== "kie" || !["video_generation", "video_edit"].includes(registry.category))) throw new Error("PAID_MODEL_NOT_VERIFIED");
+  const selected = registry?.providerModelId || (video ? "bytedance/seedance-2-fast" : images.length ? "wan/2-6-image-to-video" : "wan/2-6-text-to-video");
   const entry = resolveGenerationModel(selected, { hasImages: images.length > 0, hasVideo: Boolean(video) });
-  const model = entry.kieModelId;
+  const model = entry.providerModelId;
   const duration = Number(body.duration);
   const resolution = typeof body.quality === "string" ? body.quality.toLowerCase() : "720p";
   if (prompt.length < 3 || prompt.length > 5000 || !Number.isSafeInteger(duration)) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");

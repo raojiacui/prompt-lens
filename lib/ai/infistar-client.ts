@@ -45,8 +45,8 @@ export async function infistarJson(path: string, apiKey: string, body?: unknown,
   try {
     response = await fetch(`${infistarBaseUrl()}${path}`, {
       method: body === undefined ? "GET" : "POST", cache: "no-store", redirect: "error", signal: AbortSignal.timeout(timeoutMs),
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      headers: { Authorization: `Bearer ${apiKey}`, ...(body instanceof FormData ? {} : { "Content-Type": "application/json" }) },
+      ...(body === undefined ? {} : { body: body instanceof FormData ? body : JSON.stringify(body) }),
     });
   } catch (error) { throw new InfistarRequestError("Infistar 请求中断，请先核对任务状态再重试。", undefined, body === undefined ? "not_sent" : "unknown", error); }
   const payload = await response.json().catch(() => null);

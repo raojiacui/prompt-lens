@@ -1,7 +1,9 @@
+import { createProviderVideo, getProviderVideoStatus } from "@/lib/ai/video-client";
+import { isUserProvider, type UserProvider } from "@/lib/ai/providers";
 import { NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
-import { createKieVeoGeneration, getKieVeoGenerationStatus, kieErrorResponse } from "@/lib/reference-video/kie-veo";
+import { kieErrorResponse } from "@/lib/reference-video/kie-veo";
 import { db, projects, sceneVersions, videoGeneration, workflowJobs } from "@/lib/db";
 import { generationKeyFingerprint, resolveGenerationStatusKey } from "@/lib/billing/generation-key";
 import { getModelById, listModels, routeModel } from "@/lib/ai/model-registry";
@@ -18,8 +20,8 @@ function durationRange(maxDuration: number) {
   return Array.from({ length: max - min + 1 }, (_, index) => min + index);
 }
 
-const VIDEO_MODELS = [...listModels("video_generation"), ...listModels("video_edit")].map((model) => ({
-  id: model.kieModelId,
+const VIDEO_MODELS = [...listModels("video_generation"), ...listModels("video_edit"), ...listModels("video_generation", "infistar")].map((model) => ({
+  id: model.providerModelId,
   category: model.category,
   supportedAspectRatios: model.aspectRatios || ["16:9"],
   supportedDurations: model.durationOptions || (model.maxDuration ? durationRange(model.maxDuration) : model.category === "video_edit" ? [0] : durationRange(10)),
@@ -29,15 +31,15 @@ function isWanVideoEditModel(modelId: string) {
   return modelId === "wan/2-7-videoedit";
 }
 
-function parseModel(value: unknown, options: { hasReferenceVideo: boolean; hasImages: boolean }): string {
+function parseModel(value: unknown, options: { hasReferenceVideo: boolean; hasImages: boolean; provider: UserProvider }): string {
   if (typeof value === "string" && value.trim() && value.trim() !== "auto") {
     const registryModel = getModelById(value.trim());
-    if (registryModel?.enabled && ["video_generation", "video_edit"].includes(registryModel.category)) return resolveGenerationModel(registryModel.kieModelId, { hasImages: options.hasImages, hasVideo: options.hasReferenceVideo }).kieModelId;
+    if (registryModel?.enabled && registryModel.provider === options.provider && ["video_generation", "video_edit"].includes(registryModel.category)) return resolveGenerationModel(registryModel.providerModelId, { hasImages: options.hasImages, hasVideo: options.hasReferenceVideo }).providerModelId;
     throw new Error("MODEL_UNAVAILABLE");
   }
 
   const routed = routeModel({
-    category: "video_generation",
+    category: "video_generation", provider: options.provider,
     priority: "balanced",
     requiredCapabilities: options.hasReferenceVideo
       ? ["text", "reference_video"]
@@ -45,7 +47,7 @@ function parseModel(value: unknown, options: { hasReferenceVideo: boolean; hasIm
         ? ["text", "reference_image"]
         : ["text"],
   });
-  return resolveGenerationModel(routed?.kieModelId || "bytedance/seedance-2-mini", { hasImages: options.hasImages, hasVideo: options.hasReferenceVideo }).kieModelId;
+  return resolveGenerationModel(routed?.providerModelId || "bytedance/seedance-2-mini", { hasImages: options.hasImages, hasVideo: options.hasReferenceVideo }).providerModelId;
 }
 
 function parseAspectRatio(value: unknown, modelId: string): string | undefined {
@@ -145,10 +147,12 @@ export async function POST(request: Request) {
     const imageUrls = hiddenReferenceImageUrl ? [hiddenReferenceImageUrl] : userImageUrls;
     const hasReferenceVideo = Boolean(referenceVideoUrl);
     const hasImages = Boolean(imageUrls.length);
-    const model = parseModel(body?.model, { hasReferenceVideo, hasImages });
-    const useNativeVideoEdit = isWanVideoEditModel(model) && hasReferenceVideo;
-    const aspectRatio = useNativeVideoEdit ? undefined : parseAspectRatio(body?.aspectRatio, model);
-    const duration = useNativeVideoEdit ? 0 : parseDuration(body?.duration, model);
+    const keyAccess = await resolveApiKeyForFeature(auth.user.id, { allowPaidPlatformKey: false });
+    const provider = keyAccess.provider || "kie";
+    const model = parseModel(body?.model, { hasReferenceVideo, hasImages, provider });
+    const useNativeVideoEdit = (isWanVideoEditModel(model) || model === "MiniMax-H3") && hasReferenceVideo;
+    const aspectRatio = isWanVideoEditModel(model) ? undefined : parseAspectRatio(body?.aspectRatio, model);
+    const duration = isWanVideoEditModel(model) ? 0 : parseDuration(body?.duration, model);
     const resolution = typeof body?.quality === "string" ? body.quality.toLowerCase() : undefined;
     const projectId = optionalUuid(body?.projectId);
     const sceneId = optionalUuid(body?.sceneId);
@@ -169,9 +173,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Wan 2.7 Video Edit requires a reference video." }, { status: 400 });
     }
 
-    const keyAccess = await resolveApiKeyForFeature(auth.user.id, { allowPaidPlatformKey: false });
     if (!keyAccess.apiKey || (body?.payer === "byok" && keyAccess.source !== "user")) {
-      return NextResponse.json({ error: "使用自己的 Key 生成视频，需要先在设置里配置 KIE API Key。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
+      return NextResponse.json({ error: "使用自己的 Key 生成视频，需要先在设置里配置 Infistar 或 KIE API Key。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
     }
 
 
@@ -182,7 +185,7 @@ export async function POST(request: Request) {
       useNativeVideoEdit,
     });
 
-    const result = await createKieVeoGeneration({
+    const result = await createProviderVideo(provider, {
       prompt,
       imageUrls: useNativeVideoEdit ? [] : imageUrls,
       referenceVideoUrl,
@@ -192,7 +195,7 @@ export async function POST(request: Request) {
       duration,
       resolution,
       generationType: imageUrls.length ? "REFERENCE_2_VIDEO" : "TEXT_2_VIDEO",
-    }, keyAccess.apiKey);
+    }, keyAccess.apiKey, { userId: auth.user.id, projectId });
 
     const [record] = await db.insert(videoGeneration).values({
       userId: auth.user.id,
@@ -202,11 +205,11 @@ export async function POST(request: Request) {
       projectVersionId,
       prompt,
       model,
-      provider: "kie",
+      provider,
       status: "pending",
       duration,
       resolution,
-      rawResponse: { ...(result.raw as Record<string, unknown>), billing: { keySource: keyAccess.source, keyFingerprint: generationKeyFingerprint(keyAccess.apiKey), chargedCredits: 0 } },
+      rawResponse: { ...(result.raw as Record<string, unknown>), billing: { provider, keySource: keyAccess.source, keyFingerprint: generationKeyFingerprint(keyAccess.apiKey), chargedCredits: 0 } },
     }).returning();
 
 
@@ -216,7 +219,7 @@ export async function POST(request: Request) {
         sceneId,
         type: "GENERATE_VIDEO",
         status: "processing",
-        provider: "kie",
+        provider,
         modelId: model,
         externalTaskId: result.taskId,
         input: { generationId: record.id, projectVersionId, duration, aspectRatio, resolution, replacementAssetCount: userImageUrls.length, hiddenReferenceImage: Boolean(hiddenReferenceImageUrl), referenceVideoUrl, mode: hasReferenceVideo ? "reference_video_to_video" : hasImages ? "image_to_video" : "text_to_video" },
@@ -228,7 +231,7 @@ export async function POST(request: Request) {
       id: record.id,
       providerTaskId: result.taskId,
       status: "generating",
-      provider: "kie.ai",
+      provider,
       billing: { keySource: keyAccess.source, chargedCredits: 0 },
     });
   } catch (error) {
@@ -262,9 +265,10 @@ export async function GET(request: Request) {
 
     const job = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.taskId, taskId), eq(videoGeneration.userId, auth.user.id)) });
     if (!job) return NextResponse.json({ error: "Generation job not found" }, { status: 404 });
-    const apiKey = await resolveGenerationStatusKey(auth.user.id, job.rawResponse);
-    if (!apiKey) return NextResponse.json({ error: "The original KIE key is required to query this task", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
-    const status = await getKieVeoGenerationStatus(taskId, job.model || undefined, apiKey);
+    const provider = isUserProvider(job.provider) ? job.provider : "kie";
+    const apiKey = await resolveGenerationStatusKey(auth.user.id, job.rawResponse, provider);
+    if (!apiKey) return NextResponse.json({ error: "The original provider key is required to query this task", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
+    const status = await getProviderVideoStatus(provider, taskId, job.model || undefined, apiKey);
     const normalizedStatus = status.state === "success" ? "completed" : status.state === "fail" ? "failed" : "processing";
 
     if (job) {
@@ -287,7 +291,7 @@ export async function GET(request: Request) {
       }
     }
 
-    return NextResponse.json({ provider: "kie.ai", providerTaskId: status.taskId, status: status.state, videoUrl: status.videoUrl, error: status.error, raw: status.raw });
+    return NextResponse.json({ provider, providerTaskId: status.taskId, status: status.state, videoUrl: status.videoUrl, error: status.error, raw: status.raw });
   } catch (error) {
     console.error("Generation job status error:", error);
     const kieError = kieErrorResponse(error);

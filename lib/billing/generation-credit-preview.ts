@@ -11,7 +11,7 @@ export function generationCreditPreview(input: {
   let model;
   try { model = resolveGenerationModel(selected, input); }
   catch { return { state: "unavailable" }; }
-  const modelId = model.kieModelId;
+  const modelId = model.providerModelId;
   if (input.hasVideo && modelId.startsWith("bytedance/seedance-2") && (input.referenceSeconds! < 2 || input.referenceSeconds! > 15)) return { state: "unavailable" };
   if (modelId === "wan/2-7-videoedit" && (input.referenceSeconds! < 2 || input.referenceSeconds! > 10 || (input.duration !== 0 && input.duration > input.referenceSeconds!))) return { state: "unavailable" };
   if (["veo3", "veo3_fast", "veo3_lite"].includes(modelId)) {

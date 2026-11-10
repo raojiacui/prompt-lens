@@ -4,23 +4,24 @@ import {
   createVideoProvider,
   DEFAULT_KIE_VIDEO_MODEL,
   DEFAULT_VIDEO_PROVIDER,
-} from "@/lib/ai/video-generator";
+} from "@/lib/ai/video-provider";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { db, videoGeneration } from "@/lib/db";
 import { and, desc, eq } from "drizzle-orm";
 import { getModelById, routeModel, type ModelRegistryEntry } from "@/lib/ai/model-registry";
 import { resolveApiKeyForFeature } from "@/lib/billing/platform-access";
+import { generationKeyFingerprint } from "@/lib/billing/generation-key";
 import { kieErrorResponse } from "@/lib/reference-video/kie-veo";
 
 const VIDEO_GENERATE_LIMIT = { limit: 3, windowMs: 60000 };
 const MIN_VIDEO_DURATION = 4;
 
-function selectedGenerationModel(value: unknown) {
+function selectedGenerationModel(value: unknown, provider: "kie" | "infistar") {
   if (typeof value === "string" && value.trim()) {
     const model = getModelById(value.trim());
-    if (model?.category === "video_generation") return model;
+    if (model?.category === "video_generation" && model.provider === provider) return model;
   }
-  return routeModel({ category: "video_generation", priority: "balanced", requiredCapabilities: ["text"] });
+  return routeModel({ category: "video_generation", provider, priority: "balanced", requiredCapabilities: ["text"] });
 }
 
 function parseAspectRatio(value: unknown, model: ModelRegistryEntry | null | undefined) {
@@ -72,24 +73,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
     }
 
-    const provider = (body?.provider as string) || DEFAULT_VIDEO_PROVIDER;
-    if (provider !== "kie") {
-      return NextResponse.json({ error: "当前视频生成仅支持 KIE 模型" }, { status: 400 });
-    }
+    const keyAccess = await resolveApiKeyForFeature(session.user.id, { allowPaidPlatformKey: false });
+    const provider = keyAccess.provider || DEFAULT_VIDEO_PROVIDER;
 
-    const selectedModel = selectedGenerationModel(body?.model || body?.modelId);
+    const selectedModel = selectedGenerationModel(body?.model || body?.modelId, provider);
     const normalizedDuration = parseDuration(body?.duration, selectedModel);
     const aspectRatio = parseAspectRatio(body?.aspectRatio, selectedModel);
     const resolution = typeof body?.resolution === "string" ? body.resolution : undefined;
     const negativePrompt = typeof body?.negativePrompt === "string" ? body.negativePrompt : undefined;
-    const model = selectedModel?.kieModelId || DEFAULT_KIE_VIDEO_MODEL;
+    const model = selectedModel?.providerModelId || (provider === "infistar" ? "doubao-seedance-2.0-mini" : DEFAULT_KIE_VIDEO_MODEL);
 
-    const keyAccess = await resolveApiKeyForFeature(session.user.id, { allowPaidPlatformKey: false });
     if (!keyAccess.apiKey || (commercialEnabled && keyAccess.source !== "user")) {
-      return NextResponse.json({ error: "视频生成需要先在设置里配置你自己的 KIE API Key。平台不再提供视频生成额度。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
+      return NextResponse.json({ error: "视频生成需要先在设置里配置你自己的 Infistar 或 KIE API Key。平台不再提供视频生成额度。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
     }
 
 
+    if (selectedModel && selectedModel.provider !== provider) return NextResponse.json({ error: "请选择当前供应商支持的模型。" }, { status: 400 });
     const videoProvider = createVideoProvider(provider, keyAccess.apiKey);
     const result = await videoProvider.createTask({
       prompt,
@@ -112,7 +111,7 @@ export async function POST(request: NextRequest) {
         model,
         provider,
         status: "pending",
-        rawResponse: { ...(result.raw as Record<string, unknown>), billing: { keySource: keyAccess.source, chargedCredits: 0 } },
+        rawResponse: { ...(result.raw as Record<string, unknown>), billing: { provider, keySource: keyAccess.source, keyFingerprint: generationKeyFingerprint(keyAccess.apiKey), chargedCredits: 0 } },
       })
       .returning();
 
@@ -122,7 +121,7 @@ export async function POST(request: NextRequest) {
       taskId: result.taskId,
       record: records[0],
       provider,
-      billing: { keySource: keyAccess.source, chargedCredits: 0 },
+      billing: { provider, keySource: keyAccess.source, keyFingerprint: generationKeyFingerprint(keyAccess.apiKey), chargedCredits: 0 },
     });
   } catch (error: unknown) {
     console.error("[video-generate] Error:", error);

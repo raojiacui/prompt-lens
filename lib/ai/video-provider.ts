@@ -1,10 +1,10 @@
 /**
  * 视频生成 Provider 抽象层
- * 支持多 provider 扩展：Kie.ai, Runway, Pika, Luma 等
+ * 支持 KIE 与 Infistar 的独立模型和接口
  */
 
-import { getUserApiKeyForProvider } from "@/lib/byok/kie";
-import { createKieVeoGeneration, getKieVeoGenerationStatus } from "@/lib/reference-video/kie-veo";
+import { createProviderVideo, getProviderVideoStatus } from "./video-client";
+import type { UserProvider } from "./providers";
 
 // ============ 类型定义 ============
 
@@ -44,41 +44,26 @@ export interface VideoProvider {
 
 // ============ Provider 名称枚举 ============
 
-export type VideoProviderName = "kie" | "runway" | "pika" | "luma";
+export type VideoProviderName = UserProvider;
 
-// ============ 帮助函数 ============
-
-export async function getUserProviderApiKey(
-  userId: string,
-  provider: VideoProviderName
-): Promise<string | undefined> {
-  try {
-    return (await getUserApiKeyForProvider(userId, provider)) || undefined;
-  } catch (e) {
-    console.error(`[video-provider] Failed to get ${provider} API key for user:`, e);
-  }
-  return undefined;
-}
-
-// ============ Kie.ai Provider ============
+// ============ 供应商实现 ============
 
 export const DEFAULT_KIE_VIDEO_MODEL = "bytedance/seedance-2-fast";
 
-export class KieVideoProvider implements VideoProvider {
-  readonly name = "kie" as const;
+export class ConfiguredVideoProvider implements VideoProvider {
   private apiKey: string;
 
-  constructor(apiKey: string) {
+  constructor(readonly name: UserProvider, apiKey: string) {
     this.apiKey = apiKey;
   }
 
   async createTask(input: CreateVideoTaskInput): Promise<VideoTaskResult> {
-    const result = await createKieVeoGeneration({
+    const result = await createProviderVideo(this.name, {
       prompt: input.prompt,
       duration: input.duration,
       resolution: input.resolution,
       negativePrompt: input.negativePrompt,
-      model: input.model || DEFAULT_KIE_VIDEO_MODEL,
+      model: input.model || (this.name === "infistar" ? "doubao-seedance-2.0-mini" : DEFAULT_KIE_VIDEO_MODEL),
       aspectRatio: input.aspectRatio,
     }, this.apiKey);
 
@@ -86,7 +71,7 @@ export class KieVideoProvider implements VideoProvider {
   }
 
   async getStatus(taskId: string, model?: string | null): Promise<NormalizedVideoTaskStatus> {
-    const status = await getKieVeoGenerationStatus(taskId, model, this.apiKey);
+    const status = await getProviderVideoStatus(this.name, taskId, model, this.apiKey);
     if (status.state === "success") {
       return { status: status.videoUrl ? "completed" : "processing", videoUrl: status.videoUrl, raw: status.raw };
     }
@@ -100,17 +85,7 @@ export class KieVideoProvider implements VideoProvider {
 // ============ Provider 工厂 ============
 
 export function createVideoProvider(name: VideoProviderName, apiKey: string): VideoProvider {
-  switch (name) {
-    case "kie":
-      return new KieVideoProvider(apiKey);
-    // 以后扩展：
-    // case "runway":
-    //   return new RunwayVideoProvider(apiKey);
-    // case "pika":
-    //   return new PikaVideoProvider(apiKey);
-    default:
-      throw new Error(`Unsupported video provider: ${name}`);
-  }
+  return new ConfiguredVideoProvider(name, apiKey);
 }
 
 // 默认 provider

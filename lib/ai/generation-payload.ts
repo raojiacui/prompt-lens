@@ -10,7 +10,7 @@ export type MarketGenerationInput = {
 export function buildMarketGenerationPayload(request: MarketGenerationInput, images: string[] = []) {
   const video = request.referenceVideoUrl;
   const entry = resolveGenerationModel(request.modelId, { hasImages: images.length > 0, hasVideo: Boolean(video) });
-  const model = entry.kieModelId;
+  const model = entry.providerModelId;
   const editing = model === "wan/2-7-videoedit";
   const duration = request.duration ?? (editing ? 0 : 5);
   const resolution = request.resolution?.toLowerCase() || (entry.resolutionOptions?.includes("720p") ? "720p" : entry.resolutionOptions![0]);

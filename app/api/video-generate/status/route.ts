@@ -1,6 +1,7 @@
+import { isUserProvider } from "@/lib/ai/providers";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { createVideoProvider } from "@/lib/ai/video-generator";
+import { createVideoProvider } from "@/lib/ai/video-provider";
 import { resolveGenerationStatusKey } from "@/lib/billing/generation-key";
 import { db, videoGeneration } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
@@ -30,13 +31,13 @@ export async function GET(request: NextRequest) {
     }
 
     const provider = record.provider || "kie";
-    if (provider !== "kie") {
-      return NextResponse.json({ status: "failed", error: "当前视频生成仅支持 KIE 模型" }, { status: 400 });
+    if (!isUserProvider(provider)) {
+      return NextResponse.json({ status: "failed", error: "Unsupported video provider" }, { status: 400 });
     }
 
-    const apiKey = await resolveGenerationStatusKey(session.user.id, record.rawResponse);
+    const apiKey = await resolveGenerationStatusKey(session.user.id, record.rawResponse, provider);
     if (!apiKey) {
-      return NextResponse.json({ error: "视频生成状态查询需要先在设置里配置你自己的 KIE API Key。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
+      return NextResponse.json({ error: "视频生成状态查询需要先在设置里配置此任务原供应商的 API Key。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
     }
 
     const videoProvider = createVideoProvider(provider, apiKey);

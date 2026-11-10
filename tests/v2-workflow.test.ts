@@ -66,7 +66,7 @@ describe("V2 model routing", () => {
   it("routes a balanced video generation model that can generate from text", () => {
     const model = routeModel({ category: "video_generation", requiredCapabilities: ["text"], duration: 8, aspectRatio: "16:9", priority: "balanced" });
 
-    expect(model?.kieModelId).toBeTruthy();
+    expect(model?.providerModelId).toBeTruthy();
     expect(model?.capabilities).toContain("text");
   });
 });

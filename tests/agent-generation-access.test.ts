@@ -6,10 +6,12 @@ const mocks = vi.hoisted(() => ({
   createProvider: vi.fn(),
   createTask: vi.fn(),
   rateLimit: vi.fn(),
+  record: vi.fn(),
 }));
 
 vi.mock("@/lib/utils/rate-limit", () => ({ checkRateLimit: mocks.rateLimit }));
-vi.mock("@/lib/ai/video-generator", () => ({ getUserProviderApiKey: mocks.userKey }));
+vi.mock("@/lib/db", () => ({ videoGeneration: {}, db: { insert: () => ({ values: mocks.record }) } }));
+vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: mocks.userKey }));
 vi.mock("@/lib/ai/video-provider", () => ({
   DEFAULT_VIDEO_PROVIDER: "kie",
   createVideoProvider: mocks.createProvider,
@@ -23,6 +25,7 @@ describe("Agent generation spending boundary", () => {
     vi.stubEnv("KIE_API_KEY", "platform-secret-test-only");
     vi.stubEnv("KIE_AI_API_KEY", "platform-alias-test-only");
     mocks.rateLimit.mockResolvedValue({ allowed: true, resetIn: 0 });
+    mocks.record.mockResolvedValue(undefined);
     mocks.createTask.mockResolvedValue({ taskId: "byok-task", raw: {} });
     mocks.createProvider.mockReturnValue({ createTask: mocks.createTask });
   });
@@ -38,7 +41,7 @@ describe("Agent generation spending boundary", () => {
   });
 
   it("uses only the explicitly saved personal key", async () => {
-    mocks.userKey.mockResolvedValue("personal-key-test-only");
+    mocks.userKey.mockResolvedValue({ provider: "kie", apiKey: "personal-key-test-only" });
     const result = await callExistingVideoGenerateApiTool.execute({ prompt: "A cloud palace" }, makeToolContext());
     expect(result.data).toMatchObject({ created: true, taskId: "byok-task" });
     expect(mocks.createProvider).toHaveBeenCalledWith("kie", "personal-key-test-only");
@@ -51,5 +54,13 @@ describe("Agent generation spending boundary", () => {
     expect(result.data).toMatchObject({ created: false });
     expect(mocks.createProvider).not.toHaveBeenCalled();
     expect(mocks.createTask).not.toHaveBeenCalled();
+  });
+
+  it("uses the saved Infistar provider and persists it for future polling", async () => {
+    mocks.userKey.mockResolvedValue({ provider: "infistar", apiKey: "personal-infistar-fixture" });
+    const result = await callExistingVideoGenerateApiTool.execute({ prompt: "A cloud palace" }, makeToolContext());
+    expect(result.data).toMatchObject({ created: true, provider: "infistar" });
+    expect(mocks.createProvider).toHaveBeenCalledWith("infistar", "personal-infistar-fixture");
+    expect(mocks.record).toHaveBeenCalledWith(expect.objectContaining({ provider: "infistar", rawResponse: expect.objectContaining({ billing: expect.objectContaining({ keySource: "user", provider: "infistar" }) }) }));
   });
 });

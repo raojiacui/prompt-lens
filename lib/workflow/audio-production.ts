@@ -173,7 +173,7 @@ export function buildAudioProductionPlan(scenes: AudioProductionScene[], selecti
   });
 
   return {
-    modelId: resolved.model.kieModelId,
+    modelId: resolved.model.providerModelId,
     modelMode: resolved.mode,
     modelPriority: resolved.priority,
     cues,

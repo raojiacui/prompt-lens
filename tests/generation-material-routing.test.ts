@@ -16,11 +16,11 @@ describe("Generation model families and material routing", () => {
     ["kling-2.6/text-to-video", true, false, "kling-2.6/image-to-video"],
     ["wan/2-7-videoedit", true, true, "wan/2-7-videoedit"],
   ])("routes %s with images=%s video=%s", (id, hasImages, hasVideo, expected) => {
-    expect(resolveGenerationModel(id as string, { hasImages: Boolean(hasImages), hasVideo: Boolean(hasVideo) }).kieModelId).toBe(expected);
+    expect(resolveGenerationModel(id as string, { hasImages: Boolean(hasImages), hasVideo: Boolean(hasVideo) }).providerModelId).toBe(expected);
   });
 
   it("lists families once without losing separate editing intent", () => {
-    const ids = generationChoices().map(m => m.kieModelId);
+    const ids = generationChoices().map(m => m.providerModelId);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toContain("wan/2-7-videoedit");
     expect(ids).not.toContain("wan/2-6-image-to-video");
@@ -58,13 +58,13 @@ describe("Generation model families and material routing", () => {
     for (const choice of generationChoices()) {
       for (const materials of [{ hasImages: false, hasVideo: false }, { hasImages: true, hasVideo: false }, { hasImages: false, hasVideo: true }]) {
         let model;
-        try { model = resolveGenerationModel(choice.kieModelId, materials); }
+        try { model = resolveGenerationModel(choice.providerModelId, materials); }
         catch { continue; }
         for (const resolution of model.resolutionOptions || []) {
           for (const duration of model.durationOptions || [0]) {
-            const preview = generationCreditPreview({ model: choice.kieModelId, resolution, duration, quantity: 1, ...materials, referenceSeconds: materials.hasVideo ? 5 : undefined });
-            expect(preview, JSON.stringify({ model: choice.kieModelId, resolution, duration, materials })).toMatchObject({
-              state: "priced", total: estimateGeneration({ modelId: model.kieModelId, resolution, durationSeconds: duration || 5, referenceVideoSeconds: materials.hasVideo ? 5 : undefined, audio: false }).credits,
+            const preview = generationCreditPreview({ model: choice.providerModelId, resolution, duration, quantity: 1, ...materials, referenceSeconds: materials.hasVideo ? 5 : undefined });
+            expect(preview, JSON.stringify({ model: choice.providerModelId, resolution, duration, materials })).toMatchObject({
+              state: "priced", total: estimateGeneration({ modelId: model.providerModelId, resolution, durationSeconds: duration || 5, referenceVideoSeconds: materials.hasVideo ? 5 : undefined, audio: false }).credits,
             });
             checked++;
           }

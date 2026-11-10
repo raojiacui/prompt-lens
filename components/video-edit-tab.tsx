@@ -24,7 +24,7 @@ interface TimelineMarker {
   time: number;
 }
 
-type EditModelOption = { id: string; displayName: string; kieModelId: string; enabled: boolean; experimental?: boolean };
+type EditModelOption = { id: string; displayName: string; providerModelId: string; enabled: boolean; experimental?: boolean };
 type EditResult = { outputUrl?: string; providerTaskId?: string; plan?: unknown; instruction?: unknown };
 
 type VideoEditTabProps = {
@@ -492,7 +492,7 @@ export function VideoEditTab({ initialProjectId, initialVersionId, initialSceneI
                 <select value={editModel} onChange={(event) => setEditModel(event.target.value)} className="h-11 w-full min-w-0 rounded-xl border border-[#D8D5CC]/80 bg-white px-3 text-sm font-semibold text-[#6B6860] outline-none focus:border-[#D97757]">
                   <option value="__auto__">Auto · Balanced</option>
                   {editModels.map((model) => (
-                    <option key={model.id} value={model.kieModelId}>{model.displayName}{model.experimental ? " · Experimental" : ""}</option>
+                    <option key={model.id} value={model.providerModelId}>{model.displayName}{model.experimental ? " · Experimental" : ""}</option>
                   ))}
                 </select>
               </label>

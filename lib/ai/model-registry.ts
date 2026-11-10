@@ -1,5 +1,8 @@
-﻿export type ModelCategory = "analysis" | "video_generation" | "audio" | "video_edit";
-export type ModelProvider = "kie";
+﻿import { infistarModels } from "./infistar-models";
+import type { UserProvider } from "./providers";
+
+export type ModelCategory = "analysis" | "video_generation" | "audio" | "video_edit";
+export type ModelProvider = UserProvider;
 export type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
 
 export type ModelCapability =
@@ -23,7 +26,7 @@ export interface ModelRegistryEntry {
   family: string;
   category: ModelCategory;
   provider: ModelProvider;
-  kieModelId: string;
+  providerModelId: string;
   enabled: boolean;
   capabilities: ModelCapability[];
   maxDuration?: number;
@@ -38,6 +41,7 @@ export interface ModelRegistryEntry {
 
 export interface ModelRouteRequest {
   category: ModelCategory;
+  provider?: UserProvider;
   requiredCapabilities?: ModelCapability[];
   duration?: number;
   aspectRatio?: string;
@@ -55,9 +59,10 @@ export interface ModelSelectionInput {
 }
 
 export const modelRegistry: ModelRegistryEntry[] = [
+  ...infistarModels,
   {
     id: "kling-2-6-image-video", displayName: "Kling 2.6", family: "Kling",
-    category: "video_generation", provider: "kie", kieModelId: "kling-2.6/image-to-video",
+    category: "video_generation", provider: "kie", providerModelId: "kling-2.6/image-to-video",
     enabled: true, capabilities: ["image", "reference_image"],
     maxDuration: 10, durationOptions: [5, 10],
     aspectRatios: ["16:9", "9:16", "1:1"], resolutionOptions: ["1080p"],
@@ -65,7 +70,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
   },
   {
     id: "wan-2-7-text-video", displayName: "Wan 2.7", family: "Wan",
-    category: "video_generation", provider: "kie", kieModelId: "wan/2-7-text-to-video",
+    category: "video_generation", provider: "kie", providerModelId: "wan/2-7-text-to-video",
     enabled: true, capabilities: ["text"],
     maxDuration: 15, durationOptions: Array.from({ length: 14 }, (_, i) => i + 2),
     aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4"], resolutionOptions: ["720p", "1080p"],
@@ -73,7 +78,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
   },
   {
     id: "wan-2-7-image-video", displayName: "Wan 2.7", family: "Wan",
-    category: "video_generation", provider: "kie", kieModelId: "wan/2-7-image-to-video",
+    category: "video_generation", provider: "kie", providerModelId: "wan/2-7-image-to-video",
     enabled: true, capabilities: ["image", "reference_image"],
     maxDuration: 15, durationOptions: Array.from({ length: 14 }, (_, i) => i + 2),
     aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4"], resolutionOptions: ["720p", "1080p"],
@@ -81,7 +86,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
   },
   {
     id: "wan-2-7-reference-video", displayName: "Wan 2.7", family: "Wan",
-    category: "video_generation", provider: "kie", kieModelId: "wan/2-7-r2v",
+    category: "video_generation", provider: "kie", providerModelId: "wan/2-7-r2v",
     enabled: true, capabilities: ["image", "video", "reference_image", "reference_video"],
     maxDuration: 10, durationOptions: Array.from({ length: 9 }, (_, i) => i + 2),
     aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4"], resolutionOptions: ["720p", "1080p"],
@@ -93,7 +98,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Gemini",
     category: "analysis",
     provider: "kie",
-    kieModelId: "gemini-3-8-flash-openai",
+    providerModelId: "gemini-3-8-flash-openai",
     enabled: true,
     capabilities: ["text", "image", "video"],
     speedLevel: 5,
@@ -106,7 +111,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Gemini",
     category: "analysis",
     provider: "kie",
-    kieModelId: "gemini-3-7-flash-openai",
+    providerModelId: "gemini-3-7-flash-openai",
     enabled: true,
     capabilities: ["text", "image", "video"],
     speedLevel: 5,
@@ -119,7 +124,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Gemini",
     category: "analysis",
     provider: "kie",
-    kieModelId: "gemini-3-6-flash-openai",
+    providerModelId: "gemini-3-6-flash-openai",
     enabled: true,
     capabilities: ["text", "image", "video"],
     speedLevel: 5,
@@ -132,7 +137,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Gemini",
     category: "analysis",
     provider: "kie",
-    kieModelId: "gemini-3-5-flash-openai",
+    providerModelId: "gemini-3-5-flash-openai",
     enabled: true,
     capabilities: ["text", "image", "video"],
     speedLevel: 4,
@@ -141,7 +146,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
   },
   {
     id: "analysis-deepseek-v4-1-flash", displayName: "DeepSeek V4.1 Flash", family: "DeepSeek",
-    category: "analysis", provider: "kie", kieModelId: "deepseek-v4-1-flash",
+    category: "analysis", provider: "kie", providerModelId: "deepseek-v4-1-flash",
     enabled: true, capabilities: ["text", "image"],
     speedLevel: 4, qualityLevel: 4, costLevel: 2,
   },
@@ -151,7 +156,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Veo",
     category: "video_generation",
     provider: "kie",
-    kieModelId: "veo3_fast",
+    providerModelId: "veo3_fast",
     enabled: true,
     capabilities: ["text", "image", "reference_image"],
     maxDuration: 8,
@@ -168,7 +173,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Veo",
     category: "video_generation",
     provider: "kie",
-    kieModelId: "veo3_lite",
+    providerModelId: "veo3_lite",
     enabled: true,
     capabilities: ["text", "image", "reference_image"],
     maxDuration: 8,
@@ -185,7 +190,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Veo",
     category: "video_generation",
     provider: "kie",
-    kieModelId: "veo3",
+    providerModelId: "veo3",
     enabled: true,
     capabilities: ["text", "image", "reference_image"],
     maxDuration: 8,
@@ -202,7 +207,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Seedance",
     category: "video_generation",
     provider: "kie",
-    kieModelId: "bytedance/seedance-2",
+    providerModelId: "bytedance/seedance-2",
     enabled: true,
     capabilities: ["text", "image", "reference_image", "reference_video", "native_audio", "first_last_frame"],
     maxDuration: 15,
@@ -219,7 +224,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Seedance",
     category: "video_generation",
     provider: "kie",
-    kieModelId: "bytedance/seedance-2-fast",
+    providerModelId: "bytedance/seedance-2-fast",
     enabled: true,
     capabilities: ["text", "image", "reference_image", "reference_video", "native_audio", "first_last_frame"],
     maxDuration: 15,
@@ -236,7 +241,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Seedance",
     category: "video_generation",
     provider: "kie",
-    kieModelId: "bytedance/seedance-2-mini",
+    providerModelId: "bytedance/seedance-2-mini",
     enabled: true,
     capabilities: ["text", "image", "reference_image", "reference_video"],
     maxDuration: 15,
@@ -253,7 +258,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Kling",
     category: "video_generation",
     provider: "kie",
-    kieModelId: "kling-3.0/video",
+    providerModelId: "kling-3.0/video",
     enabled: true,
     capabilities: ["text", "image", "reference_image"],
     maxDuration: 15,
@@ -270,7 +275,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Kling",
     category: "video_generation",
     provider: "kie",
-    kieModelId: "kling-2.6/text-to-video",
+    providerModelId: "kling-2.6/text-to-video",
     enabled: true,
     capabilities: ["text", "image", "reference_image"],
     maxDuration: 10,
@@ -287,7 +292,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Wan",
     category: "video_generation",
     provider: "kie",
-    kieModelId: "wan/2-6-text-to-video",
+    providerModelId: "wan/2-6-text-to-video",
     enabled: true,
     capabilities: ["text"],
     maxDuration: 15,
@@ -304,7 +309,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Wan",
     category: "video_generation",
     provider: "kie",
-    kieModelId: "wan/2-6-image-to-video",
+    providerModelId: "wan/2-6-image-to-video",
     enabled: true,
     capabilities: ["text", "image", "reference_image"],
     maxDuration: 15,
@@ -321,7 +326,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Wan",
     category: "video_edit",
     provider: "kie",
-    kieModelId: "wan/2-7-videoedit",
+    providerModelId: "wan/2-7-videoedit",
     enabled: true,
     capabilities: ["video", "reference_video", "video_to_video", "generative_edit"],
     aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4"],
@@ -336,7 +341,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Wan",
     category: "video_edit",
     provider: "kie",
-    kieModelId: "wan/2-6-video-to-video",
+    providerModelId: "wan/2-6-video-to-video",
     enabled: true,
     capabilities: ["video", "reference_video", "video_to_video", "generative_edit"],
     maxDuration: 15,
@@ -353,7 +358,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "ElevenLabs",
     category: "audio",
     provider: "kie",
-    kieModelId: "elevenlabs/text-to-dialogue-v3",
+    providerModelId: "elevenlabs/text-to-dialogue-v3",
     enabled: true,
     capabilities: ["text", "audio", "tts"],
     speedLevel: 4,
@@ -366,7 +371,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "ElevenLabs",
     category: "audio",
     provider: "kie",
-    kieModelId: "elevenlabs/speech-to-text",
+    providerModelId: "elevenlabs/speech-to-text",
     enabled: true,
     capabilities: ["audio", "transcription"],
     speedLevel: 4,
@@ -379,7 +384,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Gemini",
     category: "audio",
     provider: "kie",
-    kieModelId: "gemini/tts",
+    providerModelId: "gemini/tts",
     enabled: true,
     capabilities: ["text", "audio", "tts"],
     speedLevel: 4,
@@ -392,7 +397,7 @@ export const modelRegistry: ModelRegistryEntry[] = [
     family: "Suno",
     category: "audio",
     provider: "kie",
-    kieModelId: "suno/voice",
+    providerModelId: "suno/voice",
     enabled: true,
     capabilities: ["text", "audio", "tts"],
     speedLevel: 3,
@@ -413,12 +418,12 @@ function priorityScore(model: ModelRegistryEntry, priority: ModelPriority) {
   return model.qualityLevel * 2 + model.speedLevel * 1.5 + (6 - model.costLevel) * 1.25;
 }
 
-export function listModels(category?: ModelCategory) {
-  return modelRegistry.filter((model) => !category || model.category === category);
+export function listModels(category?: ModelCategory, provider: UserProvider = "kie") {
+  return modelRegistry.filter((model) => model.provider === provider && (!category || model.category === category));
 }
 
 export function getModelById(id: string) {
-  return modelRegistry.find((model) => model.id === id || model.kieModelId === id);
+  return modelRegistry.find((model) => model.id === id || model.providerModelId === id);
 }
 
 export function resolveModelSelection(
@@ -443,7 +448,7 @@ export function routeModel(request: ModelRouteRequest) {
   const priority = request.priority || "balanced";
   const requiredCapabilities = request.requiredCapabilities || [];
   const candidates = modelRegistry
-    .filter((model) => model.category === request.category)
+    .filter((model) => model.category === request.category && model.provider === (request.provider || "kie"))
     .filter((model) => model.enabled)
     .filter((model) => request.allowExperimental || !model.experimental)
     .filter((model) => hasCapabilities(model, requiredCapabilities))

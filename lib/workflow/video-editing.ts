@@ -88,7 +88,7 @@ export function buildEditPlan(params: {
       mode,
       operations: [],
       notes: ["Generative edit will submit the source video and prompt to a KIE video edit model."],
-      modelId: resolved.model.kieModelId,
+      modelId: resolved.model.providerModelId,
       modelMode: resolved.mode,
       modelPriority: resolved.priority,
       prompt,

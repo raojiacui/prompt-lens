@@ -57,7 +57,7 @@ interface AudioAnalyzeTabProps {
   initialVersionId?: string | null;
 }
 
-type AudioModelOption = { id: string; displayName: string; kieModelId: string; enabled: boolean; experimental?: boolean; capabilities?: string[] };
+type AudioModelOption = { id: string; displayName: string; providerModelId: string; enabled: boolean; experimental?: boolean; capabilities?: string[] };
 type WorkflowAudioResult = {
   plan: {
     modelId: string;
@@ -351,7 +351,7 @@ export function AudioAnalyzeTab({ activeTab, initialProjectId, initialVersionId 
                   <select value={workflowModel} onChange={(event) => setWorkflowModel(event.target.value)} className="h-10 min-w-56 rounded-xl border border-border bg-background px-3 text-sm outline-none focus:border-ring">
                     <option value="__auto__">Auto · Balanced</option>
                     {audioModels.map((model) => (
-                      <option key={model.id} value={model.kieModelId}>{model.displayName}{model.experimental ? " · Experimental" : ""}</option>
+                      <option key={model.id} value={model.providerModelId}>{model.displayName}{model.experimental ? " · Experimental" : ""}</option>
                     ))}
                   </select>
                 </label>

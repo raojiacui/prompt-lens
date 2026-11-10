@@ -57,7 +57,7 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
   const access = entitlement.mode === "trial" ? { apiKey: getPlatformKieApiKey(), source: "platform", provider: "kie" as const } : await resolveApiKeyForFeature(userId, { requiredPackageScope: "video_analysis", allowPaidPlatformKey: entitlement.mode === "platform_credits" });
   if (!access.apiKey) throw new Error("KIE API Key is not configured");
   const selection = parseWorkflowModelSelection(body);
-  const modelId = entitlement.mode === "trial" ? FREE_TRIAL_ANALYSIS_MODEL : resolveModelSelection("analysis", { mode: selection.modelMode, modelId: selection.modelId, priority: selection.modelPriority }).model.kieModelId;
+  const modelId = entitlement.mode === "trial" ? FREE_TRIAL_ANALYSIS_MODEL : resolveModelSelection("analysis", { mode: selection.modelMode, modelId: selection.modelId, priority: selection.modelPriority }).model.providerModelId;
   const id = randomUUID();
   let reservation: string | null = null;
   try {

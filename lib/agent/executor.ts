@@ -82,7 +82,6 @@ function buildToolInput(
         negativePrompt: videoPrompt.negativePrompt ? String(videoPrompt.negativePrompt) : undefined,
         duration: 5,
         resolution: "720p",
-        provider: "kie",
       };
     case "save_agent_artifact":
       return {};

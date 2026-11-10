@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { getWorkflowAnalysisEntitlement } from "@/lib/billing/video-analysis";
 import { getCommercialRewriteBalance } from "@/lib/billing/commercial-rewrite";
 import { getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
+import { getUserCredential } from "@/lib/byok/credentials";
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -19,6 +20,7 @@ export async function GET(request: NextRequest) {
     mode: entitlement.mode,
     hasPaidVideoAnalysis: entitlement.hasPaidVideoAnalysis,
     hasUserApiKey: entitlement.hasUserApiKey,
+    byokProvider: (await getUserCredential(session.user.id))?.provider || "kie",
     canUsePlatformKie: entitlement.canUsePlatformKie,
     platformKieConfigured: entitlement.platformKieConfigured,
     trial: entitlement.trial,

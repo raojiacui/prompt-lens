@@ -53,7 +53,7 @@ type Bundle = {
   referenceVideos?: Array<{ id?: string; sourceUrl: string }>;
 };
 
-type ModelOption = { id: string; displayName: string; family: string; provider: string; kieModelId: string; enabled: boolean; experimental?: boolean };
+type ModelOption = { id: string; displayName: string; family: string; provider: string; providerModelId: string; enabled: boolean; experimental?: boolean };
 const analysisModels: ModelOption[] = listModels("analysis").filter(model => model.enabled);
 type ModelMode = "auto" | "manual";
 type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";

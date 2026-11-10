@@ -16,7 +16,7 @@ V2 新增 Infistar 供应商，在首页、配置页和 README 使用 PromptLens
 - 用户明确授权真实联调累计费用不超过人民币 5 元，仅消耗既有余额，不充值。测试 Key 只保存在 Git 忽略的 `.env.local`，日志与提交禁止包含密钥。
 - 首页顶部公告可关闭，通过版本化本地标记记忆关闭状态；README 顶部展示产品品牌，推荐表格左品牌、右介绍与链接。
 - 注册入口统一为 `https://www.infistar.cc/register?aff=PROMPTLENS&ref_source=link`，文案提供人民币 5 元 API 体验额度。
-- 模真真入口为 `https://mozhenzhen.com/verify`，新标签页打开，不携带用户 Key。
+- 模真真入口为 `https://mozhenzhen.com/go/prompt-lens`，新标签页打开，不携带用户 Key。
 
 ## 替代方案
 
@@ -34,3 +34,14 @@ V2 新增 Infistar 供应商，在首页、配置页和 README 使用 PromptLens
 - 验证分析、改写、视频生成/编辑、音频、Agent 的路由、后台恢复与历史查询。
 - 对照真实 `/v1/models` 返回核实模型 ID，验证用户指定模型和参数不被替换。
 - 本地测试、类型检查、构建及移动端/桌面界面检查；每个模块本地提交。此次不推送、不部署。
+
+## 2026-11-10 接口与模型核实
+
+- 真实 Key 的 `/v1/models` 返回 Gemini 3.8/3.7/3.6/3.5 Flash、DeepSeek V4.1 Flash、Seedance 2 系列、Wan 2.7、MiniMax-H3 与 Kling O1。
+- 官方模型广场还展示即梦 3.0/Pro、Kling v3/Omni/Turbo；当前 Key 没有返回这些型号。前端根据当前 Key 的模型列表过滤，不将广场展示等同于令牌可调用。
+- 模型注册表使用中立的 `providerModelId`，保留 KIE 清单及平台价格规则；Infistar 自带 Key 的费用由服务商直接扣取，不套用 KIE 平台积分报价。
+- 官方公开价格 API `https://infistar.cc/api/pricing` 的人民币分组价格：即梦 3.0 为 0.28 或 0.63 元/秒，Pro 为 1 元/秒；Kling O1 为 720p 0.5833、1080p 0.7778 元/秒；MiniMax-H3 不同分组为 0.1630–0.8 元/秒；Seedance Mini 的豆包媒体分组为无视频参考 23 元/百万输出 Token、有视频参考 14 元/百万输出 Token，Fast 对应 37/22。报价因 Key 分组及输出规格变化，不能将广场最低价作为所有用户的固定价格。
+- 文本最小真实请求成功；Seedance Mini 的 5 秒、720p 文生视频完成，真实轮询取得 HTTPS 视频地址。4 秒、480p 请求被服务商明确拒绝。Wan 2.7 的 2 秒、720p 请求返回需要 1.20 元、账户当时余额 1 元，未创建任务。
+- 详细手册 `https://doc.infistar.cc/api-reference/视频/视频生成` 定义 multipart/form-data 的二进制 `input_reference`；图片与 MiniMax-H3 的视频参考按文件传输，限制来源为当前账户上传素材或其项目派生素材。MiniMax 视频输入依据官方模型说明实现，仍需真实受理与生成结果验收。
+- 任意上传视频的编辑与原生成任务的 `/v1/videos/{video_id}/remix` 分开处理；后者不能冒充前者。
+- 真实图生视频、参考视频/编辑及音频仍待验证；当前阶段不能声称全功能已验收。

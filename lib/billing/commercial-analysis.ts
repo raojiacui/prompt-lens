@@ -38,7 +38,7 @@ export function quotedAnalysisModel(input: { payer: string; model: string; model
   const modelId = input.payer === "platform"
     ? input.model === "flash" ? platformFlashModel : "analysis-gemini-2-5-pro"
     : input.modelId || "analysis-gemini-3-8-flash";
-  return resolveModelSelection("analysis", { mode: "manual", modelId }).model.kieModelId;
+  return resolveModelSelection("analysis", { mode: "manual", modelId }).model.providerModelId;
 }
 
 export function savedAnalysisModel(input: AnalysisInput) {

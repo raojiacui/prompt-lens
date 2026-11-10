@@ -6,7 +6,7 @@ import { buildCommercialGenerationPayload } from "@/lib/billing/commercial-gener
 describe("removed model choices", () => {
   it.each(["analysis-gemini-2-5-flash", "gemini-2.5-flash"])("removes %s from analysis choices and routing", modelId => {
     expect(getModelById(modelId)).toBeUndefined();
-    expect(listModels("analysis").some(model => model.id === modelId || model.kieModelId === modelId)).toBe(false);
+    expect(listModels("analysis").some(model => model.id === modelId || model.providerModelId === modelId)).toBe(false);
     expect(() => resolveModelSelection("analysis", { mode: "manual", modelId })).toThrow();
   });
   it.each(["analysis-gemini-2-5-pro", "gemini-2.5-pro", "grok-imagine-text-video", "grok-imagine/text-to-video", "grok-imagine-video-1-5-preview", "happyhorse-video-edit", "happyhorse/video-edit", "kling-omni-transform", "kling-omni/transformation", "kling-3.0-omni/transformation"])("excludes %s from the catalog and manual routing", modelId => {
@@ -18,7 +18,7 @@ describe("removed model choices", () => {
     expect(() => buildKIEJobPayload({ modelId, prompt: "A cinematic landscape" })).toThrow("MODEL_UNAVAILABLE");
   });
   it("keeps other Kling, Wan and Gemini models available", () => {
-    expect(listModels("analysis").some(m => m.kieModelId === "gemini-3-8-flash-openai")).toBe(true);
+    expect(listModels("analysis").some(m => m.providerModelId === "gemini-3-8-flash-openai")).toBe(true);
     expect(getModelById("kling-3.0/video")?.enabled).toBe(true);
     expect(getModelById("wan/2-7-videoedit")?.enabled).toBe(true);
   });

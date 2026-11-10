@@ -160,7 +160,7 @@ function resolveAnalysisSelection(selection?: AiModelSelection, options?: { forc
     { mode: selection?.modelMode, modelId: selection?.modelId, priority },
     { requiredCapabilities: ["text", "image"] },
   );
-  return { provider: resolved.model.provider, modelId: resolved.model.kieModelId, modelMode: resolved.mode, modelPriority: resolved.priority };
+  return { provider: resolved.model.provider, modelId: resolved.model.providerModelId, modelMode: resolved.mode, modelPriority: resolved.priority };
 }
 
 
