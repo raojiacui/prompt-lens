@@ -1,6 +1,21 @@
-# PromptLens V2
+<p align="center">
+  <img src="public/prompt-lens-logo.png" alt="PromptLens 标识与产品名" width="420" />
+</p>
+<h1 align="center">PromptLens V2</h1>
+<p align="center">从参考视频，到你的创作。</p>
 
 PromptLens V2 是一个 AI 视频创作工作流工具，将参考视频或图片整理成可编辑的画面分析和复刻提示词，帮助你理解镜头、改写创意并生成自己的视频。
+
+## 推荐服务
+
+<table>
+  <tr>
+    <td width="220" align="center"><h3>Infistar<br />无限星河</h3></td>
+    <td>Infistar 提供多模型 API 服务，可在 PromptLens 的 API Key 配置页保存密钥并设为首选供应商。<br /><br />通过 PromptLens 专属链接注册，可领取<strong>人民币 5 元 API 体验额度</strong>。<br /><br /><a href="https://www.infistar.cc/register?aff=PROMPTLENS&amp;ref_source=link">注册并领取体验额度 →</a></td>
+  </tr>
+</table>
+
+在「设置 → API Key 配置」中分别管理 Infistar 与 KIE 密钥；新任务自动使用首选供应商，已提交的任务保留原供应商。不同供应商提供的模型和参数范围会有差异，可用性以当前 Key 的权限为准。配置页也提供[模真真模型价格与验真入口](https://mozhenzhen.com/go/prompt-lens)。
 
 ## 功能概览
 

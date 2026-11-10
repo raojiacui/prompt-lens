@@ -24,7 +24,7 @@ beforeEach(() => {
 describe("private user endpoints", () => {
   it("filters key reads by the authenticated user and never returns the decrypted key", async () => {
     const response = await getKeys(new NextRequest("https://app.test/api/settings/api-key?userId=bob"));
-    expect(dialect.sqlToQuery(mocks.keys.mock.calls[0][0].where).params).toEqual(["alice", "kie"]);
+    expect(dialect.sqlToQuery(mocks.keys.mock.calls[0][0].where).params).toEqual(["alice", "infistar", "kie"]);
     const body = await response.text();
     expect(body).not.toContain("alice-private-api-secret-12345678");
     expect(body).not.toContain("encrypted");

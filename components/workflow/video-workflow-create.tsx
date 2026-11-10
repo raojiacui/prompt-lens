@@ -631,13 +631,13 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         throw new Error(locale === "en" ? "Shot splitting requires purchased credits. Top up or analyze the whole video." : "拆镜需要已购买的平台积分，请充值或选择整段分析。");
       }
       if (selectedMediaType === "video" && latestStatus?.commercialConsumptionEnabled && (automaticSplit || latestStatus.mode !== "trial") && analysisPayer === "byok" && !latestStatus.hasUserApiKey) {
-        throw new Error(locale === "en" ? "Configure your own KIE Key in Settings first." : "请先在设置中配置自己的 KIE Key。");
+        throw new Error(locale === "en" ? "Configure your own API key in Settings first." : "请先在设置中配置自己的 API Key。");
       }
       if (isLinkedMedia && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.linkImports?.remaining ?? 0) < 1)) {
         throw new Error(locale === "en" ? "Your account has no included video link imports remaining. Top up or upload a file." : "当前账号的套餐视频链接导入次数不足，请充值或改用本地文件上传。");
       }
       if (selectedMediaType === "image" && latestStatus?.mode === "trial" && (latestStatus.trial.remaining || 0) <= 0) {
-        throw new Error(locale === "zh" ? "两次免费试用已用完，请先到设置中配置自己的 KIE Key。" : "Your two free trials are used. Add your own KIE key in Settings to continue.");
+        throw new Error(locale === "zh" ? "两次免费试用已用完，请先到设置中配置自己的 API Key。" : "Your two free trials are used. Add your own API key in Settings to continue.");
       }
       const prepared: PreparedMedia = isLinkedMedia
         ? await resolveLinkedMedia()
@@ -1130,9 +1130,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                             <div className="order-last mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                               <select aria-label={locale === "en" ? "Rewrite payment source" : "改写费用来源"} value={rewritePayer} onChange={(event) => setRewritePayer(event.target.value === "byok" ? "byok" : "included")} disabled={Boolean(rewritingSceneId)} className="h-8 max-w-full rounded-lg border border-border bg-background px-2">
                                 <option value="included">{locale === "en" ? "Included rewrites" : "套餐改写额度"} · {creditStatus.commercial.rewrites ?? 0}</option>
-                                <option value="byok" disabled={!creditStatus.hasUserApiKey}>{locale === "en" ? "Own KIE key" : "自带 KIE Key"}</option>
+                                <option value="byok" disabled={!creditStatus.hasUserApiKey}>{locale === "en" ? "Own API key" : "自带 API Key"}</option>
                               </select>
-                              <span>{rewritePayer === "included" ? (locale === "en" ? "1 rewrite · No extra credits" : "消耗 1 次 · 不另扣积分") : (locale === "en" ? "Billed to your KIE account" : "费用由你的 KIE 账户承担")}</span>
+                              <span>{rewritePayer === "included" ? (locale === "en" ? "1 rewrite · No extra credits" : "消耗 1 次 · 不另扣积分") : (locale === "en" ? "Billed to your provider account" : "费用由你的供应商账户承担")}</span>
                             </div>
                           )}
                           <div className="relative mt-2">

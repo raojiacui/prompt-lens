@@ -3,6 +3,7 @@ export type UserProvider = (typeof USER_PROVIDERS)[number];
 
 export const INFISTAR_REGISTRATION_URL = "https://www.infistar.cc/register?aff=PROMPTLENS&ref_source=link";
 export const MODEL_VERIFICATION_URL = "https://mozhenzhen.com/go/prompt-lens";
+export const INFISTAR_ANNOUNCEMENT_COOKIE = "promptlens-infistar-announcement-v1";
 
 export function isUserProvider(value: unknown): value is UserProvider {
   return value === "infistar" || value === "kie";

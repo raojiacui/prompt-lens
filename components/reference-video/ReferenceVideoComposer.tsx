@@ -1298,7 +1298,7 @@ export function ReferenceVideoComposer({
           </div>
           <LiveCreditBalanceLink status={creditStatus} locale={zh ? "zh" : "en"} />
         </div>
-        <p className="max-w-5xl text-sm leading-6 text-muted-foreground">{zh ? "输入提示词，或上传参考图与视频，生成自己的视频。自带 Key 的任务使用你自己的 KIE 余额，不扣平台积分。" : "Create videos from prompts, reference images or video. Jobs using your own key charge your KIE account, not platform credits."}</p>
+        <p className="max-w-5xl text-sm leading-6 text-muted-foreground">{zh ? "输入提示词，或上传参考图与视频，生成自己的视频。自带 Key 的任务使用对应供应商的余额，不扣平台积分。" : "Create videos from prompts, reference images or video. Jobs using your own key charge your selected provider account, not platform credits."}</p>
 
         <div className="grid items-stretch gap-4 xl:grid-cols-[0.74fr_1.26fr]">
           <section className="flex h-full flex-col rounded-2xl border border-border bg-card p-3 shadow-sm">

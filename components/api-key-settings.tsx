@@ -1,210 +1,86 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ArrowUpRight, Check, KeyRound, ShieldCheck } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { useTranslations } from "next-intl";
+import { INFISTAR_REGISTRATION_URL, MODEL_VERIFICATION_URL, USER_PROVIDERS, type UserProvider } from "@/lib/ai/providers";
 
-interface ApiKey {
-  id: string;
-  provider: string;
-  isActive: boolean;
-  createdAt: string;
-  apiKey: string;
-  decryptError?: boolean;
-}
+type ApiKey = { id: string; provider: UserProvider; isActive: boolean; apiKey: string; decryptError?: boolean };
+type Notice = { type: "success" | "error"; text: string };
 
 export function ApiKeySettings() {
   const t = useTranslations("settings");
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
-  const [apiKey, setApiKey] = useState("");
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-
+  const [keys, setKeys] = useState<ApiKey[]>([]);
+  const [preferred, setPreferred] = useState<UserProvider | null>(null);
+  const [drafts, setDrafts] = useState<Record<UserProvider, string>>({ infistar: "", kie: "" });
+  const [busy, setBusy] = useState<string | null>(null);
+  const [notices, setNotices] = useState<Partial<Record<UserProvider | "global", Notice>>>({});
+  const notify = (provider: UserProvider | "global", notice: Notice) => setNotices(value => ({ ...value, [provider]: notice }));
+  async function refresh() {
+    const response = await fetch("/api/settings/api-key", { cache: "no-store" });
+    if (!response.ok) throw new Error(t("loadFailed"));
+    const body = await response.json();
+    setKeys(body.apiKeys || []); setPreferred(body.preferredProvider || null);
+  }
   useEffect(() => {
-    fetchApiKeys();
+    void refresh().catch(() => notify("global", { type: "error", text: t("loadFailed") })).finally(() => setLoading(false));
+    // Configuration is loaded when the settings panel mounts.
   }, []);
-
-  const fetchApiKeys = async () => {
-    setLoading(true);
+  async function action(provider: UserProvider, kind: "save" | "prefer" | "test" | "delete", id?: string) {
+    const apiKey = drafts[provider].trim();
+    if (kind === "save" && !apiKey) { notify(provider, { type: "error", text: t("apiKeyRequired") }); return; }
+    if (kind === "delete" && !window.confirm(t("deleteConfirm"))) return;
+    setBusy(`${provider}:${kind}`); setNotices(value => ({ ...value, [provider]: undefined }));
     try {
-      const res = await fetch("/api/settings/api-key");
-      const data = await res.json();
-      setApiKeys(data.apiKeys || []);
-    } catch (error) {
-      console.error("Failed to fetch API keys:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveApiKey = async () => {
-    if (!apiKey.trim()) {
-      setMessage({ type: "error", text: t("apiKeyRequired") });
-      return;
-    }
-
-    setSaving(true);
-    setMessage(null);
-
-    try {
-      const res = await fetch("/api/settings/api-key", {
-        method: "POST",
+      const response = await fetch(kind === "test" ? "/api/settings/api-key/test" : `/api/settings/api-key${kind === "delete" ? `?id=${encodeURIComponent(id!)}` : ""}`, {
+        method: kind === "delete" ? "DELETE" : kind === "prefer" ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider: "kie", apiKey: apiKey.trim() }),
+        ...(kind === "delete" ? {} : { body: JSON.stringify({ provider, ...(kind === "save" || kind === "test" ? { apiKey: apiKey || undefined } : {}) }) }),
       });
-
-      if (res.ok) {
-        setMessage({ type: "success", text: t("saveSuccess") });
-        setApiKey("");
-        fetchApiKeys();
-      } else {
-        const data = await res.json();
-        setMessage({ type: "error", text: data.error || t("saveFailed") });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || t("saveFailed"));
+      if (kind !== "test") {
+        if (kind === "save") setDrafts(value => ({ ...value, [provider]: "" }));
+        await refresh(); window.dispatchEvent(new Event("promptlens:provider-change"));
       }
-    } catch {
-      setMessage({ type: "error", text: t("saveFailed") });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteApiKey = async (id: string) => {
-    if (!confirm(t("deleteConfirm"))) return;
-
-    try {
-      const res = await fetch(`/api/settings/api-key?id=${id}`, { method: "DELETE" });
-      if (res.ok) fetchApiKeys();
-    } catch (error) {
-      console.error("Failed to delete API key:", error);
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <Card className="bg-[var(--color-bg-raised)] border-[var(--color-border-default)]">
-        <CardHeader>
-          <CardTitle style={{ fontFamily: "var(--font-display)" }}>{t("addApiKey")}</CardTitle>
-          <CardDescription>{t("addDesc")}</CardDescription>
+      notify(provider, { type: "success", text: t(kind === "test" ? "testSuccess" : kind === "prefer" ? "preferenceSaved" : kind === "delete" ? "deleted" : "saveSuccess") });
+    } catch (error) { notify(provider, { type: "error", text: error instanceof Error ? error.message : t("saveFailed") }); }
+    finally { setBusy(null); }
+  }
+  return <div className="space-y-6">
+    <div className="max-w-2xl"><h2 className="text-xl font-semibold text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>{t("apiKey")}</h2><p className="mt-2 text-sm leading-6 text-[var(--color-text-secondary)]">{t("addDesc")}</p></div>
+    {notices.global && <p role="alert" className="text-sm text-[var(--color-error)]">{notices.global.text}</p>}
+    {USER_PROVIDERS.map(provider => {
+      const saved = keys.filter(key => key.provider === provider);
+      const key = saved[0]; const current = preferred === provider;
+      const name = provider === "infistar" ? "Infistar 无限星河" : "KIE";
+      const notice = notices[provider];
+      return <Card key={provider} className={`overflow-hidden bg-[var(--color-bg-raised)] ${provider === "infistar" ? "border-[var(--color-accent-orange)]/35" : "border-[var(--color-border-default)]"}`}>
+        <CardHeader className="gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3"><span aria-hidden="true" className={`flex h-11 w-11 items-center justify-center rounded-xl border text-base font-bold ${provider === "infistar" ? "border-orange-200 bg-orange-50 text-orange-700" : "border-[var(--color-border-default)] bg-[var(--color-bg-base)] text-[var(--color-text-primary)]"}`}>{provider === "infistar" ? "I" : "K"}</span><CardTitle className="text-lg" style={{ fontFamily: "var(--font-heading)" }}>{name}</CardTitle>{provider === "infistar" && <span className="rounded-md bg-orange-100 px-2 py-1 text-xs font-medium text-orange-800">{t("recommended")}</span>}</div>
+            {current && <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-success)]"><Check size={14} />{t("preferred")}</span>}
+          </div>
+          <CardDescription className="leading-6">{t(provider === "infistar" ? "infistarDesc" : "kieDesc")}</CardDescription>
+          <a href={provider === "infistar" ? INFISTAR_REGISTRATION_URL : "https://kie.ai/"} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center gap-1 text-sm font-medium text-[var(--color-accent-orange)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">{t(provider === "infistar" ? "infistarRegister" : "kieGetKeyLink")}<ArrowUpRight size={15} /></a>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr]">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">{t("provider")}</label>
-              <div className="flex h-11 items-center rounded-xl border border-[var(--color-border-default)] bg-white px-3 text-sm font-semibold text-[var(--color-text-primary)]">
-                {t("providerKie")}
-              </div>
-            </div>
-            <div>
-              <label className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">API Key</label>
-              <div className="flex gap-2">
-                <Input
-                  type="password"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  placeholder={t("placeholderKie")}
-                  className="bg-[var(--color-bg-raised)]"
-                />
-                <Button onClick={saveApiKey} disabled={saving} className="bg-[var(--color-accent-orange)] hover:bg-[var(--color-accent-orange-hover)]">
-                  {saving ? <Spinner size="sm" /> : t("saveApiKey")}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {message && (
-            <div
-              className={`rounded-lg p-3 ${
-                message.type === "success"
-                  ? "bg-[var(--color-success)]/10 text-[var(--color-success)]"
-                  : "bg-[var(--color-error)]/10 text-[var(--color-error)]"
-              }`}
-            >
-              {message.text}
-            </div>
-          )}
+          {loading ? <div className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]"><Spinner size="sm" />{t("loadingKeys")}</div> : key && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-base)] px-4 py-3">
+            <div className="flex items-center gap-2 text-sm"><KeyRound size={16} className="text-[var(--color-text-muted)]" /><span className="font-mono">{key.apiKey}</span>{key.decryptError && <span className="text-xs text-[var(--color-error)]">{t("resaveRequired")}</span>}</div>
+            <div className="flex flex-wrap gap-2">{!current && !key.decryptError && <Button size="sm" variant="outline" disabled={Boolean(busy)} onClick={() => void action(provider, "prefer")}>{t("setPreferred")}</Button>}{saved.map(record => <Button key={record.id} size="sm" variant="ghost" disabled={Boolean(busy)} onClick={() => void action(provider, "delete", record.id)} aria-label={`${t("delete")} ${name} ${record.apiKey}`}>{t("delete")}</Button>)}</div>
+          </div>}
+          <label htmlFor={`key-${provider}`} className="block text-sm font-medium text-[var(--color-text-primary)]">{key ? t("replaceKey") : t("enterApiKey")}</label>
+          <div className="flex flex-col gap-2 sm:flex-row"><Input id={`key-${provider}`} type="password" autoComplete="off" spellCheck={false} value={drafts[provider]} onChange={event => setDrafts(value => ({ ...value, [provider]: event.target.value }))} placeholder={t(provider === "infistar" ? "placeholderInfistar" : "placeholderKie")} disabled={loading || Boolean(busy)} className="min-w-0 flex-1 bg-[var(--color-bg-base)]" /><div className="flex gap-2"><Button variant="outline" className="flex-1 sm:flex-none" disabled={loading || Boolean(busy) || (!drafts[provider].trim() && (!key || key.decryptError))} onClick={() => void action(provider, "test")}>{busy === `${provider}:test` ? <Spinner size="sm" /> : t("testConnection")}</Button><Button className="flex-1 bg-[var(--color-accent-orange)] hover:bg-[var(--color-accent-orange-hover)] sm:flex-none" disabled={loading || Boolean(busy) || !drafts[provider].trim()} onClick={() => void action(provider, "save")}>{busy === `${provider}:save` ? <Spinner size="sm" /> : t("saveApiKey")}</Button></div></div>
+          {notice && <p role={notice.type === "error" ? "alert" : "status"} className={`rounded-lg px-3 py-2 text-sm ${notice.type === "error" ? "bg-[var(--color-error)]/10 text-[var(--color-error)]" : "bg-[var(--color-success)]/10 text-[var(--color-success)]"}`}>{notice.text}</p>}
         </CardContent>
-      </Card>
-
-      <Card className="bg-[var(--color-bg-raised)] border-[var(--color-border-default)]">
-        <CardHeader>
-          <CardTitle style={{ fontFamily: "var(--font-display)" }}>{t("savedKeys")}</CardTitle>
-          <CardDescription>{t("savedDesc")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Spinner />
-            </div>
-          ) : apiKeys.length === 0 ? (
-            <p className="py-8 text-center text-[var(--color-text-muted)]">{t("noKeys")}</p>
-          ) : (
-            <div className="space-y-2">
-              {apiKeys.map((key) => (
-                <div key={key.id} className="flex items-center justify-between rounded-xl border border-[var(--color-border-default)] bg-white p-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>
-                        {t("kieName")}
-                      </span>
-                      {key.decryptError ? (
-                        <span className="rounded bg-[var(--color-error)]/10 px-2 py-0.5 text-xs text-[var(--color-error)]">
-                          需要重新保存
-                        </span>
-                      ) : key.isActive ? (
-                        <span className="rounded bg-[var(--color-success)]/10 px-2 py-0.5 text-xs text-[var(--color-success)]">
-                          {t("active")}
-                        </span>
-                      ) : null}
-                    </div>
-                    <p className={`mt-1 font-mono text-sm ${key.decryptError ? "text-[var(--color-error)]" : "text-[var(--color-text-secondary)]"}`}>{key.apiKey}</p>
-                    <p className="mt-1 text-xs text-[var(--color-text-muted)]">
-                      {t("addedAt", { date: new Date(key.createdAt).toLocaleDateString("zh-CN") })}
-                    </p>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => deleteApiKey(key.id)}
-                    className="border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-error)] hover:text-[var(--color-error)]"
-                  >
-                    {t("delete")}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Card className="bg-[var(--color-bg-raised)] border-[var(--color-border-default)]">
-        <CardHeader>
-          <CardTitle style={{ fontFamily: "var(--font-display)" }}>{t("providerDocs")}</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-          <div>
-            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>{t("trialTitle")}</h4>
-            <p className="mt-2">{t("trialDesc")}</p>
-          </div>
-          <div>
-            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>{t("kieName")}</h4>
-            <p className="mt-2">
-              {t("kieDesc")} {" "}
-              <a href="https://kie.ai/" target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent-orange)] hover:underline">
-                {t("kieLink")}
-              </a>{" "}
-              {t("kieGetKey")}
-            </p>
-          </div>
-          <div className="rounded-xl border border-[var(--color-border-default)] bg-white p-4">
-            <h4 className="font-medium text-[var(--color-text-primary)]" style={{ fontFamily: "var(--font-heading)" }}>{t("storageTitle")}</h4>
-            <p className="mt-2">{t("storageDesc")}</p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+      </Card>;
+    })}
+    <a href={MODEL_VERIFICATION_URL} target="_blank" rel="noopener noreferrer" className="group flex items-start justify-between gap-4 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-5 transition-colors hover:border-[var(--color-accent-orange)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"><div className="flex gap-3"><ShieldCheck className="mt-0.5 shrink-0 text-[var(--color-accent-orange)]" size={22} /><div><h3 className="font-medium text-[var(--color-text-primary)]">{t("verificationTitle")}</h3><p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">{t("verificationDesc")}</p><p className="mt-2 text-xs text-[var(--color-text-muted)]">{t("verificationPrivacy")}</p></div></div><ArrowUpRight aria-hidden="true" size={18} className="shrink-0 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent-orange)]" /></a>
+    <Card className="border-[var(--color-border-default)] bg-[var(--color-bg-raised)]"><CardHeader><CardTitle className="text-base">{t("providerDocs")}</CardTitle></CardHeader><CardContent className="space-y-5 text-sm leading-6 text-[var(--color-text-secondary)]">{["routing", "trial", "storage"].map(section => <div key={section}><h3 className="font-medium text-[var(--color-text-primary)]">{t(`${section}Title`)}</h3><p className="mt-1">{t(`${section}Desc`)}</p></div>)}</CardContent></Card>
+  </div>;
 }
