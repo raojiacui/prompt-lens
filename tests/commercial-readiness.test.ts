@@ -11,6 +11,8 @@ describe("Commercial configuration diagnostics", () => {
       COMMERCIAL_CONSUMPTION_ENABLED: "true", COMMERCIAL_REWRITE_ENABLED: "true",
       COMMERCIAL_MIGRATION_ACCEPTED: "0019", COMMERCIAL_PAYMENT_ACCEPTANCE: PRICING_VERSION,
       COMMERCIAL_MODEL_ACCEPTANCE: PRICING_VERSION,
+      COMMERCIAL_REVIEW_ALERT_EMAIL: "review@example.test", SMTP_HOST: "smtp.example.test",
+      SMTP_USER: "test-user", SMTP_PASS: "test-only", SMTP_FROM: "test@example.test",
     };
     for (const [key, value] of Object.entries(configured)) vi.stubEnv(key, value);
   });

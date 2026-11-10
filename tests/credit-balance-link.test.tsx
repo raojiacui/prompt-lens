@@ -9,7 +9,7 @@ describe("workspace credit balance", () => {
     expect(html).toContain("600");
     expect(html).toContain("原版积分");
     expect(html).toContain("25");
-    expect(html).toContain('href="/billing"');
+    expect(html).toContain('href="/dashboard?tab=account"');
   });
   it("preserves zero package balances rather than falling back to legacy", () => {
     const html = renderToStaticMarkup(<CreditBalanceLink status={{ balance: 25, commercial: { credits: 0 } }} failed={false} locale="en" />);

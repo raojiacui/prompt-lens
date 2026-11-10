@@ -19,6 +19,8 @@
         "db:push": "drizzle-kit push",
         "db:studio": "drizzle-kit studio",
         "test": "vitest",
+        "test:node": "node --test tests/fly-machine-lifecycle.test.mjs tests/reconciliation-scheduler.test.mjs tests/scene-segments.test.mjs",
+        "test:all": "vitest run --maxWorkers 2 && npm run test:node",
         "test:e2e": "playwright test"
     },
     "dependencies": {
