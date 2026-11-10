@@ -20,7 +20,7 @@ for (const width of [1440, 390]) {
         : path === "/api/workflow/projects" ? { projects: [project] }
         : path === "/api/workflow/projects/project-1" ? { project, versions: [version], activeVersion: version,
           scenes: [{ id: "scene-1", sceneIndex: 1, startTime: 0, endTime: 2, duration: 2, status: "completed", keyframeUrls: [] }], sceneVersions: [scene], allSceneVersions: [scene] }
-        : path === "/api/credits/me" ? { balance: 0, mode: "byok", hasUserKieKey: true, trial: { limit: 2, remaining: 2 } }
+        : path === "/api/credits/me" ? { balance: 0, mode: "byok", hasUserApiKey: true, trial: { limit: 2, remaining: 2 } }
         : path === "/api/models" ? { models: [] } : {};
       await route.fulfill({ json: body });
     });

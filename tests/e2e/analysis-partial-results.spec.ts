@@ -17,7 +17,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       const path = new URL(route.request().url()).pathname;
       let body: unknown = {};
       if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
-      else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, mode: "byok", hasUserKieKey: true, trial: { remaining: 0 }, commercial: { enabled: true, credits: 200 }, linkImports: { remaining: 10 } };
+      else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, mode: "byok", hasUserApiKey: true, trial: { remaining: 0 }, commercial: { enabled: true, credits: 200 }, linkImports: { remaining: 10 } };
       else if (path === "/api/models") body = { models: [] };
       else if (path === "/api/workflow/projects") body = route.request().method() === "POST" ? { project: { id: projectId } } : { projects: [] };
       else if (path === "/api/media/resolve-link") body = { mediaUrl: "https://example.com/video.mp4", filename: "video.mp4", mediaType: "video", platform: "douyin" };

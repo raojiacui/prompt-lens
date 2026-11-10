@@ -1,8 +1,10 @@
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { getUserCredential } from "@/lib/byok/credentials";
+import type { UserProvider } from "@/lib/ai/providers";
+import { requestProviderChat } from "@/lib/ai/provider-client";
 import { getPlatformKieApiKey } from "@/lib/billing/platform-access";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import { FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/billing/video-analysis";
-import { DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, KieEmptyResultError, KieRequestError, requestKieChat } from "@/lib/ai/kie-client";
+import { DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, KieEmptyResultError, KieRequestError } from "@/lib/ai/kie-client";
 import { InvalidSceneAnalysisResult, validateSceneAnalysis } from "./scene-analysis-result";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
@@ -38,6 +40,7 @@ export interface AiModelSelection {
   allowPlatformKeyForAnalysis?: boolean;
   analysisKeySource?: "platform" | "user";
   analysisApiKey?: string;
+  analysisProvider?: UserProvider;
   analysisBudgetMs?: number;
   forceFreeTrialKie?: boolean;
 }
@@ -52,7 +55,7 @@ export interface SceneRewriteInput extends AiModelSelection {
   rewriteKeySource?: "platform" | "user";
 }
 
-type AnalysisProvider = "kie";
+type AnalysisProvider = UserProvider;
 
 type AnalysisChatJsonResult = {
   json: Record<string, unknown>;
@@ -137,13 +140,14 @@ function parseJsonObject(raw: string) {
   }
 }
 
-async function getKieApiKey(userId: string, options?: { allowPlatformKey?: boolean; source?: "platform" | "user" }) {
-  if (options?.source === "platform") return options.allowPlatformKey === true ? getPlatformKieApiKey() : null;
-  const userApiKey = await getUserKieApiKey(userId);
-  if (userApiKey) return userApiKey;
-  if (options?.source === "user") return null;
-  if (options?.allowPlatformKey !== true) return null;
-  return getPlatformKieApiKey();
+async function getAnalysisCredential(userId: string, options?: { allowPlatformKey?: boolean; source?: "platform" | "user"; provider?: UserProvider }) {
+  if (options?.source !== "platform") {
+    const credential = await getUserCredential(userId, options?.provider);
+    if (credential) return credential;
+  }
+  if (options?.source === "user" || options?.allowPlatformKey !== true) return null;
+  const apiKey = getPlatformKieApiKey();
+  return apiKey ? { apiKey, provider: "kie" as const } : null;
 }
 
 function resolveAnalysisSelection(selection?: AiModelSelection, options?: { forceFreeTrialKie?: boolean }) {
@@ -186,11 +190,14 @@ async function callAnalysisChatJson(params: {
   forceFreeTrialKie?: boolean;
   validateJson?: (value: unknown) => void;
 }): Promise<AnalysisChatJsonResult | null> {
-  const selected = resolveAnalysisSelection(params.selection, { forceFreeTrialKie: params.forceFreeTrialKie === true });
-  const apiKey = params.forceFreeTrialKie
-    ? getPlatformKieApiKey()
-    : params.selection?.analysisApiKey || await getKieApiKey(params.userId, { allowPlatformKey: params.allowPlatformKey, source: params.keySource ?? params.selection?.analysisKeySource });
-  if (!apiKey) return null;
+  const platformKey = params.forceFreeTrialKie ? getPlatformKieApiKey() : null;
+  const credential = params.forceFreeTrialKie
+    ? platformKey ? { apiKey: platformKey, provider: "kie" as const } : null
+    : params.selection?.analysisApiKey ? { apiKey: params.selection.analysisApiKey, provider: params.selection.analysisProvider || "kie" as const }
+      : await getAnalysisCredential(params.userId, { allowPlatformKey: params.allowPlatformKey, source: params.keySource ?? params.selection?.analysisKeySource, provider: params.selection?.analysisProvider });
+  if (!credential) return null;
+  const { apiKey, provider } = credential;
+  const selected = { ...resolveAnalysisSelection(params.selection, { forceFreeTrialKie: params.forceFreeTrialKie === true }), provider };
 
   const messages = [
     { role: "system", content: params.system },
@@ -206,7 +213,7 @@ async function callAnalysisChatJson(params: {
   let providerAttemptUnconfirmed = false;
   for (let attempt = 1; attempt <= (params.validateJson ? 2 : 1); attempt++) {
     try {
-      const content = await requestKieChat({ apiKey, modelId: selected.modelId, messages,
+      const content = await requestProviderChat({ provider, apiKey, modelId: selected.modelId, messages,
         timeoutMs: Math.max(1, Math.min(DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, deadline - Date.now())),
         // Own the retry here so transport and result retries cannot multiply.
         retryUnopenedConnection: !params.validateJson,

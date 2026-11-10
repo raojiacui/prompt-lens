@@ -5,7 +5,7 @@ vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { sel
 vi.mock("undici", async importOriginal => ({ ...await importOriginal<typeof import("undici")>(), fetch: mocks.localFetch }));
 vi.mock("@/lib/billing/commercial-analysis", () => ({ finishCommercialAnalysis: vi.fn(), savedAnalysisModel: vi.fn() }));
 vi.mock("@/lib/workflow/scene-analysis", () => ({ analyzeSceneBlueprint: vi.fn(), buildFallbackSceneBlueprint: vi.fn() }));
-vi.mock("@/lib/byok/kie", () => ({ getUserKieApiKey: vi.fn() }));
+vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: vi.fn() }));
 import { dispatchQueuedSceneJobs } from "@/lib/billing/independent-scene-analysis";
 
 function queued(rows: Array<{ id: string; taskId: string; activeCount: number }>) {

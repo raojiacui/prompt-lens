@@ -1,7 +1,7 @@
 import { isAdmin } from "@/lib/auth";
 import { DEFAULT_KIE_CHAT_MODEL } from "@/lib/ai/kie-client";
 import { assertHasCredits, creditErrorResponse, deductCreditsFromUser, getCreditBalance } from "@/lib/billing/credits";
-import { getPlatformKieApiKey, hasPaidPackageAccess, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { getPlatformKieApiKey, hasPaidPackageAccess, resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { assertTrialQuota, getUserTrialUsage, trialQuotaResponse } from "@/lib/usage/trial-quota";
 
 export const VIDEO_ANALYSIS_SHORT_MAX_SECONDS = 10;
@@ -17,7 +17,7 @@ export type VideoAnalysisEntitlement = {
   mode: VideoAnalysisBillingMode;
   balance: number;
   hasPaidVideoAnalysis: boolean;
-  hasUserKieKey: boolean;
+  hasUserApiKey: boolean;
   canUsePlatformKie: boolean;
   platformKieConfigured: boolean;
   trial: Awaited<ReturnType<typeof getUserTrialUsage>>;
@@ -89,7 +89,7 @@ export async function getVideoAnalysisEntitlement(userId: string): Promise<Video
       mode: "admin",
       balance: credits.balance,
       hasPaidVideoAnalysis: true,
-      hasUserKieKey: false,
+      hasUserApiKey: false,
       canUsePlatformKie: true,
       platformKieConfigured: Boolean(getPlatformKieApiKey()),
       trial: { ...trial, used: 0, remaining: Number.POSITIVE_INFINITY, isAdmin: true },
@@ -113,10 +113,10 @@ export async function getVideoAnalysisEntitlement(userId: string): Promise<Video
     getUserTrialUsage(userId),
     getCreditBalance(userId),
     hasPaidPackageAccess(userId, ["video_analysis"]),
-    resolveKieApiKeyForFeature(userId, { requiredPackageScope: "video_analysis" }),
+    resolveApiKeyForFeature(userId, { requiredPackageScope: "video_analysis" }),
   ]);
 
-  const mode: VideoAnalysisBillingMode = keyAccess.hasUserKieKey
+  const mode: VideoAnalysisBillingMode = keyAccess.hasUserApiKey
     ? "byok"
     : hasPaidVideoAnalysis
       ? "platform_credits"
@@ -128,7 +128,7 @@ export async function getVideoAnalysisEntitlement(userId: string): Promise<Video
     mode,
     balance: credits.balance,
     hasPaidVideoAnalysis,
-    hasUserKieKey: keyAccess.hasUserKieKey,
+    hasUserApiKey: keyAccess.hasUserApiKey,
     canUsePlatformKie,
     platformKieConfigured: Boolean(getPlatformKieApiKey()),
     trial,
@@ -169,7 +169,7 @@ export async function assertCanStartVideoAnalysis(userId: string, options: numbe
 export async function getWorkflowAnalysisEntitlement(userId: string): Promise<VideoAnalysisEntitlement> {
   const entitlement = await getVideoAnalysisEntitlement(userId);
   if (process.env.COMMERCIAL_CONSUMPTION_ENABLED !== "true" || entitlement.mode === "admin") return entitlement;
-  const mode = entitlement.hasUserKieKey ? "byok" : "trial";
+  const mode = entitlement.hasUserApiKey ? "byok" : "trial";
   return {
     ...entitlement,
     mode,

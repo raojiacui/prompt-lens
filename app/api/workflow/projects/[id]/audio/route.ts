@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db, projectAssets, sceneVersions, workflowJobs } from "@/lib/db";
-import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { providerAccessError, resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { uploadToR2 } from "@/lib/cloudflare/r2";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 import { buildAudioProductionPlan, type AudioProductionScene } from "@/lib/workflow/audio-production";
@@ -67,10 +67,10 @@ async function deferredPOST(request: NextRequest, { params }: { params: Promise<
     }).where(and(eq(sceneVersions.id, scene.id), eq(sceneVersions.projectId, id)));
   }
 
-  const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "audio_generation", allowPaidPlatformKey: false });
+  const keyAccess = await resolveApiKeyForFeature(session.user.id, { requiredPackageScope: "audio_generation", allowPaidPlatformKey: false });
   const apiKey = keyAccess.apiKey;
   const callbackUrl = typeof body.callbackUrl === "string" ? body.callbackUrl.trim() : undefined;
-  if (!apiKey) return NextResponse.json(kieAccessError("音频生成"), { status: 400 });
+  if (!apiKey) return NextResponse.json(providerAccessError("音频生成"), { status: 400 });
   const audioTask = await createKieDialogueTask({ apiKey, modelId: plan.modelId, cues: plan.cues, callBackUrl: callbackUrl });
 
   const [job] = await db.insert(workflowJobs).values({

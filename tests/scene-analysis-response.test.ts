@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { analyzeSceneBlueprint, analyzeImageBlueprint } from "@/lib/workflow/scene-analysis";
 
-vi.mock("@/lib/byok/kie", () => ({ getUserKieApiKey: async () => "test-key" }));
+vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: async () => ({ provider: "kie", apiKey: "test-key" }) }));
 vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "test-key" }));
 const input = {
   userId: "test", modelMode: "manual" as const, modelId: "gemini-3-8-flash-openai",

@@ -58,17 +58,18 @@ export const callExistingAnalyzeApiTool: ToolDefinition = {
       const { analyzeFrames } = await import("@/lib/ai/analyzer");
       const { assertCanStartVideoAnalysis, FREE_TRIAL_ANALYSIS_MODEL, settleVideoAnalysisCredits } = await import("@/lib/billing/video-analysis");
       const { reserveTrialAnalysis, completeTrialAnalysis } = await import("@/lib/usage/trial-quota");
-      const { getPlatformKieApiKey, resolveKieApiKeyForFeature } = await import("@/lib/billing/platform-access");
+      const { getPlatformKieApiKey, resolveApiKeyForFeature } = await import("@/lib/billing/platform-access");
       const { db, analysisHistory, operationLogs } = await import("@/lib/db");
       const entitlement = await assertCanStartVideoAnalysis(ctx.userId, 1);
+      const access = entitlement.mode === "trial" ? null : await resolveApiKeyForFeature(ctx.userId, { requiredPackageScope: "video_analysis" });
       const apiKey = entitlement.mode === "trial"
         ? getPlatformKieApiKey()
-        : (await resolveKieApiKeyForFeature(ctx.userId, { requiredPackageScope: "video_analysis" })).apiKey;
+        : access?.apiKey;
       if (!apiKey) throw new Error("KIE API Key is not configured");
       if (entitlement.mode === "trial") {
         trialReservationId = await reserveTrialAnalysis(ctx.userId);
       }
-      const provider = "kie";
+      const provider = access?.provider || "kie";
       const result = await analyzeFrames({
         userId: ctx.userId,
         provider,
@@ -109,7 +110,7 @@ export const callExistingAnalyzeApiTool: ToolDefinition = {
         userId: ctx.userId,
         action: "analysis.complete",
         resourceType: videoAttachments.length ? "video" : "image",
-        metadata: { billingMode: entitlement.mode, provider: "kie", agentRunId: ctx.runId, trialReservationId },
+        metadata: { billingMode: entitlement.mode, provider, agentRunId: ctx.runId, trialReservationId },
       });
       await completeTrialAnalysis(trialReservationId);
       trialCompleted = true;

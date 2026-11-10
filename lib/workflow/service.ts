@@ -381,6 +381,7 @@ export async function rewriteSceneVersion(params: {
     outputLanguage: params.outputLanguage,
     allowPlatformKeyForRewrite: params.allowPlatformKeyForRewrite,
     rewriteKeySource: params.rewriteKeySource,
+    analysisProvider: params.analysisProvider, analysisApiKey: params.analysisApiKey,
   });
   } catch (error) {
     if (params.commercialTaskKey) {

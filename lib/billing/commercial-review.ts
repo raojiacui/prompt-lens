@@ -79,7 +79,7 @@ export async function releaseUnfulfilledCommercialAnalysis(input: { reservationI
     const taskInput = task.input as { projectId?: string; retry?: unknown; pricing?: { automaticSplit?: boolean } };
     if (taskInput.retry) throw new Error("RETRY_REQUIRES_INDIVIDUAL_RECONCILIATION");
     if (!taskInput.projectId || typeof taskInput.pricing?.automaticSplit !== "boolean") throw new Error("INCOMPLETE_ANALYSIS_CHECKPOINT");
-    const [deliveredScene] = await tx.select({ id: sceneVersions.id }).from(sceneVersions).where(and(eq(sceneVersions.projectId, taskInput.projectId), sql`(${sceneVersions.metadata}->>'analysisProvider' = 'kie' OR ${sceneVersions.generationPrompt} <> '')`)).limit(1);
+    const [deliveredScene] = await tx.select({ id: sceneVersions.id }).from(sceneVersions).where(and(eq(sceneVersions.projectId, taskInput.projectId), sql`(${sceneVersions.metadata}->>'analysisProvider' IN ('kie', 'infistar') OR ${sceneVersions.generationPrompt} <> '')`)).limit(1);
     if (deliveredScene) throw new Error("DELIVERED_SCENE_EXISTS");
     if (taskInput.pricing.automaticSplit) {
       const [deliveredSplit] = await tx.select({ id: projectVersions.id }).from(projectVersions).where(eq(projectVersions.projectId, taskInput.projectId)).limit(1);

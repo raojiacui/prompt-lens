@@ -1,11 +1,13 @@
 import { ANALYSIS_PROMPTS, extractCorePrompt } from "@/lib/ai/prompts";
-import { DEFAULT_KIE_CHAT_MODEL, requestKieChat } from "@/lib/ai/kie-client";
+import { DEFAULT_KIE_CHAT_MODEL } from "@/lib/ai/kie-client";
+import { requestProviderChat } from "./provider-client";
+import type { UserProvider } from "./providers";
 import { defaultLocale, type Locale } from "@/i18n/config";
 
 
 export interface AnalyzeOptions {
   userId: string;
-  provider?: "kie";
+  provider?: UserProvider;
   frames: string[];
   mode: "single" | "batch";
   outputLanguage?: Locale;
@@ -33,7 +35,7 @@ export async function analyzeFrames(options: AnalyzeOptions): Promise<AnalyzeRes
   }];
 
   try {
-    const result = await requestKieChat({ apiKey: apiKeyOverride, modelId, messages });
+    const result = await requestProviderChat({ provider: options.provider, apiKey: apiKeyOverride, modelId, messages });
     return { success: true, prompt: result, corePrompt: extractCorePrompt(result) };
   } catch (error) {
     console.error("AI Analysis error:", error);

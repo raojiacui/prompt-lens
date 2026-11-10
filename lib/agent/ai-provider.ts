@@ -15,7 +15,7 @@ export interface AgentChatMessage {
 
 /**
  * 尝试调用现有 AI provider 生成文本。
- * 仅使用 KIE；无可用 Key 或请求失败时返回 null。
+ * 使用已配置的首选供应商；无可用 Key 或请求失败时返回 null。
  */
 export async function tryAgentChat(
   userId: string,
@@ -28,11 +28,11 @@ export async function tryAgentChat(
   }
   try {
     const { callAIProvider } = await import("@/lib/ai/chat");
-    const content = await callAIProvider({ userId, messages });
-    if (content.trim()) return { content: content.trim(), provider: "kie" };
+    const result = await callAIProvider({ userId, messages });
+    if (result.content.trim()) return { content: result.content.trim(), provider: result.provider };
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
-    if (!msg.includes("No KIE API key configured")) console.warn("[agent-ai] KIE call failed:", msg);
+    if (!msg.includes("No API key configured")) console.warn("[agent-ai] Provider call failed:", msg);
   }
   return null;
 }

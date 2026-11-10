@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { analyzeSceneBlueprint } from "@/lib/workflow/scene-analysis";
 
 // Explicit opt-in: one paid provider request, synthetic pictures, no account or task writes.
-vi.mock("@/lib/byok/kie", () => ({ getUserKieApiKey: async () => null }));
+vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: async () => null }));
 
 describe.runIf(process.env.KIE_DEEPSEEK_LIVE_TEST === "1")("DeepSeek live image analysis", () => {
   it("returns a real scene blueprint from two synthetic frames through the V2 client", async () => {

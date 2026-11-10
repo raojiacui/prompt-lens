@@ -3,7 +3,7 @@ import { rewriteSceneBlueprint, type SceneBlueprintDraft } from "@/lib/workflow/
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { REWRITE_BUDGET_MS } from "@/lib/workflow/rewrite-execution";
 
-vi.mock("@/lib/byok/kie", () => ({ getUserKieApiKey: vi.fn(async () => "test-key") }));
+vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: vi.fn(async () => ({ provider: "kie", apiKey: "test-key" })) }));
 vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "platform-test-key" }));
 
 const original: SceneBlueprintDraft = {

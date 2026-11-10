@@ -9,7 +9,7 @@ import { checkRateLimit } from "@/lib/utils/rate-limit";
 import { db, videoGeneration } from "@/lib/db";
 import { and, desc, eq } from "drizzle-orm";
 import { getModelById, routeModel, type ModelRegistryEntry } from "@/lib/ai/model-registry";
-import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { kieErrorResponse } from "@/lib/reference-video/kie-veo";
 
 const VIDEO_GENERATE_LIMIT = { limit: 3, windowMs: 60000 };
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     const negativePrompt = typeof body?.negativePrompt === "string" ? body.negativePrompt : undefined;
     const model = selectedModel?.kieModelId || DEFAULT_KIE_VIDEO_MODEL;
 
-    const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { allowPaidPlatformKey: false });
+    const keyAccess = await resolveApiKeyForFeature(session.user.id, { allowPaidPlatformKey: false });
     if (!keyAccess.apiKey || (commercialEnabled && keyAccess.source !== "user")) {
       return NextResponse.json({ error: "视频生成需要先在设置里配置你自己的 KIE API Key。平台不再提供视频生成额度。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
     }

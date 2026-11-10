@@ -1,15 +1,17 @@
 import { and, eq, gt, isNotNull } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { getCreditPackage, type CreditPackageScope } from "@/lib/billing/credit-packages";
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { getUserCredential, type UserCredential } from "@/lib/byok/credentials";
+import type { UserProvider } from "@/lib/ai/providers";
 import { creditLedger, db } from "@/lib/db";
 
-export type KieApiKeySource = "user" | "platform_admin" | "platform_paid";
+export type ApiKeySource = "user" | "platform_admin" | "platform_paid";
 
-export type ResolvedKieApiKey = {
+export type ResolvedApiKey = {
   apiKey: string | null;
-  source: KieApiKeySource | null;
-  hasUserKieKey: boolean;
+  provider: UserProvider;
+  source: ApiKeySource | null;
+  hasUserApiKey: boolean;
   hasPaidPackage: boolean;
   isAdmin: boolean;
   platformKeyConfigured: boolean;
@@ -30,27 +32,28 @@ export async function hasPaidPackageAccess(userId: string, requiredScopes: Credi
   });
 }
 
-export async function resolveKieApiKeyForFeature(
+export async function resolveApiKeyForFeature(
   userId: string,
   options: { allowPaidPlatformKey?: boolean; requiredPackageScope?: CreditPackageScope } = {},
-): Promise<ResolvedKieApiKey> {
+): Promise<ResolvedApiKey> {
   const adminUser = await isAdmin(userId);
   const platformKey = getPlatformKieApiKey();
   const platformKeyConfigured = Boolean(platformKey);
 
-  let userKey: string | null = null;
+  let credential: UserCredential | null = null;
   try {
-    userKey = await getUserKieApiKey(userId);
+    credential = await getUserCredential(userId);
   } catch (error) {
     if (!adminUser) throw error;
     console.warn("[billing] Failed to load admin BYOK key; continuing with platform/admin access:", error);
   }
 
-  if (userKey) {
+  if (credential) {
     return {
-      apiKey: userKey,
+      apiKey: credential.apiKey,
+      provider: credential.provider,
       source: "user",
-      hasUserKieKey: true,
+      hasUserApiKey: true,
       hasPaidPackage: false,
       isAdmin: adminUser,
       platformKeyConfigured,
@@ -60,8 +63,9 @@ export async function resolveKieApiKeyForFeature(
   if (platformKey && adminUser) {
     return {
       apiKey: platformKey,
+      provider: "kie",
       source: "platform_admin",
-      hasUserKieKey: false,
+      hasUserApiKey: false,
       hasPaidPackage: true,
       isAdmin: true,
       platformKeyConfigured,
@@ -79,8 +83,9 @@ export async function resolveKieApiKeyForFeature(
   if (platformKey && hasPaidPackage && options.allowPaidPlatformKey === true) {
     return {
       apiKey: platformKey,
+      provider: "kie",
       source: "platform_paid",
-      hasUserKieKey: false,
+      hasUserApiKey: false,
       hasPaidPackage: true,
       isAdmin: false,
       platformKeyConfigured,
@@ -89,16 +94,17 @@ export async function resolveKieApiKeyForFeature(
 
   return {
     apiKey: null,
+    provider: "kie",
     source: null,
-    hasUserKieKey: false,
+    hasUserApiKey: false,
     hasPaidPackage,
     isAdmin: adminUser,
     platformKeyConfigured,
   };
 }
-export function kieAccessError(featureName: string) {
+export function providerAccessError(featureName: string) {
   return {
-    error: `${featureName} 需要先在设置里配置你自己的 KIE API Key；如果想使用平台额度，请先购买包含该功能的积分套餐。`,
+    error: `${featureName} 需要先在设置里配置你自己的 Infistar 或 KIE API Key；如果想使用平台额度，请先购买包含该功能的积分套餐。`,
     code: "KIE_ACCESS_REQUIRED",
   };
 }

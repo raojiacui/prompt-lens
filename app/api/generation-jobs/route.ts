@@ -6,7 +6,7 @@ import { db, projects, sceneVersions, videoGeneration, workflowJobs } from "@/li
 import { generationKeyFingerprint, resolveGenerationStatusKey } from "@/lib/billing/generation-key";
 import { getModelById, listModels, routeModel } from "@/lib/ai/model-registry";
 import { resolveGenerationModel } from "@/lib/ai/generation-models";
-import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 
 export const runtime = "nodejs";
 
@@ -169,7 +169,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Wan 2.7 Video Edit requires a reference video." }, { status: 400 });
     }
 
-    const keyAccess = await resolveKieApiKeyForFeature(auth.user.id, { allowPaidPlatformKey: false });
+    const keyAccess = await resolveApiKeyForFeature(auth.user.id, { allowPaidPlatformKey: false });
     if (!keyAccess.apiKey || (body?.payer === "byok" && keyAccess.source !== "user")) {
       return NextResponse.json({ error: "使用自己的 Key 生成视频，需要先在设置里配置 KIE API Key。", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
     }

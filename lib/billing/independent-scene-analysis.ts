@@ -1,8 +1,9 @@
+import { isUserProvider } from "@/lib/ai/providers";
 import { randomUUID } from "node:crypto";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { analysisProviderSlots, analysisSceneJobs, commercialTasks, db, sceneVersions, videoScenes } from "@/lib/db";
 import { analyzeSceneBlueprint, buildFallbackSceneBlueprint, type SceneBlueprintDraft } from "@/lib/workflow/scene-analysis";
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { getUserCredential } from "@/lib/byok/credentials";
 import { getPlatformKieApiKey } from "./platform-access";
 import { generationKeyFingerprint } from "./generation-key";
 import { finishCommercialAnalysis, savedAnalysisModel, type AnalysisInput } from "./commercial-analysis";
@@ -85,11 +86,11 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string, delivery
         let blueprint = pending || buildFallbackSceneBlueprint(asset, "Analysis interrupted", undefined, input.outputLanguage);
         // A provider label alone cannot make an empty checkpoint billable. Recovery
         // only saves the checkpoint; it must never resubmit inference here.
-        if (blueprint.metadata?.analysisProvider === "kie" && !hasUsablePrompt(blueprint.generationPrompt)) {
+        if (isUserProvider(blueprint.metadata?.analysisProvider) && !hasUsablePrompt(blueprint.generationPrompt)) {
           const failure = buildFallbackSceneBlueprint(asset, "Analysis returned no usable generation prompt", undefined, input.outputLanguage);
           blueprint = { ...failure, metadata: { ...failure.metadata, analysisResultAttempts: blueprint.metadata.analysisResultAttempts, providerAttemptUnconfirmed: blueprint.metadata.providerAttemptUnconfirmed, providerOutcome: blueprint.metadata.providerAttemptUnconfirmed ? "unknown" : "confirmed_failure", failureCode: "KIE_INVALID_RESULT" } };
         }
-        const succeeded = blueprint.metadata?.analysisProvider === "kie";
+        const succeeded = isUserProvider(blueprint.metadata?.analysisProvider);
         const interval = input.pricing.scenes[current.sceneIndex - 1];
         trace.mark("insert_scene_result");
         const retryVersion = input.retry?.sceneVersions.find(scene => scene.id === current.sceneId);
@@ -202,7 +203,7 @@ export async function runIndependentSceneJob(jobId: string) {
     if (!current) throw new AnalysisExecutionLost();
   }
   try {
-    const apiKey = input.pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(task.userId);
+    const apiKey = input.pricing.payer === "platform" ? getPlatformKieApiKey() : (await getUserCredential(task.userId, input.provider || "kie"))?.apiKey;
     if (!apiKey || generationKeyFingerprint(apiKey) !== input.keyFingerprint) throw new Error("KIE_KEY_CHANGED");
     if (input.executionMode === "scene_pipeline_v1") {
       await recordPhase("preparing");
@@ -214,7 +215,7 @@ export async function runIndependentSceneJob(jobId: string) {
     await recordPhase("analyzing");
     console.info("commercial.scene.model_started", { taskId: task.id, sceneJobId: job.id, sceneIndex: job.sceneIndex, preparationMs, queueMs: modelStartedAt - job.createdAt.getTime() });
     requestStarted = true;
-    blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, analysisBudgetMs: Math.max(1, startedAt + 270_000 - Date.now()), allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false });
+    blueprint = await analyzeSceneBlueprint({ userId: task.userId, scene: asset, context: { sceneCount: input.pricing.scenes.length }, modelMode: "manual", modelId: savedAnalysisModel(input), outputLanguage: input.outputLanguage, analysisApiKey: apiKey, analysisProvider: input.provider || "kie", analysisBudgetMs: Math.max(1, startedAt + 270_000 - Date.now()), allowPlatformKeyForAnalysis: input.pricing.payer === "platform", analysisKeySource: input.pricing.payer === "platform" ? "platform" : "user", forceFreeTrialKie: false });
   } catch (error) {
     if (error instanceof AnalysisExecutionLost) {
       console.info("commercial.scene.execution_lost", { taskId: task.id, sceneJobId: job.id });

@@ -9,7 +9,7 @@ vi.mock("@/lib/billing/credits", () => ({
 vi.mock("@/lib/billing/platform-access", () => ({
   getPlatformKieApiKey: () => "platform-test",
   hasPaidPackageAccess: async () => mocks.legacyPaid,
-  resolveKieApiKeyForFeature: async () => ({ hasUserKieKey: mocks.ownKey, apiKey: mocks.ownKey ? "own-test" : "platform-test" }),
+  resolveApiKeyForFeature: async () => ({ hasUserApiKey: mocks.ownKey, apiKey: mocks.ownKey ? "own-test" : "platform-test" }),
 }));
 vi.mock("@/lib/usage/trial-quota", () => ({
   getUserTrialUsage: async () => ({ limit: 2, used: mocks.used, remaining: 2 - mocks.used, isAdmin: false }),

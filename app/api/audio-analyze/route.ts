@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, audioAnalysis, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
-import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { providerAccessError, resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { buildSrt, formatSrtTimestamp, type SubtitleCue } from "@/lib/workflow/audio-production";
 import { transcribeMediaWithKie, type TranscriptSegment } from "@/lib/workflow/transcription";
 
@@ -80,9 +80,9 @@ async function deferredPOST(request: NextRequest) {
     const mediaUrl = typeof body?.mediaUrl === "string" ? body.mediaUrl.trim() : "";
     if (!mediaUrl) return NextResponse.json({ error: "Missing mediaUrl" }, { status: 400 });
 
-    const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "audio_generation", allowPaidPlatformKey: false });
+    const keyAccess = await resolveApiKeyForFeature(session.user.id, { requiredPackageScope: "audio_generation", allowPaidPlatformKey: false });
     const apiKey = keyAccess.apiKey;
-    if (!apiKey) return NextResponse.json(kieAccessError("音频分析"), { status: 400 });
+    if (!apiKey) return NextResponse.json(providerAccessError("音频分析"), { status: 400 });
     await db.insert(operationLogs).values({
       userId: session.user.id,
       action: "analysis.start",

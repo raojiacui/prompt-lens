@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getModelById } from "@/lib/ai/model-registry";
-import { getPlatformKieApiKey, kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { getPlatformKieApiKey, providerAccessError, resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { commercialRewriteEnabled } from "@/lib/billing/commercial-rewrite";
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { getUserCredential } from "@/lib/byok/credentials";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 import { defaultLocale, isLocale } from "@/i18n/config";
@@ -35,13 +35,15 @@ export async function POST(
       return NextResponse.json({ error: "Invalid rewrite request ID" }, { status: 400 });
     }
     try {
-      const key = payer === "included" ? getPlatformKieApiKey() : await getUserKieApiKey(session.user.id);
-      if (!key) return NextResponse.json({ error: payer === "included" ? "Platform rewrite temporarily unavailable" : "Configure your KIE API Key first", code: "KIE_KEY_REQUIRED", final: true }, { status: 400 });
+      const credential = payer === "included" ? null : await getUserCredential(session.user.id);
+      const key = payer === "included" ? getPlatformKieApiKey() : credential?.apiKey;
+      if (!key) return NextResponse.json({ error: payer === "included" ? "Platform rewrite temporarily unavailable" : "Configure your API Key first", code: "KIE_KEY_REQUIRED", final: true }, { status: 400 });
       const scene = await rewriteSceneVersion({
         userId: session.user.id, projectId: id, sceneVersionId, instruction,
         currentPrompt: typeof body?.currentPrompt === "string" && body.currentPrompt.trim() ? body.currentPrompt.trim() : undefined,
         outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale,
         modelMode: "manual", modelId: "analysis-gemini-3-8-flash", modelPriority: "balanced",
+        analysisProvider: credential?.provider || "kie", analysisApiKey: key,
         rewriteKeySource: payer === "included" ? "platform" : "user",
         allowPlatformKeyForRewrite: payer === "included",
         commercialTaskKey: payer === "included" ? `rewrite:${requestId}` : undefined,
@@ -71,9 +73,9 @@ export async function POST(
     return NextResponse.json({ error: "AI 重写脚本只支持 KIE 模型。", code: "KIE_MODEL_REQUIRED" }, { status: 400 });
   }
 
-  const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_analysis" });
+  const keyAccess = await resolveApiKeyForFeature(session.user.id, { requiredPackageScope: "video_analysis" });
   if (!keyAccess.apiKey) {
-    return NextResponse.json(kieAccessError("AI 重写脚本"), { status: 400 });
+    return NextResponse.json(providerAccessError("AI 重写脚本"), { status: 400 });
   }
 
   try {
@@ -85,6 +87,7 @@ export async function POST(
       currentPrompt: typeof body?.currentPrompt === "string" && body.currentPrompt.trim() ? body.currentPrompt.trim() : undefined,
       outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale,
       allowPlatformKeyForRewrite: keyAccess.source === "platform_admin" || keyAccess.source === "platform_paid",
+      analysisProvider: keyAccess.provider, analysisApiKey: keyAccess.apiKey,
       ...modelSelection,
     });
     return NextResponse.json({ scene, keySource: keyAccess.source });

@@ -36,7 +36,7 @@ for (const width of [1440, 390]) test(`download split shot without billing ${wid
     const path = new URL(route.request().url()).pathname;
     let body: unknown = {};
     if (path.includes("/auth/get-session")) body = { user: { id: "test", name: "Test", email: "test@example.com" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
-    else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, mode: "byok", hasUserKieKey: false, trial: { remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 }, linkImports: { remaining: 10 } };
+    else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, mode: "byok", hasUserApiKey: false, trial: { remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 }, linkImports: { remaining: 10 } };
     else if (path === "/api/models") body = { models: [] };
     else if (path === "/api/workflow/projects") body = route.request().method() === "POST" ? { project: { id: projectId } } : { projects: [] };
 

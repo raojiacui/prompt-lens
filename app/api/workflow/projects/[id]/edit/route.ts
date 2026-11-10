@@ -3,7 +3,7 @@ import axios from "axios";
 import { auth } from "@/lib/auth";
 import { db, workflowJobs } from "@/lib/db";
 import { extractR2Key, getSignedUrlFromR2 } from "@/lib/cloudflare/r2";
-import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { providerAccessError, resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { createKieVeoGeneration } from "@/lib/reference-video/kie-veo";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 import { buildEditPlan, type EditMode } from "@/lib/workflow/video-editing";
@@ -58,10 +58,10 @@ async function deferredPOST(request: NextRequest, { params }: { params: Promise<
   });
 
   if (plan.mode === "generative") {
-    const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_edit", allowPaidPlatformKey: false });
+    const keyAccess = await resolveApiKeyForFeature(session.user.id, { requiredPackageScope: "video_edit", allowPaidPlatformKey: false });
     const apiKey = keyAccess.apiKey;
     if (!apiKey) {
-      return NextResponse.json(kieAccessError("生成式视频编辑"), { status: 400 });
+      return NextResponse.json(providerAccessError("生成式视频编辑"), { status: 400 });
     }
     const result = await createKieVeoGeneration({
       prompt: plan.prompt,

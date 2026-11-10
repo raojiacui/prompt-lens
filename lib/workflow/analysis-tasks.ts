@@ -1,8 +1,11 @@
+import { isUserProvider } from "@/lib/ai/providers";
+import { getUserCredential } from "@/lib/byok/credentials";
+import type { UserProvider } from "@/lib/ai/providers";
 import { randomUUID } from "node:crypto";
 import { and, asc, eq, sql } from "drizzle-orm";
 import { commercialTasks, creditLedger, db, operationLogs, projects, projectVersions, referenceVideos, sceneVersions, trialAnalysisReservations, trialAnalysisUsage, userCredits, videoScenes } from "@/lib/db";
 import { assertCanStartVideoAnalysis, getWorkflowAnalysisEntitlement, FREE_TRIAL_ANALYSIS_MODEL, getVideoAnalysisChargeUnits, type VideoAnalysisBillingMode } from "@/lib/billing/video-analysis";
-import { getPlatformKieApiKey, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { getPlatformKieApiKey, resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { assertOwnedUploadedVideo, commercialMediaRequest, type MediaPreview } from "@/lib/billing/commercial-media";
 import { generationKeyFingerprint } from "@/lib/billing/generation-key";
 import { InsufficientCreditsError } from "@/lib/billing/credits";
@@ -21,7 +24,7 @@ import { dispatchQueuedAnalysis } from "./analysis-dispatch";
 type Task = typeof commercialTasks.$inferSelect;
 type Input = {
   projectId: string; mediaUrl: string; mediaName?: string; mediaType: "image" | "video";
-  mode: VideoAnalysisBillingMode; modelId: string; keySource: "user" | "platform"; keyFingerprint: string;
+  mode: VideoAnalysisBillingMode; modelId: string; provider?: UserProvider; keySource: "user" | "platform"; keyFingerprint: string;
   outputLanguage: "zh" | "en"; longVideoAllowed: boolean; trialReservationId: string | null;
 };
 type Progress = {
@@ -34,7 +37,7 @@ type Progress = {
 const LEASE_MS = 6 * 60_000;
 
 async function taskKey(input: Input, userId: string) {
-  const key = input.keySource === "platform" ? getPlatformKieApiKey() : (await resolveKieApiKeyForFeature(userId, { allowPaidPlatformKey: false })).apiKey;
+  const key = input.keySource === "platform" ? getPlatformKieApiKey() : (await getUserCredential(userId, input.provider || "kie"))?.apiKey;
   if (!key || generationKeyFingerprint(key) !== input.keyFingerprint) throw new Error("KIE Key 已变更，请重新提交分析。");
   return key;
 }
@@ -51,7 +54,7 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
     ? await getWorkflowAnalysisEntitlement(userId)
     : await assertCanStartVideoAnalysis(userId, { longVideo: false });
   if (requiresAnalysisQuote({ commercialEnabled: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true", mediaType, mode: entitlement.mode, trialRemaining: entitlement.trial.remaining })) throw new Error("CONFIRMED_QUOTE_REQUIRED");
-  const access = entitlement.mode === "trial" ? { apiKey: getPlatformKieApiKey(), source: "platform" } : await resolveKieApiKeyForFeature(userId, { requiredPackageScope: "video_analysis", allowPaidPlatformKey: entitlement.mode === "platform_credits" });
+  const access = entitlement.mode === "trial" ? { apiKey: getPlatformKieApiKey(), source: "platform", provider: "kie" as const } : await resolveApiKeyForFeature(userId, { requiredPackageScope: "video_analysis", allowPaidPlatformKey: entitlement.mode === "platform_credits" });
   if (!access.apiKey) throw new Error("KIE API Key is not configured");
   const selection = parseWorkflowModelSelection(body);
   const modelId = entitlement.mode === "trial" ? FREE_TRIAL_ANALYSIS_MODEL : resolveModelSelection("analysis", { mode: selection.modelMode, modelId: selection.modelId, priority: selection.modelPriority }).model.kieModelId;
@@ -63,7 +66,7 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
       const [project] = await tx.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).for("update");
       if (!project || project.status !== "draft") throw new Error("PROJECT_NOT_READY");
       const input: Input = { projectId, mediaUrl, mediaType, mediaName: typeof body.mediaName === "string" ? body.mediaName : undefined,
-        mode: entitlement.mode, modelId, outputLanguage: body.outputLanguage === "en" ? "en" : "zh",
+        mode: entitlement.mode, modelId, provider: access.provider || "kie", outputLanguage: body.outputLanguage === "en" ? "en" : "zh",
         longVideoAllowed: false,
         keySource: access.source === "user" ? "user" : "platform", keyFingerprint: generationKeyFingerprint(access.apiKey!), trialReservationId: reservation };
       const result: Progress = { phase: "prepare", cursor: 0, successful: 0, failed: 0, heldCredits: 0, projectId };
@@ -113,7 +116,7 @@ async function settleAnalysisTask(task: Task, progress: Progress, recovering = f
     const state = progress.successful > 0 ? "completed" : "failed";
     await tx.update(commercialTasks).set({ state, result: { ...progress, phase: "settle", chargedCredits, partial }, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
     await tx.update(projects).set({ status: progress.successful > 0 ? "ready" : "failed", metadata: sql`${projects.metadata} || ${JSON.stringify({ failedSceneCount: progress.failed, partialAnalysis: partial, analysisError: progress.error })}::jsonb`, updatedAt: new Date() }).where(eq(projects.id, input.projectId));
-    await tx.insert(operationLogs).values({ userId: task.userId, action: progress.successful > 0 ? "analysis.complete" : "analysis.error", resourceType: input.mediaType, resourceId: input.projectId, metadata: { taskId: task.id, billingMode: input.mode, model: input.modelId, provider: "kie", successful: progress.successful, failed: progress.failed, chargedCredits } });
+    await tx.insert(operationLogs).values({ userId: task.userId, action: progress.successful > 0 ? "analysis.complete" : "analysis.error", resourceType: input.mediaType, resourceId: input.projectId, metadata: { taskId: task.id, billingMode: input.mode, model: input.modelId, provider: input.provider || "kie", successful: progress.successful, failed: progress.failed, chargedCredits } });
   });
 }
 
@@ -181,10 +184,10 @@ async function runAnalysisTaskStep(id: string) {
       const audio = buildSceneAudioContexts({ scenes: progress.assets!.scenes, transcription: progress.transcription || null, unavailableReason: progress.transcriptionError }).get(scene.sceneIndex);
       let blueprint: SceneBlueprintDraft;
       try {
-        blueprint = await (input.mediaType === "image" ? analyzeImageBlueprint : analyzeSceneBlueprint)({ userId: task.userId, scene, context: { sceneCount: progress.assets!.scenes.length, audio }, modelMode: "manual", modelId: input.modelId, outputLanguage: input.outputLanguage, analysisApiKey: apiKey, analysisKeySource: input.keySource, allowPlatformKeyForAnalysis: input.keySource === "platform", forceFreeTrialKie: input.mode === "trial" });
+        blueprint = await (input.mediaType === "image" ? analyzeImageBlueprint : analyzeSceneBlueprint)({ userId: task.userId, scene, context: { sceneCount: progress.assets!.scenes.length, audio }, modelMode: "manual", modelId: input.modelId, outputLanguage: input.outputLanguage, analysisApiKey: apiKey, analysisProvider: input.provider || "kie", analysisKeySource: input.keySource, allowPlatformKeyForAnalysis: input.keySource === "platform", forceFreeTrialKie: input.mode === "trial" });
       } catch (error) { blueprint = buildFallbackSceneBlueprint(scene, error instanceof Error ? error.message : "Analysis failed"); }
       blueprint = attachBackgroundMusicToBlueprint(blueprint, progress.music);
-      const succeeded = blueprint.metadata?.analysisProvider === "kie";
+      const succeeded = isUserProvider(blueprint.metadata?.analysisProvider);
       await db.transaction(async (tx) => {
         await lockAnalysisExecution(tx, task);
         await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId!, originalSceneId: progress.sceneIds![progress.cursor], sceneIndex: scene.sceneIndex, duration: scene.duration, ...blueprint });
@@ -199,9 +202,9 @@ async function runAnalysisTaskStep(id: string) {
       await lockAnalysisExecution(tx, task);
       const scenes = await tx.query.sceneVersions.findMany({ where: eq(sceneVersions.projectVersionId, progress.versionId!), orderBy: [asc(sceneVersions.sceneIndex)] });
       const project = await tx.query.projects.findFirst({ where: eq(projects.id, input.projectId) });
-      const successful = scenes.filter(s => (s.metadata as Record<string, unknown>).analysisProvider === "kie");
+      const successful = scenes.filter(s => isUserProvider((s.metadata as Record<string, unknown>).analysisProvider));
       if (project && successful.length) await tx.update(projects).set({ title: deriveProjectTitle({}, successful as unknown as SceneBlueprintDraft[], project.title) }).where(eq(projects.id, project.id));
-      await tx.update(projectVersions).set({ overview: { sceneCount: scenes.length, successfulSceneCount: progress.successful, failedSceneCount: progress.failed, backgroundMusic: progress.music, narrative: scenes.filter(s => (s.metadata as Record<string, unknown>).analysisProvider === "kie").map(s => (s.story as Record<string, unknown>).summary).filter(Boolean).join("\n") }, updatedAt: new Date() }).where(eq(projectVersions.id, progress.versionId!));
+      await tx.update(projectVersions).set({ overview: { sceneCount: scenes.length, successfulSceneCount: progress.successful, failedSceneCount: progress.failed, backgroundMusic: progress.music, narrative: scenes.filter(s => isUserProvider((s.metadata as Record<string, unknown>).analysisProvider)).map(s => (s.story as Record<string, unknown>).summary).filter(Boolean).join("\n") }, updatedAt: new Date() }).where(eq(projectVersions.id, progress.versionId!));
       });
     }
     await settleAnalysisTask(task, progress);

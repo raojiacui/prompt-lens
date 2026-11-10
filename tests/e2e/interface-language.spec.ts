@@ -12,7 +12,7 @@ for (const locale of ["zh", "en"]) {
           ? { session: { id: "test", token: "test", expiresAt: "2099-01-01T00:00:00.000Z" }, user: { id: "test", email: "test@example.com", name: "Test" } }
           : path === "/api/samples" ? { samples: [{ id: "sample", title: "User custom title", mediaType: "video", status: "ready", sceneCount: 3, createdAt: "2026-10-01T00:00:00Z" }] }
           : path === "/api/workflow/projects" ? { projects: [] }
-          : path === "/api/credits/me" ? { mode: "byok", balance: 0, hasUserKieKey: true, trial: { limit: 2, remaining: 2 } }
+          : path === "/api/credits/me" ? { mode: "byok", balance: 0, hasUserApiKey: true, trial: { limit: 2, remaining: 2 } }
           : path === "/api/models" ? { models: [] } : {};
         await route.fulfill({ json: body });
       });

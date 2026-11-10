@@ -6,8 +6,8 @@ import { SceneRewriteError } from "@/lib/workflow/rewrite-execution";
 
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: vi.fn(async () => ({ user: { id: "owner" } })) } } }));
 vi.mock("@/lib/billing/commercial-rewrite", () => ({ commercialRewriteEnabled: () => true }));
-vi.mock("@/lib/byok/kie", () => ({ getUserKieApiKey: async () => "private-key" }));
-vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "platform-key", resolveKieApiKeyForFeature: vi.fn(), kieAccessError: vi.fn() }));
+vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: async () => ({ provider: "kie", apiKey: "private-key" }) }));
+vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "platform-key", resolveApiKeyForFeature: vi.fn(), providerAccessError: vi.fn() }));
 vi.mock("@/lib/workflow/service", () => ({ rewriteSceneVersion: vi.fn() }));
 const requestId = "11111111-1111-4111-8111-111111111111";
 const call = (body: Record<string, unknown>) => POST(new NextRequest("http://localhost/api/rewrite", { method: "POST", body: JSON.stringify({ instruction: "Change the costume", requestId, ...body }) }), { params: Promise.resolve({ id: "project", sceneVersionId: "scene" }) });

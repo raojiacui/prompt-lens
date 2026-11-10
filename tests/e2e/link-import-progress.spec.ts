@@ -21,7 +21,7 @@ for (const locale of ["zh", "en"] as const) for (const width of [1440, 390]) {
       const path = new URL(route.request().url()).pathname;
       let body: unknown = {};
       if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
-      else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, mode: "byok", hasUserKieKey: true, balance: 0, trial: { remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 }, linkImports: { remaining: 10 } };
+      else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, mode: "byok", hasUserApiKey: true, balance: 0, trial: { remaining: 0 }, commercial: { enabled: true, credits: 200, rewrites: 20 }, linkImports: { remaining: 10 } };
       else if (path === "/api/models") body = { models: [] };
       else if (path === "/api/workflow/projects") body = { projects: [] };
       await route.fulfill({ json: body });

@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
 
-const mocks = vi.hoisted(() => ({ db: null as unknown, mode: "trial", analyze: vi.fn(), probe: vi.fn() }));
+const mocks = vi.hoisted(() => ({ db: null as unknown, mode: "trial", provider: "kie", analyze: vi.fn(), probe: vi.fn() }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return mocks.db; } }));
 vi.mock("@/lib/auth", () => ({ isAdminProfile: () => false }));
 vi.mock("@/lib/billing/video-analysis", () => ({
@@ -14,7 +14,8 @@ vi.mock("@/lib/billing/video-analysis", () => ({
   getWorkflowAnalysisEntitlement: async () => ({ mode: mocks.mode, trial: { remaining: 2 }, capabilities: { videoAnalysis: { canUseLongVideo: mocks.mode !== "trial" } } }),
   getVideoAnalysisChargeUnits: ({ sceneCount, longVideo }: { sceneCount: number; longVideo: boolean }) => sceneCount + (longVideo ? 3 : 0),
 }));
-vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "platform-test", resolveKieApiKeyForFeature: async () => ({ apiKey: "own-test", source: "user" }) }));
+vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "platform-test", resolveApiKeyForFeature: async () => ({ apiKey: "own-test", source: "user", provider: mocks.provider }) }));
+vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: async (_user: string, provider?: string) => ({ apiKey: "own-test", provider: provider || mocks.provider }) }));
 vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: async () => "owned", commercialMediaRequest: mocks.probe }));
 vi.mock("@/lib/workflow/scene-analysis", () => ({ analyzeImageBlueprint: mocks.analyze, analyzeSceneBlueprint: mocks.analyze, buildFallbackSceneBlueprint: (_: unknown, reason: string) => ({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "", metadata: { analysisProvider: "fallback", fallbackReason: reason } }) }));
 vi.mock("@/lib/workflow/transcription", () => ({ buildSceneAudioContexts: () => new Map(), transcribeMediaWithKie: async () => null }));
@@ -49,6 +50,7 @@ describe("durable analysis", () => {
   beforeEach(async () => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "false");
     mocks.mode = "trial";
+    mocks.provider = "kie";
     mocks.analyze.mockReset().mockResolvedValue(blueprint);
     mocks.probe.mockReset();
     userId = randomUUID(); projectId = randomUUID();
@@ -87,6 +89,18 @@ describe("durable analysis", () => {
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
     const rows = await testDb.select().from(schema.sceneVersions);
     expect(rows.find(r => r.projectId === projectId)?.generationPrompt).toBe("");
+  });
+
+  it("persists Infistar routing and counts real Infistar analysis as successful", async () => {
+    mocks.mode = "byok";
+    mocks.provider = "infistar";
+    mocks.analyze.mockResolvedValue({ ...blueprint, metadata: { analysisProvider: "infistar" } });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    expect(queued.input).toMatchObject({ provider: "infistar", keySource: "user" });
+    mocks.provider = "kie"; // Preference can change while the queued task is waiting.
+    expect((await drain(queued.id)).state).toBe("completed");
+    expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ analysisProvider: "infistar", analysisApiKey: "own-test" });
+    expect((await task(queued.id)).result).toMatchObject({ successful: 1, failed: 0 });
   });
 
   it("settles only delivered scenes, including after a worker disappears", async () => {

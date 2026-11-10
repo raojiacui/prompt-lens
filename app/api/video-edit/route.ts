@@ -62,7 +62,7 @@ async function parseEditInstruction(
 
 只返回 JSON，不要其他内容。`;
 
-  const content = await callAIProvider({
+  const { content } = await callAIProvider({
     userId,
     messages: [
       { role: "system", content: systemPrompt },

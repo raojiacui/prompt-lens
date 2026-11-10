@@ -4,7 +4,8 @@ import { ANALYSIS_SAVE_STALE_TIMEOUT_MS, ANALYSIS_STALE_TIMEOUT_MS, AnalysisExec
 import { db, analysisSceneJobs, commercialLots, commercialTasks, projects, referenceVideos, projectVersions, videoScenes, sceneVersions } from "@/lib/db";
 import { isOwnedLinkedVideo, commercialMediaRequest, type MediaPreview } from "./commercial-media";
 import { quoteAnalysis, settleAnalysis, type AnalysisPriceInput, PRICING_VERSION } from "./pricing-v6";
-import { getUserKieApiKey } from "@/lib/byok/kie";
+import { getUserCredential } from "@/lib/byok/credentials";
+import type { UserProvider } from "@/lib/ai/providers";
 import { getPlatformKieApiKey } from "./platform-access";
 import { generationKeyFingerprint } from "./generation-key";
 import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
@@ -17,7 +18,7 @@ import { dispatchQueuedAnalysis } from "@/lib/workflow/analysis-dispatch";
 import { dispatchQueuedSceneJobs } from "./independent-scene-analysis";
 
 export function commercialConsumptionEnabled() { return process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true"; }
-export type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; executionMode?: "scene_jobs_v1" | "scene_pipeline_v1"; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
+export type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; provider?: UserProvider; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; executionMode?: "scene_jobs_v1" | "scene_pipeline_v1"; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
 
 const PREPARATION_RETENTION_MS = 7 * 86400000;
 type PreparationSource = { projectId: string; mediaUrl: string; mediaName: string; automaticSplit: boolean; preview: MediaPreview; retentionExpired?: boolean };
@@ -98,7 +99,7 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
   }
 }
 
-export async function quoteCommercialAnalysis(userId: string, input: { preparationId: string; sceneIds: string[]; payer: string; model: string; modelId?: string; outputLanguage: string }) {
+export async function quoteCommercialAnalysis(userId: string, input: { preparationId: string; sceneIds: string[]; payer: string; model: string; modelId?: string; provider?: UserProvider; outputLanguage: string }) {
   const preparation = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, input.preparationId), eq(commercialTasks.userId, userId), eq(commercialTasks.kind, "analysis_preview")) });
   const source = retainedPreparationSource(preparation);
   if (!source) throw new Error("PREVIEW_EXPIRED");
@@ -107,10 +108,12 @@ export async function quoteCommercialAnalysis(userId: string, input: { preparati
   if (!Array.isArray(input.sceneIds) || new Set(input.sceneIds).size !== input.sceneIds.length || input.sceneIds.some((id) => !source.preview.scenes.some((s) => s.id === id))) throw new Error("INVALID_SCENE_SELECTION");
   const pricing: AnalysisPriceInput = { payer: input.payer as AnalysisPriceInput["payer"], model: input.model as AnalysisPriceInput["model"], sourceDurationUs: source.preview.durationUs, automaticSplit: source.automaticSplit, paidSplitReusable: false, scenes: source.preview.scenes.filter((s) => input.sceneIds.includes(s.id)) };
   const quote = quoteAnalysis(pricing);
-  const apiKey = pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(userId);
+  const credential = pricing.payer === "platform" ? null : await getUserCredential(userId);
+  const provider = credential?.provider || "kie";
+  const apiKey = pricing.payer === "platform" ? getPlatformKieApiKey() : credential?.apiKey;
   if (!apiKey) throw new Error("KIE_KEY_REQUIRED");
   const modelId = quotedAnalysisModel(input);
-  const snapshot: AnalysisInput = { ...source, pricing, modelId, pricingVersion: PRICING_VERSION, outputLanguage: input.outputLanguage === "zh" ? "zh" : "en", keyFingerprint: generationKeyFingerprint(apiKey), executionMode: source.automaticSplit && process.env.ANALYSIS_SCENE_PREPARATION_MODE !== "batch" ? "scene_pipeline_v1" : "scene_jobs_v1" };
+  const snapshot: AnalysisInput = { ...source, pricing, modelId, provider, pricingVersion: PRICING_VERSION, outputLanguage: input.outputLanguage === "zh" ? "zh" : "en", keyFingerprint: generationKeyFingerprint(apiKey), executionMode: source.automaticSplit && process.env.ANALYSIS_SCENE_PREPARATION_MODE !== "batch" ? "scene_pipeline_v1" : "scene_jobs_v1" };
   const [task] = await db.insert(commercialTasks).values({ userId, kind: "analysis", input: snapshot, credits: quote.credits, expiresAt: new Date(Date.now() + 600000) }).returning();
   return { id: task.id, ...quote, modelId, payer: pricing.payer, expiresAt: task.expiresAt };
 }
@@ -293,7 +296,7 @@ export async function quoteCommercialAnalysisRetry(userId: string, parentId: str
     if (!version) throw new Error("SCENE_ALREADY_CHANGED");
     return { id: scene.id, sceneVersionId: version.id };
   });
-  const apiKey = source.pricing.payer === "platform" ? getPlatformKieApiKey() : await getUserKieApiKey(userId);
+  const apiKey = source.pricing.payer === "platform" ? getPlatformKieApiKey() : (await getUserCredential(userId, source.provider || "kie"))?.apiKey;
   if (!apiKey) throw new Error("KIE_KEY_REQUIRED");
   const credits = settleAnalysis(source.pricing, [...previousSuccess, ...remaining.map(scene => scene.id)], true) - result.totalChargedCredits!;
   const snapshot: AnalysisInput = { ...source, executionMode: source.executionMode || "scene_jobs_v1", keyFingerprint: generationKeyFingerprint(apiKey), retry: { parentId, previousSuccess, previousCharged: result.totalChargedCredits!, sceneVersions } };

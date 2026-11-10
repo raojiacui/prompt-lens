@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     commercialConsumptionEnabled: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true",
     mode: entitlement.mode,
     hasPaidVideoAnalysis: entitlement.hasPaidVideoAnalysis,
-    hasUserKieKey: entitlement.hasUserKieKey,
+    hasUserApiKey: entitlement.hasUserApiKey,
     canUsePlatformKie: entitlement.canUsePlatformKie,
     platformKieConfigured: entitlement.platformKieConfigured,
     trial: entitlement.trial,

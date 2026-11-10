@@ -13,7 +13,7 @@ for (const locale of ["zh", "en"]) {
         const path = new URL(route.request().url()).pathname;
         let body: unknown = {};
         if (path.includes("/auth/get-session")) body = { session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() }, user: { id: "test", email: "test@example.com", name: "Test", role: "user" } };
-        else if (path === "/api/credits/me") body = { balance: 10, mode: "byok", hasUserKieKey: true, trial: { limit: 2, used: 0, remaining: 2, isAdmin: false }, commercial: { enabled: true, credits: 200, rewrites: 20, heldRewrites: 0 } };
+        else if (path === "/api/credits/me") body = { balance: 10, mode: "byok", hasUserApiKey: true, trial: { limit: 2, used: 0, remaining: 2, isAdmin: false }, commercial: { enabled: true, credits: 200, rewrites: 20, heldRewrites: 0 } };
         else if (path === "/api/models") body = { models: [] };
         else if (path === "/api/workflow/projects") body = { projects: [project] };
         else if (path.endsWith("/rewrite")) {

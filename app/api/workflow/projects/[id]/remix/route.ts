@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getModelById } from "@/lib/ai/model-registry";
-import { kieAccessError, resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { providerAccessError, resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { createRemixVersion } from "@/lib/workflow/service";
 import { parseWorkflowModelSelection } from "@/lib/workflow/model-selection";
 
@@ -22,8 +22,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return NextResponse.json({ error: "视频 remix 只支持 KIE 模型。", code: "KIE_MODEL_REQUIRED" }, { status: 400 });
   }
 
-  const keyAccess = await resolveKieApiKeyForFeature(session.user.id, { requiredPackageScope: "video_analysis" });
-  if (!keyAccess.apiKey) return NextResponse.json(kieAccessError("视频 remix"), { status: 400 });
+  const keyAccess = await resolveApiKeyForFeature(session.user.id, { requiredPackageScope: "video_analysis" });
+  if (!keyAccess.apiKey) return NextResponse.json(providerAccessError("视频 remix"), { status: 400 });
 
   try {
     const { id } = await params;

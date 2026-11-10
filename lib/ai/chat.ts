@@ -1,5 +1,6 @@
-import { DEFAULT_KIE_CHAT_MODEL, requestKieChat } from "@/lib/ai/kie-client";
-import { resolveKieApiKeyForFeature } from "@/lib/billing/platform-access";
+import { DEFAULT_KIE_CHAT_MODEL } from "@/lib/ai/kie-client";
+import { requestProviderChat } from "./provider-client";
+import { resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 
 
 interface ChatOptions {
@@ -7,11 +8,12 @@ interface ChatOptions {
   messages: Array<{ role: string; content: string }>;
 }
 
-export async function callAIProvider({ userId, messages }: ChatOptions): Promise<string> {
-  const access = await resolveKieApiKeyForFeature(userId, { allowPaidPlatformKey: false });
-  if (!access.apiKey) throw new Error("No KIE API key configured. Add your key in Settings.");
+export async function callAIProvider({ userId, messages }: ChatOptions) {
+  const access = await resolveApiKeyForFeature(userId, { allowPaidPlatformKey: false });
+  if (!access.apiKey) throw new Error("No API key configured. Add your key in Settings.");
 
-  return requestKieChat({
+  const content = await requestProviderChat({
+    provider: access.provider,
     apiKey: access.apiKey,
     modelId: DEFAULT_KIE_CHAT_MODEL,
     messages: messages.map((message) => ({
@@ -19,4 +21,5 @@ export async function callAIProvider({ userId, messages }: ChatOptions): Promise
       content: message.content,
     })),
   });
+  return { content, provider: access.provider };
 }

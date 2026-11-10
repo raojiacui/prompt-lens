@@ -80,7 +80,7 @@ type CreditStatus = {
   linkImports?: { total: number; used: number; remaining: number };
   commercialConsumptionEnabled?: boolean;
   balance: number;
-  hasUserKieKey?: boolean;
+  hasUserApiKey?: boolean;
   commercial?: { enabled: boolean; credits?: number; rewrites?: number; heldRewrites?: number };
   mode: "admin" | "byok" | "platform_credits" | "trial";
   hasPaidVideoAnalysis?: boolean;
@@ -350,7 +350,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer: "platform" | "byok"; modelId: string } | null>(null);
   const canSplitUpload = Boolean(creditStatus?.commercialConsumptionEnabled && (creditStatus.commercial?.credits ?? 0) > 0);
   const uploadAnalysisMode = canSplitUpload ? preferredUploadAnalysisMode : "whole";
-  const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (canSplitUpload || creditStatus.hasUserKieKey || creditStatus.mode !== "trial") && (mediaInputMode === "link" || mediaType !== "image"));
+  const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (canSplitUpload || creditStatus.hasUserApiKey || creditStatus.mode !== "trial") && (mediaInputMode === "link" || mediaType !== "image"));
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
   const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
   const rewriteBusyRef = useRef(false);
@@ -630,7 +630,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       if (automaticSplit && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.commercial?.credits ?? 0) <= 0)) {
         throw new Error(locale === "en" ? "Shot splitting requires purchased credits. Top up or analyze the whole video." : "拆镜需要已购买的平台积分，请充值或选择整段分析。");
       }
-      if (selectedMediaType === "video" && latestStatus?.commercialConsumptionEnabled && (automaticSplit || latestStatus.mode !== "trial") && analysisPayer === "byok" && !latestStatus.hasUserKieKey) {
+      if (selectedMediaType === "video" && latestStatus?.commercialConsumptionEnabled && (automaticSplit || latestStatus.mode !== "trial") && analysisPayer === "byok" && !latestStatus.hasUserApiKey) {
         throw new Error(locale === "en" ? "Configure your own KIE Key in Settings first." : "请先在设置中配置自己的 KIE Key。");
       }
       if (isLinkedMedia && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.linkImports?.remaining ?? 0) < 1)) {
@@ -1130,7 +1130,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
                             <div className="order-last mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                               <select aria-label={locale === "en" ? "Rewrite payment source" : "改写费用来源"} value={rewritePayer} onChange={(event) => setRewritePayer(event.target.value === "byok" ? "byok" : "included")} disabled={Boolean(rewritingSceneId)} className="h-8 max-w-full rounded-lg border border-border bg-background px-2">
                                 <option value="included">{locale === "en" ? "Included rewrites" : "套餐改写额度"} · {creditStatus.commercial.rewrites ?? 0}</option>
-                                <option value="byok" disabled={!creditStatus.hasUserKieKey}>{locale === "en" ? "Own KIE key" : "自带 KIE Key"}</option>
+                                <option value="byok" disabled={!creditStatus.hasUserApiKey}>{locale === "en" ? "Own KIE key" : "自带 KIE Key"}</option>
                               </select>
                               <span>{rewritePayer === "included" ? (locale === "en" ? "1 rewrite · No extra credits" : "消耗 1 次 · 不另扣积分") : (locale === "en" ? "Billed to your KIE account" : "费用由你的 KIE 账户承担")}</span>
                             </div>
