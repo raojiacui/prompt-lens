@@ -58,3 +58,11 @@ V2 新增 Infistar 供应商，在首页、配置页和 README 使用 PromptLens
 - 先前完整回归：1001 项 Vitest、12 项 Node 测试通过，2 项按需测试未执行；6 项双语和响应式界面测试通过，生产构建通过。本轮真实请求修正另做定向回归及类型检查；逐模型证据见 `docs/infistar-integration-validation-2026-11-10.md`。以上证据不替代视觉、参考/编辑、带时间轴音频及受邀用户完整线上流程的验收。
 - 本轮修正回归：21 项定向测试通过，TypeScript 类型检查通过；未再次发送已完成模型的生成请求。
 - 用户随后要求核实全部模型，仅补测尚未成功的 MiniMax-H3 基础文生视频（5 秒、2K），任务完成并结算，结果只读下载返回 200、video/mp4 和实际字节。当前接入的 18 款模型均有最小调用成功证据；已移除的可灵 2.6 不计入。MiniMax 的参考视频失败和音频缺少时间戳仍各自保留为验收阻塞，不能从基础模型接通推定完整功能通过。此次只更新真实验证记录，未改产品代码、未部署。
+
+## MiniMax Ref2VA 核对更正
+
+原厂文档 `https://platform.minimax.io/docs/api-reference/video-generation-v2-create` 明确支持 MiniMax-H3 的参考视频生成：`POST /v2/video_generation`，`content[]` 中使用 `type=video_url` 与 `role=reference_video`。模型能力本身已获一手资料确认。
+
+Infistar `https://doc.infistar.cc/api-reference/video-generation` 却将 `/v1/videos` 的 `input_reference` 定义为参考图片，平台上线公告只明确列出文生与首尾帧图生。早先由模型说明推定该文件字段可接收参考视频，缺乏网关映射依据；相关代码及能力声明仍属于未验证尝试，不能把失败归因于原厂模型缺少能力。
+
+决策：区分模型原生能力与供应商暴露能力，不将基础文生通过当成 Ref2VA 验收。替代方案中，向统一文件字段继续猜参数会增加无效付费请求；将 Infistar Key 发往原厂违反凭据隔离，均不采用。需网关提供其参考视频请求示例或透传规则后，按实际支持方式实现并做一次最小视频参考验证；在此之前保持该能力的验收阻塞，不宣称其接入完成。此次只补充事实与边界，未变更产品功能开关。

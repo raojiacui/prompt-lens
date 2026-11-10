@@ -63,6 +63,22 @@
 
 ## 接口来源
 
+### MiniMax 参考视频能力核对与更正
+
+2026-11-10 对照原厂与网关文档核实：
+
+- MiniMax-H3 原生支持 reference-to-video。原厂 `POST /v2/video_generation` 使用 `content` 数组，视频项为 `type=video_url`、`role=reference_video`；支持最多 3 段视频、每段 2–15 秒、合计不超过 15 秒。参考图片、视频和音频属于参考模式，不能与首尾帧模式混用。
+- Infistar 的 `/v1/videos` 公开参数表将 `input_reference` 解释为参考图片文件；其 MiniMax-H3 上线公告明确列出 2K 文生、首帧及首尾帧图生，没有在该公告中承诺视频参考。该公告不能用于断言平台绝对不支持视频参考，但现有公开资料不足以核实透传方式。
+- 早先根据模型说明将视频文件放进 `input_reference`，尚未得到网关参数文档或成功结果支持。该实现只能视作未验证尝试，不能视作正确的 Ref2VA 接入；已受理后失败及退款也不能证明原厂模型不支持视频参考。
+- 当前结论：原厂模型有该能力；当前 Infistar 视频参考路径未核实、未跑通。需 Infistar 提供其支持的参考视频端点、请求示例或透传规则，再验证同一供应商的实际链路。禁止将 Infistar Key 发往 MiniMax 原厂接口试探。
+
+一手来源：
+
+- [MiniMax 原厂创建视频任务文档](https://platform.minimax.io/docs/api-reference/video-generation-v2-create)
+- [MiniMax 官方模型仓库](https://github.com/MiniMax-AI/MiniMax-H3)
+- [Infistar 视频参数说明](https://doc.infistar.cc/api-reference/video-generation)
+- [Infistar 平台公告：MiniMax H3 正式上线](https://infistar.cc/announcements)
+
 - [Infistar API 总览](https://doc.infistar.ai/api-overview)
 - [视频生成详细手册](https://doc.infistar.cc/api-reference/视频/视频生成)：文件字段 `input_reference`，multipart/form-data。
 - [音频转录详细手册](https://doc.infistar.cc/api-reference/音频/音频转录)：文件字段 `file`。
