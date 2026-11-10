@@ -8,7 +8,7 @@
 | Infistar 模型权限 | 真实 `/v1/models` 返回 200；发现 auto 分组可调用的可灵/即梦未列出，保留已核实的独立模型配置并由实际请求判定权限 | 真实读取与请求核实通过 |
 | 文本对话 | Gemini 3.8/3.7/3.6/3.5 Flash、DeepSeek V4.1 Flash 均返回 200 与 `OK` | 五款最小调用通过 |
 | 视觉分析与提示词改写 | 供应商路由、图像消息、结果校验、重试与计费边界测试通过 | 真实推理待验证 |
-| 文生视频 | 即梦 3.0/Pro、可灵 3/Omni/Turbo/O1、Seedance Mini/Fast/标准版、Wan 2.7 均完成最小任务 | 十款最小调用通过 |
+| 文生视频 | 即梦 3.0/Pro、可灵 3/Omni/Turbo/O1、Seedance Mini/Fast/标准版、Wan 2.7、MiniMax-H3 均完成最小任务 | 十一款最小调用通过 |
 | 图生视频 | Wan 2.7 i2v 使用合成 PNG 的 multipart 二进制输入，任务完成并返回视频地址 | 最小调用通过 |
 | 参考视频与生成式编辑 | MiniMax-H3 的 2K、5 秒视频文件输入受理后任务失败，metadata 显示 REFUNDED、final_quota=0 | 真实失败，参考/编辑验收阻塞 |
 | 音频转写 | Qwen FileTrans 合成人声返回 200、`hello world.`；即便请求 verbose_json 仍仅返回 task/text | 最小识别通过，字幕时间戳验收阻塞 |
@@ -52,8 +52,14 @@
 | doubao-seedance-2-0-260128 | 5 秒，720p，文本 | 完成，HTTPS 结果 |
 | wan2.7-t2v | 5 秒，720p，文本 | 完成，HTTPS 结果 |
 | wan2.7-i2v | 5 秒，720p，合成红色图片 | 完成，HTTPS 结果 |
-| MiniMax-H3 | 5 秒，2K，合成参考视频文件 | 已受理后失败，上游显示退款 |
+| MiniMax-H3 | 5 秒，2K，文本；另测合成参考视频文件 | 文生完成，结果下载 200、video/mp4、收到实际字节；参考视频受理后失败并退款 |
 | qwen-audio-3.0-asr-flash-filetrans | 本地合成 hello world 人声 | 200，识别成功；无时间戳 |
+
+## 补充核实：当前清单均可最小调用
+
+用户再次要求核实全部模型后，仅对尚未成功的 MiniMax-H3 补发一次基础文生视频请求：5 秒、原生 size=2K，不携带参考文件。任务从 queued、in_progress 到 completed，metadata.billing_status=SETTLED，结果地址 GET 返回 200、video/mp4 并收到实际字节。其余成功模型复用既有真实结果，未重复生成。
+
+当前配置内的 18 款精确模型 ID（5 款文本、12 款视频，含 Wan 图生专用 ID、1 款音频）均有成功最小调用证据。此前返回无通道的 kling-v2-6 已从 Infistar 配置移除，不计入当前清单。MiniMax 的参考/编辑与音频时间轴仍为独立验收阻塞，基础模型接通不代表所有输入模式和完整产品流程通过。
 
 ## 接口来源
 
