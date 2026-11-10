@@ -265,6 +265,7 @@ export async function GET(request: Request) {
 
     const job = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.taskId, taskId), eq(videoGeneration.userId, auth.user.id)) });
     if (!job) return NextResponse.json({ error: "Generation job not found" }, { status: 404 });
+    if (job.status === "completed" && job.videoUrl) return NextResponse.json({ provider: job.provider, providerTaskId: taskId, status: "success", videoUrl: job.videoUrl });
     const provider = isUserProvider(job.provider) ? job.provider : "kie";
     const apiKey = await resolveGenerationStatusKey(auth.user.id, job.rawResponse, provider);
     if (!apiKey) return NextResponse.json({ error: "The original provider key is required to query this task", code: "KIE_BYOK_REQUIRED" }, { status: 402 });

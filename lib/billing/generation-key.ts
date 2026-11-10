@@ -12,7 +12,9 @@ export async function resolveGenerationStatusKey(userId: string, rawResponse: un
   if (!billing?.keySource) {
     const own = await getUserCredential(userId, provider);
     if (own) return own.apiKey;
-    return provider === "kie" ? (await resolveApiKeyForFeature(userId, { allowPaidPlatformKey: false })).apiKey : null;
+    if (provider !== "kie") return null;
+    const access = await resolveApiKeyForFeature(userId, { allowPaidPlatformKey: false });
+    return access.provider === "kie" ? access.apiKey : null;
   }
   const key = billing.keySource === "user" ? (await getUserCredential(userId, provider))?.apiKey
     : provider === "kie" && ["platform_admin", "platform_paid"].includes(billing.keySource) ? getPlatformKieApiKey() : null;

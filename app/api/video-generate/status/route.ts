@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
     if (!record) {
       return NextResponse.json({ error: "Record not found" }, { status: 404 });
     }
+    if (record.status === "completed" && record.videoUrl) return NextResponse.json({ status: "completed", videoUrl: record.videoUrl, record });
 
     const provider = record.provider || "kie";
     if (!isUserProvider(provider)) {

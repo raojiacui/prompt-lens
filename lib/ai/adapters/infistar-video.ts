@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { infistarJson, assertInfistarModel, InfistarRequestError } from "../infistar-client";
 import { getModelById } from "../model-registry";
 import { uploadToR2 } from "@/lib/cloudflare/r2";
+import { db, mediaCleanupJobs } from "@/lib/db";
 import { readInfistarMedia } from "../infistar-media";
 import { assertReferenceMediaAccess, type ReferenceMediaContext } from "../reference-media-access";
 import type { KieVideoGenerationRequest, KieVeoStatus } from "@/lib/reference-video/kie-veo";
@@ -37,7 +38,8 @@ export async function createInfistarVideo(input: KieVideoGenerationRequest, apiK
     const media = await readInfistarMedia(body.input_reference, input.referenceVideoUrl ? "video" : "image");
     const form = new FormData();
     for (const [key, value] of Object.entries(body)) if (key !== "input_reference") form.set(key, String(value));
-    form.set("input_reference", media, input.referenceVideoUrl ? "reference.mp4" : "reference.png");
+    const extension = media.type === "image/jpeg" ? "jpg" : media.type.split("/")[1]?.replace(/[^a-z0-9]/gi, "") || (input.referenceVideoUrl ? "mp4" : "png");
+    form.set("input_reference", media, `reference.${extension}`);
     request = form;
   }
   const raw = await infistarJson("/videos", apiKey, request);
@@ -66,7 +68,10 @@ export async function getInfistarVideoStatus(taskId: string, apiKey: string): Pr
     const reader = response.body!.getReader(); const chunks: Uint8Array[] = []; let size = 0;
     try { while (true) { const chunk = await reader.read(); if (chunk.done) break; size += chunk.value.byteLength; if (size > maxBytes) throw new Error("Video size limit exceeded"); chunks.push(chunk.value); } }
     finally { await reader.cancel().catch(() => {}); }
-    videoUrl = await uploadToR2(Buffer.concat(chunks), `generated/infistar/${randomUUID()}.mp4`, "video/mp4");
+    const storageKey = `generated/infistar/${randomUUID()}.mp4`;
+    // Register deletion before uploading so even an interrupted save has a cleanup path.
+    await db.insert(mediaCleanupJobs).values({ storageKey, nextAttemptAt: new Date(Date.now() + 7 * 86400000) });
+    videoUrl = await uploadToR2(Buffer.concat(chunks), storageKey, "video/mp4");
   }
   return { taskId, state, videoUrl, error: state === "fail" ? "Infistar 视频生成失败，请到服务商后台查看原因。" : undefined, raw };
 }

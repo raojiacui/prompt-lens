@@ -2,7 +2,9 @@ import { afterEach, expect, it, vi } from "vitest";
 import { buildInfistarVideoPayload, createInfistarVideo, getInfistarVideoStatus } from "@/lib/ai/adapters/infistar-video";
 import { generationChoices, resolveGenerationModel } from "@/lib/ai/generation-models";
 
-vi.mock("@/lib/cloudflare/r2", () => ({ uploadToR2: vi.fn() }));
+const storage = vi.hoisted(() => ({ cleanup: vi.fn(), upload: vi.fn() }));
+vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { insert: () => ({ values: storage.cleanup }) } }));
+vi.mock("@/lib/cloudflare/r2", () => ({ uploadToR2: storage.upload }));
 vi.mock("@/lib/ai/reference-media-access", () => ({ assertReferenceMediaAccess: vi.fn(async () => undefined) }));
 vi.mock("@/lib/ai/infistar-media", () => ({ readInfistarMedia: vi.fn(async () => new Blob(["fixture-media"], { type: "video/mp4" })) }));
 afterEach(() => vi.unstubAllGlobals());
@@ -41,4 +43,15 @@ it("sends authorized MiniMax video references as binary multipart files", async 
   expect(request.body.get("input_reference")).toBeInstanceOf(Blob);
   expect(request.body.get("model")).toBe("MiniMax-H3");
   expect(request.headers["Content-Type"]).toBeUndefined();
+});
+
+it("registers cleanup before persisting authenticated-only video content", async () => {
+  storage.cleanup.mockResolvedValue(undefined);
+  storage.upload.mockResolvedValue("https://media.example/persisted.mp4");
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ id: "content-task", status: "completed" }))
+    .mockResolvedValueOnce(new Response(new Uint8Array([0, 1, 2]), { headers: { "Content-Type": "video/mp4", "Content-Length": "3" } }));
+  vi.stubGlobal("fetch", fetcher);
+  expect(await getInfistarVideoStatus("content-task", "content-fixture")).toMatchObject({ state: "success", videoUrl: "https://media.example/persisted.mp4" });
+  expect(storage.cleanup).toHaveBeenCalledWith(expect.objectContaining({ storageKey: expect.stringMatching(/^generated\/infistar\//), nextAttemptAt: expect.any(Date) }));
+  expect(storage.cleanup.mock.invocationCallOrder.at(-1)).toBeLessThan(storage.upload.mock.invocationCallOrder.at(-1)!);
 });
