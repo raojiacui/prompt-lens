@@ -297,6 +297,8 @@ export async function createRemixVersion(params: {
       userId: params.userId,
       scene: sourceBlueprints[index],
       remixPrompt: params.remixPrompt,
+      analysisProvider: params.analysisProvider, analysisApiKey: params.analysisApiKey, analysisKeySource: params.analysisKeySource,
+      allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis,
       sceneIndex: scene.sceneIndex,
       duration: scene.duration,
       modelMode: params.modelMode,
@@ -323,7 +325,7 @@ export async function createRemixVersion(params: {
     });
   }
 
-  const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: remixedBlueprints, remixPrompt: params.remixPrompt, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialKie: params.forceFreeTrialKie });
+  const overview = await buildStructuredVideoOverview({ userId: params.userId, title: project.title, sceneBlueprints: remixedBlueprints, remixPrompt: params.remixPrompt, analysisProvider: params.analysisProvider, analysisApiKey: params.analysisApiKey, analysisKeySource: params.analysisKeySource, modelMode: params.modelMode, modelId: params.modelId, modelPriority: params.modelPriority, outputLanguage: params.outputLanguage, allowPlatformKeyForAnalysis: params.allowPlatformKeyForAnalysis, forceFreeTrialKie: params.forceFreeTrialKie });
   await db.update(projectVersions).set({ overview, updatedAt: new Date() }).where(eq(projectVersions.id, version.id));
   await db.update(projects).set({ activeVersionId: version.id, updatedAt: new Date() }).where(eq(projects.id, params.projectId));
   return getProjectBundle(params.projectId, params.userId);

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { extractCorePrompt } from "@/lib/ai/prompts";
 import { formatDate, formatFileSize, truncate } from "@/lib/utils";
-import { decodeStoredApiKey } from "@/lib/byok/kie";
+import { decodeStoredApiKey } from "@/lib/byok/keys";
 
 describe("AI Analyzer", () => {
   it("should extract core prompt from result", () => {

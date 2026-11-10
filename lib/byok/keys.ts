@@ -14,10 +14,6 @@ export function decodeStoredApiKey(apiKey: string): string | null {
   }
 }
 
-export async function getUserKieApiKey(userId: string): Promise<string | null> {
-  return getUserApiKeyForProvider(userId, "kie");
-}
-
 export async function getUserApiKeyForProvider(userId: string, provider: string): Promise<string | null> {
   const records = await db.query.userApiKeys.findMany({
     where: and(
@@ -38,9 +34,4 @@ export async function getUserApiKeyForProvider(userId: string, provider: string)
   }
 
   return null;
-}
-export function maskApiKey(apiKey: string) {
-  const trimmed = apiKey.trim();
-  if (trimmed.length <= 8) return "••••••••";
-  return `${trimmed.slice(0, 4)}••••••••${trimmed.slice(-4)}`;
 }

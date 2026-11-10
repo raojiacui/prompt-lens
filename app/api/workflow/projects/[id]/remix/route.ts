@@ -33,6 +33,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       sourceVersionId,
       remixPrompt,
       allowPlatformKeyForAnalysis: keyAccess.source === "platform_admin" || keyAccess.source === "platform_paid",
+      analysisProvider: keyAccess.provider, analysisApiKey: keyAccess.apiKey,
+      analysisKeySource: keyAccess.source === "user" ? "user" : "platform",
       ...modelSelection,
     });
     return NextResponse.json(bundle);

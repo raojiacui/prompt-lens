@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db, userApiKeys } from "@/lib/db";
 import { USER_PROVIDERS, type UserProvider } from "@/lib/ai/providers";
-import { decodeStoredApiKey, getUserApiKeyForProvider } from "./kie";
+import { decodeStoredApiKey, getUserApiKeyForProvider } from "./keys";
 
 export type UserCredential = { provider: UserProvider; apiKey: string };
 

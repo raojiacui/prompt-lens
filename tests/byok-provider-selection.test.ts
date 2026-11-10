@@ -2,7 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({ rows: [] as { provider: string; apiKey: string; isPreferred?: boolean }[], pinned: vi.fn() }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { query: { userApiKeys: { findMany: async () => mocks.rows } } } }));
-vi.mock("@/lib/byok/kie", () => ({ decodeStoredApiKey: (value: string) => value === "corrupt" ? null : value, getUserApiKeyForProvider: mocks.pinned }));
+vi.mock("@/lib/byok/keys", () => ({ decodeStoredApiKey: (value: string) => value === "corrupt" ? null : value, getUserApiKeyForProvider: mocks.pinned }));
 import { getUserCredential } from "@/lib/byok/credentials";
 
 beforeEach(() => { mocks.rows = []; mocks.pinned.mockReset(); });

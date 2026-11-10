@@ -17,9 +17,10 @@ const VIDEO_GENERATE_LIMIT = { limit: 3, windowMs: 60000 };
 const MIN_VIDEO_DURATION = 4;
 
 function selectedGenerationModel(value: unknown, provider: "kie" | "infistar") {
-  if (typeof value === "string" && value.trim()) {
+  if (typeof value === "string" && value.trim() && value.trim() !== "auto") {
     const model = getModelById(value.trim());
     if (model?.category === "video_generation" && model.provider === provider) return model;
+    throw new Error("MODEL_UNAVAILABLE");
   }
   return routeModel({ category: "video_generation", provider, priority: "balanced", requiredCapabilities: ["text"] });
 }
