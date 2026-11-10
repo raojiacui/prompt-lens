@@ -18,7 +18,7 @@ vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "p
 vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: async (_user: string, provider?: string) => ({ apiKey: "own-test", provider: provider || mocks.provider }) }));
 vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: async () => "owned", commercialMediaRequest: mocks.probe }));
 vi.mock("@/lib/workflow/scene-analysis", () => ({ analyzeImageBlueprint: mocks.analyze, analyzeSceneBlueprint: mocks.analyze, buildFallbackSceneBlueprint: (_: unknown, reason: string) => ({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "", metadata: { analysisProvider: "fallback", fallbackReason: reason } }) }));
-vi.mock("@/lib/workflow/transcription", () => ({ buildSceneAudioContexts: () => new Map(), transcribeMediaWithKie: async () => null }));
+vi.mock("@/lib/workflow/transcription", () => ({ buildSceneAudioContexts: () => new Map(), transcribeMedia: async () => null }));
 vi.mock("@/lib/workflow/music-recognition", () => ({ recognizeBackgroundMusic: async () => ({ status: "disabled" }) }));
 vi.mock("@/lib/workflow/service", () => ({ attachBackgroundMusicToBlueprint: (blueprint: unknown) => blueprint, deriveProjectTitle: () => "Analyzed project" }));
 

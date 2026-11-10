@@ -45,3 +45,5 @@ V2 新增 Infistar 供应商，在首页、配置页和 README 使用 PromptLens
 - 详细手册 `https://doc.infistar.cc/api-reference/视频/视频生成` 定义 multipart/form-data 的二进制 `input_reference`；图片与 MiniMax-H3 的视频参考按文件传输，限制来源为当前账户上传素材或其项目派生素材。MiniMax 视频输入依据官方模型说明实现，仍需真实受理与生成结果验收。
 - 任意上传视频的编辑与原生成任务的 `/v1/videos/{video_id}/remix` 分开处理；后者不能冒充前者。
 - 真实图生视频、参考视频/编辑及音频仍待验证；当前阶段不能声称全功能已验收。
+- 视频分析内的音频转写使用 Infistar Qwen FileTrans 的 multipart 接口；保留真实段落时间戳，缺少时间戳时明确记录转写不可用，不伪造字幕时间。
+- 现有独立音频生成入口本来返回 410，本次保持原发布范围；本次不将其作为已开放功能宣传。

@@ -4,7 +4,7 @@ import { db, audioAnalysis, operationLogs } from "@/lib/db";
 import { checkRateLimit, RateLimitConfigs } from "@/lib/utils/rate-limit";
 import { providerAccessError, resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { buildSrt, formatSrtTimestamp, type SubtitleCue } from "@/lib/workflow/audio-production";
-import { transcribeMediaWithKie, type TranscriptSegment } from "@/lib/workflow/transcription";
+import { transcribeMedia, type TranscriptSegment } from "@/lib/workflow/transcription";
 
 function buildSegments(transcription: TranscriptSegment[], duration: number) {
   if (!transcription.length) return [];
@@ -87,12 +87,13 @@ async function deferredPOST(request: NextRequest) {
       userId: session.user.id,
       action: "analysis.start",
       resourceType: "audio",
-      metadata: { mediaUrl, provider: "kie", keySource: keyAccess.source },
+      metadata: { mediaUrl, provider: keyAccess.provider, keySource: keyAccess.source },
     }).catch(() => undefined);
 
-    const result = await transcribeMediaWithKie({
+    const result = await transcribeMedia({
       userId: session.user.id,
       apiKey,
+      provider: keyAccess.provider,
       mediaUrl,
       modelMode: body?.modelMode === "manual" ? "manual" : "auto",
       modelId: typeof body?.modelId === "string" ? body.modelId : undefined,
@@ -124,13 +125,13 @@ async function deferredPOST(request: NextRequest) {
       action: "analysis.complete",
       resourceType: "audio",
       resourceId: record.id,
-      metadata: { mediaUrl, provider: "kie", keySource: keyAccess.source, modelId: result.modelId, taskId: result.taskId, segmentCount: segments.length, duration },
+      metadata: { mediaUrl, provider: keyAccess.provider, keySource: keyAccess.source, modelId: result.modelId, taskId: result.taskId, segmentCount: segments.length, duration },
     }).catch(() => undefined);
 
     return NextResponse.json({
       success: true,
       id: record.id,
-      provider: "kie",
+      provider: keyAccess.provider,
       modelId: result.modelId,
       providerTaskId: result.taskId,
       language: "auto",

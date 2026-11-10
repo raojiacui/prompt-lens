@@ -14,7 +14,7 @@ import { resolveModelSelection } from "@/lib/ai/model-registry";
 import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import { analyzeImageBlueprint, analyzeSceneBlueprint, buildFallbackSceneBlueprint, type SceneBlueprintDraft } from "./scene-analysis";
 import { parseWorkflowModelSelection } from "./model-selection";
-import { buildSceneAudioContexts, transcribeMediaWithKie, type KieTranscriptionResult } from "./transcription";
+import { buildSceneAudioContexts, transcribeMedia, type TranscriptionResult } from "./transcription";
 import { recognizeBackgroundMusic, type BackgroundMusicRecognition } from "./music-recognition";
 import { requiresAnalysisQuote } from "./analysis-routing";
 import { attachBackgroundMusicToBlueprint, deriveProjectTitle } from "./service";
@@ -31,7 +31,7 @@ type Progress = {
   phase: "prepare" | "assets" | "transcription" | "music" | "scenes" | "settle";
   preview?: MediaPreview; assets?: FfmpegBreakdownResult; versionId?: string; sceneIds?: string[];
   cursor: number; successful: number; failed: number; heldCredits: number; chargedCredits?: number;
-  transcription?: KieTranscriptionResult | null; transcriptionError?: string; music?: BackgroundMusicRecognition;
+  transcription?: TranscriptionResult | null; transcriptionError?: string; music?: BackgroundMusicRecognition;
   error?: string; projectId?: string; partial?: boolean; executionId?: string;
 };
 const LEASE_MS = 6 * 60_000;
@@ -169,7 +169,7 @@ async function runAnalysisTaskStep(id: string) {
       return;
     }
     if (progress.phase === "transcription") {
-      try { progress.transcription = await transcribeMediaWithKie({ userId: task.userId, apiKey, mediaUrl: input.mediaUrl, timeoutMs: 180000 }); }
+      try { progress.transcription = await transcribeMedia({ userId: task.userId, provider: input.provider || "kie", apiKey, mediaUrl: input.mediaUrl, timeoutMs: 180000 }); }
       catch (error) { progress.transcriptionError = error instanceof Error ? error.message : "Transcription failed"; }
       await saveCheckpoint(task, { ...progress, phase: "music" });
       return;

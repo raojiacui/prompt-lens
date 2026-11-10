@@ -1,3 +1,5 @@
+import type { UserProvider } from "@/lib/ai/providers";
+import { transcribeInfistarMedia } from "@/lib/ai/infistar-audio";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import { extractR2Key, getSignedUrlFromR2 } from "@/lib/cloudflare/r2";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
@@ -16,14 +18,15 @@ export interface SceneAudioContext {
   audio: {
     transcriptSummary: string;
     hasSpeech: boolean;
-    transcriptionProvider: "kie" | "unavailable";
+    transcriptionProvider: UserProvider | "unavailable";
     transcriptionModel?: string;
     transcriptionTaskId?: string;
     transcriptionReason?: string;
   };
 }
 
-export interface KieTranscriptionInput {
+export interface TranscriptionInput {
+  provider?: UserProvider;
   userId: string;
   apiKey: string | null;
   mediaUrl: string;
@@ -34,8 +37,8 @@ export interface KieTranscriptionInput {
   timeoutMs?: number;
 }
 
-export interface KieTranscriptionResult {
-  provider: "kie";
+export interface TranscriptionResult {
+  provider: UserProvider;
   modelId: string;
   taskId?: string;
   recordId?: string;
@@ -127,8 +130,9 @@ async function fetchKieTask(apiKey: string, taskId: string) {
   return payload;
 }
 
-export async function transcribeMediaWithKie(input: KieTranscriptionInput): Promise<KieTranscriptionResult | null> {
+export async function transcribeMedia(input: TranscriptionInput): Promise<TranscriptionResult | null> {
   if (!input.apiKey) return null;
+  if (input.provider === "infistar") return transcribeInfistarMedia(input);
   const selected = resolveModelSelection(
     "audio",
     { mode: input.modelMode, modelId: input.modelId, priority: input.modelPriority || "balanced" },
@@ -196,7 +200,7 @@ function clampToScene(segment: TranscriptSegment, scene: FfmpegSceneAsset): Tran
 
 export function buildSceneAudioContexts(params: {
   scenes: FfmpegSceneAsset[];
-  transcription: KieTranscriptionResult | null;
+  transcription: TranscriptionResult | null;
   unavailableReason?: string;
 }): Map<number, SceneAudioContext> {
   const contexts = new Map<number, SceneAudioContext>();
@@ -211,10 +215,10 @@ export function buildSceneAudioContexts(params: {
       audio: {
         transcriptSummary,
         hasSpeech: dialogue.length > 0,
-        transcriptionProvider: params.transcription ? "kie" : "unavailable",
+        transcriptionProvider: params.transcription?.provider || "unavailable",
         transcriptionModel: params.transcription?.modelId,
         transcriptionTaskId: params.transcription?.taskId,
-        transcriptionReason: params.transcription ? undefined : params.unavailableReason || "KIE transcription was not available",
+        transcriptionReason: params.transcription ? undefined : params.unavailableReason || "Audio transcription was not available",
       },
     });
   }
