@@ -16,15 +16,15 @@ export async function GET(request: NextRequest) {
   const provider = isUserProvider(requestedProvider) ? requestedProvider : "kie";
   const auto = request.nextUrl.searchParams.get("auto") === "1";
   if (!auto) {
-    let models = listModels(category, provider);
+    const models = listModels(category, provider);
     if (provider === "infistar") {
       const session = await auth.api.getSession({ headers: request.headers });
       if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       try {
         const credential = await getUserCredential(session.user.id, "infistar");
         if (!credential) return NextResponse.json({ error: "请先保存 Infistar API Key。" }, { status: 400 });
-        const available = new Set((await listInfistarModels(credential.apiKey)).map(model => model.id));
-        models = models.filter(model => available.has(model.providerModelId));
+        // Validate credentials without hiding verified auto-group models absent from /models.
+        await listInfistarModels(credential.apiKey);
       } catch { return NextResponse.json({ error: "无法获取 Infistar 模型列表，请检查 Key 或稍后重试。" }, { status: 502 }); }
     }
     return NextResponse.json({ models, provider }, { headers: { "Cache-Control": "private, no-store" } });

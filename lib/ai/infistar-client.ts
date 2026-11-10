@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { KieEmptyResultError, KieRequestError } from "./kie-client";
+import { infistarModels } from "./infistar-models";
 
 export function infistarBaseUrl() {
   return (process.env.INFISTAR_API_BASE_URL || "https://infistar.cc/v1").replace(/\/$/, "");
@@ -35,7 +36,10 @@ export async function listInfistarModels(apiKey: string): Promise<InfistarModel[
 }
 
 export async function assertInfistarModel(apiKey: string, modelId: string) {
-  if (!(await listInfistarModels(apiKey)).some(model => model.id === modelId)) {
+  const listed = (await listInfistarModels(apiKey)).some(model => model.id === modelId);
+  // Auto-group routing can accept verified video IDs omitted from /models.
+  const configuredVideo = infistarModels.some(model => model.enabled && model.providerModelId === modelId);
+  if (!listed && !configuredVideo) {
     throw new InfistarRequestError(`Infistar 当前 Key 无法调用 ${modelId}，请检查令牌分组或选择可用模型。`, undefined, "not_sent");
   }
 }

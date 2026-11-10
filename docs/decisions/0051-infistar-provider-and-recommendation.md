@@ -38,13 +38,16 @@ V2 新增 Infistar 供应商，在首页、配置页和 README 使用 PromptLens
 ## 2026-11-10 接口与模型核实
 
 - 真实 Key 的 `/v1/models` 返回 Gemini 3.8/3.7/3.6/3.5 Flash、DeepSeek V4.1 Flash、Seedance 2 系列、Wan 2.7、MiniMax-H3 与 Kling O1。
-- 官方模型广场还展示即梦 3.0/Pro、Kling v3/Omni/Turbo；当前 Key 没有返回这些型号。前端根据当前 Key 的模型列表过滤，不将广场展示等同于令牌可调用。
+- 官方模型广场还展示即梦 3.0/Pro、Kling v3/Omni/Turbo；当前 Key 的模型列表没有返回这些型号，但同一 Key 的最小 POST 均成功并完成任务。取消将 `/v1/models` 作为排他白名单的方案：仍查询列表校验凭据，独立视频配置内的已核实 ID 允许交给 auto 分组路由；未知且未配置的 ID 继续拒绝，实际权限失败不切换 Key 或供应商。
 - 模型注册表使用中立的 `providerModelId`，保留 KIE 清单及平台价格规则；Infistar 自带 Key 的费用由服务商直接扣取，不套用 KIE 平台积分报价。
 - 官方公开价格 API `https://infistar.cc/api/pricing` 的人民币分组价格：即梦 3.0 为 0.28 或 0.63 元/秒，Pro 为 1 元/秒；Kling O1 为 720p 0.5833、1080p 0.7778 元/秒；MiniMax-H3 不同分组为 0.1630–0.8 元/秒；Seedance Mini 的豆包媒体分组为无视频参考 23 元/百万输出 Token、有视频参考 14 元/百万输出 Token，Fast 对应 37/22。报价因 Key 分组及输出规格变化，不能将广场最低价作为所有用户的固定价格。
 - 文本最小真实请求成功；Seedance Mini 的 5 秒、720p 文生视频完成，真实轮询取得 HTTPS 视频地址。4 秒、480p 请求被服务商明确拒绝。Wan 2.7 的 2 秒、720p 请求返回需要 1.20 元、账户当时余额 1 元，未创建任务。
 - 详细手册 `https://doc.infistar.cc/api-reference/视频/视频生成` 定义 multipart/form-data 的二进制 `input_reference`；图片与 MiniMax-H3 的视频参考按文件传输，限制来源为当前账户上传素材或其项目派生素材。MiniMax 视频输入依据官方模型说明实现，仍需真实受理与生成结果验收。
 - 任意上传视频的编辑与原生成任务的 `/v1/videos/{video_id}/remix` 分开处理；后者不能冒充前者。
-- 真实图生视频、参考视频/编辑及音频仍待验证；当前阶段不能声称全功能已验收。
+- 按用户要求逐款最小请求：五款文本均返回 OK，十款文生视频与 Wan 2.7 图生视频均完成；可灵 2.6 返回 auto 分组无可用通道，移出 Infistar 备选，保留 KIE 原清单。即梦 Pro 使用 1080p；MiniMax-H3 使用 2K。
+- MiniMax-H3 的视频参考任务受理后失败，上游 metadata 显示冻结额度已退回、最终额度为 0，参考/编辑验收仍阻塞。Qwen FileTrans 合成人声识别成功，但 verbose_json 仍仅有 task/text，缺少字幕时间戳，带时间轴转写验收阻塞。保留明确失败提示，不伪造字幕或关闭功能来通过验收。
+- 可灵/即梦完成响应使用顶层 status/id 与 data 数组中的 url，已按真实结构修正解析；这些既有任务的 content 入口只读验证为 200、video/mp4 并收到字节，不新增生成。
+- MiniMax 的已受理 size 为原生 `2K`，当前仅提供测试输入的 16:9，避免将其他比例转换后仍静默发送同一 size。其他比例与能力待上游成功示例核实。
 - 视频分析内的音频转写使用 Infistar Qwen FileTrans 的 multipart 接口；保留真实段落时间戳，缺少时间戳时明确记录转写不可用，不伪造字幕时间。
 - 现有独立音频生成入口本来返回 410，本次保持原发布范围；本次不将其作为已开放功能宣传。
 - 配置页连接测试只读取 Infistar 模型列表或 KIE 余额，保留鉴权、同源检查和频率限制，不发送付费推理请求。
@@ -52,4 +55,5 @@ V2 新增 Infistar 供应商，在首页、配置页和 README 使用 PromptLens
 - 历史任务缺少来源快照时，只查原供应商的 Key；不能把当前首选 Infistar Key 发往 KIE。视频结果若只有鉴权下载入口，在既有 R2 中保存并预登记 7 天清理任务；已有完成结果直接复用，避免重复下载和存储。
 - 验证入口仅收集仓库根 `tests/` 的 Vitest 测试，避免临时副本、缓存内的旧用例混入。按实际导入区分 runner：fly-machine-lifecycle、reconciliation-scheduler、scene-segments 三个既有文件使用 Node 内置 runner，通过 `test:node` 执行，其余包含 `.mjs` 的 Vitest 测试照常运行；`test:all` 串联两种 runner。修正既有测试中遗漏的预警配置夹具及过时的账单链接预期，产品开关与认证策略不变。
 - 数据库只读检查补充 Infistar 枚举值、首选列及唯一索引；应用部署前必须执行 0025 迁移，当前未对远端数据库执行迁移。
-- 本地最终回归：1001 项 Vitest、12 项 Node 测试通过，2 项按需测试未执行；6 项双语和响应式界面测试通过，生产构建通过。以上证据不替代真实图生视频、参考/编辑、音频及受邀用户完整线上流程的验收。
+- 先前完整回归：1001 项 Vitest、12 项 Node 测试通过，2 项按需测试未执行；6 项双语和响应式界面测试通过，生产构建通过。本轮真实请求修正另做定向回归及类型检查；逐模型证据见 `docs/infistar-integration-validation-2026-11-10.md`。以上证据不替代视觉、参考/编辑、带时间轴音频及受邀用户完整线上流程的验收。
+- 本轮修正回归：21 项定向测试通过，TypeScript 类型检查通过；未再次发送已完成模型的生成请求。

@@ -17,6 +17,11 @@ it("builds the exact accepted Seedance Mini request", () => {
   expect(buildInfistarVideoPayload({ model: "doubao-seedance-2.0-mini", prompt: "A cube", duration: 5, resolution: "720p", aspectRatio: "16:9" }))
     .toEqual({ model: "doubao-seedance-2.0-mini", prompt: "A cube", seconds: "5", size: "1280x720" });
 });
+it("uses the live-accepted Jimeng Pro profile and excludes unavailable Kling 2.6", () => {
+  expect(buildInfistarVideoPayload({ model: "jimeng-video-3.0-pro", prompt: "A cube", duration: 5 })).toMatchObject({ size: "1920x1080" });
+  expect(() => buildInfistarVideoPayload({ model: "jimeng-video-3.0-pro", prompt: "A cube", duration: 5, resolution: "720p" })).toThrow("画质");
+  expect(generationChoices("infistar").map(model => model.providerModelId)).not.toContain("kling-v2-6");
+});
 it("preserves image input and portrait dimensions", () => {
   expect(buildInfistarVideoPayload({ model: "wan2.7-i2v", prompt: "A cube", duration: 5, aspectRatio: "9:16", imageUrls: ["https://media.example/image.png"] }))
     .toMatchObject({ input_reference: "https://media.example/image.png", size: "720x1280" });
@@ -33,16 +38,24 @@ it("normalizes the asynchronous result and never resubmits while polling", async
   expect(fetcher).toHaveBeenCalledTimes(1);
   expect(fetcher.mock.calls[0][1].method).toBe("GET");
 });
+it("reads the live Kling and Jimeng completed data-array response", async () => {
+  const fetcher = vi.fn().mockResolvedValue(Response.json({ id: "array-task", status: "completed", object: "video.generation", data: [{ url: "https://media.example/kling.mp4" }] }));
+  vi.stubGlobal("fetch", fetcher);
+  expect(await getInfistarVideoStatus("array-task", "array-fixture")).toMatchObject({ state: "success", videoUrl: "https://media.example/kling.mp4" });
+  expect(fetcher).toHaveBeenCalledTimes(1);
+});
 
 it("sends authorized MiniMax video references as binary multipart files", async () => {
   const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ data: [{ id: "MiniMax-H3" }] })).mockResolvedValueOnce(Response.json({ id: "reference-task" }));
   vi.stubGlobal("fetch", fetcher);
-  expect(await createInfistarVideo({ model: "MiniMax-H3", prompt: "Change the cube to blue", duration: 5, resolution: "1080p", referenceVideoUrl: "https://media.example/source.mp4" }, "minimax-reference-fixture", { userId: "owner" })).toMatchObject({ taskId: "reference-task" });
+  expect(await createInfistarVideo({ model: "MiniMax-H3", prompt: "Change the cube to blue", duration: 5, resolution: "2K", referenceVideoUrl: "https://media.example/source.mp4" }, "minimax-reference-fixture", { userId: "owner" })).toMatchObject({ taskId: "reference-task" });
   const request = fetcher.mock.calls[1][1];
   expect(request.body).toBeInstanceOf(FormData);
   expect(request.body.get("input_reference")).toBeInstanceOf(Blob);
   expect(request.body.get("model")).toBe("MiniMax-H3");
+  expect(request.body.get("size")).toBe("2K");
   expect(request.headers["Content-Type"]).toBeUndefined();
+  expect(() => buildInfistarVideoPayload({ model: "MiniMax-H3", prompt: "Edit", duration: 5, resolution: "2K", aspectRatio: "9:16" })).toThrow("比例");
 });
 
 it("registers cleanup before persisting authenticated-only video content", async () => {

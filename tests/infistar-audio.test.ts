@@ -9,6 +9,11 @@ it("preserves real timestamps instead of fabricating subtitle timing", () => {
 it("rejects reversed timestamps", () => {
   expect(() => infistarTranscriptSegments({ segments: [{ start: 2, end: 1, text: "hello" }] })).toThrow("无效");
 });
+it("reports the real text-only ASR response as missing subtitle timestamps", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(Response.json({ data: [{ id: "qwen-audio-3.0-asr-flash-filetrans" }] }))
+    .mockResolvedValueOnce(Response.json({ task: "transcribe", text: "hello world." })));
+  await expect(transcribeInfistarMedia({ userId: "owner", apiKey: "text-only-asr-fixture", mediaUrl: "https://media.example/source.wav", provider: "infistar" })).rejects.toThrow("时间戳");
+});
 it("routes audio files only to the available Infistar transcription endpoint", async () => {
   const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ data: [{ id: "qwen-audio-3.0-asr-flash-filetrans" }] }))
     .mockResolvedValueOnce(Response.json({ segments: [{ start: 0, end: 1, text: "hello" }] }));

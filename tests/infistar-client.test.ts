@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { infistarChatModel, requestInfistarChat } from "@/lib/ai/infistar-client";
+import { assertInfistarModel, infistarChatModel, requestInfistarChat } from "@/lib/ai/infistar-client";
 import { requestProviderChat } from "@/lib/ai/provider-client";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
@@ -21,6 +21,13 @@ it("does not submit inference or try KIE when a model is absent", async () => {
   vi.stubGlobal("fetch", fetcher);
   await expect(requestInfistarChat({ apiKey: "missing-model-fixture", modelId: "missing", messages: [] })).rejects.toMatchObject({ outcome: "not_sent" });
   expect(fetcher).toHaveBeenCalledTimes(1);
+});
+it("allows verified auto-group video models omitted from the key catalog", async () => {
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ data: [] }));
+  vi.stubGlobal("fetch", fetcher);
+  await expect(assertInfistarModel("auto-group-fixture", "kling-v3")).resolves.toBeUndefined();
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  await expect(assertInfistarModel("auto-group-fixture", "kling-v2-6")).rejects.toMatchObject({ outcome: "not_sent" });
 });
 it("does not expose upstream credentials or error bodies", async () => {
   const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ data: [{ id: "deepseek-v4.1-flash" }] }))

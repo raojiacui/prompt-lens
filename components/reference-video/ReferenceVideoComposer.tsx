@@ -34,7 +34,7 @@ type AspectRatio =
   | "3:4"
   | "3:2"
   | "2:3";
-type Quality = "480P" | "720P" | "1080P" | "4K";
+type Quality = "480P" | "720P" | "1080P" | "2K" | "4K";
 type Duration = `${number}s`;
 type OutputCount = "1" | "2" | "3" | "4";
 type UploadedAsset = {
@@ -73,7 +73,7 @@ const aspectRatioOptions: Array<{
   { value: "2:3", label: "2:3", shape: "h-6 w-4" },
 ];
 
-const qualityOptions: Quality[] = ["480P", "720P", "1080P", "4K"];
+const qualityOptions: Quality[] = ["480P", "720P", "1080P", "2K", "4K"];
 const outputCountOptions: OutputCount[] = ["1", "2", "3", "4"];
 const defaultGenerationModelId = "bytedance/seedance-2-mini";
 

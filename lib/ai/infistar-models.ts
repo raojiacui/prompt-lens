@@ -7,7 +7,7 @@ const seedance = { category: "video_generation", provider: "infistar", enabled: 
   resolutionOptions: ["720p"], speedLevel: 4, qualityLevel: 4, costLevel: 2,
 } satisfies Omit<ModelRegistryEntry, "id" | "displayName" | "family" | "providerModelId">;
 
-/** Exact IDs observed through /v1/models; separate from KIE's catalog and prices. */
+/** Exact IDs verified by minimal requests; /v1/models omits some auto-group routes. */
 export const infistarModels: ModelRegistryEntry[] = [
   { ...seedance, id: "infistar-seedance-2-mini", displayName: "即梦 Seedance 2.0 Mini", family: "Seedance", providerModelId: "doubao-seedance-2.0-mini" },
   ...([
@@ -16,11 +16,11 @@ export const infistarModels: ModelRegistryEntry[] = [
     ["kling-v3", "可灵 Kling 3", "Kling", 3],
     ["kling-v3-omni", "可灵 Kling 3 Omni", "Kling", 3],
     ["kling-3.0-turbo", "可灵 Kling 3 Turbo", "Kling", 4],
-    ["kling-v2-6", "可灵 Kling 2.6", "Kling", 3],
     ["MiniMax-H3", "MiniMax H3", "MiniMax", 2],
   ] as const).map(([id, displayName, family, costLevel]): ModelRegistryEntry => ({
     ...seedance, id: `infistar-${id}`, displayName, family, providerModelId: id, costLevel,
-    resolutionOptions: id === "MiniMax-H3" ? ["1080p"] : ["720p", "1080p"], durationOptions: [5, 10], maxDuration: 10,
+    resolutionOptions: id === "MiniMax-H3" ? ["2k"] : id === "jimeng-video-3.0-pro" ? ["1080p"] : ["720p", "1080p"], durationOptions: [5, 10], maxDuration: 10,
+    aspectRatios: id === "MiniMax-H3" ? ["16:9"] : ratios,
     capabilities: id === "MiniMax-H3" ? ["text", "image", "reference_image", "video", "reference_video", "video_to_video", "generative_edit"] : ["text", "image", "reference_image"],
   })),
   { ...seedance, id: "infistar-seedance-2-fast", displayName: "即梦 Seedance 2.0 Fast", family: "Seedance", providerModelId: "doubao-seedance-2-0-fast-260128", speedLevel: 5, costLevel: 3 },

@@ -21,11 +21,11 @@ export function buildInfistarVideoPayload(input: KieVideoGenerationRequest) {
   const resolution = input.resolution?.toLowerCase() || model.resolutionOptions?.[0] || "720p";
   const ratio = input.aspectRatio || "16:9";
   if (!model.durationOptions?.includes(seconds) || !model.resolutionOptions?.includes(resolution) || !model.aspectRatios?.includes(ratio)) throw new InfistarRequestError("当前 Infistar 型号不支持所选时长、画质或比例。", undefined, "not_sent");
-  const shortSide = Number.parseInt(resolution, 10);
+  const shortSide = resolution === "2k" ? 1440 : Number.parseInt(resolution, 10);
   const [widthRatio, heightRatio] = ratio.split(":").map(Number);
   const width = Math.round(shortSide * Math.max(1, widthRatio / heightRatio) / 2) * 2;
   const height = Math.round(shortSide * Math.max(1, heightRatio / widthRatio) / 2) * 2;
-  return { model: model.providerModelId, prompt: input.prompt, seconds: String(seconds), size: `${width}x${height}`, ...(input.referenceVideoUrl || images.length ? { input_reference: input.referenceVideoUrl || images[0] } : {}) };
+  return { model: model.providerModelId, prompt: input.prompt, seconds: String(seconds), size: resolution === "2k" ? "2K" : `${width}x${height}`, ...(input.referenceVideoUrl || images.length ? { input_reference: input.referenceVideoUrl || images[0] } : {}) };
 }
 
 export async function createInfistarVideo(input: KieVideoGenerationRequest, apiKey: string, context?: ReferenceMediaContext) {
@@ -50,10 +50,10 @@ export async function createInfistarVideo(input: KieVideoGenerationRequest, apiK
 
 export async function getInfistarVideoStatus(taskId: string, apiKey: string): Promise<KieVeoStatus> {
   const raw = await infistarJson(`/videos/${encodeURIComponent(taskId)}`, apiKey);
-  const data = raw.data || raw;
+  const data = raw.data && !Array.isArray(raw.data) ? raw.data : raw;
   if (data.id && data.id !== taskId) throw new InfistarRequestError("Infistar 返回的任务 ID 不匹配。", undefined, "unknown");
   const state = data.status === "completed" ? "success" : data.status === "failed" ? "fail" : "generating";
-  const candidate = data.metadata?.url || data.video_url || data.url;
+  const candidate = data.metadata?.url || data.video_url || data.url || (Array.isArray(data.data) ? data.data[0]?.url : undefined);
   let videoUrl: string | undefined;
   if (typeof candidate === "string") {
     try { if (new URL(candidate).protocol === "https:") videoUrl = candidate; } catch { /* wait for a valid result */ }
