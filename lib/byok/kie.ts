@@ -34,7 +34,7 @@ export async function getUserApiKeyForProvider(userId: string, provider: string)
   }
 
   if (records.length) {
-    throw new Error("保存的 KIE API Key 无法解密。请确认 BYOK_ENCRYPTION_KEY 没有变更，或在设置中删除后重新保存 KIE API Key。");
+    throw new Error("保存的 API Key 无法解密。请确认 BYOK_ENCRYPTION_KEY 没有变更，或在设置中删除后重新保存 API Key。");
   }
 
   return null;

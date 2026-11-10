@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { db, userApiKeys } from "@/lib/db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import { encryptApiKey, decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
-const SUPPORTED_USER_PROVIDER = "kie" as const;
+import { isUserProvider, USER_PROVIDERS } from "@/lib/ai/providers";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const apiKeys = await db.query.userApiKeys.findMany({
-      where: and(eq(userApiKeys.userId, session.user.id), eq(userApiKeys.provider, SUPPORTED_USER_PROVIDER)),
+      where: and(eq(userApiKeys.userId, session.user.id), inArray(userApiKeys.provider, [...USER_PROVIDERS])),
       orderBy: [desc(userApiKeys.updatedAt), desc(userApiKeys.createdAt)],
     });
 
@@ -40,13 +40,16 @@ export async function GET(request: NextRequest) {
         id: key.id,
         provider: key.provider,
         isActive: key.isActive,
+        isPreferred: key.isPreferred,
         createdAt: key.createdAt,
         apiKey: displayKey,
         decryptError,
       };
     });
 
-    return NextResponse.json({ apiKeys: sanitizedKeys }, { headers: { "Cache-Control": "private, no-store" } });
+    const preferredProvider = apiKeys.find(key => key.isActive && key.isPreferred)?.provider
+      || (apiKeys.some(key => key.isActive && key.provider === "kie") ? "kie" : apiKeys.find(key => key.isActive)?.provider) || null;
+    return NextResponse.json({ apiKeys: sanitizedKeys, preferredProvider }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {
     console.error("API key get error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
@@ -63,30 +66,33 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { provider, apiKey } = body;
+    const { apiKey } = body;
+    const provider = body.provider ?? "kie";
 
     if (typeof apiKey !== "string" || !apiKey.trim() || apiKey.length > 512) {
       return NextResponse.json({ error: "Missing API Key" }, { status: 400 });
     }
 
-    if (provider && provider !== SUPPORTED_USER_PROVIDER) {
-      return NextResponse.json({ error: "当前只支持配置 KIE API Key。" }, { status: 400 });
+    if (!isUserProvider(provider)) {
+      return NextResponse.json({ error: "Unsupported API provider" }, { status: 400 });
     }
 
     if (apiKey.trim().length < 16) {
-      return NextResponse.json({ error: "Invalid Kie.ai API Key format" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid API Key format" }, { status: 400 });
     }
 
     const encryptedApiKey = encryptApiKey(apiKey.trim());
-    const existing = await db.query.userApiKeys.findMany({
+    await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`byok:${session.user.id}`}))`);
+    const existing = await tx.query.userApiKeys.findMany({
       where: and(
         eq(userApiKeys.userId, session.user.id),
-        eq(userApiKeys.provider, SUPPORTED_USER_PROVIDER)
+        eq(userApiKeys.provider, provider)
       ),
     });
 
     if (existing.length > 0) {
-      await db
+      await tx
         .update(userApiKeys)
         .set({
           apiKey: encryptedApiKey,
@@ -95,21 +101,46 @@ export async function POST(request: NextRequest) {
         })
         .where(and(
           eq(userApiKeys.userId, session.user.id),
-          eq(userApiKeys.provider, SUPPORTED_USER_PROVIDER)
+          eq(userApiKeys.provider, provider)
         ));
     } else {
-      await db.insert(userApiKeys).values({
+      await tx.insert(userApiKeys).values({
         userId: session.user.id,
-        provider: SUPPORTED_USER_PROVIDER,
+        provider,
         apiKey: encryptedApiKey,
         isActive: true,
       });
     }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("API key save error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { provider } = await request.json();
+  if (!isUserProvider(provider)) return NextResponse.json({ error: "Unsupported API provider" }, { status: 400 });
+  try {
+    const changed = await db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`byok:${session.user.id}`}))`);
+      const record = await tx.query.userApiKeys.findFirst({
+        where: and(eq(userApiKeys.userId, session.user.id), eq(userApiKeys.provider, provider), eq(userApiKeys.isActive, true)),
+        orderBy: [desc(userApiKeys.updatedAt)],
+      });
+      if (!record || !isValidEncryptedKey(record.apiKey) || !decryptApiKey(record.apiKey)) return false;
+      await tx.update(userApiKeys).set({ isPreferred: false }).where(eq(userApiKeys.userId, session.user.id));
+      await tx.update(userApiKeys).set({ isPreferred: true }).where(eq(userApiKeys.id, record.id));
+      return true;
+    });
+    return NextResponse.json(changed ? { success: true } : { error: "Save a valid API Key first" }, { status: changed ? 200 : 400 });
+  } catch {
+    return NextResponse.json({ error: "Unable to switch API provider" }, { status: 500 });
   }
 }
 

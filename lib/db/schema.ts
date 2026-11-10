@@ -220,6 +220,7 @@ export const verification = pgTable("verification", {
 
 // ============ 新增：用户 API Key 存储 ============
 export const apiProviderEnum = pgEnum("api_provider", [
+  "infistar", // Infistar 无限星河
   "zhipu",   // 智谱AI
   "gemini",  // Google Gemini
   "openrouter", // OpenRouter
@@ -236,6 +237,7 @@ export const userApiKeys = pgTable(
     provider: apiProviderEnum("provider").notNull(),
     apiKey: text("api_key").notNull(),
     isActive: boolean("is_active").default(true).notNull(),
+    isPreferred: boolean("is_preferred").default(false).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()
       .notNull(),
