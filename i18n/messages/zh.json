@@ -78,7 +78,7 @@
     "batchMode": "批量对比",
     "provider": "API 提供商",
     "model": "分析模型",
-    "modelDeepseek": "DeepSeek V4 Flash（默认）",
+    "modelDeepseek": "DeepSeek V4 Flash（默认 · 推荐）",
     "modelGemini": "Gemini 3.8 Flash",
     "keySource": "费用来源",
     "keyPlatform": "平台试用",
