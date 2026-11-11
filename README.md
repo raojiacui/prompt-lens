@@ -1,7 +1,6 @@
 <p align="center">
-  <img src="public/prompt-lens-logo.png" alt="PromptLens 标识与产品名" width="420" />
+  <img src="public/prompt-lens-logo.png" alt="PromptLens 标识与产品名" width="280" />
 </p>
-<h1 align="center">PromptLens V2</h1>
 <p align="center">从参考视频，到你的创作。</p>
 
 PromptLens V2 是一个 AI 视频创作工作流工具，将参考视频或图片整理成可编辑的画面分析和复刻提示词，帮助你理解镜头、改写创意并生成自己的视频。
@@ -14,9 +13,9 @@ PromptLens V2 是一个 AI 视频创作工作流工具，将参考视频或图�
       <a href="https://www.infistar.cc/register?aff=PROMPTLENS&amp;ref_source=link"><img src="public/partners/infistar-brand-dark.png" alt="无限星河 Infistar" width="260" /></a>
     </td>
     <td>
-      <strong>无限星河 Infistar</strong> 是面向开发者与创作者的多模型 API 服务，覆盖文本、视觉、图像、音频和视频等常用 AI 能力。一个 API Key 即可按账户权限调用不同模型与线路，适合将模型能力接入应用、自动化工作流和创作工具。<br /><br />
-      在 PromptLens 中，你可以在「设置 → API Key 配置」保存 Infistar Key 并设为首选供应商；后续分析、改写和视频生成会按所选供应商与模型能力执行，历史任务仍保留原有来源。<br /><br />
-      <strong>通过 PromptLens 专属链接注册，可领取人民币 5 元 API 体验额度。</strong><br /><br />
+      <a href="https://www.infistar.cc/register?aff=PROMPTLENS&amp;ref_source=link"><strong>无限星河 Infistar</strong></a> 是面向开发者与创作者的多模型 API 服务，覆盖文本、视觉、图像、音频和视频等常用 AI 能力。一个 API Key 即可按账户权限调用不同模型与线路，适合将模型能力接入应用、自动化工作流和创作工具。<br />
+      在 PromptLens 中，你可以在「设置 → API Key 配置」保存 Infistar Key 并设为首选供应商；后续分析、改写和视频生成会按所选供应商与模型能力执行，历史任务仍保留原有来源。<br />
+      <strong>通过 PromptLens 专属链接注册，可领取人民币 5 元 API 体验额度。</strong><br />
       <a href="https://www.infistar.cc/register?aff=PROMPTLENS&amp;ref_source=link">使用专属链接注册并领取体验额度 →</a>
     </td>
   </tr>
