@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { ArrowUpRight, Check, KeyRound, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
@@ -58,12 +59,12 @@ export function ApiKeySettings() {
     {USER_PROVIDERS.map(provider => {
       const saved = keys.filter(key => key.provider === provider);
       const key = saved[0]; const current = preferred === provider;
-      const name = provider === "infistar" ? "Infistar 无限星河" : "KIE";
+      const name = provider === "infistar" ? "无限星河 Infistar" : "KIE";
       const notice = notices[provider];
       return <Card key={provider} className={`overflow-hidden bg-[var(--color-bg-raised)] ${provider === "infistar" ? "border-[var(--color-accent-orange)]/35" : "border-[var(--color-border-default)]"}`}>
         <CardHeader className="gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3"><span aria-hidden="true" className={`flex h-11 w-11 items-center justify-center rounded-xl border text-base font-bold ${provider === "infistar" ? "border-orange-200 bg-orange-50 text-orange-700" : "border-[var(--color-border-default)] bg-[var(--color-bg-base)] text-[var(--color-text-primary)]"}`}>{provider === "infistar" ? "I" : "K"}</span><CardTitle className="text-lg" style={{ fontFamily: "var(--font-heading)" }}>{name}</CardTitle>{provider === "infistar" && <span className="rounded-md bg-orange-100 px-2 py-1 text-xs font-medium text-orange-800">{t("recommended")}</span>}</div>
+            <div className="flex flex-wrap items-center gap-3"><Image src={provider === "infistar" ? "/partners/infistar-logo.jpg" : "/partners/kie-logo.png"} alt="" width={44} height={44} className="h-11 w-11 shrink-0 rounded-xl object-contain" /><CardTitle className="text-lg" style={{ fontFamily: "var(--font-heading)" }}>{name}</CardTitle>{provider === "infistar" && <span className="rounded-md bg-orange-100 px-2 py-1 text-xs font-medium text-orange-800">{t("recommended")}</span>}</div>
             {current && <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-success)]"><Check size={14} />{t("preferred")}</span>}
           </div>
           <CardDescription className="leading-6">{t(provider === "infistar" ? "infistarDesc" : "kieDesc")}</CardDescription>

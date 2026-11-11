@@ -25,6 +25,8 @@ for (const width of [1440, 390]) {
     const banner = page.getByRole("complementary", { name: "新用户体验额度" });
     await expect(banner).toBeVisible();
     await expect(banner.getByRole("link")).toHaveAttribute("href", registration);
+    await expect(banner.locator('img[src*="prompt-lens-icon"]')).toBeVisible();
+    await expect(banner.locator('img[src*="infistar-logo"]')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: `tmp/infistar/announcement-${width}.png` });
     await page.getByRole("button", { name: "关闭公告" }).click();
@@ -58,7 +60,12 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
         : path === "/api/credits/me" ? { balance: 0, mode: "byok", hasUserApiKey: true, byokProvider: preferredProvider, commercial: { credits: 0 } } : {} });
     });
     await page.goto("/dashboard?tab=settings");
-    await expect(page.getByRole("heading", { name: /^(Infistar 无限星河|KIE)$/ })).toHaveText(["Infistar 无限星河", "KIE"]);
+    await expect(page.getByRole("heading", { name: /^(无限星河 Infistar|KIE)$/ })).toHaveText(["无限星河 Infistar", "KIE"]);
+    for (const filename of ["infistar-logo", "kie-logo"]) {
+      const logo = page.locator(`img[src*="${filename}"]`);
+      await expect(logo).toBeVisible();
+      await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
+    }
     await expect(page.getByText(zh ? "推荐" : "Recommended", { exact: true })).toBeVisible();
     await expect(page.locator(`a[href="${registration}"]`)).toHaveCount(1);
     await expect(page.locator(`a[href="${verification}"]`)).toHaveAttribute("target", "_blank");
