@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { ArrowUpRight, Check, KeyRound, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Check, KeyRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -81,7 +81,7 @@ export function ApiKeySettings() {
         </CardContent>
       </Card>;
     })}
-    <a href={MODEL_VERIFICATION_URL} target="_blank" rel="noopener noreferrer" className="group flex items-start justify-between gap-4 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-5 transition-colors hover:border-[var(--color-accent-orange)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"><div className="flex gap-3"><ShieldCheck className="mt-0.5 shrink-0 text-[var(--color-accent-orange)]" size={22} /><div><h3 className="font-medium text-[var(--color-text-primary)]">{t("verificationTitle")}</h3><p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">{t("verificationDesc")}</p><p className="mt-2 text-xs text-[var(--color-text-muted)]">{t("verificationPrivacy")}</p></div></div><ArrowUpRight aria-hidden="true" size={18} className="shrink-0 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent-orange)]" /></a>
+    <a href={MODEL_VERIFICATION_URL} target="_blank" rel="noopener noreferrer" className="group flex items-start justify-between gap-4 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-raised)] p-5 transition-colors hover:border-[var(--color-accent-orange)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4"><div className="flex gap-3"><Image src="/partners/mozhenzhen-logo.png" alt="" width={44} height={44} className="h-11 w-11 shrink-0 rounded-xl object-contain" /><div><h3 className="font-medium text-[var(--color-text-primary)]">{t("verificationTitle")}</h3><p className="mt-1 text-sm leading-6 text-[var(--color-text-secondary)]">{t("verificationDesc")}</p><p className="mt-2 text-xs text-[var(--color-text-muted)]">{t("verificationPrivacy")}</p></div></div><ArrowUpRight aria-hidden="true" size={18} className="shrink-0 text-[var(--color-text-muted)] group-hover:text-[var(--color-accent-orange)]" /></a>
     <Card className="border-[var(--color-border-default)] bg-[var(--color-bg-raised)]"><CardHeader><CardTitle className="text-base">{t("providerDocs")}</CardTitle></CardHeader><CardContent className="space-y-5 text-sm leading-6 text-[var(--color-text-secondary)]">{["routing", "trial", "storage"].map(section => <div key={section}><h3 className="font-medium text-[var(--color-text-primary)]">{t(`${section}Title`)}</h3><p className="mt-1">{t(`${section}Desc`)}</p></div>)}</CardContent></Card>
   </div>;
 }

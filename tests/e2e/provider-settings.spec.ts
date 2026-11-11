@@ -61,7 +61,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     });
     await page.goto("/dashboard?tab=settings");
     await expect(page.getByRole("heading", { name: /^(无限星河 Infistar|KIE)$/ })).toHaveText(["无限星河 Infistar", "KIE"]);
-    for (const filename of ["infistar-logo", "kie-logo"]) {
+    for (const filename of ["infistar-logo", "kie-logo", "mozhenzhen-logo"]) {
       const logo = page.locator(`img[src*="${filename}"]`);
       await expect(logo).toBeVisible();
       await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
