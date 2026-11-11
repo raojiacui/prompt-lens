@@ -379,7 +379,6 @@
     "resaveRequired": "Save your key again",
     "verificationTitle": "Mozhenzhen · Model prices and verification",
     "verificationDesc": "Check model prices, provider reviews or the API service you use.",
-    "verificationPrivacy": "Opens in a new tab without sharing your saved API key.",
     "routingTitle": "Automatic routing and costs",
     "routingDesc": "New tasks use your preferred provider. Submitted tasks keep their original provider. Existing KIE users retain their selection. Provider API charges use your own provider balance; platform services such as automatic shot splitting are charged as quoted."
   },

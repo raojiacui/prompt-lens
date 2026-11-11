@@ -378,7 +378,6 @@
     "resaveRequired": "需要重新保存",
     "verificationTitle": "模真真 · 模型价格与验真",
     "verificationDesc": "查询模型价格、服务商口碑，或检测你使用的 API 线路。",
-    "verificationPrivacy": "新标签页打开，不会传递你保存的 API Key。",
     "routingTitle": "自动调用与费用",
     "routingDesc": "新任务使用首选供应商，已提交的任务继续使用原供应商。已有 KIE 配置会保留原选择。自带 Key 的调用费用由对应供应商扣取，不扣平台积分；自动拆镜等平台服务仍按页面报价收费。"
   },

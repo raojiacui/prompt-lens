@@ -104,3 +104,5 @@ Infistar `https://doc.infistar.cc/api-reference/video-generation` 却将 `/v1/vi
 用户继续提供模真真熊猫 Logo，要求补到配置页入口。直接使用用户原始 PNG 保存为 `public/partners/mozhenzhen-logo.png`，沿用 44px 装饰性图片样式并移除不再使用的盾牌图标。整个卡片继续跳转至 `https://mozhenzhen.com/go/prompt-lens`，不改变说明与 Key 隔离行为；在既有中英文桌面/手机检查中增加图片解码验证。
 
 模真真 Logo 修正的生产构建及 4 项中英文桌面/手机配置页检查通过，图片加载、专属链接和无横向溢出已验证。
+
+按用户文案修正要求，移除模真真入口的「新标签页打开，不会传递你保存的 API Key。」提示段落及未使用的中英文翻译键。仅删除展示文案，专属链接、新标签页行为和凭据隔离逻辑保持原实现。
