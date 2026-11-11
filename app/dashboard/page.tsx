@@ -10,7 +10,6 @@ import { HistoryList } from "@/components/history-list";
 import { ApiKeySettings } from "@/components/api-key-settings";
 import { AudioAnalyzeTab } from "@/components/audio-analyze-tab";
 import { VideoGenerateTab } from "@/components/video-generate-tab";
-import { FloatingChat } from "@/components/floating-chat";
 import { createImageAnalysisFrame, extractVideoFrameFiles } from "@/lib/utils/frame-extractor";
 import { MAX_ANALYSIS_FRAMES } from "@/lib/ai/analysis-frame-input";
 import { uploadAnalysisFrames, uploadMediaToR2 } from "@/lib/r2-client";
@@ -474,10 +473,6 @@ export default function DashboardPage() {
         )}
       </main>
 
-      {/* 悬浮聊天助手 */}
-      <div className="hidden md:block">
-        <FloatingChat />
-      </div>
     </div>
   );
 }
