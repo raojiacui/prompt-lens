@@ -475,7 +475,9 @@ export default function DashboardPage() {
       </main>
 
       {/* 悬浮聊天助手 */}
-      <FloatingChat />
+      <div className="hidden md:block">
+        <FloatingChat />
+      </div>
     </div>
   );
 }
