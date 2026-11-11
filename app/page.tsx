@@ -12,18 +12,15 @@ import { PricingSection } from "@/components/landing/pricing-section";
 import { CTASection } from "@/components/landing/cta-section";
 import { SiteFooter } from "@/components/landing/site-footer";
 import { ProviderAnnouncement } from "@/components/landing/provider-announcement";
-import { INFISTAR_ANNOUNCEMENT_COOKIE } from "@/lib/ai/providers";
-import { cookies } from "next/headers";
 
 export default async function HomePage() {
   const headersList = await headers();
   const session = await auth.api.getSession({ headers: headersList }).catch(() => null);
   const isAuthenticated = !!session?.user;
-  const dismissed = (await cookies()).get(INFISTAR_ANNOUNCEMENT_COOKIE)?.value === "closed";
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-base)]">
-      <ProviderAnnouncement initiallyDismissed={dismissed} />
+      <ProviderAnnouncement />
       <div className="relative">
       <SiteHeader user={session?.user ?? null} />
       <main>

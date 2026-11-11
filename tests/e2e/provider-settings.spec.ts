@@ -16,9 +16,11 @@ test.beforeEach(async ({ context, baseURL }) => {
 });
 
 for (const width of [1440, 390]) {
-  test(`announcement closes and stays dismissed at ${width}px`, async ({ page, context }) => {
+  test(`announcement reappears on reload and re-entry at ${width}px`, async ({ page, context }) => {
     await page.setViewportSize({ width, height: 1000 });
     await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: new URL(String(test.info().project.use.baseURL || "http://localhost:3000")).hostname, path: "/" }]);
+    // Users who dismissed the previous release must also see the announcement again.
+    await context.addCookies([{ name: "promptlens-infistar-announcement-v1", value: "closed", domain: new URL(String(test.info().project.use.baseURL || "http://localhost:3000")).hostname, path: "/" }]);
     await page.goto("/");
     const banner = page.getByRole("complementary", { name: "新用户体验额度" });
     await expect(banner).toBeVisible();
@@ -28,8 +30,11 @@ for (const width of [1440, 390]) {
     await page.getByRole("button", { name: "关闭公告" }).click();
     await expect(banner).toHaveCount(0);
     await page.reload();
-    await expect(banner).toHaveCount(0);
-    expect((await context.cookies()).find(cookie => cookie.name === "promptlens-infistar-announcement-v1")?.value).toBe("closed");
+    await expect(banner).toBeVisible();
+    await page.getByRole("button", { name: "关闭公告" }).click();
+    await page.goto("/login");
+    await page.goto("/");
+    await expect(banner).toBeVisible();
   });
 }
 
