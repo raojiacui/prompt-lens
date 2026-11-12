@@ -47,12 +47,16 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await context.addCookies([{ name: "NEXT_LOCALE", value: locale, domain: new URL(String(test.info().project.use.baseURL || "http://localhost:3000")).hostname, path: "/" }]);
     const keys = [{ id: "kie-fixture", provider: "kie", isActive: true, apiKey: "kie-••••1234" }];
     let preferredProvider = "kie";
+    let rejectFirstSave = true;
     const requests: Array<{ provider: string; apiKey?: string }> = [];
     await page.route("**/api/**", async route => {
       const request = route.request(); const path = new URL(request.url()).pathname;
-      if (path === "/api/settings/api-key/test") { requests.push(request.postDataJSON()); return route.fulfill({ json: { success: true } }); }
       if (path === "/api/settings/api-key") {
-        if (request.method() === "POST") { const body = request.postDataJSON(); requests.push(body); keys.unshift({ id: "infistar-fixture", provider: body.provider, isActive: true, apiKey: "sk-f••••1234" }); }
+        if (request.method() === "POST") {
+          const body = request.postDataJSON(); requests.push(body);
+          if (rejectFirstSave) { rejectFirstSave = false; return route.fulfill({ status: 400, json: { code: "KEY_VALIDATION_FAILED" } }); }
+          keys.unshift({ id: "infistar-fixture", provider: body.provider, isActive: true, apiKey: "sk-f••••1234" });
+        }
         if (request.method() === "PATCH") preferredProvider = request.postDataJSON().provider;
         return route.fulfill({ json: { apiKeys: keys, preferredProvider, success: true } });
       }
@@ -70,9 +74,15 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     await expect(page.locator(`a[href="${registration}"]`)).toHaveCount(1);
     await expect(page.locator(`a[href="${verification}"]`)).toHaveAttribute("target", "_blank");
     await page.getByPlaceholder(zh ? "输入 Infistar API Key" : "Enter your Infistar API key").fill("sk-fake-test-key-not-real-1234");
-    await page.getByRole("button", { name: zh ? "测试连接" : "Test connection", exact: true }).first().click();
-    await expect(page.getByRole("status")).toContainText(zh ? "连接验证成功" : "Connection verified");
+    await expect(page.getByRole("button", { name: zh ? "测试连接" : "Test connection", exact: true })).toHaveCount(0);
     await page.getByRole("button", { name: zh ? "保存" : "Save", exact: true }).first().click();
+    await expect(page.getByRole("alert").filter({ hasText: zh ? "验证失败" : "Verification failed" })).toBeVisible();
+    await expect(page.getByPlaceholder(zh ? "输入 Infistar API Key" : "Enter your Infistar API key")).toHaveValue("sk-fake-test-key-not-real-1234");
+    await expect(page.getByText("kie-••••1234")).toBeVisible();
+    await expect(page.getByText("sk-f••••1234")).toHaveCount(0);
+    expect(preferredProvider).toBe("kie");
+    await page.getByRole("button", { name: zh ? "保存" : "Save", exact: true }).first().click();
+    await expect(page.getByRole("status")).toContainText(zh ? "验证通过，已保存" : "verified and saved");
     await expect(page.getByText("sk-f••••1234")).toBeVisible();
     expect(preferredProvider).toBe("kie");
     await page.getByRole("button", { name: zh ? "设为首选" : "Set as preferred", exact: true }).click();

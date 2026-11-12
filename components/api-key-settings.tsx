@@ -32,24 +32,22 @@ export function ApiKeySettings() {
     void refresh().catch(() => notify("global", { type: "error", text: t("loadFailed") })).finally(() => setLoading(false));
     // Configuration is loaded when the settings panel mounts.
   }, []);
-  async function action(provider: UserProvider, kind: "save" | "prefer" | "test" | "delete", id?: string) {
+  async function action(provider: UserProvider, kind: "save" | "prefer" | "delete", id?: string) {
     const apiKey = drafts[provider].trim();
     if (kind === "save" && !apiKey) { notify(provider, { type: "error", text: t("apiKeyRequired") }); return; }
     if (kind === "delete" && !window.confirm(t("deleteConfirm"))) return;
     setBusy(`${provider}:${kind}`); setNotices(value => ({ ...value, [provider]: undefined }));
     try {
-      const response = await fetch(kind === "test" ? "/api/settings/api-key/test" : `/api/settings/api-key${kind === "delete" ? `?id=${encodeURIComponent(id!)}` : ""}`, {
+      const response = await fetch(`/api/settings/api-key${kind === "delete" ? `?id=${encodeURIComponent(id!)}` : ""}`, {
         method: kind === "delete" ? "DELETE" : kind === "prefer" ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        ...(kind === "delete" ? {} : { body: JSON.stringify({ provider, ...(kind === "save" || kind === "test" ? { apiKey: apiKey || undefined } : {}) }) }),
+        ...(kind === "delete" ? {} : { body: JSON.stringify({ provider, ...(kind === "save" ? { apiKey } : {}) }) }),
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body.error || t("saveFailed"));
-      if (kind !== "test") {
-        if (kind === "save") setDrafts(value => ({ ...value, [provider]: "" }));
-        await refresh(); window.dispatchEvent(new Event("promptlens:provider-change"));
-      }
-      notify(provider, { type: "success", text: t(kind === "test" ? "testSuccess" : kind === "prefer" ? "preferenceSaved" : kind === "delete" ? "deleted" : "saveSuccess") });
+      if (!response.ok) throw new Error(body.code === "KEY_VALIDATION_FAILED" ? t("keyValidationFailed") : body.code === "KEY_SAVE_RATE_LIMITED" ? t("saveRateLimited") : body.error || t("saveFailed"));
+      if (kind === "save") setDrafts(value => ({ ...value, [provider]: "" }));
+      await refresh(); window.dispatchEvent(new Event("promptlens:provider-change"));
+      notify(provider, { type: "success", text: t(kind === "prefer" ? "preferenceSaved" : kind === "delete" ? "deleted" : "saveSuccess") });
     } catch (error) { notify(provider, { type: "error", text: error instanceof Error ? error.message : t("saveFailed") }); }
     finally { setBusy(null); }
   }
@@ -76,7 +74,7 @@ export function ApiKeySettings() {
             <div className="flex flex-wrap gap-2">{!current && !key.decryptError && <Button size="sm" variant="outline" disabled={Boolean(busy)} onClick={() => void action(provider, "prefer")}>{t("setPreferred")}</Button>}{saved.map(record => <Button key={record.id} size="sm" variant="ghost" disabled={Boolean(busy)} onClick={() => void action(provider, "delete", record.id)} aria-label={`${t("delete")} ${name} ${record.apiKey}`}>{t("delete")}</Button>)}</div>
           </div>}
           <label htmlFor={`key-${provider}`} className="block text-sm font-medium text-[var(--color-text-primary)]">{key ? t("replaceKey") : t("enterApiKey")}</label>
-          <div className="flex flex-col gap-2 sm:flex-row"><Input id={`key-${provider}`} type="password" autoComplete="off" spellCheck={false} value={drafts[provider]} onChange={event => setDrafts(value => ({ ...value, [provider]: event.target.value }))} placeholder={t(provider === "infistar" ? "placeholderInfistar" : "placeholderKie")} disabled={loading || Boolean(busy)} className="min-w-0 flex-1 bg-[var(--color-bg-base)]" /><div className="flex gap-2"><Button variant="outline" className="flex-1 sm:flex-none" disabled={loading || Boolean(busy) || (!drafts[provider].trim() && (!key || key.decryptError))} onClick={() => void action(provider, "test")}>{busy === `${provider}:test` ? <Spinner size="sm" /> : t("testConnection")}</Button><Button className="flex-1 bg-[var(--color-accent-orange)] hover:bg-[var(--color-accent-orange-hover)] sm:flex-none" disabled={loading || Boolean(busy) || !drafts[provider].trim()} onClick={() => void action(provider, "save")}>{busy === `${provider}:save` ? <Spinner size="sm" /> : t("saveApiKey")}</Button></div></div>
+          <div className="flex flex-col gap-2 sm:flex-row"><Input id={`key-${provider}`} type="password" autoComplete="off" spellCheck={false} value={drafts[provider]} onChange={event => setDrafts(value => ({ ...value, [provider]: event.target.value }))} placeholder={t(provider === "infistar" ? "placeholderInfistar" : "placeholderKie")} disabled={loading || Boolean(busy)} className="min-w-0 flex-1 bg-[var(--color-bg-base)]" /><Button className="bg-[var(--color-accent-orange)] hover:bg-[var(--color-accent-orange-hover)] sm:shrink-0" disabled={loading || Boolean(busy) || !drafts[provider].trim()} onClick={() => void action(provider, "save")}>{busy === `${provider}:save` ? <><Spinner size="sm" />{t("validatingAndSaving")}</> : t("saveApiKey")}</Button></div>
           {notice && <p role={notice.type === "error" ? "alert" : "status"} className={`rounded-lg px-3 py-2 text-sm ${notice.type === "error" ? "bg-[var(--color-error)]/10 text-[var(--color-error)]" : "bg-[var(--color-success)]/10 text-[var(--color-success)]"}`}>{notice.text}</p>}
         </CardContent>
       </Card>;

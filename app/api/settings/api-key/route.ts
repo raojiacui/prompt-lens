@@ -5,6 +5,8 @@ import { eq, and, desc, inArray, sql } from "drizzle-orm";
 import { encryptApiKey, decryptApiKey, isValidEncryptedKey } from "@/lib/utils/encryption";
 
 import { isUserProvider, USER_PROVIDERS } from "@/lib/ai/providers";
+import { listInfistarModels } from "@/lib/ai/infistar-client";
+import { checkRateLimit } from "@/lib/utils/rate-limit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -65,9 +67,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { apiKey } = body;
-    const provider = body.provider ?? "kie";
+    const body = await request.json().catch(() => null);
+    const apiKey = body?.apiKey;
+    const provider = body?.provider ?? "kie";
 
     if (typeof apiKey !== "string" || !apiKey.trim() || apiKey.length > 512) {
       return NextResponse.json({ error: "Missing API Key" }, { status: 400 });
@@ -79,6 +81,23 @@ export async function POST(request: NextRequest) {
 
     if (apiKey.trim().length < 16) {
       return NextResponse.json({ error: "Invalid API Key format" }, { status: 400 });
+    }
+
+    const { allowed } = await checkRateLimit(`provider-save:${session.user.id}`, 6, 60_000);
+    if (!allowed) return NextResponse.json({ error: "Too many save attempts. Try again shortly.", code: "KEY_SAVE_RATE_LIMITED" }, { status: 429 });
+
+    // Validate before acquiring the transaction lock or replacing any stored key.
+    // These read-only provider endpoints do not invoke paid model inference.
+    try {
+      if (provider === "infistar") await listInfistarModels(apiKey.trim(), { refresh: true });
+      else {
+        const base = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
+        const response = await fetch(`${base}/api/v1/chat/credit`, { headers: { Authorization: `Bearer ${apiKey.trim()}` }, redirect: "error", cache: "no-store", signal: AbortSignal.timeout(15_000) });
+        const data = await response.json();
+        if (!response.ok || data.code !== 200) throw new Error("Provider authentication failed");
+      }
+    } catch {
+      return NextResponse.json({ error: "API Key verification failed. Check the provider, key and network.", code: "KEY_VALIDATION_FAILED" }, { status: 400 });
     }
 
     const encryptedApiKey = encryptApiKey(apiKey.trim());

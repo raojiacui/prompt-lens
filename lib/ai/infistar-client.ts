@@ -19,10 +19,10 @@ export class InfistarRequestError extends KieRequestError {
 
 type InfistarModel = { id: string; supported_endpoint_types?: string[] };
 const catalogCache = new Map<string, { expiresAt: number; models: InfistarModel[] }>();
-export async function listInfistarModels(apiKey: string): Promise<InfistarModel[]> {
+export async function listInfistarModels(apiKey: string, options: { refresh?: boolean } = {}): Promise<InfistarModel[]> {
   const cacheKey = createHash("sha256").update(infistarBaseUrl() + apiKey).digest("hex");
   const cached = catalogCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.models;
+  if (!options.refresh && cached && cached.expiresAt > Date.now()) return cached.models;
   const response = await fetch(`${infistarBaseUrl()}/models`, {
     headers: { Authorization: `Bearer ${apiKey}` }, cache: "no-store", redirect: "error", signal: AbortSignal.timeout(15_000),
   });

@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { assertInfistarModel, infistarChatModel, requestInfistarChat } from "@/lib/ai/infistar-client";
+import { assertInfistarModel, infistarChatModel, listInfistarModels, requestInfistarChat } from "@/lib/ai/infistar-client";
 import { requestProviderChat } from "@/lib/ai/provider-client";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
@@ -34,4 +34,14 @@ it("does not expose upstream credentials or error bodies", async () => {
     .mockResolvedValueOnce(Response.json({ error: { message: "private-fixture echoed" } }, { status: 401 }));
   vi.stubGlobal("fetch", fetcher);
   await expect(requestInfistarChat({ apiKey: "error-fixture", modelId: "deepseek-v4-1-flash", messages: [] })).rejects.toThrow("Infistar 请求失败 (401)");
+});
+it("bypasses the model cache when verifying a key before saving", async () => {
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ data: [] }))
+    .mockResolvedValueOnce(Response.json({ error: "revoked" }, { status: 401 }));
+  vi.stubGlobal("fetch", fetcher);
+  await listInfistarModels("fresh-save-fixture");
+  await listInfistarModels("fresh-save-fixture");
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  await expect(listInfistarModels("fresh-save-fixture", { refresh: true })).rejects.toThrow("模型查询失败");
+  expect(fetcher).toHaveBeenCalledTimes(2);
 });
