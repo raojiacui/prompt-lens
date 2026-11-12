@@ -1,6 +1,22 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { splitLongScenes, sampleSceneFrameTimes } from "../workers/ffmpeg-worker/scene-segments.mjs";
+import { splitLongScenes, sampleSceneFrameTimes, parseRefinedSceneResult, SCENE_PREVIEW_REVISION } from "../workers/ffmpeg-worker/scene-segments.mjs";
+
+test("refined scenes preserve gaps through validation and long-scene splitting", () => {
+  const scenes = [{ start: .5, end: 35 }, { start: 36, end: 36.5 }];
+  const result = splitLongScenes(parseRefinedSceneResult({ revision: SCENE_PREVIEW_REVISION, scenes }, 37));
+  assert.equal(result[0].start, .5);
+  assert.equal(result.at(-2).end, 35);
+  assert.deepEqual(result.at(-1), { start: 36, end: 36.5 });
+});
+
+test("empty videos and invalid or outdated refinement cannot become valid previews", () => {
+  assert.throws(() => parseRefinedSceneResult({ revision: SCENE_PREVIEW_REVISION, scenes: [] }, 2), { code: "NO_USEFUL_SCENES" });
+  for (const scenes of [[{ start: 1, end: 0 }], [{ start: 0, end: 3 }], [{ start: 0, end: 1 }, { start: .5, end: 2 }], [{ start: NaN, end: 1 }]]) {
+    assert.throws(() => parseRefinedSceneResult({ revision: SCENE_PREVIEW_REVISION, scenes }, 2));
+  }
+  assert.throws(() => parseRefinedSceneResult({ revision: "old", scenes: [{ start: 0, end: 1 }] }, 2));
+});
 
 test("samples three ordered frames within a whole long video without splitting it", () => {
   assert.deepEqual(sampleSceneFrameTimes(0, 60), [6, 30, 54]);

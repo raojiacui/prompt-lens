@@ -1275,6 +1275,42 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(commercialMediaRequest).toHaveBeenCalledTimes(4);
   });
 
+  it("refreshes old detector previews without altering existing quotes or their boundaries", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Detector revision" }).returning();
+    const source = { projectId: project.id, mediaUrl: "https://example.com/revision.mp4", mediaName: "Revision", automaticSplit: true };
+    const oldScenes = [{ id: "1", startUs: 0, endUs: 2_000_000 }];
+    const preview = { sourceHash: "a".repeat(64), durationUs: 2_000_000, bytes: 500, metadata: {}, scenes: oldScenes };
+    const [old] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis_preview", state: "quoted", input: { ...source, preview }, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    const original = await quoteCommercialAnalysis(userId, { preparationId: old.id, sceneIds: ["1"], payer: "platform", model: "flash", outputLanguage: "zh" });
+    const filtered = [{ id: "1", startUs: 0, endUs: 500_000 }, { id: "2", startUs: 1_000_000, endUs: 2_000_000 }];
+    vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ ...preview, scenes: filtered });
+    const fresh = await prepareCommercialAnalysis(userId, source);
+    expect(fresh.id).not.toBe(old.id);
+    expect(fresh.scenes).toEqual(filtered);
+    expect(await prepareCommercialAnalysis(userId, source)).toEqual(fresh);
+    expect(commercialMediaRequest).toHaveBeenCalledTimes(1);
+    const [savedOld] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, old.id));
+    const [savedQuote] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, original.id));
+    expect(savedOld.input).toEqual(old.input);
+    expect(savedQuote.input).toMatchObject({ preview: { scenes: oldScenes }, pricing: { scenes: oldScenes } });
+    expect(await testDb.select().from(schema.commercialReservations)).toHaveLength(0);
+  });
+
+  it("records an empty-content preview failure without reserving credits or calling analysis", async () => {
+    await grant();
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const [project] = await testDb.insert(schema.projects).values({ userId, title: "Empty video" }).returning();
+    vi.mocked(commercialMediaRequest).mockRejectedValueOnce(new Error("NO_USEFUL_SCENES"));
+    await expect(prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/black.mp4", mediaName: "Black", automaticSplit: true })).rejects.toThrow("NO_USEFUL_SCENES");
+    expect((await testDb.select().from(schema.commercialTasks))[0]).toMatchObject({ state: "failed", result: { code: "NO_USEFUL_SCENES" } });
+    expect(await testDb.select().from(schema.commercialReservations)).toHaveLength(0);
+    expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
+    expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+  });
+
   it("does not start a second worker probe while the same source is still preparing", async () => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     const [project] = await testDb.insert(schema.projects).values({ userId, title: "Concurrent preparation" }).returning();

@@ -4,6 +4,7 @@ vi.mock("@/lib/db", () => ({ db: {}, operationLogs: {} }));
 vi.mock("@/lib/cloudflare/r2", () => ({ extractR2Key: () => "uploads/video.mp4", getSignedUrlFromR2: async () => "https://storage.example/signed" }));
 import { commercialMediaRequest } from "@/lib/billing/commercial-media";
 import { taskErrorDetails } from "@/lib/billing/task-diagnostics";
+import { SCENE_PREVIEW_REVISION } from "@/lib/media/scene-preview";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
@@ -29,11 +30,22 @@ it("retains the HTTP status when the proxy responds with HTML", async () => {
   expect(taskErrorDetails(failure)).toMatchObject({ cause: { code: "MEDIA_HTTP_502" } });
 });
 
-it.each(["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE"])("preserves a known media failure code: %s", async (code) => {
+it.each(["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "NO_USEFUL_SCENES", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE"])("preserves a known media failure code: %s", async (code) => {
   vi.stubEnv("FFMPEG_WORKER_URL", "https://worker.example");
   vi.stubEnv("FFMPEG_WORKER_SECRET", "worker-test-secret");
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ code, error: "Cannot inspect video" }, { status: 422 })));
   await expect(commercialMediaRequest("https://storage.example/video", { mode: "preview", automaticSplit: true })).rejects.toThrow(code);
+});
+
+it("rejects stale automatic workers but preserves explicit whole-video analysis", async () => {
+  vi.stubEnv("FFMPEG_WORKER_URL", "https://worker.example");
+  vi.stubEnv("FFMPEG_WORKER_SECRET", "worker-test-secret");
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json({ metadata: {} })));
+  await expect(commercialMediaRequest("https://storage.example/video", { mode: "preview", automaticSplit: true })).rejects.toThrow("SCENE_DETECTION_FAILED");
+  await expect(commercialMediaRequest("https://storage.example/video", { mode: "preview", automaticSplit: false })).resolves.toEqual({ metadata: {} });
+  const payload = { metadata: { sceneDetection: { revision: SCENE_PREVIEW_REVISION } } };
+  vi.stubGlobal("fetch", vi.fn(async () => Response.json(payload)));
+  await expect(commercialMediaRequest("https://storage.example/video", { mode: "preview", automaticSplit: true })).resolves.toEqual(payload);
 });
 
 it("does not expose arbitrary worker error codes", async () => {

@@ -3,6 +3,19 @@ import { createHash } from "node:crypto";
 const SECOND = 1_000_000;
 const LIMIT = 15 * SECOND;
 
+export const SCENE_PREVIEW_REVISION = "content-scenes-v2";
+
+export function parseRefinedSceneResult(payload, duration) {
+  if (payload?.revision !== SCENE_PREVIEW_REVISION || !Array.isArray(payload.scenes)) throw new Error("Invalid scene refinement response");
+  if (!payload.scenes.length) throw Object.assign(new Error("视频仅包含无内容的纯黑或纯白画面，没有可分析的镜头。"), { code: "NO_USEFUL_SCENES", statusCode: 422 });
+  let previousEnd = 0;
+  for (const scene of payload.scenes) {
+    if (![scene.start, scene.end].every(Number.isFinite) || scene.start < previousEnd || scene.end <= scene.start || scene.end > duration + 0.000001) throw new Error("Invalid refined scene interval");
+    previousEnd = scene.end;
+  }
+  return payload.scenes;
+}
+
 export function sampleSceneFrameTimes(start, end) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start) throw new Error("Invalid scene interval");
   return [0.1, 0.5, 0.9].map(fraction => start + (end - start) * fraction);

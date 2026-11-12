@@ -9,7 +9,7 @@ import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { downloadStreamsInParallel } from "./parallel-download.mjs";
-import { splitLongScenes, sampleSceneFrameTimes } from "./scene-segments.mjs";
+import { splitLongScenes, sampleSceneFrameTimes, parseRefinedSceneResult, SCENE_PREVIEW_REVISION } from "./scene-segments.mjs";
 import { fetchMedia } from "./media-fetch.mjs";
 import { inspectVideoProbe, detectWithFallback, ingestVideoCandidates } from "./video-inspection.mjs";
 import { probeRemoteVideoCodec } from "./remote-video-codec.mjs";
@@ -33,6 +33,7 @@ const FFPROBE_PATH = process.env.FFPROBE_PATH || "ffprobe";
 const PYTHON_PATH = process.env.PYTHON_PATH || "python3";
 const PYSCENEDETECT_ENABLED = process.env.PYSCENEDETECT_ENABLED !== "false";
 const PYSCENEDETECT_SCRIPT_PATH = process.env.PYSCENEDETECT_SCRIPT_PATH || path.join(process.cwd(), "scene-detect.py");
+const SCENE_REFINEMENT_SCRIPT_PATH = path.join(path.dirname(PYSCENEDETECT_SCRIPT_PATH), "scene-refine.py");
 const PYSCENEDETECT_DETECTOR = ["adaptive", "content"].includes(process.env.PYSCENEDETECT_DETECTOR)
   ? process.env.PYSCENEDETECT_DETECTOR
   : "adaptive";
@@ -279,7 +280,7 @@ async function detectSceneCutsWithPySceneDetect(inputPath, metadata) {
 }
 
 async function detectSceneCutsWithFallback(inputPath, metadata) {
-  return detectWithFallback(
+  const detection = await detectWithFallback(
     () => detectSceneCutsWithPySceneDetect(inputPath, metadata),
     async () => ({
       provider: "ffmpeg_scene_filter",
@@ -289,24 +290,23 @@ async function detectSceneCutsWithFallback(inputPath, metadata) {
     }),
     error => console.warn("PySceneDetect failed, falling back to FFmpeg scene detection:", error.message),
   );
-}
-
-function buildBoundaries(cuts, duration) {
-  const raw = [0, ...cuts.filter((cut) => cut > MIN_SCENE_SECONDS && cut < duration - MIN_SCENE_SECONDS), duration];
-  const normalized = [];
-  for (let index = 0; index < raw.length - 1; index += 1) {
-    const start = raw[index];
-    const end = raw[index + 1];
-    if (end - start < MIN_SCENE_SECONDS && normalized.length) {
-      normalized[normalized.length - 1].end = end;
-      continue;
-    }
-    normalized.push({ start, end });
+  try {
+    // Refinement is mandatory for both detectors. Its failure must not silently
+    // restore black frames or an unverified one-shot preview through fallback.
+    const { stdout } = await run(PYTHON_PATH, [
+      SCENE_REFINEMENT_SCRIPT_PATH, "--input", inputPath,
+      "--cuts", JSON.stringify(detection.cuts), "--duration", String(metadata.duration),
+      "--stream-index", String(metadata.videoStreamIndex), "--ffmpeg", FFMPEG_PATH,
+      "--min-scene-seconds", String(MIN_SCENE_SECONDS),
+    ]);
+    const refined = JSON.parse(stdout);
+    const scenes = parseRefinedSceneResult(refined, metadata.duration);
+    return { ...detection, scenes, revision: SCENE_PREVIEW_REVISION,
+      excludedIntervals: refined.excludedIntervals, removedCuts: refined.removedCuts };
+  } catch (error) {
+    if (error.code === "NO_USEFUL_SCENES" || ["AbortError", "TimeoutError"].includes(error.name)) throw error;
+    throw Object.assign(new Error("镜头画面校验失败，请重新读取视频。", { cause: error }), { code: "SCENE_DETECTION_FAILED", statusCode: 422 });
   }
-
-  return splitLongScenes(normalized.map((scene, index) => ({
-    ...scene, shotGroupId: `shot-${String(index + 1).padStart(3, "0")}`,
-  })));
 }
 
 async function uploadFile(localPath, key, contentType, signal) {
@@ -320,14 +320,14 @@ async function uploadFile(localPath, key, contentType, signal) {
   return `${R2_PUBLIC_URL}/${key}`;
 }
 
-async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, metadata, exact = false) {
+async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, metadata) {
   const scenes = [];
   for (let index = 0; index < boundaries.length; index += 1) {
     const item = boundaries[index];
     const sceneIndex = index + 1;
-    const start = Number(item.start.toFixed(3));
-    const end = Number(item.end.toFixed(3));
-    const duration = Number((end - start).toFixed(3));
+    const start = Number(item.start.toFixed(6));
+    const end = Number(item.end.toFixed(6));
+    const duration = Number((end - start).toFixed(6));
     const scenePrefix = `${projectKey}/scenes/${String(sceneIndex).padStart(3, "0")}`;
     const clipPath = path.join(workDir, `scene-${sceneIndex}.mp4`);
     const audioPath = path.join(workDir, `scene-${sceneIndex}.m4a`);
@@ -337,8 +337,11 @@ async function extractSceneAssets(inputPath, workDir, projectKey, boundaries, me
       "-ss", String(start),
       "-i", inputPath,
       "-map", `0:${metadata.videoStreamIndex}`, "-map", "0:a:0?",
-      "-t", String(duration),
-      ...(exact ? ["-c:v", "libx264", "-preset", "fast", "-crf", "20", "-c:a", "aac"] : ["-c", "copy"]),
+      // PTS rounded to microseconds can lie just after the first excluded
+      // frame. Keep the end exclusive; stream copy can seek to an earlier GOP.
+      "-vf", `trim=end=${Math.max(0.000001, duration - 0.000001)},setpts=PTS-STARTPTS`,
+      "-t", String(Math.max(0.000001, duration - 0.000001)),
+      "-c:v", "libx264", "-preset", "fast", "-crf", "20", "-c:a", "aac",
       "-avoid_negative_ts", "make_zero",
       clipPath,
     ]);
@@ -469,7 +472,7 @@ async function handleBreakdown(req, res) {
     const metadata = await probeVideo(inputPath);
     if (!metadata.duration || metadata.duration <= 0) throw new Error("Unable to determine video duration");
     const sceneDetection = await detectSceneCutsWithFallback(inputPath, metadata);
-    const boundaries = buildBoundaries(sceneDetection.cuts, metadata.duration);
+    const boundaries = splitLongScenes(sceneDetection.scenes.map((scene, index) => ({ ...scene, shotGroupId: `shot-${String(index + 1).padStart(3, "0")}` })));
     const projectKey = `workflow/${randomUUID()}`;
     const audioPreview = await extractAudioPreviewAsset(inputPath, workDir, projectKey, metadata);
     const scenes = await extractSceneAssets(inputPath, workDir, projectKey, boundaries, metadata);
@@ -500,12 +503,10 @@ async function handleCommercialMedia(req, res) {
     const durationUs = Math.round(metadata.duration * 1000000);
     if (!metadata.width || !Number.isSafeInteger(durationUs) || durationUs <= 0) throw new Error("Invalid video duration");
     if (body.mode === "preview") {
-      const detection = body.automaticSplit === true ? await detectSceneCutsWithFallback(inputPath, metadata) : { cuts: [] };
-      const cuts = [0, ...new Set(detection.cuts.map((n) => Math.round(n * 1000000)).filter((n) => n > 0 && n < durationUs)), durationUs].sort((a, b) => a - b);
-      const detectedScenes = cuts.slice(0, -1).map((startUs, index) => ({ start: startUs / 1000000, end: cuts[index + 1] / 1000000 }));
-      const intervals = body.automaticSplit === true ? splitLongScenes(detectedScenes, sourceHash) : detectedScenes;
+      const detection = body.automaticSplit === true ? await detectSceneCutsWithFallback(inputPath, metadata) : null;
+      const intervals = detection ? splitLongScenes(detection.scenes, sourceHash) : [{ start: 0, end: durationUs / 1000000 }];
       const scenes = intervals.map((scene, index) => ({ id: String(index + 1), startUs: Math.round(scene.start * 1000000), endUs: Math.round(scene.end * 1000000) }));
-      return json(res, 200, { sourceHash, durationUs, bytes, metadata: { ...metadata, sceneDetection: body.automaticSplit === true ? { provider: detection.provider, detector: detection.detector } : null }, scenes });
+      return json(res, 200, { sourceHash, durationUs, bytes, metadata: { ...metadata, sceneDetection: detection ? { provider: detection.provider, detector: detection.detector, revision: detection.revision, excludedIntervals: detection.excludedIntervals, removedCuts: detection.removedCuts } : null }, scenes });
     }
     if (body.sourceHash !== sourceHash) throw new Error("Source changed after quote");
     if (!Array.isArray(body.scenes) || !body.scenes.length) throw new Error("Invalid scene selection");
@@ -515,7 +516,7 @@ async function handleCommercialMedia(req, res) {
       end = scene.endUs;
       return { start: scene.startUs / 1000000, end: scene.endUs / 1000000, shotGroupId: scene.id };
     });
-    const scenes = await extractSceneAssets(inputPath, workDir, `workflow/${randomUUID()}`, boundaries, metadata, true);
+    const scenes = await extractSceneAssets(inputPath, workDir, `workflow/${randomUUID()}`, boundaries, metadata);
     return json(res, 200, { metadata, scenes });
   } finally {
     commercialRequests--;
@@ -546,7 +547,7 @@ const server = createServer(async (req, res) => {
   } catch (error) {
     const status = error.statusCode || 500;
     console.error(error);
-    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "VIDEO_CODEC_PREFLIGHT_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE"].includes(error.code) ? error.code : undefined;
+    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "NO_USEFUL_SCENES", "VIDEO_CODEC_PREFLIGHT_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE"].includes(error.code) ? error.code : undefined;
     return json(res, status, { error: error.message || "Worker error", ...(code ? { code } : {}) });
   }
 });

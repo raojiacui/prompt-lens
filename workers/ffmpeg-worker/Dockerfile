@@ -2,7 +2,7 @@ FROM node:20-bookworm-slim
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ca-certificates ffmpeg python3 python3-pip \
-  && python3 -m pip install --break-system-packages --no-cache-dir scenedetect-headless \
+  && python3 -m pip install --break-system-packages --no-cache-dir scenedetect-headless==0.7.1 \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -19,6 +19,7 @@ COPY workers/ffmpeg-worker/video-inspection.mjs ./video-inspection.mjs
 COPY workers/ffmpeg-worker/remote-video-codec.mjs ./remote-video-codec.mjs
 COPY workers/ffmpeg-worker/scene-segments.mjs ./scene-segments.mjs
 COPY workers/ffmpeg-worker/scene-detect.py ./scene-detect.py
+COPY workers/ffmpeg-worker/scene-refine.py ./scene-refine.py
 
 ENV PORT=8080
 CMD ["node", "server.mjs"]

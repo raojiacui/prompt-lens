@@ -16,6 +16,7 @@ import { resolveModelSelection } from "@/lib/ai/model-registry";
 import { taskErrorDetails } from "./task-diagnostics";
 import { dispatchQueuedAnalysis } from "@/lib/workflow/analysis-dispatch";
 import { dispatchQueuedSceneJobs } from "./independent-scene-analysis";
+import { SCENE_PREVIEW_REVISION } from "@/lib/media/scene-preview";
 
 export function commercialConsumptionEnabled() { return process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true"; }
 export type AnalysisInput = { projectId: string; mediaUrl: string; mediaName: string; preview: MediaPreview; pricing: AnalysisPriceInput; modelId?: string; provider?: UserProvider; outputLanguage: "zh" | "en"; keyFingerprint: string; pricingVersion: string; executionMode?: "scene_jobs_v1" | "scene_pipeline_v1"; retry?: { parentId: string; previousSuccess: string[]; previousCharged: number; sceneVersions: { id: string; sceneVersionId: string }[] } };
@@ -63,7 +64,8 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
     const sameSource = and(eq(commercialTasks.userId, userId), eq(commercialTasks.kind, "analysis_preview"),
       sql`${commercialTasks.input}->>'projectId' = ${input.projectId}`,
       sql`${commercialTasks.input}->>'mediaUrl' = ${input.mediaUrl}`,
-      sql`${commercialTasks.input}->>'automaticSplit' = ${String(input.automaticSplit)}`);
+      sql`${commercialTasks.input}->>'automaticSplit' = ${String(input.automaticSplit)}`,
+      input.automaticSplit ? sql`${commercialTasks.input}->>'previewRevision' = ${SCENE_PREVIEW_REVISION}` : undefined);
     const [cached] = await tx.select().from(commercialTasks).where(and(sameSource,
       sql`${commercialTasks.createdAt} > now() - interval '7 days'`,
       sql`(${commercialTasks.state} = 'quoted' OR (${commercialTasks.state} = 'failed' AND ${commercialTasks.result}->>'code' = 'PREVIEW_EXPIRED'))`,
@@ -74,7 +76,7 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
     if (pending) throw new Error("PREVIEW_PREPARING");
     const recent = await tx.select({ id: commercialTasks.id }).from(commercialTasks).where(and(eq(commercialTasks.userId, userId), eq(commercialTasks.kind, "analysis_preview"), sql`${commercialTasks.createdAt} > now() - interval '1 hour'`)).limit(10);
     if (recent.length >= 10) throw new Error("PREVIEW_RATE_LIMIT");
-    const [row] = await tx.insert(commercialTasks).values({ userId, kind: "analysis_preview", state: "running", input, expiresAt: new Date(Date.now() + 900000) }).returning();
+    const [row] = await tx.insert(commercialTasks).values({ userId, kind: "analysis_preview", state: "running", input: { ...input, ...(input.automaticSplit ? { previewRevision: SCENE_PREVIEW_REVISION } : {}) }, expiresAt: new Date(Date.now() + 900000) }).returning();
     return { task: row, reused: false };
   });
   const preparation = claim.task;
@@ -87,13 +89,13 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
   // Validate worker quantities using the exact same billing validator before storing them.
   quoteAnalysis({ payer: input.automaticSplit ? "byok_split" : "byok", model: "flash", sourceDurationUs: preview.durationUs, automaticSplit: input.automaticSplit, paidSplitReusable: false, scenes: preview.scenes });
   if (!/^[0-9a-f]{64}$/.test(preview.sourceHash) || !Number.isSafeInteger(preview.bytes) || preview.bytes <= 0 || preview.bytes > 100 * 1024 * 1024) throw new Error("INVALID_MEDIA_PROBE");
-  const [task] = await db.update(commercialTasks).set({ state: "quoted", input: { ...input, preview }, expiresAt: new Date(preparation.createdAt.getTime() + PREPARATION_RETENTION_MS), updatedAt: new Date() }).where(and(eq(commercialTasks.id, preparation.id), eq(commercialTasks.state, "running"), sql`${commercialTasks.expiresAt} > now()`)).returning();
+  const [task] = await db.update(commercialTasks).set({ state: "quoted", input: { ...input, preview, ...(input.automaticSplit ? { previewRevision: SCENE_PREVIEW_REVISION } : {}) }, expiresAt: new Date(preparation.createdAt.getTime() + PREPARATION_RETENTION_MS), updatedAt: new Date() }).where(and(eq(commercialTasks.id, preparation.id), eq(commercialTasks.state, "running"), sql`${commercialTasks.expiresAt} > now()`)).returning();
   if (!task) throw new Error("PREVIEW_PREPARATION_INTERRUPTED", { cause: new Error(`Preparation ${preparation.id} lost its running lease before preview persistence`) });
   return { id: task.id, durationUs: preview.durationUs, scenes: preview.scenes };
   } catch (error) {
     const diagnostic = taskErrorDetails(error);
     const failureMessage = error instanceof Error ? error.message : "";
-    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL"].includes(failureMessage) ? failureMessage : "MEDIA_PREPARATION_FAILED";
+    const code = ["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "NO_USEFUL_SCENES", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL"].includes(failureMessage) ? failureMessage : "MEDIA_PREPARATION_FAILED";
     await db.update(commercialTasks).set({ state: "failed", result: { code, diagnostic }, updatedAt: new Date() }).where(and(eq(commercialTasks.id, preparation.id), eq(commercialTasks.state, "running")));
     throw error;
   }

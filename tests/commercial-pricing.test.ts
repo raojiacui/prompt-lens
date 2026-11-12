@@ -29,6 +29,14 @@ describe("V6 commercial pricing", () => {
     expect(quoteAnalysis({ ...input, model: "pro" }).credits).toBe(25);
     expect(quoteAnalysis({ ...input, paidSplitReusable: true }).credits).toBe(9);
   });
+  it("excludes blank gaps from analysis duration without compressing scene timestamps", () => {
+    const input = { ...analysis(12, 2), scenes: [{ id: "0", startUs: 2_000_000, endUs: 2_500_000 }, { id: "1", startUs: 9_000_000, endUs: 9_500_000 }] };
+    const compact = { ...input, scenes: [{ id: "0", startUs: 0, endUs: 500_000 }, { id: "1", startUs: 500_000, endUs: 1_000_000 }] };
+    expect(quoteAnalysis(input)).toEqual(quoteAnalysis(compact));
+    expect(quoteAnalysis(input).splitCredits).toBe(2);
+    expect(settleAnalysis(input, ["0", "1"], true)).toBe(quoteAnalysis(input).credits);
+    expect(input.scenes[1].startUs).toBe(9_000_000);
+  });
   it("does not round each short scene separately", () => {
     const input = analysis(2, 2);
     expect(quoteAnalysis(input).credits).toBe(4);

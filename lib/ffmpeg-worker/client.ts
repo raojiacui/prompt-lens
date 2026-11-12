@@ -30,6 +30,13 @@ export interface FfmpegBreakdownResult {
     hasAudio?: boolean;
     audioPreviewUrl?: string;
     audioPreviewDuration?: number;
+    sceneDetection?: {
+      provider: string;
+      detector: string;
+      revision?: string;
+      excludedIntervals?: { start: number; end: number }[];
+      removedCuts?: number[];
+    } | null;
   };
   scenes: FfmpegSceneAsset[];
 }

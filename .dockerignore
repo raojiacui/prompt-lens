@@ -17,3 +17,4 @@ workers/ffmpeg-worker/*
 !workers/ffmpeg-worker/remote-video-codec.mjs
 !workers/ffmpeg-worker/scene-segments.mjs
 !workers/ffmpeg-worker/scene-detect.py
+!workers/ffmpeg-worker/scene-refine.py

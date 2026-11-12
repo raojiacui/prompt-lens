@@ -3,6 +3,7 @@ import { db, operationLogs } from "@/lib/db";
 import { extractR2Key, getSignedUrlFromR2 } from "@/lib/cloudflare/r2";
 import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import type { SceneInterval } from "./pricing-v6";
+import { SCENE_PREVIEW_REVISION } from "@/lib/media/scene-preview";
 
 export type MediaPreview = { sourceHash: string; durationUs: number; bytes: number; scenes: SceneInterval[]; metadata: FfmpegBreakdownResult["metadata"] };
 export async function assertOwnedUploadedVideo(userId: string, mediaUrl: string, mediaType?: "video" | "image") {
@@ -30,9 +31,11 @@ export async function commercialMediaRequest<T>(mediaUrl: string, body: Record<s
     try {
       const payload = await response.json() as { error?: unknown; code?: unknown };
       if (typeof payload.error === "string") reason = payload.error.slice(0, 1000);
-      if (["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE"].includes(String(payload.code))) code = String(payload.code);
+      if (["UNSUPPORTED_VIDEO_CODEC", "INVALID_VIDEO_STREAM", "SCENE_DETECTION_FAILED", "NO_USEFUL_SCENES", "MEDIA_STORAGE_CONFIG_INVALID", "INVALID_MEDIA_URL", "MEDIA_DOWNLOAD_FAILED", "MEDIA_DOWNLOAD_TIMEOUT", "MEDIA_SOURCE_FORBIDDEN", "MEDIA_SOURCE_NOT_FOUND", "MEDIA_TOO_LARGE"].includes(String(payload.code))) code = String(payload.code);
     } catch { /* A proxy may return HTML instead of the worker's JSON response. */ }
     throw new Error(code, { cause: Object.assign(new Error(reason), { code: `MEDIA_HTTP_${response.status}` }) });
   }
-  return await response.json() as T;
+  const payload = await response.json();
+  if (body.mode === "preview" && body.automaticSplit === true && payload?.metadata?.sceneDetection?.revision !== SCENE_PREVIEW_REVISION) throw new Error("SCENE_DETECTION_FAILED", { cause: new Error("Scene worker revision does not match the preview contract") });
+  return payload as T;
 }
