@@ -18939,5 +18939,2490 @@
         "metadata": {}
       }
     ]
+  },
+  {
+    "project": {
+      "id": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+      "status": "ready",
+      "activeVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+      "createdAt": "2026-11-12T09:27:28.710105+00:00",
+      "updatedAt": "2026-11-12T09:54:17.522+00:00",
+      "title": "古风权谋短片",
+      "description": null,
+      "metadata": {
+        "mediaType": "video",
+        "failedSceneCount": 0
+      }
+    },
+    "versions": [
+      {
+        "id": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "versionNumber": 0,
+        "kind": "original",
+        "overview": {
+          "sceneCount": 17
+        },
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:45:58.553352+00:00",
+        "parentVersionId": null,
+        "label": "原始分析",
+        "remixPrompt": null,
+        "metadata": {}
+      }
+    ],
+    "activeVersion": {
+      "id": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+      "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+      "versionNumber": 0,
+      "kind": "original",
+      "overview": {
+        "sceneCount": 17
+      },
+      "createdAt": "2026-11-12T09:45:58.553352+00:00",
+      "updatedAt": "2026-11-12T09:45:58.553352+00:00",
+      "parentVersionId": null,
+      "label": "原始分析",
+      "remixPrompt": null,
+      "metadata": {}
+    },
+    "scenes": [
+      {
+        "id": "631e4ffb-ede7-4876-ad1d-112da91323b0",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 1,
+        "shotGroupId": null,
+        "startTime": 0,
+        "endTime": 0.875,
+        "duration": 0.875,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/23780def-2bab-45a0-9bee-4264944af9f6/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/23780def-2bab-45a0-9bee-4264944af9f6/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/23780def-2bab-45a0-9bee-4264944af9f6/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/23780def-2bab-45a0-9bee-4264944af9f6/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/23780def-2bab-45a0-9bee-4264944af9f6/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:46:55.241+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "f376d96b-5fa5-4bec-a3da-55cc013e75c2",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 2,
+        "shotGroupId": null,
+        "startTime": 0.875,
+        "endTime": 2.667,
+        "duration": 1.792,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/f8417a14-ebad-4f49-8d5b-828a2b104f2b-464d608bd6c8f7c58bd1a755e70a5fb3.mp4#t=0.875,2.667",
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:46:44.625+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "5e25263e-3208-4a06-b40f-06e359166254",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 3,
+        "shotGroupId": null,
+        "startTime": 2.667,
+        "endTime": 4.583,
+        "duration": 1.916,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/09fde452-10c4-45ba-927c-2929b8b1da52/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/09fde452-10c4-45ba-927c-2929b8b1da52/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/09fde452-10c4-45ba-927c-2929b8b1da52/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/09fde452-10c4-45ba-927c-2929b8b1da52/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/09fde452-10c4-45ba-927c-2929b8b1da52/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:47:22.992+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "fd4ef892-bd3d-47a7-a836-3cd89a16c214",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 4,
+        "shotGroupId": null,
+        "startTime": 4.583,
+        "endTime": 6.583,
+        "duration": 2,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/aeb44d44-db11-42a0-82a8-b25042ffab65/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/aeb44d44-db11-42a0-82a8-b25042ffab65/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/aeb44d44-db11-42a0-82a8-b25042ffab65/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/aeb44d44-db11-42a0-82a8-b25042ffab65/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/aeb44d44-db11-42a0-82a8-b25042ffab65/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:47:45.234+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "0c2818fd-f77f-4a97-9af2-61544a0fe7d0",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 5,
+        "shotGroupId": null,
+        "startTime": 6.583,
+        "endTime": 8.458,
+        "duration": 1.875,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0345b908-ec01-4073-9d39-b1db52974f66/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0345b908-ec01-4073-9d39-b1db52974f66/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0345b908-ec01-4073-9d39-b1db52974f66/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0345b908-ec01-4073-9d39-b1db52974f66/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/0345b908-ec01-4073-9d39-b1db52974f66/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:49:16.555+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "c1f58837-35be-469b-8136-fbe61f5a18a3",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 6,
+        "shotGroupId": null,
+        "startTime": 8.458,
+        "endTime": 11.167,
+        "duration": 2.709,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/397e5394-908a-47e6-827b-262b55988486/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/397e5394-908a-47e6-827b-262b55988486/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/397e5394-908a-47e6-827b-262b55988486/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/397e5394-908a-47e6-827b-262b55988486/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/397e5394-908a-47e6-827b-262b55988486/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:49:00.683+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "f9d0c940-2190-4fcc-95f5-c7aee03eb64f",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 7,
+        "shotGroupId": null,
+        "startTime": 11.167,
+        "endTime": 13.625,
+        "duration": 2.458,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/f8417a14-ebad-4f49-8d5b-828a2b104f2b-464d608bd6c8f7c58bd1a755e70a5fb3.mp4#t=11.167,13.625",
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:50:02.288+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "183e987d-4b80-476f-89fe-86c8504b698a",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 8,
+        "shotGroupId": null,
+        "startTime": 13.625,
+        "endTime": 16.167,
+        "duration": 2.542,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/48045e31-573b-41f3-8165-4c7bfbe396d4/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/48045e31-573b-41f3-8165-4c7bfbe396d4/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/48045e31-573b-41f3-8165-4c7bfbe396d4/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/48045e31-573b-41f3-8165-4c7bfbe396d4/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/48045e31-573b-41f3-8165-4c7bfbe396d4/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:50:06.984+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "2756cb1f-3c6a-4825-b623-9d461c56fdfb",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 9,
+        "shotGroupId": null,
+        "startTime": 16.167,
+        "endTime": 18.833,
+        "duration": 2.666,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/f8417a14-ebad-4f49-8d5b-828a2b104f2b-464d608bd6c8f7c58bd1a755e70a5fb3.mp4#t=16.167,18.833",
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:51:04.313+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "be2ba16a-f48d-4183-a6d2-356f13f63794",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 10,
+        "shotGroupId": null,
+        "startTime": 18.833,
+        "endTime": 19.416667,
+        "duration": 0.583667,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/146afc97-eea5-4d40-bbce-a71b0e4460d8/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/146afc97-eea5-4d40-bbce-a71b0e4460d8/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/146afc97-eea5-4d40-bbce-a71b0e4460d8/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/146afc97-eea5-4d40-bbce-a71b0e4460d8/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/146afc97-eea5-4d40-bbce-a71b0e4460d8/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:50:41.997+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "1897560f-cdb7-4da8-8ae7-6c486066739f",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 11,
+        "shotGroupId": null,
+        "startTime": 20,
+        "endTime": 20.708333,
+        "duration": 0.708333,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9ab9e0cb-b5da-44b6-8ce9-aec474b19744/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9ab9e0cb-b5da-44b6-8ce9-aec474b19744/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9ab9e0cb-b5da-44b6-8ce9-aec474b19744/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9ab9e0cb-b5da-44b6-8ce9-aec474b19744/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/9ab9e0cb-b5da-44b6-8ce9-aec474b19744/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:51:24.686+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "158e534e-ff9e-42e4-b25f-832203f81e28",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 12,
+        "shotGroupId": null,
+        "startTime": 21.333333,
+        "endTime": 22,
+        "duration": 0.666667,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/1ac06eff-4ce7-4412-a718-b6c8705f4223/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/1ac06eff-4ce7-4412-a718-b6c8705f4223/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/1ac06eff-4ce7-4412-a718-b6c8705f4223/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/1ac06eff-4ce7-4412-a718-b6c8705f4223/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/1ac06eff-4ce7-4412-a718-b6c8705f4223/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:51:44.683+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "8725530a-4e79-4b40-b8f0-51509d6b09f3",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 13,
+        "shotGroupId": null,
+        "startTime": 22.625,
+        "endTime": 23.291667,
+        "duration": 0.666667,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fea7a227-f594-4cfb-968a-916a04a7bdb8/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fea7a227-f594-4cfb-968a-916a04a7bdb8/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fea7a227-f594-4cfb-968a-916a04a7bdb8/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fea7a227-f594-4cfb-968a-916a04a7bdb8/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/fea7a227-f594-4cfb-968a-916a04a7bdb8/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:52:13.353+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "e947a812-75f7-4657-a6b7-b623a06dafe2",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 14,
+        "shotGroupId": null,
+        "startTime": 23.875,
+        "endTime": 24.625,
+        "duration": 0.75,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f9fcfeef-d668-4aa0-acf6-31361e1d2aa7/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f9fcfeef-d668-4aa0-acf6-31361e1d2aa7/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f9fcfeef-d668-4aa0-acf6-31361e1d2aa7/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f9fcfeef-d668-4aa0-acf6-31361e1d2aa7/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/f9fcfeef-d668-4aa0-acf6-31361e1d2aa7/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:52:28.195+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "625a7aa2-0c65-470f-b732-85ddd9690b93",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 15,
+        "shotGroupId": null,
+        "startTime": 25.125,
+        "endTime": 25.833333,
+        "duration": 0.708333,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/b2d9851d-92ea-43a6-909c-393c48f63701/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/b2d9851d-92ea-43a6-909c-393c48f63701/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/b2d9851d-92ea-43a6-909c-393c48f63701/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/b2d9851d-92ea-43a6-909c-393c48f63701/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/b2d9851d-92ea-43a6-909c-393c48f63701/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:53:08.074+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "e75f7609-7518-4ee0-8026-93bba936fb24",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 16,
+        "shotGroupId": null,
+        "startTime": 26.458333,
+        "endTime": 27.166667,
+        "duration": 0.708334,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/f8417a14-ebad-4f49-8d5b-828a2b104f2b-464d608bd6c8f7c58bd1a755e70a5fb3.mp4#t=26.458333,27.166667",
+        "keyframeUrls": [],
+        "audioUrl": null,
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:53:24.506+00:00",
+        "error": null,
+        "metadata": {}
+      },
+      {
+        "id": "d60991af-6a5a-474c-be32-4b943f36d9d3",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "referenceVideoId": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "sceneIndex": 17,
+        "shotGroupId": null,
+        "startTime": 27.625,
+        "endTime": 29.792,
+        "duration": 2.167,
+        "clipUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/dddd7a94-30e2-465b-879a-95a228d108a9/scenes/001/clip.mp4",
+        "keyframeUrls": [
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/dddd7a94-30e2-465b-879a-95a228d108a9/scenes/001/keyframe-0.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/dddd7a94-30e2-465b-879a-95a228d108a9/scenes/001/keyframe-1.jpg",
+          "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/dddd7a94-30e2-465b-879a-95a228d108a9/scenes/001/keyframe-2.jpg"
+        ],
+        "audioUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/workflow/dddd7a94-30e2-465b-879a-95a228d108a9/scenes/001/audio.m4a",
+        "transitionIn": null,
+        "transitionOut": null,
+        "status": "completed",
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "updatedAt": "2026-11-12T09:54:11.236+00:00",
+        "error": null,
+        "metadata": {}
+      }
+    ],
+    "sceneVersions": [
+      {
+        "id": "64639a80-b88a-427a-a0aa-e36f669c09dc",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "631e4ffb-ede7-4876-ad1d-112da91323b0",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 0.875,
+          "summary": "朝堂大殿内，一名身着白袍的策士手持卷轴面向高处的王座与台阶，群臣肃立两旁。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暗黑与琥珀金主调，强烈的暖黄火光与深冷阴影对比。",
+          "style": "史诗东方神话奇幻电影质感，写实质感与厚重历史氛围。",
+          "action": "白袍男子双手托举展开的卷轴，身体微侧面向高台王座；台阶两侧侍臣静默伫立，火光摇曳。",
+          "camera": "中远景，低角度仰拍，广角微畸变，固定镜头，焦点在左侧持卷男子与延伸台阶。",
+          "motion": "人物微幅呼吸静态站立，背景火焰微动，镜头几近静止。",
+          "subject": "前景左侧的白袍男子，发髻高束，侧身向右前方台阶顶端的王座示意。",
+          "lighting": "低调火光照明，暖橙色摇曳火光映照主体轮廓与台阶边缘，大面积阴影与高对比度黑金质感。",
+          "characters": "主角为手持卷轴的白袍策士；中景台阶栏杆旁立有数名深色服饰朝臣；远景王座旁有侍者与隐约坐席。",
+          "composition": "三分法则，左侧前景为白袍主角与青铜巨器，右侧由右下向左上延伸的宽阔台阶形成对角线引导演示高处的王座。",
+          "environment": "庄严昏暗的东方玄幻风格皇宫大殿，巨型青铜鼎立于立柱旁，层层石阶通向高台王座，火盆燃着烈火。",
+          "sceneDescription": "宏伟幽暗的古代宫殿大厅，右侧为通往高耸王座的宽大石阶，台阶两侧点缀火盆与守卫群臣。左前景立着一名身穿宽大米白色道袍、手持半展卷轴的长发男子。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的大殿环境氛围音与火盆燃烧声。",
+          "transcript": []
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极短建立镜头，节奏凝重沉稳。",
+            "techniques": "硬切（Hard cut）进入。"
+          }
+        },
+        "generationPrompt": "电影质感，低角度仰拍古代宏伟大殿。左前景站立一位身着宽大米白色古装长袍的男子，手托展开的书卷面朝台阶。右侧是宽阔雄伟的石阶直通高处辉煌王座，台阶两侧侍立文武百官，火盆跳动橙红烈焰。暗色调黑金色调，火光侧逆光勾勒人物边缘，厚重大气，8k分辨率。\n\n画面与环境: 宏伟幽暗的古代宫殿大厅，右侧为通往高耸王座的宽大石阶，台阶两侧点缀火盆与守卫群臣。左前景立着一名身穿宽大米白色道袍、手持半展卷轴的长发男子。；前景左侧的白袍男子，发髻高束，侧身向右前方台阶顶端的王座示意。；庄严昏暗的东方玄幻风格皇宫大殿，巨型青铜鼎立于立柱旁，层层石阶通向高台王座，火盆燃着烈火。\n\n人物与动作: 主角为手持卷轴的白袍策士；中景台阶栏杆旁立有数名深色服饰朝臣；远景王座旁有侍者与隐约坐席。；白袍男子双手托举展开的卷轴，身体微侧面向高台王座；台阶两侧侍臣静默伫立，火光摇曳。；人物微幅呼吸静态站立，背景火焰微动，镜头几近静止。\n\n镜头与构图: 中远景，低角度仰拍，广角微畸变，固定镜头，焦点在左侧持卷男子与延伸台阶。；三分法则，左侧前景为白袍主角与青铜巨器，右侧由右下向左上延伸的宽阔台阶形成对角线引导演示高处的王座。\n\n光影与质感: 低调火光照明，暖橙色摇曳火光映照主体轮廓与台阶边缘，大面积阴影与高对比度黑金质感。；暗黑与琥珀金主调，强烈的暖黄火光与深冷阴影对比。；史诗东方神话奇幻电影质感，写实质感与厚重历史氛围。\n\n声音: soundStyle: 低沉压抑的大殿环境氛围音与火盆燃烧声。\n\n节奏与转场: editing: pacing: 极短建立镜头，节奏凝重沉稳。; techniques: 硬切（Hard cut）进入。",
+        "duration": 0.875,
+        "createdAt": "2026-11-12T09:46:55.118754+00:00",
+        "updatedAt": "2026-11-12T09:46:55.118754+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:46:55.076Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "c90f09b1-78aa-4eb1-bd8f-82fa16f779a6",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "f376d96b-5fa5-4bec-a3da-55cc013e75c2",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 2.667,
+          "summary": "水畔芦苇丛边，一名黑衣人立于小舟上，岸边列队肃立的将士向其拱手作揖行礼送行。",
+          "startTime": 0.875,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "青灰与暗绿为主色调，冷暖微弱交织，水面和天空呈淡青黄，具有电影质感历史厚重感。",
+          "style": "写实历史古装电影风格，画面沉稳冷峻，纹理细腻。",
+          "action": "船上的人静立凝视岸边，岸上众将士双手交叠于胸前，身形微躬，维持抱拳作揖的送别礼仪。",
+          "camera": "全景远景结合，低机位平视，固定镜头微幅推进，大景深展现两岸对峙送别的层次感。",
+          "motion": "人物动作极其微幅凝重，芦苇微风摆动，水面波纹轻晃。",
+          "subject": "舟上的黑衣人物与岸边列队行礼的群臣将士。",
+          "lighting": "自然漫射光，暗调清晨/黄昏光照，低反差微弱轮廓光。",
+          "characters": "左侧船头立着一位身着深黑色厚重披风长袍、发髻高束的神秘人物；右侧岸边站立数十名束发戴冠的古代兵卒与将官，着暗色军服或官袍，姿态整齐恭敬。",
+          "composition": "左右对峙构图。左侧三分之一为舟上主角与高耸芦苇，右侧纵向延伸为列队将士，中央留出水面通道形成视线引导。",
+          "environment": "野外水域浅滩与芦苇丛，背景远处水面雾气弥漫，天空泛着昏黄暗沉的光，带有湿润清冷的萧瑟氛围。",
+          "sceneDescription": "清晨或暮色下的水泽芦苇荡，左侧一叶木舟上立有一名着深色长袍挽发的背影人物；右侧水岸边缘整齐排列着众多身着古装甲胄与袍服的将士，正齐齐向小舟方向拱手行礼作揖。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "speech": "无对白",
+          "musicStyle": "低沉肃穆的管弦或鼓点氛围铺底音乐",
+          "soundEffects": "芦苇轻微风吹声与微弱水流波纹声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉重，留白悠长",
+            "techniques": "硬切（前后切点明确）"
+          }
+        },
+        "generationPrompt": "电影质感全景镜头，中国古代清冷水泽。左侧近景一艘木舟停靠在丛生的高耸芦苇边，一位身穿黑色连帽厚斗篷、束发背影的人物静立船头；右侧浅滩水岸上整齐伫立着两纵队长排列的古代将士与将官，身穿深灰和墨绿战袍，整齐划一地面向木舟拱手作揖行礼。远景水天相接，水面飘浮着薄雾，微弱的晨暮日光，青绿冷灰调，极简微风动态，严肃深沉的史诗史剧氛围，超高细节，8k摄影机拍摄。\n\n画面与环境: 清晨或暮色下的水泽芦苇荡，左侧一叶木舟上立有一名着深色长袍挽发的背影人物；右侧水岸边缘整齐排列着众多身着古装甲胄与袍服的将士，正齐齐向小舟方向拱手行礼作揖。；舟上的黑衣人物与岸边列队行礼的群臣将士。；野外水域浅滩与芦苇丛，背景远处水面雾气弥漫，天空泛着昏黄暗沉的光，带有湿润清冷的萧瑟氛围。\n\n人物与动作: 左侧船头立着一位身着深黑色厚重披风长袍、发髻高束的神秘人物；右侧岸边站立数十名束发戴冠的古代兵卒与将官，着暗色军服或官袍，姿态整齐恭敬。；船上的人静立凝视岸边，岸上众将士双手交叠于胸前，身形微躬，维持抱拳作揖的送别礼仪。；人物动作极其微幅凝重，芦苇微风摆动，水面波纹轻晃。\n\n镜头与构图: 全景远景结合，低机位平视，固定镜头微幅推进，大景深展现两岸对峙送别的层次感。；左右对峙构图。左侧三分之一为舟上主角与高耸芦苇，右侧纵向延伸为列队将士，中央留出水面通道形成视线引导。\n\n光影与质感: 自然漫射光，暗调清晨/黄昏光照，低反差微弱轮廓光。；青灰与暗绿为主色调，冷暖微弱交织，水面和天空呈淡青黄，具有电影质感历史厚重感。；写实历史古装电影风格，画面沉稳冷峻，纹理细腻。\n\n声音: speech: 无对白; soundEffects: 芦苇轻微风吹声与微弱水流波纹声; musicStyle: 低沉肃穆的管弦或鼓点氛围铺底音乐\n\n节奏与转场: editing: pacing: 缓慢沉重，留白悠长; techniques: 硬切（前后切点明确）",
+        "duration": 1.792,
+        "createdAt": "2026-11-12T09:46:44.482806+00:00",
+        "updatedAt": "2026-11-12T09:46:44.482806+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:46:44.435Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "29f28fd6-167b-4f18-8b31-8a660488f6bf",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "5e25263e-3208-4a06-b40f-06e359166254",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 4.583,
+          "summary": "黄昏日落时分，一名持剑武士乘一叶扁舟在水面上前行，水岸边集结着大批人群，空中飞鸟掠过，氛围苍凉肃穆。",
+          "startTime": 2.667,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "浓烈饱和的橙红、金黄与暗青、纯黑剪影形成强烈冷暖及明暗反差，带有东方史诗古典质感。",
+          "style": "写实东方古装武侠史诗风格，兼具意境与电影画质。",
+          "action": "小船在水面平缓向前滑行，武士静立不动，衣角微拂；天空中飞鸟自右上方朝左上方振翅滑翔掠过画面。",
+          "camera": "全景远摄，低机位平视，固定机位或极缓慢水平前移，大景深展现壮丽落日全景。",
+          "motion": "船体平稳轻微水面位移，飞鸟平缓扇翅飞行，水纹与轻烟慢速流动。",
+          "subject": "立于船头的持剑武士剪影，身着长袍战甲，束发，手握佩剑，姿态挺拔凝重。",
+          "lighting": "逆光剪影照明。强烈且温暖的夕阳作为主光源，将人物与景物边缘勾勒出微弱轮廓光，主体呈现清晰暗黑剪影。",
+          "characters": "主角武士（左侧剪影），右侧岸边密集的士兵或随从队列剪影，以及近岸处一名坐姿或划桨人物。",
+          "composition": "三分法则与对角线构图。左侧重点为立于船头的武士剪影，右下方为岸边人群，上方保留大面积落日云霞与飞鸟，虚实对比强烈。",
+          "environment": "开阔水域，远景为低矮山峦与落日熔金的晚霞天空；右侧为长满芦苇的浅滩岸边，水面微波荡漾。",
+          "sceneDescription": "夕阳染红天际，湖面烟波浩渺。左侧前景小船上一名武士持剑而立，背光形成全身剪影；右侧岸边芦苇丛后整齐排列着人群；空中有一只飞鸟划过晚霞。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉悠扬的古风管弦乐或笛声，伴随水流波动声和远方苍凉的风声。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓凝重，镜头停留稳定",
+            "techniques": "硬切进入，硬切退出"
+          }
+        },
+        "generationPrompt": "电影级宽画幅全景，壮丽浓烈的夕阳晚霞映照天空与水面。画面左侧，一艘小木船平稳漂浮在水上，一名中国古代武士手持长剑威严站立，强逆光下呈现清晰黑色剪影，长袍与发丝在微风中轻微摆动。画面右上空一只飞鸟掠过橙红色的云层。右侧芦苇浅滩边整齐列队伫立着大批沉默的人群剪影。暖橙色调与深暗暗部形成极致明暗反差，东方武侠意境，史诗感，极高细节与质感。\n\n画面与环境: 夕阳染红天际，湖面烟波浩渺。左侧前景小船上一名武士持剑而立，背光形成全身剪影；右侧岸边芦苇丛后整齐排列着人群；空中有一只飞鸟划过晚霞。；立于船头的持剑武士剪影，身着长袍战甲，束发，手握佩剑，姿态挺拔凝重。；开阔水域，远景为低矮山峦与落日熔金的晚霞天空；右侧为长满芦苇的浅滩岸边，水面微波荡漾。\n\n人物与动作: 主角武士（左侧剪影），右侧岸边密集的士兵或随从队列剪影，以及近岸处一名坐姿或划桨人物。；小船在水面平缓向前滑行，武士静立不动，衣角微拂；天空中飞鸟自右上方朝左上方振翅滑翔掠过画面。；船体平稳轻微水面位移，飞鸟平缓扇翅飞行，水纹与轻烟慢速流动。\n\n镜头与构图: 全景远摄，低机位平视，固定机位或极缓慢水平前移，大景深展现壮丽落日全景。；三分法则与对角线构图。左侧重点为立于船头的武士剪影，右下方为岸边人群，上方保留大面积落日云霞与飞鸟，虚实对比强烈。\n\n光影与质感: 逆光剪影照明。强烈且温暖的夕阳作为主光源，将人物与景物边缘勾勒出微弱轮廓光，主体呈现清晰暗黑剪影。；浓烈饱和的橙红、金黄与暗青、纯黑剪影形成强烈冷暖及明暗反差，带有东方史诗古典质感。；写实东方古装武侠史诗风格，兼具意境与电影画质。\n\n声音: soundStyle: 低沉悠扬的古风管弦乐或笛声，伴随水流波动声和远方苍凉的风声。\n\n节奏与转场: editing: pacing: 舒缓凝重，镜头停留稳定; techniques: 硬切进入，硬切退出",
+        "duration": 1.916,
+        "createdAt": "2026-11-12T09:47:22.88206+00:00",
+        "updatedAt": "2026-11-12T09:47:22.88206+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:47:22.840Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "18aa2796-1069-44ca-b24b-07049fc26411",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "fd4ef892-bd3d-47a7-a836-3cd89a16c214",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 6.583,
+          "summary": "幽暗的古风大殿内，两名黑袍男子隔案对坐成剪影，青绿色薄雾笼罩远景，气氛静穆紧张。",
+          "startTime": 4.583,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "青蓝冷调与墨黑剪影为主，辅以小范围暖黄色烛火形成冷暖对比，具水墨电影质感。",
+          "style": "冷峻、极简古风武侠电影风格，高对比度低调摄影。",
+          "action": "二人相对静坐无大幅动作，烛火轻微跳跃，神情隐于阴影中维持对峙气场。",
+          "camera": "全景固定镜头，正面对称视角，平视机位，深焦景深。",
+          "motion": "画面近乎静止，仅见烛光微动与极其轻微的气流流动感。",
+          "subject": "案几两侧对峙的两个古装男子剪影。",
+          "lighting": "逆光剪影照明，背景大面积漫射青绿色冷调天光，几案上与两侧点缀数盏暖黄蜡烛点光源。",
+          "characters": "左侧男子头挽发髻，着长袍；右侧男子头戴发冠，微现须髯轮廓；二人均呈黑色纯剪影状态，端坐不动。",
+          "composition": "严格的中心对称构图，两侧柱石与垂帘形成框景，二人分列左右黄金分割区域，中心为长案及后方大殿通道。",
+          "environment": "开敞式古典中式殿阁或水榭，背景有灰色古典建筑轮廓与帷幔遮掩，空气中弥漫青绿色烟雾，地面隐见暗色水光反光。",
+          "sceneDescription": "对称式古典殿宇内，两名古装人物呈剪影侧身相对跪坐于低案两侧，案上及殿柱旁烛光微亮，背景为青绿雾气中幽深的中式建筑与垂幔。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "极简压抑的环境氛围低频嗡鸣或微弱风声，无台词。",
+          "transcript": ""
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉静凝固",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "电影全景镜头，极简水墨武侠风格。青绿色冷调雾气笼罩的古典中式殿堂内，严格中心对称构图。两名穿汉服长袍、挽发髻的男子呈完全的黑色剪影，端坐在一张低矮木案两侧对视。长案与大殿两侧立柱旁点亮着散发暖黄微光的蜡烛。背景悬挂素色帷幔，隐约可见后方庭院古典大殿轮廓，深色水面反光。冷青色与墨黑高反差基调，平视固定机位，微弱烛火摇曳，肃穆对峙氛围。\n\n画面与环境: 对称式古典殿宇内，两名古装人物呈剪影侧身相对跪坐于低案两侧，案上及殿柱旁烛光微亮，背景为青绿雾气中幽深的中式建筑与垂幔。；案几两侧对峙的两个古装男子剪影。；开敞式古典中式殿阁或水榭，背景有灰色古典建筑轮廓与帷幔遮掩，空气中弥漫青绿色烟雾，地面隐见暗色水光反光。\n\n人物与动作: 左侧男子头挽发髻，着长袍；右侧男子头戴发冠，微现须髯轮廓；二人均呈黑色纯剪影状态，端坐不动。；二人相对静坐无大幅动作，烛火轻微跳跃，神情隐于阴影中维持对峙气场。；画面近乎静止，仅见烛光微动与极其轻微的气流流动感。\n\n镜头与构图: 全景固定镜头，正面对称视角，平视机位，深焦景深。；严格的中心对称构图，两侧柱石与垂帘形成框景，二人分列左右黄金分割区域，中心为长案及后方大殿通道。\n\n光影与质感: 逆光剪影照明，背景大面积漫射青绿色冷调天光，几案上与两侧点缀数盏暖黄蜡烛点光源。；青蓝冷调与墨黑剪影为主，辅以小范围暖黄色烛火形成冷暖对比，具水墨电影质感。；冷峻、极简古风武侠电影风格，高对比度低调摄影。\n\n声音: style: 极简压抑的环境氛围低频嗡鸣或微弱风声，无台词。\n\n节奏与转场: editing: pacing: 沉静凝固; techniques: 硬切",
+        "duration": 2,
+        "createdAt": "2026-11-12T09:47:45.125631+00:00",
+        "updatedAt": "2026-11-12T09:47:45.125631+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:47:45.084Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "afc887fb-075a-4aa3-b010-2acb3157172c",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "0c2818fd-f77f-4a97-9af2-61544a0fe7d0",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 8.458,
+          "summary": "一名虚焦男子的面庞遮挡在前景右侧，背景是一队头戴斗笠、手持白色旗幡的古代军士在阴郁雾气中肃立对峙。",
+          "startTime": 6.583,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "青灰与暗绿为主的低饱和冷色调，呈现沉重压抑的历史质感。",
+          "style": "写实古装历史正剧电影质感，冷峻肃杀，纹理清晰。",
+          "action": "中景军士身形稳重、冷冷注视前方，白色旗帜在阴风中轻微飘拂；前景人物保持静止对峙姿态。",
+          "camera": "过肩特写视角，浅景深，前景右侧极端虚焦，焦点锁定在中景军士面部，镜头近乎静止。",
+          "motion": "人物几乎静止，仅背景白幡轻微摆动及镜头极轻微呼吸感。",
+          "subject": "右侧前景虚焦人物与中景严整肃立的斗笠军士群体。",
+          "lighting": "冷调漫射自然光，阴沉低对比，面部阴影沉重无明显高光。",
+          "characters": "中景军士神情冷峻，身着暗青色与浅色交领长袍及甲胄，头戴宽檐黑色斗笠；前景男子背光虚焦，仅能辨认深色面容与胡须轮廓。",
+          "composition": "前景遮挡式构图，右侧暗色虚焦占据近半画面，中景主体人物与旗帜位于左侧及中轴，纵深感强烈。",
+          "environment": "被浓雾与灰绿色冷光笼罩的荒野或平原，背景空旷朦胧。",
+          "sceneDescription": "阴冷大雾中，右侧前景是一张极度虚焦、面部暗沉的人物特写轮廓；中景左侧至中部聚焦于数名身着灰袍皮甲、头戴平顶斗笠的古代武士，后方插有随风摆动的白色旗幡，气氛肃杀。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的冷风呼啸与凝重的肃杀氛围音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢凝重",
+            "techniques": "前后均为硬切"
+          }
+        },
+        "generationPrompt": "电影质感，古装史诗风格。画面右侧前景为一个严重虚焦的古代男子面部暗部特写轮廓；中景聚焦于一队在寒冷大雾中肃立的古代东方武士，他们头戴黑色宽檐平顶斗笠，身着青灰与粗布战袍，神色冷峻，身后高挑着数面在风中微动的白布长旗。深浅景深对比强烈，冷青色低饱和影调，阴暗低对比漫射光，气氛沉凝肃杀。\n\n画面与环境: 阴冷大雾中，右侧前景是一张极度虚焦、面部暗沉的人物特写轮廓；中景左侧至中部聚焦于数名身着灰袍皮甲、头戴平顶斗笠的古代武士，后方插有随风摆动的白色旗幡，气氛肃杀。；右侧前景虚焦人物与中景严整肃立的斗笠军士群体。；被浓雾与灰绿色冷光笼罩的荒野或平原，背景空旷朦胧。\n\n人物与动作: 中景军士神情冷峻，身着暗青色与浅色交领长袍及甲胄，头戴宽檐黑色斗笠；前景男子背光虚焦，仅能辨认深色面容与胡须轮廓。；中景军士身形稳重、冷冷注视前方，白色旗帜在阴风中轻微飘拂；前景人物保持静止对峙姿态。；人物几乎静止，仅背景白幡轻微摆动及镜头极轻微呼吸感。\n\n镜头与构图: 过肩特写视角，浅景深，前景右侧极端虚焦，焦点锁定在中景军士面部，镜头近乎静止。；前景遮挡式构图，右侧暗色虚焦占据近半画面，中景主体人物与旗帜位于左侧及中轴，纵深感强烈。\n\n光影与质感: 冷调漫射自然光，阴沉低对比，面部阴影沉重无明显高光。；青灰与暗绿为主的低饱和冷色调，呈现沉重压抑的历史质感。；写实古装历史正剧电影质感，冷峻肃杀，纹理清晰。\n\n声音: soundStyle: 低沉压抑的冷风呼啸与凝重的肃杀氛围音。\n\n节奏与转场: editing: pacing: 缓慢凝重; techniques: 前后均为硬切",
+        "duration": 1.875,
+        "createdAt": "2026-11-12T09:49:16.447275+00:00",
+        "updatedAt": "2026-11-12T09:49:16.447275+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:49:16.409Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "d65b063d-346e-4d87-a05b-182d20b8fdce",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "c1f58837-35be-469b-8136-fbe61f5a18a3",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 11.167,
+          "summary": "在如镜面般倒映天空的旷野浅水中，一人席地弹奏吉他，另一人身着长袍缓步前行，氛围空灵诗意。",
+          "startTime": 8.458,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "淡青蓝与米黄色双色调渐变，低饱和度，温润纯净。",
+          "style": "极简主义写意电影质感，带微弱空气颗粒感。",
+          "action": "吉他手保持坐姿持续拨弦；长袍者平稳慢步跨过水面，荡开极微弱水波。",
+          "camera": "超广角大远景，平视固定机位，大景深，主体置于画面左右两侧三分线位置。",
+          "motion": "人物步伐极缓，空气中微粒漂浮，水面动态近乎静止。",
+          "subject": "旷野水面上的弹奏者与漫步者剪影",
+          "lighting": "柔和漫射背光，弱对比，人物呈现高反差剪影质感。",
+          "characters": "左侧乐手着深色衣物坐地弹唱；右侧漫步者着深色长袍缓步前行，面部细节弱化为剪影。",
+          "composition": "极简对称平衡构图，中心大面积留白，形成疏离空旷的空间纵深感。",
+          "environment": "天空之镜般的水平浅水地表，倒影清晰；背景为青绿色与淡鹅黄色渐变的天空与薄雾。",
+          "sceneDescription": "极简浅水倒影平原，左侧人物盘坐弹吉他，右侧长袍人物向外漫步，天地间呈青黄渐变微光，飘浮细微微粒。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "轻柔抒情的原声吉他弹拨配乐",
+          "ambient": "开阔空旷的微风环境声",
+          "soundEffects": "微弱不可闻的踏水声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓静谧",
+            "techniques": "固定长镜头，硬切过渡"
+          }
+        },
+        "generationPrompt": "电影级极简大远景。广阔如镜的浅水湖面，倒映着苍茫天际。画面左侧一人席地盘坐弹奏木吉他呈深色剪影，右侧一人身着飘逸深色长袍缓慢向前迈步，水面清晰倒映其身影。画面中央大面积留白，天空呈现淡青灰与浅暖黄交融的柔和渐变，带有微光薄雾与细碎漂浮微粒。固定摄影机平视拍摄，柔和逆光剪影风格，色调极简雅致，意境空灵寂静。\n\n画面与环境: 极简浅水倒影平原，左侧人物盘坐弹吉他，右侧长袍人物向外漫步，天地间呈青黄渐变微光，飘浮细微微粒。；旷野水面上的弹奏者与漫步者剪影；天空之镜般的水平浅水地表，倒影清晰；背景为青绿色与淡鹅黄色渐变的天空与薄雾。\n\n人物与动作: 左侧乐手着深色衣物坐地弹唱；右侧漫步者着深色长袍缓步前行，面部细节弱化为剪影。；吉他手保持坐姿持续拨弦；长袍者平稳慢步跨过水面，荡开极微弱水波。；人物步伐极缓，空气中微粒漂浮，水面动态近乎静止。\n\n镜头与构图: 超广角大远景，平视固定机位，大景深，主体置于画面左右两侧三分线位置。；极简对称平衡构图，中心大面积留白，形成疏离空旷的空间纵深感。\n\n光影与质感: 柔和漫射背光，弱对比，人物呈现高反差剪影质感。；淡青蓝与米黄色双色调渐变，低饱和度，温润纯净。；极简主义写意电影质感，带微弱空气颗粒感。\n\n声音: ambient: 开阔空旷的微风环境声; music: 轻柔抒情的原声吉他弹拨配乐; soundEffects: 微弱不可闻的踏水声\n\n节奏与转场: editing: pacing: 舒缓静谧; techniques: 固定长镜头，硬切过渡",
+        "duration": 2.709,
+        "createdAt": "2026-11-12T09:49:00.564027+00:00",
+        "updatedAt": "2026-11-12T09:49:00.564027+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:49:00.521Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "55688338-d623-478a-afda-8b931f3acd52",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "f9d0c940-2190-4fcc-95f5-c7aee03eb64f",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 13.625,
+          "summary": "一名背负长剑的古代侠客剪影，在幽暗宏伟的拱形门洞前，迎着门外炽热的金黄色迷雾强光缓缓向远处走去。",
+          "startTime": 11.167,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "极简冷暖强对比色调。大面积深墨黑与暗青灰色阴影，对比中央高饱和暖金黄色背景光及左侧局部暖橙色火光。",
+          "style": "东方美学的风格化数字绘景或三维国风动画电影质感，光影高度凝练，带有水墨留白与苍凉史诗氛围。",
+          "action": "0.0秒至2.458秒：人物剪影位于拱门底部中央，迈着平稳缓慢的步伐背对镜头向门外金色光雾中前行；同时左侧火炬台上的火焰持续轻微摇曳跳动。",
+          "camera": "大远景，平视视角，标准至中长焦镜头感，机位完全固定静止，无推拉摇移，景深较大，前中后景轮廓均清晰。",
+          "motion": "整体画面高度克制平稳，仅包含人物微幅向前的步行位移与左侧火苗的轻微摇曳，运动连贯自然。",
+          "subject": "背负长剑的古代东方侠客剪影",
+          "lighting": "极端高反差强逆光剪影布光。门外射入强烈的金黄色漫射天光，将人物压成纯黑剪影；左侧火炬提供局部暖橙色点光源，在木门表面形成柔和光晕；其余环境处于深重阴影中。",
+          "characters": [
+            {
+              "pose": "背对镜头直立行走，右肩斜背一柄长剑，剑柄露于右肩上方，剑鞘尾端斜伸向左胯侧",
+              "identity": "未知（背影剪影，疑为古代剑客或武者）",
+              "wardrobe": "宽松深色古风长袍，下摆垂至脚踝",
+              "appearance": "全身呈纯黑逆光剪影，头顶束有发髻，身形修长",
+              "expression": "未知（完全背对镜头且处于剪影暗部）"
+            }
+          ],
+          "composition": "严格中心对称构图。前景左右下角为灰白雾气与暗色地面；中景为占据画幅绝大部分的漆黑墙体、左侧火炬与人物剪影；背景为中央拱门框住的纯净金黄色强光区域，人物位于拱门中轴线偏下位置。",
+          "environment": "宏伟幽暗的古代东方宫殿或城关内部通道，中央为高大拱形出口，门洞左侧嵌有厚重竖纹木门与火炬台，门外为明亮的金色光雾空间，两侧前景地面有灰白积雪或低矮烟雾。",
+          "sceneDescription": "对称式大远景剪影画面。画面正中央是一座高大的拱形门洞，门外弥漫着明亮饱和的金黄色强光与薄雾。门洞底部中央，一名头束发髻、身穿长袍、右肩斜背长剑的黑色人物剪影背对镜头缓缓向门外走去。门洞四周被浓重的墨黑色建筑墙体包围，门洞左侧立有一座火炬台，跳动的橙红色火光照亮了后方深色竖纹木门的局部纹理；左右两侧前景地面覆盖着灰白色薄雾或积雪，向中央深色通道汇聚。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "未知（语音转录为空；画面呈现极度静谧、空灵的氛围，可能配有低沉风声、微弱火焰燃烧声或克制的史诗感背景音乐，具体音轨未知）",
+          "transcript": []
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "缓慢、沉稳、富有仪式感，单镜头持续2.458秒，内部动态极微",
+            "techniques": [
+              "硬切转场（置信度：高，依据输入转场元数据）",
+              "固定镜头凝视（置信度：高，依据三帧画面机位零位移）"
+            ]
+          }
+        },
+        "generationPrompt": "中国古风三维动画电影质感，对称式大远景，固定机位。幽暗宏伟的古代城门内部，画面正中央是一座高大的拱形门洞，门外透出极其明亮饱和的金黄色迷雾强光。门洞底部正中，一名头束发髻、身穿长袍、右肩斜背长剑的侠客呈纯黑逆光剪影，背对镜头缓缓向门外金色光芒中走去。门洞四周被浓重的墨黑色墙体包围，门洞左侧立着一座石质火炬台，跳动的暖橙色火光照亮后方深色竖纹木门的局部细节；左右前景地面铺展着灰白色薄雾与积雪，向中央暗色通道汇聚。极致明暗对比与冷暖撞色，光影凝练，氛围苍凉肃穆。音频与剪辑约束：无对白与字幕，环境音可能为极简风声或低沉氛围音效（未知），前后均为硬切，镜头全程静止。\n\n画面与环境: 对称式大远景剪影画面。画面正中央是一座高大的拱形门洞，门外弥漫着明亮饱和的金黄色强光与薄雾。门洞底部中央，一名头束发髻、身穿长袍、右肩斜背长剑的黑色人物剪影背对镜头缓缓向门外走去。门洞四周被浓重的墨黑色建筑墙体包围，门洞左侧立有一座火炬台，跳动的橙红色火光照亮了后方深色竖纹木门的局部纹理；左右两侧前景地面覆盖着灰白色薄雾或积雪，向中央深色通道汇聚。；背负长剑的古代东方侠客剪影；宏伟幽暗的古代东方宫殿或城关内部通道，中央为高大拱形出口，门洞左侧嵌有厚重竖纹木门与火炬台，门外为明亮的金色光雾空间，两侧前景地面有灰白积雪或低矮烟雾。\n\n人物与动作: identity: 未知（背影剪影，疑为古代剑客或武者）; appearance: 全身呈纯黑逆光剪影，头顶束有发髻，身形修长; wardrobe: 宽松深色古风长袍，下摆垂至脚踝; expression: 未知（完全背对镜头且处于剪影暗部）; pose: 背对镜头直立行走，右肩斜背一柄长剑，剑柄露于右肩上方，剑鞘尾端斜伸向左胯侧；0.0秒至2.458秒：人物剪影位于拱门底部中央，迈着平稳缓慢的步伐背对镜头向门外金色光雾中前行；同时左侧火炬台上的火焰持续轻微摇曳跳动。；整体画面高度克制平稳，仅包含人物微幅向前的步行位移与左侧火苗的轻微摇曳，运动连贯自然。\n\n镜头与构图: 大远景，平视视角，标准至中长焦镜头感，机位完全固定静止，无推拉摇移，景深较大，前中后景轮廓均清晰。；严格中心对称构图。前景左右下角为灰白雾气与暗色地面；中景为占据画幅绝大部分的漆黑墙体、左侧火炬与人物剪影；背景为中央拱门框住的纯净金黄色强光区域，人物位于拱门中轴线偏下位置。\n\n光影与质感: 极端高反差强逆光剪影布光。门外射入强烈的金黄色漫射天光，将人物压成纯黑剪影；左侧火炬提供局部暖橙色点光源，在木门表面形成柔和光晕；其余环境处于深重阴影中。；极简冷暖强对比色调。大面积深墨黑与暗青灰色阴影，对比中央高饱和暖金黄色背景光及左侧局部暖橙色火光。；东方美学的风格化数字绘景或三维国风动画电影质感，光影高度凝练，带有水墨留白与苍凉史诗氛围。\n\n声音: soundStyle: 未知（语音转录为空；画面呈现极度静谧、空灵的氛围，可能配有低沉风声、微弱火焰燃烧声或克制的史诗感背景音乐，具体音轨未知）\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 缓慢、沉稳、富有仪式感，单镜头持续2.458秒，内部动态极微; techniques: 硬切转场（置信度：高，依据输入转场元数据）; 固定镜头凝视（置信度：高，依据三帧画面机位零位移）",
+        "duration": 2.458,
+        "createdAt": "2026-11-12T09:50:02.179278+00:00",
+        "updatedAt": "2026-11-12T09:50:02.179278+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:49:57.106Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "50b15add-a9c5-4250-a20e-48e3273c33c8",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "183e987d-4b80-476f-89fe-86c8504b698a",
+        "sceneIndex": 8,
+        "story": {
+          "endTime": 16.167,
+          "summary": "宏伟的东方暗黑奇幻宫殿全景，双巨龙雕像盘踞两侧，微小人群在火光与雾气中仰望并步入大殿。",
+          "startTime": 13.625,
+          "sceneIndex": 8
+        },
+        "visual": {
+          "color": "暗黑史诗电影色调，以深炭黑、暗青灰为基底，搭配高饱和的暗红色垂幔与宫墙，点缀暖金色强逆光与橙黄色火光，冷暖对比鲜明。",
+          "style": "影视级三维CG写实奇幻风格，建模厚重精细，具有强烈的体积光、大气透视与烟雾质感。",
+          "action": "0.0秒至2.542秒：镜头平稳向前推进；首帧左下角前景人影随推镜自然移出画面；殿前与阶梯上的微小人群剪影缓慢移动；火盆火焰微弱跳动，底部薄雾在巨龙底座与阶梯间缓缓流动。",
+          "camera": "大远景（全景），低角度仰拍，广角镜头感，景深极大且深焦清晰，镜头以平稳缓慢的速度向前推进（缓推），画面稳定无晃动。",
+          "motion": "镜头匀速缓慢前推，带来持续的空间纵深感；前景遮挡物自然出画，中远景巨龙与宫殿保持静止庄严，仅雾气与火光有细微动态。",
+          "subject": "巨型双龙雕塑与中式重檐大殿建筑群，辅以殿前微小的剪影人群。",
+          "lighting": "强烈的高反差戏剧性明暗对比，主光源为右上角高处倾泻而下的暖金色逆光，勾勒出右侧巨龙轮廓、大殿金瓦及左侧龙身鳞片的耀眼高光；殿前火盆提供局部暖橙色点光源，其余大面积区域处于冷暗阴影中。",
+          "characters": "殿前广场与阶梯上分布着多名深色着装的微小人物剪影（身份与五官不可见）；首帧左下角前景有一名背对镜头的深色人影肩部轮廓，随镜头推进迅速移出画外。",
+          "composition": "对称式宏大构图，左右两侧巨龙雕塑形成天然画框，将视线引向正中央的重檐大殿与阶梯；前景为极暗的建筑边缘与首帧左下角人影，中景为双龙与台阶火光，远景为大殿主体与右上角高光天隙，通过极小人物与巨兽的体量对比凸显史诗感。",
+          "environment": "幽深宏大的洞穴或峡谷内修建的古代东方宫殿建筑群，包含多层飞檐阁楼、石砌阶梯、石柱、垂挂的红色巨幅帷幔以及多处燃烧的火盆。",
+          "sceneDescription": "低角度仰拍宏伟的东方暗黑奇幻宫殿群，两侧矗立着巨型盘龙雕塑。画面中央为重檐歇山顶古建筑大殿，红柱黑瓦、金饰屋脊，下方有长石阶与燃烧的火盆。左侧高处探出巨龙龙头，中左侧龙身鳞片被金光照亮，旁悬深红巨幅垂幔；右侧巨龙雕像如山岳般拔地而起，张口怒吼，背脊受右上角强逆光勾勒出金边。画面底部有极小的人物剪影在殿前广场与阶梯上活动，薄雾与烟尘在低处弥漫。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知（无音频轨道，推测可能配有低沉史诗管弦乐或低频氛围音以烘托宏大压迫感）。",
+          "soundEffects": "未知（画面暗示可能有微弱的火焰燃烧声、风声与宏大空间混响）。",
+          "dialogueSummary": "无对白与人声（语音转写结果为空）。"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "稳重缓慢（2.542秒单镜头持续缓推，营造史诗场景的压迫感与空间展示节奏，置信度：高）。",
+            "techniques": "首尾均采用直接硬切衔接，镜头内部无剪辑切分，依靠单一连续向前推镜完成视觉递进（置信度：高）。"
+          }
+        },
+        "generationPrompt": "东方暗黑奇幻史诗电影感大远景，低角度仰拍，广角镜头平稳缓慢向前推进。幽深宏大的峡谷秘境中矗立着一座古代中式重檐大殿，黑瓦飞檐、红柱金饰，长石阶通向殿门，阶梯与广场两侧燃着暖橙色火盆。宫殿左右两侧盘踞着两尊山岳般巨大的暗色石铜巨龙雕像：左侧上方探出狰狞龙头，中左侧弯曲的龙身鳞片反射着耀眼的暖金色强光，旁悬深红色巨幅垂幔；右侧巨龙拔地而起，朝向大殿张口怒吼，利齿毕露，龙首与背脊被右上角高处倾泻而下的金色逆光勾勒出强烈金边。殿前广场与石阶上分布着数十个极小的黑衣人群剪影缓慢行走，与巨龙形成震撼的体量对比。画面底部弥漫着厚重的体积雾与烟尘，首帧左下角前景边缘的暗色人影随镜头前推自然移出画外。高反差戏剧性明暗对比，冷暗青黑阴影与暖金逆光、深红帷幔、橙红火光交织，影视级写实CG质感，细节丰富，深焦清晰。无对白，无字幕，单镜头硬切起止。\n\n画面与环境: 低角度仰拍宏伟的东方暗黑奇幻宫殿群，两侧矗立着巨型盘龙雕塑。画面中央为重檐歇山顶古建筑大殿，红柱黑瓦、金饰屋脊，下方有长石阶与燃烧的火盆。左侧高处探出巨龙龙头，中左侧龙身鳞片被金光照亮，旁悬深红巨幅垂幔；右侧巨龙雕像如山岳般拔地而起，张口怒吼，背脊受右上角强逆光勾勒出金边。画面底部有极小的人物剪影在殿前广场与阶梯上活动，薄雾与烟尘在低处弥漫。；巨型双龙雕塑与中式重檐大殿建筑群，辅以殿前微小的剪影人群。；幽深宏大的洞穴或峡谷内修建的古代东方宫殿建筑群，包含多层飞檐阁楼、石砌阶梯、石柱、垂挂的红色巨幅帷幔以及多处燃烧的火盆。\n\n人物与动作: 殿前广场与阶梯上分布着多名深色着装的微小人物剪影（身份与五官不可见）；首帧左下角前景有一名背对镜头的深色人影肩部轮廓，随镜头推进迅速移出画外。；0.0秒至2.542秒：镜头平稳向前推进；首帧左下角前景人影随推镜自然移出画面；殿前与阶梯上的微小人群剪影缓慢移动；火盆火焰微弱跳动，底部薄雾在巨龙底座与阶梯间缓缓流动。；镜头匀速缓慢前推，带来持续的空间纵深感；前景遮挡物自然出画，中远景巨龙与宫殿保持静止庄严，仅雾气与火光有细微动态。\n\n镜头与构图: 大远景（全景），低角度仰拍，广角镜头感，景深极大且深焦清晰，镜头以平稳缓慢的速度向前推进（缓推），画面稳定无晃动。；对称式宏大构图，左右两侧巨龙雕塑形成天然画框，将视线引向正中央的重檐大殿与阶梯；前景为极暗的建筑边缘与首帧左下角人影，中景为双龙与台阶火光，远景为大殿主体与右上角高光天隙，通过极小人物与巨兽的体量对比凸显史诗感。\n\n光影与质感: 强烈的高反差戏剧性明暗对比，主光源为右上角高处倾泻而下的暖金色逆光，勾勒出右侧巨龙轮廓、大殿金瓦及左侧龙身鳞片的耀眼高光；殿前火盆提供局部暖橙色点光源，其余大面积区域处于冷暗阴影中。；暗黑史诗电影色调，以深炭黑、暗青灰为基底，搭配高饱和的暗红色垂幔与宫墙，点缀暖金色强逆光与橙黄色火光，冷暖对比鲜明。；影视级三维CG写实奇幻风格，建模厚重精细，具有强烈的体积光、大气透视与烟雾质感。\n\n声音: music: 未知（无音频轨道，推测可能配有低沉史诗管弦乐或低频氛围音以烘托宏大压迫感）。; soundEffects: 未知（画面暗示可能有微弱的火焰燃烧声、风声与宏大空间混响）。; dialogueSummary: 无对白与人声（语音转写结果为空）。\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 稳重缓慢（2.542秒单镜头持续缓推，营造史诗场景的压迫感与空间展示节奏，置信度：高）。; techniques: 首尾均采用直接硬切衔接，镜头内部无剪辑切分，依靠单一连续向前推镜完成视觉递进（置信度：高）。",
+        "duration": 2.542,
+        "createdAt": "2026-11-12T09:50:06.87099+00:00",
+        "updatedAt": "2026-11-12T09:50:06.87099+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:50:06.835Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "072449ad-e1da-4385-8855-3b5aebe13532",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "2756cb1f-3c6a-4825-b623-9d461c56fdfb",
+        "sceneIndex": 9,
+        "story": {
+          "endTime": 18.833,
+          "summary": "幽暗宏伟的大殿内，一名身着白袍的男子在两侧肃立的百官注视下，缓步走向大殿深处的王座。",
+          "startTime": 16.167,
+          "sceneIndex": 9
+        },
+        "visual": {
+          "color": "青黑与墨绿为主色调，局部点缀微弱暖金反光，与主体纯白袍服形成强烈对比。",
+          "style": "史诗历史电影质感，冷峻肃杀，画面极具仪式感与压迫力。",
+          "action": "白袍男子匀速走向远方王座台阶；镜头横向移动，前景立柱短暂遮挡主体后再度显现。",
+          "camera": "远景、俯角，伴随缓慢横移运镜，利用长焦纵深感及前景立柱制造强烈的遮挡视差。",
+          "motion": "摄影机平缓横移，前景立柱平移穿过画面，人物平稳漫步。",
+          "subject": "背对镜头的白袍男子，身着宽大纯白汉服长袍，头束发髻，步伐沉稳走向大殿深处。",
+          "lighting": "冷峻暗调布光，带有微弱顶光与远景暖色烛火，地面形成修长高光倒影，伴有弥漫的丁达尔雾气。",
+          "characters": "两旁按列肃立的百官群臣，身着深色朝服，低头垂手，神态庄严肃穆，隐没在暗影中。",
+          "composition": "纵深对称轴线构图，两列朝臣与巨柱引导视觉至中央王座，白袍主体居于画幅中心偏下。",
+          "environment": "中国古代宏伟正殿，列柱高耸，地面如镜面般光滑反光，远景高台王座隐没在薄雾与微弱火光中。",
+          "sceneDescription": "宏伟古朴的宫廷大殿远景。黑色反光石砖纵深延展至深处王座，两侧群臣整齐肃立。一名白袍男子背对镜头独自前行，前景巨大柱体随运镜产生视差遮挡。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "description": "空旷大殿内的压抑低频环境混响，伴随极微弱的脚步声与肃穆的氛围音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉稳缓慢",
+            "techniques": "硬切出入，长镜头视差平移"
+          }
+        },
+        "generationPrompt": "电影级画面，古代中国宏伟大殿俯视远景。光亮如镜的黑色石板地面向深处延伸至高台王座。一名身穿纯白色宽袖汉服的男子背对镜头走向王座，身形挺拔。两侧排列着身穿黑袍的百官与高大柱廊。镜头缓慢平移，前景粗壮黑柱滑过画面形成遮挡视差。幽暗墨绿色调，空气中带有微弱薄雾与金色烛光漫射，冷峻肃杀的权谋历史大片质感。\n\n画面与环境: 宏伟古朴的宫廷大殿远景。黑色反光石砖纵深延展至深处王座，两侧群臣整齐肃立。一名白袍男子背对镜头独自前行，前景巨大柱体随运镜产生视差遮挡。；背对镜头的白袍男子，身着宽大纯白汉服长袍，头束发髻，步伐沉稳走向大殿深处。；中国古代宏伟正殿，列柱高耸，地面如镜面般光滑反光，远景高台王座隐没在薄雾与微弱火光中。\n\n人物与动作: 两旁按列肃立的百官群臣，身着深色朝服，低头垂手，神态庄严肃穆，隐没在暗影中。；白袍男子匀速走向远方王座台阶；镜头横向移动，前景立柱短暂遮挡主体后再度显现。；摄影机平缓横移，前景立柱平移穿过画面，人物平稳漫步。\n\n镜头与构图: 远景、俯角，伴随缓慢横移运镜，利用长焦纵深感及前景立柱制造强烈的遮挡视差。；纵深对称轴线构图，两列朝臣与巨柱引导视觉至中央王座，白袍主体居于画幅中心偏下。\n\n光影与质感: 冷峻暗调布光，带有微弱顶光与远景暖色烛火，地面形成修长高光倒影，伴有弥漫的丁达尔雾气。；青黑与墨绿为主色调，局部点缀微弱暖金反光，与主体纯白袍服形成强烈对比。；史诗历史电影质感，冷峻肃杀，画面极具仪式感与压迫力。\n\n声音: description: 空旷大殿内的压抑低频环境混响，伴随极微弱的脚步声与肃穆的氛围音。\n\n节奏与转场: editing: pacing: 沉稳缓慢; techniques: 硬切出入，长镜头视差平移",
+        "duration": 2.666,
+        "createdAt": "2026-11-12T09:51:04.203938+00:00",
+        "updatedAt": "2026-11-12T09:51:04.203938+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:51:04.000Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "96ca53b3-44c3-4ce9-8554-d776365798dc",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "be2ba16a-f48d-4183-a6d2-356f13f63794",
+        "sceneIndex": 10,
+        "story": {
+          "endTime": 19.416667,
+          "summary": "特写镜头展示身穿白色长袍和白靴的人物在光亮地面上快速走过。",
+          "startTime": 18.833,
+          "sceneIndex": 10
+        },
+        "visual": {
+          "color": "暖金、米白与深棕黑相间的高对比色调。",
+          "style": "电影写实质感，注重布料质地与光洁地面的反射。",
+          "action": "人物双脚交替向前迈步走过，衣摆随着步伐轻微摆动。",
+          "camera": "贴地低角度侧拍特写，浅景深聚焦于足部，镜头轻微横向跟随。",
+          "motion": "靴子向前迈进的匀速运动及下摆微幅晃动。",
+          "subject": "人物走动的小腿及双足。",
+          "lighting": "暖调侧逆光，照亮靴子边缘和衣摆，暗部层次分明。",
+          "characters": "未知角色，身着白色下垂衣袍，脚穿白色靴子。",
+          "composition": "横向运动构图，主体位于中下部，底部有地面反光倒影，背景大面积虚化暗调。",
+          "environment": "室内暗调空间，铺设光滑深色反光地砖，背景虚化且幽暗。",
+          "sceneDescription": "地面极低角度特写，身穿白色垂坠长袍与白色平底靴的人物从画面中稳步走过，深色反光地面上倒映出微弱光影。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "深沉幽暗的环境嗡鸣声",
+          "soundEffects": "靴底踩在坚硬光滑地面上的清脆脚步声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极快节奏镜头（约0.58秒）",
+            "techniques": "硬切连接前后镜头"
+          }
+        },
+        "generationPrompt": "地面极低角度侧面特写，电影质感。身穿白色长袍和白色长靴的人物在光滑反光的深色地砖上稳健向前走过，脚步快速交替。暖金色的侧逆光勾勒靴子与飘动下摆的轮廓，地砖上映出清晰的倒影。暗色背景深沉，浅景深，高对比度光影。\n\n画面与环境: 地面极低角度特写，身穿白色垂坠长袍与白色平底靴的人物从画面中稳步走过，深色反光地面上倒映出微弱光影。；人物走动的小腿及双足。；室内暗调空间，铺设光滑深色反光地砖，背景虚化且幽暗。\n\n人物与动作: 未知角色，身着白色下垂衣袍，脚穿白色靴子。；人物双脚交替向前迈步走过，衣摆随着步伐轻微摆动。；靴子向前迈进的匀速运动及下摆微幅晃动。\n\n镜头与构图: 贴地低角度侧拍特写，浅景深聚焦于足部，镜头轻微横向跟随。；横向运动构图，主体位于中下部，底部有地面反光倒影，背景大面积虚化暗调。\n\n光影与质感: 暖调侧逆光，照亮靴子边缘和衣摆，暗部层次分明。；暖金、米白与深棕黑相间的高对比色调。；电影写实质感，注重布料质地与光洁地面的反射。\n\n声音: soundEffects: 靴底踩在坚硬光滑地面上的清脆脚步声; ambient: 深沉幽暗的环境嗡鸣声\n\n节奏与转场: editing: pacing: 极快节奏镜头（约0.58秒）; techniques: 硬切连接前后镜头",
+        "duration": 0.583667,
+        "createdAt": "2026-11-12T09:50:41.894544+00:00",
+        "updatedAt": "2026-11-12T09:50:41.894544+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:50:41.705Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "2bb21f8e-b43c-4ec3-89ac-5e8909764b22",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "1897560f-cdb7-4da8-8ae7-6c486066739f",
+        "sceneIndex": 11,
+        "story": {
+          "endTime": 20.708333,
+          "summary": "一名身穿白袍的剑客背对镜头，在众臣两侧列队肃立的阴暗庄严大殿中，径直朝前方的王座高台走去。",
+          "startTime": 20,
+          "sceneIndex": 11
+        },
+        "visual": {
+          "color": "青灰与暗墨绿基调，主角的米白色与两侧群臣的深黑色形成强烈明暗反差。",
+          "style": "写实古装史诗电影质感，烟气弥漫，庄严肃穆。",
+          "action": "白袍男子保持沉稳步伐从大殿中央纵深向前行进，两侧列队侍臣保持静立肃穆。",
+          "camera": "中景，低角度后方跟拍移动镜头，平稳跟推，景深适中，焦点锁定在行进男子的背影上。",
+          "motion": "主角向前平稳缓步位移，衣袍微摆，摄像机同向平稳向前推移。",
+          "subject": "背影中央的白袍侠客，发髻高束，身披宽松飘逸的米白汉服深衣，腰间束带，背负一柄深色剑鞘的佩剑。",
+          "lighting": "冷调微弱的环境散射光与背光立柱光斑结合，左侧带有微弱暖光侧逆光，整体呈现幽暗肃杀的胶片质感。",
+          "characters": "主角为背向镜头的长袍男子；两侧为两列身穿黑色深红朝服、神情肃穆静立的文武百官与侍从。",
+          "composition": "严格的中央对称透视构图，行进主角居中，两侧群臣形成延伸汇聚线，引向背景高台。",
+          "environment": "宏大压抑的古代帝国宫殿室内，黑色光滑能倒影的地面，高耸柱列，薄雾弥漫，背景深处有王座台阶与烛光灯树。",
+          "sceneDescription": "宏伟幽暗的古代宫殿大殿，两侧列队站立着深色衣袍的群臣侍卫。中央反光地面上，一位身穿米白色长袍、背负长剑的男子背向镜头正步向前走去。远处高台立柱间透出垂直冷光，大殿中弥漫着青灰色的薄雾。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的殿堂氛围低频环境音，伴随回荡的脚步声（可能推断）。",
+          "transcript": ""
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "pacing": "快剪切入，节奏紧凑凝重",
+          "techniques": "前后均为硬切"
+        },
+        "generationPrompt": "古代宏伟大殿内景，中央对称透视构图，电影质感。一名束发髻、身穿米白色宽松汉服古装、背负长剑的男子背对镜头，沿中央光滑反光的黑色石砖地面缓步向前行进。大殿两侧整齐站立着两排身穿黑袍的朝臣。远处背景是高耸立柱和被薄雾笼罩的高台王座，冷白色柔和天光与微弱烛光交织。低角度跟拍镜头平稳向前推进，青灰冷色调，充满史诗般肃穆压抑的氛围。\n\n画面与环境: 宏伟幽暗的古代宫殿大殿，两侧列队站立着深色衣袍的群臣侍卫。中央反光地面上，一位身穿米白色长袍、背负长剑的男子背向镜头正步向前走去。远处高台立柱间透出垂直冷光，大殿中弥漫着青灰色的薄雾。；背影中央的白袍侠客，发髻高束，身披宽松飘逸的米白汉服深衣，腰间束带，背负一柄深色剑鞘的佩剑。；宏大压抑的古代帝国宫殿室内，黑色光滑能倒影的地面，高耸柱列，薄雾弥漫，背景深处有王座台阶与烛光灯树。\n\n人物与动作: 主角为背向镜头的长袍男子；两侧为两列身穿黑色深红朝服、神情肃穆静立的文武百官与侍从。；白袍男子保持沉稳步伐从大殿中央纵深向前行进，两侧列队侍臣保持静立肃穆。；主角向前平稳缓步位移，衣袍微摆，摄像机同向平稳向前推移。\n\n镜头与构图: 中景，低角度后方跟拍移动镜头，平稳跟推，景深适中，焦点锁定在行进男子的背影上。；严格的中央对称透视构图，行进主角居中，两侧群臣形成延伸汇聚线，引向背景高台。\n\n光影与质感: 冷调微弱的环境散射光与背光立柱光斑结合，左侧带有微弱暖光侧逆光，整体呈现幽暗肃杀的胶片质感。；青灰与暗墨绿基调，主角的米白色与两侧群臣的深黑色形成强烈明暗反差。；写实古装史诗电影质感，烟气弥漫，庄严肃穆。\n\n声音: soundStyle: 低沉压抑的殿堂氛围低频环境音，伴随回荡的脚步声（可能推断）。\n\n节奏与转场: pacing: 快剪切入，节奏紧凑凝重; techniques: 前后均为硬切",
+        "duration": 0.708333,
+        "createdAt": "2026-11-12T09:51:24.57162+00:00",
+        "updatedAt": "2026-11-12T09:51:24.57162+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:51:21.639Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "617eda8b-7701-4412-9b76-08bea291e98c",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "158e534e-ff9e-42e4-b25f-832203f81e28",
+        "sceneIndex": 12,
+        "story": {
+          "endTime": 22,
+          "summary": "一名身着白袍、头挽发髻的人物背对镜头，面朝昏暗深邃的殿堂内部伫立。",
+          "startTime": 21.333333,
+          "sceneIndex": 12
+        },
+        "visual": {
+          "color": {
+            "palette": "青绿灰暗调为主，主体衣物呈暖米白色，整体呈低饱和电影质感"
+          },
+          "style": "写实古装历史剧电影质感，烟雾氛围与浅景深虚化结合",
+          "action": [
+            {
+              "time": "00:00 - 00:00.66",
+              "description": "人物保持背影站立姿态，身体仅有极细微的起伏或静止，面朝大殿深处凝望。"
+            }
+          ],
+          "camera": {
+            "angle": "平视，正后方视角",
+            "focus": "焦点锁定在人物后脑勺发髻及衣领处",
+            "speed": "静态稳定",
+            "lensFeel": "浅景深长焦质感，主体后颈与发髻对焦清晰，背景高度虚化",
+            "movement": "固定镜头或极轻微微动",
+            "shotSize": "中近景/特写背影"
+          },
+          "motion": "主体微动，背景静止，画面极具沉静压迫感",
+          "subject": "背对镜头的古装人物，留有整齐发髻与簪子，身着粗布质感的浅色衣袍。",
+          "lighting": {
+            "mood": "幽深、静穆、悬疑",
+            "type": "柔和漫射环境光与微弱背光",
+            "direction": "左侧偏前方微光，背后微弱环境反光"
+          },
+          "characters": [
+            {
+              "pose": "背对镜头端正站立，略微挺直脊背。",
+              "identity": "古装人物（身份未知）",
+              "wardrobe": "米白或浅麻色交领古装长袍，面料具有轻微织物纹理。",
+              "appearance": "黑发梳成利落的高发髻，插素色发簪，肤质干净，露出后颈。",
+              "expression": "背对镜头，无法观察面部表情。"
+            }
+          ],
+          "composition": {
+            "midground": "虚化的室内横木、烛台或立柱结构",
+            "background": "带有竖向窗光与朦胧阴影的殿堂深处",
+            "foreground": "画面中央居中的人物头部、后颈及肩膀背影"
+          },
+          "environment": "古代宏大室内殿堂，背景光线朦胧且有薄雾感，透出柱子与室内结构的轮廓，左侧有窗隙透进微弱自然光。",
+          "sceneDescription": "特写镜头展示人物背影。人物头发高挽成髻并插有发簪，身着米白色长袍。前景清晰，背景为烟雾缭绕的古代昏暗大殿，远处可见立柱与朦胧光影。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的氛围环境音或静止的弦乐铺垫，无对白。",
+          "transcript": []
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极短促过渡切换（约0.67秒）",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "电影写实特写镜头，正后方视角。一名头戴素雅发簪、梳整齐高发髻的古装人物背对镜头静立，身穿米白色交领长袍，露出后颈。浅景深焦点清晰落在后脑发丝与领口处。背景是烟雾弥漫、光线昏暗的古代大殿深处，左侧有微弱的淡黄窗光透入，背景立柱轮廓高度虚化。青灰与暗绿冷调光影，沉静肃穆的氛围，画面稳定无剧烈动作，8k电影画质。\n\n画面与环境: 特写镜头展示人物背影。人物头发高挽成髻并插有发簪，身着米白色长袍。前景清晰，背景为烟雾缭绕的古代昏暗大殿，远处可见立柱与朦胧光影。；背对镜头的古装人物，留有整齐发髻与簪子，身着粗布质感的浅色衣袍。；古代宏大室内殿堂，背景光线朦胧且有薄雾感，透出柱子与室内结构的轮廓，左侧有窗隙透进微弱自然光。\n\n人物与动作: identity: 古装人物（身份未知）; appearance: 黑发梳成利落的高发髻，插素色发簪，肤质干净，露出后颈。; wardrobe: 米白或浅麻色交领古装长袍，面料具有轻微织物纹理。; expression: 背对镜头，无法观察面部表情。; pose: 背对镜头端正站立，略微挺直脊背。；time: 00:00 - 00:00.66; description: 人物保持背影站立姿态，身体仅有极细微的起伏或静止，面朝大殿深处凝望。；主体微动，背景静止，画面极具沉静压迫感\n\n镜头与构图: shotSize: 中近景/特写背影; angle: 平视，正后方视角; lensFeel: 浅景深长焦质感，主体后颈与发髻对焦清晰，背景高度虚化; movement: 固定镜头或极轻微微动; focus: 焦点锁定在人物后脑勺发髻及衣领处; speed: 静态稳定；foreground: 画面中央居中的人物头部、后颈及肩膀背影; midground: 虚化的室内横木、烛台或立柱结构; background: 带有竖向窗光与朦胧阴影的殿堂深处\n\n光影与质感: type: 柔和漫射环境光与微弱背光; direction: 左侧偏前方微光，背后微弱环境反光; mood: 幽深、静穆、悬疑；palette: 青绿灰暗调为主，主体衣物呈暖米白色，整体呈低饱和电影质感；写实古装历史剧电影质感，烟雾氛围与浅景深虚化结合\n\n声音: soundStyle: 低沉压抑的氛围环境音或静止的弦乐铺垫，无对白。\n\n节奏与转场: editing: pacing: 极短促过渡切换（约0.67秒）; techniques: 硬切入，硬切出",
+        "duration": 0.666667,
+        "createdAt": "2026-11-12T09:51:44.569508+00:00",
+        "updatedAt": "2026-11-12T09:51:44.569508+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:51:44.530Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "8a6392de-263a-47f3-9b86-cb45faf6457c",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "8725530a-4e79-4b40-b8f0-51509d6b09f3",
+        "sceneIndex": 13,
+        "story": {
+          "endTime": 23.291667,
+          "summary": "刺客身着飘逸白衣凌空向右飞跃行刺，王座上的君王满脸惊恐后仰。",
+          "startTime": 22.625,
+          "sceneIndex": 13
+        },
+        "visual": {
+          "color": "深青绿与墨黑为主基调，高对比度，刺客纯白衣袍与背景形成鲜明黑白反差。",
+          "style": "写意武侠电影风格，兼具飘逸美感与刺杀张力，胶片质感与烟雾环境。",
+          "action": "刺客持剑于半空向右下极速飞冲，宽大白袍在气流中剧烈鼓胀散开；君王身体向后倒退躲避。",
+          "camera": "中全景侧面横向机位，固定平视略带仰角，焦段适中，主体清晰且伴有高速动作残影。",
+          "motion": "人物快速向右滑翔的冲刺运动，伴随衣物布料剧烈翻卷流动的物理动态。",
+          "subject": "空中飞扑行刺的白衣刺客与受惊的君王。",
+          "lighting": "冷调低照度电影侧逆光，一道强烈倾斜顶光穿透幽暗形成丁达尔光效，刺客白袍形成耀眼亮部。",
+          "characters": "刺客身穿宽大膨胀的素白长袍，束发，面容冷峻凌厉；君王坐于右侧暗处高台座椅，穿深色华服，面部惊恐扭曲。",
+          "composition": "左高右低对角线动势构图，刺客居左中高位，君王居右侧阴影，斜向光束划分空间层次。",
+          "environment": "宏大昏暗的秦汉风格宫殿内殿，地面光滑反光，背景有立柱暗影及微弱烛台火光，空中漂浮微尘光束。",
+          "sceneDescription": "墨绿幽暗的宫殿大厅内，一名白衣刺客从左侧腾空滑翔，右手执短刃直扑右侧；右侧王座上的深色衣袍君王惊愕大叫并向后闪避。一束倾斜光柱自殿顶打下，照亮飞舞的白袍。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "急促紧绷的武侠悬疑打击乐或弦乐",
+          "ambient": "空旷殿堂的压抑低鸣",
+          "soundEffects": "凌空扑击的破风呼啸声与衣袍翻卷声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "pacing": "极快（约0.67秒快切）",
+          "techniques": "前后硬切"
+        },
+        "generationPrompt": "电影质感写意武侠场景，墨绿偏黑冷色调的大殿。左上方一名身穿宽大飘逸素白长袍的刺客凌空向前飞跃刺击，手中持短刃，白袍如云般极速翻卷膨胀；右侧暗处王座上，穿黑袍的君王惊骇张口后仰。一道斜向的青绿色天光光柱穿透尘雾照亮白袍，全景侧面拍摄，充满动势与冲击力，地面光滑微反光，极富张力的古装刺杀瞬间。\n\n画面与环境: 墨绿幽暗的宫殿大厅内，一名白衣刺客从左侧腾空滑翔，右手执短刃直扑右侧；右侧王座上的深色衣袍君王惊愕大叫并向后闪避。一束倾斜光柱自殿顶打下，照亮飞舞的白袍。；空中飞扑行刺的白衣刺客与受惊的君王。；宏大昏暗的秦汉风格宫殿内殿，地面光滑反光，背景有立柱暗影及微弱烛台火光，空中漂浮微尘光束。\n\n人物与动作: 刺客身穿宽大膨胀的素白长袍，束发，面容冷峻凌厉；君王坐于右侧暗处高台座椅，穿深色华服，面部惊恐扭曲。；刺客持剑于半空向右下极速飞冲，宽大白袍在气流中剧烈鼓胀散开；君王身体向后倒退躲避。；人物快速向右滑翔的冲刺运动，伴随衣物布料剧烈翻卷流动的物理动态。\n\n镜头与构图: 中全景侧面横向机位，固定平视略带仰角，焦段适中，主体清晰且伴有高速动作残影。；左高右低对角线动势构图，刺客居左中高位，君王居右侧阴影，斜向光束划分空间层次。\n\n光影与质感: 冷调低照度电影侧逆光，一道强烈倾斜顶光穿透幽暗形成丁达尔光效，刺客白袍形成耀眼亮部。；深青绿与墨黑为主基调，高对比度，刺客纯白衣袍与背景形成鲜明黑白反差。；写意武侠电影风格，兼具飘逸美感与刺杀张力，胶片质感与烟雾环境。\n\n声音: ambient: 空旷殿堂的压抑低鸣; soundEffects: 凌空扑击的破风呼啸声与衣袍翻卷声; music: 急促紧绷的武侠悬疑打击乐或弦乐\n\n节奏与转场: pacing: 极快（约0.67秒快切）; techniques: 前后硬切",
+        "duration": 0.666667,
+        "createdAt": "2026-11-12T09:52:13.246782+00:00",
+        "updatedAt": "2026-11-12T09:52:13.246782+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:52:13.052Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "fa7b1908-415e-40f1-81cf-2fc5ca4335b3",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "e947a812-75f7-4657-a6b7-b623a06dafe2",
+        "sceneIndex": 14,
+        "story": {
+          "endTime": 24.625,
+          "summary": "白衣刺客凌空飞跃，持剑刺向惊骇大呼的黑袍帝王。",
+          "startTime": 23.875,
+          "sceneIndex": 14
+        },
+        "visual": {
+          "color": "青绿色暗调基底，高光区呈现温暖的暖金黄色。",
+          "style": "写意武侠风格，强调视觉张力与气势。",
+          "action": "白衣人持剑凌空滑翔向前刺出，黑袍人保持惊恐呼号的防御姿态，动作极快。",
+          "camera": "中远景，轻微仰角侧拍，固定或极缓推拉镜头，浅景深。",
+          "motion": "刺客身体与剑刃沿对角线高速滑行，衣袂翻卷。",
+          "subject": "空中持剑突刺的白衣人与受惊的黑袍人",
+          "lighting": "高反差侧逆光，一道醒目的斜向耶稣光（体积光）照亮白衣与尘埃，其余环境暗沉。",
+          "characters": [
+            {
+              "pose": "身体在空中向前平掠，右手单手执短剑向前直刺",
+              "identity": "白衣刺客",
+              "wardrobe": "飘逸的白色古代汉服长袍，衣袖与下摆在空中张开",
+              "expression": "背对或侧面，无法看清"
+            },
+            {
+              "pose": "端坐在王座或跪坐后仰，身体被刺客的剑势所逼",
+              "identity": "黑袍君王",
+              "wardrobe": "深色厚重古代帝王冕服",
+              "expression": "极度惊恐，张大嘴呼喊"
+            }
+          ],
+          "composition": "对角线构图。左上方为飞行的白衣人，右下方为黑袍君王，斜向金色光柱连接两者。",
+          "environment": "幽暗肃穆的古代宫殿内部，空气中弥漫轻烟，背景有模糊的雕刻屏风与立柱。",
+          "sceneDescription": "幽暗宫殿中，一道斜射光束穿透薄雾。一名身着白色宽袍的刺客在半空中平掠飞刺，右侧黑袍帝王面露惊恐张口大呼，左侧近景有黑色剪影掩映。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "刺客破空的呼啸声、剑气嗡鸣，以及惊呼声（推测）"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极快，紧张急促的动作打斗节奏",
+            "techniques": "硬切（进出）"
+          }
+        },
+        "generationPrompt": "写意武侠电影质感。幽暗宫殿中，一道金色强光束穿透烟雾斜射而下。一名身穿白色宽大汉服长袍的侠客凌空横向飞掠，右手握剑向前直刺，衣袍翻飞透光；右侧深处一名身着黑色华丽古装长袍的男子惊恐张嘴大喊。电影级光影，青绿与暖金高对比色调，中远景侧面视角，慢动作张力感。\n\n画面与环境: 幽暗宫殿中，一道斜射光束穿透薄雾。一名身着白色宽袍的刺客在半空中平掠飞刺，右侧黑袍帝王面露惊恐张口大呼，左侧近景有黑色剪影掩映。；空中持剑突刺的白衣人与受惊的黑袍人；幽暗肃穆的古代宫殿内部，空气中弥漫轻烟，背景有模糊的雕刻屏风与立柱。\n\n人物与动作: identity: 白衣刺客; wardrobe: 飘逸的白色古代汉服长袍，衣袖与下摆在空中张开; expression: 背对或侧面，无法看清; pose: 身体在空中向前平掠，右手单手执短剑向前直刺; identity: 黑袍君王; wardrobe: 深色厚重古代帝王冕服; expression: 极度惊恐，张大嘴呼喊; pose: 端坐在王座或跪坐后仰，身体被刺客的剑势所逼；白衣人持剑凌空滑翔向前刺出，黑袍人保持惊恐呼号的防御姿态，动作极快。；刺客身体与剑刃沿对角线高速滑行，衣袂翻卷。\n\n镜头与构图: 中远景，轻微仰角侧拍，固定或极缓推拉镜头，浅景深。；对角线构图。左上方为飞行的白衣人，右下方为黑袍君王，斜向金色光柱连接两者。\n\n光影与质感: 高反差侧逆光，一道醒目的斜向耶稣光（体积光）照亮白衣与尘埃，其余环境暗沉。；青绿色暗调基底，高光区呈现温暖的暖金黄色。；写意武侠风格，强调视觉张力与气势。\n\n声音: soundStyle: 刺客破空的呼啸声、剑气嗡鸣，以及惊呼声（推测）\n\n节奏与转场: editing: pacing: 极快，紧张急促的动作打斗节奏; techniques: 硬切（进出）",
+        "duration": 0.75,
+        "createdAt": "2026-11-12T09:52:28.054839+00:00",
+        "updatedAt": "2026-11-12T09:52:28.054839+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:52:28.011Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "d23d8d5b-e56f-4286-a360-8b6e4b66211d",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "625a7aa2-0c65-470f-b732-85ddd9690b93",
+        "sceneIndex": 15,
+        "story": {
+          "endTime": 25.833333,
+          "summary": "昏暗大殿内，白衣刺客持短剑飞身突刺，黑甲男子向后急退闪避，两人在高速交锋中完成一记凌厉挥砍。",
+          "startTime": 25.125,
+          "sceneIndex": 15
+        },
+        "visual": {
+          "color": "冷暖强对比色调，大面积深墨绿与青黑色阴影，搭配米白长袍与琥珀金色剑光及火光。",
+          "style": "写实古装武侠电影质感，高反差胶片颗粒感与强烈运动模糊，视觉冲击力强。",
+          "action": "1）起始：白衣刺客从右侧腾空扑出，右臂高举短剑蓄力，黑甲男子向左后方闪避；2）中段：刺客俯身前冲，短剑横向刺向黑甲男子，剑身泛出暖光；3）收尾：刺客一击过后借势旋身，宽大白袖向右上甩起，黑甲男子在左侧暗影中稳住重心。",
+          "camera": "中景至中全景，平视略带仰角，模拟手持快速横向跟拍，快门较慢产生明显拖影动态模糊，焦点随白衣主体快速移动。",
+          "motion": "极高速线性前冲衔接旋转收势，伴随大幅度宽袖布料飘动与镜头横向跟拍动感。",
+          "subject": "米白色长袍持剑刺客与黑金铠甲蓄须男子。",
+          "lighting": "低调戏剧性布光，环境整体极暗，仅以局部暖黄色侧逆光勾勒白袍褶皱、剑身反光与铠甲边缘，两侧边缘点缀微弱火光。",
+          "characters": [
+            {
+              "role": "右侧白衣刺客",
+              "wardrobe": "米白色宽袖古装长袍，层叠衣摆飘逸",
+              "appearance": "束发髻，身形敏捷，面部因高速运动与侧背光而模糊不清",
+              "poseAndExpression": "由高举短剑腾空前扑，转为俯身前冲突刺，最后旋身扬袖，表情不可见"
+            },
+            {
+              "role": "左侧黑甲男子",
+              "wardrobe": "深黑色层叠铠甲，肩部带暗金色甲片纹理",
+              "appearance": "身材魁梧，蓄须，头戴金属发簪",
+              "poseAndExpression": "重心后仰向左侧急退闪避，神情紧绷且带有运动模糊"
+            }
+          ],
+          "composition": "左右对抗式构图；前景为翻飞的白色衣摆与虚化暗影，中景左侧为暗调黑甲男子、右侧为亮调白衣刺客形成强烈明暗反差，背景为幽深大殿纵深结构。",
+          "environment": "昏暗宽阔的古代石质宫殿，背景为深青黑色立柱与高墙，画面中下方有一深色雕花矮几，左右两侧边缘低处各有微弱暖黄火盆光点，地面反光微弱。",
+          "sceneDescription": "幽暗深邃的中式古代石殿内，右侧一名束发髻、穿米白色宽袖长袍的刺客持短剑凌空扑向左侧；左侧一名身穿黑金重甲、头戴发簪的蓄须男子向后退避。刺客由高举短剑蓄力转为俯身横向突刺，剑锋闪现暖金反光，随后借势旋身、宽大白袖向右上高高扬起，画面充满强烈的快门动态模糊。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "无对白；基于画面推测为急促的衣袂破风声、脚步摩擦声及低沉紧张的古装动作音效（具体音轨未知）。",
+          "transcriptStatus": "无有效语音转录（空）"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "极快，单镜头仅约0.71秒，属于高速近身搏斗的快剪段落。",
+            "techniques": "前后均采用硬切衔接，依靠刺客连续扑刺动作与强烈的动态模糊维持镜头连贯性（高置信度，无明显特效转场）。"
+          }
+        },
+        "generationPrompt": "写实古装武侠电影画面，中景平视镜头。幽暗深邃的古代石质大殿内，整体呈深墨绿与青黑色低调阴影，左右画面边缘低处各有一点微弱暖黄火光。画面右侧，一名束发髻、身着米白色宽袖长袍的刺客从右向左凌空飞扑，先右臂高举短剑蓄力，随即俯身前冲横向突刺，剑身闪现琥珀金色反光，紧接着借势旋身、宽大白袖向右上高高扬起，层叠白袍剧烈翻飞。画面左侧，一名身穿黑金重甲、头戴金属发簪的魁梧蓄须男子在暗影中向左侧急退闪避。镜头快速横向跟拍，带有明显的快门拖影动态模糊，强明暗对比突出白衣与黑甲的瞬间交锋。附加说明：无对白与字幕，音效推测为凌厉的衣袂破风与打斗声（未知），极快节奏硬切镜头，时长约0.71秒。\n\n画面与环境: 幽暗深邃的中式古代石殿内，右侧一名束发髻、穿米白色宽袖长袍的刺客持短剑凌空扑向左侧；左侧一名身穿黑金重甲、头戴发簪的蓄须男子向后退避。刺客由高举短剑蓄力转为俯身横向突刺，剑锋闪现暖金反光，随后借势旋身、宽大白袖向右上高高扬起，画面充满强烈的快门动态模糊。；米白色长袍持剑刺客与黑金铠甲蓄须男子。；昏暗宽阔的古代石质宫殿，背景为深青黑色立柱与高墙，画面中下方有一深色雕花矮几，左右两侧边缘低处各有微弱暖黄火盆光点，地面反光微弱。\n\n人物与动作: role: 右侧白衣刺客; appearance: 束发髻，身形敏捷，面部因高速运动与侧背光而模糊不清; wardrobe: 米白色宽袖古装长袍，层叠衣摆飘逸; poseAndExpression: 由高举短剑腾空前扑，转为俯身前冲突刺，最后旋身扬袖，表情不可见; role: 左侧黑甲男子; appearance: 身材魁梧，蓄须，头戴金属发簪; wardrobe: 深黑色层叠铠甲，肩部带暗金色甲片纹理; poseAndExpression: 重心后仰向左侧急退闪避，神情紧绷且带有运动模糊；1）起始：白衣刺客从右侧腾空扑出，右臂高举短剑蓄力，黑甲男子向左后方闪避；2）中段：刺客俯身前冲，短剑横向刺向黑甲男子，剑身泛出暖光；3）收尾：刺客一击过后借势旋身，宽大白袖向右上甩起，黑甲男子在左侧暗影中稳住重心。；极高速线性前冲衔接旋转收势，伴随大幅度宽袖布料飘动与镜头横向跟拍动感。\n\n镜头与构图: 中景至中全景，平视略带仰角，模拟手持快速横向跟拍，快门较慢产生明显拖影动态模糊，焦点随白衣主体快速移动。；左右对抗式构图；前景为翻飞的白色衣摆与虚化暗影，中景左侧为暗调黑甲男子、右侧为亮调白衣刺客形成强烈明暗反差，背景为幽深大殿纵深结构。\n\n光影与质感: 低调戏剧性布光，环境整体极暗，仅以局部暖黄色侧逆光勾勒白袍褶皱、剑身反光与铠甲边缘，两侧边缘点缀微弱火光。；冷暖强对比色调，大面积深墨绿与青黑色阴影，搭配米白长袍与琥珀金色剑光及火光。；写实古装武侠电影质感，高反差胶片颗粒感与强烈运动模糊，视觉冲击力强。\n\n声音: transcriptStatus: 无有效语音转录（空）; soundStyle: 无对白；基于画面推测为急促的衣袂破风声、脚步摩擦声及低沉紧张的古装动作音效（具体音轨未知）。\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 极快，单镜头仅约0.71秒，属于高速近身搏斗的快剪段落。; techniques: 前后均采用硬切衔接，依靠刺客连续扑刺动作与强烈的动态模糊维持镜头连贯性（高置信度，无明显特效转场）。",
+        "duration": 0.708333,
+        "createdAt": "2026-11-12T09:53:07.947148+00:00",
+        "updatedAt": "2026-11-12T09:53:07.947148+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:53:01.406Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "0b0d5a49-c232-4428-9293-dae7d5d302c8",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "e75f7609-7518-4ee0-8026-93bba936fb24",
+        "sceneIndex": 16,
+        "story": {
+          "endTime": 27.166667,
+          "summary": "昏暗的古代宫殿内，一名身着黑甲长袍的男子挥剑格挡后，急速向左侧转身低头闪避右侧白衣人的突袭。",
+          "startTime": 26.458333,
+          "sceneIndex": 16
+        },
+        "visual": {
+          "color": "高对比度暗绿与炭黑主色调，搭配米白色服饰形成明暗反差，左下角火焰呈现饱和的暖橙黄色，整体电影感冷峻低饱和。",
+          "style": "写实主义古装武侠电影质感，胶片颗粒感明显，强调高速肢体对抗与自然动态模糊。",
+          "action": "0.00秒至0.25秒：右侧白衣人向前突进，黑衣男子向后仰身并挥剑格挡；0.25秒至0.50秒：黑衣男子宽袖甩开，向左侧急速旋转后撤；0.50秒至0.71秒：黑衣男子大幅低头俯身躲避，白衣人重心上移持续压迫。",
+          "camera": "中近景平视机位，带有标准至略微长焦的压缩感；镜头随打斗动作轻微跟拍晃动；焦点锁定在左侧黑衣男子身上，前景白衣人处于浅景深虚化中；快门速度较慢导致高速动作产生明显动态模糊，正常速度播放。",
+          "motion": "极快且连贯的闪避动作，黑衣男子由后仰格挡转为向左旋转低头俯冲，宽大衣袍与发冠产生剧烈拖影，前景白衣人同步向前压迫。",
+          "subject": "身着黑色铠甲长袍的古代男性（视觉核心），以及右侧前景身着米白色长袍的突袭者。",
+          "lighting": "低调暗调布光，整体环境光极暗；主要依靠画面左后方火盆的暖橙色火光以及上方微弱的冷青色环境散射光勾勒人物轮廓与铠甲反光。",
+          "characters": [
+            {
+              "id": "角色一（黑衣男子）",
+              "pose": "先向后仰身挥剑格挡，随即宽袖甩开向左侧快速扭身低头俯冲闪避",
+              "identity": "身份未知（疑似古代君王或将领）",
+              "wardrobe": "黑色层叠古装长袍，肩部覆有黑色札甲片，腰束金属饰带，手持深色剑柄长剑",
+              "appearance": "中年东亚男性，蓄短须，黑色长发束于头顶，佩戴金属发冠与横簪",
+              "expression": "神情紧绷惊怒，张口似在呼喝，随后低头专注闪避"
+            },
+            {
+              "id": "角色二（白衣人）",
+              "pose": "位于右侧前景，向画面左前方猛然探身突进后略微上移逼近",
+              "identity": "身份未知（背向/侧向镜头，未露正脸）",
+              "wardrobe": "米白色宽松丝麻质地古装长袍，宽大衣袖随动作剧烈摆动",
+              "appearance": "体型与年龄未知",
+              "expression": "未知（背向镜头且高度动态模糊）"
+            }
+          ],
+          "composition": "非对称双人过肩对抗构图。右侧前景为大面积虚化的米白色衣袖形成遮挡，左侧三分线处为动作核心黑衣男子，后景为幽暗大殿立柱与左下角火盆，纵深感强。",
+          "environment": "昏暗深邃的古代宫殿内景，背景可见粗大的深色立柱、雕花墙壁与右侧台阶结构；左后方地面设有一座燃烧的火盆作为局部光源，无其他明显道具。",
+          "sceneDescription": "古装动作近身交锋镜头。画面左侧中景，一名留短须、束发戴金属发冠的中年男子身着黑色古装长袍与肩部札甲，面露惊怒张口呼喝，先挥剑格挡随后宽袖翻飞，迅速向左侧扭身低头俯冲闪避；画面右侧前景，一名身着米白色宽袖长袍的背影人物猛然向左前方突进逼近，处于浅景深虚化中。背景为幽暗的古代石木结构大殿，左后方地面有一盏燃烧的橙黄色火盆，全片带有强烈的快速动态模糊。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "未知（无可用音频轨；基于画面推测可能包含衣物剧烈摩擦声、兵器碰撞声、急促喘息及低沉紧张的配乐，具体音效与音乐未知）",
+          "transcript": "无（语音识别结果为空）"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极快（镜头时长约0.71秒，处于高频动作剪辑序列中）",
+            "techniques": "前后均采用硬切衔接，依靠镜头内部人物高速动作与强动态模糊维持动作连贯性，未见明显特效转场（置信度高）"
+          },
+          "transitionIn": "硬切",
+          "transitionOut": "硬切"
+        },
+        "generationPrompt": "写实古装武侠电影画面，中近景过肩对抗镜头。昏暗幽深的古代石木大殿内，画面左侧中景一名留短须、束发戴金属发冠的中年男子身着黑色古装长袍与肩部札甲，面露惊怒张口呼喝，先挥剑格挡随后宽袖翻飞，迅速向左侧扭身低头俯冲闪避；画面右侧前景一名身着米白色宽袖长袍的背影人物猛然向左前方突进逼近，处于浅景深虚化中。背景有深色立柱、台阶与左后方地面燃烧的橙黄色火盆。暗绿炭黑低饱和电影调色，低调明暗对比布光，暖橙火光与微弱冷青顶光勾勒轮廓，高速动作带有强烈自然动态模糊与胶片颗粒感。音频与剪辑约束：无对白与字幕，音效与配乐未知（可能为衣物破风声与打斗音效），镜头时长约0.71秒，前后硬切，快节奏动作剪辑。\n\n画面与环境: 古装动作近身交锋镜头。画面左侧中景，一名留短须、束发戴金属发冠的中年男子身着黑色古装长袍与肩部札甲，面露惊怒张口呼喝，先挥剑格挡随后宽袖翻飞，迅速向左侧扭身低头俯冲闪避；画面右侧前景，一名身着米白色宽袖长袍的背影人物猛然向左前方突进逼近，处于浅景深虚化中。背景为幽暗的古代石木结构大殿，左后方地面有一盏燃烧的橙黄色火盆，全片带有强烈的快速动态模糊。；身着黑色铠甲长袍的古代男性（视觉核心），以及右侧前景身着米白色长袍的突袭者。；昏暗深邃的古代宫殿内景，背景可见粗大的深色立柱、雕花墙壁与右侧台阶结构；左后方地面设有一座燃烧的火盆作为局部光源，无其他明显道具。\n\n人物与动作: id: 角色一（黑衣男子）; identity: 身份未知（疑似古代君王或将领）; appearance: 中年东亚男性，蓄短须，黑色长发束于头顶，佩戴金属发冠与横簪; wardrobe: 黑色层叠古装长袍，肩部覆有黑色札甲片，腰束金属饰带，手持深色剑柄长剑; expression: 神情紧绷惊怒，张口似在呼喝，随后低头专注闪避; pose: 先向后仰身挥剑格挡，随即宽袖甩开向左侧快速扭身低头俯冲闪避; id: 角色二（白衣人）; identity: 身份未知（背向/侧向镜头，未露正脸）; appearance: 体型与年龄未知; wardrobe: 米白色宽松丝麻质地古装长袍，宽大衣袖随动作剧烈摆动; expression: 未知（背向镜头且高度动态模糊）; pose: 位于右侧前景，向画面左前方猛然探身突进后略微上移逼近；0.00秒至0.25秒：右侧白衣人向前突进，黑衣男子向后仰身并挥剑格挡；0.25秒至0.50秒：黑衣男子宽袖甩开，向左侧急速旋转后撤；0.50秒至0.71秒：黑衣男子大幅低头俯身躲避，白衣人重心上移持续压迫。；极快且连贯的闪避动作，黑衣男子由后仰格挡转为向左旋转低头俯冲，宽大衣袍与发冠产生剧烈拖影，前景白衣人同步向前压迫。\n\n镜头与构图: 中近景平视机位，带有标准至略微长焦的压缩感；镜头随打斗动作轻微跟拍晃动；焦点锁定在左侧黑衣男子身上，前景白衣人处于浅景深虚化中；快门速度较慢导致高速动作产生明显动态模糊，正常速度播放。；非对称双人过肩对抗构图。右侧前景为大面积虚化的米白色衣袖形成遮挡，左侧三分线处为动作核心黑衣男子，后景为幽暗大殿立柱与左下角火盆，纵深感强。\n\n光影与质感: 低调暗调布光，整体环境光极暗；主要依靠画面左后方火盆的暖橙色火光以及上方微弱的冷青色环境散射光勾勒人物轮廓与铠甲反光。；高对比度暗绿与炭黑主色调，搭配米白色服饰形成明暗反差，左下角火焰呈现饱和的暖橙黄色，整体电影感冷峻低饱和。；写实主义古装武侠电影质感，胶片颗粒感明显，强调高速肢体对抗与自然动态模糊。\n\n声音: transcript: 无（语音识别结果为空）; soundStyle: 未知（无可用音频轨；基于画面推测可能包含衣物剧烈摩擦声、兵器碰撞声、急促喘息及低沉紧张的配乐，具体音效与音乐未知）\n\n节奏与转场: transitionIn: 硬切; transitionOut: 硬切; editing: pacing: 极快（镜头时长约0.71秒，处于高频动作剪辑序列中）; techniques: 前后均采用硬切衔接，依靠镜头内部人物高速动作与强动态模糊维持动作连贯性，未见明显特效转场（置信度高）",
+        "duration": 0.708334,
+        "createdAt": "2026-11-12T09:53:24.376819+00:00",
+        "updatedAt": "2026-11-12T09:53:24.376819+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:53:15.320Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "87cf8213-0b7d-4411-9c0f-0c9357166d6f",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "d60991af-6a5a-474c-be32-4b943f36d9d3",
+        "sceneIndex": 17,
+        "story": {
+          "endTime": 29.792,
+          "summary": "重甲将军手持长剑刺穿白袍男子的胸膛，背景烈火熊熊燃烧，男子发出痛苦嘶吼。",
+          "startTime": 27.625,
+          "sceneIndex": 17
+        },
+        "visual": {
+          "color": "饱和浓烈的猩红、赤橙与火黄色为主调，黑甲深沉，白袍在红光下呈粉橘色。",
+          "style": "史诗历史战争动作片风格，胶片质感，高反差电影感。",
+          "action": "将军将长剑推入白袍男子胸口，剑身横穿胸膛；白袍男子承受贯穿痛苦向后仰靠嘶吼，背景烈焰剧烈翻腾。",
+          "camera": "中景双人侧拍镜头，平视视角，焦距约50mm，景深适中，主体焦点位于剑身刺入处与二人面部。",
+          "motion": "剑势推进微动，受害者因剧痛轻微颤抖仰倒，火焰高速翻滚流动。",
+          "subject": "被长剑刺穿胸膛的受害者与行刑的铠甲将军。",
+          "lighting": "强烈的火焰逆光与轮廓光，前景人物背光呈深色半剪影，暗部被红光晕染，高对比度戏剧性光影。",
+          "characters": [
+            {
+              "pose": "身体前倾，单手紧握剑柄向前平刺。",
+              "identity": "黑甲将军",
+              "wardrobe": "黑色中式重型鳞甲、饰有金色纹样护腕，束发。",
+              "expression": "神色冷酷决绝，侧颜紧绷。"
+            },
+            {
+              "pose": "向后瘫坐依附于立柱或御座旁，双臂受创无力垂落。",
+              "identity": "白袍男子",
+              "wardrobe": "染血的米白交领长袍，腰系布带，发型凌乱微散。",
+              "expression": "张口痛呼，双目紧闭，神情痛苦绝望。"
+            }
+          ],
+          "composition": "对峙式三分构图，左侧黑甲将军占据左侧画幅，右侧白袍受害者居右，正中央留给刺入的长剑及明亮的火焰背景，形成明暗剪影对冲。",
+          "environment": "起火的古代殿堂，背景为翻滚的巨大火焰与浓烟，四周由深色木柱或殿宇结构包围。",
+          "sceneDescription": "室内宫殿中，左侧身着黑铁鳞甲的将军持剑平刺，剑尖贯穿右侧靠墙瘫坐的白袍男子胸口。背景中央是巨大的熊熊烈火，火光将整个场景染成血红与金黄色。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "殿宇崩塌与烈焰呼啸声。",
+          "musicStyle": "低沉悲壮的管弦乐与重击鼓点。",
+          "soundEffects": "利刃刺破血肉的沉闷声响、男子痛苦嘶吼声以及背景巨大的烈火燃烧轰鸣。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "凝重而极具张力的高潮定格感",
+            "techniques": "硬切入，定镜头短停顿后硬切出"
+          }
+        },
+        "generationPrompt": "电影级中景侧拍镜头，中国古代宫殿内，背景是翻滚爆裂的金色与猩红烈火。左侧一名身穿精细黑金重型鳞甲的中式将军，眼神冷酷，单手手持长剑平刺向前；右侧一名身穿染血米白长袍的男子被剑尖贯穿胸膛，痛苦仰面张口嘶吼，身躯靠向雕花木柱。逆光火海勾勒出两人深邃的轮廓光，浓烟与火星飘散，高对比度红黄暖色调，胶片颗粒质感，史诗悲壮氛围，无字幕，8k高画质。\n\n画面与环境: 室内宫殿中，左侧身着黑铁鳞甲的将军持剑平刺，剑尖贯穿右侧靠墙瘫坐的白袍男子胸口。背景中央是巨大的熊熊烈火，火光将整个场景染成血红与金黄色。；被长剑刺穿胸膛的受害者与行刑的铠甲将军。；起火的古代殿堂，背景为翻滚的巨大火焰与浓烟，四周由深色木柱或殿宇结构包围。\n\n人物与动作: identity: 黑甲将军; wardrobe: 黑色中式重型鳞甲、饰有金色纹样护腕，束发。; expression: 神色冷酷决绝，侧颜紧绷。; pose: 身体前倾，单手紧握剑柄向前平刺。; identity: 白袍男子; wardrobe: 染血的米白交领长袍，腰系布带，发型凌乱微散。; expression: 张口痛呼，双目紧闭，神情痛苦绝望。; pose: 向后瘫坐依附于立柱或御座旁，双臂受创无力垂落。；将军将长剑推入白袍男子胸口，剑身横穿胸膛；白袍男子承受贯穿痛苦向后仰靠嘶吼，背景烈焰剧烈翻腾。；剑势推进微动，受害者因剧痛轻微颤抖仰倒，火焰高速翻滚流动。\n\n镜头与构图: 中景双人侧拍镜头，平视视角，焦距约50mm，景深适中，主体焦点位于剑身刺入处与二人面部。；对峙式三分构图，左侧黑甲将军占据左侧画幅，右侧白袍受害者居右，正中央留给刺入的长剑及明亮的火焰背景，形成明暗剪影对冲。\n\n光影与质感: 强烈的火焰逆光与轮廓光，前景人物背光呈深色半剪影，暗部被红光晕染，高对比度戏剧性光影。；饱和浓烈的猩红、赤橙与火黄色为主调，黑甲深沉，白袍在红光下呈粉橘色。；史诗历史战争动作片风格，胶片质感，高反差电影感。\n\n声音: soundEffects: 利刃刺破血肉的沉闷声响、男子痛苦嘶吼声以及背景巨大的烈火燃烧轰鸣。; ambient: 殿宇崩塌与烈焰呼啸声。; musicStyle: 低沉悲壮的管弦乐与重击鼓点。\n\n节奏与转场: editing: pacing: 凝重而极具张力的高潮定格感; techniques: 硬切入，定镜头短停顿后硬切出",
+        "duration": 2.167,
+        "createdAt": "2026-11-12T09:54:11.108991+00:00",
+        "updatedAt": "2026-11-12T09:54:11.108991+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:54:04.035Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      }
+    ],
+    "allSceneVersions": [
+      {
+        "id": "64639a80-b88a-427a-a0aa-e36f669c09dc",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "631e4ffb-ede7-4876-ad1d-112da91323b0",
+        "sceneIndex": 1,
+        "story": {
+          "endTime": 0.875,
+          "summary": "朝堂大殿内，一名身着白袍的策士手持卷轴面向高处的王座与台阶，群臣肃立两旁。",
+          "startTime": 0,
+          "sceneIndex": 1
+        },
+        "visual": {
+          "color": "暗黑与琥珀金主调，强烈的暖黄火光与深冷阴影对比。",
+          "style": "史诗东方神话奇幻电影质感，写实质感与厚重历史氛围。",
+          "action": "白袍男子双手托举展开的卷轴，身体微侧面向高台王座；台阶两侧侍臣静默伫立，火光摇曳。",
+          "camera": "中远景，低角度仰拍，广角微畸变，固定镜头，焦点在左侧持卷男子与延伸台阶。",
+          "motion": "人物微幅呼吸静态站立，背景火焰微动，镜头几近静止。",
+          "subject": "前景左侧的白袍男子，发髻高束，侧身向右前方台阶顶端的王座示意。",
+          "lighting": "低调火光照明，暖橙色摇曳火光映照主体轮廓与台阶边缘，大面积阴影与高对比度黑金质感。",
+          "characters": "主角为手持卷轴的白袍策士；中景台阶栏杆旁立有数名深色服饰朝臣；远景王座旁有侍者与隐约坐席。",
+          "composition": "三分法则，左侧前景为白袍主角与青铜巨器，右侧由右下向左上延伸的宽阔台阶形成对角线引导演示高处的王座。",
+          "environment": "庄严昏暗的东方玄幻风格皇宫大殿，巨型青铜鼎立于立柱旁，层层石阶通向高台王座，火盆燃着烈火。",
+          "sceneDescription": "宏伟幽暗的古代宫殿大厅，右侧为通往高耸王座的宽大石阶，台阶两侧点缀火盆与守卫群臣。左前景立着一名身穿宽大米白色道袍、手持半展卷轴的长发男子。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的大殿环境氛围音与火盆燃烧声。",
+          "transcript": []
+        },
+        "transition": {
+          "in": "start",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极短建立镜头，节奏凝重沉稳。",
+            "techniques": "硬切（Hard cut）进入。"
+          }
+        },
+        "generationPrompt": "电影质感，低角度仰拍古代宏伟大殿。左前景站立一位身着宽大米白色古装长袍的男子，手托展开的书卷面朝台阶。右侧是宽阔雄伟的石阶直通高处辉煌王座，台阶两侧侍立文武百官，火盆跳动橙红烈焰。暗色调黑金色调，火光侧逆光勾勒人物边缘，厚重大气，8k分辨率。\n\n画面与环境: 宏伟幽暗的古代宫殿大厅，右侧为通往高耸王座的宽大石阶，台阶两侧点缀火盆与守卫群臣。左前景立着一名身穿宽大米白色道袍、手持半展卷轴的长发男子。；前景左侧的白袍男子，发髻高束，侧身向右前方台阶顶端的王座示意。；庄严昏暗的东方玄幻风格皇宫大殿，巨型青铜鼎立于立柱旁，层层石阶通向高台王座，火盆燃着烈火。\n\n人物与动作: 主角为手持卷轴的白袍策士；中景台阶栏杆旁立有数名深色服饰朝臣；远景王座旁有侍者与隐约坐席。；白袍男子双手托举展开的卷轴，身体微侧面向高台王座；台阶两侧侍臣静默伫立，火光摇曳。；人物微幅呼吸静态站立，背景火焰微动，镜头几近静止。\n\n镜头与构图: 中远景，低角度仰拍，广角微畸变，固定镜头，焦点在左侧持卷男子与延伸台阶。；三分法则，左侧前景为白袍主角与青铜巨器，右侧由右下向左上延伸的宽阔台阶形成对角线引导演示高处的王座。\n\n光影与质感: 低调火光照明，暖橙色摇曳火光映照主体轮廓与台阶边缘，大面积阴影与高对比度黑金质感。；暗黑与琥珀金主调，强烈的暖黄火光与深冷阴影对比。；史诗东方神话奇幻电影质感，写实质感与厚重历史氛围。\n\n声音: soundStyle: 低沉压抑的大殿环境氛围音与火盆燃烧声。\n\n节奏与转场: editing: pacing: 极短建立镜头，节奏凝重沉稳。; techniques: 硬切（Hard cut）进入。",
+        "duration": 0.875,
+        "createdAt": "2026-11-12T09:46:55.118754+00:00",
+        "updatedAt": "2026-11-12T09:46:55.118754+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:46:55.076Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "c90f09b1-78aa-4eb1-bd8f-82fa16f779a6",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "f376d96b-5fa5-4bec-a3da-55cc013e75c2",
+        "sceneIndex": 2,
+        "story": {
+          "endTime": 2.667,
+          "summary": "水畔芦苇丛边，一名黑衣人立于小舟上，岸边列队肃立的将士向其拱手作揖行礼送行。",
+          "startTime": 0.875,
+          "sceneIndex": 2
+        },
+        "visual": {
+          "color": "青灰与暗绿为主色调，冷暖微弱交织，水面和天空呈淡青黄，具有电影质感历史厚重感。",
+          "style": "写实历史古装电影风格，画面沉稳冷峻，纹理细腻。",
+          "action": "船上的人静立凝视岸边，岸上众将士双手交叠于胸前，身形微躬，维持抱拳作揖的送别礼仪。",
+          "camera": "全景远景结合，低机位平视，固定镜头微幅推进，大景深展现两岸对峙送别的层次感。",
+          "motion": "人物动作极其微幅凝重，芦苇微风摆动，水面波纹轻晃。",
+          "subject": "舟上的黑衣人物与岸边列队行礼的群臣将士。",
+          "lighting": "自然漫射光，暗调清晨/黄昏光照，低反差微弱轮廓光。",
+          "characters": "左侧船头立着一位身着深黑色厚重披风长袍、发髻高束的神秘人物；右侧岸边站立数十名束发戴冠的古代兵卒与将官，着暗色军服或官袍，姿态整齐恭敬。",
+          "composition": "左右对峙构图。左侧三分之一为舟上主角与高耸芦苇，右侧纵向延伸为列队将士，中央留出水面通道形成视线引导。",
+          "environment": "野外水域浅滩与芦苇丛，背景远处水面雾气弥漫，天空泛着昏黄暗沉的光，带有湿润清冷的萧瑟氛围。",
+          "sceneDescription": "清晨或暮色下的水泽芦苇荡，左侧一叶木舟上立有一名着深色长袍挽发的背影人物；右侧水岸边缘整齐排列着众多身着古装甲胄与袍服的将士，正齐齐向小舟方向拱手行礼作揖。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "speech": "无对白",
+          "musicStyle": "低沉肃穆的管弦或鼓点氛围铺底音乐",
+          "soundEffects": "芦苇轻微风吹声与微弱水流波纹声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢沉重，留白悠长",
+            "techniques": "硬切（前后切点明确）"
+          }
+        },
+        "generationPrompt": "电影质感全景镜头，中国古代清冷水泽。左侧近景一艘木舟停靠在丛生的高耸芦苇边，一位身穿黑色连帽厚斗篷、束发背影的人物静立船头；右侧浅滩水岸上整齐伫立着两纵队长排列的古代将士与将官，身穿深灰和墨绿战袍，整齐划一地面向木舟拱手作揖行礼。远景水天相接，水面飘浮着薄雾，微弱的晨暮日光，青绿冷灰调，极简微风动态，严肃深沉的史诗史剧氛围，超高细节，8k摄影机拍摄。\n\n画面与环境: 清晨或暮色下的水泽芦苇荡，左侧一叶木舟上立有一名着深色长袍挽发的背影人物；右侧水岸边缘整齐排列着众多身着古装甲胄与袍服的将士，正齐齐向小舟方向拱手行礼作揖。；舟上的黑衣人物与岸边列队行礼的群臣将士。；野外水域浅滩与芦苇丛，背景远处水面雾气弥漫，天空泛着昏黄暗沉的光，带有湿润清冷的萧瑟氛围。\n\n人物与动作: 左侧船头立着一位身着深黑色厚重披风长袍、发髻高束的神秘人物；右侧岸边站立数十名束发戴冠的古代兵卒与将官，着暗色军服或官袍，姿态整齐恭敬。；船上的人静立凝视岸边，岸上众将士双手交叠于胸前，身形微躬，维持抱拳作揖的送别礼仪。；人物动作极其微幅凝重，芦苇微风摆动，水面波纹轻晃。\n\n镜头与构图: 全景远景结合，低机位平视，固定镜头微幅推进，大景深展现两岸对峙送别的层次感。；左右对峙构图。左侧三分之一为舟上主角与高耸芦苇，右侧纵向延伸为列队将士，中央留出水面通道形成视线引导。\n\n光影与质感: 自然漫射光，暗调清晨/黄昏光照，低反差微弱轮廓光。；青灰与暗绿为主色调，冷暖微弱交织，水面和天空呈淡青黄，具有电影质感历史厚重感。；写实历史古装电影风格，画面沉稳冷峻，纹理细腻。\n\n声音: speech: 无对白; soundEffects: 芦苇轻微风吹声与微弱水流波纹声; musicStyle: 低沉肃穆的管弦或鼓点氛围铺底音乐\n\n节奏与转场: editing: pacing: 缓慢沉重，留白悠长; techniques: 硬切（前后切点明确）",
+        "duration": 1.792,
+        "createdAt": "2026-11-12T09:46:44.482806+00:00",
+        "updatedAt": "2026-11-12T09:46:44.482806+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:46:44.435Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "29f28fd6-167b-4f18-8b31-8a660488f6bf",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "5e25263e-3208-4a06-b40f-06e359166254",
+        "sceneIndex": 3,
+        "story": {
+          "endTime": 4.583,
+          "summary": "黄昏日落时分，一名持剑武士乘一叶扁舟在水面上前行，水岸边集结着大批人群，空中飞鸟掠过，氛围苍凉肃穆。",
+          "startTime": 2.667,
+          "sceneIndex": 3
+        },
+        "visual": {
+          "color": "浓烈饱和的橙红、金黄与暗青、纯黑剪影形成强烈冷暖及明暗反差，带有东方史诗古典质感。",
+          "style": "写实东方古装武侠史诗风格，兼具意境与电影画质。",
+          "action": "小船在水面平缓向前滑行，武士静立不动，衣角微拂；天空中飞鸟自右上方朝左上方振翅滑翔掠过画面。",
+          "camera": "全景远摄，低机位平视，固定机位或极缓慢水平前移，大景深展现壮丽落日全景。",
+          "motion": "船体平稳轻微水面位移，飞鸟平缓扇翅飞行，水纹与轻烟慢速流动。",
+          "subject": "立于船头的持剑武士剪影，身着长袍战甲，束发，手握佩剑，姿态挺拔凝重。",
+          "lighting": "逆光剪影照明。强烈且温暖的夕阳作为主光源，将人物与景物边缘勾勒出微弱轮廓光，主体呈现清晰暗黑剪影。",
+          "characters": "主角武士（左侧剪影），右侧岸边密集的士兵或随从队列剪影，以及近岸处一名坐姿或划桨人物。",
+          "composition": "三分法则与对角线构图。左侧重点为立于船头的武士剪影，右下方为岸边人群，上方保留大面积落日云霞与飞鸟，虚实对比强烈。",
+          "environment": "开阔水域，远景为低矮山峦与落日熔金的晚霞天空；右侧为长满芦苇的浅滩岸边，水面微波荡漾。",
+          "sceneDescription": "夕阳染红天际，湖面烟波浩渺。左侧前景小船上一名武士持剑而立，背光形成全身剪影；右侧岸边芦苇丛后整齐排列着人群；空中有一只飞鸟划过晚霞。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉悠扬的古风管弦乐或笛声，伴随水流波动声和远方苍凉的风声。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓凝重，镜头停留稳定",
+            "techniques": "硬切进入，硬切退出"
+          }
+        },
+        "generationPrompt": "电影级宽画幅全景，壮丽浓烈的夕阳晚霞映照天空与水面。画面左侧，一艘小木船平稳漂浮在水上，一名中国古代武士手持长剑威严站立，强逆光下呈现清晰黑色剪影，长袍与发丝在微风中轻微摆动。画面右上空一只飞鸟掠过橙红色的云层。右侧芦苇浅滩边整齐列队伫立着大批沉默的人群剪影。暖橙色调与深暗暗部形成极致明暗反差，东方武侠意境，史诗感，极高细节与质感。\n\n画面与环境: 夕阳染红天际，湖面烟波浩渺。左侧前景小船上一名武士持剑而立，背光形成全身剪影；右侧岸边芦苇丛后整齐排列着人群；空中有一只飞鸟划过晚霞。；立于船头的持剑武士剪影，身着长袍战甲，束发，手握佩剑，姿态挺拔凝重。；开阔水域，远景为低矮山峦与落日熔金的晚霞天空；右侧为长满芦苇的浅滩岸边，水面微波荡漾。\n\n人物与动作: 主角武士（左侧剪影），右侧岸边密集的士兵或随从队列剪影，以及近岸处一名坐姿或划桨人物。；小船在水面平缓向前滑行，武士静立不动，衣角微拂；天空中飞鸟自右上方朝左上方振翅滑翔掠过画面。；船体平稳轻微水面位移，飞鸟平缓扇翅飞行，水纹与轻烟慢速流动。\n\n镜头与构图: 全景远摄，低机位平视，固定机位或极缓慢水平前移，大景深展现壮丽落日全景。；三分法则与对角线构图。左侧重点为立于船头的武士剪影，右下方为岸边人群，上方保留大面积落日云霞与飞鸟，虚实对比强烈。\n\n光影与质感: 逆光剪影照明。强烈且温暖的夕阳作为主光源，将人物与景物边缘勾勒出微弱轮廓光，主体呈现清晰暗黑剪影。；浓烈饱和的橙红、金黄与暗青、纯黑剪影形成强烈冷暖及明暗反差，带有东方史诗古典质感。；写实东方古装武侠史诗风格，兼具意境与电影画质。\n\n声音: soundStyle: 低沉悠扬的古风管弦乐或笛声，伴随水流波动声和远方苍凉的风声。\n\n节奏与转场: editing: pacing: 舒缓凝重，镜头停留稳定; techniques: 硬切进入，硬切退出",
+        "duration": 1.916,
+        "createdAt": "2026-11-12T09:47:22.88206+00:00",
+        "updatedAt": "2026-11-12T09:47:22.88206+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:47:22.840Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "18aa2796-1069-44ca-b24b-07049fc26411",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "fd4ef892-bd3d-47a7-a836-3cd89a16c214",
+        "sceneIndex": 4,
+        "story": {
+          "endTime": 6.583,
+          "summary": "幽暗的古风大殿内，两名黑袍男子隔案对坐成剪影，青绿色薄雾笼罩远景，气氛静穆紧张。",
+          "startTime": 4.583,
+          "sceneIndex": 4
+        },
+        "visual": {
+          "color": "青蓝冷调与墨黑剪影为主，辅以小范围暖黄色烛火形成冷暖对比，具水墨电影质感。",
+          "style": "冷峻、极简古风武侠电影风格，高对比度低调摄影。",
+          "action": "二人相对静坐无大幅动作，烛火轻微跳跃，神情隐于阴影中维持对峙气场。",
+          "camera": "全景固定镜头，正面对称视角，平视机位，深焦景深。",
+          "motion": "画面近乎静止，仅见烛光微动与极其轻微的气流流动感。",
+          "subject": "案几两侧对峙的两个古装男子剪影。",
+          "lighting": "逆光剪影照明，背景大面积漫射青绿色冷调天光，几案上与两侧点缀数盏暖黄蜡烛点光源。",
+          "characters": "左侧男子头挽发髻，着长袍；右侧男子头戴发冠，微现须髯轮廓；二人均呈黑色纯剪影状态，端坐不动。",
+          "composition": "严格的中心对称构图，两侧柱石与垂帘形成框景，二人分列左右黄金分割区域，中心为长案及后方大殿通道。",
+          "environment": "开敞式古典中式殿阁或水榭，背景有灰色古典建筑轮廓与帷幔遮掩，空气中弥漫青绿色烟雾，地面隐见暗色水光反光。",
+          "sceneDescription": "对称式古典殿宇内，两名古装人物呈剪影侧身相对跪坐于低案两侧，案上及殿柱旁烛光微亮，背景为青绿雾气中幽深的中式建筑与垂幔。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "style": "极简压抑的环境氛围低频嗡鸣或微弱风声，无台词。",
+          "transcript": ""
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉静凝固",
+            "techniques": "硬切"
+          }
+        },
+        "generationPrompt": "电影全景镜头，极简水墨武侠风格。青绿色冷调雾气笼罩的古典中式殿堂内，严格中心对称构图。两名穿汉服长袍、挽发髻的男子呈完全的黑色剪影，端坐在一张低矮木案两侧对视。长案与大殿两侧立柱旁点亮着散发暖黄微光的蜡烛。背景悬挂素色帷幔，隐约可见后方庭院古典大殿轮廓，深色水面反光。冷青色与墨黑高反差基调，平视固定机位，微弱烛火摇曳，肃穆对峙氛围。\n\n画面与环境: 对称式古典殿宇内，两名古装人物呈剪影侧身相对跪坐于低案两侧，案上及殿柱旁烛光微亮，背景为青绿雾气中幽深的中式建筑与垂幔。；案几两侧对峙的两个古装男子剪影。；开敞式古典中式殿阁或水榭，背景有灰色古典建筑轮廓与帷幔遮掩，空气中弥漫青绿色烟雾，地面隐见暗色水光反光。\n\n人物与动作: 左侧男子头挽发髻，着长袍；右侧男子头戴发冠，微现须髯轮廓；二人均呈黑色纯剪影状态，端坐不动。；二人相对静坐无大幅动作，烛火轻微跳跃，神情隐于阴影中维持对峙气场。；画面近乎静止，仅见烛光微动与极其轻微的气流流动感。\n\n镜头与构图: 全景固定镜头，正面对称视角，平视机位，深焦景深。；严格的中心对称构图，两侧柱石与垂帘形成框景，二人分列左右黄金分割区域，中心为长案及后方大殿通道。\n\n光影与质感: 逆光剪影照明，背景大面积漫射青绿色冷调天光，几案上与两侧点缀数盏暖黄蜡烛点光源。；青蓝冷调与墨黑剪影为主，辅以小范围暖黄色烛火形成冷暖对比，具水墨电影质感。；冷峻、极简古风武侠电影风格，高对比度低调摄影。\n\n声音: style: 极简压抑的环境氛围低频嗡鸣或微弱风声，无台词。\n\n节奏与转场: editing: pacing: 沉静凝固; techniques: 硬切",
+        "duration": 2,
+        "createdAt": "2026-11-12T09:47:45.125631+00:00",
+        "updatedAt": "2026-11-12T09:47:45.125631+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:47:45.084Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "afc887fb-075a-4aa3-b010-2acb3157172c",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "0c2818fd-f77f-4a97-9af2-61544a0fe7d0",
+        "sceneIndex": 5,
+        "story": {
+          "endTime": 8.458,
+          "summary": "一名虚焦男子的面庞遮挡在前景右侧，背景是一队头戴斗笠、手持白色旗幡的古代军士在阴郁雾气中肃立对峙。",
+          "startTime": 6.583,
+          "sceneIndex": 5
+        },
+        "visual": {
+          "color": "青灰与暗绿为主的低饱和冷色调，呈现沉重压抑的历史质感。",
+          "style": "写实古装历史正剧电影质感，冷峻肃杀，纹理清晰。",
+          "action": "中景军士身形稳重、冷冷注视前方，白色旗帜在阴风中轻微飘拂；前景人物保持静止对峙姿态。",
+          "camera": "过肩特写视角，浅景深，前景右侧极端虚焦，焦点锁定在中景军士面部，镜头近乎静止。",
+          "motion": "人物几乎静止，仅背景白幡轻微摆动及镜头极轻微呼吸感。",
+          "subject": "右侧前景虚焦人物与中景严整肃立的斗笠军士群体。",
+          "lighting": "冷调漫射自然光，阴沉低对比，面部阴影沉重无明显高光。",
+          "characters": "中景军士神情冷峻，身着暗青色与浅色交领长袍及甲胄，头戴宽檐黑色斗笠；前景男子背光虚焦，仅能辨认深色面容与胡须轮廓。",
+          "composition": "前景遮挡式构图，右侧暗色虚焦占据近半画面，中景主体人物与旗帜位于左侧及中轴，纵深感强烈。",
+          "environment": "被浓雾与灰绿色冷光笼罩的荒野或平原，背景空旷朦胧。",
+          "sceneDescription": "阴冷大雾中，右侧前景是一张极度虚焦、面部暗沉的人物特写轮廓；中景左侧至中部聚焦于数名身着灰袍皮甲、头戴平顶斗笠的古代武士，后方插有随风摆动的白色旗幡，气氛肃杀。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的冷风呼啸与凝重的肃杀氛围音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "缓慢凝重",
+            "techniques": "前后均为硬切"
+          }
+        },
+        "generationPrompt": "电影质感，古装史诗风格。画面右侧前景为一个严重虚焦的古代男子面部暗部特写轮廓；中景聚焦于一队在寒冷大雾中肃立的古代东方武士，他们头戴黑色宽檐平顶斗笠，身着青灰与粗布战袍，神色冷峻，身后高挑着数面在风中微动的白布长旗。深浅景深对比强烈，冷青色低饱和影调，阴暗低对比漫射光，气氛沉凝肃杀。\n\n画面与环境: 阴冷大雾中，右侧前景是一张极度虚焦、面部暗沉的人物特写轮廓；中景左侧至中部聚焦于数名身着灰袍皮甲、头戴平顶斗笠的古代武士，后方插有随风摆动的白色旗幡，气氛肃杀。；右侧前景虚焦人物与中景严整肃立的斗笠军士群体。；被浓雾与灰绿色冷光笼罩的荒野或平原，背景空旷朦胧。\n\n人物与动作: 中景军士神情冷峻，身着暗青色与浅色交领长袍及甲胄，头戴宽檐黑色斗笠；前景男子背光虚焦，仅能辨认深色面容与胡须轮廓。；中景军士身形稳重、冷冷注视前方，白色旗帜在阴风中轻微飘拂；前景人物保持静止对峙姿态。；人物几乎静止，仅背景白幡轻微摆动及镜头极轻微呼吸感。\n\n镜头与构图: 过肩特写视角，浅景深，前景右侧极端虚焦，焦点锁定在中景军士面部，镜头近乎静止。；前景遮挡式构图，右侧暗色虚焦占据近半画面，中景主体人物与旗帜位于左侧及中轴，纵深感强烈。\n\n光影与质感: 冷调漫射自然光，阴沉低对比，面部阴影沉重无明显高光。；青灰与暗绿为主的低饱和冷色调，呈现沉重压抑的历史质感。；写实古装历史正剧电影质感，冷峻肃杀，纹理清晰。\n\n声音: soundStyle: 低沉压抑的冷风呼啸与凝重的肃杀氛围音。\n\n节奏与转场: editing: pacing: 缓慢凝重; techniques: 前后均为硬切",
+        "duration": 1.875,
+        "createdAt": "2026-11-12T09:49:16.447275+00:00",
+        "updatedAt": "2026-11-12T09:49:16.447275+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:49:16.409Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "d65b063d-346e-4d87-a05b-182d20b8fdce",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "c1f58837-35be-469b-8136-fbe61f5a18a3",
+        "sceneIndex": 6,
+        "story": {
+          "endTime": 11.167,
+          "summary": "在如镜面般倒映天空的旷野浅水中，一人席地弹奏吉他，另一人身着长袍缓步前行，氛围空灵诗意。",
+          "startTime": 8.458,
+          "sceneIndex": 6
+        },
+        "visual": {
+          "color": "淡青蓝与米黄色双色调渐变，低饱和度，温润纯净。",
+          "style": "极简主义写意电影质感，带微弱空气颗粒感。",
+          "action": "吉他手保持坐姿持续拨弦；长袍者平稳慢步跨过水面，荡开极微弱水波。",
+          "camera": "超广角大远景，平视固定机位，大景深，主体置于画面左右两侧三分线位置。",
+          "motion": "人物步伐极缓，空气中微粒漂浮，水面动态近乎静止。",
+          "subject": "旷野水面上的弹奏者与漫步者剪影",
+          "lighting": "柔和漫射背光，弱对比，人物呈现高反差剪影质感。",
+          "characters": "左侧乐手着深色衣物坐地弹唱；右侧漫步者着深色长袍缓步前行，面部细节弱化为剪影。",
+          "composition": "极简对称平衡构图，中心大面积留白，形成疏离空旷的空间纵深感。",
+          "environment": "天空之镜般的水平浅水地表，倒影清晰；背景为青绿色与淡鹅黄色渐变的天空与薄雾。",
+          "sceneDescription": "极简浅水倒影平原，左侧人物盘坐弹吉他，右侧长袍人物向外漫步，天地间呈青黄渐变微光，飘浮细微微粒。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "轻柔抒情的原声吉他弹拨配乐",
+          "ambient": "开阔空旷的微风环境声",
+          "soundEffects": "微弱不可闻的踏水声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "舒缓静谧",
+            "techniques": "固定长镜头，硬切过渡"
+          }
+        },
+        "generationPrompt": "电影级极简大远景。广阔如镜的浅水湖面，倒映着苍茫天际。画面左侧一人席地盘坐弹奏木吉他呈深色剪影，右侧一人身着飘逸深色长袍缓慢向前迈步，水面清晰倒映其身影。画面中央大面积留白，天空呈现淡青灰与浅暖黄交融的柔和渐变，带有微光薄雾与细碎漂浮微粒。固定摄影机平视拍摄，柔和逆光剪影风格，色调极简雅致，意境空灵寂静。\n\n画面与环境: 极简浅水倒影平原，左侧人物盘坐弹吉他，右侧长袍人物向外漫步，天地间呈青黄渐变微光，飘浮细微微粒。；旷野水面上的弹奏者与漫步者剪影；天空之镜般的水平浅水地表，倒影清晰；背景为青绿色与淡鹅黄色渐变的天空与薄雾。\n\n人物与动作: 左侧乐手着深色衣物坐地弹唱；右侧漫步者着深色长袍缓步前行，面部细节弱化为剪影。；吉他手保持坐姿持续拨弦；长袍者平稳慢步跨过水面，荡开极微弱水波。；人物步伐极缓，空气中微粒漂浮，水面动态近乎静止。\n\n镜头与构图: 超广角大远景，平视固定机位，大景深，主体置于画面左右两侧三分线位置。；极简对称平衡构图，中心大面积留白，形成疏离空旷的空间纵深感。\n\n光影与质感: 柔和漫射背光，弱对比，人物呈现高反差剪影质感。；淡青蓝与米黄色双色调渐变，低饱和度，温润纯净。；极简主义写意电影质感，带微弱空气颗粒感。\n\n声音: ambient: 开阔空旷的微风环境声; music: 轻柔抒情的原声吉他弹拨配乐; soundEffects: 微弱不可闻的踏水声\n\n节奏与转场: editing: pacing: 舒缓静谧; techniques: 固定长镜头，硬切过渡",
+        "duration": 2.709,
+        "createdAt": "2026-11-12T09:49:00.564027+00:00",
+        "updatedAt": "2026-11-12T09:49:00.564027+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:49:00.521Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "55688338-d623-478a-afda-8b931f3acd52",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "f9d0c940-2190-4fcc-95f5-c7aee03eb64f",
+        "sceneIndex": 7,
+        "story": {
+          "endTime": 13.625,
+          "summary": "一名背负长剑的古代侠客剪影，在幽暗宏伟的拱形门洞前，迎着门外炽热的金黄色迷雾强光缓缓向远处走去。",
+          "startTime": 11.167,
+          "sceneIndex": 7
+        },
+        "visual": {
+          "color": "极简冷暖强对比色调。大面积深墨黑与暗青灰色阴影，对比中央高饱和暖金黄色背景光及左侧局部暖橙色火光。",
+          "style": "东方美学的风格化数字绘景或三维国风动画电影质感，光影高度凝练，带有水墨留白与苍凉史诗氛围。",
+          "action": "0.0秒至2.458秒：人物剪影位于拱门底部中央，迈着平稳缓慢的步伐背对镜头向门外金色光雾中前行；同时左侧火炬台上的火焰持续轻微摇曳跳动。",
+          "camera": "大远景，平视视角，标准至中长焦镜头感，机位完全固定静止，无推拉摇移，景深较大，前中后景轮廓均清晰。",
+          "motion": "整体画面高度克制平稳，仅包含人物微幅向前的步行位移与左侧火苗的轻微摇曳，运动连贯自然。",
+          "subject": "背负长剑的古代东方侠客剪影",
+          "lighting": "极端高反差强逆光剪影布光。门外射入强烈的金黄色漫射天光，将人物压成纯黑剪影；左侧火炬提供局部暖橙色点光源，在木门表面形成柔和光晕；其余环境处于深重阴影中。",
+          "characters": [
+            {
+              "pose": "背对镜头直立行走，右肩斜背一柄长剑，剑柄露于右肩上方，剑鞘尾端斜伸向左胯侧",
+              "identity": "未知（背影剪影，疑为古代剑客或武者）",
+              "wardrobe": "宽松深色古风长袍，下摆垂至脚踝",
+              "appearance": "全身呈纯黑逆光剪影，头顶束有发髻，身形修长",
+              "expression": "未知（完全背对镜头且处于剪影暗部）"
+            }
+          ],
+          "composition": "严格中心对称构图。前景左右下角为灰白雾气与暗色地面；中景为占据画幅绝大部分的漆黑墙体、左侧火炬与人物剪影；背景为中央拱门框住的纯净金黄色强光区域，人物位于拱门中轴线偏下位置。",
+          "environment": "宏伟幽暗的古代东方宫殿或城关内部通道，中央为高大拱形出口，门洞左侧嵌有厚重竖纹木门与火炬台，门外为明亮的金色光雾空间，两侧前景地面有灰白积雪或低矮烟雾。",
+          "sceneDescription": "对称式大远景剪影画面。画面正中央是一座高大的拱形门洞，门外弥漫着明亮饱和的金黄色强光与薄雾。门洞底部中央，一名头束发髻、身穿长袍、右肩斜背长剑的黑色人物剪影背对镜头缓缓向门外走去。门洞四周被浓重的墨黑色建筑墙体包围，门洞左侧立有一座火炬台，跳动的橙红色火光照亮了后方深色竖纹木门的局部纹理；左右两侧前景地面覆盖着灰白色薄雾或积雪，向中央深色通道汇聚。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "未知（语音转录为空；画面呈现极度静谧、空灵的氛围，可能配有低沉风声、微弱火焰燃烧声或克制的史诗感背景音乐，具体音轨未知）",
+          "transcript": []
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "缓慢、沉稳、富有仪式感，单镜头持续2.458秒，内部动态极微",
+            "techniques": [
+              "硬切转场（置信度：高，依据输入转场元数据）",
+              "固定镜头凝视（置信度：高，依据三帧画面机位零位移）"
+            ]
+          }
+        },
+        "generationPrompt": "中国古风三维动画电影质感，对称式大远景，固定机位。幽暗宏伟的古代城门内部，画面正中央是一座高大的拱形门洞，门外透出极其明亮饱和的金黄色迷雾强光。门洞底部正中，一名头束发髻、身穿长袍、右肩斜背长剑的侠客呈纯黑逆光剪影，背对镜头缓缓向门外金色光芒中走去。门洞四周被浓重的墨黑色墙体包围，门洞左侧立着一座石质火炬台，跳动的暖橙色火光照亮后方深色竖纹木门的局部细节；左右前景地面铺展着灰白色薄雾与积雪，向中央暗色通道汇聚。极致明暗对比与冷暖撞色，光影凝练，氛围苍凉肃穆。音频与剪辑约束：无对白与字幕，环境音可能为极简风声或低沉氛围音效（未知），前后均为硬切，镜头全程静止。\n\n画面与环境: 对称式大远景剪影画面。画面正中央是一座高大的拱形门洞，门外弥漫着明亮饱和的金黄色强光与薄雾。门洞底部中央，一名头束发髻、身穿长袍、右肩斜背长剑的黑色人物剪影背对镜头缓缓向门外走去。门洞四周被浓重的墨黑色建筑墙体包围，门洞左侧立有一座火炬台，跳动的橙红色火光照亮了后方深色竖纹木门的局部纹理；左右两侧前景地面覆盖着灰白色薄雾或积雪，向中央深色通道汇聚。；背负长剑的古代东方侠客剪影；宏伟幽暗的古代东方宫殿或城关内部通道，中央为高大拱形出口，门洞左侧嵌有厚重竖纹木门与火炬台，门外为明亮的金色光雾空间，两侧前景地面有灰白积雪或低矮烟雾。\n\n人物与动作: identity: 未知（背影剪影，疑为古代剑客或武者）; appearance: 全身呈纯黑逆光剪影，头顶束有发髻，身形修长; wardrobe: 宽松深色古风长袍，下摆垂至脚踝; expression: 未知（完全背对镜头且处于剪影暗部）; pose: 背对镜头直立行走，右肩斜背一柄长剑，剑柄露于右肩上方，剑鞘尾端斜伸向左胯侧；0.0秒至2.458秒：人物剪影位于拱门底部中央，迈着平稳缓慢的步伐背对镜头向门外金色光雾中前行；同时左侧火炬台上的火焰持续轻微摇曳跳动。；整体画面高度克制平稳，仅包含人物微幅向前的步行位移与左侧火苗的轻微摇曳，运动连贯自然。\n\n镜头与构图: 大远景，平视视角，标准至中长焦镜头感，机位完全固定静止，无推拉摇移，景深较大，前中后景轮廓均清晰。；严格中心对称构图。前景左右下角为灰白雾气与暗色地面；中景为占据画幅绝大部分的漆黑墙体、左侧火炬与人物剪影；背景为中央拱门框住的纯净金黄色强光区域，人物位于拱门中轴线偏下位置。\n\n光影与质感: 极端高反差强逆光剪影布光。门外射入强烈的金黄色漫射天光，将人物压成纯黑剪影；左侧火炬提供局部暖橙色点光源，在木门表面形成柔和光晕；其余环境处于深重阴影中。；极简冷暖强对比色调。大面积深墨黑与暗青灰色阴影，对比中央高饱和暖金黄色背景光及左侧局部暖橙色火光。；东方美学的风格化数字绘景或三维国风动画电影质感，光影高度凝练，带有水墨留白与苍凉史诗氛围。\n\n声音: soundStyle: 未知（语音转录为空；画面呈现极度静谧、空灵的氛围，可能配有低沉风声、微弱火焰燃烧声或克制的史诗感背景音乐，具体音轨未知）\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 缓慢、沉稳、富有仪式感，单镜头持续2.458秒，内部动态极微; techniques: 硬切转场（置信度：高，依据输入转场元数据）; 固定镜头凝视（置信度：高，依据三帧画面机位零位移）",
+        "duration": 2.458,
+        "createdAt": "2026-11-12T09:50:02.179278+00:00",
+        "updatedAt": "2026-11-12T09:50:02.179278+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:49:57.106Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "50b15add-a9c5-4250-a20e-48e3273c33c8",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "183e987d-4b80-476f-89fe-86c8504b698a",
+        "sceneIndex": 8,
+        "story": {
+          "endTime": 16.167,
+          "summary": "宏伟的东方暗黑奇幻宫殿全景，双巨龙雕像盘踞两侧，微小人群在火光与雾气中仰望并步入大殿。",
+          "startTime": 13.625,
+          "sceneIndex": 8
+        },
+        "visual": {
+          "color": "暗黑史诗电影色调，以深炭黑、暗青灰为基底，搭配高饱和的暗红色垂幔与宫墙，点缀暖金色强逆光与橙黄色火光，冷暖对比鲜明。",
+          "style": "影视级三维CG写实奇幻风格，建模厚重精细，具有强烈的体积光、大气透视与烟雾质感。",
+          "action": "0.0秒至2.542秒：镜头平稳向前推进；首帧左下角前景人影随推镜自然移出画面；殿前与阶梯上的微小人群剪影缓慢移动；火盆火焰微弱跳动，底部薄雾在巨龙底座与阶梯间缓缓流动。",
+          "camera": "大远景（全景），低角度仰拍，广角镜头感，景深极大且深焦清晰，镜头以平稳缓慢的速度向前推进（缓推），画面稳定无晃动。",
+          "motion": "镜头匀速缓慢前推，带来持续的空间纵深感；前景遮挡物自然出画，中远景巨龙与宫殿保持静止庄严，仅雾气与火光有细微动态。",
+          "subject": "巨型双龙雕塑与中式重檐大殿建筑群，辅以殿前微小的剪影人群。",
+          "lighting": "强烈的高反差戏剧性明暗对比，主光源为右上角高处倾泻而下的暖金色逆光，勾勒出右侧巨龙轮廓、大殿金瓦及左侧龙身鳞片的耀眼高光；殿前火盆提供局部暖橙色点光源，其余大面积区域处于冷暗阴影中。",
+          "characters": "殿前广场与阶梯上分布着多名深色着装的微小人物剪影（身份与五官不可见）；首帧左下角前景有一名背对镜头的深色人影肩部轮廓，随镜头推进迅速移出画外。",
+          "composition": "对称式宏大构图，左右两侧巨龙雕塑形成天然画框，将视线引向正中央的重檐大殿与阶梯；前景为极暗的建筑边缘与首帧左下角人影，中景为双龙与台阶火光，远景为大殿主体与右上角高光天隙，通过极小人物与巨兽的体量对比凸显史诗感。",
+          "environment": "幽深宏大的洞穴或峡谷内修建的古代东方宫殿建筑群，包含多层飞檐阁楼、石砌阶梯、石柱、垂挂的红色巨幅帷幔以及多处燃烧的火盆。",
+          "sceneDescription": "低角度仰拍宏伟的东方暗黑奇幻宫殿群，两侧矗立着巨型盘龙雕塑。画面中央为重檐歇山顶古建筑大殿，红柱黑瓦、金饰屋脊，下方有长石阶与燃烧的火盆。左侧高处探出巨龙龙头，中左侧龙身鳞片被金光照亮，旁悬深红巨幅垂幔；右侧巨龙雕像如山岳般拔地而起，张口怒吼，背脊受右上角强逆光勾勒出金边。画面底部有极小的人物剪影在殿前广场与阶梯上活动，薄雾与烟尘在低处弥漫。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "未知（无音频轨道，推测可能配有低沉史诗管弦乐或低频氛围音以烘托宏大压迫感）。",
+          "soundEffects": "未知（画面暗示可能有微弱的火焰燃烧声、风声与宏大空间混响）。",
+          "dialogueSummary": "无对白与人声（语音转写结果为空）。"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "稳重缓慢（2.542秒单镜头持续缓推，营造史诗场景的压迫感与空间展示节奏，置信度：高）。",
+            "techniques": "首尾均采用直接硬切衔接，镜头内部无剪辑切分，依靠单一连续向前推镜完成视觉递进（置信度：高）。"
+          }
+        },
+        "generationPrompt": "东方暗黑奇幻史诗电影感大远景，低角度仰拍，广角镜头平稳缓慢向前推进。幽深宏大的峡谷秘境中矗立着一座古代中式重檐大殿，黑瓦飞檐、红柱金饰，长石阶通向殿门，阶梯与广场两侧燃着暖橙色火盆。宫殿左右两侧盘踞着两尊山岳般巨大的暗色石铜巨龙雕像：左侧上方探出狰狞龙头，中左侧弯曲的龙身鳞片反射着耀眼的暖金色强光，旁悬深红色巨幅垂幔；右侧巨龙拔地而起，朝向大殿张口怒吼，利齿毕露，龙首与背脊被右上角高处倾泻而下的金色逆光勾勒出强烈金边。殿前广场与石阶上分布着数十个极小的黑衣人群剪影缓慢行走，与巨龙形成震撼的体量对比。画面底部弥漫着厚重的体积雾与烟尘，首帧左下角前景边缘的暗色人影随镜头前推自然移出画外。高反差戏剧性明暗对比，冷暗青黑阴影与暖金逆光、深红帷幔、橙红火光交织，影视级写实CG质感，细节丰富，深焦清晰。无对白，无字幕，单镜头硬切起止。\n\n画面与环境: 低角度仰拍宏伟的东方暗黑奇幻宫殿群，两侧矗立着巨型盘龙雕塑。画面中央为重檐歇山顶古建筑大殿，红柱黑瓦、金饰屋脊，下方有长石阶与燃烧的火盆。左侧高处探出巨龙龙头，中左侧龙身鳞片被金光照亮，旁悬深红巨幅垂幔；右侧巨龙雕像如山岳般拔地而起，张口怒吼，背脊受右上角强逆光勾勒出金边。画面底部有极小的人物剪影在殿前广场与阶梯上活动，薄雾与烟尘在低处弥漫。；巨型双龙雕塑与中式重檐大殿建筑群，辅以殿前微小的剪影人群。；幽深宏大的洞穴或峡谷内修建的古代东方宫殿建筑群，包含多层飞檐阁楼、石砌阶梯、石柱、垂挂的红色巨幅帷幔以及多处燃烧的火盆。\n\n人物与动作: 殿前广场与阶梯上分布着多名深色着装的微小人物剪影（身份与五官不可见）；首帧左下角前景有一名背对镜头的深色人影肩部轮廓，随镜头推进迅速移出画外。；0.0秒至2.542秒：镜头平稳向前推进；首帧左下角前景人影随推镜自然移出画面；殿前与阶梯上的微小人群剪影缓慢移动；火盆火焰微弱跳动，底部薄雾在巨龙底座与阶梯间缓缓流动。；镜头匀速缓慢前推，带来持续的空间纵深感；前景遮挡物自然出画，中远景巨龙与宫殿保持静止庄严，仅雾气与火光有细微动态。\n\n镜头与构图: 大远景（全景），低角度仰拍，广角镜头感，景深极大且深焦清晰，镜头以平稳缓慢的速度向前推进（缓推），画面稳定无晃动。；对称式宏大构图，左右两侧巨龙雕塑形成天然画框，将视线引向正中央的重檐大殿与阶梯；前景为极暗的建筑边缘与首帧左下角人影，中景为双龙与台阶火光，远景为大殿主体与右上角高光天隙，通过极小人物与巨兽的体量对比凸显史诗感。\n\n光影与质感: 强烈的高反差戏剧性明暗对比，主光源为右上角高处倾泻而下的暖金色逆光，勾勒出右侧巨龙轮廓、大殿金瓦及左侧龙身鳞片的耀眼高光；殿前火盆提供局部暖橙色点光源，其余大面积区域处于冷暗阴影中。；暗黑史诗电影色调，以深炭黑、暗青灰为基底，搭配高饱和的暗红色垂幔与宫墙，点缀暖金色强逆光与橙黄色火光，冷暖对比鲜明。；影视级三维CG写实奇幻风格，建模厚重精细，具有强烈的体积光、大气透视与烟雾质感。\n\n声音: music: 未知（无音频轨道，推测可能配有低沉史诗管弦乐或低频氛围音以烘托宏大压迫感）。; soundEffects: 未知（画面暗示可能有微弱的火焰燃烧声、风声与宏大空间混响）。; dialogueSummary: 无对白与人声（语音转写结果为空）。\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 稳重缓慢（2.542秒单镜头持续缓推，营造史诗场景的压迫感与空间展示节奏，置信度：高）。; techniques: 首尾均采用直接硬切衔接，镜头内部无剪辑切分，依靠单一连续向前推镜完成视觉递进（置信度：高）。",
+        "duration": 2.542,
+        "createdAt": "2026-11-12T09:50:06.87099+00:00",
+        "updatedAt": "2026-11-12T09:50:06.87099+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:50:06.835Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "072449ad-e1da-4385-8855-3b5aebe13532",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "2756cb1f-3c6a-4825-b623-9d461c56fdfb",
+        "sceneIndex": 9,
+        "story": {
+          "endTime": 18.833,
+          "summary": "幽暗宏伟的大殿内，一名身着白袍的男子在两侧肃立的百官注视下，缓步走向大殿深处的王座。",
+          "startTime": 16.167,
+          "sceneIndex": 9
+        },
+        "visual": {
+          "color": "青黑与墨绿为主色调，局部点缀微弱暖金反光，与主体纯白袍服形成强烈对比。",
+          "style": "史诗历史电影质感，冷峻肃杀，画面极具仪式感与压迫力。",
+          "action": "白袍男子匀速走向远方王座台阶；镜头横向移动，前景立柱短暂遮挡主体后再度显现。",
+          "camera": "远景、俯角，伴随缓慢横移运镜，利用长焦纵深感及前景立柱制造强烈的遮挡视差。",
+          "motion": "摄影机平缓横移，前景立柱平移穿过画面，人物平稳漫步。",
+          "subject": "背对镜头的白袍男子，身着宽大纯白汉服长袍，头束发髻，步伐沉稳走向大殿深处。",
+          "lighting": "冷峻暗调布光，带有微弱顶光与远景暖色烛火，地面形成修长高光倒影，伴有弥漫的丁达尔雾气。",
+          "characters": "两旁按列肃立的百官群臣，身着深色朝服，低头垂手，神态庄严肃穆，隐没在暗影中。",
+          "composition": "纵深对称轴线构图，两列朝臣与巨柱引导视觉至中央王座，白袍主体居于画幅中心偏下。",
+          "environment": "中国古代宏伟正殿，列柱高耸，地面如镜面般光滑反光，远景高台王座隐没在薄雾与微弱火光中。",
+          "sceneDescription": "宏伟古朴的宫廷大殿远景。黑色反光石砖纵深延展至深处王座，两侧群臣整齐肃立。一名白袍男子背对镜头独自前行，前景巨大柱体随运镜产生视差遮挡。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "description": "空旷大殿内的压抑低频环境混响，伴随极微弱的脚步声与肃穆的氛围音。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "沉稳缓慢",
+            "techniques": "硬切出入，长镜头视差平移"
+          }
+        },
+        "generationPrompt": "电影级画面，古代中国宏伟大殿俯视远景。光亮如镜的黑色石板地面向深处延伸至高台王座。一名身穿纯白色宽袖汉服的男子背对镜头走向王座，身形挺拔。两侧排列着身穿黑袍的百官与高大柱廊。镜头缓慢平移，前景粗壮黑柱滑过画面形成遮挡视差。幽暗墨绿色调，空气中带有微弱薄雾与金色烛光漫射，冷峻肃杀的权谋历史大片质感。\n\n画面与环境: 宏伟古朴的宫廷大殿远景。黑色反光石砖纵深延展至深处王座，两侧群臣整齐肃立。一名白袍男子背对镜头独自前行，前景巨大柱体随运镜产生视差遮挡。；背对镜头的白袍男子，身着宽大纯白汉服长袍，头束发髻，步伐沉稳走向大殿深处。；中国古代宏伟正殿，列柱高耸，地面如镜面般光滑反光，远景高台王座隐没在薄雾与微弱火光中。\n\n人物与动作: 两旁按列肃立的百官群臣，身着深色朝服，低头垂手，神态庄严肃穆，隐没在暗影中。；白袍男子匀速走向远方王座台阶；镜头横向移动，前景立柱短暂遮挡主体后再度显现。；摄影机平缓横移，前景立柱平移穿过画面，人物平稳漫步。\n\n镜头与构图: 远景、俯角，伴随缓慢横移运镜，利用长焦纵深感及前景立柱制造强烈的遮挡视差。；纵深对称轴线构图，两列朝臣与巨柱引导视觉至中央王座，白袍主体居于画幅中心偏下。\n\n光影与质感: 冷峻暗调布光，带有微弱顶光与远景暖色烛火，地面形成修长高光倒影，伴有弥漫的丁达尔雾气。；青黑与墨绿为主色调，局部点缀微弱暖金反光，与主体纯白袍服形成强烈对比。；史诗历史电影质感，冷峻肃杀，画面极具仪式感与压迫力。\n\n声音: description: 空旷大殿内的压抑低频环境混响，伴随极微弱的脚步声与肃穆的氛围音。\n\n节奏与转场: editing: pacing: 沉稳缓慢; techniques: 硬切出入，长镜头视差平移",
+        "duration": 2.666,
+        "createdAt": "2026-11-12T09:51:04.203938+00:00",
+        "updatedAt": "2026-11-12T09:51:04.203938+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:51:04.000Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "96ca53b3-44c3-4ce9-8554-d776365798dc",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "be2ba16a-f48d-4183-a6d2-356f13f63794",
+        "sceneIndex": 10,
+        "story": {
+          "endTime": 19.416667,
+          "summary": "特写镜头展示身穿白色长袍和白靴的人物在光亮地面上快速走过。",
+          "startTime": 18.833,
+          "sceneIndex": 10
+        },
+        "visual": {
+          "color": "暖金、米白与深棕黑相间的高对比色调。",
+          "style": "电影写实质感，注重布料质地与光洁地面的反射。",
+          "action": "人物双脚交替向前迈步走过，衣摆随着步伐轻微摆动。",
+          "camera": "贴地低角度侧拍特写，浅景深聚焦于足部，镜头轻微横向跟随。",
+          "motion": "靴子向前迈进的匀速运动及下摆微幅晃动。",
+          "subject": "人物走动的小腿及双足。",
+          "lighting": "暖调侧逆光，照亮靴子边缘和衣摆，暗部层次分明。",
+          "characters": "未知角色，身着白色下垂衣袍，脚穿白色靴子。",
+          "composition": "横向运动构图，主体位于中下部，底部有地面反光倒影，背景大面积虚化暗调。",
+          "environment": "室内暗调空间，铺设光滑深色反光地砖，背景虚化且幽暗。",
+          "sceneDescription": "地面极低角度特写，身穿白色垂坠长袍与白色平底靴的人物从画面中稳步走过，深色反光地面上倒映出微弱光影。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "深沉幽暗的环境嗡鸣声",
+          "soundEffects": "靴底踩在坚硬光滑地面上的清脆脚步声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极快节奏镜头（约0.58秒）",
+            "techniques": "硬切连接前后镜头"
+          }
+        },
+        "generationPrompt": "地面极低角度侧面特写，电影质感。身穿白色长袍和白色长靴的人物在光滑反光的深色地砖上稳健向前走过，脚步快速交替。暖金色的侧逆光勾勒靴子与飘动下摆的轮廓，地砖上映出清晰的倒影。暗色背景深沉，浅景深，高对比度光影。\n\n画面与环境: 地面极低角度特写，身穿白色垂坠长袍与白色平底靴的人物从画面中稳步走过，深色反光地面上倒映出微弱光影。；人物走动的小腿及双足。；室内暗调空间，铺设光滑深色反光地砖，背景虚化且幽暗。\n\n人物与动作: 未知角色，身着白色下垂衣袍，脚穿白色靴子。；人物双脚交替向前迈步走过，衣摆随着步伐轻微摆动。；靴子向前迈进的匀速运动及下摆微幅晃动。\n\n镜头与构图: 贴地低角度侧拍特写，浅景深聚焦于足部，镜头轻微横向跟随。；横向运动构图，主体位于中下部，底部有地面反光倒影，背景大面积虚化暗调。\n\n光影与质感: 暖调侧逆光，照亮靴子边缘和衣摆，暗部层次分明。；暖金、米白与深棕黑相间的高对比色调。；电影写实质感，注重布料质地与光洁地面的反射。\n\n声音: soundEffects: 靴底踩在坚硬光滑地面上的清脆脚步声; ambient: 深沉幽暗的环境嗡鸣声\n\n节奏与转场: editing: pacing: 极快节奏镜头（约0.58秒）; techniques: 硬切连接前后镜头",
+        "duration": 0.583667,
+        "createdAt": "2026-11-12T09:50:41.894544+00:00",
+        "updatedAt": "2026-11-12T09:50:41.894544+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:50:41.705Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "2bb21f8e-b43c-4ec3-89ac-5e8909764b22",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "1897560f-cdb7-4da8-8ae7-6c486066739f",
+        "sceneIndex": 11,
+        "story": {
+          "endTime": 20.708333,
+          "summary": "一名身穿白袍的剑客背对镜头，在众臣两侧列队肃立的阴暗庄严大殿中，径直朝前方的王座高台走去。",
+          "startTime": 20,
+          "sceneIndex": 11
+        },
+        "visual": {
+          "color": "青灰与暗墨绿基调，主角的米白色与两侧群臣的深黑色形成强烈明暗反差。",
+          "style": "写实古装史诗电影质感，烟气弥漫，庄严肃穆。",
+          "action": "白袍男子保持沉稳步伐从大殿中央纵深向前行进，两侧列队侍臣保持静立肃穆。",
+          "camera": "中景，低角度后方跟拍移动镜头，平稳跟推，景深适中，焦点锁定在行进男子的背影上。",
+          "motion": "主角向前平稳缓步位移，衣袍微摆，摄像机同向平稳向前推移。",
+          "subject": "背影中央的白袍侠客，发髻高束，身披宽松飘逸的米白汉服深衣，腰间束带，背负一柄深色剑鞘的佩剑。",
+          "lighting": "冷调微弱的环境散射光与背光立柱光斑结合，左侧带有微弱暖光侧逆光，整体呈现幽暗肃杀的胶片质感。",
+          "characters": "主角为背向镜头的长袍男子；两侧为两列身穿黑色深红朝服、神情肃穆静立的文武百官与侍从。",
+          "composition": "严格的中央对称透视构图，行进主角居中，两侧群臣形成延伸汇聚线，引向背景高台。",
+          "environment": "宏大压抑的古代帝国宫殿室内，黑色光滑能倒影的地面，高耸柱列，薄雾弥漫，背景深处有王座台阶与烛光灯树。",
+          "sceneDescription": "宏伟幽暗的古代宫殿大殿，两侧列队站立着深色衣袍的群臣侍卫。中央反光地面上，一位身穿米白色长袍、背负长剑的男子背向镜头正步向前走去。远处高台立柱间透出垂直冷光，大殿中弥漫着青灰色的薄雾。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的殿堂氛围低频环境音，伴随回荡的脚步声（可能推断）。",
+          "transcript": ""
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "pacing": "快剪切入，节奏紧凑凝重",
+          "techniques": "前后均为硬切"
+        },
+        "generationPrompt": "古代宏伟大殿内景，中央对称透视构图，电影质感。一名束发髻、身穿米白色宽松汉服古装、背负长剑的男子背对镜头，沿中央光滑反光的黑色石砖地面缓步向前行进。大殿两侧整齐站立着两排身穿黑袍的朝臣。远处背景是高耸立柱和被薄雾笼罩的高台王座，冷白色柔和天光与微弱烛光交织。低角度跟拍镜头平稳向前推进，青灰冷色调，充满史诗般肃穆压抑的氛围。\n\n画面与环境: 宏伟幽暗的古代宫殿大殿，两侧列队站立着深色衣袍的群臣侍卫。中央反光地面上，一位身穿米白色长袍、背负长剑的男子背向镜头正步向前走去。远处高台立柱间透出垂直冷光，大殿中弥漫着青灰色的薄雾。；背影中央的白袍侠客，发髻高束，身披宽松飘逸的米白汉服深衣，腰间束带，背负一柄深色剑鞘的佩剑。；宏大压抑的古代帝国宫殿室内，黑色光滑能倒影的地面，高耸柱列，薄雾弥漫，背景深处有王座台阶与烛光灯树。\n\n人物与动作: 主角为背向镜头的长袍男子；两侧为两列身穿黑色深红朝服、神情肃穆静立的文武百官与侍从。；白袍男子保持沉稳步伐从大殿中央纵深向前行进，两侧列队侍臣保持静立肃穆。；主角向前平稳缓步位移，衣袍微摆，摄像机同向平稳向前推移。\n\n镜头与构图: 中景，低角度后方跟拍移动镜头，平稳跟推，景深适中，焦点锁定在行进男子的背影上。；严格的中央对称透视构图，行进主角居中，两侧群臣形成延伸汇聚线，引向背景高台。\n\n光影与质感: 冷调微弱的环境散射光与背光立柱光斑结合，左侧带有微弱暖光侧逆光，整体呈现幽暗肃杀的胶片质感。；青灰与暗墨绿基调，主角的米白色与两侧群臣的深黑色形成强烈明暗反差。；写实古装史诗电影质感，烟气弥漫，庄严肃穆。\n\n声音: soundStyle: 低沉压抑的殿堂氛围低频环境音，伴随回荡的脚步声（可能推断）。\n\n节奏与转场: pacing: 快剪切入，节奏紧凑凝重; techniques: 前后均为硬切",
+        "duration": 0.708333,
+        "createdAt": "2026-11-12T09:51:24.57162+00:00",
+        "updatedAt": "2026-11-12T09:51:24.57162+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:51:21.639Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "617eda8b-7701-4412-9b76-08bea291e98c",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "158e534e-ff9e-42e4-b25f-832203f81e28",
+        "sceneIndex": 12,
+        "story": {
+          "endTime": 22,
+          "summary": "一名身着白袍、头挽发髻的人物背对镜头，面朝昏暗深邃的殿堂内部伫立。",
+          "startTime": 21.333333,
+          "sceneIndex": 12
+        },
+        "visual": {
+          "color": {
+            "palette": "青绿灰暗调为主，主体衣物呈暖米白色，整体呈低饱和电影质感"
+          },
+          "style": "写实古装历史剧电影质感，烟雾氛围与浅景深虚化结合",
+          "action": [
+            {
+              "time": "00:00 - 00:00.66",
+              "description": "人物保持背影站立姿态，身体仅有极细微的起伏或静止，面朝大殿深处凝望。"
+            }
+          ],
+          "camera": {
+            "angle": "平视，正后方视角",
+            "focus": "焦点锁定在人物后脑勺发髻及衣领处",
+            "speed": "静态稳定",
+            "lensFeel": "浅景深长焦质感，主体后颈与发髻对焦清晰，背景高度虚化",
+            "movement": "固定镜头或极轻微微动",
+            "shotSize": "中近景/特写背影"
+          },
+          "motion": "主体微动，背景静止，画面极具沉静压迫感",
+          "subject": "背对镜头的古装人物，留有整齐发髻与簪子，身着粗布质感的浅色衣袍。",
+          "lighting": {
+            "mood": "幽深、静穆、悬疑",
+            "type": "柔和漫射环境光与微弱背光",
+            "direction": "左侧偏前方微光，背后微弱环境反光"
+          },
+          "characters": [
+            {
+              "pose": "背对镜头端正站立，略微挺直脊背。",
+              "identity": "古装人物（身份未知）",
+              "wardrobe": "米白或浅麻色交领古装长袍，面料具有轻微织物纹理。",
+              "appearance": "黑发梳成利落的高发髻，插素色发簪，肤质干净，露出后颈。",
+              "expression": "背对镜头，无法观察面部表情。"
+            }
+          ],
+          "composition": {
+            "midground": "虚化的室内横木、烛台或立柱结构",
+            "background": "带有竖向窗光与朦胧阴影的殿堂深处",
+            "foreground": "画面中央居中的人物头部、后颈及肩膀背影"
+          },
+          "environment": "古代宏大室内殿堂，背景光线朦胧且有薄雾感，透出柱子与室内结构的轮廓，左侧有窗隙透进微弱自然光。",
+          "sceneDescription": "特写镜头展示人物背影。人物头发高挽成髻并插有发簪，身着米白色长袍。前景清晰，背景为烟雾缭绕的古代昏暗大殿，远处可见立柱与朦胧光影。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "低沉压抑的氛围环境音或静止的弦乐铺垫，无对白。",
+          "transcript": []
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极短促过渡切换（约0.67秒）",
+            "techniques": "硬切入，硬切出"
+          }
+        },
+        "generationPrompt": "电影写实特写镜头，正后方视角。一名头戴素雅发簪、梳整齐高发髻的古装人物背对镜头静立，身穿米白色交领长袍，露出后颈。浅景深焦点清晰落在后脑发丝与领口处。背景是烟雾弥漫、光线昏暗的古代大殿深处，左侧有微弱的淡黄窗光透入，背景立柱轮廓高度虚化。青灰与暗绿冷调光影，沉静肃穆的氛围，画面稳定无剧烈动作，8k电影画质。\n\n画面与环境: 特写镜头展示人物背影。人物头发高挽成髻并插有发簪，身着米白色长袍。前景清晰，背景为烟雾缭绕的古代昏暗大殿，远处可见立柱与朦胧光影。；背对镜头的古装人物，留有整齐发髻与簪子，身着粗布质感的浅色衣袍。；古代宏大室内殿堂，背景光线朦胧且有薄雾感，透出柱子与室内结构的轮廓，左侧有窗隙透进微弱自然光。\n\n人物与动作: identity: 古装人物（身份未知）; appearance: 黑发梳成利落的高发髻，插素色发簪，肤质干净，露出后颈。; wardrobe: 米白或浅麻色交领古装长袍，面料具有轻微织物纹理。; expression: 背对镜头，无法观察面部表情。; pose: 背对镜头端正站立，略微挺直脊背。；time: 00:00 - 00:00.66; description: 人物保持背影站立姿态，身体仅有极细微的起伏或静止，面朝大殿深处凝望。；主体微动，背景静止，画面极具沉静压迫感\n\n镜头与构图: shotSize: 中近景/特写背影; angle: 平视，正后方视角; lensFeel: 浅景深长焦质感，主体后颈与发髻对焦清晰，背景高度虚化; movement: 固定镜头或极轻微微动; focus: 焦点锁定在人物后脑勺发髻及衣领处; speed: 静态稳定；foreground: 画面中央居中的人物头部、后颈及肩膀背影; midground: 虚化的室内横木、烛台或立柱结构; background: 带有竖向窗光与朦胧阴影的殿堂深处\n\n光影与质感: type: 柔和漫射环境光与微弱背光; direction: 左侧偏前方微光，背后微弱环境反光; mood: 幽深、静穆、悬疑；palette: 青绿灰暗调为主，主体衣物呈暖米白色，整体呈低饱和电影质感；写实古装历史剧电影质感，烟雾氛围与浅景深虚化结合\n\n声音: soundStyle: 低沉压抑的氛围环境音或静止的弦乐铺垫，无对白。\n\n节奏与转场: editing: pacing: 极短促过渡切换（约0.67秒）; techniques: 硬切入，硬切出",
+        "duration": 0.666667,
+        "createdAt": "2026-11-12T09:51:44.569508+00:00",
+        "updatedAt": "2026-11-12T09:51:44.569508+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:51:44.530Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "8a6392de-263a-47f3-9b86-cb45faf6457c",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "8725530a-4e79-4b40-b8f0-51509d6b09f3",
+        "sceneIndex": 13,
+        "story": {
+          "endTime": 23.291667,
+          "summary": "刺客身着飘逸白衣凌空向右飞跃行刺，王座上的君王满脸惊恐后仰。",
+          "startTime": 22.625,
+          "sceneIndex": 13
+        },
+        "visual": {
+          "color": "深青绿与墨黑为主基调，高对比度，刺客纯白衣袍与背景形成鲜明黑白反差。",
+          "style": "写意武侠电影风格，兼具飘逸美感与刺杀张力，胶片质感与烟雾环境。",
+          "action": "刺客持剑于半空向右下极速飞冲，宽大白袍在气流中剧烈鼓胀散开；君王身体向后倒退躲避。",
+          "camera": "中全景侧面横向机位，固定平视略带仰角，焦段适中，主体清晰且伴有高速动作残影。",
+          "motion": "人物快速向右滑翔的冲刺运动，伴随衣物布料剧烈翻卷流动的物理动态。",
+          "subject": "空中飞扑行刺的白衣刺客与受惊的君王。",
+          "lighting": "冷调低照度电影侧逆光，一道强烈倾斜顶光穿透幽暗形成丁达尔光效，刺客白袍形成耀眼亮部。",
+          "characters": "刺客身穿宽大膨胀的素白长袍，束发，面容冷峻凌厉；君王坐于右侧暗处高台座椅，穿深色华服，面部惊恐扭曲。",
+          "composition": "左高右低对角线动势构图，刺客居左中高位，君王居右侧阴影，斜向光束划分空间层次。",
+          "environment": "宏大昏暗的秦汉风格宫殿内殿，地面光滑反光，背景有立柱暗影及微弱烛台火光，空中漂浮微尘光束。",
+          "sceneDescription": "墨绿幽暗的宫殿大厅内，一名白衣刺客从左侧腾空滑翔，右手执短刃直扑右侧；右侧王座上的深色衣袍君王惊愕大叫并向后闪避。一束倾斜光柱自殿顶打下，照亮飞舞的白袍。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "music": "急促紧绷的武侠悬疑打击乐或弦乐",
+          "ambient": "空旷殿堂的压抑低鸣",
+          "soundEffects": "凌空扑击的破风呼啸声与衣袍翻卷声"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "pacing": "极快（约0.67秒快切）",
+          "techniques": "前后硬切"
+        },
+        "generationPrompt": "电影质感写意武侠场景，墨绿偏黑冷色调的大殿。左上方一名身穿宽大飘逸素白长袍的刺客凌空向前飞跃刺击，手中持短刃，白袍如云般极速翻卷膨胀；右侧暗处王座上，穿黑袍的君王惊骇张口后仰。一道斜向的青绿色天光光柱穿透尘雾照亮白袍，全景侧面拍摄，充满动势与冲击力，地面光滑微反光，极富张力的古装刺杀瞬间。\n\n画面与环境: 墨绿幽暗的宫殿大厅内，一名白衣刺客从左侧腾空滑翔，右手执短刃直扑右侧；右侧王座上的深色衣袍君王惊愕大叫并向后闪避。一束倾斜光柱自殿顶打下，照亮飞舞的白袍。；空中飞扑行刺的白衣刺客与受惊的君王。；宏大昏暗的秦汉风格宫殿内殿，地面光滑反光，背景有立柱暗影及微弱烛台火光，空中漂浮微尘光束。\n\n人物与动作: 刺客身穿宽大膨胀的素白长袍，束发，面容冷峻凌厉；君王坐于右侧暗处高台座椅，穿深色华服，面部惊恐扭曲。；刺客持剑于半空向右下极速飞冲，宽大白袍在气流中剧烈鼓胀散开；君王身体向后倒退躲避。；人物快速向右滑翔的冲刺运动，伴随衣物布料剧烈翻卷流动的物理动态。\n\n镜头与构图: 中全景侧面横向机位，固定平视略带仰角，焦段适中，主体清晰且伴有高速动作残影。；左高右低对角线动势构图，刺客居左中高位，君王居右侧阴影，斜向光束划分空间层次。\n\n光影与质感: 冷调低照度电影侧逆光，一道强烈倾斜顶光穿透幽暗形成丁达尔光效，刺客白袍形成耀眼亮部。；深青绿与墨黑为主基调，高对比度，刺客纯白衣袍与背景形成鲜明黑白反差。；写意武侠电影风格，兼具飘逸美感与刺杀张力，胶片质感与烟雾环境。\n\n声音: ambient: 空旷殿堂的压抑低鸣; soundEffects: 凌空扑击的破风呼啸声与衣袍翻卷声; music: 急促紧绷的武侠悬疑打击乐或弦乐\n\n节奏与转场: pacing: 极快（约0.67秒快切）; techniques: 前后硬切",
+        "duration": 0.666667,
+        "createdAt": "2026-11-12T09:52:13.246782+00:00",
+        "updatedAt": "2026-11-12T09:52:13.246782+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:52:13.052Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "fa7b1908-415e-40f1-81cf-2fc5ca4335b3",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "e947a812-75f7-4657-a6b7-b623a06dafe2",
+        "sceneIndex": 14,
+        "story": {
+          "endTime": 24.625,
+          "summary": "白衣刺客凌空飞跃，持剑刺向惊骇大呼的黑袍帝王。",
+          "startTime": 23.875,
+          "sceneIndex": 14
+        },
+        "visual": {
+          "color": "青绿色暗调基底，高光区呈现温暖的暖金黄色。",
+          "style": "写意武侠风格，强调视觉张力与气势。",
+          "action": "白衣人持剑凌空滑翔向前刺出，黑袍人保持惊恐呼号的防御姿态，动作极快。",
+          "camera": "中远景，轻微仰角侧拍，固定或极缓推拉镜头，浅景深。",
+          "motion": "刺客身体与剑刃沿对角线高速滑行，衣袂翻卷。",
+          "subject": "空中持剑突刺的白衣人与受惊的黑袍人",
+          "lighting": "高反差侧逆光，一道醒目的斜向耶稣光（体积光）照亮白衣与尘埃，其余环境暗沉。",
+          "characters": [
+            {
+              "pose": "身体在空中向前平掠，右手单手执短剑向前直刺",
+              "identity": "白衣刺客",
+              "wardrobe": "飘逸的白色古代汉服长袍，衣袖与下摆在空中张开",
+              "expression": "背对或侧面，无法看清"
+            },
+            {
+              "pose": "端坐在王座或跪坐后仰，身体被刺客的剑势所逼",
+              "identity": "黑袍君王",
+              "wardrobe": "深色厚重古代帝王冕服",
+              "expression": "极度惊恐，张大嘴呼喊"
+            }
+          ],
+          "composition": "对角线构图。左上方为飞行的白衣人，右下方为黑袍君王，斜向金色光柱连接两者。",
+          "environment": "幽暗肃穆的古代宫殿内部，空气中弥漫轻烟，背景有模糊的雕刻屏风与立柱。",
+          "sceneDescription": "幽暗宫殿中，一道斜射光束穿透薄雾。一名身着白色宽袍的刺客在半空中平掠飞刺，右侧黑袍帝王面露惊恐张口大呼，左侧近景有黑色剪影掩映。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "刺客破空的呼啸声、剑气嗡鸣，以及惊呼声（推测）"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极快，紧张急促的动作打斗节奏",
+            "techniques": "硬切（进出）"
+          }
+        },
+        "generationPrompt": "写意武侠电影质感。幽暗宫殿中，一道金色强光束穿透烟雾斜射而下。一名身穿白色宽大汉服长袍的侠客凌空横向飞掠，右手握剑向前直刺，衣袍翻飞透光；右侧深处一名身着黑色华丽古装长袍的男子惊恐张嘴大喊。电影级光影，青绿与暖金高对比色调，中远景侧面视角，慢动作张力感。\n\n画面与环境: 幽暗宫殿中，一道斜射光束穿透薄雾。一名身着白色宽袍的刺客在半空中平掠飞刺，右侧黑袍帝王面露惊恐张口大呼，左侧近景有黑色剪影掩映。；空中持剑突刺的白衣人与受惊的黑袍人；幽暗肃穆的古代宫殿内部，空气中弥漫轻烟，背景有模糊的雕刻屏风与立柱。\n\n人物与动作: identity: 白衣刺客; wardrobe: 飘逸的白色古代汉服长袍，衣袖与下摆在空中张开; expression: 背对或侧面，无法看清; pose: 身体在空中向前平掠，右手单手执短剑向前直刺; identity: 黑袍君王; wardrobe: 深色厚重古代帝王冕服; expression: 极度惊恐，张大嘴呼喊; pose: 端坐在王座或跪坐后仰，身体被刺客的剑势所逼；白衣人持剑凌空滑翔向前刺出，黑袍人保持惊恐呼号的防御姿态，动作极快。；刺客身体与剑刃沿对角线高速滑行，衣袂翻卷。\n\n镜头与构图: 中远景，轻微仰角侧拍，固定或极缓推拉镜头，浅景深。；对角线构图。左上方为飞行的白衣人，右下方为黑袍君王，斜向金色光柱连接两者。\n\n光影与质感: 高反差侧逆光，一道醒目的斜向耶稣光（体积光）照亮白衣与尘埃，其余环境暗沉。；青绿色暗调基底，高光区呈现温暖的暖金黄色。；写意武侠风格，强调视觉张力与气势。\n\n声音: soundStyle: 刺客破空的呼啸声、剑气嗡鸣，以及惊呼声（推测）\n\n节奏与转场: editing: pacing: 极快，紧张急促的动作打斗节奏; techniques: 硬切（进出）",
+        "duration": 0.75,
+        "createdAt": "2026-11-12T09:52:28.054839+00:00",
+        "updatedAt": "2026-11-12T09:52:28.054839+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:52:28.011Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "d23d8d5b-e56f-4286-a360-8b6e4b66211d",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "625a7aa2-0c65-470f-b732-85ddd9690b93",
+        "sceneIndex": 15,
+        "story": {
+          "endTime": 25.833333,
+          "summary": "昏暗大殿内，白衣刺客持短剑飞身突刺，黑甲男子向后急退闪避，两人在高速交锋中完成一记凌厉挥砍。",
+          "startTime": 25.125,
+          "sceneIndex": 15
+        },
+        "visual": {
+          "color": "冷暖强对比色调，大面积深墨绿与青黑色阴影，搭配米白长袍与琥珀金色剑光及火光。",
+          "style": "写实古装武侠电影质感，高反差胶片颗粒感与强烈运动模糊，视觉冲击力强。",
+          "action": "1）起始：白衣刺客从右侧腾空扑出，右臂高举短剑蓄力，黑甲男子向左后方闪避；2）中段：刺客俯身前冲，短剑横向刺向黑甲男子，剑身泛出暖光；3）收尾：刺客一击过后借势旋身，宽大白袖向右上甩起，黑甲男子在左侧暗影中稳住重心。",
+          "camera": "中景至中全景，平视略带仰角，模拟手持快速横向跟拍，快门较慢产生明显拖影动态模糊，焦点随白衣主体快速移动。",
+          "motion": "极高速线性前冲衔接旋转收势，伴随大幅度宽袖布料飘动与镜头横向跟拍动感。",
+          "subject": "米白色长袍持剑刺客与黑金铠甲蓄须男子。",
+          "lighting": "低调戏剧性布光，环境整体极暗，仅以局部暖黄色侧逆光勾勒白袍褶皱、剑身反光与铠甲边缘，两侧边缘点缀微弱火光。",
+          "characters": [
+            {
+              "role": "右侧白衣刺客",
+              "wardrobe": "米白色宽袖古装长袍，层叠衣摆飘逸",
+              "appearance": "束发髻，身形敏捷，面部因高速运动与侧背光而模糊不清",
+              "poseAndExpression": "由高举短剑腾空前扑，转为俯身前冲突刺，最后旋身扬袖，表情不可见"
+            },
+            {
+              "role": "左侧黑甲男子",
+              "wardrobe": "深黑色层叠铠甲，肩部带暗金色甲片纹理",
+              "appearance": "身材魁梧，蓄须，头戴金属发簪",
+              "poseAndExpression": "重心后仰向左侧急退闪避，神情紧绷且带有运动模糊"
+            }
+          ],
+          "composition": "左右对抗式构图；前景为翻飞的白色衣摆与虚化暗影，中景左侧为暗调黑甲男子、右侧为亮调白衣刺客形成强烈明暗反差，背景为幽深大殿纵深结构。",
+          "environment": "昏暗宽阔的古代石质宫殿，背景为深青黑色立柱与高墙，画面中下方有一深色雕花矮几，左右两侧边缘低处各有微弱暖黄火盆光点，地面反光微弱。",
+          "sceneDescription": "幽暗深邃的中式古代石殿内，右侧一名束发髻、穿米白色宽袖长袍的刺客持短剑凌空扑向左侧；左侧一名身穿黑金重甲、头戴发簪的蓄须男子向后退避。刺客由高举短剑蓄力转为俯身横向突刺，剑锋闪现暖金反光，随后借势旋身、宽大白袖向右上高高扬起，画面充满强烈的快门动态模糊。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "无对白；基于画面推测为急促的衣袂破风声、脚步摩擦声及低沉紧张的古装动作音效（具体音轨未知）。",
+          "transcriptStatus": "无有效语音转录（空）"
+        },
+        "transition": {
+          "in": "硬切",
+          "out": "硬切",
+          "editing": {
+            "pacing": "极快，单镜头仅约0.71秒，属于高速近身搏斗的快剪段落。",
+            "techniques": "前后均采用硬切衔接，依靠刺客连续扑刺动作与强烈的动态模糊维持镜头连贯性（高置信度，无明显特效转场）。"
+          }
+        },
+        "generationPrompt": "写实古装武侠电影画面，中景平视镜头。幽暗深邃的古代石质大殿内，整体呈深墨绿与青黑色低调阴影，左右画面边缘低处各有一点微弱暖黄火光。画面右侧，一名束发髻、身着米白色宽袖长袍的刺客从右向左凌空飞扑，先右臂高举短剑蓄力，随即俯身前冲横向突刺，剑身闪现琥珀金色反光，紧接着借势旋身、宽大白袖向右上高高扬起，层叠白袍剧烈翻飞。画面左侧，一名身穿黑金重甲、头戴金属发簪的魁梧蓄须男子在暗影中向左侧急退闪避。镜头快速横向跟拍，带有明显的快门拖影动态模糊，强明暗对比突出白衣与黑甲的瞬间交锋。附加说明：无对白与字幕，音效推测为凌厉的衣袂破风与打斗声（未知），极快节奏硬切镜头，时长约0.71秒。\n\n画面与环境: 幽暗深邃的中式古代石殿内，右侧一名束发髻、穿米白色宽袖长袍的刺客持短剑凌空扑向左侧；左侧一名身穿黑金重甲、头戴发簪的蓄须男子向后退避。刺客由高举短剑蓄力转为俯身横向突刺，剑锋闪现暖金反光，随后借势旋身、宽大白袖向右上高高扬起，画面充满强烈的快门动态模糊。；米白色长袍持剑刺客与黑金铠甲蓄须男子。；昏暗宽阔的古代石质宫殿，背景为深青黑色立柱与高墙，画面中下方有一深色雕花矮几，左右两侧边缘低处各有微弱暖黄火盆光点，地面反光微弱。\n\n人物与动作: role: 右侧白衣刺客; appearance: 束发髻，身形敏捷，面部因高速运动与侧背光而模糊不清; wardrobe: 米白色宽袖古装长袍，层叠衣摆飘逸; poseAndExpression: 由高举短剑腾空前扑，转为俯身前冲突刺，最后旋身扬袖，表情不可见; role: 左侧黑甲男子; appearance: 身材魁梧，蓄须，头戴金属发簪; wardrobe: 深黑色层叠铠甲，肩部带暗金色甲片纹理; poseAndExpression: 重心后仰向左侧急退闪避，神情紧绷且带有运动模糊；1）起始：白衣刺客从右侧腾空扑出，右臂高举短剑蓄力，黑甲男子向左后方闪避；2）中段：刺客俯身前冲，短剑横向刺向黑甲男子，剑身泛出暖光；3）收尾：刺客一击过后借势旋身，宽大白袖向右上甩起，黑甲男子在左侧暗影中稳住重心。；极高速线性前冲衔接旋转收势，伴随大幅度宽袖布料飘动与镜头横向跟拍动感。\n\n镜头与构图: 中景至中全景，平视略带仰角，模拟手持快速横向跟拍，快门较慢产生明显拖影动态模糊，焦点随白衣主体快速移动。；左右对抗式构图；前景为翻飞的白色衣摆与虚化暗影，中景左侧为暗调黑甲男子、右侧为亮调白衣刺客形成强烈明暗反差，背景为幽深大殿纵深结构。\n\n光影与质感: 低调戏剧性布光，环境整体极暗，仅以局部暖黄色侧逆光勾勒白袍褶皱、剑身反光与铠甲边缘，两侧边缘点缀微弱火光。；冷暖强对比色调，大面积深墨绿与青黑色阴影，搭配米白长袍与琥珀金色剑光及火光。；写实古装武侠电影质感，高反差胶片颗粒感与强烈运动模糊，视觉冲击力强。\n\n声音: transcriptStatus: 无有效语音转录（空）; soundStyle: 无对白；基于画面推测为急促的衣袂破风声、脚步摩擦声及低沉紧张的古装动作音效（具体音轨未知）。\n\n节奏与转场: in: 硬切; out: 硬切; editing: pacing: 极快，单镜头仅约0.71秒，属于高速近身搏斗的快剪段落。; techniques: 前后均采用硬切衔接，依靠刺客连续扑刺动作与强烈的动态模糊维持镜头连贯性（高置信度，无明显特效转场）。",
+        "duration": 0.708333,
+        "createdAt": "2026-11-12T09:53:07.947148+00:00",
+        "updatedAt": "2026-11-12T09:53:07.947148+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:53:01.406Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "0b0d5a49-c232-4428-9293-dae7d5d302c8",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "e75f7609-7518-4ee0-8026-93bba936fb24",
+        "sceneIndex": 16,
+        "story": {
+          "endTime": 27.166667,
+          "summary": "昏暗的古代宫殿内，一名身着黑甲长袍的男子挥剑格挡后，急速向左侧转身低头闪避右侧白衣人的突袭。",
+          "startTime": 26.458333,
+          "sceneIndex": 16
+        },
+        "visual": {
+          "color": "高对比度暗绿与炭黑主色调，搭配米白色服饰形成明暗反差，左下角火焰呈现饱和的暖橙黄色，整体电影感冷峻低饱和。",
+          "style": "写实主义古装武侠电影质感，胶片颗粒感明显，强调高速肢体对抗与自然动态模糊。",
+          "action": "0.00秒至0.25秒：右侧白衣人向前突进，黑衣男子向后仰身并挥剑格挡；0.25秒至0.50秒：黑衣男子宽袖甩开，向左侧急速旋转后撤；0.50秒至0.71秒：黑衣男子大幅低头俯身躲避，白衣人重心上移持续压迫。",
+          "camera": "中近景平视机位，带有标准至略微长焦的压缩感；镜头随打斗动作轻微跟拍晃动；焦点锁定在左侧黑衣男子身上，前景白衣人处于浅景深虚化中；快门速度较慢导致高速动作产生明显动态模糊，正常速度播放。",
+          "motion": "极快且连贯的闪避动作，黑衣男子由后仰格挡转为向左旋转低头俯冲，宽大衣袍与发冠产生剧烈拖影，前景白衣人同步向前压迫。",
+          "subject": "身着黑色铠甲长袍的古代男性（视觉核心），以及右侧前景身着米白色长袍的突袭者。",
+          "lighting": "低调暗调布光，整体环境光极暗；主要依靠画面左后方火盆的暖橙色火光以及上方微弱的冷青色环境散射光勾勒人物轮廓与铠甲反光。",
+          "characters": [
+            {
+              "id": "角色一（黑衣男子）",
+              "pose": "先向后仰身挥剑格挡，随即宽袖甩开向左侧快速扭身低头俯冲闪避",
+              "identity": "身份未知（疑似古代君王或将领）",
+              "wardrobe": "黑色层叠古装长袍，肩部覆有黑色札甲片，腰束金属饰带，手持深色剑柄长剑",
+              "appearance": "中年东亚男性，蓄短须，黑色长发束于头顶，佩戴金属发冠与横簪",
+              "expression": "神情紧绷惊怒，张口似在呼喝，随后低头专注闪避"
+            },
+            {
+              "id": "角色二（白衣人）",
+              "pose": "位于右侧前景，向画面左前方猛然探身突进后略微上移逼近",
+              "identity": "身份未知（背向/侧向镜头，未露正脸）",
+              "wardrobe": "米白色宽松丝麻质地古装长袍，宽大衣袖随动作剧烈摆动",
+              "appearance": "体型与年龄未知",
+              "expression": "未知（背向镜头且高度动态模糊）"
+            }
+          ],
+          "composition": "非对称双人过肩对抗构图。右侧前景为大面积虚化的米白色衣袖形成遮挡，左侧三分线处为动作核心黑衣男子，后景为幽暗大殿立柱与左下角火盆，纵深感强。",
+          "environment": "昏暗深邃的古代宫殿内景，背景可见粗大的深色立柱、雕花墙壁与右侧台阶结构；左后方地面设有一座燃烧的火盆作为局部光源，无其他明显道具。",
+          "sceneDescription": "古装动作近身交锋镜头。画面左侧中景，一名留短须、束发戴金属发冠的中年男子身着黑色古装长袍与肩部札甲，面露惊怒张口呼喝，先挥剑格挡随后宽袖翻飞，迅速向左侧扭身低头俯冲闪避；画面右侧前景，一名身着米白色宽袖长袍的背影人物猛然向左前方突进逼近，处于浅景深虚化中。背景为幽暗的古代石木结构大殿，左后方地面有一盏燃烧的橙黄色火盆，全片带有强烈的快速动态模糊。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "soundStyle": "未知（无可用音频轨；基于画面推测可能包含衣物剧烈摩擦声、兵器碰撞声、急促喘息及低沉紧张的配乐，具体音效与音乐未知）",
+          "transcript": "无（语音识别结果为空）"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "hard_cut",
+          "editing": {
+            "pacing": "极快（镜头时长约0.71秒，处于高频动作剪辑序列中）",
+            "techniques": "前后均采用硬切衔接，依靠镜头内部人物高速动作与强动态模糊维持动作连贯性，未见明显特效转场（置信度高）"
+          },
+          "transitionIn": "硬切",
+          "transitionOut": "硬切"
+        },
+        "generationPrompt": "写实古装武侠电影画面，中近景过肩对抗镜头。昏暗幽深的古代石木大殿内，画面左侧中景一名留短须、束发戴金属发冠的中年男子身着黑色古装长袍与肩部札甲，面露惊怒张口呼喝，先挥剑格挡随后宽袖翻飞，迅速向左侧扭身低头俯冲闪避；画面右侧前景一名身着米白色宽袖长袍的背影人物猛然向左前方突进逼近，处于浅景深虚化中。背景有深色立柱、台阶与左后方地面燃烧的橙黄色火盆。暗绿炭黑低饱和电影调色，低调明暗对比布光，暖橙火光与微弱冷青顶光勾勒轮廓，高速动作带有强烈自然动态模糊与胶片颗粒感。音频与剪辑约束：无对白与字幕，音效与配乐未知（可能为衣物破风声与打斗音效），镜头时长约0.71秒，前后硬切，快节奏动作剪辑。\n\n画面与环境: 古装动作近身交锋镜头。画面左侧中景，一名留短须、束发戴金属发冠的中年男子身着黑色古装长袍与肩部札甲，面露惊怒张口呼喝，先挥剑格挡随后宽袖翻飞，迅速向左侧扭身低头俯冲闪避；画面右侧前景，一名身着米白色宽袖长袍的背影人物猛然向左前方突进逼近，处于浅景深虚化中。背景为幽暗的古代石木结构大殿，左后方地面有一盏燃烧的橙黄色火盆，全片带有强烈的快速动态模糊。；身着黑色铠甲长袍的古代男性（视觉核心），以及右侧前景身着米白色长袍的突袭者。；昏暗深邃的古代宫殿内景，背景可见粗大的深色立柱、雕花墙壁与右侧台阶结构；左后方地面设有一座燃烧的火盆作为局部光源，无其他明显道具。\n\n人物与动作: id: 角色一（黑衣男子）; identity: 身份未知（疑似古代君王或将领）; appearance: 中年东亚男性，蓄短须，黑色长发束于头顶，佩戴金属发冠与横簪; wardrobe: 黑色层叠古装长袍，肩部覆有黑色札甲片，腰束金属饰带，手持深色剑柄长剑; expression: 神情紧绷惊怒，张口似在呼喝，随后低头专注闪避; pose: 先向后仰身挥剑格挡，随即宽袖甩开向左侧快速扭身低头俯冲闪避; id: 角色二（白衣人）; identity: 身份未知（背向/侧向镜头，未露正脸）; appearance: 体型与年龄未知; wardrobe: 米白色宽松丝麻质地古装长袍，宽大衣袖随动作剧烈摆动; expression: 未知（背向镜头且高度动态模糊）; pose: 位于右侧前景，向画面左前方猛然探身突进后略微上移逼近；0.00秒至0.25秒：右侧白衣人向前突进，黑衣男子向后仰身并挥剑格挡；0.25秒至0.50秒：黑衣男子宽袖甩开，向左侧急速旋转后撤；0.50秒至0.71秒：黑衣男子大幅低头俯身躲避，白衣人重心上移持续压迫。；极快且连贯的闪避动作，黑衣男子由后仰格挡转为向左旋转低头俯冲，宽大衣袍与发冠产生剧烈拖影，前景白衣人同步向前压迫。\n\n镜头与构图: 中近景平视机位，带有标准至略微长焦的压缩感；镜头随打斗动作轻微跟拍晃动；焦点锁定在左侧黑衣男子身上，前景白衣人处于浅景深虚化中；快门速度较慢导致高速动作产生明显动态模糊，正常速度播放。；非对称双人过肩对抗构图。右侧前景为大面积虚化的米白色衣袖形成遮挡，左侧三分线处为动作核心黑衣男子，后景为幽暗大殿立柱与左下角火盆，纵深感强。\n\n光影与质感: 低调暗调布光，整体环境光极暗；主要依靠画面左后方火盆的暖橙色火光以及上方微弱的冷青色环境散射光勾勒人物轮廓与铠甲反光。；高对比度暗绿与炭黑主色调，搭配米白色服饰形成明暗反差，左下角火焰呈现饱和的暖橙黄色，整体电影感冷峻低饱和。；写实主义古装武侠电影质感，胶片颗粒感明显，强调高速肢体对抗与自然动态模糊。\n\n声音: transcript: 无（语音识别结果为空）; soundStyle: 未知（无可用音频轨；基于画面推测可能包含衣物剧烈摩擦声、兵器碰撞声、急促喘息及低沉紧张的配乐，具体音效与音乐未知）\n\n节奏与转场: transitionIn: 硬切; transitionOut: 硬切; editing: pacing: 极快（镜头时长约0.71秒，处于高频动作剪辑序列中）; techniques: 前后均采用硬切衔接，依靠镜头内部人物高速动作与强动态模糊维持动作连贯性，未见明显特效转场（置信度高）",
+        "duration": 0.708334,
+        "createdAt": "2026-11-12T09:53:24.376819+00:00",
+        "updatedAt": "2026-11-12T09:53:24.376819+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:53:15.320Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      },
+      {
+        "id": "87cf8213-0b7d-4411-9c0f-0c9357166d6f",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "projectVersionId": "8fa95389-c319-45c6-ab95-3023bef3a88d",
+        "originalSceneId": "d60991af-6a5a-474c-be32-4b943f36d9d3",
+        "sceneIndex": 17,
+        "story": {
+          "endTime": 29.792,
+          "summary": "重甲将军手持长剑刺穿白袍男子的胸膛，背景烈火熊熊燃烧，男子发出痛苦嘶吼。",
+          "startTime": 27.625,
+          "sceneIndex": 17
+        },
+        "visual": {
+          "color": "饱和浓烈的猩红、赤橙与火黄色为主调，黑甲深沉，白袍在红光下呈粉橘色。",
+          "style": "史诗历史战争动作片风格，胶片质感，高反差电影感。",
+          "action": "将军将长剑推入白袍男子胸口，剑身横穿胸膛；白袍男子承受贯穿痛苦向后仰靠嘶吼，背景烈焰剧烈翻腾。",
+          "camera": "中景双人侧拍镜头，平视视角，焦距约50mm，景深适中，主体焦点位于剑身刺入处与二人面部。",
+          "motion": "剑势推进微动，受害者因剧痛轻微颤抖仰倒，火焰高速翻滚流动。",
+          "subject": "被长剑刺穿胸膛的受害者与行刑的铠甲将军。",
+          "lighting": "强烈的火焰逆光与轮廓光，前景人物背光呈深色半剪影，暗部被红光晕染，高对比度戏剧性光影。",
+          "characters": [
+            {
+              "pose": "身体前倾，单手紧握剑柄向前平刺。",
+              "identity": "黑甲将军",
+              "wardrobe": "黑色中式重型鳞甲、饰有金色纹样护腕，束发。",
+              "expression": "神色冷酷决绝，侧颜紧绷。"
+            },
+            {
+              "pose": "向后瘫坐依附于立柱或御座旁，双臂受创无力垂落。",
+              "identity": "白袍男子",
+              "wardrobe": "染血的米白交领长袍，腰系布带，发型凌乱微散。",
+              "expression": "张口痛呼，双目紧闭，神情痛苦绝望。"
+            }
+          ],
+          "composition": "对峙式三分构图，左侧黑甲将军占据左侧画幅，右侧白袍受害者居右，正中央留给刺入的长剑及明亮的火焰背景，形成明暗剪影对冲。",
+          "environment": "起火的古代殿堂，背景为翻滚的巨大火焰与浓烟，四周由深色木柱或殿宇结构包围。",
+          "sceneDescription": "室内宫殿中，左侧身着黑铁鳞甲的将军持剑平刺，剑尖贯穿右侧靠墙瘫坐的白袍男子胸口。背景中央是巨大的熊熊烈火，火光将整个场景染成血红与金黄色。"
+        },
+        "dialogue": [],
+        "narration": [],
+        "subtitle": [],
+        "audio": {
+          "ambient": "殿宇崩塌与烈焰呼啸声。",
+          "musicStyle": "低沉悲壮的管弦乐与重击鼓点。",
+          "soundEffects": "利刃刺破血肉的沉闷声响、男子痛苦嘶吼声以及背景巨大的烈火燃烧轰鸣。"
+        },
+        "transition": {
+          "in": "hard_cut",
+          "out": "end",
+          "editing": {
+            "pacing": "凝重而极具张力的高潮定格感",
+            "techniques": "硬切入，定镜头短停顿后硬切出"
+          }
+        },
+        "generationPrompt": "电影级中景侧拍镜头，中国古代宫殿内，背景是翻滚爆裂的金色与猩红烈火。左侧一名身穿精细黑金重型鳞甲的中式将军，眼神冷酷，单手手持长剑平刺向前；右侧一名身穿染血米白长袍的男子被剑尖贯穿胸膛，痛苦仰面张口嘶吼，身躯靠向雕花木柱。逆光火海勾勒出两人深邃的轮廓光，浓烟与火星飘散，高对比度红黄暖色调，胶片颗粒质感，史诗悲壮氛围，无字幕，8k高画质。\n\n画面与环境: 室内宫殿中，左侧身着黑铁鳞甲的将军持剑平刺，剑尖贯穿右侧靠墙瘫坐的白袍男子胸口。背景中央是巨大的熊熊烈火，火光将整个场景染成血红与金黄色。；被长剑刺穿胸膛的受害者与行刑的铠甲将军。；起火的古代殿堂，背景为翻滚的巨大火焰与浓烟，四周由深色木柱或殿宇结构包围。\n\n人物与动作: identity: 黑甲将军; wardrobe: 黑色中式重型鳞甲、饰有金色纹样护腕，束发。; expression: 神色冷酷决绝，侧颜紧绷。; pose: 身体前倾，单手紧握剑柄向前平刺。; identity: 白袍男子; wardrobe: 染血的米白交领长袍，腰系布带，发型凌乱微散。; expression: 张口痛呼，双目紧闭，神情痛苦绝望。; pose: 向后瘫坐依附于立柱或御座旁，双臂受创无力垂落。；将军将长剑推入白袍男子胸口，剑身横穿胸膛；白袍男子承受贯穿痛苦向后仰靠嘶吼，背景烈焰剧烈翻腾。；剑势推进微动，受害者因剧痛轻微颤抖仰倒，火焰高速翻滚流动。\n\n镜头与构图: 中景双人侧拍镜头，平视视角，焦距约50mm，景深适中，主体焦点位于剑身刺入处与二人面部。；对峙式三分构图，左侧黑甲将军占据左侧画幅，右侧白袍受害者居右，正中央留给刺入的长剑及明亮的火焰背景，形成明暗剪影对冲。\n\n光影与质感: 强烈的火焰逆光与轮廓光，前景人物背光呈深色半剪影，暗部被红光晕染，高对比度戏剧性光影。；饱和浓烈的猩红、赤橙与火黄色为主调，黑甲深沉，白袍在红光下呈粉橘色。；史诗历史战争动作片风格，胶片质感，高反差电影感。\n\n声音: soundEffects: 利刃刺破血肉的沉闷声响、男子痛苦嘶吼声以及背景巨大的烈火燃烧轰鸣。; ambient: 殿宇崩塌与烈焰呼啸声。; musicStyle: 低沉悲壮的管弦乐与重击鼓点。\n\n节奏与转场: editing: pacing: 凝重而极具张力的高潮定格感; techniques: 硬切入，定镜头短停顿后硬切出",
+        "duration": 2.167,
+        "createdAt": "2026-11-12T09:54:11.108991+00:00",
+        "updatedAt": "2026-11-12T09:54:11.108991+00:00",
+        "generatedVideoUrl": null,
+        "metadata": {
+          "analysisProvider": "kie",
+          "analysisModel": "gemini-3-8-flash-openai",
+          "analyzedAt": "2026-11-12T09:54:04.035Z",
+          "recreationPromptVersion": 1,
+          "modelMode": "manual",
+          "modelPriority": "balanced"
+        }
+      }
+    ],
+    "referenceVideos": [
+      {
+        "id": "11441afe-fb88-4fd9-98cd-2bb32bd7bdd5",
+        "projectId": "679cfc78-2ba8-49c1-a47a-614f0c83ecfe",
+        "sourceUrl": "https://pub-838ceb4cc82146c2b99d5f06b4751da6.r2.dev/uploads/10f14984-02e8-4554-827d-03cd739fa7da/video/f8417a14-ebad-4f49-8d5b-828a2b104f2b-464d608bd6c8f7c58bd1a755e70a5fb3.mp4",
+        "mimeType": null,
+        "duration": 29.792,
+        "createdAt": "2026-11-12T09:45:58.553352+00:00",
+        "fileName": "古风权谋短片.mp4",
+        "metadata": {}
+      }
+    ]
   }
 ]

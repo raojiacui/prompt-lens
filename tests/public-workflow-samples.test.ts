@@ -4,6 +4,7 @@ import { getPublicSampleBundle, getPublicWorkflowSamples, hasPublicSampleMedia }
 const id = "e3a4aa5b-976d-4dd7-a906-c818f55c4a54";
 const mountainSampleId = "52457e72-44d6-41e1-ae89-8233ef50082c";
 it.each([
+  ["679cfc78-2ba8-49c1-a47a-614f0c83ecfe", "古风权谋短片", 17],
   ["5c698174-5a21-48cf-9fe5-93cbe2136280", "圆缺", 10],
   ["da42d280-4d6a-48d6-a7bd-0f1366fb9bb0", "无论我走多远，我永远是我母亲的孩子", 8],
   ["bad27466-22a9-43d8-9f7e-ae0d0182dcac", "西藏人文纪录片", 10],
@@ -37,7 +38,15 @@ it("combines Yuanque's first six and next four shots on one unchanged source tim
   expect(bundle.scenes.every(scene => scene.projectId === bundle.project.id && scene.referenceVideoId === bundle.referenceVideos[0].id)).toBe(true);
   expect(bundle.sceneVersions.every(scene => scene.projectId === bundle.project.id && scene.projectVersionId === bundle.activeVersion!.id)).toBe(true);
   expect(bundle.scenes.filter(scene => scene.clipUrl?.includes("#t=")).map(scene => scene.sceneIndex)).toEqual([7,8,9,10]);
+  expect((await getPublicWorkflowSamples())[1].id).toBe(bundle.project.id);
+});
+it("shows the refined seventeen-shot sample first while retaining empty-transition gaps", async () => {
+  const bundle = (await getPublicSampleBundle("679cfc78-2ba8-49c1-a47a-614f0c83ecfe"))!;
   expect((await getPublicWorkflowSamples())[0].id).toBe(bundle.project.id);
+  expect(bundle.scenes.map(scene => scene.sceneIndex)).toEqual(Array.from({ length: 17 }, (_, index) => index + 1));
+  expect(bundle.scenes[4]).toMatchObject({ startTime: 6.583, endTime: 8.458 });
+  expect(bundle.scenes.slice(1).filter((scene, index) => scene.startTime > bundle.scenes[index].endTime)).toHaveLength(7);
+  expect(bundle.referenceVideos[0].duration).toBeCloseTo(29.79127, 2);
 });
 it("publishes the seven-scene mountain video under its chosen title", async () => {
   const bundle = (await getPublicSampleBundle(mountainSampleId))!;
