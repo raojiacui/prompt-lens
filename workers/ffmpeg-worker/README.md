@@ -2,7 +2,7 @@
 
 Cloud Run worker for V2 video breakdown. Scene boundary detection uses PySceneDetect first, then falls back to FFmpeg scene filtering if PySceneDetect is unavailable or fails.
 
-Both detectors then run mandatory local frame refinement (`scene-refine.py`). It removes empty near-pure black/white intervals and confirms motion continuity before discarding a candidate cut. Refined scenes retain original timestamps and may have gaps; callers must not reconstruct contiguous intervals from start times. Empty automatic previews return `NO_USEFUL_SCENES`. Manual whole-video previews retain the complete source. New automatic previews advertise revision `content-scenes-v2`; see ADR 0053 for limits, caching and verification.
+Both detectors then run mandatory local frame refinement (`scene-refine.py`). It removes empty near-pure black/white intervals and confirms motion continuity before discarding a candidate cut. Refined scenes retain original timestamps and may have gaps; callers must not reconstruct contiguous intervals from start times. Empty automatic previews return `NO_USEFUL_SCENES`. Manual whole-video previews retain the complete source. New automatic previews advertise revision `content-scenes-v3`; see ADR 0053 for limits, caching and verification.
 
 ## Endpoints
 

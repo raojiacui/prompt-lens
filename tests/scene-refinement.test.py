@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import tempfile
 import unittest
+from fractions import Fraction
 
 import cv2
 import numpy as np
@@ -64,6 +65,13 @@ class ContinuityTests(unittest.TestCase):
 
 
 class IntervalTests(unittest.TestCase):
+    def test_integer_pts_avoids_ffmpeg_five_display_rounding(self):
+        line = "[Parsed_showinfo_1] n: 466 pts: 238592 pts_time:19.4167 pos: 10"
+        self.assertAlmostEqual(refiner.frame_timestamp(line, Fraction(1, 12288)), 466 / 24)
+        self.assertIsNone(refiner.frame_timestamp("config out time_base: 0/0", None))
+        with self.assertRaises(ValueError):
+            refiner.frame_timestamp(line, None)
+
     def test_blank_gaps_are_not_filled_or_time_compressed(self):
         result = refiner.useful_intervals([1, 2, 3, 4], [(0, 0.3), (2, 3), (4.5, 5)], 5)
         self.assertEqual(result, [{"start": .3, "end": 1}, {"start": 1, "end": 2}, {"start": 3, "end": 4}, {"start": 4, "end": 4.5}])

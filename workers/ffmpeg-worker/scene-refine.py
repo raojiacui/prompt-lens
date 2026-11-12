@@ -8,12 +8,24 @@ import re
 import subprocess
 import sys
 import threading
+from fractions import Fraction
 
 import cv2
 import numpy as np
 
-REVISION = "content-scenes-v2"
+REVISION = "content-scenes-v3"
 WIDTH, HEIGHT = 640, 360
+
+
+def frame_timestamp(line, time_base):
+    match = re.search(r"\bn:\s*\d+.*?\bpts:\s*(-?\d+)", line)
+    if not match:
+        return None
+    if time_base is None:
+        raise ValueError("Missing refinement time base")
+    # FFmpeg 5 prints pts_time with only six significant digits. At 100s it
+    # can round across a frame boundary; integer PTS preserves the real clock.
+    return float(int(match.group(1)) * time_base)
 
 
 def is_empty_frame(frame):
@@ -97,14 +109,20 @@ def refine_video(path, cuts, duration, stream_index=0, ffmpeg="ffmpeg", minimum=
     ], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     def read_metadata():
+        time_base = None
         try:
             for raw in iter(process.stderr.readline, b""):
                 line = raw.decode("utf-8", errors="replace")
-                match = re.search(r"\bn:\s*\d+.*?\bpts_time:([-\d.e+]+)", line)
-                if match:
-                    timestamps.put(float(match.group(1)))
+                config = re.search(r"config in time_base:\s*(\d+)/(\d+)", line)
+                if config:
+                    time_base = Fraction(int(config.group(1)), int(config.group(2)))
+                timestamp = frame_timestamp(line, time_base)
+                if timestamp is not None:
+                    timestamps.put(timestamp)
                 elif "showinfo" not in line:
                     errors.append(line.strip())
+        except Exception as error:
+            errors.append(str(error))
         finally:
             timestamps.put(None)
 

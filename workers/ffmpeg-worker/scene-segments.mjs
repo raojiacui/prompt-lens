@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 const SECOND = 1_000_000;
 const LIMIT = 15 * SECOND;
 
-export const SCENE_PREVIEW_REVISION = "content-scenes-v2";
+export const SCENE_PREVIEW_REVISION = "content-scenes-v3";
 
 export function parseRefinedSceneResult(payload, duration) {
   if (payload?.revision !== SCENE_PREVIEW_REVISION || !Array.isArray(payload.scenes)) throw new Error("Invalid scene refinement response");
