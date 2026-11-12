@@ -4,7 +4,7 @@ import { getPublicSampleBundle, getPublicWorkflowSamples, hasPublicSampleMedia }
 const id = "e3a4aa5b-976d-4dd7-a906-c818f55c4a54";
 const mountainSampleId = "52457e72-44d6-41e1-ae89-8233ef50082c";
 it.each([
-  ["679cfc78-2ba8-49c1-a47a-614f0c83ecfe", "古风权谋短片", 17],
+  ["679cfc78-2ba8-49c1-a47a-614f0c83ecfe", "荆轲刺秦王", 17],
   ["5c698174-5a21-48cf-9fe5-93cbe2136280", "圆缺", 10],
   ["da42d280-4d6a-48d6-a7bd-0f1366fb9bb0", "无论我走多远，我永远是我母亲的孩子", 8],
   ["bad27466-22a9-43d8-9f7e-ae0d0182dcac", "西藏人文纪录片", 10],
