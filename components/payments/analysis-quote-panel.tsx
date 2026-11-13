@@ -4,6 +4,7 @@ import { useLocale } from "next-intl";
 import { X } from "lucide-react";
 import { type SceneInterval } from "@/lib/billing/pricing-v6";
 import { listModels } from "@/lib/ai/model-registry";
+import { isUserProvider, providerName, type UserProvider } from "@/lib/ai/providers";
 import { SceneVideoPreview } from "@/components/workflow/scene-video-preview";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
 import { AnalysisTaskProgress } from "./analysis-task-progress";
@@ -29,7 +30,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   const [downloading, setDownloading] = useState(false);
   const downloadController = useRef<AbortController | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
-  const [savedQuote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number; expiresAt?: string; requestKey: string } | null>(null);
+  const [savedQuote, setQuote] = useState<{ id: string; credits: number; splitCredits: number; analysisCredits: number; provider?: UserProvider; expiresAt?: string; requestKey: string } | null>(null);
   const [taskId, setTaskId] = useState("");
   const [diagnostics, setDiagnostics] = useState<AnalysisDiagnostics>();
   const [lastSyncedAt, setLastSyncedAt] = useState<number>();
@@ -56,6 +57,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   const selectionKey = JSON.stringify(selected);
   const quoteRequestKey = JSON.stringify([preparation?.id, selectionKey, payer, selectedModelId, automaticSplit, source.outputLanguage]);
   const quote = savedQuote?.requestKey === quoteRequestKey ? savedQuote : null;
+  const accountName = isUserProvider(quote?.provider) ? providerName(quote.provider, zh ? "zh" : "en") : (zh ? "对应供应商" : "provider");
   useEffect(() => { onLockChange?.(selectionLocked); }, [selectionLocked, onLockChange]);
   const onCompleteRef = useRef(onComplete); onCompleteRef.current = onComplete;
   const onPartialRef = useRef(onPartial); onPartialRef.current = onPartial;
@@ -87,7 +89,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
     if (!response.ok && data.code === "INVALID_VIDEO_STREAM") throw new Error(zh ? "无法读取视频画面，未开始分析。请更换素材。" : "The video has no readable picture stream. Analysis has not started. Choose another video.");
     if (!response.ok && data.code === "SCENE_DETECTION_FAILED") throw new Error(zh ? "自动拆镜失败，未开始分析。请重新读取视频或更换素材。" : "Shot detection failed. Analysis has not started. Inspect the video again or choose another video.");
     if (!response.ok && data.code === "NO_USEFUL_SCENES") throw new Error(zh ? "视频仅包含无内容的纯黑或纯白画面，没有可分析的镜头。请更换素材。" : "This video contains only empty black or white frames. Choose a video with visible content.");
-    if (!response.ok) throw new AnalysisRequestError(data.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "可用积分不足，请先充值。" : "Not enough available credits. Please top up.") : data.code === "KIE_KEY_REQUIRED" ? (zh ? "请先配置所选来源的 KIE Key。" : "Configure the KIE key for this payment source first.") : data.code === "QUOTE_EXPIRED" ? (zh ? "报价已过期，请重新获取费用。" : "This quote has expired. Refresh the cost.") : (zh ? "请求暂未完成，尚未确认的任务不会自动重复提交。" : "The request did not complete. Unconfirmed tasks will not be resubmitted automatically."), data.code, response.status >= 500, response.status >= 400 && response.status < 500);
+    if (!response.ok) throw new AnalysisRequestError(data.code === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "可用积分不足，请先充值。" : "Not enough available credits. Please top up.") : data.code === "KIE_KEY_REQUIRED" ? (zh ? "请先配置所选供应商的 API Key。" : "Configure the API key for the selected provider first.") : data.code === "QUOTE_EXPIRED" ? (zh ? "报价已过期，请重新获取费用。" : "This quote has expired. Refresh the cost.") : (zh ? "请求暂未完成，尚未确认的任务不会自动重复提交。" : "The request did not complete. Unconfirmed tasks will not be resubmitted automatically."), data.code, response.status >= 500, response.status >= 400 && response.status < 500);
     if (typeof data.id !== "string" || !data.id) throw invalidResponse();
     if (action === "prepare" && (!Array.isArray(data.scenes) || !data.scenes.length || !Number.isSafeInteger(data.durationUs) || data.durationUs <= 0)) throw invalidResponse();
     if (action === "quote" && (![data.credits, data.splitCredits, data.analysisCredits].every(value => Number.isSafeInteger(value) && value >= 0))) throw invalidResponse();
@@ -286,7 +288,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         </article>)}</div>
         {!selectedScenes.length && <p className="mt-2 text-sm text-muted-foreground">{zh ? "请至少选择一个镜头。" : "Select at least one shot."}</p>}
       </div>}
-      {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? "模型费用由你的 KIE 账户承担。" : "Model fees are billed to your KIE account."}</p>}</div>}
+      {quote && <div className="my-5 border-y border-border py-4"><p className="text-2xl font-semibold">{quote.credits} {zh ? "积分" : "credits"}</p><p className="mt-2 text-sm text-muted-foreground">{zh ? `拆镜 ${quote.splitCredits} + 分析 ${quote.analysisCredits}。按成功结果结算。` : `Splitting ${quote.splitCredits} + analysis ${quote.analysisCredits}. Settled by successful results.`}</p>{payer === "byok" && <p className="mt-2 text-sm">{zh ? (isUserProvider(quote.provider) ? `模型费用由你的 ${accountName} 账户承担。` : "模型费用由对应供应商账户承担。") : `Model fees are billed to your ${accountName} account.`}</p>}</div>}
       <div className="mt-5 flex items-stretch">
         <button disabled={busy || downloading || preparing || quoting || (!quote && (!error || (preparation !== null && !selected.length && !needsPreparation)))} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : error ? (preparation && !needsPreparation ? (zh ? "重新获取费用" : "Refresh cost") : (zh ? "重新读取视频" : "Inspect video again")) : (zh ? "确认分析" : "Confirm analysis")}</button>
       </div>

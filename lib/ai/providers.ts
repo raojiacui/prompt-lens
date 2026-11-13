@@ -8,6 +8,6 @@ export function isUserProvider(value: unknown): value is UserProvider {
   return value === "infistar" || value === "kie";
 }
 
-export function providerName(provider: string) {
-  return provider === "infistar" ? "Infistar" : provider === "kie" ? "KIE" : provider;
+export function providerName(provider: string, locale?: string) {
+  return provider === "infistar" ? (locale === "zh" ? "无限星河 Infistar" : "Infistar") : provider === "kie" ? "KIE" : provider;
 }

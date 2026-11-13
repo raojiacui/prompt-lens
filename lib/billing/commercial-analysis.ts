@@ -117,7 +117,7 @@ export async function quoteCommercialAnalysis(userId: string, input: { preparati
   const modelId = quotedAnalysisModel(input);
   const snapshot: AnalysisInput = { ...source, pricing, modelId, provider, pricingVersion: PRICING_VERSION, outputLanguage: input.outputLanguage === "zh" ? "zh" : "en", keyFingerprint: generationKeyFingerprint(apiKey), executionMode: source.automaticSplit && process.env.ANALYSIS_SCENE_PREPARATION_MODE !== "batch" ? "scene_pipeline_v1" : "scene_jobs_v1" };
   const [task] = await db.insert(commercialTasks).values({ userId, kind: "analysis", input: snapshot, credits: quote.credits, expiresAt: new Date(Date.now() + 600000) }).returning();
-  return { id: task.id, ...quote, modelId, payer: pricing.payer, expiresAt: task.expiresAt };
+  return { id: task.id, ...quote, modelId, provider, payer: pricing.payer, expiresAt: task.expiresAt };
 }
 
 async function recordAnalysisPhase(task: typeof commercialTasks.$inferSelect, phase: string, sceneId?: string, checkpoint: Record<string, unknown> = {}) {

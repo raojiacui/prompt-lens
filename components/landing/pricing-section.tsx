@@ -56,7 +56,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
         <div className="mt-8 grid gap-5 border-t border-[var(--color-border-subtle)] pt-6 md:grid-cols-2">
           <div>
             <h3 className="font-semibold">{zh ? "已有 KIE API Key？" : "Already have a KIE API key?"}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{zh ? "手动上传分析和视频生成可使用自己的 Key，模型费用由你的 KIE 账户承担。自动拆镜单独消耗平台积分。" : "Use your own key for uploaded-file analysis and video generation. Model fees go to your KIE account; automatic splitting uses platform credits."}</p>
+            <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">{zh ? "手动上传分析和视频生成可使用自己的 Key，模型费用由对应供应商账户承担。自动拆镜单独消耗平台积分。" : "Use your own key for uploaded-file analysis and video generation. Model fees go to the corresponding provider account; automatic splitting uses platform credits."}</p>
             <Link href={settings} className="mt-3 inline-block text-sm underline underline-offset-4">{zh ? "配置自己的 Key" : "Configure your key"}</Link>
           </div>
           <div>

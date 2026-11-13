@@ -73,8 +73,8 @@ async function buildAnalysisPage() {
   });
 }
 
-it("lets the real analysis page use the saved Infistar status and submit a BYOK quote", async () => {
-  saveFixture("infistar");
+it.each(["infistar", "kie"] as const)("lets the real analysis page use saved %s status and show the quoted provider account", async provider => {
+  saveFixture(provider);
   const status = await (await credits(new NextRequest("https://fixture.test/api/credits/me"))).json();
   const bundle = await buildAnalysisPage();
   const browser = await chromium.launch({ headless: true });
@@ -94,7 +94,7 @@ it("lets the real analysis page use the saved Infistar status and submit a BYOK 
         const body = request.postDataJSON();
         if (body.action === "prepare") return route.fulfill({ json: { id: "fixture-preparation", durationUs: 1_000_000, scenes: [{ id: "1", startUs: 0, endUs: 1_000_000 }] } });
         quotes.push(body);
-        return route.fulfill({ json: { id: "fixture-quote", credits: 1, splitCredits: 1, analysisCredits: 0, expiresAt: new Date(Date.now() + 600_000).toISOString() } });
+        return route.fulfill({ json: { id: "fixture-quote", provider, credits: 1, splitCredits: 1, analysisCredits: 0, expiresAt: new Date(Date.now() + 600_000).toISOString() } });
       }
       if (url.pathname.startsWith("/api/commercial/tasks")) confirmations++;
       return route.fulfill({ status: 400, json: { code: "UNEXPECTED_TEST_REQUEST" } });
@@ -108,7 +108,8 @@ it("lets the real analysis page use the saved Infistar status and submit a BYOK 
     await vi.waitFor(() => expect(quotes.length).toBeGreaterThan(0), { timeout: 10_000 });
     expect(quotes.at(-1)).toMatchObject({ payer: "byok_split", preparationId: "fixture-preparation" });
     expect(await page.locator("body").innerText()).not.toContain("请先在设置中配置自己的 API Key");
-    expect(status.byokProvider).toBe("infistar");
+    expect(status.byokProvider).toBe(provider);
+    await page.getByText(`模型费用由你的 ${provider === "infistar" ? "无限星河 Infistar" : "KIE"} 账户承担。`, { exact: true }).waitFor();
     expect(confirmations).toBe(0);
   } finally { await browser.close(); }
 }, 30_000);

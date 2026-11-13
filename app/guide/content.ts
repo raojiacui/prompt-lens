@@ -34,7 +34,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "选择适合你的使用方式", paragraphs: [
           "先体验效果：符合条件的新账号可使用两次免费整段分析，建议上传短的完整单镜头片段。免费分析不包含拆镜和视频生成。",
           "用平台积分：购买套餐后，按页面支持的范围使用自动拆镜、视频分析和已开放的积分生成组合；付费任务开始前会显示报价。",
-          "用自己的 KIE Key：在设置中保存 Key，模型调用费用由你的 KIE 账户承担。你仍然可以购买套餐，用平台积分支付自动拆镜，并使用套餐包含的链接导入、改写额度。",
+          "用自己的 API Key：在设置中保存 Key，模型调用费用由你的 API 供应商账户承担。你仍然可以购买套餐，用平台积分支付自动拆镜，并使用套餐包含的链接导入、改写额度。",
         ] },
       ],
       note: { title: "本期可用功能", text: "视频分析与视频生成已提供入口。音频分析、视频剪辑标为「待开放」，暂时无法进入；生成的单个镜头需要拼接成片时，可下载后使用自己的剪辑工具。" },
@@ -68,7 +68,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       summary: "拆镜负责把整条视频分成独立镜头，分析负责把每个镜头的画面和运动转成可用的提示词。",
       topics: [
         { title: "在页面内选择镜头与确认费用", steps: [
-          "在主按钮右侧选择「费用来源」：使用平台积分，或使用自己的 KIE Key。自带 Key 时，自动拆镜仍使用平台积分。",
+          "在主按钮右侧选择「费用来源」：使用平台积分，或使用自己的 API Key。自带 Key 时，自动拆镜仍使用平台积分。",
           "在素材区域选择分析模型。导入后直接在右侧「镜头选择与费用」继续，不会弹出费用窗口。上传文件可选择整段分析或拆镜分析；拆镜后可勾选需要分析的镜头，链接视频也采用这个拆镜流程。",
           "点击「读取视频信息」，查看拆镜后的镜头卡片和起止时间。每张卡片都可以预览对应镜头的画面，在「镜头 01」等标题左侧勾选需要分析的镜头，也可以全选。未选中的镜头不会送去分析，不收分析费。",
           "点击镜头卡片上的「下载镜头」，可保存对应的独立视频片段。下载不扣积分，也不会启动分析任务；拆镜和分析仍按原有规则收费。镜头素材保留 7 天，请及时下载。",
@@ -78,7 +78,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "怎么理解拆镜费和分析费", paragraphs: [
           "拆镜按实际处理的视频时长计费，每开始 6 秒计 1 积分：30 秒为 5 积分，60 秒为 10 积分。这只是拆镜费用。",
           "使用平台分析时，分析部分还与所选模型、镜头数量和时长有关，以当前报价为准。只选部分镜头可以减少分析量，但不会把整条素材已经需要的拆镜工作变成免费。",
-          "自带 Key 时，报价中的平台积分用于拆镜；模型费用由 KIE 账户承担。平台余额和 KIE 余额互不通用。",
+          "自带 Key 时，报价中的平台积分用于拆镜；模型费用由 API 供应商账户承担。平台余额和 供应商余额互不通用。",
         ] },
         { title: "等待处理与再次打开", paragraphs: [
           "处理过程中查看进度，不要连续重复点击提交。任务完成后，在右侧查看整片解读和镜头结果。",
@@ -112,7 +112,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       topics: [
         { title: "一次有效改写的操作顺序", steps: [
           "找到要调整的镜头，在提示词旁的改写输入框中写下要求。",
-          "选择改写结果语言。有「改写费用来源」时，选择套餐改写额度，或自己的 KIE Key。",
+          "选择改写结果语言。有「改写费用来源」时，选择套餐改写额度，或自己的 API Key。",
           "点击改写按钮，等待新的脚本版本生成。套餐模式下，一个镜头成功生成一次新版本计一次改写，不另扣平台积分；失败不计次。",
           "使用「上一版脚本 / 下一版脚本」切换比较。确认当前显示的是你想用的版本，再复制或点击「做同款」。",
         ] },
@@ -134,7 +134,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "不用寻找三种模式的切换按钮。页面会根据上传完成的素材显示「当前生成方式」：有视频时优先使用参考视频路径；没有视频但有图片时使用图片路径；没有上传素材时显示文字路径。上传中或失败的文件不能作为有效参考。",
         ] },
         { title: "先确认费用来源", paragraphs: [
-          "使用自己的 KIE Key：打开设置，填写并保存 Key，确认你的 KIE 账户有余额。保存成功后回到视频生成，模型费用由该账户承担，不消耗平台推理积分。",
+          "使用自己的 API Key：打开设置，填写并保存 Key，确认你的 API 供应商账户有余额。保存成功后回到视频生成，模型费用由该账户承担，不消耗平台推理积分。",
           "如果页面显示「平台积分」选项，可以选择已开放的付费模型与参数组合，先获取报价，再确认生成。界面有某个模型，不代表它的每一种参数都已支持平台积分付款。",
           "三个套餐共用通用积分钱包，已核价的文字、图片、参考视频生成与视频编辑均可使用。Wan、Seedance、Kling、Veo 按各自支持的素材与参数报价，并非所有模型都支持所有参数。Veo 支持文字、图片及素材图片参考，不支持上传参考视频；Quality 4K 暂不开放。完整扣费见积分表。图生视频构图还会受到源图片比例影响。",
           "免费分析次数不用于生成视频。没有自己的有效 Key，也没有可用的积分生成条件时，需要先补齐再提交。",
@@ -162,7 +162,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "准备与操作步骤", steps: [
           "在左侧选择「视频生成」。检查上传区是否保留了上一次的素材；若要纯文字生成，用素材旁的移除按钮清掉图片和视频，确认「当前生成方式」显示「文字生成视频」。",
           "在提示词框中依次写清主体、场景、主要动作、镜头运动和光线。文字路径必须填写提示词。先写一个连续镜头，不要同时要求多个互相冲突的动作。",
-          "选择支持文字生成的模型，再选择费用来源。用平台积分时，可选择 Wan、Seedance、Kling 或 Veo 的已核价组合；不同模型、画质和时长的积分消耗不同。自带 Key 时，确认设置中已保存有效的 Key，KIE 账户有余额。",
+          "选择支持文字生成的模型，再选择费用来源。用平台积分时，可选择 Wan、Seedance、Kling 或 Veo 的已核价组合；不同模型、画质和时长的积分消耗不同。自带 Key 时，确认设置中已保存有效的 Key，API 供应商账户有余额。",
           "展开生成参数，核对比例、画质、时长和生成数量。竖屏内容选择支持竖屏的模型与计费方式；第一次先生成 1 条，避免尚未验证提示词就同时提交多条任务。",
           "点击生成。积分模式先查看报价，再确认开始；自带 Key 模式提交后查看右侧进度。完成后播放结果，检查画面是否符合描述，再下载或修改提示词重新生成。",
         ] },
@@ -216,7 +216,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "按目标选择支持视频参考的模型，或 Wan 2.7 Video Edit。只支持文字或图片的模型不能因为上传了视频就自动获得视频参考能力。",
           "普通参考生成写清「保留的动作、节奏与运镜」和「要变更的主体、场景、风格」；视频编辑写清原片里修改哪个对象、改成什么，以及哪些背景、动作和镜头需要保留。",
           "需要替换人物或商品时，另外上传清晰图片，使用 @ 图片引用把修改要求与素材对应起来。先只替换一个对象，避免第一次就同时改变人物、背景、光线和所有动作。",
-          "费用来源可选择平台积分或自己的 KIE Key。平台积分支持 Seedance 参考视频、Wan 2.6 视频参考，以及 Wan 2.7 视频编辑的已核价组合。服务器先检测上传视频的实际时长；Seedance 按参考视频加输出时长计价，编辑模型按其输出时长规则计价。核对画质、数量、时长与总积分，再确认生成。",
+          "费用来源可选择平台积分或自己的 API Key。平台积分支持 Seedance 参考视频、Wan 2.6 视频参考，以及 Wan 2.7 视频编辑的已核价组合。服务器先检测上传视频的实际时长；Seedance 按参考视频加输出时长计价，编辑模型按其输出时长规则计价。核对画质、数量、时长与总积分，再确认生成。",
           "在右侧查看各条任务的进度。完成后对照原视频播放，分别检查动作时序、运镜，以及替换对象的外观；保存满意结果，需要继续改动时重新调整指令。",
         ] },
         { title: "分别怎样写指令", example: { label: "普通视频参考与视频编辑的指令区别", text: "参考生成：保留参考视频中人物缓慢行走的节奏和从背后跟随的运镜。将场景改为雨后的未来城市，把人物服装改为银灰色外套。保持单个连续镜头，路面有霓虹倒影，不增加字幕。\n\n视频编辑：把原视频中桌面中央的杯子替换为引用图片里的白色杯子，保留杯子的原位置和大小。保留手部动作、桌面、背景和镜头运动，只修改杯子外观。请通过 @ 按钮插入对应的替换图片。" } },
@@ -231,13 +231,13 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
     },
     {
       id: "credits", title: "积分、次数与订单",
-      summary: "平台积分、链接导入次数、改写次数和 KIE 余额各有用途。判断一笔费用时，先看这次任务选择了哪一种费用来源。",
+      summary: "平台积分、链接导入次数、改写次数和供应商余额各有用途。判断一笔费用时，先看这次任务选择了哪一种费用来源。",
       topics: [
         { title: "四种额度分别用在哪里", paragraphs: [
           "平台积分：用于自动拆镜，以及页面已开放的积分分析、生成服务。分析和生成页面右上角显示余额，侧栏「账户」统一查看余额、订单与任务消费。",
           "链接导入次数：粘贴视频链接并成功导入时使用。只扣导入次数，不额外扣解析积分；之后的拆镜和分析另算。",
-          "套餐改写次数：使用套餐模式生成一个镜头的新脚本版本时计次，不另扣积分。选择自己的 Key 改写时，费用改由 KIE 账户承担。",
-          "KIE 余额：由你在服务商账户中管理。向 Prompt Lens 购买套餐不会给 KIE 充值，在 KIE 充值也不会增加 Prompt Lens 积分。",
+          "套餐改写次数：使用套餐模式生成一个镜头的新脚本版本时计次，不另扣积分。选择自己的 Key 改写时，费用改由 API 供应商账户承担。",
+          "供应商余额：由你在服务商账户中管理。向 Prompt Lens 购买套餐不会给供应商充值，在供应商处充值也不会增加 Prompt Lens 积分。",
         ] },
         { title: "购买后怎么确认到账", steps: [
           "在套餐页选择套餐，核对金额和包含的额度，再打开支付宝付款。",
@@ -254,7 +254,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       topics: [
         { title: "素材和提示词保存多久", paragraphs: ["项目原视频、镜头片段、关键帧和分析提示词在项目最近一次分析或改写内容生成后保留 7 天，到期由定时任务清理；处理中任务会暂缓清理。请及时下载素材并复制提示词。视频生成页面下方的「生成历史」可查看平台积分和自带 Key 的任务。线上生成记录从创建起保留 7 天，处理中任务暂缓清理，请及时下载结果；视频本身使用服务商链接，有效期由服务商决定。本地测试历史不自动清理。订单、积分和退款记录不会因素材到期被删除。"] },
         { title: "链接无法导入", paragraphs: ["先在原平台确认视频仍可访问，再复制具体视频的分享链接，每次只粘贴一个。确认剩余导入次数，以及时长和大小是否符合限制。仍失败时，可以把你已有的本地文件上传；这一步不消耗链接导入次数。"] },
-        { title: "提示 Key 无效或余额不足", paragraphs: ["先确认本次选择的是平台积分还是自己的 Key。平台积分不足，到套餐页充值；KIE 余额不足，到 KIE 账户处理。Key 无效时，在设置中重新保存有效的 Key，再检查账户权限和余额。不要把 Key 当作提示词粘贴。"] },
+        { title: "提示 Key 无效或余额不足", paragraphs: ["先确认本次选择的是平台积分还是自己的 Key。平台积分不足，到套餐页充值；供应商余额不足，到 API 供应商账户处理。Key 无效时，在设置中重新保存有效的 Key，再检查账户权限和余额。不要把 Key 当作提示词粘贴。"] },
         { title: "任务很久没有变化，或刷新后看不到结果", paragraphs: ["先从「我的项目」重新打开项目，付费任务也可以从「余额与订单」查看任务状态。页面暂时无法查询，不一定表示后台任务失败。先保留任务编号并联系客服核对，避免重复提交造成多次调用。"] },
         { title: "为什么不是完全一样的视频", paragraphs: ["分析提取的是可见细节和镜头描述，生成模型仍会重新创作画面。先核对提示词和参考素材，固定模型、比例与时长，每次修改少量细节比较结果。复刻不等于逐帧复制。"] },
         { title: "不想付款了，怎么取消", paragraphs: ["未付款订单可以主动点击「取消本次付款」。15 分钟内未完成支付的订单会进入超时关闭处理；如果已经付款，系统会先核对到账。已经付过款时不要继续扫描旧码，也不要靠再次下单来解决到账延迟。"] },
@@ -283,7 +283,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "Choose how to pay for your workflow", paragraphs: [
           "Try analysis first: eligible new accounts receive two free whole-video analyses. A short, complete single-shot clip is recommended. The trial does not include shot splitting or video generation.",
           "Use platform credits: buy a package for automatic shot splitting and the supported analysis and generation options. Paid tasks show a quote before you confirm.",
-          "Bring your own KIE key: save it in Settings to pay model fees from your KIE account. You can still buy a package for shot splitting, included link imports, and rewrites.",
+          "Bring your own API key: save it in Settings to pay model fees from your API provider account. You can still buy a package for shot splitting, included link imports, and rewrites.",
         ] },
       ],
       note: { title: "Available now", text: "Video analysis and video generation are available. Audio analysis and video editing are marked Coming soon. Download individual generated shots and assemble them in your own editor." },
@@ -317,7 +317,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       summary: "Shot splitting divides a video into individual clips. Analysis turns each clip's visible details and movement into a generation prompt.",
       topics: [
         { title: "Select shots and review costs on the page", steps: [
-          "Choose Payment source beside the main button: Platform credits or My KIE key. Automatic splitting still uses platform credits when you bring your own key.",
+          "Choose Payment source beside the main button: Platform credits or My API key. Automatic splitting still uses platform credits when you bring your own key.",
           "Select an analysis model in the reference area. After import, continue in Shots and analysis cost on the right without a modal. Uploaded files can be analyzed as a whole or split before selecting shots. Linked videos use the same splitting and selection flow.",
           "Select Inspect video to see the shot cards and timestamps. Preview each shot, then use the checkbox to the left of its title or Select all. Unselected shots are not sent for analysis and incur no analysis fee.",
           "Download each independent video clip from its shot card. Downloading does not deduct credits or start analysis. Existing splitting and analysis charges are unchanged. Shot assets are retained for 7 days; download them in time.",
@@ -327,7 +327,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "Understand the two parts of the quote", paragraphs: [
           "Splitting costs one credit per started six seconds of processed video: five credits for 30 seconds and ten for 60. This covers splitting only.",
           "Platform analysis also depends on the model and the number and duration of selected shots. Use the displayed quote. Selecting fewer shots reduces analysis work; it does not remove the work needed to split the full source.",
-          "With your own key, the platform quote covers splitting and your KIE account pays the model fees. The two balances are separate.",
+          "With your own key, the platform quote covers splitting and your API provider account pays the model fees. The two balances are separate.",
         ] },
         { title: "Follow progress and return to a project", paragraphs: [
           "Watch the progress instead of repeatedly submitting. When analysis finishes, the result area shows the video interpretation and individual shots.",
@@ -361,7 +361,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       topics: [
         { title: "Create and compare a rewrite", steps: [
           "Find a shot and enter your requested changes in the rewrite field next to its prompt.",
-          "Choose the output language. Where payment options are available, select Included rewrites or Own KIE key.",
+          "Choose the output language. Where payment options are available, select Included rewrites or Own API key.",
           "Run the rewrite and wait for the new script version. One successful new version of one shot consumes one included rewrite, with no extra platform credits. Failed rewrites do not count.",
           "Use Previous version and Next version to compare. Select the version you want before copying it or sending it to generation.",
         ] },
@@ -383,7 +383,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "There is no separate mode switch. Current path updates after assets finish uploading: video takes priority, otherwise images select image-to-video, and no uploaded assets selects text-to-video. Uploading or failed assets are not usable references.",
         ] },
         { title: "Check your payment source first", paragraphs: [
-          "For your own KIE key, open Settings, enter and save the key, and check your KIE balance. Return to generation after saving. Model calls use that account rather than platform inference credits.",
+          "For your own API key, open Settings, enter and save the key, and check your provider balance. Return to generation after saving. Model calls use that account rather than platform inference credits.",
           "If Platform credits is available, select a supported paid model and parameter combination, get a quote, and confirm it. A model appearing in the selector does not mean every configuration supports platform billing.",
           "All three packages share one credit wallet. Priced text, image, reference-video and video-editing configurations can use it. Wan, Seedance, Kling and Veo have different supported inputs and settings. Veo supports text, images, and material-image references, not uploaded reference videos. Quality 4K is unavailable. See the credit table for charges. Source-image framing also affects image-to-video output.",
           "Free analysis attempts cannot be used for video generation. You need a valid funded key or an eligible platform-credit generation option before submitting.",
@@ -411,7 +411,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
         { title: "Prepare and generate", steps: [
           "Open Video generation in the sidebar. Remove any images or videos left from a previous session, and check that Current path reads Text to video.",
           "Describe the subject, setting, main action, camera movement, and lighting in the prompt. Text-to-video needs a prompt. Keep the action within one shot and avoid conflicting instructions.",
-          "Choose a text-capable model and payment source. Platform credits support priced Wan, Seedance, Kling and Veo configurations; charges depend on the model, quality and duration. For your own key, save a valid KIE key in Settings and fund that provider account.",
+          "Choose a text-capable model and payment source. Platform credits support priced Wan, Seedance, Kling and Veo configurations; charges depend on the model, quality and duration. For your own key, save a valid API key in Settings and fund that provider account.",
           "Open the generation settings and review aspect ratio, quality, duration, and output count. Portrait video needs a model and billing configuration that support portrait output. Start with one output while testing the prompt.",
           "Generate, review and confirm the quote when using platform credits, then watch the status on the right. Play the completed result, save it, or adjust the prompt for another generation.",
         ] },
@@ -465,7 +465,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
           "Select a video-reference model or Wan 2.7 Video Edit. Uploading a video does not give a text-only or image-only model video-reference capabilities.",
           "For reference generation, explain the motion, pacing, and camera work to keep, plus the subject, setting, or style to change. For editing, identify the object to replace and the background, action, and camera work to preserve.",
           "Upload a clear replacement image when changing a person or product, and insert it with the @ button next to the relevant instruction. Start by changing one object rather than the subject, background, lighting, and all movement at once.",
-          "Choose platform credits or your funded KIE key. Priced Seedance and Wan 2.6 video-reference configurations, plus Wan 2.7 editing, support platform billing. The server verifies source-video duration. Seedance charges for input plus output seconds; editing follows its output-duration rules. Review settings and the total quote before confirming.",
+          "Choose platform credits or your funded API key. Priced Seedance and Wan 2.6 video-reference configurations, plus Wan 2.7 editing, support platform billing. The server verifies source-video duration. Seedance charges for input plus output seconds; editing follows its output-duration rules. Review settings and the total quote before confirming.",
           "Watch each task on the right. Compare completed footage with the source for action timing, camera movement, and replacement appearance. Save the result or adjust the instructions for another task.",
         ] },
         { title: "Two different instruction styles", example: { label: "Reference generation versus video editing", text: "Reference generation: Keep the source video's slow walking rhythm and rear tracking camera. Change the setting to a futuristic city after rain and the outfit to a silver-gray coat. One continuous shot, neon reflections on the road, no subtitles.\n\nVideo editing: Replace the cup at the center of the table with the white cup in the referenced image. Keep its original size and position. Preserve hand movements, the table, background, and camera motion; change only the cup's appearance. Insert the replacement image using the @ button." } },
@@ -480,13 +480,13 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
     },
     {
       id: "credits", title: "Credits, allowances, and orders",
-      summary: "Platform credits, link imports, included rewrites, and your KIE balance serve different purposes. Check the payment source to understand each charge.",
+      summary: "Platform credits, link imports, included rewrites, and your provider balance serve different purposes. Check the payment source to understand each charge.",
       topics: [
         { title: "What each balance pays for", paragraphs: [
           "Platform credits cover automatic splitting and supported analysis and generation. The top-right display shows balance; Account in the sidebar contains your balance, orders, and task usage.",
           "Link imports are used when a pasted video link is imported successfully. The import itself consumes no extra credits; subsequent splitting and analysis are separate.",
-          "Included rewrites pay for successful new shot-script versions without extra credits. Selecting your own key instead bills the model call to KIE.",
-          "Your KIE balance is managed with the provider. Buying a Prompt Lens package does not top up KIE, and adding funds to KIE does not add Prompt Lens credits.",
+          "Included rewrites pay for successful new shot-script versions without extra credits. Selecting your own key instead bills the model call to your provider.",
+          "Your provider balance is managed with the provider. Buying a Prompt Lens package does not top up your provider account, and adding funds to your provider account does not add Prompt Lens credits.",
         ] },
         { title: "Confirm a purchase", steps: [
           "Choose a package and check its price and allowances before opening Alipay payment.",
@@ -503,7 +503,7 @@ export const guideContent: Record<"zh" | "en", GuideSection[]> = {
       topics: [
         { title: "How long are media and prompts kept?", paragraphs: ["Project source videos, shot clips, keyframes, and analysis prompts are kept for 7 days after the project's latest analysis or rewrite content, then removed by scheduled cleanup. Active tasks postpone cleanup. Download media and copy prompts promptly. Generation history below the video generation workspace includes platform-credit and own-key tasks. Production generation records are kept for 7 days from creation; active tasks postpone cleanup. Download results promptly. Video links are hosted by the provider with provider-controlled validity. Local testing history is not automatically cleared. Order, credit, and refund records are not removed when project content expires."] },
         { title: "A link will not import", paragraphs: ["Check that the original video is accessible, copy its specific share link, and paste only one video at a time. Check your remaining imports and the file limits. If it still fails, upload a local copy you already have; local uploads do not use link imports."] },
-        { title: "Invalid key or insufficient balance", paragraphs: ["Check whether the task uses platform credits or your KIE key. Top up the corresponding account. For an invalid key, save a valid replacement in Settings and check its permissions and provider balance. Never paste a key into a prompt."] },
+        { title: "Invalid key or insufficient balance", paragraphs: ["Check whether the task uses platform credits or your API key. Top up the corresponding account. For an invalid key, save a valid replacement in Settings and check its permissions and provider balance. Never paste a key into a prompt."] },
         { title: "Progress is stuck or results disappeared after refresh", paragraphs: ["Reopen the reference in My projects. Paid tasks are also listed in Balance and orders. A temporary status-query error does not necessarily mean the underlying task failed. Keep the task ID and ask support to check before submitting another request."] },
         { title: "The result does not exactly match the reference", paragraphs: ["Analysis describes visible details; generation creates a new image sequence. Review the prompt and reference, keep the model, ratio, and duration fixed, and compare small changes. Recreation is not frame-by-frame copying."] },
         { title: "Cancel an unpaid order", paragraphs: ["Use Cancel this payment for an unpaid order. Orders unpaid after 15 minutes enter timeout closure; completed payments are checked before closure. If you already paid, do not scan an old code or create another purchase to resolve a confirmation delay."] },

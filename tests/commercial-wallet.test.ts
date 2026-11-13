@@ -1511,16 +1511,17 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(analyzeSceneBlueprint).not.toHaveBeenCalled();
   });
 
-  it("allows long local uploads without splitting or purchased credits", async () => {
+  it.each(["kie", "infistar"] as const)("quotes the saved %s provider for long uploads without splitting or purchased credits", async provider => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     const [project] = await testDb.insert(schema.projects).values({ userId, title: "Whole upload" }).returning();
     vi.mocked(commercialMediaRequest).mockResolvedValueOnce({ sourceHash: "a".repeat(64), durationUs: 60_000_000, bytes: 500, scenes: [{ id: "1", startUs: 0, endUs: 60_000_000 }] });
     const preparation = await prepareCommercialAnalysis(userId, { projectId: project.id, mediaUrl: "https://example.com/local.mp4", mediaName: "local", automaticSplit: false });
     expect(preparation.durationUs).toBe(60_000_000);
     expect(preparation.scenes).toHaveLength(1);
-    vi.mocked(getUserCredential).mockResolvedValue({ provider: "kie", apiKey: "own-test-key" });
+    vi.mocked(getUserCredential).mockResolvedValue({ provider, apiKey: "own-test-key" });
     const quote = await quoteCommercialAnalysis(userId, { preparationId: preparation.id, sceneIds: ["1"], payer: "byok", model: "flash", outputLanguage: "zh" });
-    expect(quote).toMatchObject({ splitCredits: 0, analysisCredits: 0, credits: 0 });
+    expect(quote).toMatchObject({ provider, splitCredits: 0, analysisCredits: 0, credits: 0 });
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id)))[0].input).toMatchObject({ provider });
     await confirmCommercialTask(userId, quote.id);
     expect(await balance()).toMatchObject({ credits: 0, heldCredits: 0 });
     expect(analyzeSceneBlueprint).not.toHaveBeenCalled();

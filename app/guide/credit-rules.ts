@@ -50,7 +50,7 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
   const generationDurations = [4, 5, 6, 8, 10, 15];
   const durationColumns = generationDurations.map(s => zh ? `${s} 秒` : `${s} sec`);
   return [
-    { title: zh ? "套餐包含哪些额度" : "Package allowances", paragraphs: [zh ? "三个套餐的通用积分适用于同一套已开放功能，不按套餐锁定模型。表内积分均为平台积分，不是 KIE 点数。金额为人民币；每次使用仍需足够可用余额。" : "All packages use the same wallet and supported features. These are Prompt Lens credits, not KIE credits. Prices are in CNY; each task needs sufficient available credits."], table: {
+    { title: zh ? "套餐包含哪些额度" : "Package allowances", paragraphs: [zh ? "三个套餐的通用积分适用于同一套已开放功能，不按套餐锁定模型。表内积分为 Prompt Lens 平台积分，与供应商账户余额分开计算。金额为人民币；每次使用仍需足够可用余额。" : "All packages use the same wallet and supported features. Prompt Lens credits and provider balances are separate. Prices are in CNY; each task needs sufficient available credits."], table: {
       columns: zh ? ["套餐", "价格", "通用积分", "改写次数", "链接导入次数"] : ["Package", "CNY", "Credits", "Rewrites", "Link imports"],
       rows: COMMERCIAL_PACKAGES.map((p, i) => [zh ? p.name : ["Starter", "Creator", "Volume"][i], (p.priceCents / 100).toFixed(2), String(p.credits), String(p.rewrites), String(p.linkImports)]),
     } },
@@ -72,7 +72,7 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "Each number is the platform credit cost of successfully analyzing one shot with the named model. Splitting is not included; these are not full-video totals. Duration means the length of that individual shot, not the full source.",
       "One 10-second shot costs 5 credits with Gemini 3.8 Flash. Platform-credit analysis uses Gemini 3.8 Flash. With your own key, other available analysis models charge your provider account, not platform analysis credits.",
       "Analyze all shots or a selected subset. Unselected shots incur no analysis fee. For other shot lengths or multiple selected shots, use the quote on the analysis button and confirmation page.",
-      "Failed shots incur no analysis charge. If all platform analysis fails, neither splitting nor analysis is charged for that attempt. Retries do not charge paid splitting or successful shots again. Your own key pays model costs through KIE; automatic splitting still uses platform credits.",
+      "Failed shots incur no analysis charge. If all platform analysis fails, neither splitting nor analysis is charged for that attempt. Retries do not charge paid splitting or successful shots again. Your own key pays model costs through the corresponding provider; automatic splitting still uses platform credits.",
       "Video files up to 100MB have no duration limit. Whole-video analysis has no splitting fee; a complete single-shot clip is recommended because long videos with multiple shots may reduce accuracy. Splitting requires purchased platform credits, at the same rate for files and links. Analysis fees cover only selected shots.",
       "Two introductory trials apply to eligible whole-video analysis, excluding splitting and generation. After trials, purchase credits or explicitly use your own key; the platform key is not an automatic fallback.",
     ], table: { columns: zh ? ["单个镜头时长", "Gemini 3.8 Flash（积分/镜头）"] : ["Single-shot duration", "Gemini 3.8 Flash (credits/shot)"], rows: analysisRows } },
@@ -116,13 +116,13 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "一次最多生成 4 条视频。例如 Wan 720p、5 秒：1 条扣 29 积分，2 条扣 58，4 条扣 116。其他配置和条数以生成按钮显示的总积分为准；重新生成需再次付费。",
       "一个镜头成功生成一个新的 AI 改写版本，消耗 1 次套餐改写额度、0 额外平台积分；失败不计次。一次处理多个镜头按成功的新版本数量计次。改写次数与通用积分不可互换。",
       "成功导入一个视频链接消耗 1 次链接导入额度、0 额外平台积分；失败不计次。手动上传本地文件不消耗导入次数。分析、拆镜单独收费。",
-      "自带 Key 的手动分析、生成、改写不扣平台推理积分，模型费用从自己的 KIE 账户扣。自动拆镜仍扣平台积分，链接导入仍需要对应额度。“0 平台积分”不表示 KIE 免费。",
+      "自带 Key 的手动分析、生成、改写不扣平台推理积分，模型费用从自己的 API 供应商账户扣。自动拆镜仍扣平台积分，链接导入仍需要对应额度。“0 平台积分”不表示供应商调用免费。",
       "Veo 已接入平台积分支付，支持组合和费用见上表。音频分析、独立视频剪辑仍待开放。",
     ] : [
       "Generate up to four outputs at once. Wan 720p, 5 seconds costs 29 credits for one output, 58 for two, and 116 for four. For other settings and quantities, use the total shown on the generation button. Generating again is a new paid task.",
       "A successful new AI script version of one shot consumes one included rewrite and no extra credits. Failures do not count; multiple shots consume one allowance per successful new version. Rewrite allowances and credits are separate.",
       "A successful video-link import uses one import allowance and no extra platform credits. Failed imports do not count. Local file uploads do not use import allowances. Splitting and analysis are charged separately.",
-      "Manual analysis, generation, and rewriting with your own key charge your KIE account, not platform inference credits. Automatic splitting still uses platform credits, and link imports still need their allowance. Zero platform credits does not mean free KIE usage.",
+      "Manual analysis, generation, and rewriting with your own key charge your API provider account, not platform inference credits. Automatic splitting still uses platform credits, and link imports still need their allowance. Zero platform credits does not mean free provider usage.",
       "Veo supports platform credits for the configurations listed above. Audio analysis and standalone Video editing remain Coming soon.",
     ] },
   ];
