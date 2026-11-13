@@ -80,16 +80,17 @@ export async function getVideoAnalysisEntitlement(userId: string): Promise<Video
   const adminUser = await isAdmin(userId);
 
   if (adminUser) {
-    const [trial, credits] = await Promise.all([
+    const [trial, credits, keyAccess] = await Promise.all([
       getUserTrialUsage(userId).catch(() => fallbackAdminTrialUsage()),
       getAdminSafeCreditBalance(userId),
+      resolveApiKeyForFeature(userId),
     ]);
 
     return {
       mode: "admin",
       balance: credits.balance,
       hasPaidVideoAnalysis: true,
-      hasUserApiKey: false,
+      hasUserApiKey: keyAccess.hasUserApiKey,
       canUsePlatformKie: true,
       platformKieConfigured: Boolean(getPlatformKieApiKey()),
       trial: { ...trial, used: 0, remaining: Number.POSITIVE_INFINITY, isAdmin: true },
