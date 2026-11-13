@@ -2,7 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { PgDialect } from "drizzle-orm/pg-core";
 
-const mocks = vi.hoisted(() => ({ session: vi.fn(), find: vi.fn(), bundle: vi.fn(), after: vi.fn(), recover: vi.fn(), resumeScenes: vi.fn(), select: vi.fn(), orderBy: vi.fn(), where: vi.fn() }));
+const mocks = vi.hoisted(() => ({ session: vi.fn(), find: vi.fn(), bundle: vi.fn(), after: vi.fn(), recover: vi.fn(), finalize: vi.fn(), resumeScenes: vi.fn(), select: vi.fn(), orderBy: vi.fn(), where: vi.fn() }));
 vi.mock("next/server", async importOriginal => ({ ...await importOriginal<typeof import("next/server")>(), after: mocks.after }));
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: mocks.session } } }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { select: mocks.select, query: { commercialTasks: { findFirst: mocks.find } } } }));
@@ -10,7 +10,7 @@ vi.mock("@/lib/billing/commercial-analysis", () => ({ commercialAnalysisBundle: 
 vi.mock("@/lib/billing/commercial-task-runner", () => ({ confirmCommercialTask: vi.fn(), runCommercialTask: vi.fn() }));
 vi.mock("@/lib/billing/commercial-generation", () => ({ reconcileCommercialGeneration: vi.fn() }));
 vi.mock("@/lib/billing/independent-scene-analysis", () => ({ resumeIndependentAnalysis: mocks.resumeScenes, flushReadyAnalysisSceneResults: vi.fn() }));
-vi.mock("@/lib/workflow/analysis-tasks", () => ({ recoverAnalysisTasks: vi.fn(), runAnalysisTask: vi.fn() }));
+vi.mock("@/lib/workflow/analysis-tasks", () => ({ recoverAnalysisTasks: vi.fn(), runAnalysisTask: vi.fn(), finalizeCheckpointedWorkflow: mocks.finalize }));
 import { GET } from "@/app/api/commercial/tasks/[id]/route";
 
 const id = "22222222-2222-4222-8222-222222222222";
@@ -19,7 +19,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.after.mockImplementation(() => undefined);
   mocks.session.mockResolvedValue({ user: { id: "alice" } });
-  mocks.find.mockResolvedValue({ id, userId: "alice", kind: "analysis", state: "running", updatedAt: new Date(), expiresAt: new Date(Date.now() + 60000), input: { pricing: { scenes: [1, 2] } }, result: { assets: { scenes: [1, 2] }, finishedSceneIds: ["1"], successfulSceneIds: ["1"] } });
+  mocks.finalize.mockResolvedValue(false);
+  mocks.find.mockResolvedValue({ id, userId: "alice", kind: "analysis", state: "running", createdAt: new Date(Date.now() - 10000), updatedAt: new Date(), expiresAt: new Date(Date.now() + 60000), input: { pricing: { scenes: [1, 2] } }, result: { assets: { scenes: [1, 2] }, finishedSceneIds: ["1"], successfulSceneIds: ["1"] } });
   mocks.bundle.mockResolvedValue({ sceneVersions: [{ id: "completed-shot" }] });
   mocks.select.mockReturnValue({ from: () => ({ where: mocks.where }) });
   mocks.where.mockReturnValue({ orderBy: mocks.orderBy });
@@ -51,6 +52,16 @@ it("also returns intermediate results for uploaded-file workflow tasks", async (
   const task = await mocks.find();
   mocks.find.mockResolvedValue({ ...task, kind: "workflow_analysis", result: { cursor: 1, assets: { scenes: [1, 2] } } });
   expect(await (await call()).json()).toMatchObject({ state: "running", completedScenes: 1, bundle: { sceneVersions: [{ id: "completed-shot" }] } });
+});
+it("returns the settled terminal status when an owned workflow checkpoint can be finalized", async () => {
+  const task = await mocks.find();
+  const result = { cursor: 1, successful: 0, failed: 1, assets: { scenes: [1] }, phase: "scenes", error: "Analysis interrupted" };
+  mocks.find.mockResolvedValueOnce({ ...task, kind: "workflow_analysis", result })
+    .mockResolvedValueOnce({ ...task, kind: "workflow_analysis", state: "failed", result: { ...result, phase: "settle" } });
+  mocks.finalize.mockResolvedValueOnce(true);
+  expect(await (await call()).json()).toMatchObject({ state: "failed", phase: "saving", error: "Analysis interrupted", startedAt: task.createdAt.getTime() });
+  expect(mocks.finalize).toHaveBeenCalledOnce();
+  expect(mocks.after).not.toHaveBeenCalled();
 });
 it("does not load a project before any scene is processed", async () => {
   const task = await mocks.find();

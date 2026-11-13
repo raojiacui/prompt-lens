@@ -83,7 +83,8 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
 }
 
 async function saveCheckpoint(task: Task, progress: Progress) {
-  await db.update(commercialTasks).set({ state: "queued", result: progress, updatedAt: new Date() }).where(executionCondition(task));
+  const [saved] = await db.update(commercialTasks).set({ state: "queued", result: progress, updatedAt: new Date() }).where(executionCondition(task)).returning({ id: commercialTasks.id });
+  if (!saved) throw new AnalysisExecutionLost();
 }
 
 async function settleAnalysisTask(task: Task, progress: Progress, recovering = false) {
@@ -120,6 +121,38 @@ async function settleAnalysisTask(task: Task, progress: Progress, recovering = f
   });
 }
 
+function hasFinishedCheckpoint(progress: Progress) {
+  const total = progress.assets?.scenes.length || 0;
+  return total > 0 && progress.cursor === total && progress.successful >= 0 && progress.failed >= 0
+    && progress.successful + progress.failed === total;
+}
+
+async function finishAnalysisCheckpoint(task: Task, progress: Progress) {
+  const input = task.input as Input;
+  if (progress.versionId) {
+    await db.transaction(async (tx) => {
+      await lockAnalysisExecution(tx, task);
+      const scenes = await tx.query.sceneVersions.findMany({ where: eq(sceneVersions.projectVersionId, progress.versionId!), orderBy: [asc(sceneVersions.sceneIndex)] });
+      const project = await tx.query.projects.findFirst({ where: eq(projects.id, input.projectId) });
+      const successful = scenes.filter(s => isUserProvider((s.metadata as Record<string, unknown>).analysisProvider));
+      if (project && successful.length) await tx.update(projects).set({ title: deriveProjectTitle({}, successful as unknown as SceneBlueprintDraft[], project.title) }).where(eq(projects.id, project.id));
+      await tx.update(projectVersions).set({ overview: { sceneCount: scenes.length, successfulSceneCount: progress.successful, failedSceneCount: progress.failed, backgroundMusic: progress.music, narrative: successful.map(s => (s.story as Record<string, unknown>).summary).filter(Boolean).join("\n") }, updatedAt: new Date() }).where(eq(projectVersions.id, progress.versionId!));
+    });
+  }
+  await settleAnalysisTask(task, progress);
+}
+
+/** Finish durable results without needing a live provider key or another inference. */
+export async function finalizeCheckpointedWorkflow(task: Task, now = Date.now()) {
+  if (task.kind !== "workflow_analysis" || !["queued", "running"].includes(task.state) || !hasFinishedCheckpoint(task.result as Progress)) return false;
+  if (task.state === "running" && task.updatedAt.getTime() > now - 60_000) return false;
+  const [claimed] = await db.update(commercialTasks).set({ state: "running", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionId: randomUUID() })}::jsonb`, updatedAt: new Date() })
+    .where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, task.state), eq(commercialTasks.updatedAt, task.updatedAt))).returning();
+  if (!claimed) return false;
+  await finishAnalysisCheckpoint(claimed, claimed.result as Progress);
+  return true;
+}
+
 async function runAnalysisTaskStep(id: string) {
   await recoverAnalysisTasks();
   const [task] = await db.update(commercialTasks).set({ state: "running", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionId: randomUUID() })}::jsonb`, updatedAt: new Date() }).where(and(eq(commercialTasks.id, id), eq(commercialTasks.kind, "workflow_analysis"), eq(commercialTasks.state, "queued"), sql`${commercialTasks.expiresAt} > now()`)).returning();
@@ -127,6 +160,7 @@ async function runAnalysisTaskStep(id: string) {
   const input = task.input as Input;
   let progress = task.result as Progress;
   try {
+    if (hasFinishedCheckpoint(progress)) { await finishAnalysisCheckpoint(task, progress); return; }
     const apiKey = await taskKey(input, task.userId);
     if (input.trialReservationId) {
       const [renewed] = await db.update(trialAnalysisReservations).set({ expiresAt: new Date(Date.now() + 30 * 60_000) }).where(and(eq(trialAnalysisReservations.id, input.trialReservationId), eq(trialAnalysisReservations.state, "pending"))).returning();
@@ -183,11 +217,13 @@ async function runAnalysisTaskStep(id: string) {
       const scene = progress.assets!.scenes[progress.cursor];
       const audio = buildSceneAudioContexts({ scenes: progress.assets!.scenes, transcription: progress.transcription || null, unavailableReason: progress.transcriptionError }).get(scene.sceneIndex);
       let blueprint: SceneBlueprintDraft;
+      console.info("workflow.analysis.model_started", { taskId: id, sceneIndex: scene.sceneIndex, provider: input.provider || "kie", modelId: input.modelId });
       try {
         blueprint = await (input.mediaType === "image" ? analyzeImageBlueprint : analyzeSceneBlueprint)({ userId: task.userId, scene, context: { sceneCount: progress.assets!.scenes.length, audio }, modelMode: "manual", modelId: input.modelId, outputLanguage: input.outputLanguage, analysisApiKey: apiKey, analysisProvider: input.provider || "kie", analysisKeySource: input.keySource, allowPlatformKeyForAnalysis: input.keySource === "platform", forceFreeTrialKie: input.mode === "trial" });
       } catch (error) { blueprint = buildFallbackSceneBlueprint(scene, error instanceof Error ? error.message : "Analysis failed"); }
       blueprint = attachBackgroundMusicToBlueprint(blueprint, progress.music);
       const succeeded = isUserProvider(blueprint.metadata?.analysisProvider);
+      console.info("workflow.analysis.model_returned", { taskId: id, sceneIndex: scene.sceneIndex, succeeded });
       await db.transaction(async (tx) => {
         await lockAnalysisExecution(tx, task);
         await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId!, originalSceneId: progress.sceneIds![progress.cursor], sceneIndex: scene.sceneIndex, duration: scene.duration, ...blueprint });
@@ -197,19 +233,9 @@ async function runAnalysisTaskStep(id: string) {
       });
       return;
     }
-    if (progress.versionId) {
-      await db.transaction(async (tx) => {
-      await lockAnalysisExecution(tx, task);
-      const scenes = await tx.query.sceneVersions.findMany({ where: eq(sceneVersions.projectVersionId, progress.versionId!), orderBy: [asc(sceneVersions.sceneIndex)] });
-      const project = await tx.query.projects.findFirst({ where: eq(projects.id, input.projectId) });
-      const successful = scenes.filter(s => isUserProvider((s.metadata as Record<string, unknown>).analysisProvider));
-      if (project && successful.length) await tx.update(projects).set({ title: deriveProjectTitle({}, successful as unknown as SceneBlueprintDraft[], project.title) }).where(eq(projects.id, project.id));
-      await tx.update(projectVersions).set({ overview: { sceneCount: scenes.length, successfulSceneCount: progress.successful, failedSceneCount: progress.failed, backgroundMusic: progress.music, narrative: scenes.filter(s => isUserProvider((s.metadata as Record<string, unknown>).analysisProvider)).map(s => (s.story as Record<string, unknown>).summary).filter(Boolean).join("\n") }, updatedAt: new Date() }).where(eq(projectVersions.id, progress.versionId!));
-      });
-    }
-    await settleAnalysisTask(task, progress);
+    await finishAnalysisCheckpoint(task, progress);
   } catch (error) {
-    if (error instanceof AnalysisExecutionLost) return;
+    if (error instanceof AnalysisExecutionLost) { console.warn("workflow.analysis.execution_lost", { taskId: id, phase: progress.phase, cursor: progress.cursor }); return; }
     // Read the last committed checkpoint: a failed DB transaction may have rolled back a hold.
     const current = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) });
     if (current) await settleAnalysisTask(task, { ...current.result as Progress, error: error instanceof Error ? error.message : "Analysis failed" }).catch((settlementError) => {
@@ -228,6 +254,7 @@ export async function recoverAnalysisTasks(options: { dispatch?: boolean; limit?
   for (const task of abandoned) {
     if (options.deadline && Date.now() >= options.deadline) break;
     try {
+    if (await finalizeCheckpointedWorkflow(task)) continue;
     if (task.state === "queued") {
       await settleAnalysisTask(task, { ...task.result as Progress, error: "任务已过期，已保留完成的镜头并退回未交付额度。" }, true);
       continue;

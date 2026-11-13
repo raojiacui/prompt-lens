@@ -6,7 +6,7 @@ import { buildAnalysisDiagnostics } from "@/lib/billing/analysis-diagnostics";
 import { commercialAnalysisBundle, recoverCommercialAnalysisTasks } from "@/lib/billing/commercial-analysis";
 import { confirmCommercialTask, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
-import { recoverAnalysisTasks, runAnalysisTask } from "@/lib/workflow/analysis-tasks";
+import { recoverAnalysisTasks, runAnalysisTask, finalizeCheckpointedWorkflow } from "@/lib/workflow/analysis-tasks";
 import { analysisNeedsRecovery } from "@/lib/billing/analysis-execution";
 import { flushReadyAnalysisSceneResults, resumeIndependentAnalysis } from "@/lib/billing/independent-scene-analysis";
 import { wakeReconciliationWorker } from "@/lib/billing/reconciliation-worker";
@@ -42,6 +42,11 @@ export async function GET(request: NextRequest, { params }: Context) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) return NextResponse.json({ code: "INVALID_TASK" }, { status: 400 });
   let task = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) });
   if (!task) return NextResponse.json({ code: "TASK_NOT_FOUND" }, { status: 404 });
+  if (task.kind === "workflow_analysis") {
+    try {
+      if (await finalizeCheckpointedWorkflow(task)) task = (await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) }))!;
+    } catch { console.error("workflow.analysis.finalization_failed", { taskId: id }); }
+  }
   if (task.kind === "analysis" && task.state === "running" && (task.result as { sceneJobMode?: string }).sceneJobMode === "independent_v1") {
     try { await flushReadyAnalysisSceneResults(id); }
     catch (error) { console.error("commercial.scene.delivery_failed", { taskId: id, message: error instanceof Error ? error.message : "Unknown error" }); }
@@ -88,7 +93,8 @@ export async function GET(request: NextRequest, { params }: Context) {
     catch (error) { console.error("analysis.bundle.unavailable", { taskId: id, message: error instanceof Error ? error.message : "Unknown error" }); }
   }
   const partial = task.kind === "workflow_analysis" ? Boolean(result.partial) : success > 0 && success < (input.pricing?.scenes.length || 0);
-  const phase = task.kind === "analysis" ? !result.assets ? "preparing" : completedScenes < totalScenes ? "analyzing" : "saving" : undefined;
+  const phase = task.kind === "analysis" ? !result.assets ? "preparing" : completedScenes < totalScenes ? "analyzing" : "saving"
+    : task.kind === "workflow_analysis" ? !result.assets ? "preparing" : completedScenes >= totalScenes ? "saving" : result.phase === "scenes" ? "analyzing" : "preparing" : undefined;
   const saveRecoveryPending = task.kind === "analysis" && task.state === "review" && Boolean(result.pendingResult);
   const diagnostics = request.nextUrl.searchParams.get("diagnostics") === "1" && task.kind === "analysis"
     ? buildAnalysisDiagnostics(task, await db.select({
@@ -96,5 +102,5 @@ export async function GET(request: NextRequest, { params }: Context) {
       createdAt: analysisSceneJobs.createdAt, updatedAt: analysisSceneJobs.updatedAt,
       result: sql<Record<string, unknown>>`jsonb_build_object('phase', ${analysisSceneJobs.result}->'phase', 'phaseStartedAt', ${analysisSceneJobs.result}->'phaseStartedAt', 'hasPendingBlueprint', jsonb_typeof(${analysisSceneJobs.result}->'pendingBlueprint') = 'object', 'timings', ${analysisSceneJobs.result}->'timings', 'failureCode', ${analysisSceneJobs.result}->'failureCode')`,
     }).from(analysisSceneJobs).where(eq(analysisSceneJobs.taskId, id)).orderBy(asc(analysisSceneJobs.sceneIndex))) : undefined;
-  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, diagnostics, progressUpdatedAt: task.updatedAt.getTime(), saveRecoveryPending, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error, reviewReason: (result.review as { reason?: string } | undefined)?.reason }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, startedAt: task.createdAt.getTime(), diagnostics, progressUpdatedAt: task.updatedAt.getTime(), saveRecoveryPending, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error, reviewReason: (result.review as { reason?: string } | undefined)?.reason }, { headers: { "Cache-Control": "private, no-store" } });
 }

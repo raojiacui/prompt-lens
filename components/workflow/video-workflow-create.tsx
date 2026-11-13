@@ -10,6 +10,7 @@ import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { analysisFailureMessage } from "@/lib/billing/analysis-failure-message";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
+import { workflowAnalysisPercent } from "@/lib/workflow/analysis-progress";
 import { fetchProjectList } from "@/lib/workflow/project-list-client";
 import { listModels } from "@/lib/ai/model-registry";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
@@ -257,7 +258,7 @@ function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }
         </div>
 
         {!progress.indeterminate ? <div className="mt-6">
-          <div className="h-3 overflow-hidden rounded-full bg-muted">
+          <div role="progressbar" aria-label={zh ? "分析进度" : "Analysis progress"} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress.percent} className="h-3 overflow-hidden rounded-full bg-muted">
             <div
               className="h-full rounded-full bg-[#D97757] shadow-[0_0_18px_rgba(217,119,87,0.35)] transition-all duration-500"
               style={{ width: `${progress.percent}%` }}
@@ -374,23 +375,6 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }, []);
 
   useEffect(() => {
-    if (!loading || !analysisProgress || analysisProgress.phase !== "analysis") return;
-
-    const timer = window.setInterval(() => {
-      setAnalysisProgress((current) => {
-        if (!current || current.phase !== "analysis") return current;
-        return {
-          ...current,
-          percent: Math.min(94, current.percent + 1),
-          detail: current.detail,
-        };
-      });
-    }, 900);
-
-    return () => window.clearInterval(timer);
-  }, [analysisProgress, loading]);
-
-  useEffect(() => {
     setSceneDrafts(current => {
       const drafts: Record<string, string> = {};
       bundle?.allSceneVersions.forEach((scene) => {
@@ -500,8 +484,9 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           void loadProjects({ force: true }); void loadCreditStatus();
           return;
         }
-        const detail = data.totalScenes ? `已处理 ${data.completedScenes}/${data.totalScenes} 个镜头` : "正在准备素材";
-        setAnalysisProgress({ phase: "analysis", percent: data.totalScenes ? 65 + Math.round(data.completedScenes / data.totalScenes * 30) : 60, label: "AI 分析", detail });
+        const detail = data.phase === "saving" ? (locale === "en" ? "Saving analysis results" : "正在保存分析结果")
+          : data.totalScenes ? (locale === "en" ? `${data.completedScenes}/${data.totalScenes} shots processed` : `已处理 ${data.completedScenes}/${data.totalScenes} 个镜头`) : (locale === "en" ? "Preparing media" : "正在准备素材");
+        setAnalysisProgress({ phase: "analysis", percent: workflowAnalysisPercent({ phase: data.phase, total: data.totalScenes || 0, finished: data.completedScenes || 0 }), label: locale === "en" ? "AI analysis" : "AI 分析", detail, startedAt: data.startedAt });
       } catch (error) {
         if (controller.signal.aborted) return;
         setError(error instanceof Error ? error.message : "查询暂时中断，正在重新连接。");
@@ -682,7 +667,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
       setProgress(locale === "en" ? "Analyzing reference" : "正在分析参考素材");
       setAnalysisProgress({
         phase: "analysis",
-        percent: 68,
+        percent: 60,
         label: locale === "en" ? "Analyze reference" : (prepared.mediaType === "image" ? "图片分析" : "视频分析"),
         detail: locale === "en" ? "Extracting visual details, camera movement and recreation prompts." : (prepared.mediaType === "image" ? "正在提取画面结构和复刻提示词" : "正在提取画面、动作、光线和复刻提示词"),
       });

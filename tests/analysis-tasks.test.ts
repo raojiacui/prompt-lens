@@ -22,7 +22,7 @@ vi.mock("@/lib/workflow/transcription", () => ({ buildSceneAudioContexts: () => 
 vi.mock("@/lib/workflow/music-recognition", () => ({ recognizeBackgroundMusic: async () => ({ status: "disabled" }) }));
 vi.mock("@/lib/workflow/service", () => ({ attachBackgroundMusicToBlueprint: (blueprint: unknown) => blueprint, deriveProjectTitle: () => "Analyzed project" }));
 
-import { enqueueAnalysis, recoverAnalysisTasks, runAnalysisTask } from "@/lib/workflow/analysis-tasks";
+import { enqueueAnalysis, recoverAnalysisTasks, runAnalysisTask, finalizeCheckpointedWorkflow } from "@/lib/workflow/analysis-tasks";
 import { getUserTrialUsage } from "@/lib/usage/trial-quota";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 
@@ -200,6 +200,29 @@ describe("durable analysis", () => {
     expect(mocks.analyze).not.toHaveBeenCalled();
   });
 
+  it("finalizes an interrupted failed checkpoint once without another model call", async () => {
+    mocks.analyze.mockRejectedValue(new Error("provider interrupted"));
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    for (let index = 0; index < 3; index++) await runAnalysisTask(queued.id);
+    await client.query("UPDATE commercial_tasks SET state='running', updated_at=now()-interval '70 seconds' WHERE id=$1", [queued.id]);
+    const stale = await task(queued.id);
+    expect(await finalizeCheckpointedWorkflow(stale)).toBe(true);
+    expect((await task(queued.id))).toMatchObject({ state: "failed", result: { chargedCredits: 0, failed: 1, phase: "settle" } });
+    expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
+    expect(await finalizeCheckpointedWorkflow(stale)).toBe(false);
+    expect(mocks.analyze).toHaveBeenCalledTimes(1);
+  });
+
+  it("settles a delivered checkpoint after its reservation expires without losing the result", async () => {
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    for (let index = 0; index < 3; index++) await runAnalysisTask(queued.id);
+    await client.query("UPDATE trial_analysis_reservations SET expires_at=now()-interval '1 minute' WHERE user_id=$1", [userId]);
+    expect(await finalizeCheckpointedWorkflow(await task(queued.id))).toBe(true);
+    expect((await task(queued.id)).state).toBe("completed");
+    expect(await getUserTrialUsage(userId)).toMatchObject({ used: 1 });
+    expect(mocks.analyze).toHaveBeenCalledTimes(1);
+  });
+
   it("rejects a late result after recovery has released its trial", async () => {
     const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
     await runAnalysisTask(queued.id);
@@ -210,6 +233,7 @@ describe("durable analysis", () => {
     mocks.analyze.mockImplementationOnce(() => { started(); return new Promise(resolve => { deliver = resolve; }); });
     const running = runAnalysisTask(queued.id);
     await entered;
+    expect(await finalizeCheckpointedWorkflow(await task(queued.id))).toBe(false);
     await client.query("UPDATE commercial_tasks SET updated_at = now() - interval '7 minutes' WHERE id = $1", [queued.id]);
     await recoverAnalysisTasks();
     deliver(blueprint);

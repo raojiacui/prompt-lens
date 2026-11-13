@@ -59,10 +59,8 @@ it("does not count the administrator's platform access as a saved personal key",
     .toMatchObject({ mode: "admin", hasUserApiKey: false, canUsePlatformKie: true });
 });
 
-it("lets the real analysis page use the saved Infistar status and submit a BYOK quote", async () => {
-  saveFixture("infistar");
-  const status = await (await credits(new NextRequest("https://fixture.test/api/credits/me"))).json();
-  const bundle = await build({
+async function buildAnalysisPage() {
+  return build({
     stdin: { contents: `import React from 'react';import {createRoot} from 'react-dom/client';import {VideoWorkflowCreate} from './components/workflow/video-workflow-create';createRoot(document.getElementById('root')).render(<VideoWorkflowCreate onSendToGenerate={()=>{}}/>);`, resolveDir: process.cwd(), loader: "tsx" },
     alias: { "@": process.cwd() }, bundle: true, write: false, platform: "browser", jsx: "automatic",
     plugins: [{ name: "isolated-analysis-browser", setup(builder) {
@@ -73,6 +71,12 @@ it("lets the real analysis page use the saved Infistar status and submit a BYOK 
         : args.path === "link" ? "import React from 'react';export default function Link({children,...props}){return React.createElement('a',props,children);}" : "export const uploadMediaToR2=async(file)=>({url:'https://media.fixture/reference.mp4',filename:file.name,mediaType:'video',size:file.size,key:'fixture-video'});" }));
     } }],
   });
+}
+
+it("lets the real analysis page use the saved Infistar status and submit a BYOK quote", async () => {
+  saveFixture("infistar");
+  const status = await (await credits(new NextRequest("https://fixture.test/api/credits/me"))).json();
+  const bundle = await buildAnalysisPage();
   const browser = await chromium.launch({ headless: true });
   try {
     const page = await browser.newPage();
@@ -104,5 +108,51 @@ it("lets the real analysis page use the saved Infistar status and submit a BYOK 
     expect(await page.locator("body").innerText()).not.toContain("请先在设置中配置自己的 API Key");
     expect(status.byokProvider).toBe("infistar");
     expect(confirmations).toBe(0);
+  } finally { await browser.close(); }
+}, 30_000);
+
+it("keeps unchanged server progress stable and stops polling a failed analysis", async () => {
+  saveFixture("infistar");
+  const status = await (await credits(new NextRequest("https://fixture.test/api/credits/me"))).json();
+  const bundle = await buildAnalysisPage();
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    let polls = 0; let failed = false; let submissions = 0;
+    const startedAt = Date.now() - 10_000;
+    await page.clock.install();
+    await page.route("**/*", route => {
+      const request = route.request(); const url = new URL(request.url());
+      if (url.origin !== "https://fixture.test") return route.fulfill({ status: 404, body: "" });
+      if (url.pathname === "/") return route.fulfill({ contentType: "text/html", body: '<div id="root"></div>' });
+      if (url.pathname === "/api/credits/me") return route.fulfill({ json: status });
+      if (url.pathname === "/api/workflow/projects") return route.fulfill({ json: request.method() === "POST" ? { project: { id: "fixture-project" } } : { projects: [] } });
+      if (url.pathname.endsWith("/breakdown")) { submissions++; return route.fulfill({ json: { taskId: "fixture-task" } }); }
+      if (url.pathname === "/api/commercial/tasks/fixture-task") {
+        polls++;
+        return route.fulfill({ json: { state: failed ? "failed" : "running", totalScenes: 1, completedScenes: 0, phase: "analyzing", startedAt, error: failed ? "该镜头分析中断" : undefined } });
+      }
+      return route.fulfill({ status: 400, json: { code: "UNEXPECTED_TEST_REQUEST" } });
+    });
+    await page.goto("https://fixture.test/");
+    await page.addScriptTag({ content: bundle.outputFiles[0].text });
+    const video = execFileSync("ffmpeg", ["-v", "error", "-f", "lavfi", "-i", "testsrc2=size=160x90:rate=12:duration=1", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-movflags", "frag_keyframe+empty_moov", "-f", "mp4", "pipe:1"]);
+    await page.locator('input[type="file"]').setInputFiles({ name: "fixture.mp4", mimeType: "video/mp4", buffer: video });
+    await page.getByRole("radio", { name: "整段分析", exact: true }).check();
+    await page.getByLabel("费用来源", { exact: true }).selectOption("byok");
+    await page.getByRole("button", { name: "分析视频", exact: true }).click();
+    await page.getByText("已处理 0/1 个镜头", { exact: true }).waitFor();
+    expect(await page.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("65");
+    await page.clock.runFor(3500);
+    expect(await page.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("65");
+    await page.clock.runFor(5000);
+    expect(await page.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("65");
+    failed = true;
+    await page.clock.runFor(4500);
+    await page.getByText("该镜头分析中断", { exact: true }).waitFor();
+    const stopped = polls;
+    await page.clock.runFor(5000);
+    expect(polls).toBe(stopped);
+    expect(submissions).toBe(1);
   } finally { await browser.close(); }
 }, 30_000);
