@@ -36,5 +36,13 @@
 
 ## 候选部署与后续边界
 
+## 2026-11-13 正式配套更新授权与数据库执行
+
+- 负责人随后明确授权“继续补齐数据库迁移和 worker 更新”。本次授权限于正式库 0025 和正式 Fly Worker；正式 Web 切换仍由负责人亲自操作，GitHub 默认分支及正式项目跟踪分支保持原状。
+- 执行前复核：正式商业任务和分镜作业均无排队或运行项，4 条旧 workflow 已完成；正式 Worker v14 / bc949557… 处于 started，测试 Worker v6 / 27e9313a… 已自行 suspended，未为检查唤醒测试环境。原备份恢复及本机 0025 演练证据仍有效。
+- 16:03（Asia/Shanghai）通过 Supabase apply_migration 在正式项目 vxlwqiohliynbtjwivte 应用已提交 0025 的三项 DDL，显式事务、5 秒锁等待和 30 秒语句超时。平台迁移记录为 20261113080348 / v2_0025_infistar_byok；没有重放旧迁移。
+- 迁移后只读验证：public.api_provider 已含 infistar；is_preferred 为 boolean、NOT NULL、默认 false；唯一索引 valid/ready 均为 true。205 条原 Key 的数量和加密值聚合指纹与迁移前完全相同，首选数为 0；没有重置试用、修改余额或覆盖 Key。
+- 正式 Worker 更新及原站兼容复核结果在完成后追加。本次加法迁移保留供 V2 使用，旧站回退不删该列或枚举，不以旧库恢复覆盖新增业务数据。
+
 - 标签 v2-rc-2026-11-13 与 V2 推送来源为 8107fd647e84cf62607724ac813bcc7335fb9db2，测试 Git 部署 dpl_GYcFcn89SJGE5KX7z99W78ARHyYF 已 READY 且 SHA 相同，固定测试域名已指向该部署。登录与认证健康正常，匿名样例仍受白名单保护；正式域名仍为 dpl_BKjZ5RUGiHomYsV4kBbVXW8gTK4P，main 未变。后续证据文档提交不改冻结的产品代码。
 - 新版本未在正式执行，旧站会话、Key、模型交付、支付、后台调度及邮件的发布后验收继续未执行。准备完成不等于整体业务上线验收通过。
