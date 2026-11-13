@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({ db: null as unknown, mode: "trial", provider: 
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return mocks.db; } }));
 vi.mock("@/lib/auth", () => ({ isAdminProfile: () => false }));
 vi.mock("@/lib/billing/video-analysis", () => ({
-  FREE_TRIAL_ANALYSIS_MODEL: "gemini-3-8-flash-openai",
+  FREE_TRIAL_ANALYSIS_MODEL: "deepseek-v4-1-flash",
   assertCanStartVideoAnalysis: async () => ({ mode: mocks.mode, trial: { remaining: 2 }, capabilities: { videoAnalysis: { canUseLongVideo: mocks.mode !== "trial" } } }),
   getWorkflowAnalysisEntitlement: async () => ({ mode: mocks.mode, trial: { remaining: 2 }, capabilities: { videoAnalysis: { canUseLongVideo: mocks.mode !== "trial" } } }),
   getVideoAnalysisChargeUnits: ({ sceneCount, longVideo }: { sceneCount: number; longVideo: boolean }) => sceneCount + (longVideo ? 3 : 0),
@@ -76,7 +76,7 @@ describe("durable analysis", () => {
     await Promise.all([runAnalysisTask(queued.id), runAnalysisTask(queued.id)]);
     expect((await drain(queued.id)).state).toBe("completed");
     expect(mocks.analyze).toHaveBeenCalledTimes(1);
-    expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ modelId: "gemini-3-8-flash-openai", forceFreeTrialKie: true, analysisApiKey: "platform-test" });
+    expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ modelId: "deepseek-v4-1-flash", forceFreeTrialKie: true, analysisApiKey: "platform-test" });
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 1 });
     await runAnalysisTask(queued.id);
     expect(mocks.analyze).toHaveBeenCalledTimes(1);

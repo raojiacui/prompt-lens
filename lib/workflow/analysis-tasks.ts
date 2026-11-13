@@ -20,6 +20,7 @@ import { requiresAnalysisQuote } from "./analysis-routing";
 import { attachBackgroundMusicToBlueprint, deriveProjectTitle } from "./service";
 import { AnalysisExecutionLost, executionCondition, lockAnalysisExecution } from "@/lib/billing/analysis-execution";
 import { dispatchQueuedAnalysis } from "./analysis-dispatch";
+import { safeDiagnosticText, taskErrorDetails } from "@/lib/billing/task-diagnostics";
 
 type Task = typeof commercialTasks.$inferSelect;
 type Input = {
@@ -224,6 +225,8 @@ async function runAnalysisTaskStep(id: string) {
       blueprint = attachBackgroundMusicToBlueprint(blueprint, progress.music);
       const succeeded = isUserProvider(blueprint.metadata?.analysisProvider);
       console.info("workflow.analysis.model_returned", { taskId: id, sceneIndex: scene.sceneIndex, succeeded });
+      if (!succeeded) console.warn("workflow.analysis.model_failed", { taskId: id, sceneIndex: scene.sceneIndex,
+        diagnostic: blueprint.metadata?.analysisError || { message: safeDiagnosticText(String(blueprint.metadata?.fallbackReason || "Analysis failed")) }, failureCode: blueprint.metadata?.failureCode });
       await db.transaction(async (tx) => {
         await lockAnalysisExecution(tx, task);
         await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId!, originalSceneId: progress.sceneIds![progress.cursor], sceneIndex: scene.sceneIndex, duration: scene.duration, ...blueprint });
@@ -236,6 +239,7 @@ async function runAnalysisTaskStep(id: string) {
     await finishAnalysisCheckpoint(task, progress);
   } catch (error) {
     if (error instanceof AnalysisExecutionLost) { console.warn("workflow.analysis.execution_lost", { taskId: id, phase: progress.phase, cursor: progress.cursor }); return; }
+    console.error("workflow.analysis.step_failed", { taskId: id, phase: progress.phase, cursor: progress.cursor, error: taskErrorDetails(error) });
     // Read the last committed checkpoint: a failed DB transaction may have rolled back a hold.
     const current = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) });
     if (current) await settleAnalysisTask(task, { ...current.result as Progress, error: error instanceof Error ? error.message : "Analysis failed" }).catch((settlementError) => {

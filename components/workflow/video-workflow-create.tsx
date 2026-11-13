@@ -13,6 +13,7 @@ import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 import { workflowAnalysisPercent } from "@/lib/workflow/analysis-progress";
 import { fetchProjectList } from "@/lib/workflow/project-list-client";
 import { listModels } from "@/lib/ai/model-registry";
+import { FREE_TRIAL_ANALYSIS_MODEL_ID } from "@/lib/ai/free-trial-model";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { VideoOverview } from "@/components/workflow/video-overview";
 import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
@@ -66,6 +67,8 @@ type AnalysisProgressState = {
   detail: string;
   indeterminate?: boolean;
   startedAt?: number;
+  automaticSplit?: boolean;
+  mediaType?: "video" | "image";
 };
 type MediaInputMode = "upload" | "link";
 type LinkedMediaPlatform = "tiktok" | "douyin" | "bilibili";
@@ -223,16 +226,18 @@ function sceneStatusLabel(locale: string, scene?: Scene, sceneVersion?: SceneVer
   return localizedStatus(scene?.status, locale, provider === "fallback");
 }
 
-const analysisProgressSteps: Array<{ phase: AnalysisProgressPhase; label: string; percent: number }> = [
-  { phase: "upload", label: "上传素材", percent: 45 },
-  { phase: "project", label: "创建项目", percent: 60 },
-  { phase: "analysis", label: "AI 拆解分析", percent: 95 },
-  { phase: "complete", label: "生成蓝图", percent: 100 },
+const analysisProgressSteps: Array<{ phase: AnalysisProgressPhase; percent: number }> = [
+  { phase: "upload", percent: 45 },
+  { phase: "project", percent: 60 },
+  { phase: "analysis", percent: 95 },
+  { phase: "complete", percent: 100 },
 ];
 
-function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }) {
+function AnalysisProgressPanel({ progress, automaticSplit, mediaType }: { progress: AnalysisProgressState; automaticSplit: boolean; mediaType: string | null }) {
   const zh = useLocale() !== "en";
-  const stepLabels = zh ? ["上传素材", "创建项目", "拆镜分析", "生成提示词"] : ["Upload reference", "Create project", "Analyze shots", "Prepare prompts"];
+  const split = progress.automaticSplit ?? automaticSplit;
+  const image = (progress.mediaType || mediaType) === "image";
+  const stepLabels = zh ? ["上传素材", "创建项目", image ? "图片分析" : split ? "拆镜分析" : "整段分析", "生成提示词"] : ["Upload reference", "Create project", image ? "Analyze image" : split ? "Analyze shots" : "Analyze whole video", "Prepare prompts"];
   const currentStepIndex = Math.max(0, analysisProgressSteps.findIndex((step) => step.phase === progress.phase));
   const [now, setNow] = useState(Date.now);
   useEffect(() => {
@@ -243,7 +248,7 @@ function AnalysisProgressPanel({ progress }: { progress: AnalysisProgressState }
   const elapsed = Math.max(0, Math.floor((now - (progress.startedAt || now)) / 1000));
 
   return (
-    <div className="flex min-h-[520px] flex-col justify-center">
+    <div data-testid="workflow-analysis-progress" className="flex min-h-[520px] flex-col justify-center">
       <div className="mx-auto w-full max-w-2xl rounded-2xl border border-border bg-background p-5 shadow-sm">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -350,6 +355,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }, []);
   const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer: "platform" | "byok"; modelId: string } | null>(null);
   const canSplitUpload = Boolean(creditStatus?.commercialConsumptionEnabled && (creditStatus.commercial?.credits ?? 0) > 0);
+  const usesFreeTrialModel = creditStatus?.mode === "trial" && (mediaType === "image" || !canSplitUpload);
   const uploadAnalysisMode = canSplitUpload ? preferredUploadAnalysisMode : "whole";
   const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (canSplitUpload || creditStatus.hasUserApiKey || creditStatus.mode !== "trial") && (mediaInputMode === "link" || mediaType !== "image"));
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
@@ -414,7 +420,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }
   function analysisSelectionPayload() {
     if (creditStatus?.mode === "trial") {
-      return { modelMode: "manual" as ModelMode, modelId: "analysis-gemini-3-8-flash", modelPriority, outputLanguage: analysisOutputLanguage };
+      return { modelMode: "manual" as ModelMode, modelId: FREE_TRIAL_ANALYSIS_MODEL_ID, modelPriority, outputLanguage: analysisOutputLanguage };
     }
     const manualModelId = analysisModelValue;
     return {
@@ -486,7 +492,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
         }
         const detail = data.phase === "saving" ? (locale === "en" ? "Saving analysis results" : "正在保存分析结果")
           : data.totalScenes ? (locale === "en" ? `${data.completedScenes}/${data.totalScenes} shots processed` : `已处理 ${data.completedScenes}/${data.totalScenes} 个镜头`) : (locale === "en" ? "Preparing media" : "正在准备素材");
-        setAnalysisProgress({ phase: "analysis", percent: workflowAnalysisPercent({ phase: data.phase, total: data.totalScenes || 0, finished: data.completedScenes || 0 }), label: locale === "en" ? "AI analysis" : "AI 分析", detail, startedAt: data.startedAt });
+        setAnalysisProgress({ phase: "analysis", percent: workflowAnalysisPercent({ phase: data.phase, total: data.totalScenes || 0, finished: data.completedScenes || 0 }), label: locale === "en" ? "AI analysis" : "AI 分析", detail, startedAt: data.startedAt, automaticSplit: data.automaticSplit, mediaType: data.mediaType });
       } catch (error) {
         if (controller.signal.aborted) return;
         setError(error instanceof Error ? error.message : "查询暂时中断，正在重新连接。");
@@ -929,7 +935,7 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <ModelSelector
               label={ui.analysisModel}
-              value={creditStatus?.mode === "trial" ? "analysis-gemini-3-8-flash" : analysisModelValue}
+              value={usesFreeTrialModel ? FREE_TRIAL_ANALYSIS_MODEL_ID : analysisModelValue}
               models={analysisModels}
               onChange={setAnalysisModelValue}
               disabled={creditStatus?.mode === "trial" || loading || Boolean(commercialSource) || Boolean(analysisTaskId)}
@@ -1000,10 +1006,10 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
           <div className="space-y-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-2">
           {commercialSource && <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onPartial={(result) => setBundle(result as Bundle)} onLockChange={setAnalysisQuoteLocked} onClose={() => { setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} />}
-          {!commercialSource && loading && analysisProgress && bundle && <AnalysisProgressPanel progress={analysisProgress} />}
+          {!commercialSource && loading && analysisProgress && bundle && <AnalysisProgressPanel progress={analysisProgress} automaticSplit={mediaInputMode === "link" || uploadAnalysisMode === "split"} mediaType={mediaType} />}
           {!commercialSource && !bundle ? (
             loading && analysisProgress ? (
-              <AnalysisProgressPanel progress={analysisProgress} />
+              <AnalysisProgressPanel progress={analysisProgress} automaticSplit={mediaInputMode === "link" || uploadAnalysisMode === "split"} mediaType={mediaType} />
             ) : (
               <div className="flex min-h-[520px] flex-col items-center justify-center text-center">
                 <Play className="mb-4 h-10 w-10 text-muted-foreground" />

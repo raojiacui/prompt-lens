@@ -4,10 +4,10 @@ import { FREE_TRIAL_ANALYSIS_MODEL, FREE_TRIAL_ANALYSIS_PROVIDER } from "@/lib/b
 import { getModelById, routeModel } from "@/lib/ai/model-registry";
 
 describe("KIE analysis models", () => {
-  it("locks the free trial to KIE Gemini 3.8 Flash", () => {
+  it("locks the free trial to KIE DeepSeek V4.1 Flash", () => {
     expect(FREE_TRIAL_ANALYSIS_PROVIDER).toBe("kie");
-    expect(FREE_TRIAL_ANALYSIS_MODEL).toBe("gemini-3-8-flash-openai");
-    expect(getModelById("analysis-gemini-3-8-flash")?.providerModelId).toBe(FREE_TRIAL_ANALYSIS_MODEL);
+    expect(FREE_TRIAL_ANALYSIS_MODEL).toBe("deepseek-v4-1-flash");
+    expect(getModelById("analysis-deepseek-v4-1-flash")?.providerModelId).toBe(FREE_TRIAL_ANALYSIS_MODEL);
   });
 
   it("uses the current KIE model for automatic analysis", () => {

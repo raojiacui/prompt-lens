@@ -50,8 +50,8 @@ it.each(["running", "queued"])("returns saved results while commercial analysis 
 });
 it("also returns intermediate results for uploaded-file workflow tasks", async () => {
   const task = await mocks.find();
-  mocks.find.mockResolvedValue({ ...task, kind: "workflow_analysis", result: { cursor: 1, assets: { scenes: [1, 2] } } });
-  expect(await (await call()).json()).toMatchObject({ state: "running", completedScenes: 1, bundle: { sceneVersions: [{ id: "completed-shot" }] } });
+  mocks.find.mockResolvedValue({ ...task, kind: "workflow_analysis", input: { longVideoAllowed: false, mediaType: "video" }, result: { cursor: 1, assets: { scenes: [1, 2] } } });
+  expect(await (await call()).json()).toMatchObject({ state: "running", completedScenes: 1, automaticSplit: false, mediaType: "video", bundle: { sceneVersions: [{ id: "completed-shot" }] } });
 });
 it("returns the settled terminal status when an owned workflow checkpoint can be finalized", async () => {
   const task = await mocks.find();

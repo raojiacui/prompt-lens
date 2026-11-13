@@ -1,5 +1,5 @@
 import { isAdmin } from "@/lib/auth";
-import { DEFAULT_KIE_CHAT_MODEL } from "@/lib/ai/kie-client";
+import { FREE_TRIAL_ANALYSIS_PROVIDER, FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/ai/free-trial-model";
 import { assertHasCredits, creditErrorResponse, deductCreditsFromUser, getCreditBalance } from "@/lib/billing/credits";
 import { getPlatformKieApiKey, hasPaidPackageAccess, resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { assertTrialQuota, getUserTrialUsage, trialQuotaResponse } from "@/lib/usage/trial-quota";
@@ -8,8 +8,7 @@ export const VIDEO_ANALYSIS_SHORT_MAX_SECONDS = 10;
 export const VIDEO_ANALYSIS_DURATION_TOLERANCE_SECONDS = 0.75;
 export const VIDEO_ANALYSIS_LONG_VIDEO_BASE_CREDITS = 3;
 export const VIDEO_ANALYSIS_PER_SCENE_CREDITS = 1;
-export const FREE_TRIAL_ANALYSIS_PROVIDER = "kie";
-export const FREE_TRIAL_ANALYSIS_MODEL = DEFAULT_KIE_CHAT_MODEL;
+export { FREE_TRIAL_ANALYSIS_PROVIDER, FREE_TRIAL_ANALYSIS_MODEL };
 
 export type VideoAnalysisBillingMode = "admin" | "byok" | "platform_credits" | "trial";
 

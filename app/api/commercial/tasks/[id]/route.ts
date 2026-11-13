@@ -82,7 +82,7 @@ export async function GET(request: NextRequest, { params }: Context) {
     task = (await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) }))!;
   }
   const result = task.result as Record<string, unknown>;
-  const input = task.input as { pricing?: { scenes: unknown[] }; retry?: { sceneVersions: unknown[] } };
+  const input = task.input as { pricing?: { scenes: unknown[]; automaticSplit?: boolean }; retry?: { sceneVersions: unknown[] }; longVideoAllowed?: boolean; mediaType?: string };
   const success = Array.isArray(result.successfulSceneIds) ? result.successfulSceneIds.length : 0;
   const retryAvailable = task.kind === "analysis" && ["completed", "failed"].includes(task.state) && !result.nextTaskId && Boolean(result.assets) && success < (input.pricing?.scenes.length || 0);
   const totalScenes = task.kind === "workflow_analysis" ? (result.assets as { scenes?: unknown[] } | undefined)?.scenes?.length || 0 : input.retry?.sceneVersions.length ?? input.pricing?.scenes.length ?? 0;
@@ -102,5 +102,5 @@ export async function GET(request: NextRequest, { params }: Context) {
       createdAt: analysisSceneJobs.createdAt, updatedAt: analysisSceneJobs.updatedAt,
       result: sql<Record<string, unknown>>`jsonb_build_object('phase', ${analysisSceneJobs.result}->'phase', 'phaseStartedAt', ${analysisSceneJobs.result}->'phaseStartedAt', 'hasPendingBlueprint', jsonb_typeof(${analysisSceneJobs.result}->'pendingBlueprint') = 'object', 'timings', ${analysisSceneJobs.result}->'timings', 'failureCode', ${analysisSceneJobs.result}->'failureCode')`,
     }).from(analysisSceneJobs).where(eq(analysisSceneJobs.taskId, id)).orderBy(asc(analysisSceneJobs.sceneIndex))) : undefined;
-  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, startedAt: task.createdAt.getTime(), diagnostics, progressUpdatedAt: task.updatedAt.getTime(), saveRecoveryPending, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error, reviewReason: (result.review as { reason?: string } | undefined)?.reason }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ id: task.id, kind: task.kind, state: task.state, phase, automaticSplit: task.kind === "workflow_analysis" ? input.longVideoAllowed === true : input.pricing?.automaticSplit, mediaType: task.kind === "workflow_analysis" ? input.mediaType : "video", startedAt: task.createdAt.getTime(), diagnostics, progressUpdatedAt: task.updatedAt.getTime(), saveRecoveryPending, credits: task.credits, chargedCredits: result.chargedCredits, projectId: result.projectId, bundle, videoUrl: result.videoUrl, retryAvailable, nextTaskId: result.nextTaskId, totalScenes, completedScenes, partial, error: result.error, reviewReason: (result.review as { reason?: string } | undefined)?.reason }, { headers: { "Cache-Control": "private, no-store" } });
 }
