@@ -108,6 +108,7 @@ function detectLinkedPlatform(value: string): LinkedMediaPlatform | null {
 }
 
 type Props = {
+  initialProjectId?: string | null;
   onSendToGenerate: (payload: { prompt: string; projectId: string; sceneId: string; versionId: string; duration?: number; modelId?: string; hiddenReferenceImageUrl?: string }) => void;
 };
 
@@ -303,7 +304,7 @@ function AnalysisProgressPanel({ progress, automaticSplit, mediaType }: { progre
   );
 }
 
-export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
+export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Props) {
   const locale = useLocale();
   const copy = workflowCopyFor(locale);
   const ui = workspaceCopyFor(locale);
@@ -381,6 +382,15 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
   }, []);
 
   useEffect(() => {
+    if (!initialProjectId) return;
+    const controller = new AbortController();
+    void loadProject(initialProjectId, controller.signal).catch(() => {
+      if (!controller.signal.aborted) setError(locale === "en" ? "Unable to load this project. Please retry." : "项目暂时无法加载，请重试。");
+    });
+    return () => controller.abort();
+  }, [initialProjectId]);
+
+  useEffect(() => {
     setSceneDrafts(current => {
       const drafts: Record<string, string> = {};
       bundle?.allSceneVersions.forEach((scene) => {
@@ -448,11 +458,12 @@ export function VideoWorkflowCreate({ onSendToGenerate }: Props) {
     }
     return data;
   }
-  async function loadProject(projectId: string) {
+  async function loadProject(projectId: string, signal?: AbortSignal) {
     if (retryBusy.current || retryConfirmationPending || analysisTaskId) return;
     setError("");
-    const response = await fetchWithSessionRefresh(`/api/workflow/projects/${projectId}`);
+    const response = await fetchWithSessionRefresh(`/api/workflow/projects/${encodeURIComponent(projectId)}`, { signal, cache: "no-store" });
     const data = await response.json();
+    if (signal?.aborted) return;
     if (!response.ok) {
       setError(data.error || "Failed to load project");
       return;

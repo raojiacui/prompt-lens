@@ -490,7 +490,7 @@ export default function DashboardPage() {
 
           {/* 分析页面 */}
           {activeTab === "analyze" && (
-            <VideoWorkflowCreate onSendToGenerate={handleWorkflowSendToGenerate} />
+            <VideoWorkflowCreate key={searchParams.get("projectId") || "new"} initialProjectId={searchParams.get("projectId")} onSendToGenerate={handleWorkflowSendToGenerate} />
           )}
           {/* 音频分析页面 */}
 

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDate, truncate } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
+import { GenerationHistory } from "@/components/reference-video/generation-history";
+import { ProjectHistoryDetails } from "@/components/workflow/project-history-details";
 
 interface HistoryRecord {
   id: string;
@@ -20,17 +22,42 @@ interface HistoryRecord {
   favorite: boolean;
   createdAt: string;
   language?: string;
+  source?: "legacy" | "workflow";
+  projectId?: string;
+  status?: string;
+  sceneCount?: number;
 }
 
 interface HistoryListProps {
   refreshTrigger?: number;
 }
 
+function analysisStatusLabel(status: string | undefined, zh: boolean) {
+  const labels: Record<string, string> = zh
+    ? { draft: "未开始", analyzing: "分析中", ready: "分析完成", partial: "部分完成", failed: "分析失败", archived: "已归档" }
+    : { draft: "Not started", analyzing: "Analyzing", ready: "Ready", partial: "Partially completed", failed: "Failed", archived: "Archived" };
+  return labels[status || ""] || status || "";
+}
+
 export function HistoryList({ refreshTrigger }: HistoryListProps) {
+  const zh = useLocale() !== "en";
+  const [tab, setTab] = useState<"analysis" | "generation">("analysis");
+  return <div className="space-y-5">
+    <div role="group" aria-label={zh ? "历史记录类型" : "History type"} className="flex flex-wrap gap-2">
+      {(["analysis", "generation"] as const).map(value => <Button key={value} variant={tab === value ? "default" : "outline"} aria-pressed={tab === value} onClick={() => setTab(value)}>{value === "analysis" ? (zh ? "分析历史" : "Analysis history") : (zh ? "生成历史" : "Generation history")}</Button>)}
+    </div>
+    {tab === "analysis" ? <AnalysisHistory refreshTrigger={refreshTrigger} /> : <GenerationHistory refreshKey={String(refreshTrigger ?? 0)} />}
+  </div>;
+}
+
+function AnalysisHistory({ refreshTrigger }: HistoryListProps) {
   const t = useTranslations("history");
+  const zh = useLocale() !== "en";
   const [records, setRecords] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [selectedRecord, setSelectedRecord] = useState<HistoryRecord | null>(null);
@@ -39,45 +66,55 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
 
   const limit = 10;
 
-  useEffect(() => {
-    fetchHistory();
-  }, [page, refreshTrigger]);
-
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
       });
-      if (search) params.append("search", search);
+      if (query) params.append("search", query);
 
-      const res = await fetch(`/api/history?${params}`);
+      const res = await fetch(`/api/history?${params}`, { cache: "no-store", signal });
+      if (!res.ok) throw new Error();
       const data = await res.json();
-      setRecords(data.history || []);
+      if (!Array.isArray(data.history)) throw new Error();
+      if (signal?.aborted) return;
+      setRecords(data.history);
       setTotal(data.total || 0);
-    } catch (error) {
-      console.error("Failed to fetch history:", error);
+      setError("");
+    } catch {
+      if (!signal?.aborted) setError(zh ? "分析历史暂时无法加载，请刷新重试。" : "Unable to load analysis history. Please refresh to retry.");
     } finally {
-      setLoading(false);
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, [page, query, zh]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchHistory(controller.signal);
+    return () => controller.abort();
+  }, [fetchHistory, refreshTrigger]);
 
   const handleSearch = () => {
     setPage(1);
-    fetchHistory();
+    setSelectedRecord(null);
+    setQuery(search.trim());
+    if (page === 1 && query === search.trim()) void fetchHistory();
   };
 
   const toggleFavorite = async (id: string, currentFavorite: boolean) => {
     try {
-      await fetch("/api/history", {
+      const response = await fetch("/api/history", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, favorite: !currentFavorite }),
       });
-      fetchHistory();
-    } catch (error) {
-      console.error("Failed to toggle favorite:", error);
+      if (!response.ok) throw new Error();
+      void fetchHistory();
+      setSelectedRecord(record => record?.id === id ? { ...record, favorite: !currentFavorite } : record);
+    } catch {
+      setError(zh ? "收藏状态保存失败，请重试。" : "Unable to save favorite. Please retry.");
     }
   };
 
@@ -85,13 +122,14 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
     if (!confirm(t("deleteConfirm"))) return;
 
     try {
-      await fetch(`/api/history?id=${id}`, { method: "DELETE" });
-      fetchHistory();
+      const response = await fetch(`/api/history?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (!response.ok) throw new Error();
+      void fetchHistory();
       if (selectedRecord?.id === id) {
         setSelectedRecord(null);
       }
-    } catch (error) {
-      console.error("Failed to delete record:", error);
+    } catch {
+      setError(zh ? "删除失败，请重试。" : "Unable to delete record. Please retry.");
     }
   };
 
@@ -103,16 +141,17 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
     if (!selectedRecord) return;
 
     try {
-      await fetch("/api/history", {
+      const response = await fetch("/api/history", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: selectedRecord.id, note: noteContent }),
       });
+      if (!response.ok) throw new Error();
       setEditingNote(false);
-      fetchHistory();
+      void fetchHistory();
       setSelectedRecord({ ...selectedRecord, note: noteContent });
-    } catch (error) {
-      console.error("Failed to save note:", error);
+    } catch {
+      setError(zh ? "备注保存失败，请重试。" : "Unable to save note. Please retry.");
     }
   };
 
@@ -140,9 +179,9 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
   const totalPages = Math.ceil(total / limit);
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
+    <div className="grid min-w-0 gap-6 lg:grid-cols-3">
       {/* 左侧：列表 */}
-      <div className="lg:col-span-1 space-y-4">
+      <div className="min-w-0 space-y-4 lg:col-span-1">
         {/* 搜索框 */}
         <div className="flex gap-2">
           <Input
@@ -157,19 +196,25 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
           </Button>
         </div>
 
+        <Button variant="outline" size="sm" disabled={loading} onClick={() => void fetchHistory()}>{zh ? "刷新分析历史" : "Refresh analysis history"}</Button>
+        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+
         {/* 历史记录列表 */}
         <div className="space-y-2 max-h-[600px] overflow-y-auto">
           {loading ? (
             <div className="flex justify-center py-8">
               <Spinner />
             </div>
-          ) : records.length === 0 ? (
+          ) : records.length === 0 && !error ? (
             <p className="text-center text-[var(--color-text-muted)] py-8">{t("noHistory")}</p>
           ) : (
             records.map((record) => (
               <div
                 key={record.id}
-                onClick={() => setSelectedRecord(record)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setSelectedRecord(record); setEditingNote(false); } }}
+                onClick={() => { setSelectedRecord(record); setEditingNote(false); }}
                 className={`p-3 rounded-xl border cursor-pointer transition-all duration-200 ${
                   selectedRecord?.id === record.id
                     ? "border-[#D97757] bg-[#D97757]/5"
@@ -188,7 +233,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
                       {record.favorite && <span className="text-[var(--color-accent-orange)]">⭐</span>}
                     </div>
                     <p className="text-xs text-[var(--color-text-secondary)] mt-1 truncate">
-                      {record.corePrompt || truncate(record.prompt, 50)}
+                      {record.source === "workflow" ? `${analysisStatusLabel(record.status, zh)} · ${record.sceneCount || 0} ${zh ? "个镜头" : "shots"}` : record.corePrompt || truncate(record.prompt, 50)}
                     </p>
                     <p className="text-xs text-[var(--color-text-muted)] mt-1">
                       {formatDate(record.createdAt)}
@@ -229,11 +274,11 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
       </div>
 
       {/* 右侧：详情 */}
-      <div className="lg:col-span-2">
+      <div className="min-w-0 lg:col-span-2">
         <Card className="bg-[var(--color-bg-raised)] border-[var(--color-border-default)]">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle style={{ fontFamily: 'var(--font-display)' }}>{t("detail")}</CardTitle>
-            {selectedRecord && (
+            {selectedRecord && selectedRecord.source !== "workflow" && (
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -263,7 +308,7 @@ export function HistoryList({ refreshTrigger }: HistoryListProps) {
             )}
           </CardHeader>
           <CardContent>
-            {selectedRecord ? (
+            {selectedRecord?.source === "workflow" && selectedRecord.projectId ? <ProjectHistoryDetails key={selectedRecord.id} projectId={selectedRecord.projectId} /> : selectedRecord ? (
               <div className="space-y-4">
                 {/* 元信息 */}
                 <div className="flex flex-wrap gap-4 text-sm text-[var(--color-text-secondary)]">
