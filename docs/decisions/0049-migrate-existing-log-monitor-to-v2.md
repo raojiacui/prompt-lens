@@ -39,6 +39,11 @@
 - 仍不覆盖 Fly 独立日志或无新日志的失联场景。SMTP 接受、用户实际收到及巡检自身失败告警分别验证，不提前记录为通过。
 - 本次推送包含此前已本地提交的上线记录及旧密钥兼容测试；未提交工作区无关 ADR 0001 修改或 R2 辅助脚本。远端及部署核验完成后补充执行结果。
 
+## 默认分支切换后的执行核验（2026-11-13）
+
+- 负责人已将默认分支改为 prompt-lens-V2，并亲自手动运行巡检。GitHub API 核验运行 43431705684：workflow_dispatch、prompt-lens-V2 / b9bd3dd，completed/success；Node 24、正式日志采集和通知判断步骤均成功。
+- 此结果只证明 V2 手动运行及现有日志查询路径可用，不代表计划任务连续覆盖或异常邮件实际送达；schedule 接续与 ADR 0050 的延迟缺口仍待观察及后续处理。助手未手动触发任何工作流或发信。
+
 ## Git 推送与部署核验
 
 - 功能提交 [31e99f05fe57ef9566bec77d399b20c61505b4b2](https://github.com/raojiacui/prompt-lens/commit/31e99f05fe57ef9566bec77d399b20c61505b4b2) 先完成本地验证及提交，再推送 origin/prompt-lens-V2；远端实读 SHA 一致，GitHub 固定提交的工作流文件已确认存在。

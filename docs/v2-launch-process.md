@@ -440,7 +440,14 @@
 - 负责人本人在 GitHub 将默认分支切换为 prompt-lens-V2；助手通过仓库元数据 API 实读核验 default_branch=prompt-lens-V2。main 保留，与 V2 不合并，正式 Vercel 项目此前已跟踪 V2。
 - 本次只核验设置并本地补记录，没有推送待发布页面修改，也没有触发部署或手动日志巡检。下一项核对默认分支切换后的日志巡检来源与执行情况，已有调度间隔缺口继续单独记录。
 
-## 后续安排
+## 026：核验 V2 日志巡检手动运行
+
+- 日期：2026-11-13。
+- 负责人亲自运行工作流；助手只读核验 [运行 43431705684](https://github.com/raojiacui/prompt-lens/actions/runs/43431705684)，event=workflow_dispatch、head_branch=prompt-lens-V2、head_sha=b9bd3dd2fb88309d8cc9685bd11b6c288d59a7c3，状态 completed/success。北京时间 21:12:45 创建，约 21:13:12 完成。
+- Node 24 设置、正式日志采集及通知判断步骤均成功。手动运行验证 V2 工作流可执行，尚不证明 schedule 每半小时覆盖；既有调度间隔缺口继续依 ADR 0050 处理，未新增调度器或推送页面代码。
+- 运行摘要为 No new actionable Vercel production errors found，本次窗口未发现需通知的错误，正常静默；没有以本次无告警运行验证异常邮件投递。
+
+## 后续待办
 
 后续按讨论顺序追加。未经项目负责人确认的事项不放入“已确认安排”，也不据此执行上线操作。
 
