@@ -1,7 +1,7 @@
 # ADR 0062：依据最新 V2 刷新发布候选、备份与回退基线
 
 - 日期：2026-11-13
-- 状态：代码回归、备份恢复、回退归档及候选 Git 部署已验证。正式数据库/Worker 存在两项配套差异，未执行正式更新或 Web 发布。
+- 状态：代码回归、备份恢复、回退归档及候选 Git 部署已验证；负责人另行授权后，正式数据库 0025 和 Worker v15 均已更新并验证。正式 Web 未切换。
 - 关联：ADR 0031、0032、0037、0043、0050、0051、0053、0058、0060；上线记录第 021 项。
 
 ## 背景
@@ -42,7 +42,17 @@
 - 执行前复核：正式商业任务和分镜作业均无排队或运行项，4 条旧 workflow 已完成；正式 Worker v14 / bc949557… 处于 started，测试 Worker v6 / 27e9313a… 已自行 suspended，未为检查唤醒测试环境。原备份恢复及本机 0025 演练证据仍有效。
 - 16:03（Asia/Shanghai）通过 Supabase apply_migration 在正式项目 vxlwqiohliynbtjwivte 应用已提交 0025 的三项 DDL，显式事务、5 秒锁等待和 30 秒语句超时。平台迁移记录为 20261113080348 / v2_0025_infistar_byok；没有重放旧迁移。
 - 迁移后只读验证：public.api_provider 已含 infistar；is_preferred 为 boolean、NOT NULL、默认 false；唯一索引 valid/ready 均为 true。205 条原 Key 的数量和加密值聚合指纹与迁移前完全相同，首选数为 0；没有重置试用、修改余额或覆盖 Key。
-- 正式 Worker 更新及原站兼容复核结果在完成后追加。本次加法迁移保留供 V2 使用，旧站回退不删该列或枚举，不以旧库恢复覆盖新增业务数据。
+- 本次加法迁移保留供 V2 使用，旧站回退不删该列或枚举，不以旧库恢复覆盖新增业务数据。
+
+## 2026-11-13 正式 Worker 更新与媒体核验
+
+- 16:09（Asia/Shanghai）正式 Fly Release v15 为 complete，原机器 2874974f710538 保持 1 台 sin / shared 2 CPU / 2048 MiB。直接使用测试 v6 的不可变镜像 sha256:27e9313ade107f8408672ffecf5d6c0ea6d6562cade2230909da04dab03c0124，没有重新构建。Worker 业务源码已在 GitHub V2，更新前确认没有未推送的 Worker 变更。
+- 从正式远端保存独立临时配置再部署，未使用本地配置覆盖现有参数。更新前后机器 env、guest、services、区域及全部正式 Secret 的名称/摘要/部署状态相同；正式实际桶仍 prl、公开地址正确。测试机器继续 suspended，镜像、配置和 Secret 均未变；没有唤醒测试 Worker。
+- 正式 COMMERCIAL_RECONCILIATION_BASE_URL 仍未设置，健康接口 scheduler.enabled=false；鉴权的 wake 返回 scheduled=false。没有扫描待支付、复核或过期清理项，未改 Vercel 验收标记。正式机器原已 started，完成验证后维持 started；回调恢复及正式任务/自动挂起验收继续放在正式 Web 切换后。
+- 16:10–16:11 在正式机器使用其运行时凭据处理 2.5 秒合成素材，不输出或导出密钥。4 个运行文件 SHA-256 与已提交源码相同；preview 返回 content-scenes-v3、pyscenedetect/adaptive、两个有效镜头 [0,1] 与 [1.5,2.5] 秒，正确扣除 [1,1.5] 秒黑幕，保持原时间轴。
+- assets 成功输出 2 段视频、6 张关键帧、2 段音频，10 个输出 S3 HEAD 非空、公开 HEAD 200。源素材加输出共 11 个对象全部删除，并逐项 HEAD 确认 404；临时素材目录已清理。未处理用户视频、调用 EasyDown 或模型、写业务数据或发送邮件。
+- 16:12 公网 /healthz 为 200，未授权 /ingest-media 为 401；运行时正常鉴权空请求为 400。正式登录及认证健康仍 200，正式域名仍指向 dpl_BKjZ5RUGiHomYsV4kBbVXW8gTK4P。两项配套已补齐，不代表真实支付、模型交付及正式调度已验收。
+- Worker 回退镜像保留 bc949557ff9d5306e01a220d90cd8345ac78f2ae0e464d4a5de7179e77a99e62，正式配置及密钥未变；若回退 Worker，V2 新预览协议将不兼容，需按 Web/Worker 组合判断。
 
 - 标签 v2-rc-2026-11-13 与 V2 推送来源为 8107fd647e84cf62607724ac813bcc7335fb9db2，测试 Git 部署 dpl_GYcFcn89SJGE5KX7z99W78ARHyYF 已 READY 且 SHA 相同，固定测试域名已指向该部署。登录与认证健康正常，匿名样例仍受白名单保护；正式域名仍为 dpl_BKjZ5RUGiHomYsV4kBbVXW8gTK4P，main 未变。后续证据文档提交不改冻结的产品代码。
 - 新版本未在正式执行，旧站会话、Key、模型交付、支付、后台调度及邮件的发布后验收继续未执行。准备完成不等于整体业务上线验收通过。
