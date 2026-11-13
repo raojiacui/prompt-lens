@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { taskFailureMessage, type TaskFailureContext } from "@/lib/billing/task-failure-message";
 
 const ANALYSIS_RANGE_START = 20;
 const ANALYSIS_RANGE_END = 90;
@@ -39,9 +40,10 @@ export function getAnalysisProgressPercent({ state, phase, total, finished, elap
   return roundedPercent(2 + Math.min(checkpointElapsed / 120, 1) * 16);
 }
 
-export function AnalysisTaskProgress({ zh, state, phase, total, finished, startedAt, checkpointAt, connection = "ok" }: {
+export function AnalysisTaskProgress({ zh, state, phase, total, finished, startedAt, checkpointAt, connection = "ok", failure = {} }: {
   zh: boolean; state: string; phase: string; total: number; finished: number; startedAt: number; checkpointAt?: number;
   connection?: "ok" | "error" | "auth";
+  failure?: TaskFailureContext;
 }) {
   const [now, setNow] = useState(startedAt);
   const terminal = ["completed", "failed", "review"].includes(state);
@@ -82,6 +84,6 @@ export function AnalysisTaskProgress({ zh, state, phase, total, finished, starte
       ? (zh ? "等待已超过参考时间，仍在查询任务状态，请勿重复提交。" : "Taking longer than estimated. Still checking status; do not resubmit.")
       : (zh ? `预计约 ${count}–${count * 3 + 1} 分钟（参考估计，受素材处理及模型响应影响）。` : `Estimated ${count}–${count * 3 + 1} minutes (approximate; media processing and model response may vary).`)}</p>}
     {state === "review" && <p className="text-sm">{zh ? "额度保持预留，不会重复扣款。" : "Credits remain reserved and will not be charged twice."}</p>}
-    {state === "failed" && <p className="text-sm">{zh ? "请到分析历史查看结果和任务状态。" : "Check analysis history for results and task status."}</p>}
+    {state === "failed" && connection === "ok" && <p role="alert" className="text-sm">{taskFailureMessage(failure, zh ? "zh" : "en")}</p>}
   </div>;
 }

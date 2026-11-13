@@ -16,6 +16,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { localizedStatus } from "@/lib/workflow/interface-copy";
 import { restoreGenerationSubmission, submitCommercialGeneration, type GenerationSubmissionBatch } from "@/lib/reference-video/commercial-generation-submit";
 import { generationCreditPreview } from "@/lib/billing/generation-credit-preview";
+import { taskFailureMessage, taskSyncInterruptedMessage } from "@/lib/billing/task-failure-message";
 import { getModelById, type ModelRegistryEntry } from "@/lib/ai/model-registry";
 import { generationChoiceId, generationChoices, generationDisplayName, resolveGenerationModel } from "@/lib/ai/generation-models";
 import { refreshWalletBalance } from "@/lib/billing/use-wallet-balance";
@@ -57,6 +58,7 @@ type GenerationStatusPayload = {
   videoUrl?: string;
   error?: string;
   reviewReason?: string;
+  failureCode?: string;
 };
 
 const aspectRatioOptions: Array<{
@@ -893,10 +895,7 @@ export function ReferenceVideoComposer({
           if ("error" in result) {
             return {
               ...variant,
-              notes:
-                result.error instanceof Error
-                  ? result.error.message
-                  : "Waiting for generation status...",
+              notes: taskSyncInterruptedMessage(zh ? "zh" : "en"),
             };
           }
 
@@ -915,9 +914,12 @@ export function ReferenceVideoComposer({
           }
 
           if (result.payload.status === "fail") {
-            const failureReason = taskId.startsWith("commercial:")
-              ? (zh ? `生成失败，已释放 ${result.payload.credits} 积分，本次未扣费。` : `Generation failed. ${result.payload.credits} reserved credits released. No charge.`)
-              : result.payload.error || (zh ? "生成失败。" : "Generation failed.");
+            const commercial = taskId.startsWith("commercial:");
+            const failureReason = taskFailureMessage({
+              failureCode: commercial ? result.payload.failureCode : "PROVIDER_MODEL_FAILED",
+              chargedCredits: result.payload.chargedCredits,
+              payer: commercial ? "platform" : "byok",
+            }, zh ? "zh" : "en");
             return {
               ...variant,
               status: "failed" as const,

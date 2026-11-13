@@ -310,6 +310,10 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(String(fetchMock.mock.calls[1][0])).toContain("/api/v1/veo/record-info");
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(await balance()).toMatchObject({ credits: state === "success" ? 185 : 200, heldCredits: 0 });
+    if (state === "fail") {
+      const [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+      expect(task).toMatchObject({ state: "failed", result: { failureCode: "PROVIDER_MODEL_FAILED", chargedCredits: 0 } });
+    }
   });
   it("rejects unsupported paid Veo settings before quoting", async () => {
     vi.stubEnv("KIE_API_KEY", "test-key");
@@ -1339,15 +1343,22 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(await balance()).toMatchObject({ credits: 57, heldCredits: 0 });
     expect((await testDb.select().from(schema.commercialTasks)).every((t) => t.state === "quoted")).toBe(true);
   });
-  it("releases a rejected generation but retains an unknown submission without retrying it", async () => {
+  it.each([
+    [400, "PROVIDER_REQUEST_REJECTED"], [401, "PROVIDER_ACCOUNT_REJECTED"],
+    [402, "PROVIDER_ACCOUNT_REJECTED"], [403, "PROVIDER_ACCOUNT_REJECTED"],
+    [422, "PROVIDER_REQUEST_REJECTED"], [429, "PROVIDER_MODEL_UNAVAILABLE"],
+    [433, "PROVIDER_REQUEST_REJECTED"],
+  ])("releases rejected generation code %s but retains an unknown submission without retrying it", async (code, failureCode) => {
     await grant(200, 20);
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     vi.stubEnv("KIE_AI_API_KEY", "platform-test-key");
     const quote = await quoteCommercialGeneration(userId, { userPrompt: "A cinematic scene", duration: 5 });
     await confirmCommercialTask(userId, quote.id);
-    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ code: 433 })));
+    vi.stubGlobal("fetch", vi.fn(async () => Response.json({ code })));
     await runCommercialTask(quote.id);
     expect(await balance()).toMatchObject({ credits: 200, heldCredits: 0 });
+    const [rejected] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
+    expect(rejected).toMatchObject({ state: "failed", result: { chargedCredits: 0, failureCode } });
     const uncertain = await quoteCommercialGeneration(userId, { userPrompt: "Another scene", duration: 5 });
     await confirmCommercialTask(userId, uncertain.id);
     const fetchMock = vi.fn().mockRejectedValue(new Error("timeout"));
@@ -1357,6 +1368,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [reviewTask] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, uncertain.id));
     expect(reviewTask).toMatchObject({ state: "review", result: { review: { reason: "provider_unknown", action: "manual_reconciliation", reservedCredits: 29 }, reviewHistory: [{ action: "entered_review", reason: "provider_unknown" }] } });
+    expect(reviewTask.result).not.toHaveProperty("failureCode");
     expect(await balance()).toMatchObject({ credits: 171, heldCredits: 29 });
   });
   it("moves a stopped generation without a provider id to review", async () => {
@@ -1371,6 +1383,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await reconcileCommercialGeneration(quote.id);
     const [task] = await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, quote.id));
     expect(task).toMatchObject({ state: "review", providerTaskId: null, result: { review: { reason: "provider_unknown", reservedCredits: 29 } } });
+    expect(task.result).not.toHaveProperty("failureCode");
     expect(fetchMock).not.toHaveBeenCalled();
     expect(await balance()).toMatchObject({ credits: 171, heldCredits: 29 });
   });

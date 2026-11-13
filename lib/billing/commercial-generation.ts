@@ -106,7 +106,7 @@ export async function quoteCommercialGeneration(userId: string, body: Record<str
 export async function executeCommercialGeneration(task: typeof commercialTasks.$inferSelect) {
   const input = task.input as GenerationSnapshot;
   const key = getPlatformKieApiKey();
-  if (!key || generationKeyFingerprint(key) !== input.keyFingerprint) { await settleGeneration(task, "failed"); return; }
+  if (!key || generationKeyFingerprint(key) !== input.keyFingerprint) { await settleGeneration(task, "failed", undefined, !key ? "KIE_KEY_REQUIRED" : "KIE_KEY_CHANGED"); return; }
   const base = (process.env.KIE_AI_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
   const veo = isKIEVeoModel(input.payload.model);
   const payload = veo ? buildKIEVeoPayload({
@@ -117,7 +117,11 @@ export async function executeCommercialGeneration(task: typeof commercialTasks.$
   const response = await fetch(`${base}${veo ? "/api/v1/veo/generate" : "/api/v1/jobs/createTask"}`, { method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" }, body: JSON.stringify(payload), signal: AbortSignal.timeout(20000) });
   const data = await response.json();
   // Explicit rejection is terminal; transport errors and malformed acceptance remain under review.
-  if ([400, 401, 402, 403, 422, 429, 433].includes(Number(data.code))) { await settleGeneration(task, "failed"); return; }
+  if ([400, 401, 402, 403, 422, 429, 433].includes(Number(data.code))) {
+    const failureCode = [401, 402, 403].includes(Number(data.code)) ? "PROVIDER_ACCOUNT_REJECTED"
+      : Number(data.code) === 429 ? "PROVIDER_MODEL_UNAVAILABLE" : "PROVIDER_REQUEST_REJECTED";
+    await settleGeneration(task, "failed", undefined, failureCode); return;
+  }
   if (!response.ok || data.code !== 200 || typeof data.data?.taskId !== "string") throw new Error("GENERATION_SUBMISSION_UNKNOWN");
   // Persist provider acceptance before secondary bookkeeping. If the process stops
   // afterward, polling can still reconcile the accepted provider task safely.
@@ -158,16 +162,16 @@ export async function reconcileCommercialGeneration(taskId: string) {
     try { if (new URL(status.videoUrl || "").protocol !== "https:") return; } catch { return; }
   }
   if (status.state === "success" && status.videoUrl) await settleGeneration(task, "completed", status.videoUrl);
-  else if (status.state === "fail") await settleGeneration(task, "failed");
+  else if (status.state === "fail") await settleGeneration(task, "failed", undefined, "PROVIDER_MODEL_FAILED");
 }
 
-async function settleGeneration(task: typeof commercialTasks.$inferSelect, state: "completed" | "failed", videoUrl?: string) {
+async function settleGeneration(task: typeof commercialTasks.$inferSelect, state: "completed" | "failed", videoUrl?: string, failureCode?: string) {
   const input = task.input as GenerationSnapshot;
   const credits = state === "completed" ? task.credits : 0;
   await db.transaction(async (tx) => {
     await tx.select().from(commercialTasks).where(eq(commercialTasks.id, task.id)).for("update");
     await settleCommercialTaskInTransaction(tx, { userId: task.userId, taskKey: `commercial:${task.id}`, credits, rewrites: 0 });
-    await tx.update(commercialTasks).set({ state, result: sql`${commercialTasks.result} || ${JSON.stringify({ videoUrl, chargedCredits: credits })}::jsonb`, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
+    await tx.update(commercialTasks).set({ state, result: sql`${commercialTasks.result} || ${JSON.stringify({ videoUrl, chargedCredits: credits, ...(failureCode ? { failureCode } : {}) })}::jsonb`, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
     if (task.providerTaskId) await tx.update(videoGeneration).set({ status: state, videoUrl, updatedAt: new Date() }).where(and(eq(videoGeneration.taskId, task.providerTaskId), eq(videoGeneration.userId, task.userId)));
     if (state === "completed" && videoUrl && input.projectId && input.sceneId && input.projectVersionId) await tx.update(sceneVersions).set({ generatedVideoUrl: videoUrl, updatedAt: new Date() }).where(and(eq(sceneVersions.projectId, input.projectId), eq(sceneVersions.originalSceneId, input.sceneId), eq(sceneVersions.projectVersionId, input.projectVersionId)));
   });

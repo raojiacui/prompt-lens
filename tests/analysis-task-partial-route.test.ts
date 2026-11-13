@@ -41,6 +41,18 @@ it("does not query diagnostics for another user's task", async () => {
   expect((await call(true)).status).toBe(404);
   expect(mocks.select).not.toHaveBeenCalled();
 });
+it("returns safe failure and billing evidence without exposing raw provider errors", async () => {
+  const task = await mocks.find();
+  mocks.find.mockResolvedValue({ ...task, kind: "generation", state: "failed", input: {}, result: { failureCode: "PROVIDER_MODEL_FAILED", chargedCredits: 0, diagnostic: { secret: "provider-secret" } } });
+  const body = await (await call()).json();
+  expect(body).toMatchObject({ state: "failed", failureCode: "PROVIDER_MODEL_FAILED", chargedCredits: 0, payer: "platform" });
+  expect(JSON.stringify(body)).not.toContain("provider-secret");
+});
+it("identifies BYOK analysis and preserves paid splitting settlement", async () => {
+  const task = await mocks.find();
+  mocks.find.mockResolvedValue({ ...task, state: "completed", input: { pricing: { scenes: [1, 2], payer: "byok_split" } }, result: { ...task.result, chargedCredits: 5 } });
+  expect(await (await call()).json()).toMatchObject({ payer: "byok", partial: true, chargedCredits: 5 });
+});
 it.each(["running", "queued"])("returns saved results while commercial analysis is %s", async state => {
   const task = await mocks.find();
   mocks.find.mockResolvedValue({ ...task, state });

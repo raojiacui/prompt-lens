@@ -9,6 +9,7 @@ import { AnalyzedShotPreview } from "@/components/workflow/analyzed-shot-preview
 import { uploadMediaToR2 } from "@/lib/r2-upload-client";
 import { ANALYSIS_MAX_BYTES } from "@/lib/media-upload-policy";
 import { analysisFailureMessage } from "@/lib/billing/analysis-failure-message";
+import { taskFailureMessage, taskSyncInterruptedMessage } from "@/lib/billing/task-failure-message";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 import { workflowAnalysisPercent } from "@/lib/workflow/analysis-progress";
 import { fetchProjectList } from "@/lib/workflow/project-list-client";
@@ -484,7 +485,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
         const data = await response.json();
         if (controller.signal.aborted) return;
         if (!response.ok) {
-          if ([401, 403, 404].includes(response.status)) { setAnalysisTaskId(""); setLoading(false); }
+          if ([401, 403, 404].includes(response.status)) {
+            setAnalysisTaskId(""); setLoading(false);
+            setError(locale === "en" ? "Unable to access this task. Verify your login and open the original task; do not resubmit." : "暂时无法访问此任务，请验证登录后打开原任务查看，勿重复提交。");
+            return;
+          }
           throw new Error(data.error || "Task status unavailable");
         }
         setError("");
@@ -495,7 +500,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
             setSceneDrafts(current => { const next = { ...current }; delete next[sceneId]; return next; });
             retriedScene.current = "";
           }
-          setError(data.state === "failed" ? data.error || "分析失败，请检查 Key 后重试。" : data.partial ? "部分镜头分析失败，成功结果已保留，仅结算成功镜头。" : "");
+          setError(data.state === "failed" || data.partial ? taskFailureMessage(data, locale) : "");
           setAnalysisTaskId(""); setLoading(false); setAnalysisProgress(null);
           setProgress(data.state === "completed" ? "分析完成" : "分析失败");
           void loadProjects({ force: true }); void loadCreditStatus();
@@ -506,7 +511,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
         setAnalysisProgress({ phase: "analysis", percent: workflowAnalysisPercent({ phase: data.phase, total: data.totalScenes || 0, finished: data.completedScenes || 0 }), label: locale === "en" ? "AI analysis" : "AI 分析", detail, startedAt: data.startedAt, automaticSplit: data.automaticSplit, mediaType: data.mediaType });
       } catch (error) {
         if (controller.signal.aborted) return;
-        setError(error instanceof Error ? error.message : "查询暂时中断，正在重新连接。");
+        setError(taskSyncInterruptedMessage(locale));
       }
       if (!controller.signal.aborted) timer = setTimeout(poll, 4000);
     }
@@ -1016,7 +1021,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
         <div className="relative min-h-0">
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
           <div className="space-y-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-2">
-          {commercialSource && <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onPartial={(result) => setBundle(result as Bundle)} onLockChange={setAnalysisQuoteLocked} onClose={() => { setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); }} onComplete={(result) => { setBundle(result as Bundle); setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} />}
+          {commercialSource && <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onPartial={(result) => setBundle(result as Bundle)} onLockChange={setAnalysisQuoteLocked} onClose={() => { setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); }} onComplete={(result, notice) => { setError(notice || ""); setBundle(result as Bundle); setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} />}
           {!commercialSource && loading && analysisProgress && bundle && <AnalysisProgressPanel progress={analysisProgress} automaticSplit={mediaInputMode === "link" || uploadAnalysisMode === "split"} mediaType={mediaType} />}
           {!commercialSource && !bundle ? (
             loading && analysisProgress ? (

@@ -7,7 +7,8 @@ import { ArrowLeft, RefreshCw } from "lucide-react";
 import { AnalysisTaskDetails } from "@/components/payments/analysis-task-details";
 import type { AnalysisDiagnostics } from "@/lib/billing/analysis-diagnostics";
 import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
-type Task = { id: string; kind: string; state: string; credits: number; diagnostics?: AnalysisDiagnostics; chargedCredits?: number; videoUrl?: string; nextTaskId?: string; retryAvailable?: boolean; bundle?: { sceneVersions: { id: string; sceneIndex: number; duration: number; generationPrompt: string }[] } };
+import { taskFailureMessage, type TaskFailureContext } from "@/lib/billing/task-failure-message";
+type Task = TaskFailureContext & { id: string; kind: string; state: string; credits: number; diagnostics?: AnalysisDiagnostics; videoUrl?: string; nextTaskId?: string; retryAvailable?: boolean; bundle?: { sceneVersions: { id: string; sceneIndex: number; duration: number; generationPrompt: string }[] } };
 export default function BillingTaskPage() {
   const { id } = useParams<{ id: string }>();
   const zh = useLocale() === "zh";
@@ -53,6 +54,7 @@ export default function BillingTaskPage() {
     {task && <>
       <p role="status" className="mt-6">{zh ? ({ quoted: "等待确认", queued: "排队中", running: "处理中", completed: "已完成", failed: "未完成", review: "结果待核对，额度仍在预留中" }[state || ""] || "待确认") : state}</p>
       <p className="mt-2 text-sm">{task.chargedCredits === undefined ? (zh ? "预留" : "Reserved") : (zh ? "已结算" : "Settled")}: {task.chargedCredits ?? task.credits} {zh ? "积分" : "credits"}</p>
+      {connection === "ok" && (state === "failed" || task.partial) && <p role="alert" className="mt-4 text-sm text-amber-800">{taskFailureMessage(task, zh ? "zh" : "en")}</p>}
       {task.kind === "analysis" && <AnalysisTaskDetails taskId={task.id} diagnostics={task.diagnostics} zh={zh} lastSyncedAt={lastSyncedAt} connection={connection} expanded />}
       {task.videoUrl && <video className="mt-6 w-full rounded-lg" controls playsInline src={task.videoUrl} />}
       {task.nextTaskId && <Link href={`/billing/tasks/${task.nextTaskId}`} className="mt-5 inline-block underline">{zh ? "查看后续重试" : "View subsequent retry"}</Link>}

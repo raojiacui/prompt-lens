@@ -11,6 +11,7 @@ import { AnalysisTaskProgress } from "./analysis-task-progress";
 import { AnalysisTaskDetails } from "./analysis-task-details";
 import type { AnalysisDiagnostics } from "@/lib/billing/analysis-diagnostics";
 import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
+import { taskFailureMessage, type TaskFailureContext } from "@/lib/billing/task-failure-message";
 
 type AnalysisPreparation = { id: string; scenes: SceneInterval[]; durationUs: number };
 
@@ -19,7 +20,7 @@ class AnalysisRequestError extends Error {
 }
 type AnalysisQuoteSource = { projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer?: "platform" | "byok"; modelId?: string };
 
-export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onLockChange }: { source: AnalysisQuoteSource; onClose: () => void; onComplete: (bundle: unknown) => void; onPartial?: (bundle: unknown) => void; onLockChange?: (locked: boolean) => void }) {
+export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onLockChange }: { source: AnalysisQuoteSource; onClose: () => void; onComplete: (bundle: unknown, notice?: string) => void; onPartial?: (bundle: unknown) => void; onLockChange?: (locked: boolean) => void }) {
   const zh = useLocale() === "zh";
   const automaticSplit = source.automaticSplit;
   const payer = source.payer ?? "platform";
@@ -35,6 +36,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   const [diagnostics, setDiagnostics] = useState<AnalysisDiagnostics>();
   const [lastSyncedAt, setLastSyncedAt] = useState<number>();
   const [connection, setConnection] = useState<"ok" | "error" | "auth">("ok");
+  const [failure, setFailure] = useState<TaskFailureContext>({});
   const [state, setState] = useState("");
   const [taskProgress, setTaskProgress] = useState({ phase: "preparing", total: 0, finished: 0, startedAt: 0, checkpointAt: 0 });
   const [busy, setBusy] = useState(false);
@@ -231,6 +233,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         if (controller.signal.aborted) return;
         setDiagnostics(data.diagnostics); setLastSyncedAt(Date.now()); setConnection("ok");
         setState(data.state);
+        setFailure({ failureCode: data.failureCode, chargedCredits: data.chargedCredits, partial: data.partial, payer: data.payer });
         setError("");
         setTaskProgress(previous => ({
           ...previous,
@@ -241,7 +244,11 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         }));
         if (data.bundle && !["completed", "failed"].includes(data.state)) onPartialRef.current?.(data.bundle);
         if (["completed", "failed"].includes(data.state)) {
-          if (data.bundle && !completed.current) { completed.current = true; onCompleteRef.current(data.bundle); return; }
+          if (data.bundle && !completed.current) {
+            completed.current = true;
+            onCompleteRef.current(data.bundle, data.state === "failed" || data.partial ? taskFailureMessage(data, zh ? "zh" : "en") : undefined);
+            return;
+          }
           missingTerminalBundle++;
           setError(zh ? "任务已结束，正在读取结果。" : "Task finished; loading results.");
           if (missingTerminalBundle >= 5) {
@@ -293,7 +300,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
         <button disabled={busy || downloading || preparing || quoting || (!quote && (!error || (preparation !== null && !selected.length && !needsPreparation)))} onClick={() => void confirmAnalysis()} className="min-h-11 min-w-0 rounded-lg bg-foreground px-3 py-1 text-sm font-semibold leading-tight text-background disabled:opacity-50">{busy ? (zh ? "正在提交…" : "Submitting…") : preparing ? (zh ? "正在读取视频…" : "Inspecting video…") : quoting ? (zh ? "正在计算费用…" : "Calculating cost…") : quote ? (zh ? `确认分析 · ${quote.credits} 积分` : `Confirm analysis · ${quote.credits} credits`) : error ? (preparation && !needsPreparation ? (zh ? "重新获取费用" : "Refresh cost") : (zh ? "重新读取视频" : "Inspect video again")) : (zh ? "确认分析" : "Confirm analysis")}</button>
       </div>
     </>}
-    {taskId && <><AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} checkpointAt={taskProgress.checkpointAt} connection={connection} />
+    {taskId && <><AnalysisTaskProgress zh={zh} state={state} phase={taskProgress.phase} total={taskProgress.total} finished={taskProgress.finished} startedAt={taskProgress.startedAt} checkpointAt={taskProgress.checkpointAt} connection={connection} failure={failure} />
       <AnalysisTaskDetails taskId={taskId} diagnostics={diagnostics} zh={zh} lastSyncedAt={lastSyncedAt} connection={connection} />
     </>}
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}

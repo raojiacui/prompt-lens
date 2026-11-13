@@ -39,4 +39,13 @@ describe("analysis task progress", () => {
     expect(render("running", "analyzing", 1, false)).toContain('>Analyzing shots</p>');
     expect(render("running", "analyzing", 1, false)).toContain("approximate");
   });
+  it("shows confirmed failure guidance but hides stale settlement claims while disconnected", () => {
+    const props = { zh: true, state: "failed", phase: "saving", total: 2, finished: 2, startedAt: Date.now(), failure: { failureCode: "PROVIDER_MODEL_FAILED", chargedCredits: 0 } };
+    const connected = renderToStaticMarkup(<AnalysisTaskProgress {...props} />);
+    expect(connected).toContain("换个模型");
+    expect(connected).toContain("本次未扣积分");
+    const stale = renderToStaticMarkup(<AnalysisTaskProgress {...props} connection="error" />);
+    expect(stale).toContain("后台进展尚未同步");
+    expect(stale).not.toContain("本次未扣积分");
+  });
 });
