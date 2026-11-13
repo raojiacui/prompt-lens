@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, eq, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db, paymentOrders } from "@/lib/db";
-import { alipayNotifyUrl, createAlipayPaymentForm } from "@/lib/payments/alipay";
+import { alipayNotifyUrl, createAlipayPaymentUrl } from "@/lib/payments/alipay";
 import { alipayOrderDeadline } from "@/lib/payments/order-expiry";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const base = siteUrl(request);
   const embedded = request.nextUrl.searchParams.get("embedded") === "1";
-  const html = createAlipayPaymentForm({
+  const paymentUrl = createAlipayPaymentUrl({
     outTradeNo: order.providerOrderId,
     amountCents: order.amountCents,
     subject: `Prompt Lens ${order.packageName}`,
@@ -41,11 +41,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     expiresAt: deadline,
     embedded,
   });
-  return new NextResponse(html, {
+  return new NextResponse(null, {
+    status: 303,
     headers: {
-      "Content-Type": "text/html; charset=utf-8",
+      "Location": paymentUrl,
       "Cache-Control": "private, no-store",
-      "Content-Security-Policy": "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; frame-ancestors 'self'; form-action https://openapi.alipay.com https://openapi-sandbox.dl.alipaydev.com",
+      "Content-Security-Policy": "default-src 'none'; frame-ancestors 'self'",
       "X-Frame-Options": "SAMEORIGIN",
       "Referrer-Policy": "no-referrer",
     },

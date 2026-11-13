@@ -52,7 +52,7 @@ export function parseCny(value: unknown) {
   return Number.isSafeInteger(cents) ? cents : null;
 }
 
-export function createAlipayPaymentForm(input: {
+export function createAlipayPaymentUrl(input: {
   outTradeNo: string;
   amountCents: number;
   subject: string;
@@ -73,7 +73,13 @@ export function createAlipayPaymentForm(input: {
     },
   };
   if (input.notifyUrl) options.notifyUrl = input.notifyUrl;
-  return createAlipaySdk().pageExec("alipay.trade.page.pay", "POST", options);
+  // A form-action policy also constrains redirects after form submission in
+  // Chromium. Hand off by navigation instead of executing an auto-submit form.
+  const result = createAlipaySdk().pageExec("alipay.trade.page.pay", "GET", options);
+  const url = new URL(result);
+  if (![PRODUCTION_GATEWAY, SANDBOX_GATEWAY].includes(`${url.origin}${url.pathname}`)
+    || url.username || url.password || url.hash) throw new Error("Invalid Alipay payment URL");
+  return url.href;
 }
 
 export async function queryAlipayTrade(outTradeNo: string) {

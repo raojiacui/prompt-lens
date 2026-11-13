@@ -34,6 +34,7 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
   const [now, setNow] = useState(Date.now());
   const [cancelling, setCancelling] = useState(false);
   const [readyPaymentSource, setReadyPaymentSource] = useState("");
+  const [slowPaymentSource, setSlowPaymentSource] = useState("");
   const onPaidRef = useRef(onPaid);
   onPaidRef.current = onPaid;
   useEffect(() => {
@@ -159,6 +160,13 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
   const qr = checkout && safePaymentUrl(checkout.qrImageUrl);
   const paymentUrl = checkout && safePaymentUrl(checkout.paymentUrl || checkout.mobilePaymentUrl);
   const embeddedUrl = paymentUrl && /^\/api\/payments\/orders\/[0-9a-f-]{36}\/pay$/i.test(paymentUrl) ? `${paymentUrl}?embedded=1` : null;
+  const paymentSource = embeddedUrl;
+  const canLoadPayment = pending && remaining > 0 && !checkout?.cancellationRequested;
+  useEffect(() => {
+    if (!canLoadPayment || !paymentSource || readyPaymentSource === paymentSource) return;
+    const timer = window.setTimeout(() => setSlowPaymentSource(paymentSource), 12000);
+    return () => window.clearTimeout(timer);
+  }, [canLoadPayment, paymentSource, readyPaymentSource]);
   function checkPayment() {
     if (manualCheck.current || checking || cancelling) return;
     manualCheck.current = true;
@@ -199,12 +207,8 @@ export function AlipayCheckoutDialog({ pack, requestId, existingOrderId, onClose
         {pending && remaining > 0 && !checkout.cancellationRequested && (embeddedUrl ? <>
           {/* Alipay anchors the 224px code at the frame origin; retain a 16px quiet zone on every side. */}
           <div className="relative h-64 w-64 shrink-0 overflow-hidden rounded-lg bg-white">
-            <iframe key={checkout.orderId} src={embeddedUrl} title={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={256} height={256} className="absolute left-4 top-4 h-64 w-64 border-0 bg-white" sandbox="allow-scripts allow-forms allow-same-origin" referrerPolicy="same-origin" onLoad={(event) => {
-              // The local signing form loads before it navigates to Alipay.
-              try { if (event.currentTarget.contentDocument?.querySelector("form")) return; } catch { /* The Alipay page is cross-origin. */ }
-              setReadyPaymentSource(embeddedUrl);
-            }} />
-            {readyPaymentSource !== embeddedUrl && <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white text-foreground"><Spinner size="lg" /><p className="text-sm">{zh ? "正在加载付款码…" : "Loading payment QR code…"}</p></div>}
+            <iframe key={checkout.orderId} src={embeddedUrl} title={zh ? "支付宝付款二维码" : "Alipay payment QR code"} width={256} height={256} className="absolute left-4 top-4 h-64 w-64 border-0 bg-white" sandbox="allow-scripts allow-forms allow-same-origin" referrerPolicy="same-origin" onLoad={() => setReadyPaymentSource(embeddedUrl)} onError={() => setSlowPaymentSource(embeddedUrl)} />
+            {readyPaymentSource !== embeddedUrl && <div role="status" className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white p-4 text-foreground">{slowPaymentSource !== embeddedUrl && <Spinner size="lg" />}<p className="text-sm">{slowPaymentSource === embeddedUrl ? (zh ? "付款页面加载较慢，请点击下方链接打开同一订单的支付宝收银台，无需重新下单。" : "Checkout is taking longer. Open the link below to pay the same order; do not create another order.") : (zh ? "正在加载付款码…" : "Loading payment QR code…")}</p></div>}
           </div>
           <p className="text-sm">{zh ? "打开支付宝，扫一扫付款" : "Scan with Alipay to pay"}</p>
           <a href={paymentUrl!} target="_blank" rel="noopener noreferrer" className="text-sm text-muted-foreground underline underline-offset-4">{zh ? "手机付款 / 二维码无法显示" : "Pay on mobile / QR unavailable"}</a>
