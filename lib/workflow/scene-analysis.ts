@@ -98,6 +98,14 @@ function outputLanguageInstruction(value: unknown) {
     : "Output language: English. Keep JSON keys in English and write all human-readable values in English.";
 }
 
+const CHARACTER_GROUNDING_INSTRUCTIONS = [
+  "Character accuracy: inspect every supplied reference image before writing; describe each visible person separately using position, visible appearance, clothing, pose and action as anchors. Keep those anchors consistent when matching a person across frames; do not merge different people or treat a camera-angle change as a new person.",
+  "Describe observable on-screen presentation, not a person's actual gender identity. Do not assign male/female labels or gendered pronouns from hairstyle, makeup, clothing, occupation, action, voice pitch, or genre stereotypes alone. Long hair and robes do not establish a woman; short hair and armor do not establish a man. Never guess anatomy or add sexualized details to resolve ambiguity.",
+  "When the visible evidence is unclear, conflicting, distant, obscured or back-facing, use a stable neutral reference such as 'the person on the left' or 'the black-robed figure' (Chinese: '左侧人物' or '黑衣人物'). Preserve the concrete visible details instead of forcing a binary label or repeatedly adding uncertainty disclaimers to the recreation prompt.",
+  "Reference images are the source of truth for visible appearance. Project titles, previous/next summaries, presumed film characters, speaker labels and transcript pronouns can be wrong; they must not override the images or supply missing visual evidence. Do not assign an off-screen voice to a visible person without evidence.",
+  "Before returning JSON, silently cross-check story, visual.sceneDescription, visual.subject, visual.characters, visual.action, speaker attributions and generationPrompt for swapped people, contradictory appearance, and inconsistent gender labels or pronouns. Correct unsupported labels consistently in every field while preserving observed actions, clothing and verbatim dialogue. Do not include this checklist or your reasoning in the output.",
+].join(" ");
+
 function looksMostlyEnglish(value: string) {
   const letters = (value.match(/[A-Za-z]/g) || []).length;
   const chinese = (value.match(/[\u4e00-\u9fff]/g) || []).length;
@@ -289,7 +297,7 @@ function normalizeBlueprint(raw: Record<string, unknown>, fallback: SceneBluepri
     audio: { ...fallback.audio, ...safeObject(raw.audio) },
     transition: { ...fallback.transition, ...safeObject(raw.transition) },
     generationPrompt: buildRecreationPrompt({ ...raw, metadata: undefined, generationPrompt, visual: { ...fallback.visual, ...safeObject(raw.visual) } }),
-    metadata: { ...safeObject(raw.metadata), analysisProvider: provider, analyzedAt: new Date().toISOString(), recreationPromptVersion: 1 },
+    metadata: { ...safeObject(raw.metadata), analysisProvider: provider, analyzedAt: new Date().toISOString(), recreationPromptVersion: 1, characterGroundingVersion: 1 },
   };
 }
 
@@ -311,6 +319,7 @@ export async function analyzeSceneBlueprint(params: {
         "Analyze one extracted reference-video scene as a babysitter-level video script breakdown for near 1:1 text-to-video recreation.",
         "Primary goal: produce a visual-first recreation prompt. The prompt should let a text-to-video model reproduce the scene mostly from text alone. Audio and editing are secondary notes, not the center of the output.",
         "Be concrete and exhaustive about the visible image: objects, characters, wardrobe, expressions, pose, props, background layers, action order, camera language, lighting, color, composition, style, texture, and motion continuity.",
+        CHARACTER_GROUNDING_INSTRUCTIONS,
         "For music and editing, only describe observable or inferable style, rhythm, or basic techniques. Do not claim exact BGM title, software operations, masks, keyframes, or effects unless there is clear visual/audio evidence.",
         "Do not invent brand names or dialogue unless visible/audible evidence supports it. If something is uncertain, say unknown rather than hallucinating.",
         "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. transition must include editing.pacing and editing.techniques.",
@@ -367,6 +376,7 @@ export async function analyzeImageBlueprint(params: {
         "Analyze a single static reference image as a babysitter-level visual breakdown for near 1:1 text-to-image/video recreation.",
         "Primary goal: produce a visual-first recreation prompt. The prompt should let a generative model reproduce the image mostly from text alone.",
         "Be concrete and exhaustive about the visible image: objects, characters, wardrobe, expressions, pose, props, background layers, camera language, lighting, color, composition, style, texture, and any motion implied by the still frame.",
+        CHARACTER_GROUNDING_INSTRUCTIONS,
         "Do not invent brand names, dialogue, audio, music, or editing techniques. There is no audio, dialogue, or video editing in a static image.",
         "The JSON shape must include story, visual, dialogue, narration, subtitle, audio, transition, generationPrompt, metadata. visual must include sceneDescription, subject, characters, environment, action, camera, composition, lighting, color, style, motion. dialogue, narration, and subtitle must be empty arrays. audio must only note that no audio is available. transition.editing.pacing must be 'None' and transition.editing.techniques must be an empty array.",
         'Field types: story must be an object such as {"summary":"..."}, not a string. visual, audio, transition and metadata must be objects. generationPrompt must be a non-empty string.',
@@ -419,7 +429,7 @@ export async function buildStructuredVideoOverview(params: {
       selection: params,
       allowPlatformKey: params.allowPlatformKeyForAnalysis === true,
       forceFreeTrialKie: params.forceFreeTrialKie === true,
-      system: `Return strict JSON only. Summarize the whole video blueprint for a creator dashboard. ${outputLanguageInstruction(params.outputLanguage)}`,
+      system: `Return strict JSON only. Summarize the whole video blueprint for a creator dashboard. Preserve each scene's character references and uncertainty. Do not infer new gender labels, gendered pronouns or identities from titles, genre expectations or neutral character descriptions; do not resolve conflicting descriptions by guessing. ${outputLanguageInstruction(params.outputLanguage)}`,
       content: [
         {
           type: "text",
