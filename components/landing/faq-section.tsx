@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Plus, Minus } from "lucide-react";
 
-const faqKeys = ["faq1", "faq2", "faq3", "faq4", "faq5", "faq6"] as const;
+const faqKeys = ["faq1", "faq7", "faq2", "faq3", "faq4", "faq5", "faq6"] as const;
 
 export function FAQSection() {
   const t = useTranslations("home");

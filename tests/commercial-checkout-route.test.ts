@@ -4,7 +4,14 @@ import { GET, POST } from "@/app/api/payments/checkout/route";
 import { POST as manualPost } from "@/app/api/payments/manual/route";
 import { createAlipayCreditCheckout } from "@/lib/payments/credit-checkout";
 
-const { getSession } = vi.hoisted(() => ({ getSession: vi.fn() }));
+const { getSession, checkoutGate } = vi.hoisted(() => ({ getSession: vi.fn(), checkoutGate: { enabled: true } }));
+vi.mock("@/lib/billing/pricing-v6", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/billing/pricing-v6")>();
+  return { ...actual, COMMERCIAL_PACKAGES: actual.COMMERCIAL_PACKAGES.map((pack) => ({
+    ...pack,
+    get checkoutEnabled() { return pack.id === "v6_trial_200" ? checkoutGate.enabled : pack.checkoutEnabled; },
+  })) };
+});
 vi.mock("@/lib/auth", () => ({ auth: { api: { getSession } } }));
 vi.mock("@/lib/payments/credit-checkout", () => ({ createAlipayCreditCheckout: vi.fn() }));
 const body = { provider: "alipay", method: "alipay", packageId: "v6_trial_200", requestId: "11111111-1111-4111-8111-111111111111" };
@@ -13,6 +20,7 @@ const call = (override = {}) => POST(new NextRequest("http://localhost/api/payme
 describe("Domestic checkout route", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    checkoutGate.enabled = true;
     getSession.mockResolvedValue({ user: { id: "owner" } });
     vi.mocked(createAlipayCreditCheckout).mockResolvedValue({ orderId: "order" } as Awaited<ReturnType<typeof createAlipayCreditCheckout>>);
   });
@@ -37,7 +45,8 @@ describe("Domestic checkout route", () => {
     expect((await call({ credits: 999999, amountCents: 1, rewrites: 999999 })).status).toBe(200);
     expect(createAlipayCreditCheckout).toHaveBeenCalledWith("owner", body.packageId, body.requestId);
   });
-  it.each(["v6_creator_650", "v6_volume_1500"])("blocks unopened package %s without creating an order", async (packageId) => {
+  it.each(["v6_trial_200", "v6_creator_650", "v6_volume_1500"])("blocks unopened package %s without creating an order", async (packageId) => {
+    checkoutGate.enabled = false;
     const response = await call({ packageId });
     expect(response.status).toBe(409);
     expect((await response.json()).code).toBe("PACKAGE_NOT_OPEN");

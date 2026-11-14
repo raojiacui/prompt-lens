@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { COMMERCIAL_PACKAGES } from "../../lib/billing/pricing-v6";
 
 for (const width of [1440, 390]) for (const outcome of ["cancelled", "paid", "pending", "unknown"]) {
   test(`cancel checkout ${outcome} ${width}`, async ({ page, context }) => {
+    test.skip(!COMMERCIAL_PACKAGES.some(pack => pack.checkoutEnabled), "Opening checkout from pricing requires an open package.");
     await page.setViewportSize({ width, height: 1000 });
     await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
     let state = "pending";

@@ -1,4 +1,37 @@
 import { test, expect } from "@playwright/test";
+import { COMMERCIAL_PACKAGES } from "../../lib/billing/pricing-v6";
+
+for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const signedIn of [false, true]) {
+  test(`deferred packages and free-use FAQ ${locale} ${width} signedIn=${signedIn}`, async ({ page, context }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    await context.addCookies([{ name: "NEXT_LOCALE", value: locale, domain: "localhost", path: "/" }]);
+    let checkoutRequests = 0;
+    await page.route("**/api/**", async route => {
+      const path = new URL(route.request().url()).pathname;
+      if (path === "/api/payments/checkout") checkoutRequests++;
+      if (signedIn && path.includes("/auth/get-session")) return route.fulfill({ json: { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } } });
+      return route.fulfill({ json: {} });
+    });
+    await page.goto("/#pricing");
+    const pricing = page.locator("#pricing");
+    await expect(pricing.locator("article")).toHaveCount(3);
+    const buttons = pricing.getByRole("button", { name: locale === "zh" ? "待开放" : "Coming soon", exact: true });
+    await expect(buttons).toHaveCount(3);
+    for (const button of await buttons.all()) await expect(button).toBeDisabled();
+    await expect(pricing.locator("article").first()).toContainText("¥21.90");
+    const faq = page.locator("#faq");
+    await faq.getByRole("button", { name: locale === "zh" ? "可以完全免费使用吗？" : "Can I use PromptLens completely free?", exact: true }).click();
+    const answer = faq.getByText(locale === "zh" ? "新账号可免费试用两次视频分析。" : "New accounts get two free video analysis trials.", { exact: false });
+    await expect(answer).toBeVisible();
+    await expect(answer).toContainText(locale === "zh" ? "上传单镜头视频" : "upload a single-shot video");
+    await expect(answer).toContainText(locale === "zh" ? "模型调用费用由对应供应商账户承担" : "model usage is billed to your provider account");
+    await page.screenshot({ path: `test-results/deferred-packages-faq-${locale}-${width}-${signedIn}.png`, fullPage: true });
+    expect(checkoutRequests).toBe(0);
+  });
+}
+
+test.describe("open-package purchase flows", () => {
+  test.skip(!COMMERCIAL_PACKAGES.some(pack => pack.checkoutEnabled), "Package purchases are deferred; these flows require an open package.");
 
 test("signed-in purchases do not wait for a launch readiness request", async ({ page, context }) => {
   await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
@@ -178,4 +211,5 @@ test("network retry reuses the request and expiry does not imply failed payment"
   await expect(dialog.getByRole("button", { name: "Purchase again with a new order" })).toHaveCount(0);
   // An expired order whose provider state is unknown must not solicit a second payment.
   expect(requestIds).toHaveLength(2);
+});
 });

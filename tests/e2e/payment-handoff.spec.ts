@@ -1,5 +1,6 @@
 import { createServer, type Server } from "node:http";
 import { test, expect } from "@playwright/test";
+import { COMMERCIAL_PACKAGES } from "../../lib/billing/pricing-v6";
 
 async function listen(server: Server) {
   await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
@@ -38,6 +39,7 @@ test("payment handoff navigates through cashier redirects while a restricted POS
 });
 
 for (const locale of ["zh", "en"]) test(`checkout loading timeout keeps the original order ${locale}`, async ({ page, context }) => {
+  test.skip(!COMMERCIAL_PACKAGES.some(pack => pack.checkoutEnabled), "Opening checkout from pricing requires an open package.");
   await context.addCookies([{ name: "NEXT_LOCALE", value: locale, domain: "localhost", path: "/" }]);
   const orderId = "11111111-1111-4111-8111-111111111111";
   const paymentUrl = `/api/payments/orders/${orderId}/pay`;

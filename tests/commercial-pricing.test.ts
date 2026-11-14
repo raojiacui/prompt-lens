@@ -11,6 +11,7 @@ describe("V6 commercial pricing", () => {
     expect(COMMERCIAL_PACKAGES.map((pack) => [pack.priceCents, pack.credits, pack.rewrites])).toEqual([[2190, 200, 20], [6390, 650, 60], [13900, 1500, 150]]);
     expect(COMMERCIAL_PACKAGES.map((pack) => pack.linkImports)).toEqual([12, 30, 61]);
     expect(COMMERCIAL_PACKAGES.every((pack) => pack.id.startsWith("v6_"))).toBe(true);
+    expect(COMMERCIAL_PACKAGES.every((pack) => !pack.checkoutEnabled)).toBe(true);
   });
   it.each([[1, 1], [6_000_000, 1], [6_000_001, 2], [15_000_000, 3], [30_000_000, 5], [30_000_001, 6], [40_000_000, 7], [60_000_000, 10]])("split duration %i costs %i", (duration, expected) => {
     expect(splitCredits(duration)).toBe(expected);
