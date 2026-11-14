@@ -68,6 +68,18 @@ afterEach(() => {
 });
 
 describe("V2 test access policy", () => {
+  it.each(["/terms", "/privacy", "/refund"])("keeps %s public without bypassing other test access controls", async (path) => {
+    process.env.ACCESS_ALLOWED_EMAILS = "raojiacui@gmail.com,raojinbo@gmail.com,outreach@infistar.cc,489543971@qq.com";
+    const response = await middleware(new NextRequest(`https://test.example${path}`, { headers: { "accept-language": "en" } }));
+    expect(response.headers.get("x-middleware-next")).toBe("1");
+    expect(response.cookies.get("NEXT_LOCALE")?.value).toBe("en");
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    const nested = await middleware(new NextRequest(`https://test.example${path}/private`));
+    expect(nested.status).toBe(307);
+    expect(new URL(nested.headers.get("location")!).pathname).toBe("/login");
+    const api = await middleware(new NextRequest("https://test.example/api/credits/me"));
+    expect(api.status).toBe(401);
+  });
   it("only challenges an API cache when a session token exists", async () => {
     process.env.ACCESS_ALLOWED_EMAILS = "raojiacui@gmail.com,raojinbo@gmail.com";
     const url = "https://test.example/api/commercial/tasks/task";

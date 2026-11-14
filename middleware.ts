@@ -16,6 +16,9 @@ const SERVER_AUTH_PATHS = [
   "/api/session-refresh",
 ];
 
+// Public documents must remain readable before account creation, including on the invited test site.
+const PUBLIC_POLICY_PATHS = new Set(["/terms", "/privacy", "/refund"]);
+
 function isServerAuthPath(pathname: string) {
   return SERVER_AUTH_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
 }
@@ -36,7 +39,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (isAccessRestricted() && request.nextUrl.pathname !== "/login" && !isServerAuthPath(request.nextUrl.pathname)) {
+  if (isAccessRestricted() && request.nextUrl.pathname !== "/login" && !PUBLIC_POLICY_PATHS.has(request.nextUrl.pathname) && !isServerAuthPath(request.nextUrl.pathname)) {
     const accessSession = await inspectAccessSession(request, process.env.BETTER_AUTH_SECRET);
 
     if (isAccessEmailAllowed(accessSession.email)) {

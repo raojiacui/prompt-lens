@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Mail } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { SUPPORT_WECHAT, PARTNERSHIP_EMAIL } from "@/lib/support-contact";
+import { POLICY_LINKS } from "@/lib/legal-content";
 
 export function SiteFooter() {
   const t = useTranslations("home");
@@ -81,6 +82,9 @@ export function SiteFooter() {
         </div>
         <div className="pt-8 border-t border-[var(--color-border-subtle)] flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-[var(--color-text-muted)]">{t("footer")}</p>
+          <nav aria-label={zh ? "法律与政策" : "Legal and policies"} className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-sm text-[var(--color-text-secondary)]">
+            {POLICY_LINKS.map(link => <Link key={link.kind} href={link.href} className="inline-flex min-h-11 items-center underline underline-offset-4">{zh ? link.zh : link.en}</Link>)}
+          </nav>
         </div>
       </div>
     </footer>
