@@ -500,6 +500,13 @@
 - 正式 dpl_7HPasnC5yYr2pNG9QPzHBWQxYgzj、测试 dpl_4LAbGU7V4MW8XhfgqENn5QjB8vkN 均 READY、source=git、来源 SHA 匹配，固定域名分别指向对应部署。正式站中英文三个禁用按钮与新 FAQ 已核验，登录和认证健康正常，积分 API 保持拒绝匿名；测试认证健康正常。
 - 本轮没有创建真实订单或调用模型，未更改支付与试用的待验收标记。发布核验记录只本地提交，详见 [ADR 0066](decisions/0066-defer-starter-checkout-and-explain-byok.md)。
 
+## 034：自带 API Key 标题微调发布
+
+- 日期：2026-11-14。
+- 负责人要求将套餐下方标题改为“已有自己的 API Key？”，中英文同步，本地检查及提交完成后明确授权“推送吧”。
+- 225e6ad4884e04b187a0e4aabb60df3b03e8e4bd 已推送 prompt-lens-V2，main 不变。正式 dpl_upXQhsfemC7mEx9dctqPVPe4M17N、测试 dpl_DALv1BTRR1okmLjnCcQLAJctvz5K 均 READY、source=git、来源 SHA 匹配，固定域名指向对应新部署。
+- 正式中英文新标题已核验、旧标题已移除，原套餐禁用状态与免费 FAQ 正确；登录、认证健康和匿名鉴权正常，测试认证健康正常。没有真实交易或模型调用；发布记录仅本地提交，详见 [ADR 0066](decisions/0066-defer-starter-checkout-and-explain-byok.md)。
+
 ## 后续待办
 
 后续按讨论顺序追加。未经项目负责人确认的事项不放入“已确认安排”，也不据此执行上线操作。

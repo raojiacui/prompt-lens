@@ -46,4 +46,8 @@
 
 ## 后续文案微调（2026-11-14）
 
-负责人要求将套餐下方标题“已有 KIE API Key？”改为“已有自己的 API Key？”，英文同步为“Already have your own API key?”，与现有多供应商自带 Key 能力保持一致。本次仅修改标题，正文与配置入口沿用现状；本地 ESLint 及差异检查通过，尚未推送此次微调。
+负责人要求将套餐下方标题“已有 KIE API Key？”改为“已有自己的 API Key？”，英文同步为“Already have your own API key?”，与现有多供应商自带 Key 能力保持一致。本次仅修改标题，正文与配置入口沿用现状；本地 ESLint 及差异检查通过，提交 225e6ad。
+
+负责人随后明确回复“推送吧”。GitHub prompt-lens-V2 实读为 225e6ad4884e04b187a0e4aabb60df3b03e8e4bd，main 仍为 0ae4531d18320ee529e4736cb9a41f0b0e94bd4c。正式 dpl_upXQhsfemC7mEx9dctqPVPe4M17N、测试 dpl_DALv1BTRR1okmLjnCcQLAJctvz5K 均 READY、source=git、分支及 SHA 与远端一致，两个固定域名分别指向对应部署。仍通过现有 Git 集成自动构建，没有 CLI 上传、手动提升或配置变更。
+
+正式首页中英文均 200，新标题已出现、旧标题已移除；三个套餐的禁用状态与免费 FAQ 保持正确。登录页和认证健康 200，匿名积分接口 401；新正式部署最近 15 分钟 error/fatal 聚合未返回分组。测试认证健康 200。此次没有创建真实订单或调用模型，发布记录仅本地提交。
