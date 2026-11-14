@@ -492,6 +492,14 @@
 - 当前先核实支付宝对该产品、个人主体及境外站点的审核口径，再选择真实合规的备案或其他收款路线；没有批准购买资源、切换域名、迁站、更换应用或密钥。通用境外接入规则不代替支付准入，不能用技术发布冒充提额完成。
 - 真实支付和试用验收仍分别待完成。本轮只更新本地记录，详见 [ADR 0039](decisions/0039-production-payment-preflight-and-merchant-evidence.md) 及 [支付宝准备单](alipay-launch-materials.md)。
 
+## 033：体验包待开放及免费使用 FAQ 发布
+
+- 日期：2026-11-14。
+- 负责人要求体验包也标为“待开放”，并新增两次试用后自带 API Key 上传单镜头分析的 FAQ；本地 200 项针对性测试、10 项浏览器检查及类型检查通过后，明确授权“推送吧”。
+- 7b893c77c944f258df4580447a05498b91abb71d 已推送 prompt-lens-V2，main 不变。现有正式与测试 Git 集成同时自动构建，未手动上传、提升或修改配置。
+- 正式 dpl_7HPasnC5yYr2pNG9QPzHBWQxYgzj、测试 dpl_4LAbGU7V4MW8XhfgqENn5QjB8vkN 均 READY、source=git、来源 SHA 匹配，固定域名分别指向对应部署。正式站中英文三个禁用按钮与新 FAQ 已核验，登录和认证健康正常，积分 API 保持拒绝匿名；测试认证健康正常。
+- 本轮没有创建真实订单或调用模型，未更改支付与试用的待验收标记。发布核验记录只本地提交，详见 [ADR 0066](decisions/0066-defer-starter-checkout-and-explain-byok.md)。
+
 ## 后续待办
 
 后续按讨论顺序追加。未经项目负责人确认的事项不放入“已确认安排”，也不据此执行上线操作。
