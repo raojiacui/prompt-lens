@@ -16,8 +16,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const body = await request.json();
     const { id } = await params;
     const task = await enqueueAnalysis(session.user.id, id, body);
-    if (["queued", "running"].includes(task.state)) await wakeReconciliationWorker("workflow_analysis");
-    if (task.state === "queued") after(() => runAnalysisTask(task.id));
+    if (["queued", "running"].includes(task.state)) after(async () => {
+      // A slow cold wake must delay neither the acknowledgement nor analysis.
+      await Promise.all([
+        wakeReconciliationWorker("workflow_analysis"),
+        task.state === "queued" ? runAnalysisTask(task.id) : Promise.resolve(),
+      ]);
+    });
     return NextResponse.json({ taskId: task.id, state: task.state }, { status: 202 });
   } catch (error) {
     const billingError = videoAnalysisBillingErrorResponse(error);

@@ -23,7 +23,7 @@ export async function POST(request: NextRequest, { params }: Context) {
     let task = await confirmCommercialTask(session.user.id, id);
     console.info("commercial.task.confirmed", { taskId: task.id, kind: task.kind, state: task.state });
     if (["queued", "running", "review"].includes(task.state)) {
-      await wakeReconciliationWorker("commercial_task_confirm");
+      after(async () => { await wakeReconciliationWorker("commercial_task_confirm"); });
     }
     if (task.state === "queued" && task.kind === "generation") {
       await runCommercialTask(task.id);
