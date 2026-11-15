@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       return rows;
     });
     if (tasks.some((task) => ["queued", "running", "review"].includes(task.state))) {
-      await wakeReconciliationWorker("commercial_confirm");
+      after(async () => { await wakeReconciliationWorker("commercial_confirm"); });
     }
     const queuedGenerations = tasks.filter((task) => task.state === "queued" && task.kind === "generation");
     await Promise.all(queuedGenerations.map((task) => runCommercialTask(task.id)));
