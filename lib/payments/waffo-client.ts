@@ -42,7 +42,7 @@ async function signedPost<T>(path: string, data: Record<string, unknown>, idempo
 export async function createWaffoSandboxCheckout(input: {
   productId: string; currency: "CNY"; amountCents: number; buyerIdentity: string; buyerEmail: string; externalOrderId: string;
 }) {
-  if (process.env.WAFFO_SANDBOX_CHECKOUT_ENABLED !== "true" || process.env.VERCEL_ENV === "production") {
+  if (process.env.WAFFO_SANDBOX_CHECKOUT_ENABLED !== "true" || process.env.VERCEL_PROJECT_ID !== "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI") {
     throw new Error("WAFFO_SANDBOX_DISABLED");
   }
   if (!/^PROD_[A-Za-z0-9]+$/.test(input.productId) || !Number.isSafeInteger(input.amountCents) || input.amountCents <= 0
