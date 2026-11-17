@@ -7,7 +7,7 @@ import { createWaffoSandboxCheckout } from "@/lib/payments/waffo-client";
 export const runtime = "nodejs";
 export async function POST(request: NextRequest) {
   // Explicitly sandbox-only. No production checkout or credits are enabled by this route.
-  if (process.env.WAFFO_SANDBOX_CHECKOUT_ENABLED !== "true" || process.env.VERCEL_ENV === "production") {
+  if (process.env.WAFFO_SANDBOX_CHECKOUT_ENABLED !== "true" || process.env.VERCEL_PROJECT_ID !== "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI") {
     return NextResponse.json({ code: "WAFFO_SANDBOX_DISABLED" }, { status: 503 });
   }
   if (request.headers.get("origin") !== new URL(request.url).origin) {
