@@ -13,7 +13,7 @@ describe("Published credit rules", () => {
     const tables = topics.filter(t => t.table).map(t => t.table!);
     expect(tables).toHaveLength(7);
     for (const table of tables) for (const row of table.rows) expect(row).toHaveLength(table.columns.length);
-    expect(tables[0].rows.map(r => r.slice(1))).toEqual([["21.90", "200", "20", "12"], ["63.90", "650", "60", "30"], ["139.00", "1500", "150", "61"]]);
+    expect(tables[0].rows.map(r => r.slice(1))).toEqual([["34.90", "200", "20", "12"], ["89.90", "650", "60", "30"], ["199.00", "1500", "150", "61"]]);
     expect(tables[3].rows.find(r => r[0] === "Wan 2.6" && r[1] === "720p")?.[4]).toBe("29");
     expect(tables[3].rows.find(r => r[0] === "Seedance Fast")?.[4]).toBe("49");
     expect(tables[4].rows).toEqual([["Veo 3.1 Lite", "13", "15", "59"], ["Veo 3.1 Fast", "25", "27", "70"], ["Veo 3.1 Quality", "97", "98", "-"]]);
