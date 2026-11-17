@@ -237,6 +237,7 @@ export async function POST(request: Request) {
       billing: { keySource: keyAccess.source, chargedCredits: 0 },
     });
   } catch (error) {
+    if (error instanceof PromptModerationError) return NextResponse.json({ code: error.code, error: "提示词审核未通过或暂不可用，本次未生成视频。" }, { status: error.code === "PROMPT_BLOCKED" ? 422 : 503 });
     console.error("Generation job creation error:", error);
     const kieError = kieErrorResponse(error);
     if (kieError) return NextResponse.json(kieError.body, { status: kieError.status });
