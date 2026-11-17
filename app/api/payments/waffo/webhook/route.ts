@@ -8,7 +8,7 @@ export const runtime = "nodejs";
  * fulfillment, refund handling, and payment amount reconciliation are tested.
  */
 export async function POST(request: Request) {
-  if (process.env.VERCEL_ENV === "production" || process.env.WAFFO_SANDBOX_CHECKOUT_ENABLED !== "true") {
+  if (process.env.VERCEL_PROJECT_ID !== "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI" || process.env.WAFFO_SANDBOX_CHECKOUT_ENABLED !== "true") {
     return NextResponse.json({ code: "WAFFO_NOT_ACTIVE" }, { status: 503 });
   }
   const publicKey = process.env.WAFFO_WEBHOOK_TEST_PUBLIC_KEY?.replace(/\\n/g, "\n");
