@@ -1,6 +1,7 @@
 import { createProviderVideo, getProviderVideoStatus } from "@/lib/ai/video-client";
 import { isUserProvider, type UserProvider } from "@/lib/ai/providers";
 import { NextResponse } from "next/server";
+import { assertPromptAllowed, PromptModerationError } from "@/lib/safety/waffo-prompt-scan";
 import { and, eq } from "drizzle-orm";
 import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
 import { kieErrorResponse } from "@/lib/reference-video/kie-veo";
@@ -185,6 +186,7 @@ export async function POST(request: Request) {
       useNativeVideoEdit,
     });
 
+    await assertPromptAllowed(prompt);
     const result = await createProviderVideo(provider, {
       prompt,
       imageUrls: useNativeVideoEdit ? [] : imageUrls,
