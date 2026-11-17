@@ -70,6 +70,7 @@ export default async function RootLayout({
   return (
     <html lang={locale}>
       <head>
+        <meta name="waffo-verify" content="028ff34323f35dd8858827a65e29f66f" />
         {/* Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
