@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { assertPromptAllowed } from "@/lib/safety/waffo-prompt-scan";
 import type { ToolDefinition } from "../types";
 import { logTool, ok, fail } from "./shared";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
@@ -66,6 +67,7 @@ export const callExistingVideoGenerateApiTool: ToolDefinition = {
         return ok(nextAction, "No video API key configured; added a next-action.");
       }
 
+      await assertPromptAllowed([parsed.data.prompt, parsed.data.negativePrompt].filter(Boolean).join("\n"));
       const provider = providerMod.createVideoProvider(providerName, effectiveKey);
       const result = await provider.createTask({
         prompt: parsed.data.prompt,

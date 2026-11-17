@@ -1,3 +1,4 @@
+import { assertPromptAllowed } from "@/lib/safety/waffo-prompt-scan";
 import { and, eq, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { db, commercialTasks, commercialWallets, mediaCleanupJobs, projects, sceneVersions, videoGeneration } from "@/lib/db";
 import { randomUUID } from "node:crypto";
@@ -98,6 +99,7 @@ export async function quoteCommercialGeneration(userId: string, body: Record<str
       if (!scene) throw new Error("SCENE_NOT_FOUND");
     }
   }
+  await assertPromptAllowed(String(payload.input.prompt ?? ""));
   const snapshot: GenerationSnapshot = { payload, durationSeconds, resolution, referenceVideoSeconds, keyFingerprint: generationKeyFingerprint(key), pricingVersion: price.version, projectId, sceneId, projectVersionId };
   const [task] = await db.insert(commercialTasks).values({ userId, kind: "generation", input: snapshot, credits: price.credits, expiresAt: new Date(Date.now() + 600000) }).returning();
   return { id: task.id, credits: task.credits, expiresAt: task.expiresAt, model: payload.model, duration: durationSeconds, resolution, referenceVideoSeconds };

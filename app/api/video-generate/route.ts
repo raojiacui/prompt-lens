@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { assertPromptAllowed, PromptModerationError } from "@/lib/safety/waffo-prompt-scan";
 import { auth } from "@/lib/auth";
 import {
   createVideoProvider,
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
 
 
     if (selectedModel && selectedModel.provider !== provider) return NextResponse.json({ error: "请选择当前供应商支持的模型。" }, { status: 400 });
+    await assertPromptAllowed([prompt, negativePrompt].filter(Boolean).join("\n"));
     const videoProvider = createVideoProvider(provider, keyAccess.apiKey);
     const result = await videoProvider.createTask({
       prompt,
@@ -125,6 +127,7 @@ export async function POST(request: NextRequest) {
       billing: { provider, keySource: keyAccess.source, keyFingerprint: generationKeyFingerprint(keyAccess.apiKey), chargedCredits: 0 },
     });
   } catch (error: unknown) {
+    if (error instanceof PromptModerationError) return NextResponse.json({ code: error.code }, { status: error.code === "PROMPT_BLOCKED" ? 422 : 503 });
     console.error("[video-generate] Error:", error);
     const kieError = kieErrorResponse(error);
     if (kieError) return NextResponse.json(kieError.body, { status: kieError.status });

@@ -1,6 +1,7 @@
 import { createProviderVideo, getProviderVideoStatus } from "@/lib/ai/video-client";
 import { isUserProvider, type UserProvider } from "@/lib/ai/providers";
 import { NextResponse } from "next/server";
+import { assertPromptAllowed, PromptModerationError } from "@/lib/safety/waffo-prompt-scan";
 import { and, eq } from "drizzle-orm";
 import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
 import { kieErrorResponse } from "@/lib/reference-video/kie-veo";
@@ -185,6 +186,7 @@ export async function POST(request: Request) {
       useNativeVideoEdit,
     });
 
+    await assertPromptAllowed(prompt);
     const result = await createProviderVideo(provider, {
       prompt,
       imageUrls: useNativeVideoEdit ? [] : imageUrls,
@@ -235,6 +237,7 @@ export async function POST(request: Request) {
       billing: { keySource: keyAccess.source, chargedCredits: 0 },
     });
   } catch (error) {
+    if (error instanceof PromptModerationError) return NextResponse.json({ code: error.code, error: "提示词审核未通过或暂不可用，本次未生成视频。" }, { status: error.code === "PROMPT_BLOCKED" ? 422 : 503 });
     console.error("Generation job creation error:", error);
     const kieError = kieErrorResponse(error);
     if (kieError) return NextResponse.json(kieError.body, { status: kieError.status });
