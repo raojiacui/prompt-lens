@@ -33,6 +33,19 @@ export function promptModerationHttpFailure(error: unknown):
   };
 }
 
+type ScanFailureStage = "credentials" | "signing" | "transport" | "http" | "json" | "envelope" | "verdict";
+
+// Emit only bounded diagnostic metadata; never log prompt, body, headers or keys.
+function unavailable(stage: ScanFailureStage, details: { status?: number; requestId?: string | null } = {}) {
+  const requestId = details.requestId;
+  console.warn("[prompt-scan] unavailable", {
+    stage,
+    ...(details.status !== undefined ? { status: details.status } : {}),
+    ...(requestId && /^[a-zA-Z0-9_-]{1,128}$/.test(requestId) ? { requestId } : {}),
+  });
+  return new PromptModerationError("PROMPT_SCAN_UNAVAILABLE");
+}
+
 function normalizeKey(value: string) {
   return createPrivateKey(value.replace(/\\n/g, "\n").trim());
 }
@@ -60,7 +73,7 @@ export async function assertPromptAllowed(prompt: string, options: {
 
   const merchantId = process.env.WAFFO_MERCHANT_ID;
   const key = process.env.WAFFO_PRIVATE_KEY;
-  if (!merchantId || !key) throw new PromptModerationError("PROMPT_SCAN_UNAVAILABLE");
+  if (!merchantId || !key) throw unavailable("credentials");
 
   const path = "/v1/actions/verification/scan-prompt";
   const payload = JSON.stringify({ prompt: content, semantic: options.semantic ?? "off" });
@@ -73,7 +86,7 @@ export async function assertPromptAllowed(prompt: string, options: {
     signer.update(canonical);
     signature = signer.sign(normalizeKey(key), "base64");
   } catch {
-    throw new PromptModerationError("PROMPT_SCAN_UNAVAILABLE");
+    throw unavailable("signing");
   }
 
   let response: Response;
@@ -91,7 +104,7 @@ export async function assertPromptAllowed(prompt: string, options: {
       signal: AbortSignal.timeout(options.timeoutMs ?? 8000),
     });
   } catch {
-    throw new PromptModerationError("PROMPT_SCAN_UNAVAILABLE");
+    throw unavailable("transport");
   }
   if (!response.ok) {
     if (response.status === 429) {
@@ -99,22 +112,22 @@ export async function assertPromptAllowed(prompt: string, options: {
       throw new PromptModerationError("PROMPT_SCAN_RATE_LIMITED",
         Number.isSafeInteger(seconds) && seconds > 0 && seconds <= 3600 ? seconds : undefined);
     }
-    throw new PromptModerationError("PROMPT_SCAN_UNAVAILABLE");
+    throw unavailable("http",  { status: response.status, requestId: response.headers.get("x-request-id") });
   }
   let result: unknown;
   try {
     result = await response.json();
   } catch {
-    throw new PromptModerationError("PROMPT_SCAN_UNAVAILABLE");
+    throw unavailable("json");
   }
   const envelope = result as { data?: { action?: unknown; reasonCode?: unknown }; errors?: unknown[] } | null;
   if (!envelope?.data || (Array.isArray(envelope.errors) && envelope.errors.length)) {
-    throw new PromptModerationError("PROMPT_SCAN_UNAVAILABLE");
+    throw unavailable("envelope");
   }
   const { action, reasonCode } = envelope.data;
   if (reasonCode === "service_degraded") throw new PromptModerationError("PROMPT_REVIEW_REQUIRED");
   if (action === "allow") return;
   if (action === "block") throw new PromptModerationError("PROMPT_BLOCKED");
   if (action === "review") throw new PromptModerationError("PROMPT_REVIEW_REQUIRED");
-  throw new PromptModerationError("PROMPT_SCAN_UNAVAILABLE");
+  throw unavailable("verdict");
 }
