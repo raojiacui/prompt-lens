@@ -1,9 +1,9 @@
 // Price snapshots are immutable. Legacy credits must not use these rates.
 export const PRICING_VERSION = "2026-09-14-v6";
 export const COMMERCIAL_PACKAGES = [
-  { id: "v6_trial_200", name: "体验包", priceCents: 2190, credits: 200, rewrites: 20, linkImports: 12, checkoutEnabled: false },
-  { id: "v6_creator_650", name: "创作包", priceCents: 6390, credits: 650, rewrites: 60, linkImports: 30, checkoutEnabled: false },
-  { id: "v6_volume_1500", name: "大容量包", priceCents: 13900, credits: 1500, rewrites: 150, linkImports: 61, checkoutEnabled: false },
+  { id: "v6_trial_200", name: "体验包", priceCents: 3490, credits: 200, rewrites: 20, linkImports: 12, checkoutEnabled: false },
+  { id: "v6_creator_650", name: "创作包", priceCents: 8990, credits: 650, rewrites: 60, linkImports: 30, checkoutEnabled: false },
+  { id: "v6_volume_1500", name: "大容量包", priceCents: 19900, credits: 1500, rewrites: 150, linkImports: 61, checkoutEnabled: false },
 ] as const;
 
 export type AnalysisModel = "flash" | "pro";
@@ -94,9 +94,10 @@ export type GenerationPriceInput = {
 
 export const GENERATION_PRICING_VERSION = "2026-10-05-generation-v5";
 
-const generationCreditBasis = COMMERCIAL_PACKAGES.reduce((lowest, pack) =>
-  BigInt(pack.priceCents) * BigInt(lowest.credits) < BigInt(lowest.priceCents) * BigInt(pack.credits) ? pack : lowest
-);
+// Keep the pre-repricing generation quote basis fixed (139 CNY / 1,500 credits).
+// Package prices can rise for payment fees without silently reducing generation-credit quotes.
+// Review cost models and create a new pricing version before changing this basis.
+const generationCreditBasis = { priceCents: 13900, credits: 1500 } as const;
 
 /** Official public rates. Input-video seconds come from the server's media probe. */
 export function estimateGeneration(input: GenerationPriceInput) {
