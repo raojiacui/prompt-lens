@@ -11,5 +11,12 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   if (!body) return NextResponse.json({ code: "INVALID_REQUEST" }, { status: 400 });
   try { return NextResponse.json(await quoteCommercialGeneration(session.user.id, body)); }
-  catch (e) { const code = e instanceof Error ? e.message : "GENERATION_QUOTE_UNAVAILABLE"; return NextResponse.json({ code: /^[A-Z_]+$/.test(code) ? code : "GENERATION_QUOTE_UNAVAILABLE" }, { status: 400 }); }
+  catch (e) {
+    const raw = e instanceof Error ? e.message : "GENERATION_QUOTE_UNAVAILABLE";
+    const code = /^[A-Z_]+$/.test(raw) ? raw : "GENERATION_QUOTE_UNAVAILABLE";
+    const status = code === "PROMPT_SCAN_RATE_LIMITED" ? 429
+      : code === "PROMPT_SCAN_UNAVAILABLE" ? 503
+        : ["PROMPT_BLOCKED", "PROMPT_REVIEW_REQUIRED"].includes(code) ? 422 : 400;
+    return NextResponse.json({ code }, { status });
+  }
 }

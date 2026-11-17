@@ -1,56 +1,99 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { generateKeyPairSync } from "node:crypto";
-import { assertPromptAllowed, PromptModerationError } from "@/lib/safety/waffo-prompt-scan";
+import { createHash, createVerify, generateKeyPairSync } from "node:crypto";
+import { assertPromptAllowed, promptModerationHttpFailure } from "@/lib/safety/waffo-prompt-scan";
 
-const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
+const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const key = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
-const originalMerchant = process.env.WAFFO_MERCHANT_ID;
-const originalKey = process.env.WAFFO_PRIVATE_KEY;
+const original = {
+  merchant: process.env.WAFFO_MERCHANT_ID,
+  key: process.env.WAFFO_PRIVATE_KEY,
+  enabled: process.env.WAFFO_PROMPT_SCAN_ENABLED,
+};
+function restore(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
 afterEach(() => {
-  if (originalMerchant === undefined) delete process.env.WAFFO_MERCHANT_ID;
-  else process.env.WAFFO_MERCHANT_ID = originalMerchant;
-  if (originalKey === undefined) delete process.env.WAFFO_PRIVATE_KEY;
-  else process.env.WAFFO_PRIVATE_KEY = originalKey;
+  restore("WAFFO_MERCHANT_ID", original.merchant);
+  restore("WAFFO_PRIVATE_KEY", original.key);
+  restore("WAFFO_PROMPT_SCAN_ENABLED", original.enabled);
 });
-
-const mock = (action: string, status = 200): typeof fetch => vi.fn(async () =>
-  new Response(JSON.stringify({ data: { action } }), { status, headers: { "content-type": "application/json" } })
-) as unknown as typeof fetch;
-
-describe("Waffo prompt moderation", () => {
-  it("is off unless explicitly enabled", async () => {
+function withCredentials() {
+  process.env.WAFFO_MERCHANT_ID = "MER_test";
+  process.env.WAFFO_PRIVATE_KEY = key;
+}
+function fakeResponse(action: string, status = 200, reasonCode = "allowed") {
+  const f = vi.fn(async () => new Response(JSON.stringify({ data: { action, reasonCode } }), {
+    status, headers: status === 429 ? { "retry-after": "12" } : { "content-type": "application/json" },
+  }));
+  return f;
+}
+describe("Waffo AIGC text prompt scan", () => {
+  it("does not scan unrelated LLM activity when disabled", async () => {
     delete process.env.WAFFO_MERCHANT_ID;
     delete process.env.WAFFO_PRIVATE_KEY;
-    await expect(assertPromptAllowed("a sunset", { enabled: false })).resolves.toBeUndefined();
+    const fetcher = vi.fn();
+    await expect(assertPromptAllowed("describe this video", { enabled: false, fetcher })).resolves.toBeUndefined();
+    expect(fetcher).not.toHaveBeenCalled();
   });
 
-  it("fails closed without merchant credentials", async () => {
+  it("fails closed without Waffo credentials once enabled", async () => {
     delete process.env.WAFFO_MERCHANT_ID;
     delete process.env.WAFFO_PRIVATE_KEY;
-    await expect(assertPromptAllowed("a sunset", { enabled: true })).rejects.toMatchObject({ code: "PROMPT_SCAN_UNAVAILABLE" });
+    await expect(assertPromptAllowed("a sunset", { enabled: true }))
+      .rejects.toMatchObject({ code: "PROMPT_SCAN_UNAVAILABLE" });
   });
 
-  it.each(["allow", "review", "block", "unexpected"])("handles action %s safely", async action => {
-    process.env.WAFFO_MERCHANT_ID = "MER_test";
-    process.env.WAFFO_PRIVATE_KEY = key;
-    const fetcher = mock(action);
-    const check = assertPromptAllowed("a cat walking", { enabled: true, fetcher });
-    if (action === "allow") await expect(check).resolves.toBeUndefined();
-    else await expect(check).rejects.toMatchObject({
-      code: action === "block" ? "PROMPT_BLOCKED" : action === "review" ? "PROMPT_REVIEW_REQUIRED" : "PROMPT_SCAN_UNAVAILABLE",
-    });
+  it("scans only one prompt with keyword-only semantic off and a valid RSA signature", async () => {
+    withCredentials();
+    const fetcher = fakeResponse("allow");
+    await expect(assertPromptAllowed("  a cat walking  ", { enabled: true, fetcher })).resolves.toBeUndefined();
     expect(fetcher).toHaveBeenCalledTimes(1);
-    const [, request] = (fetcher as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(JSON.parse(request.body)).toMatchObject({ prompt: "a cat walking", semantic: "shadow" });
-    expect(request.headers["X-Signature"]).toBeTruthy();
+    const [url, request] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("https://api.waffo.ai/v1/actions/verification/scan-prompt");
+    const body = String(request.body);
+    expect(JSON.parse(body)).toEqual({ prompt: "a cat walking", semantic: "off" });
+    const headers = request.headers as Record<string, string>;
+    expect(headers["X-Merchant-Id"]).toBe("MER_test");
+    const canonical = ["POST", "/v1/actions/verification/scan-prompt", headers["X-Timestamp"], createHash("sha256").update(body).digest("base64")].join("\n");
+    const verifier = createVerify("RSA-SHA256");
+    verifier.update(canonical);
+    expect(verifier.verify(publicKey, headers["X-Signature"], "base64")).toBe(true);
   });
 
-  it("rejects rate limits and transport failures without allowing generation", async () => {
-    process.env.WAFFO_MERCHANT_ID = "MER_test";
-    process.env.WAFFO_PRIVATE_KEY = key;
-    await expect(assertPromptAllowed("cat", { enabled: true, fetcher: mock("allow", 429) }))
-      .rejects.toMatchObject({ code: "PROMPT_SCAN_RATE_LIMITED" });
+  it.each([
+    ["review", "review_required", "PROMPT_REVIEW_REQUIRED"],
+    ["block", "restricted_content", "PROMPT_BLOCKED"],
+    ["unknown", "unknown", "PROMPT_SCAN_UNAVAILABLE"],
+    ["allow", "service_degraded", "PROMPT_REVIEW_REQUIRED"],
+  ])("never generates for %s with reason %s", async (action, reasonCode, code) => {
+    withCredentials();
+    await expect(assertPromptAllowed("a person walking", { enabled: true, fetcher: fakeResponse(action, 200, reasonCode) }))
+      .rejects.toMatchObject({ code });
+  });
+
+  it("fails closed on 429, non-2xx, invalid JSON and network error", async () => {
+    withCredentials();
+    await expect(assertPromptAllowed("cat", { enabled: true, fetcher: fakeResponse("allow", 429) }))
+      .rejects.toMatchObject({ code: "PROMPT_SCAN_RATE_LIMITED", retryAfterSeconds: 12 });
+    await expect(assertPromptAllowed("cat", { enabled: true, fetcher: fakeResponse("allow", 500) }))
+      .rejects.toMatchObject({ code: "PROMPT_SCAN_UNAVAILABLE" });
+    await expect(assertPromptAllowed("cat", { enabled: true, fetcher: vi.fn().mockResolvedValue(new Response("oops")) }))
+      .rejects.toMatchObject({ code: "PROMPT_SCAN_UNAVAILABLE" });
     await expect(assertPromptAllowed("cat", { enabled: true, fetcher: vi.fn().mockRejectedValue(new Error("timeout")) }))
       .rejects.toMatchObject({ code: "PROMPT_SCAN_UNAVAILABLE" });
+  });
+
+  it("maps errors to safe Chinese user messages without prompt text", async () => {
+    withCredentials();
+    try {
+      await assertPromptAllowed("private user prompt", { enabled: true, fetcher: fakeResponse("block") });
+    } catch (error) {
+      const message = promptModerationHttpFailure(error);
+      expect(message?.status).toBe(422);
+      expect(JSON.stringify(message)).not.toContain("private user prompt");
+      return;
+    }
+    throw new Error("Expected moderation to block");
   });
 });

@@ -51,6 +51,10 @@ export function buildCommercialGenerationPayload(body: Record<string, unknown>, 
 export async function quoteCommercialGeneration(userId: string, body: Record<string, unknown>) {
   const key = getPlatformKieApiKey();
   if (!key) throw new Error("KIE_KEY_REQUIRED");
+  const userPrompt = String(body.userPrompt || body.prompt || "").trim();
+  if (userPrompt.length < 3 || userPrompt.length > 5000) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
+  // Reject unsafe prompts before any R2 media copy, preview job, wallet reservation or provider cost.
+  await assertPromptAllowed(userPrompt);
   const video = referenceVideoUrl(body);
   let referenceVideoSeconds: number | undefined;
   let generationBody = body;
@@ -99,7 +103,6 @@ export async function quoteCommercialGeneration(userId: string, body: Record<str
       if (!scene) throw new Error("SCENE_NOT_FOUND");
     }
   }
-  await assertPromptAllowed(String(payload.input.prompt ?? ""));
   const snapshot: GenerationSnapshot = { payload, durationSeconds, resolution, referenceVideoSeconds, keyFingerprint: generationKeyFingerprint(key), pricingVersion: price.version, projectId, sceneId, projectVersionId };
   const [task] = await db.insert(commercialTasks).values({ userId, kind: "generation", input: snapshot, credits: price.credits, expiresAt: new Date(Date.now() + 600000) }).returning();
   return { id: task.id, credits: task.credits, expiresAt: task.expiresAt, model: payload.model, duration: durationSeconds, resolution, referenceVideoSeconds };

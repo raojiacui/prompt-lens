@@ -22,6 +22,10 @@ export function restoreGenerationSubmission(value: string | null): GenerationSub
 
 function quoteError(code: unknown, zh: boolean) {
   const messages: Record<string, [string, string]> = {
+    PROMPT_BLOCKED: ["提示词未通过安全检查，本次未扣积分。", "The prompt did not pass the safety check. No credits were charged."],
+    PROMPT_REVIEW_REQUIRED: ["提示词需要进一步审核，本次未扣积分。", "The prompt requires review. No credits were charged."],
+    PROMPT_SCAN_UNAVAILABLE: ["安全审核暂不可用，请稍后重试。本次未扣积分。", "Safety review is unavailable. Try again later; no credits were charged."],
+    PROMPT_SCAN_RATE_LIMITED: ["审核请求过于频繁，请稍后重试。本次未扣积分。", "Too many safety checks; try again later. No credits were charged."],
     MODEL_PRICE_UNVERIFIED: ["该模型暂未核价，请换一个模型。", "Choose a model with verified pricing."],
     PAID_MODEL_NOT_VERIFIED: ["请选择有效的视频生成或编辑模型。", "Choose an available generation or editing model."],
     PAID_GENERATION_CONFIGURATION_UNSUPPORTED: ["当前模型不支持这组素材、时长或画质，请调整参数。", "Adjust the inputs, duration or quality for this model."],

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assertPromptAllowed, PromptModerationError } from "@/lib/safety/waffo-prompt-scan";
+import { assertPromptAllowed, promptModerationHttpFailure } from "@/lib/safety/waffo-prompt-scan";
 import { auth } from "@/lib/auth";
 import {
   createVideoProvider,
@@ -127,7 +127,8 @@ export async function POST(request: NextRequest) {
       billing: { provider, keySource: keyAccess.source, keyFingerprint: generationKeyFingerprint(keyAccess.apiKey), chargedCredits: 0 },
     });
   } catch (error: unknown) {
-    if (error instanceof PromptModerationError) return NextResponse.json({ code: error.code }, { status: error.code === "PROMPT_BLOCKED" ? 422 : 503 });
+    const moderation = promptModerationHttpFailure(error);
+    if (moderation) return NextResponse.json(moderation.body, { status: moderation.status });
     console.error("[video-generate] Error:", error);
     const kieError = kieErrorResponse(error);
     if (kieError) return NextResponse.json(kieError.body, { status: kieError.status });
