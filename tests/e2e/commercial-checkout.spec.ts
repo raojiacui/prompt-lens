@@ -18,7 +18,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     const buttons = pricing.getByRole("button", { name: locale === "zh" ? "待开放" : "Coming soon", exact: true });
     await expect(buttons).toHaveCount(3);
     for (const button of await buttons.all()) await expect(button).toBeDisabled();
-    await expect(pricing.locator("article").first()).toContainText("¥21.90");
+    await expect(pricing.locator("article").first()).toContainText("¥34.90");
     const faq = page.locator("#faq");
     await faq.getByRole("button", { name: locale === "zh" ? "可以完全免费使用吗？" : "Can I use PromptLens completely free?", exact: true }).click();
     const answer = faq.getByText(locale === "zh" ? "新账号可免费试用两次视频分析。" : "New accounts get two free video analysis trials.", { exact: false });
@@ -59,7 +59,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     let paid = false;
     let requests = 0;
     const requestIds: string[] = [];
-    const checkout = { orderId: "11111111-1111-4111-8111-111111111111", amountCents: 2190, credits: 200, rewrites: 20, status: "pending", expiresAt: new Date(Date.now() + 300000).toISOString(), qrImageUrl: null, paymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay", mobilePaymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay" };
+    const checkout = { orderId: "11111111-1111-4111-8111-111111111111", amountCents: 3490, credits: 200, rewrites: 20, status: "pending", expiresAt: new Date(Date.now() + 300000).toISOString(), qrImageUrl: null, paymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay", mobilePaymentUrl: "/api/payments/orders/11111111-1111-4111-8111-111111111111/pay" };
     await page.route("https://example.com/**", (route) => route.fulfill({ contentType: "image/svg+xml", body: '<svg xmlns="http://www.w3.org/2000/svg" width="224" height="224"><rect width="224" height="224" fill="white"/><rect x="8" y="8" width="208" height="208" fill="none" stroke="black" stroke-width="8"/><text x="112" y="112" text-anchor="middle" font-family="sans-serif">TEST ONLY</text></svg>' }));
     await page.route("**/api/**", async (route) => {
       const path = new URL(route.request().url()).pathname;
@@ -86,14 +86,14 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
     for (const index of [1, 2]) await expect(pricing.locator("article").nth(index).getByRole("button")).toBeDisabled();
     await expect(pricing).toContainText(locale === "zh" ? "失败不计次" : "failures do not count");
     await expect(pricing).not.toContainText(locale === "zh" ? "失败尝试也占一次" : "Failed attempts also count");
-    for (const [index, price] of ["¥21.90", "¥63.90", "¥139"].entries()) {
+    for (const [index, price] of ["¥34.90", "¥89.90", "¥199"].entries()) {
       await expect(pricing.locator("article").nth(index).getByText(price, { exact: true })).toBeVisible();
       await expect(pricing.locator("article").nth(index)).toContainText(String([12, 30, 61][index]));
     }
     await page.getByRole("button", { name: locale === "zh" ? "支付宝购买" : "Buy with Alipay" }).first().click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
-    await expect(dialog.getByText("¥21.90", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("¥34.90", { exact: true })).toBeVisible();
     await expect(dialog.locator("iframe")).toHaveAttribute("src", `${checkout.paymentUrl}?embedded=1`);
     await expect(dialog.locator("img")).toHaveCount(0);
     const bounds = await dialog.boundingBox();
@@ -134,7 +134,7 @@ for (const scenario of ["slow-query", "return-to-page", "late-confirmation"]) {
     let snapshots = 0;
     let queries = 0;
     const checkout = {
-      orderId: "11111111-1111-4111-8111-111111111111", amountCents: 2190, credits: 200, rewrites: 20,
+      orderId: "11111111-1111-4111-8111-111111111111", amountCents: 3490, credits: 200, rewrites: 20,
       status: "pending", expiresAt: new Date(Date.now() + (scenario === "late-confirmation" ? -1200000 : 300000)).toISOString(),
       qrImageUrl: null, mobilePaymentUrl: null,
     };
@@ -193,7 +193,7 @@ test("network retry reuses the request and expiry does not imply failed payment"
       if (route.request().method() === "GET") return route.fulfill({ json: { enabled: true } });
       requestIds.push(route.request().postDataJSON().requestId);
       if (requestIds.length === 1) return route.fulfill({ status: 502, json: { code: "CHECKOUT_STATUS_UNKNOWN" } });
-      return route.fulfill({ json: { orderId: "11111111-1111-4111-8111-111111111111", amountCents: 2190, credits: 200, rewrites: 20, status: "pending", expiresAt: new Date(Date.now() - 1000).toISOString(), qrImageUrl: "https://example.com/qr.png", mobilePaymentUrl: null } });
+      return route.fulfill({ json: { orderId: "11111111-1111-4111-8111-111111111111", amountCents: 3490, credits: 200, rewrites: 20, status: "pending", expiresAt: new Date(Date.now() - 1000).toISOString(), qrImageUrl: "https://example.com/qr.png", mobilePaymentUrl: null } });
     }
     if (path.includes("/api/payments/orders/")) return route.fulfill({ status: 503, json: {} });
     return route.fulfill({ json: {} });
