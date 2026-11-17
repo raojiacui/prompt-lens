@@ -28,6 +28,7 @@ export type GenerationVariant = {
   providerTaskId?: string;
   error?: string;
   notes: string;
+  lifecycle?: import("./generation-progress").GenerationProgress;
 };
 
 export type ReferenceVideoProject = {

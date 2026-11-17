@@ -1,6 +1,7 @@
 import { createProviderVideo, getProviderVideoStatus } from "@/lib/ai/video-client";
 import { isUserProvider, type UserProvider } from "@/lib/ai/providers";
 import { NextResponse } from "next/server";
+import { generationSubmissionResponse } from "@/lib/reference-video/generation-submission-response";
 import { assertPromptAllowed, promptModerationHttpFailure } from "@/lib/safety/waffo-prompt-scan";
 import { and, eq } from "drizzle-orm";
 import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
@@ -139,6 +140,8 @@ export async function POST(request: Request) {
   const referenceVideoUrl = body ? getReferenceVideoUrl(body) : undefined;
   if (!userPrompt && !referenceVideoUrl) return NextResponse.json({ error: "Missing generation prompt" }, { status: 400 });
 
+  return generationSubmissionResponse(request, async (report) => {
+  report("preparing");
   try {
     const replacementAssets = Array.isArray(body?.replacementAssets)
       ? body.replacementAssets.filter((item: unknown) => typeof item === "object" && item !== null && typeof (item as { id?: unknown }).id === "string" && typeof (item as { url?: unknown }).url === "string") as { id: string; url: string; type?: string; name?: string }[]
@@ -188,7 +191,9 @@ export async function POST(request: Request) {
 
     // Scan only the user-written generation direction, not the LLM/system boilerplate.
     // For reference-only generation, scan the actual fallback text sent to the model.
+    report("moderating");
     await assertPromptAllowed(userPrompt || "Follow the uploaded reference video.");
+    report("submitting");
     const result = await createProviderVideo(provider, {
       prompt,
       imageUrls: useNativeVideoEdit ? [] : imageUrls,
@@ -250,6 +255,7 @@ export async function POST(request: Request) {
       : message;
     return NextResponse.json({ error: friendlyMessage }, { status: 502 });
   }
+  });
 }
 
 export async function GET(request: Request) {

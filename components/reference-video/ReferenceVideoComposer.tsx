@@ -13,7 +13,6 @@ import {
   X,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { localizedStatus } from "@/lib/workflow/interface-copy";
 import { restoreGenerationSubmission, submitCommercialGeneration, type GenerationSubmissionBatch } from "@/lib/reference-video/commercial-generation-submit";
 import { generationCreditPreview } from "@/lib/billing/generation-credit-preview";
 import { taskFailureMessage, taskSyncInterruptedMessage } from "@/lib/billing/task-failure-message";
@@ -22,6 +21,9 @@ import { generationChoiceId, generationChoices, generationDisplayName, resolveGe
 import { refreshWalletBalance } from "@/lib/billing/use-wallet-balance";
 import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
 import { GenerationHistory } from "./generation-history";
+import { GenerationTaskProgress } from "./generation-task-progress";
+import { advanceGenerationProgress, type GenerationStage } from "@/lib/reference-video/generation-progress";
+import { readGenerationSubmission, GenerationSubmissionInterrupted } from "@/lib/reference-video/read-generation-submission";
 import type { KeyboardEvent } from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -459,10 +461,22 @@ export function ReferenceVideoComposer({
     window.localStorage.setItem(commercialBatchStorageKey, JSON.stringify(batch));
   }
 
+  function updateVariantStage(index: number, stage: GenerationStage) {
+    setVariants(current => current.map((variant, position) => position === index ? {
+      ...variant, status: "generating", lifecycle: advanceGenerationProgress(variant.lifecycle, stage),
+    } : variant));
+  }
+
   function showCommercialGeneration(ids: string[]) {
-    const next: GenerationVariant[] = ids.map((id, index) => ({ id: `variant-${index + 1}`, label: `Variation ${index + 1}`, status: "generating", progress: 10, providerTaskId: `commercial:${id}`, notes: zh ? "已预留积分" : "Credits reserved" }));
-    window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(next));
-    setVariants(next);
+    setVariants(current => {
+      const next: GenerationVariant[] = ids.map((id, index) => ({
+        id: `variant-${index + 1}`, label: `Variation ${index + 1}`, status: "generating", progress: 0,
+        providerTaskId: `commercial:${id}`, notes: zh ? "已预留积分，等待后台生成。" : "Credits reserved; waiting for generation.",
+        lifecycle: { ...advanceGenerationProgress(current[index]?.lifecycle, "queued"), commercial: true },
+      }));
+      window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(next));
+      return next;
+    });
     window.localStorage.removeItem(commercialBatchStorageKey);
     commercialBatchRef.current = null;
     setPendingConfirmation(false);
@@ -792,10 +806,15 @@ export function ReferenceVideoComposer({
           : [parsedGeneration];
         if (
           restoredGeneration.some(
-            (variant) => variant.providerTaskId || variant.videoUrl,
+            (variant) => variant.providerTaskId || variant.videoUrl || variant.lifecycle,
           )
         )
-          setVariants(restoredGeneration);
+          setVariants(restoredGeneration.map(variant => !variant.providerTaskId && ["queued", "generating"].includes(variant.status)
+            ? {
+              ...variant, status: "review",
+              lifecycle: variant.lifecycle ? { ...variant.lifecycle, finishedAt: Date.now() } : undefined,
+              error: zh ? "页面已刷新，提交状态尚未确认。请先查看生成历史或核对原提交，避免重复生成。" : "The page reloaded before submission was confirmed. Check history or verify the original submission before retrying.",
+            } : variant));
       } catch {}
     }
     if (savedSettings) {
@@ -817,9 +836,12 @@ export function ReferenceVideoComposer({
   }, [storageKey, initialModel]);
 
   useEffect(() => {
+    if (hasStartedGeneration) window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(variants));
+  }, [variants, hasStartedGeneration, storageKey]);
+
+  useEffect(() => {
     if (initialPrompt && initialPrompt.trim()) {
       setPromptText(initialPrompt.trim());
-      setVariants(initialVariants);
     }
   }, [initialPrompt]);
 
@@ -896,6 +918,7 @@ export function ReferenceVideoComposer({
             return {
               ...variant,
               notes: taskSyncInterruptedMessage(zh ? "zh" : "en"),
+              lifecycle: variant.lifecycle ? { ...variant.lifecycle, connection: "error" as const } : undefined,
             };
           }
 
@@ -905,6 +928,7 @@ export function ReferenceVideoComposer({
               ...variant,
               status: "completed" as const,
               progress: 100,
+              lifecycle: { ...advanceGenerationProgress(variant.lifecycle, "complete"), finishedAt: Date.now() },
               providerTaskId,
               videoUrl: result.payload.videoUrl,
               notes: taskId.startsWith("commercial:")
@@ -923,7 +947,8 @@ export function ReferenceVideoComposer({
             return {
               ...variant,
               status: "failed" as const,
-              progress: 100,
+              progress: variant.progress,
+              lifecycle: variant.lifecycle ? { ...variant.lifecycle, connection: "ok" as const, finishedAt: Date.now() } : undefined,
               providerTaskId,
               error: failureReason,
               notes: failureReason,
@@ -934,6 +959,7 @@ export function ReferenceVideoComposer({
             return {
               ...variant,
               status: "review" as const,
+              lifecycle: variant.lifecycle ? { ...variant.lifecycle, connection: "ok" as const, updatedAt: Date.now() } : undefined,
               providerTaskId,
               notes: zh
                 ? "提交结果需要核实，积分仍处于预留状态，请勿重复提交。"
@@ -945,6 +971,11 @@ export function ReferenceVideoComposer({
             ...variant,
             providerTaskId,
             progress: Math.max(variant.progress, 28),
+            lifecycle: variant.lifecycle ? {
+              ...(variant.lifecycle.stage !== (result.payload.state === "queued" ? "queued" : "generating")
+                ? advanceGenerationProgress(variant.lifecycle, result.payload.state === "queued" ? "queued" : "generating") : variant.lifecycle),
+              connection: "ok" as const,
+            } : undefined,
             notes: taskId.startsWith("commercial:")
                 ? (zh ? `正在生成，已预留 ${result.payload.credits} 积分。` : `Generating. ${result.payload.credits} credits reserved.`)
                 : (zh ? "正在生成视频，等待模型返回结果……" : "Generating video. Checking provider status..."),
@@ -1076,7 +1107,7 @@ export function ReferenceVideoComposer({
   async function submitGenerationJob() {
     // A lost confirmation resumes its original IDs, even after a refresh or settings change.
     if (commercialBatchRef.current?.confirmationStarted) {
-      const ids = await submitCommercialGeneration(commercialBatchRef.current, zh, persistCommercialBatch);
+      const ids = await submitCommercialGeneration(commercialBatchRef.current, zh, persistCommercialBatch, fetch, updateVariantStage);
       showCommercialGeneration(ids);
       return;
     }
@@ -1118,8 +1149,9 @@ export function ReferenceVideoComposer({
         id: `variant-${index + 1}`,
         label: `Variation ${index + 1}`,
         status: "queued",
-        progress: 8,
-        notes: zh ? "正在提交生成任务……" : "Submitting video generation...",
+        progress: 0,
+        lifecycle: { ...advanceGenerationProgress(undefined, "preparing"), commercial: Boolean(commercialEnabled && generationPayer === "platform") },
+        notes: zh ? "等待准备生成任务。" : "Waiting to prepare generation.",
       }),
     );
     setVariants(queuedVariants);
@@ -1130,7 +1162,7 @@ export function ReferenceVideoComposer({
         batch = { version: 1, request, quantity: variantCount, quotes: [], confirmationStarted: false };
       }
       persistCommercialBatch(batch);
-      const ids = await submitCommercialGeneration(batch, zh, persistCommercialBatch);
+      const ids = await submitCommercialGeneration(batch, zh, persistCommercialBatch, fetch, updateVariantStage);
       showCommercialGeneration(ids);
       return;
     }
@@ -1148,15 +1180,14 @@ export function ReferenceVideoComposer({
               ? {
                   ...variant,
                   status: "generating",
-                  progress: 12,
-                  notes: `Submitting variation ${index + 1} of ${variantCount}.`,
+                  notes: zh ? "正在准备生成任务。" : "Preparing generation.",
                 }
               : variant,
           ),
         );
         const response = await fetch("/api/generation-jobs", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" },
           body: JSON.stringify({
             payer: "byok",
             provider: activeProvider,
@@ -1198,16 +1229,23 @@ export function ReferenceVideoComposer({
             },
           }),
         });
-        const payload = await response.json().catch(() => ({}));
-        if (!response.ok)
-          throw new Error(payload.error || "Failed to create generation job");
+        const result = await readGenerationSubmission(response, stage => {
+          submittedVariants[index] = { ...submittedVariants[index], lifecycle: advanceGenerationProgress(submittedVariants[index].lifecycle, stage) };
+          updateVariantStage(index, stage);
+        });
+        const payload = result.body;
+        if (payload.code === "GENERATION_SUBMISSION_UNCONFIRMED") throw new GenerationSubmissionInterrupted();
+        if (result.status >= 400)
+          throw new Error(typeof payload.error === "string" ? payload.error : "Failed to create generation job");
+        if (typeof payload.providerTaskId !== "string" || !payload.providerTaskId) throw new GenerationSubmissionInterrupted();
         const taskId = payload.providerTaskId as string;
         const submittedVariant: GenerationVariant = {
           ...queuedVariants[index],
           status: "generating",
           progress: 20,
+          lifecycle: advanceGenerationProgress(submittedVariants[index].lifecycle, "generating"),
           providerTaskId: taskId,
-          notes: `Submitted variation ${index + 1} of ${variantCount}.`,
+          notes: zh ? "任务已提交，等待模型返回结果。" : "Task submitted; waiting for the model result.",
         };
         submittedVariants[index] = submittedVariant;
         setVariants((current) =>
@@ -1217,11 +1255,14 @@ export function ReferenceVideoComposer({
         );
       } catch (submitError) {
         const failedVariant: GenerationVariant = {
-          ...queuedVariants[index],
-          status: "failed",
-          progress: 100,
+          ...submittedVariants[index],
+          status: submitError instanceof GenerationSubmissionInterrupted ? "review" : "failed",
+          progress: 0,
+          lifecycle: submittedVariants[index].lifecycle ? { ...submittedVariants[index].lifecycle!, finishedAt: Date.now() } : undefined,
           error:
-            submitError instanceof Error
+            submitError instanceof GenerationSubmissionInterrupted
+              ? (zh ? "提交连接中断，任务是否创建尚未确认。请先查看生成历史或服务商后台，避免重复生成。" : "Submission was interrupted. Check generation history or the provider before resubmitting.")
+              : submitError instanceof Error
               ? submitError.message
               : "Failed to create generation job",
           notes: zh ? "任务提交失败，请检查后重试。" : "Submission failed.",
@@ -1235,10 +1276,10 @@ export function ReferenceVideoComposer({
       }
     }
 
-    window.localStorage.setItem(
-      `reference-generation-${storageKey}`,
-      JSON.stringify(submittedVariants),
-    );
+    setVariants(current => {
+      window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(current));
+      return current;
+    });
   }
 
   async function createVideo() {
@@ -1250,18 +1291,17 @@ export function ReferenceVideoComposer({
       await submitGenerationJob();
     } catch (generationError) {
       const uncertain = Boolean(commercialBatchRef.current?.confirmationStarted);
-      setVariants([
-        {
-          ...initialVariants[0],
-          status: uncertain ? "pending" : "failed",
-          progress: uncertain ? 0 : 100,
+      setVariants(current => current.map(variant => ({
+          ...variant,
+          status: uncertain ? "review" : "failed",
+          progress: 0,
+          lifecycle: variant.lifecycle ? { ...variant.lifecycle, finishedAt: Date.now() } : undefined,
           error:
             generationError instanceof Error
               ? generationError.message
               : "Generation failed",
           notes: uncertain ? (zh ? "提交状态待核实。" : "Submission awaiting verification.") : (zh ? "视频生成失败。" : "Generation failed."),
-        },
-      ]);
+        })));
       setError(
         generationError instanceof Error
           ? generationError.message
@@ -1744,24 +1784,7 @@ export function ReferenceVideoComposer({
                     key={variant.id}
                     className="mt-3 text-sm text-muted-foreground"
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <span>{variant.error || (zh && variant.notes === "Ready to submit." ? "填写提示词后即可开始生成。" : variant.notes)}</span>
-                      <span className="shrink-0">{localizedStatus(variant.status, zh ? "zh" : "en")}</span>
-                    </div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
-                      <span
-                        className={variant.status === "generating" ? "block h-full w-1/3 rounded-full bg-primary animate-pulse" : "block h-full rounded-full bg-primary transition-all"}
-                        style={variant.status === "generating" ? undefined : { width: `${variant.progress}%` }}
-                      />
-                    </div>
-                    <p className="mt-1 text-xs font-medium text-foreground">
-                      {zh ? (variant.label === "Primary output" ? "生成结果" : variant.label.replace(/^Variation (\d+)$/, "生成结果 $1")) : variant.label}
-                    </p>
-                    {variant.providerTaskId ? (
-                      <p className="mt-2 break-all text-xs">
-                        {variant.providerTaskId}
-                      </p>
-                    ) : null}
+                    <GenerationTaskProgress variant={variant} zh={zh} />
                     {variant.videoUrl ? (
                       <div className="mt-4 overflow-hidden rounded-xl border border-border bg-black">
                         <video

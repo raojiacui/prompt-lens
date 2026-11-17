@@ -1,3 +1,5 @@
+import type { GenerationStage } from "./generation-progress";
+import { readGenerationSubmission } from "./read-generation-submission";
 export type GenerationQuote = { id: string; credits: number };
 export type GenerationSubmissionBatch = {
   version: 1;
@@ -44,15 +46,19 @@ export async function submitCommercialGeneration(
   zh: boolean,
   persist: (batch: GenerationSubmissionBatch) => void,
   fetcher: typeof fetch = fetch,
+  onStage: (index: number, stage: GenerationStage) => void = () => {},
 ): Promise<string[]> {
   while (batch.quotes.length < batch.quantity) {
+    const index = batch.quotes.length;
+    onStage(index, "preparing");
     const response = await fetcher("/api/commercial/generation", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(batch.request),
+      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/x-ndjson" }, body: JSON.stringify(batch.request),
     });
-    const body = await response.json().catch(() => null);
-    if (!response.ok) throw new Error(quoteError(body?.code, zh));
+    const result = await readGenerationSubmission(response, stage => onStage(index, stage));
+    const body = result.body;
+    if (result.status >= 400) throw new Error(quoteError(body?.code, zh));
     if (!body || typeof body.id !== "string" || !body.id || batch.quotes.some(quote => quote.id === body.id)
-      || !Number.isSafeInteger(body.credits) || body.credits < 0) {
+      || typeof body.credits !== "number" || !Number.isSafeInteger(body.credits) || body.credits < 0) {
       throw new Error(zh ? "费用响应不完整，尚未启动生成，请重试。" : "Incomplete cost response. Generation has not started; retry.");
     }
     batch.quotes.push({ id: body.id, credits: body.credits });
@@ -61,6 +67,7 @@ export async function submitCommercialGeneration(
   const ids = batch.quotes.map(quote => quote.id);
   batch.confirmationStarted = true;
   persist(batch); // Keep IDs before submission, including when its response is lost.
+  ids.forEach((_, index) => onStage(index, "submitting"));
   try {
     const response = await fetcher("/api/commercial/confirm", {
       method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }),

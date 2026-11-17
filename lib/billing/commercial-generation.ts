@@ -1,4 +1,5 @@
 import { assertPromptAllowed } from "@/lib/safety/waffo-prompt-scan";
+import type { GenerationReporter } from "@/lib/reference-video/generation-submission-response";
 import { and, eq, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { db, commercialTasks, commercialWallets, mediaCleanupJobs, projects, sceneVersions, videoGeneration } from "@/lib/db";
 import { randomUUID } from "node:crypto";
@@ -48,13 +49,16 @@ export function buildCommercialGenerationPayload(body: Record<string, unknown>, 
   return buildMarketGenerationPayload({ modelId: model, prompt, duration, resolution, aspectRatio: aspect, referenceVideoUrl: video, generateAudio: body.generateAudio === true }, images);
 }
 
-export async function quoteCommercialGeneration(userId: string, body: Record<string, unknown>) {
+export async function quoteCommercialGeneration(userId: string, body: Record<string, unknown>, report: GenerationReporter = () => {}) {
+  report("preparing");
   const key = getPlatformKieApiKey();
   if (!key) throw new Error("KIE_KEY_REQUIRED");
   const userPrompt = String(body.userPrompt || body.prompt || "").trim();
   if (userPrompt.length < 3 || userPrompt.length > 5000) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
   // Reject unsafe prompts before any R2 media copy, preview job, wallet reservation or provider cost.
+  report("moderating");
   await assertPromptAllowed(userPrompt);
+  report("quoting");
   const video = referenceVideoUrl(body);
   let referenceVideoSeconds: number | undefined;
   let generationBody = body;
