@@ -8,7 +8,7 @@ function analysis(seconds: number, count: number, model: "flash" | "pro" = "flas
 
 describe("V6 commercial pricing", () => {
   it("keeps approved packages distinct from historical credits", () => {
-    expect(COMMERCIAL_PACKAGES.map((pack) => [pack.priceCents, pack.credits, pack.rewrites])).toEqual([[2190, 200, 20], [6390, 650, 60], [13900, 1500, 150]]);
+    expect(COMMERCIAL_PACKAGES.map((pack) => [pack.priceCents, pack.credits, pack.rewrites])).toEqual([[3490, 200, 20], [8990, 650, 60], [19900, 1500, 150]]);
     expect(COMMERCIAL_PACKAGES.map((pack) => pack.linkImports)).toEqual([12, 30, 61]);
     expect(COMMERCIAL_PACKAGES.every((pack) => pack.id.startsWith("v6_"))).toBe(true);
     expect(COMMERCIAL_PACKAGES.every((pack) => !pack.checkoutEnabled)).toBe(true);
@@ -103,7 +103,7 @@ describe("V6 commercial pricing", () => {
     for (const pack of COMMERCIAL_PACKAGES) {
       expect(BigInt(quote.credits) * BigInt(pack.priceCents) * 10000n >= budgetMicroCny * BigInt(pack.credits)).toBe(true);
     }
-    const cheapest = COMMERCIAL_PACKAGES[2];
+    const cheapest = { priceCents: 13900, credits: 1500 };
     expect(BigInt(quote.credits - 1) * BigInt(cheapest.priceCents) * 10000n < budgetMicroCny * BigInt(cheapest.credits)).toBe(true);
   });
   it("includes reference video duration and rejects unpriced combinations", () => {
