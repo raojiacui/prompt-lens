@@ -65,8 +65,8 @@ export const policyContent: Record<"zh" | "en", Record<PolicyKind, PolicyDocumen
         ] },
         { id: "providers", title: "3. 服务商与数据传输", paragraphs: [
           "网站运行涉及 Vercel（托管、日志及访问统计）、Supabase（数据库）、Cloudflare R2（素材存储）及后台任务运行服务。登录和邮件发送还涉及 Google、GitHub 及配置的邮件服务。",
-          "根据你选择的功能和模型，相关提示词、素材或可访问素材的链接会提供给 KIE、Infistar 等模型服务商及其底层模型提供方；导入分享链接时，该链接也会交由链接解析服务处理。支付时，必要订单信息提供给结算页显示的支付服务商。
-          "视频生成服务通过模型聚合服务接入不同的底层模型。可用模型包括（但不限于）可灵 Kling 2.6 / Kling 3、通义万相 Wan 系列、即梦 Jimeng 系列等，实际支持的模型会随功能、地区及供应商状态调整。模型提供方与接入平台并非同一主体；提交生成任务时，所选模型对应的服务商可能接收生成所必需的提示词、图片或视频等内容。请以产品实际显示的可用模型和任务参数为准。",",
+          "根据你选择的功能和模型，相关提示词、素材或可访问素材的链接会提供给 KIE、Infistar 等模型服务商及其底层模型提供方；导入分享链接时，该链接也会交由链接解析服务处理。支付时，必要订单信息提供给结算页显示的支付服务商。",
+          "视频生成模型与积分规则：本站《使用教程》的积分规则页面公开列出具体模型和不同配置的价格，包括 Google Veo 3.1（Lite / Fast / Quality）、字节跳动 Seedance 2 / Fast / Mini、可灵 Kling 2.6 / Kling 3、通义万相 Wan 2.6 / Wan 2.7，以及 Wan 2.7 Video Edit。教程按模型、画质、声音、时长和参考视频等配置列出积分；例如教程目前示例中的 Wan 720p、5 秒生成一条视频为 29 平台积分。各模型并非每种配置均可用；实际收费以视频生成页面在提交任务前显示的实时确认报价为准。详见 https://prompt-lens.cc.cd/guide 。生成任务的提示词、图片及视频等必要内容可能经 KIE、Infistar 等模型接入服务传输至你所选的底层模型提供方。",
           "部分服务商在中国大陆以外运行，数据可能在境外传输、处理或存储。服务商还受各自的隐私与数据处理条款约束。请在提交前考虑素材敏感程度；如需确认某个模型或任务的数据流向，可联系下方邮箱。",
         ] },
         { id: "cookies", title: "4. Cookie 与本地存储", paragraphs: [
@@ -171,8 +171,8 @@ export const policyContent: Record<"zh" | "en", Record<PolicyKind, PolicyDocumen
         ] },
         { id: "providers", title: "3. Service providers and transfers", paragraphs: [
           "Operations involve Vercel for hosting, logs and analytics, Supabase for the database, Cloudflare R2 for media storage, and background task hosting. Authentication and email delivery also involve Google, GitHub and the configured email services.",
-          "Depending on the feature and model selected, relevant prompts, media or accessible media links are sent to model services such as KIE and Infistar and their underlying model providers. Imported share links are also processed by a link-resolution service. Necessary order information is sent to the payment provider shown at checkout.
-          "Video generation uses model-aggregation services to access distinct underlying models. Available model families include (but are not limited to) Kling 2.6 / Kling 3, Wan, and Jimeng, subject to the feature, region, and provider availability. The intermediary API service and the underlying model developer may be different entities. When you submit a generation task, the provider associated with the selected model may receive prompts, images, videos, and other content needed to perform the task. Refer to the models and task parameters actually offered in the product.",",
+          "Depending on the feature and model selected, relevant prompts, media or accessible media links are sent to model services such as KIE and Infistar and their underlying model providers. Imported share links are also processed by a link-resolution service. Necessary order information is sent to the payment provider shown at checkout.",
+          "Video generation models and credit pricing: Our public Guide lists model-specific credits for configurations including Google Veo 3.1 (Lite / Fast / Quality), ByteDance Seedance 2 / Fast / Mini, Kling 2.6 / Kling 3, Wan 2.6 / Wan 2.7, and Wan 2.7 Video Edit. The guide details credits by model, quality, audio, duration, and video reference options; for example, its current Wan 720p five-second example costs 29 platform credits per output. Not all model/configuration combinations are available. The final price is the quote presented before a user confirms generation. See https://prompt-lens.cc.cd/guide . Required prompts, images, and videos may be transferred via aggregation providers such as KIE or Infistar to the underlying model provider selected by the user.",
           "Some providers operate outside mainland China, so information may be transferred, processed or stored abroad. Providers also apply their own privacy and data-processing terms. Consider sensitivity before submitting materials. Contact us to clarify the data flow for a particular model or task.",
         ] },
         { id: "cookies", title: "4. Cookies and local storage", paragraphs: [
