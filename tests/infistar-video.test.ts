@@ -8,6 +8,20 @@ vi.mock("@/lib/cloudflare/r2", () => ({ uploadToR2: storage.upload }));
 vi.mock("@/lib/ai/reference-media-access", () => ({ assertReferenceMediaAccess: vi.fn(async () => undefined) }));
 vi.mock("@/lib/ai/infistar-media", () => ({ readInfistarMedia: vi.fn(async () => new Blob(["fixture-media"], { type: "video/mp4" })) }));
 afterEach(() => vi.unstubAllGlobals());
+it("returns a failed task with an error as a terminal status without resubmitting", async () => {
+  const fetcher = vi.fn().mockResolvedValue(Response.json({ id: "failed-task", status: "failed", error: { message: "private upstream details" } }));
+  vi.stubGlobal("fetch", fetcher);
+  expect(await getInfistarVideoStatus("failed-task", "fixture")).toMatchObject({ state: "fail", taskId: "failed-task" });
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(fetcher.mock.calls[0][1].method).toBe("GET");
+});
+it("does not mistake an API error or a different task for a failed generation", async () => {
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ error: { message: "denied" } }))
+    .mockResolvedValueOnce(Response.json({ id: "another-task", status: "failed", error: { message: "denied" } }))
+    .mockResolvedValueOnce(Response.json({ id: "failed-task", status: "failed", error: {} }, { status: 503 }));
+  vi.stubGlobal("fetch", fetcher);
+  for (let i = 0; i < 3; i++) await expect(getInfistarVideoStatus("failed-task", "fixture")).rejects.toThrow("Infistar 请求失败");
+});
 it("keeps KIE models and Infistar models separate", () => {
   expect(generationChoices().every(model => model.provider === "kie")).toBe(true);
   expect(generationChoices("infistar").map(model => model.providerModelId)).toContain("kling-video-o1");

@@ -436,7 +436,7 @@ export function ReferenceVideoComposer({
     supportedDurationSeconds[supportedDurationSeconds.length - 1] ??
     minSelectableDuration;
   const isRunning = isSubmitting || variants.some(
-    (variant) => variant.status === "queued" || variant.status === "generating",
+    (variant) => !variant.trackingStopped && (variant.status === "queued" || variant.status === "generating"),
   );
   const hasStartedGeneration = variants.some(
     (variant) =>
@@ -517,10 +517,18 @@ export function ReferenceVideoComposer({
         };
   const activeGenerationTaskIdsKey = variants
     .filter(
-      (variant) => ["generating", "review"].includes(variant.status) && variant.providerTaskId,
+      (variant) => !variant.trackingStopped && ["generating", "review"].includes(variant.status) && variant.providerTaskId,
     )
     .map((variant) => variant.providerTaskId)
     .join("|");
+  function setTaskTracking(id: string, stopped: boolean) {
+    setVariants(current => current.map(variant => variant.id === id ? {
+      ...variant, trackingStopped: stopped, syncFailures: 0,
+      notes: stopped
+        ? (zh ? "已停止跟踪。服务商任务可能仍在运行，费用以实际结算为准；可恢复查询原任务。" : "Tracking stopped. The provider task may still run and incur charges. Resume to query the original task.")
+        : (zh ? "正在重新查询原任务，不会重新提交生成。" : "Querying the original task without resubmitting generation."),
+    } : variant));
+  }
   const durationSeconds = durationToSeconds(duration);
   const referenceUrl = readyReferenceVideoAsset?.url;
   useEffect(() => {
@@ -869,6 +877,7 @@ export function ReferenceVideoComposer({
     if (!taskIds.length) return;
     let cancelled = false;
     let timeoutId: number | undefined;
+    const controller = new AbortController();
 
     function persistGenerationVariants(nextVariants: GenerationVariant[]) {
       window.localStorage.setItem(
@@ -883,6 +892,7 @@ export function ReferenceVideoComposer({
           try {
             const response = await fetch(
               taskId.startsWith("commercial:") ? `/api/commercial/tasks/${taskId.slice(11)}` : `/api/generation-jobs?taskId=${encodeURIComponent(taskId)}`,
+              { signal: AbortSignal.any([controller.signal, AbortSignal.timeout(30000)]) },
             );
             let payload = (await response
               .json()
@@ -910,19 +920,25 @@ export function ReferenceVideoComposer({
       setVariants((current) => {
         const next = current.map((variant) => {
           const taskId = variant.providerTaskId;
-          if (!taskId) return variant;
+          if (!taskId || variant.trackingStopped || !["generating", "review"].includes(variant.status)) return variant;
           const result = results.find((item) => item.taskId === taskId);
           if (!result) return variant;
 
           if ("error" in result) {
+            const syncFailures = (variant.syncFailures ?? 0) + 1;
+            const stopped = syncFailures >= 3;
             return {
               ...variant,
-              notes: taskSyncInterruptedMessage(zh ? "zh" : "en"),
+              syncFailures, trackingStopped: stopped,
+              notes: stopped
+                ? (zh ? "连续三次查询失败，已暂停自动查询。任务结果尚未确认，可恢复查询或到生成历史核对；不会重新提交生成。" : "Three status queries failed. Automatic tracking is paused; resume or check history. The task result is unconfirmed; no generation was resubmitted.")
+                : taskSyncInterruptedMessage(zh ? "zh" : "en"),
               lifecycle: variant.lifecycle ? { ...variant.lifecycle, connection: "error" as const } : undefined,
             };
           }
 
           const providerTaskId = result.payload.providerTaskId || taskId;
+          variant = { ...variant, syncFailures: 0 };
           if (result.payload.status === "success" && result.payload.videoUrl) {
             return {
               ...variant,
@@ -991,6 +1007,7 @@ export function ReferenceVideoComposer({
     timeoutId = window.setTimeout(pollGenerationStatus, 1000);
     return () => {
       cancelled = true;
+      controller.abort();
       if (timeoutId) window.clearTimeout(timeoutId);
     };
   }, [activeGenerationTaskIdsKey, storageKey]);
@@ -1785,6 +1802,11 @@ export function ReferenceVideoComposer({
                     className="mt-3 text-sm text-muted-foreground"
                   >
                     <GenerationTaskProgress variant={variant} zh={zh} />
+                    {variant.providerTaskId && ["generating", "review"].includes(variant.status) && !isSubmitting && (
+                      <button type="button" className="mt-3 min-h-11 rounded-lg border border-border px-4 text-sm text-foreground hover:bg-muted" onClick={() => setTaskTracking(variant.id, !variant.trackingStopped)}>
+                        {variant.trackingStopped ? (zh ? "恢复查询" : "Resume tracking") : (zh ? "停止跟踪" : "Stop tracking")}
+                      </button>
+                    )}
                     {variant.videoUrl ? (
                       <div className="mt-4 overflow-hidden rounded-xl border border-border bg-black">
                         <video

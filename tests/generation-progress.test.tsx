@@ -85,6 +85,14 @@ describe("generation stage UI", () => {
     expect(html).toContain("后台任务可能仍在运行");
     expect(html).not.toContain("生成未完成");
   });
+  it("stops the spinner for legacy tasks without claiming provider cancellation or failure", () => {
+    const html = render({ ...base, providerTaskId: "old", trackingStopped: true });
+    expect(html).toContain("已停止跟踪，结果待核实");
+    expect(html).toContain("未确认");
+    expect(html).not.toContain("animate-spin");
+    expect(html).not.toContain("未执行");
+    expect(html).not.toContain("生成未完成");
+  });
   it("does not invent checkpoints for older restored tasks or use their old percent", () => {
     const html = render({ ...base, status: "completed", progress: 100, providerTaskId: "existing" });
     expect(html).toContain("未记录");

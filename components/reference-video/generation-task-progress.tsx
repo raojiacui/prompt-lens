@@ -18,7 +18,7 @@ const labels: Record<GenerationStage, [string, string]> = {
 export function GenerationTaskProgress({ variant, zh }: { variant: GenerationVariant; zh: boolean }) {
   const progress = variant.lifecycle;
   const [now, setNow] = useState(() => Date.now());
-  const terminal = variant.status === "completed" || variant.status === "failed" || variant.status === "review";
+  const terminal = variant.status === "completed" || variant.status === "failed" || variant.status === "review" || variant.trackingStopped;
   useEffect(() => {
     if (terminal) return;
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -31,7 +31,8 @@ export function GenerationTaskProgress({ variant, zh }: { variant: GenerationVar
   const completed = progress?.completed ?? [];
   const elapsed = progress ? Math.max(0, Math.floor(((progress.finishedAt ?? (terminal ? progress.updatedAt : now)) - progress.startedAt) / 1000)) : undefined;
   const currentElapsed = progress ? Math.max(0, Math.floor(((progress.finishedAt ?? (terminal ? progress.updatedAt : now)) - progress.updatedAt) / 1000)) : undefined;
-  const title = variant.status === "queued" ? (zh ? "等待前序任务提交" : "Waiting for earlier submissions")
+  const title = variant.trackingStopped ? (zh ? "已停止跟踪，结果待核实" : "Tracking stopped; result unconfirmed")
+    : variant.status === "queued" ? (zh ? "等待前序任务提交" : "Waiting for earlier submissions")
     : variant.status === "failed" ? (zh ? "生成未完成" : "Generation incomplete")
     : variant.status === "review" ? (zh ? "提交状态待核实" : "Submission unconfirmed")
       : interrupted ? (zh ? "状态同步中断" : "Status sync interrupted") : labels[stage][zh ? 0 : 1];
@@ -46,13 +47,14 @@ export function GenerationTaskProgress({ variant, zh }: { variant: GenerationVar
         const active = step === stage;
         const done = (variant.status === "completed" && step === "complete") || completed.includes(step);
         const failed = active && variant.status === "failed";
-        const running = active && variant.status === "generating" && !interrupted;
+        const running = active && variant.status === "generating" && !interrupted && !variant.trackingStopped;
         const Icon = failed ? XCircle : done ? Check : running ? Loader2 : Circle;
         const state = failed ? (zh ? "失败" : "Failed") : done ? (zh ? "已完成" : "Done")
-          : active && (interrupted || variant.status === "review") ? (zh ? "待核实" : "Unconfirmed")
+          : active && (interrupted || variant.status === "review" || variant.trackingStopped) ? (zh ? "待核实" : "Unconfirmed")
             : running ? (zh ? "处理中" : "In progress")
               : generationStages.indexOf(step) < generationStages.indexOf(stage) ? (zh ? "未记录" : "Not recorded")
-                : terminal ? (zh ? "未执行" : "Not started") : (zh ? "等待中" : "Waiting");
+                : variant.trackingStopped ? (zh ? "未确认" : "Unconfirmed")
+                  : terminal ? (zh ? "未执行" : "Not started") : (zh ? "等待中" : "Waiting");
         return <li key={step} aria-current={active ? "step" : undefined} className={`min-w-0 rounded-lg border p-3 ${failed ? "border-destructive/40 bg-destructive/5" : active ? "border-primary/40 bg-primary/5" : "border-border"}`}>
           <div className="flex items-center gap-2">
             <Icon aria-hidden="true" className={`h-4 w-4 shrink-0 ${running ? "animate-spin motion-reduce:animate-none" : ""} ${failed ? "text-destructive" : done || active ? "text-primary" : "text-muted-foreground"}`} />
@@ -63,7 +65,7 @@ export function GenerationTaskProgress({ variant, zh }: { variant: GenerationVar
       })}
     </ol>
     <p role={variant.status === "failed" ? "alert" : undefined} className="break-words text-xs leading-relaxed text-muted-foreground">{variant.error || variant.notes}</p>
-    {variant.status === "generating" && <p className="text-xs leading-relaxed text-muted-foreground">{interrupted
+    {variant.status === "generating" && !variant.trackingStopped && <p className="text-xs leading-relaxed text-muted-foreground">{interrupted
       ? (zh ? "保留上次确认的阶段，正在重试查询；后台任务可能仍在运行，请勿重复提交。" : "Keeping the last confirmed stage and retrying. The task may still be running; do not resubmit.")
       : stage === "generating" ? (zh ? "等待模型返回结果，当前没有可确认的生成百分比，请勿重复提交。" : "Waiting for the model result. A generation percentage is not available; do not resubmit.") : (zh ? "阶段状态由服务端实时同步。" : "Stages are reported by the server.")}</p>}
   </div>;
