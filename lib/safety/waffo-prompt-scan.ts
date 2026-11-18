@@ -51,32 +51,40 @@ function normalizeKey(value: string) {
 }
 
 /**
- * Only scan the prompt immediately before a video-generation submission or
- * a paid generation quote. Do not call this from LLM chat, analysis or rewrite.
- *
- * "off" turns OFF only Waffo's optional semantic channel; its mandatory
- * keyword/policy scan is still active. Only an explicit allow may generate.
- *
- * Feature flag defaults disabled for safe staging integration. Once enabled,
- * missing credentials, transport failures and unknown results all fail closed.
+ * Only scan immediately before video generation or a paid generation quote.
+ * On the isolated V2 test project, safety scanning is mandatory even if the
+ * feature flag was mis-scoped, so a skipped check can never look like "passed".
+ * With an enabled scan, only Waffo's explicit allow can submit generation.
+ * Other projects retain their environment-controlled behavior.
  */
+const TEST_PROJECT_ID = "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI";
+const isTestProject = () => process.env.VERCEL_PROJECT_ID === TEST_PROJECT_ID;
 export async function assertPromptAllowed(prompt: string, options: {
   enabled?: boolean;
   fetcher?: typeof fetch;
   timeoutMs?: number;
   semantic?: SemanticMode;
 } = {}): Promise<void> {
-  if (options.enabled === false || (options.enabled === undefined && process.env.WAFFO_PROMPT_SCAN_ENABLED !== "true")) return;
+  // The isolated test deployment must not silently skip Waffo even if a
+  // sensitive flag is unavailable in the resolved deployment environment.
+  if (options.enabled === false) return;
+  if (options.enabled !== true && !isTestProject() && process.env.WAFFO_PROMPT_SCAN_ENABLED !== "true") {
+    console.warn("[prompt-scan] skipped", { reason: "not_enabled" });
+    return;
+  }
 
   const content = prompt.trim();
-  if (!content || content.length > 12000) throw new PromptModerationError("PROMPT_INVALID");
+  if (!content || content.length > 10_000) throw new PromptModerationError("PROMPT_INVALID");
 
   const merchantId = process.env.WAFFO_MERCHANT_ID;
   const key = process.env.WAFFO_PRIVATE_KEY;
   if (!merchantId || !key) throw unavailable("credentials");
 
   const path = "/v1/actions/verification/scan-prompt";
-  const payload = JSON.stringify({ prompt: content, semantic: options.semantic ?? "off" });
+  // The Waffo semantic layer participates in the verdict in the test
+  // project (rather than merely running the baseline keyword scan).
+  const semantic = options.semantic ?? (isTestProject() ? "enforce" : "off");
+  const payload = JSON.stringify({ prompt: content, semantic });
   const timestamp = Math.floor(Date.now() / 1000).toString();
 
   let signature: string;
@@ -120,12 +128,27 @@ export async function assertPromptAllowed(prompt: string, options: {
   } catch {
     throw unavailable("json");
   }
-  const envelope = result as { data?: { action?: unknown; reasonCode?: unknown }; errors?: unknown[] } | null;
+  const envelope = result as { data?: { action?: unknown; reasonCode?: unknown; requestId?: unknown; semanticStatus?: unknown }; errors?: unknown[] } | null;
   if (!envelope?.data || (Array.isArray(envelope.errors) && envelope.errors.length)) {
     throw unavailable("envelope");
   }
-  const { action, reasonCode } = envelope.data;
-  if (reasonCode === "service_degraded") throw new PromptModerationError("PROMPT_REVIEW_REQUIRED");
+  const { action, reasonCode, requestId, semanticStatus } = envelope.data;
+  const safeReason = ["allowed", "review_required", "restricted_content", "service_degraded"].includes(String(reasonCode))
+    ? reasonCode : "other";
+  const safeSemantic = ["disabled", "scored", "shadow_scored", "provider_error"].includes(String(semanticStatus))
+    ? semanticStatus : "unreported";
+  // Log only bounded categorical metadata, never the prompt, API key or body.
+  console.info("[prompt-scan] verdict", {
+    action: ["allow", "review", "block"].includes(String(action)) ? action : "unknown",
+    reasonCode: safeReason,
+    semanticStatus: safeSemantic,
+    ...(typeof requestId === "string" && /^[A-Za-z0-9_-]{1,128}$/.test(requestId) ? { requestId } : {}),
+  });
+  // Do not label degraded/disabled semantic enforcement as a passed check.
+  if (reasonCode === "service_degraded" ||
+    (semantic === "enforce" && (semanticStatus === "disabled" || semanticStatus === "provider_error"))) {
+    throw new PromptModerationError("PROMPT_REVIEW_REQUIRED");
+  }
   if (action === "allow") return;
   if (action === "block") throw new PromptModerationError("PROMPT_BLOCKED");
   if (action === "review") throw new PromptModerationError("PROMPT_REVIEW_REQUIRED");

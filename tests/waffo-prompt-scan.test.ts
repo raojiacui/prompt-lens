@@ -8,6 +8,7 @@ const original = {
   merchant: process.env.WAFFO_MERCHANT_ID,
   key: process.env.WAFFO_PRIVATE_KEY,
   enabled: process.env.WAFFO_PROMPT_SCAN_ENABLED,
+  projectId: process.env.VERCEL_PROJECT_ID,
 };
 function restore(name: string, value: string | undefined) {
   if (value === undefined) delete process.env[name];
@@ -17,6 +18,7 @@ afterEach(() => {
   restore("WAFFO_MERCHANT_ID", original.merchant);
   restore("WAFFO_PRIVATE_KEY", original.key);
   restore("WAFFO_PROMPT_SCAN_ENABLED", original.enabled);
+  restore("VERCEL_PROJECT_ID", original.projectId);
 });
 function withCredentials() {
   process.env.WAFFO_MERCHANT_ID = "MER_test";
@@ -44,7 +46,7 @@ describe("Waffo AIGC text prompt scan", () => {
       .rejects.toMatchObject({ code: "PROMPT_SCAN_UNAVAILABLE" });
   });
 
-  it("scans only one prompt with keyword-only semantic off and a valid RSA signature", async () => {
+  it("scans a prompt with explicit semantic off outside staging and a valid RSA signature", async () => {
     withCredentials();
     const fetcher = fakeResponse("allow");
     await expect(assertPromptAllowed("  a cat walking  ", { enabled: true, fetcher })).resolves.toBeUndefined();
@@ -59,6 +61,47 @@ describe("Waffo AIGC text prompt scan", () => {
     const verifier = createVerify("RSA-SHA256");
     verifier.update(canonical);
     expect(verifier.verify(publicKey, headers["X-Signature"], "base64")).toBe(true);
+  });
+
+  it("enforces Waffo scanning and semantic scoring in the isolated test project even if the flag is missing", async () => {
+    withCredentials();
+    delete process.env.WAFFO_PROMPT_SCAN_ENABLED;
+    process.env.VERCEL_PROJECT_ID = "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI";
+    const fetcher = vi.fn(async () => Response.json({ data: {
+      action: "allow", reasonCode: "allowed", semanticStatus: "scored", requestId: "REQ_safe123",
+    } }));
+    const log = vi.spyOn(console, "info").mockImplementation(() => {});
+    try {
+      await expect(assertPromptAllowed("a fictional orange cat", { fetcher })).resolves.toBeUndefined();
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body))).toEqual({
+        prompt: "a fictional orange cat", semantic: "enforce",
+      });
+      expect(log).toHaveBeenCalledWith("[prompt-scan] verdict", expect.objectContaining({
+        action: "allow", semanticStatus: "scored", requestId: "REQ_safe123",
+      }));
+    } finally { log.mockRestore(); }
+  });
+
+  it("never submits when enforced semantic scoring is explicitly unavailable", async () => {
+    withCredentials();
+    process.env.VERCEL_PROJECT_ID = "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI";
+    for (const semanticStatus of ["disabled", "provider_error"]) {
+      const fetcher = vi.fn(async () => Response.json({ data: {
+        action: "allow", reasonCode: "allowed", semanticStatus,
+      } }));
+      await expect(assertPromptAllowed("an orange cat", { fetcher }))
+        .rejects.toMatchObject({ code: "PROMPT_REVIEW_REQUIRED" });
+      expect(fetcher).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it("does not make an upstream call when explicitly opted out for unrelated local activity", async () => {
+    withCredentials();
+    process.env.VERCEL_PROJECT_ID = "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI";
+    const fetcher = vi.fn();
+    await expect(assertPromptAllowed("some text", { enabled: false, fetcher })).resolves.toBeUndefined();
+    expect(fetcher).not.toHaveBeenCalled();
   });
 
   it.each([
