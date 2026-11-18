@@ -1,188 +1,195 @@
 {
-    "version":  "7",
-    "dialect":  "postgresql",
-    "entries":  [
-                    {
-                        "idx":  0,
-                        "version":  "7",
-                        "when":  1773156146501,
-                        "tag":  "0000_dear_prism",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  1,
-                        "version":  "7",
-                        "when":  1773323880032,
-                        "tag":  "0001_elite_aaron_stack",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  2,
-                        "version":  "7",
-                        "when":  1780913220000,
-                        "tag":  "0002_video_generation",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  3,
-                        "version":  "7",
-                        "when":  1782745359117,
-                        "tag":  "0003_blushing_thor",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  4,
-                        "version":  "7",
-                        "when":  1787110800000,
-                        "tag":  "0004_agent_runs",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  5,
-                        "version":  "7",
-                        "when":  1787112600000,
-                        "tag":  "0005_v2_workflow",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  6,
-                        "version":  "7",
-                        "when":  1787114400000,
-                        "tag":  "0006_generation_workflow_links",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  7,
-                        "version":  "7",
-                        "when":  1787417291701,
-                        "tag":  "0007_foamy_lily_hollister",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  8,
-                        "version":  "7",
-                        "when":  1787450000000,
-                        "tag":  "0008_payment_orders",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  9,
-                        "version":  "7",
-                        "when":  1788192000000,
-                        "tag":  "0009_projects_user_updated_at_idx",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  10,
-                        "version":  "7",
-                        "when":  1789344000000,
-                        "tag":  "0010_commercial_wallets",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  11,
-                        "version":  "7",
-                        "when":  1789430400000,
-                        "tag":  "0011_commercial_purchase_lots",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  12,
-                        "version":  "7",
-                        "when":  1789430401000,
-                        "tag":  "0012_commercial_tasks",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  13,
-                        "version":  "7",
-                        "when":  1789516800000,
-                        "tag":  "0013_admin_daily_visits",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  14,
-                        "version":  "7",
-                        "when":  1790064000000,
-                        "tag":  "0014_video_generation_provider_backfill",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  15,
-                        "version":  "7",
-                        "when":  1790150400000,
-                        "tag":  "0015_alipay_official_provider",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx":  16,
-                        "version":  "7",
-                        "when":  1790323200000,
-                        "tag":  "0016_trial_analysis_usage",
-                        "breakpoints":  true
-                    },
-                    {
-                        "idx": 17,
-                        "version": "7",
-                        "when": 1790323200001,
-                        "tag": "0017_request_reservations",
-                        "breakpoints": true
-                    },
-                    {
-                        "idx": 18,
-                        "version": "7",
-                        "when": 1790323200002,
-                        "tag": "0018_workflow_analysis_tasks",
-                        "breakpoints": true
-                    },
-                    {
-                        "idx": 19,
-                        "version": "7",
-                        "when": 1790323200003,
-                        "tag": "0019_media_cleanup_jobs",
-                        "breakpoints": true
-                    },
-                    {
-                        "idx": 20,
-                        "version": "7",
-                        "when": 1790323200004,
-                        "tag": "0020_server_only_table_security",
-                        "breakpoints": true
-                    },
-                    {
-                        "idx": 21,
-                        "version": "7",
-                        "when": 1790323200005,
-                        "tag": "0021_private_application_tables",
-                        "breakpoints": true
-                    },
-                    {
-                        "idx": 22,
-                        "version": "7",
-                        "when": 1790323200006,
-                        "tag": "0022_auth_session_compatibility",
-                        "breakpoints": true
-                    },
-                    {
-                        "idx": 23,
-                        "version": "7",
-                        "when": 1790323200007,
-                        "tag": "0023_analysis_scene_jobs",
-                        "breakpoints": true
-                    },
-                    {
-                        "idx": 24,
-                        "version": "7",
-                        "when": 1790323200008,
-                        "tag": "0024_analysis_provider_slots",
-                        "breakpoints": true
-                    },
-                    {
-                        "idx": 25,
-                        "version": "7",
-                        "when": 1794268800000,
-                        "tag": "0025_infistar_byok",
-                        "breakpoints": true
-                    }
-                ]
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1773156146501,
+      "tag": "0000_dear_prism",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1773323880032,
+      "tag": "0001_elite_aaron_stack",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780913220000,
+      "tag": "0002_video_generation",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1782745359117,
+      "tag": "0003_blushing_thor",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787110800000,
+      "tag": "0004_agent_runs",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787112600000,
+      "tag": "0005_v2_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787114400000,
+      "tag": "0006_generation_workflow_links",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787417291701,
+      "tag": "0007_foamy_lily_hollister",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787450000000,
+      "tag": "0008_payment_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788192000000,
+      "tag": "0009_projects_user_updated_at_idx",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1789344000000,
+      "tag": "0010_commercial_wallets",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1789430400000,
+      "tag": "0011_commercial_purchase_lots",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1789430401000,
+      "tag": "0012_commercial_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1789516800000,
+      "tag": "0013_admin_daily_visits",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1790064000000,
+      "tag": "0014_video_generation_provider_backfill",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1790150400000,
+      "tag": "0015_alipay_official_provider",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790323200000,
+      "tag": "0016_trial_analysis_usage",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790323200001,
+      "tag": "0017_request_reservations",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790323200002,
+      "tag": "0018_workflow_analysis_tasks",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1790323200003,
+      "tag": "0019_media_cleanup_jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1790323200004,
+      "tag": "0020_server_only_table_security",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1790323200005,
+      "tag": "0021_private_application_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1790323200006,
+      "tag": "0022_auth_session_compatibility",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1790323200007,
+      "tag": "0023_analysis_scene_jobs",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1790323200008,
+      "tag": "0024_analysis_provider_slots",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794268800000,
+      "tag": "0025_infistar_byok",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794993600000,
+      "tag": "0026_moderation_controls",
+      "breakpoints": true
+    }
+  ]
 }

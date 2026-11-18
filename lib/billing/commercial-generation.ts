@@ -59,7 +59,7 @@ export async function quoteCommercialGeneration(userId: string, body: Record<str
   if (userPrompt.length < 3 || userPrompt.length > 5000) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
   // Reject unsafe prompts before any R2 media copy, preview job, wallet reservation or provider cost.
   report("moderating");
-  await assertPromptAllowed(userPrompt);
+  await assertPromptAllowed(userPrompt, { userId });
   report("quoting");
   const video = referenceVideoUrl(body);
   let referenceVideoSeconds: number | undefined;

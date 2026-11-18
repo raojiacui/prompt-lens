@@ -1,4 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
+import { appendModerationRecord } from "./moderation-controls";
 import { db, videoGeneration, workflowJobs, sceneVersions } from "@/lib/db";
 import { moderateVideoOutput, pollVideoOutputModeration, removeStagedModerationVideo, requiresVideoOutputModeration, type OutputVerdict } from "./video-output-moderation";
 
@@ -68,7 +69,14 @@ export async function reconcileVideoDelivery(record: VideoRecord, status: Provid
       checkedAt: now, ...(pending ? { retryAfter: now + 15_000 } : {}),
       ...(polled.code ? { code: polled.code } : {}),
     };
-    await db.update(videoGeneration).set({
+    if (!pending) await appendModerationRecord({
+      eventKey: `output:${record.id}:${review.operationName}:${polled.state}`,
+      userId: record.userId, taskId: record.taskId,
+      stage: "output", provider: "google_video_intelligence",
+      verdict: polled.state, reasonCode: polled.code ?? "google_operation",
+      providerRequestId: review.operationName.split("/").pop(),
+    });
+    const changed = await db.update(videoGeneration).set({
       status: pending ? "processing" : polled.state === "approved" ? "completed" : "review",
       videoUrl: polled.state === "approved" ? status.videoUrl || null : null,
       error: polled.state === "blocked" ? held("blocked").error :
@@ -76,7 +84,8 @@ export async function reconcileVideoDelivery(record: VideoRecord, status: Provid
       rawResponse: safeRaw(record, next), updatedAt: new Date(),
     }).where(and(eq(videoGeneration.id, record.id),
       sql`${videoGeneration.rawResponse}->'outputReview'->>'operationName' = ${review.operationName}`,
-      sql`${videoGeneration.rawResponse}->'outputReview'->>'state' = 'checking'`));
+      sql`${videoGeneration.rawResponse}->'outputReview'->>'state' = 'checking'`)).returning({ id: videoGeneration.id });
+    if (!changed.length) return inProgress();
     if (!pending && review.stagedObject) await removeStagedModerationVideo(review.stagedObject);
     if (polled.state === "approved" && status.videoUrl) {
       if (record.projectId) await db.update(workflowJobs).set({
@@ -124,6 +133,13 @@ export async function reconcileVideoDelivery(record: VideoRecord, status: Provid
   const pending = verdict.state === "checking";
   const allowed = verdict.state === "approved";
   const denied = verdict.state === "review" || verdict.state === "blocked";
+  await appendModerationRecord({
+    eventKey: `output:${record.id}:${verdict.operationName ?? startedAt}:${verdict.state}`,
+    userId: record.userId, taskId: record.taskId,
+    stage: "output", provider: "google_video_intelligence",
+    verdict: verdict.state, reasonCode: verdict.code ?? "google_submission",
+    providerRequestId: verdict.operationName?.split("/").pop(),
+  });
   const completed = await db.update(videoGeneration).set({
     status: allowed ? "completed" : denied ? "review" : "processing",
     videoUrl: allowed ? status.videoUrl : null,

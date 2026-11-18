@@ -64,6 +64,17 @@ export async function assertPromptAllowed(prompt: string, options: {
   fetcher?: typeof fetch;
   timeoutMs?: number;
   semantic?: SemanticMode;
+  userId?: string;
+} = {}): Promise<void> {
+  return runPromptReview(prompt, options);
+}
+
+async function scanWaffoPrompt(prompt: string, options: {
+  enabled?: boolean;
+  fetcher?: typeof fetch;
+  timeoutMs?: number;
+  semantic?: SemanticMode;
+  userId?: string;
 } = {}): Promise<void> {
   // The isolated test deployment must not silently skip Waffo even if a
   // sensitive flag is unavailable in the resolved deployment environment.
@@ -153,4 +164,55 @@ export async function assertPromptAllowed(prompt: string, options: {
   if (action === "block") throw new PromptModerationError("PROMPT_BLOCKED");
   if (action === "review") throw new PromptModerationError("PROMPT_REVIEW_REQUIRED");
   throw unavailable("verdict");
+}
+
+/**
+ * The test project's dynamic policy runs before Waffo. Both local and Waffo
+ * decisions produce durable, content-minimal audit records. Never silently
+ * bypass either safety gate on DB, network or provider failure.
+ */
+async function runPromptReview(prompt: string, options: {
+  enabled?: boolean; fetcher?: typeof fetch; timeoutMs?: number; semantic?: SemanticMode;
+  userId?: string;
+}): Promise<void> {
+  // Preserve explicit opt-out for unrelated tooling/tests. Production generation
+  // call sites never pass enabled:false.
+  if (options.enabled === false) return;
+  const isTest = process.env.VERCEL_PROJECT_ID === "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI";
+  if (!isTest) return scanWaffoPrompt(prompt, options);
+  const { appendModerationRecord, checkDynamicPromptTerms } = await import("./moderation-controls");
+  const normalized = prompt.trim();
+  if (isTest) {
+    let local;
+    try { local = await checkDynamicPromptTerms(normalized); }
+    catch {
+      await appendModerationRecord({
+        userId: options.userId, stage: "prompt", provider: "local_terms", verdict: "unavailable",
+        reasonCode: "term_store_unavailable", prompt: normalized,
+      }).catch(() => {});
+      throw new PromptModerationError("PROMPT_SCAN_UNAVAILABLE");
+    }
+    if (local) {
+      await appendModerationRecord({
+        userId: options.userId, stage: "prompt", provider: "local_terms", verdict: local.action,
+        category: local.category, ruleId: local.id, reasonCode: "dynamic_policy",
+        prompt: normalized,
+      });
+      throw new PromptModerationError(local.action === "block" ? "PROMPT_BLOCKED" : "PROMPT_REVIEW_REQUIRED");
+    }
+  }
+  try {
+    await scanWaffoPrompt(prompt, options);
+    await appendModerationRecord({
+      userId: options.userId, stage: "prompt", provider: "waffo_prompt_sift", verdict: "allow", reasonCode: "scored", prompt: normalized,
+    });
+  } catch (error) {
+    const code = error instanceof PromptModerationError ? error.code : "PROMPT_SCAN_UNAVAILABLE";
+    const verdict = code === "PROMPT_BLOCKED" ? "block" :
+      code === "PROMPT_REVIEW_REQUIRED" ? "review" : "unavailable";
+    await appendModerationRecord({
+      userId: options.userId, stage: "prompt", provider: "waffo_prompt_sift", verdict, reasonCode: code, prompt: normalized,
+    });
+    throw error;
+  }
 }

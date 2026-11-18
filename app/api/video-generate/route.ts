@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
 
     if (selectedModel && selectedModel.provider !== provider) return NextResponse.json({ error: "请选择当前供应商支持的模型。" }, { status: 400 });
-    await assertPromptAllowed([prompt, negativePrompt].filter(Boolean).join("\n"));
+    await assertPromptAllowed([prompt, negativePrompt].filter(Boolean).join("\n"), { userId: session.user.id });
     const videoProvider = createVideoProvider(provider, keyAccess.apiKey);
     const result = await videoProvider.createTask({
       prompt,

@@ -195,7 +195,7 @@ export async function POST(request: Request) {
     // Scan only the user-written generation direction, not the LLM/system boilerplate.
     // For reference-only generation, scan the actual fallback text sent to the model.
     report("moderating");
-    await assertPromptAllowed(userPrompt || "Follow the uploaded reference video.");
+    await assertPromptAllowed(userPrompt || "Follow the uploaded reference video.", { userId: auth.user.id });
     report("submitting");
     const result = await createProviderVideo(provider, {
       prompt,

@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createHash, createVerify, generateKeyPairSync } from "node:crypto";
 import { assertPromptAllowed, promptModerationHttpFailure } from "@/lib/safety/waffo-prompt-scan";
+import { checkDynamicPromptTerms, appendModerationRecord } from "@/lib/safety/moderation-controls";
+
+vi.mock("@/lib/safety/moderation-controls", () => ({
+  checkDynamicPromptTerms: vi.fn(async () => null),
+  appendModerationRecord: vi.fn(async () => {}),
+}));
 
 const { privateKey, publicKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const key = privateKey.export({ type: "pkcs8", format: "pem" }).toString();
@@ -15,6 +21,8 @@ function restore(name: string, value: string | undefined) {
   else process.env[name] = value;
 }
 afterEach(() => {
+  vi.mocked(checkDynamicPromptTerms).mockResolvedValue(null);
+  vi.mocked(appendModerationRecord).mockClear();
   restore("WAFFO_MERCHANT_ID", original.merchant);
   restore("WAFFO_PRIVATE_KEY", original.key);
   restore("WAFFO_PROMPT_SCAN_ENABLED", original.enabled);
@@ -140,4 +148,28 @@ describe("Waffo AIGC text prompt scan", () => {
     }
     throw new Error("Expected moderation to block");
   });
+  it("enforces an enabled dynamic rule before submitting to the Waffo API", async () => {
+    withCredentials();
+    process.env.VERCEL_PROJECT_ID = "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI";
+    vi.mocked(checkDynamicPromptTerms).mockResolvedValueOnce({ id: "fixture", category: "deepfake", action: "block" });
+    const fetcher = vi.fn();
+    await expect(assertPromptAllowed("test phrase", { fetcher, userId: "user-test" }))
+      .rejects.toMatchObject({ code: "PROMPT_BLOCKED" });
+    expect(fetcher).not.toHaveBeenCalled();
+    expect(appendModerationRecord).toHaveBeenCalledWith(expect.objectContaining({
+      provider: "local_terms", verdict: "block", userId: "user-test",
+    }));
+  });
+  it("writes a content-minimal Waffo audit event when accepted", async () => {
+    withCredentials();
+    process.env.VERCEL_PROJECT_ID = "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI";
+    await assertPromptAllowed("harmless cat", {
+      fetcher: vi.fn(async () => Response.json({ data: { action: "allow", reasonCode: "allowed", semanticStatus: "scored" } })),
+      userId: "user-test",
+    });
+    expect(appendModerationRecord).toHaveBeenCalledWith(expect.objectContaining({
+      provider: "waffo_prompt_sift", verdict: "allow", userId: "user-test",
+    }));
+  });
+
 });

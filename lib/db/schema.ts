@@ -1028,3 +1028,48 @@ export type WorkflowJob = typeof workflowJobs.$inferSelect;
 export type NewWorkflowJob = typeof workflowJobs.$inferInsert;
 export type ProjectAsset = typeof projectAssets.$inferSelect;
 export type NewProjectAsset = typeof projectAssets.$inferInsert;
+
+
+// AIGC safety: dynamic policy terms and append-only moderation records.
+// Activated for the isolated V2 test project only after its migration.
+export const moderationTerms = pgTable("moderation_terms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  phrase: varchar("phrase", { length: 160 }).notNull(),
+  normalizedPhrase: varchar("normalized_phrase", { length: 160 }).notNull(),
+  category: varchar("category", { length: 32 }).notNull(),
+  action: varchar("action", { length: 12 }).notNull().default("review"),
+  enabled: boolean("enabled").notNull().default(true),
+  revision: integer("revision").notNull().default(1),
+  note: varchar("note", { length: 500 }),
+  updatedBy: uuid("updated_by"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  uniqueIndex("moderation_terms_normalized_unique").on(t.normalizedPhrase),
+  index("moderation_terms_enabled_idx").on(t.enabled, t.category),
+  check("moderation_terms_action_check", sql`${t.action} IN ('block', 'review')`),
+]);
+
+// No raw prompts, rendered media, credentials or user-upload URLs are stored.
+export const moderationRecords = pgTable("moderation_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventKey: varchar("event_key", { length: 180 }).unique(),
+  userId: uuid("user_id"),
+  taskId: varchar("task_id", { length: 180 }),
+  stage: varchar("stage", { length: 24 }).notNull(),
+  provider: varchar("provider", { length: 40 }).notNull(),
+  verdict: varchar("verdict", { length: 24 }).notNull(),
+  category: varchar("category", { length: 32 }),
+  ruleId: uuid("rule_id"),
+  reasonCode: varchar("reason_code", { length: 64 }),
+  referenceHash: varchar("reference_hash", { length: 64 }),
+  providerRequestId: varchar("provider_request_id", { length: 128 }),
+  reviewerId: uuid("reviewer_id"),
+  relatedRecordId: uuid("related_record_id"),
+  reviewNote: varchar("review_note", { length: 1500 }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [
+  index("moderation_records_recent_idx").on(t.createdAt),
+  index("moderation_records_task_idx").on(t.taskId, t.createdAt),
+  index("moderation_records_verdict_idx").on(t.verdict, t.createdAt),
+]);
