@@ -1,4 +1,4 @@
-export const generationStages = ["preparing", "moderating", "quoting", "submitting", "queued", "generating", "complete"] as const;
+export const generationStages = ["preparing", "quoting", "submitting", "queued", "generating", "complete"] as const;
 export type GenerationStage = typeof generationStages[number];
 export type GenerationProgress = {
   stage: GenerationStage;
