@@ -7,6 +7,29 @@ import { readInfistarMedia } from "../infistar-media";
 import { assertReferenceMediaAccess, type ReferenceMediaContext } from "../reference-media-access";
 import type { KieVideoGenerationRequest, KieVeoStatus } from "@/lib/reference-video/kie-veo";
 
+/** Return a bounded, user-safe explanation for task failures.
+ * Never forward arbitrary upstream error messages: they may contain user prompts
+ * or internal provider details. The provider's refund state is informational,
+ * not a guarantee of an account balance update.
+ */
+export function infistarVideoFailureMessage(raw: unknown): string {
+  const envelope = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+  const nested = envelope.data && typeof envelope.data === "object" && !Array.isArray(envelope.data)
+    ? envelope.data as Record<string, unknown> : envelope;
+  const failure = nested.error && typeof nested.error === "object" && !Array.isArray(nested.error)
+    ? nested.error as Record<string, unknown> : {};
+  const detail = typeof failure.message === "string" ? failure.message : "";
+  const metadata = nested.metadata && typeof nested.metadata === "object" && !Array.isArray(nested.metadata)
+    ? nested.metadata as Record<string, unknown> : {};
+  const refunded = metadata.billing_status === "REFUNDED";
+  const refundNote = refunded ? " 服务商任务状态显示已退款，可在 Infistar 后台核对。" : "";
+
+  if (/OutputVideoSensitiveContentDetected|copyright restrictions/i.test(detail)) {
+    return "Infistar 判定生成结果可能涉及版权限制，已终止此任务。可尝试改用原创人物、场景和素材。" + refundNote;
+  }
+  return "Infistar 视频生成失败，请到服务商后台查看任务原因。" + refundNote;
+}
+
 export function buildInfistarVideoPayload(input: KieVideoGenerationRequest) {
   const modelId = input.model || "doubao-seedance-2.0-mini";
   const model = getModelById(modelId);
@@ -73,5 +96,5 @@ export async function getInfistarVideoStatus(taskId: string, apiKey: string): Pr
     await db.insert(mediaCleanupJobs).values({ storageKey, nextAttemptAt: new Date(Date.now() + 7 * 86400000) });
     videoUrl = await uploadToR2(Buffer.concat(chunks), storageKey, "video/mp4");
   }
-  return { taskId, state, videoUrl, error: state === "fail" ? "Infistar 视频生成失败，请到服务商后台查看原因。" : undefined, raw };
+  return { taskId, state, videoUrl, error: state === "fail" ? infistarVideoFailureMessage(raw) : undefined, raw };
 }

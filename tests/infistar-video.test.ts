@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { buildInfistarVideoPayload, createInfistarVideo, getInfistarVideoStatus } from "@/lib/ai/adapters/infistar-video";
+import { buildInfistarVideoPayload, createInfistarVideo, getInfistarVideoStatus, infistarVideoFailureMessage } from "@/lib/ai/adapters/infistar-video";
 import { generationChoices, generationDisplayName, resolveGenerationModel } from "@/lib/ai/generation-models";
 
 const storage = vi.hoisted(() => ({ cleanup: vi.fn(), upload: vi.fn() }));
@@ -15,6 +15,24 @@ it("returns a failed task with an error as a terminal status without resubmittin
   expect(fetcher).toHaveBeenCalledTimes(1);
   expect(fetcher.mock.calls[0][1].method).toBe("GET");
 });
+it("explains upstream copyright-output failures without leaking raw provider details", async () => {
+  const failed = {
+    id: "failed-copyright-task",
+    status: "failed",
+    error: { code: "task_failed", message: "OutputVideoSensitiveContentDetected.PolicyViolation: copyright restrictions. Request id: private-request" },
+    metadata: { billing_status: "REFUNDED", final_quota: 0 },
+  };
+  const fetcher = vi.fn().mockResolvedValue(Response.json(failed));
+  vi.stubGlobal("fetch", fetcher);
+  const status = await getInfistarVideoStatus("failed-copyright-task", "fixture");
+  expect(status.state).toBe("fail");
+  expect(status.error).toContain("版权限制");
+  expect(status.error).toContain("已退款");
+  expect(status.error).not.toContain("private-request");
+  expect(infistarVideoFailureMessage({ data: failed })).toContain("版权限制");
+  expect(infistarVideoFailureMessage({ status: "failed", error: { message: "internal provider detail" } })).not.toContain("internal provider detail");
+});
+
 it("does not mistake an API error or a different task for a failed generation", async () => {
   const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ error: { message: "denied" } }))
     .mockResolvedValueOnce(Response.json({ id: "another-task", status: "failed", error: { message: "denied" } }))

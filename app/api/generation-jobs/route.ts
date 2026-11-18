@@ -1,4 +1,5 @@
 import { createProviderVideo, getProviderVideoStatus } from "@/lib/ai/video-client";
+import { infistarVideoFailureMessage } from "@/lib/ai/adapters/infistar-video";
 import { isUserProvider, type UserProvider } from "@/lib/ai/providers";
 import { NextResponse } from "next/server";
 import { generationSubmissionResponse } from "@/lib/reference-video/generation-submission-response";
@@ -278,7 +279,7 @@ export async function GET(request: Request) {
     const job = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.taskId, taskId), eq(videoGeneration.userId, auth.user.id)) });
     if (!job) return NextResponse.json({ error: "Generation job not found" }, { status: 404 });
     if (job.status === "completed" && job.videoUrl) return NextResponse.json({ provider: job.provider, providerTaskId: taskId, status: "success", videoUrl: job.videoUrl });
-    if (job.status === "failed") return NextResponse.json({ provider: job.provider, providerTaskId: taskId, status: "fail", error: "视频生成失败，请查看生成历史或服务商后台。" });
+    if (job.status === "failed") return NextResponse.json({ provider: job.provider, providerTaskId: taskId, status: "fail", error: job.provider === "infistar" ? infistarVideoFailureMessage(job.rawResponse) : (job.error || "视频生成失败，请查看生成历史或服务商后台。") });
     const provider = isUserProvider(job.provider) ? job.provider : "kie";
     const apiKey = await resolveGenerationStatusKey(auth.user.id, job.rawResponse, provider);
     if (!apiKey) return NextResponse.json({ error: "The original provider key is required to query this task", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
