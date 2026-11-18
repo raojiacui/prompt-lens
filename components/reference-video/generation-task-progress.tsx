@@ -7,7 +7,6 @@ import { generationStages, type GenerationStage } from "@/lib/reference-video/ge
 
 const labels: Record<GenerationStage, [string, string]> = {
   preparing: ["准备任务", "Prepare task"],
-  moderating: ["提示词审核", "Prompt safety check"],
   quoting: ["核算费用与素材", "Check cost and media"],
   submitting: ["提交生成任务", "Submit generation"],
   queued: ["等待后台调度", "Waiting for dispatch"],
