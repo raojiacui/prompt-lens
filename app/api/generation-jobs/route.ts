@@ -154,7 +154,7 @@ export async function POST(request: Request) {
     const keyAccess = await resolveApiKeyForFeature(auth.user.id, { allowPaidPlatformKey: false });
     const provider = keyAccess.provider || "kie";
     const model = parseModel(body?.model, { hasReferenceVideo, hasImages, provider });
-    const useNativeVideoEdit = (isWanVideoEditModel(model) || model === "MiniMax-H3") && hasReferenceVideo;
+    const useNativeVideoEdit = isWanVideoEditModel(model) && hasReferenceVideo;
     const aspectRatio = isWanVideoEditModel(model) ? undefined : parseAspectRatio(body?.aspectRatio, model);
     const duration = isWanVideoEditModel(model) ? 0 : parseDuration(body?.duration, model);
     const resolution = typeof body?.quality === "string" ? body.quality.toLowerCase() : undefined;

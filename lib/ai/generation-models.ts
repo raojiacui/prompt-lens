@@ -5,7 +5,6 @@ export type GenerationMaterials = { hasImages: boolean; hasVideo: boolean };
 
 export function generationChoiceId(id: string) {
   const providerId = getModelById(id)?.providerModelId || id;
-  if (providerId === "wan2.7-i2v") return "wan2.7-t2v";
   if (providerId.startsWith("wan/2-6-")) return "wan/2-6-text-to-video";
   if (providerId.startsWith("wan/2-7-") && providerId !== "wan/2-7-videoedit") return "wan/2-7-text-to-video";
   if (providerId.startsWith("kling-2.6/")) return "kling-2.6/text-to-video";
@@ -19,7 +18,6 @@ export function generationChoices(provider: UserProvider = "kie") {
 export function resolveGenerationModel(id: string, materials: GenerationMaterials) {
   const choice = generationChoiceId(id);
   let providerId = choice;
-  if (choice === "wan2.7-t2v" && materials.hasImages) providerId = "wan2.7-i2v";
   if (choice === "wan/2-6-text-to-video") providerId = materials.hasVideo ? "wan/2-6-video-to-video" : materials.hasImages ? "wan/2-6-image-to-video" : choice;
   if (choice === "wan/2-7-text-to-video") providerId = materials.hasVideo ? "wan/2-7-r2v" : materials.hasImages ? "wan/2-7-image-to-video" : choice;
   if (choice === "kling-2.6/text-to-video" && materials.hasImages) providerId = "kling-2.6/image-to-video";

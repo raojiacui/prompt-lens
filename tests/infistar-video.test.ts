@@ -25,7 +25,7 @@ it("does not mistake an API error or a different task for a failed generation", 
 it("keeps KIE models and Infistar models separate", () => {
   expect(generationChoices().every(model => model.provider === "kie")).toBe(true);
   expect(generationChoices("infistar").map(model => model.providerModelId)).toContain("kling-video-o1");
-  expect(resolveGenerationModel("wan2.7-t2v", { hasImages: true, hasVideo: false }).providerModelId).toBe("wan2.7-i2v");
+  expect(generationChoices("infistar").every(model => model.provider === "infistar")).toBe(true);
 });
 it("keeps Infistar Doubao Seedance separate from Jimeng Video 3.0, matching the official model square", () => {
   const models = generationChoices("infistar");
@@ -56,8 +56,8 @@ it("uses the live-accepted Jimeng Pro profile and excludes unavailable Kling 2.6
   expect(() => buildInfistarVideoPayload({ model: "jimeng-video-3.0-pro", prompt: "A cube", duration: 5, resolution: "720p" })).toThrow("画质");
   expect(generationChoices("infistar").map(model => model.providerModelId)).not.toContain("kling-v2-6");
 });
-it("preserves image input and portrait dimensions", () => {
-  expect(buildInfistarVideoPayload({ model: "wan2.7-i2v", prompt: "A cube", duration: 5, aspectRatio: "9:16", imageUrls: ["https://media.example/image.png"] }))
+it("preserves image input and portrait dimensions for a remaining model", () => {
+  expect(buildInfistarVideoPayload({ model: "doubao-seedance-2.0-mini", prompt: "A cube", duration: 5, aspectRatio: "9:16", imageUrls: ["https://media.example/image.png"] }))
     .toMatchObject({ input_reference: "https://media.example/image.png", size: "720x1280" });
 });
 it("rejects unverified reference video parameters before any paid request", async () => {
@@ -79,17 +79,18 @@ it("reads the live Kling and Jimeng completed data-array response", async () => 
   expect(fetcher).toHaveBeenCalledTimes(1);
 });
 
-it("sends authorized MiniMax video references as binary multipart files", async () => {
-  const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ data: [{ id: "MiniMax-H3" }] })).mockResolvedValueOnce(Response.json({ id: "reference-task" }));
-  vi.stubGlobal("fetch", fetcher);
-  expect(await createInfistarVideo({ model: "MiniMax-H3", prompt: "Change the cube to blue", duration: 5, resolution: "2K", referenceVideoUrl: "https://media.example/source.mp4" }, "minimax-reference-fixture", { userId: "owner" })).toMatchObject({ taskId: "reference-task" });
-  const request = fetcher.mock.calls[1][1];
-  expect(request.body).toBeInstanceOf(FormData);
-  expect(request.body.get("input_reference")).toBeInstanceOf(Blob);
-  expect(request.body.get("model")).toBe("MiniMax-H3");
-  expect(request.body.get("size")).toBe("2K");
-  expect(request.headers["Content-Type"]).toBeUndefined();
-  expect(() => buildInfistarVideoPayload({ model: "MiniMax-H3", prompt: "Edit", duration: 5, resolution: "2K", aspectRatio: "9:16" })).toThrow("比例");
+it("removes unverified Wan 2.7 and MiniMax H3 options from Infistar and rejects retired submissions", async () => {
+  const retired = ["wan2.7-t2v", "wan2.7-i2v", "MiniMax-H3"];
+  const listed = generationChoices("infistar").map(model => model.providerModelId);
+  for (const id of retired) {
+    expect(listed).not.toContain(id);
+    expect(() => resolveGenerationModel(id, { hasImages: false, hasVideo: false })).toThrow("MODEL_UNAVAILABLE");
+    expect(() => buildInfistarVideoPayload({ model: id, prompt: "A cube", duration: 5 })).toThrow("请选择 Infistar 支持的视频模型");
+  }
+  const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+  await expect(createInfistarVideo({ model: "MiniMax-H3", prompt: "Edit source video", referenceVideoUrl: "https://media.example/source.mp4" }, "fixture", { userId: "owner" }))
+    .rejects.toMatchObject({ outcome: "not_sent" });
+  expect(fetcher).not.toHaveBeenCalled();
 });
 
 it("registers cleanup before persisting authenticated-only video content", async () => {

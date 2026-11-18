@@ -24,19 +24,12 @@ export const infistarModels: ModelRegistryEntry[] = [
     ["kling-v3", "可灵 Kling 3", "Kling", 3],
     ["kling-v3-omni", "可灵 Kling 3 Omni", "Kling", 3],
     ["kling-3.0-turbo", "可灵 Kling 3 Turbo", "Kling", 4],
-    ["MiniMax-H3", "MiniMax H3", "MiniMax", 2],
   ] as const).map(([id, displayName, family, costLevel]): ModelRegistryEntry => ({
     ...baseVideoProfile, id: `infistar-${id}`, displayName, family, providerModelId: id, costLevel,
-    resolutionOptions: id === "MiniMax-H3" ? ["2k"] : id === "jimeng-video-3.0-pro" ? ["1080p"] : ["720p", "1080p"], durationOptions: [5, 10], maxDuration: 10,
-    aspectRatios: id === "MiniMax-H3" ? ["16:9"] : ratios,
-    capabilities: id === "MiniMax-H3" ? ["text", "image", "reference_image", "video", "reference_video", "video_to_video", "generative_edit"] : ["text", "image", "reference_image"],
+    resolutionOptions: id === "jimeng-video-3.0-pro" ? ["1080p"] : ["720p", "1080p"], durationOptions: [5, 10], maxDuration: 10,
   })),
   { ...baseVideoProfile, id: "infistar-seedance-2-fast", displayName: "豆包 Seedance 2.0 Fast", family: "Doubao Seedance", providerModelId: "doubao-seedance-2-0-fast-260128", speedLevel: 5, costLevel: 3 },
   { ...baseVideoProfile, id: "infistar-seedance-2", displayName: "豆包 Seedance 2.0", family: "Doubao Seedance", providerModelId: "doubao-seedance-2-0-260128", resolutionOptions: ["480p", "720p", "1080p"], qualityLevel: 5, costLevel: 4 },
   { id: "infistar-kling-o1", displayName: "可灵 Kling O1", family: "Kling", providerModelId: "kling-video-o1", category: "video_generation", provider: "infistar", enabled: true,
     capabilities: ["text", "image", "reference_image"], maxDuration: 10, durationOptions: [5, 10], aspectRatios: ["16:9", "9:16", "1:1"], resolutionOptions: ["720p", "1080p"], speedLevel: 3, qualityLevel: 5, costLevel: 4 },
-  ...(["t2v", "i2v"] as const).map((mode): ModelRegistryEntry => ({
-    id: `infistar-wan-2-7-${mode}`, displayName: "Wan 2.7", family: "Wan", providerModelId: `wan2.7-${mode}`, category: "video_generation", provider: "infistar", enabled: true,
-    capabilities: mode === "i2v" ? ["image", "reference_image"] : ["text"], maxDuration: 15, durationOptions: Array.from({ length: 14 }, (_, i) => i + 2), aspectRatios: ratios, resolutionOptions: ["720p", "1080p"], speedLevel: 4, qualityLevel: 4, costLevel: 2,
-  })),
 ];
