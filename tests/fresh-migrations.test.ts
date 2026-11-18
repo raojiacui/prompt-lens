@@ -15,10 +15,14 @@ it("migrates an empty database and protects all application tables", async () =>
       }
     }
     const tables = await client.query<{ name: string; protected: boolean }>("SELECT relname AS name, relrowsecurity AS protected FROM pg_class JOIN pg_namespace ON pg_namespace.oid = relnamespace WHERE nspname = 'public' AND relkind = 'r'");
-    expect(tables.rows).toHaveLength(38);
+    expect(tables.rows).toHaveLength(40);
     expect(tables.rows.every((table) => table.protected)).toBe(true);
     expect(tables.rows.some((table) => table.name === "analysis_scene_jobs")).toBe(true);
     expect(tables.rows.some((table) => table.name === "analysis_provider_slots")).toBe(true);
+    expect(tables.rows.some((table) => table.name === "moderation_terms")).toBe(true);
+    expect(tables.rows.some((table) => table.name === "moderation_records")).toBe(true);
+    expect((await client.query("SELECT id FROM moderation_terms")).rows).toHaveLength(11);
+    expect((await client.query("SELECT has_table_privilege('anon','public.moderation_records','SELECT') AS allowed")).rows).toEqual([{ allowed: false }]);
     expect((await client.query("SELECT column_name FROM information_schema.columns WHERE table_name='video_generation' AND column_name='provider'")).rows).toHaveLength(1);
   } finally { await client.close(); }
 }, 30_000);

@@ -7,10 +7,12 @@ import { generationStages, type GenerationStage } from "@/lib/reference-video/ge
 
 const labels: Record<GenerationStage, [string, string]> = {
   preparing: ["准备任务", "Prepare task"],
+  moderating: ["提示词审核", "Prompt safety check"],
   quoting: ["核算费用与素材", "Check cost and media"],
   submitting: ["提交生成任务", "Submit generation"],
   queued: ["等待后台调度", "Waiting for dispatch"],
   generating: ["模型生成", "Model generation"],
+  reviewing_output: ["输出内容安全审核", "Output safety review"],
   complete: ["结果就绪", "Result ready"],
 };
 
@@ -33,6 +35,7 @@ export function GenerationTaskProgress({ variant, zh }: { variant: GenerationVar
   const title = variant.trackingStopped ? (zh ? "已停止跟踪，结果待核实" : "Tracking stopped; result unconfirmed")
     : variant.status === "queued" ? (zh ? "等待前序任务提交" : "Waiting for earlier submissions")
     : variant.status === "failed" ? (zh ? "生成未完成" : "Generation incomplete")
+    : variant.status === "review" && stage === "reviewing_output" ? (zh ? "输出内容审核待复核" : "Output awaiting safety review")
     : variant.status === "review" ? (zh ? "提交状态待核实" : "Submission unconfirmed")
       : interrupted ? (zh ? "状态同步中断" : "Status sync interrupted") : labels[stage][zh ? 0 : 1];
   return <div data-testid="generation-task-progress" className="mt-3 space-y-3 text-sm">

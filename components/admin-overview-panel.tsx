@@ -7,6 +7,7 @@ import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { AdminUserDirectory } from "@/components/admin-user-directory";
+import { AdminModerationControls } from "@/components/admin-moderation-controls";
 
 function formatNumber(value: number, locale: string) {
   return new Intl.NumberFormat(locale).format(value || 0);
@@ -213,6 +214,7 @@ export function AdminOverviewPanel() {
         </div>
       </Section>
 
+      <AdminModerationControls />
       <AdminUserDirectory />
       {showPurchases && <dialog ref={purchasesDialog} aria-label={copy.paidTitle} onCancel={event => { event.preventDefault(); setShowPurchases(false); }} className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-6xl overflow-y-auto rounded-lg border border-border bg-background p-5 text-foreground shadow-xl backdrop:bg-black/50">
         <header className="flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{copy.paidTitle}</h2><Button size="icon" variant="ghost" title={zh ? "关闭" : "Close"} aria-label={zh ? "关闭" : "Close"} onClick={() => setShowPurchases(false)}><X className="h-4 w-4" /></Button></header>

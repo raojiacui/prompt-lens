@@ -6,6 +6,8 @@ import { resolveGenerationStatusKey } from "@/lib/billing/generation-key";
 import { db, videoGeneration } from "@/lib/db";
 import { and, eq } from "drizzle-orm";
 import { kieErrorResponse } from "@/lib/reference-video/kie-veo";
+import { reconcileVideoDelivery, publicVideoRecord } from "@/lib/safety/video-output-delivery";
+import { requiresVideoOutputModeration } from "@/lib/safety/video-output-moderation";
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +31,8 @@ export async function GET(request: NextRequest) {
     if (!record) {
       return NextResponse.json({ error: "Record not found" }, { status: 404 });
     }
-    if (record.status === "completed" && record.videoUrl) return NextResponse.json({ status: "completed", videoUrl: record.videoUrl, record });
+    if (record.status === "completed" && publicVideoRecord(record).videoUrl) return NextResponse.json({ status: "completed", videoUrl: record.videoUrl, record: publicVideoRecord(record) });
+    if (requiresVideoOutputModeration() && record.status === "review") return NextResponse.json({ status: "review", stage: "reviewing_output", error: record.error, record: publicVideoRecord(record) });
 
     const provider = record.provider || "kie";
     if (!isUserProvider(provider)) {
@@ -43,6 +46,14 @@ export async function GET(request: NextRequest) {
 
     const videoProvider = createVideoProvider(provider, apiKey);
     const status = await videoProvider.getStatus(taskId, record.model);
+    if (requiresVideoOutputModeration()) {
+      const delivery = await reconcileVideoDelivery(record, {
+        state: status.status === "completed" ? "success" : status.status === "failed" ? "fail" : "generating",
+        videoUrl: status.videoUrl, error: status.error, raw: status.raw,
+      });
+      const updated = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.userId, session.user.id), eq(videoGeneration.taskId, taskId)) });
+      return NextResponse.json({ ...delivery, status: delivery.status === "success" ? "completed" : delivery.status === "fail" ? "failed" : delivery.status === "review" ? "review" : "processing", record: updated ? publicVideoRecord(updated) : undefined });
+    }
     const progress = status.progress === undefined ? undefined : String(status.progress);
 
     const records = await db

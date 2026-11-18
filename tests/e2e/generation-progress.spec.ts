@@ -67,7 +67,7 @@ for (const width of [1440, 390]) for (const locale of ["zh", "en"]) {
       else if (url.pathname === "/api/generation-jobs" && route.request().method() === "POST") {
         submissions++;
         await route.fulfill({ contentType: "application/x-ndjson", body: [
-          { type: "stage", stage: "preparing" }, { type: "stage", stage: "submitting" },
+          { type: "stage", stage: "preparing" }, { type: "stage", stage: "moderating" }, { type: "stage", stage: "submitting" },
           { type: "result", status: 200, body: { providerTaskId: "one" } },
         ].map(item => JSON.stringify(item)).join("\n") + "\n" });
         return;
@@ -82,7 +82,7 @@ for (const width of [1440, 390]) for (const locale of ["zh", "en"]) {
     await page.getByRole("button", { name: locale === "zh" ? /^生成视频/ : /^Generate Video/i }).click();
     const progress = page.getByTestId("generation-task-progress");
     await expect(progress.getByRole("status")).toHaveText(locale === "zh" ? "模型生成" : "Model generation");
-    await expect(progress.locator("li", { hasText: locale === "zh" ? "提交生成任务" : "Submit generation" })).toContainText(locale === "zh" ? "已完成" : "Done");
+    await expect(progress.locator("li", { hasText: locale === "zh" ? "提示词审核" : "Prompt safety check" })).toContainText(locale === "zh" ? "已完成" : "Done");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     polling = "offline";
     await expect(progress.getByRole("status")).toHaveText(locale === "zh" ? "状态同步中断" : "Status sync interrupted", { timeout: 10000 });
@@ -98,7 +98,7 @@ for (const width of [1440, 390]) for (const locale of ["zh", "en"]) {
   });
 }
 
-test("a submission failure keeps later steps unstarted and stops the timer", async ({ page, context }) => {
+test("a moderation failure keeps later steps unstarted and stops the timer", async ({ page, context }) => {
   await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
   await page.route("**/api/**", async route => {
     const path = new URL(route.request().url()).pathname;
@@ -109,8 +109,8 @@ test("a submission failure keeps later steps unstarted and stops the timer", asy
     else if (path === "/api/generation-history") body = { history: [] };
     else if (path === "/api/generation-jobs") {
       await route.fulfill({ contentType: "application/x-ndjson", body: [
-        { type: "stage", stage: "preparing" }, { type: "stage", stage: "submitting" },
-        { type: "result", status: 503, body: { code: "UPSTREAM_UNAVAILABLE", error: "视频生成服务暂时不可用，请稍后重试。" } },
+        { type: "stage", stage: "preparing" }, { type: "stage", stage: "moderating" },
+        { type: "result", status: 503, body: { code: "PROMPT_SCAN_UNAVAILABLE", error: "提示词安全审核暂时不可用，请稍后重试。" } },
       ].map(item => JSON.stringify(item)).join("\n") });
       return;
     }
@@ -121,7 +121,7 @@ test("a submission failure keeps later steps unstarted and stops the timer", asy
   await page.getByRole("button", { name: /^生成视频/ }).click();
   const progress = page.getByTestId("generation-task-progress");
   await expect(progress.getByRole("status")).toHaveText("生成未完成");
-  await expect(progress.locator('[aria-current="step"]')).toContainText("提交生成任务");
+  await expect(progress.locator('[aria-current="step"]')).toContainText("提示词审核");
   await expect(progress.locator('[aria-current="step"]')).toContainText("失败");
   await expect(progress.locator("li", { hasText: "模型生成" })).toContainText("未执行");
   await expect(progress).not.toContainText("100%");

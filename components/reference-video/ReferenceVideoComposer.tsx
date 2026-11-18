@@ -56,6 +56,7 @@ type GenerationStatusPayload = {
   credits?: number;
   chargedCredits?: number;
   status?: string;
+  stage?: "reviewing_output";
   providerTaskId?: string;
   videoUrl?: string;
   error?: string;
@@ -972,6 +973,12 @@ export function ReferenceVideoComposer({
           }
 
           if (result.payload.status === "review") {
+            if (result.payload.stage === "reviewing_output") return {
+              ...variant, status: "review" as const,
+              lifecycle: variant.lifecycle ? { ...advanceGenerationProgress(variant.lifecycle, "reviewing_output"), finishedAt: Date.now() } : undefined,
+              error: result.payload.error || (zh ? "视频需要人工复核，暂不展示。" : "Output requires manual review."),
+              notes: result.payload.error || (zh ? "视频需要人工复核，暂不展示。" : "Output requires manual review."),
+            };
             return {
               ...variant,
               status: "review" as const,
@@ -986,14 +993,15 @@ export function ReferenceVideoComposer({
           return {
             ...variant,
             providerTaskId,
-            progress: Math.max(variant.progress, 28),
+            progress: Math.max(variant.progress, result.payload.stage === "reviewing_output" ? 88 : 28),
             lifecycle: variant.lifecycle ? {
-              ...(variant.lifecycle.stage !== (result.payload.state === "queued" ? "queued" : "generating")
-                ? advanceGenerationProgress(variant.lifecycle, result.payload.state === "queued" ? "queued" : "generating") : variant.lifecycle),
+              ...(variant.lifecycle.stage !== (result.payload.stage === "reviewing_output" ? "reviewing_output" : result.payload.state === "queued" ? "queued" : "generating")
+                ? advanceGenerationProgress(variant.lifecycle, result.payload.stage === "reviewing_output" ? "reviewing_output" : result.payload.state === "queued" ? "queued" : "generating") : variant.lifecycle),
               connection: "ok" as const,
             } : undefined,
             notes: taskId.startsWith("commercial:")
                 ? (zh ? `正在生成，已预留 ${result.payload.credits} 积分。` : `Generating. ${result.payload.credits} credits reserved.`)
+                : result.payload.stage === "reviewing_output" ? (zh ? "视频已生成，正在审核输出内容，审核通过后展示。" : "Video generated. Reviewing output before display.")
                 : (zh ? "正在生成视频，等待模型返回结果……" : "Generating video. Checking provider status..."),
           };
         });

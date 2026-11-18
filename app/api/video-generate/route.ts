@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { assertPromptAllowed, promptModerationHttpFailure } from "@/lib/safety/waffo-prompt-scan";
 import { auth } from "@/lib/auth";
 import {
   createVideoProvider,
@@ -12,6 +13,7 @@ import { getModelById, routeModel, type ModelRegistryEntry } from "@/lib/ai/mode
 import { resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { generationKeyFingerprint } from "@/lib/billing/generation-key";
 import { kieErrorResponse } from "@/lib/reference-video/kie-veo";
+import { publicVideoRecord } from "@/lib/safety/video-output-delivery";
 
 const VIDEO_GENERATE_LIMIT = { limit: 3, windowMs: 60000 };
 const MIN_VIDEO_DURATION = 4;
@@ -90,6 +92,7 @@ export async function POST(request: NextRequest) {
 
 
     if (selectedModel && selectedModel.provider !== provider) return NextResponse.json({ error: "请选择当前供应商支持的模型。" }, { status: 400 });
+    await assertPromptAllowed([prompt, negativePrompt].filter(Boolean).join("\n"), { userId: session.user.id });
     const videoProvider = createVideoProvider(provider, keyAccess.apiKey);
     const result = await videoProvider.createTask({
       prompt,
@@ -125,6 +128,8 @@ export async function POST(request: NextRequest) {
       billing: { provider, keySource: keyAccess.source, keyFingerprint: generationKeyFingerprint(keyAccess.apiKey), chargedCredits: 0 },
     });
   } catch (error: unknown) {
+    const moderation = promptModerationHttpFailure(error);
+    if (moderation) return NextResponse.json(moderation.body, { status: moderation.status });
     console.error("[video-generate] Error:", error);
     const kieError = kieErrorResponse(error);
     if (kieError) return NextResponse.json(kieError.body, { status: kieError.status });
@@ -157,7 +162,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Record not found" }, { status: 404 });
       }
 
-      return NextResponse.json({ record });
+      return NextResponse.json({ record: publicVideoRecord(record) });
     }
 
     const records = await db.query.videoGeneration.findMany({
@@ -166,7 +171,7 @@ export async function GET(request: NextRequest) {
       limit: 20,
     });
 
-    return NextResponse.json({ records });
+    return NextResponse.json({ records: records.map(publicVideoRecord) });
   } catch (error) {
     console.error("[video-generate/list] Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

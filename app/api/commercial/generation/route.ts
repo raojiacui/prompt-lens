@@ -16,7 +16,10 @@ export async function POST(request: NextRequest) {
   catch (e) {
     const raw = e instanceof Error ? e.message : "GENERATION_QUOTE_UNAVAILABLE";
     const code = /^[A-Z_]+$/.test(raw) ? raw : "GENERATION_QUOTE_UNAVAILABLE";
-    return NextResponse.json({ code }, { status: 400 });
+    const status = code === "PROMPT_SCAN_RATE_LIMITED" ? 429
+      : code === "PROMPT_SCAN_UNAVAILABLE" ? 503
+        : ["PROMPT_BLOCKED", "PROMPT_REVIEW_REQUIRED"].includes(code) ? 422 : 400;
+    return NextResponse.json({ code }, { status });
   }
   });
 }

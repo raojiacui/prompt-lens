@@ -1,3 +1,6 @@
+import { assertPromptAllowed } from "@/lib/safety/waffo-prompt-scan";
+import { requiresVideoOutputModeration } from "@/lib/safety/video-output-moderation";
+import { reconcileVideoDelivery } from "@/lib/safety/video-output-delivery";
 import type { GenerationReporter } from "@/lib/reference-video/generation-submission-response";
 import { and, eq, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { db, commercialTasks, commercialWallets, mediaCleanupJobs, projects, sceneVersions, videoGeneration } from "@/lib/db";
@@ -54,6 +57,9 @@ export async function quoteCommercialGeneration(userId: string, body: Record<str
   if (!key) throw new Error("KIE_KEY_REQUIRED");
   const userPrompt = String(body.userPrompt || body.prompt || "").trim();
   if (userPrompt.length < 3 || userPrompt.length > 5000) throw new Error("PAID_GENERATION_CONFIGURATION_UNSUPPORTED");
+  // Reject unsafe prompts before any R2 media copy, preview job, wallet reservation or provider cost.
+  report("moderating");
+  await assertPromptAllowed(userPrompt, { userId });
   report("quoting");
   const video = referenceVideoUrl(body);
   let referenceVideoSeconds: number | undefined;
@@ -166,8 +172,28 @@ export async function reconcileCommercialGeneration(taskId: string) {
   if (status.state === "success") {
     try { if (new URL(status.videoUrl || "").protocol !== "https:") return; } catch { return; }
   }
-  if (status.state === "success" && status.videoUrl) await settleGeneration(task, "completed", status.videoUrl);
-  else if (status.state === "fail") await settleGeneration(task, "failed", undefined, "PROVIDER_MODEL_FAILED");
+  if (status.state === "success" && status.videoUrl) {
+    if (requiresVideoOutputModeration()) {
+      // Paid-video results need the same post-generation release gate as BYOK.
+      // Do not settle or expose a URL until the external moderation workflow accepts.
+      const record = await db.query.videoGeneration.findFirst({
+        where: and(eq(videoGeneration.userId, task.userId), eq(videoGeneration.taskId, task.providerTaskId)),
+      });
+      if (!record) return; // No durable record: do not publish output.
+      const delivery = await reconcileVideoDelivery(record, status);
+      if (delivery.status === "success" && delivery.videoUrl) {
+        await settleGeneration(task, "completed", delivery.videoUrl);
+      } else if (delivery.status === "review") {
+        await db.update(commercialTasks).set({
+          state: "review",
+          result: sql`${commercialTasks.result} || ${JSON.stringify({ code: "OUTPUT_REVIEW_REQUIRED", failureCode: "OUTPUT_REVIEW_REQUIRED" })}::jsonb`,
+          updatedAt: new Date(),
+        }).where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, "running")));
+      }
+      return;
+    }
+    await settleGeneration(task, "completed", status.videoUrl);
+  } else if (status.state === "fail") await settleGeneration(task, "failed", undefined, "PROVIDER_MODEL_FAILED");
 }
 
 async function settleGeneration(task: typeof commercialTasks.$inferSelect, state: "completed" | "failed", videoUrl?: string, failureCode?: string) {
