@@ -146,11 +146,12 @@ export function parseVideoOutputVerdict(value: unknown): OutputVerdict {
     response?: { annotationResults?: { explicitAnnotation?: { frames?: { pornographyLikelihood?: unknown }[] }; error?: unknown }[] };
   };
   const operationName = safeOperationName(response.name);
-  if (response.done === false) return operationName
+  if (response.error) return verdict("unavailable", { operationName, code: "provider_error" });
+  // Google omits the default false `done` field on pending REST operations.
+  if (response.done === false || response.done === undefined) return operationName && response.response === undefined
     ? verdict("checking", { operationName })
     : verdict("unavailable", { code: "invalid_response" });
   if (response.done !== true) return verdict("unavailable", { code: "invalid_response" });
-  if (response.error) return verdict("unavailable", { operationName, code: "provider_error" });
   const results = response.response?.annotationResults;
   if (!Array.isArray(results) || results.length !== 1 || results[0]?.error) {
     return verdict("unavailable", { operationName, code: "invalid_response" });
