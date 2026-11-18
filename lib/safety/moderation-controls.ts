@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { db, moderationRecords, moderationTerms } from "@/lib/db";
 
 const TEST_PROJECT_ID = "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI";
@@ -79,6 +79,21 @@ export async function listModerationTerms() {
 }
 export async function latestModerationRecords(limit = 100) {
   return db.select().from(moderationRecords).orderBy(desc(moderationRecords.createdAt)).limit(Math.max(1, Math.min(200, limit)));
+}
+export async function deleteModerationTerm(id: string, actorId: string) {
+  return db.transaction(async tx => {
+    const [removed] = await tx.delete(moderationTerms).where(eq(moderationTerms.id, id)).returning();
+    if (!removed) throw Error("NOT_FOUND");
+    // Preserve the deleted rule's context and all earlier review records.
+    // If audit persistence fails, the transaction restores the rule as well.
+    await tx.insert(moderationRecords).values({
+      stage: "policy_change", provider: "local_terms", verdict: "deleted",
+      category: removed.category, ruleId: removed.id, reviewerId: actorId,
+      reasonCode: "term_deleted",
+      reviewNote: `短语：${removed.phrase}\n处理：${removed.action}\n启用：${removed.enabled}\n修订：${removed.revision}\n备注：${removed.note ?? ""}`,
+    });
+    return removed.id;
+  });
 }
 export async function updateModerationTerm(input: {
   id?: string; phrase: string; category: ModerationCategory; action: PolicyAction;

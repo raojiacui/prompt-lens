@@ -4,7 +4,7 @@ import { getAdminUserFromHeaders } from "@/lib/auth";
 import { db, moderationRecords } from "@/lib/db";
 import {
   latestModerationRecords, listModerationTerms, moderationControlsEnabled,
-  MODERATION_CATEGORIES, updateModerationTerm,
+  MODERATION_CATEGORIES, updateModerationTerm, deleteModerationTerm,
 } from "@/lib/safety/moderation-controls";
 
 export const runtime = "nodejs";
@@ -33,6 +33,17 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null) as Record<string, unknown> | null;
   if (!body || typeof body !== "object") return NextResponse.json({ error: "Invalid body" }, { status: 400, headers });
   try {
+    if (body.action === "delete_term") {
+      if (!isUuid(body.id)) return NextResponse.json({ error: "Invalid term id" }, { status: 400, headers });
+      try {
+        await deleteModerationTerm(body.id, admin.id);
+      } catch (error) {
+        if (error instanceof Error && error.message === "NOT_FOUND")
+          return NextResponse.json({ error: "规则不存在或已删除，请刷新列表。" }, { status: 404, headers });
+        throw error;
+      }
+      return NextResponse.json({ success: true }, { headers });
+    }
     if (body.action === "save_term") {
       if (body.id != null && !isUuid(body.id)) return NextResponse.json({ error: "Invalid term id" }, { status: 400, headers });
       if (typeof body.phrase !== "string" || body.phrase.length > 160 ||

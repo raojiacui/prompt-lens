@@ -50,7 +50,8 @@ export function AdminModerationControls() {
       const result = await response.json() as { error?: string };
       if (!response.ok) throw Error(result.error || "保存失败");
       await refresh();
-    } catch (error) { setError(String(error)); }
+      return true;
+    } catch (error) { setError(String(error)); return false; }
     finally { setBusy(false); }
   };
   const edit = (term: Term) => {
@@ -66,8 +67,9 @@ export function AdminModerationControls() {
     {loading ? <p className="text-sm">正在读取审核记录…</p> : <>
       <form className="grid gap-3 rounded-lg border p-3 sm:grid-cols-2 lg:grid-cols-4" onSubmit={async event => {
         event.preventDefault();
-        await send({ action: "save_term", id: editId || undefined, ...draft });
-        setEditId(null); setDraft({ ...blank });
+        if (await send({ action: "save_term", id: editId || undefined, ...draft })) {
+          setEditId(null); setDraft({ ...blank });
+        }
       }}>
         <label className="text-xs">违禁词或短语<input required minLength={2} maxLength={160} className="mt-1 w-full rounded-md border bg-background p-2" value={draft.phrase} onChange={e => setDraft({ ...draft, phrase: e.target.value })} /></label>
         <label className="text-xs">风险分类<select className="mt-1 w-full rounded-md border bg-background p-2" value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })}>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
@@ -85,7 +87,15 @@ export function AdminModerationControls() {
           <tbody>{terms.map(term => <tr className="border-t" key={term.id}>
             <td className="px-3 py-2">{term.phrase}</td><td className="px-3 py-2">{term.category}</td><td className="px-3 py-2">{term.action}</td>
             <td className="px-3 py-2">{term.enabled ? "启用" : "停用"}</td><td className="px-3 py-2">v{term.revision}</td>
-            <td className="px-3 py-2"><button className="underline" onClick={() => edit(term)}>编辑</button></td>
+            <td className="px-3 py-2"><div className="flex gap-3">
+              <button type="button" disabled={busy} className="underline disabled:opacity-50" onClick={() => edit(term)}>编辑</button>
+              <button type="button" disabled={busy} className="text-destructive underline disabled:opacity-50" aria-label={`删除规则：${term.phrase}`} onClick={async () => {
+                if (!window.confirm(`确定删除规则“${term.phrase}”？删除后该词不再参与拦截，历史审核记录会保留。`)) return;
+                if (await send({ action: "delete_term", id: term.id }) && editId === term.id) {
+                  setEditId(null); setDraft({ ...blank });
+                }
+              }}>删除</button>
+            </div></td>
           </tr>)}</tbody>
         </table>
       </div>
@@ -106,8 +116,9 @@ export function AdminModerationControls() {
       </div>
       {reviewId && <form className="grid gap-2 rounded-lg border p-3" onSubmit={async event => {
         event.preventDefault();
-        await send({ action: "review_record", recordId: reviewId, verdict: reviewVerdict, note: reviewNote });
-        setReviewId(""); setReviewNote("");
+        if (await send({ action: "review_record", recordId: reviewId, verdict: reviewVerdict, note: reviewNote })) {
+          setReviewId(""); setReviewNote("");
+        }
       }}>
         <p className="text-xs font-medium">人工复核 · {reviewId.slice(0, 8)}</p>
         <select className="rounded-md border bg-background p-2 text-xs" value={reviewVerdict} onChange={e => setReviewVerdict(e.target.value)}>
