@@ -1,6 +1,8 @@
 import { createProviderVideo, getProviderVideoStatus } from "@/lib/ai/video-client";
+import { infistarVideoFailureMessage } from "@/lib/ai/adapters/infistar-video";
 import { isUserProvider, type UserProvider } from "@/lib/ai/providers";
 import { NextResponse } from "next/server";
+import { generationSubmissionResponse } from "@/lib/reference-video/generation-submission-response";
 import { and, eq } from "drizzle-orm";
 import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
 import { kieErrorResponse } from "@/lib/reference-video/kie-veo";
@@ -138,6 +140,8 @@ export async function POST(request: Request) {
   const referenceVideoUrl = body ? getReferenceVideoUrl(body) : undefined;
   if (!userPrompt && !referenceVideoUrl) return NextResponse.json({ error: "Missing generation prompt" }, { status: 400 });
 
+  return generationSubmissionResponse(request, async (report) => {
+  report("preparing");
   try {
     const replacementAssets = Array.isArray(body?.replacementAssets)
       ? body.replacementAssets.filter((item: unknown) => typeof item === "object" && item !== null && typeof (item as { id?: unknown }).id === "string" && typeof (item as { url?: unknown }).url === "string") as { id: string; url: string; type?: string; name?: string }[]
@@ -150,7 +154,7 @@ export async function POST(request: Request) {
     const keyAccess = await resolveApiKeyForFeature(auth.user.id, { allowPaidPlatformKey: false });
     const provider = keyAccess.provider || "kie";
     const model = parseModel(body?.model, { hasReferenceVideo, hasImages, provider });
-    const useNativeVideoEdit = (isWanVideoEditModel(model) || model === "MiniMax-H3") && hasReferenceVideo;
+    const useNativeVideoEdit = isWanVideoEditModel(model) && hasReferenceVideo;
     const aspectRatio = isWanVideoEditModel(model) ? undefined : parseAspectRatio(body?.aspectRatio, model);
     const duration = isWanVideoEditModel(model) ? 0 : parseDuration(body?.duration, model);
     const resolution = typeof body?.quality === "string" ? body.quality.toLowerCase() : undefined;
@@ -185,6 +189,7 @@ export async function POST(request: Request) {
       useNativeVideoEdit,
     });
 
+    report("submitting");
     const result = await createProviderVideo(provider, {
       prompt,
       imageUrls: useNativeVideoEdit ? [] : imageUrls,
@@ -244,6 +249,7 @@ export async function POST(request: Request) {
       : message;
     return NextResponse.json({ error: friendlyMessage }, { status: 502 });
   }
+  });
 }
 
 export async function GET(request: Request) {
@@ -266,6 +272,7 @@ export async function GET(request: Request) {
     const job = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.taskId, taskId), eq(videoGeneration.userId, auth.user.id)) });
     if (!job) return NextResponse.json({ error: "Generation job not found" }, { status: 404 });
     if (job.status === "completed" && job.videoUrl) return NextResponse.json({ provider: job.provider, providerTaskId: taskId, status: "success", videoUrl: job.videoUrl });
+    if (job.status === "failed") return NextResponse.json({ provider: job.provider, providerTaskId: taskId, status: "fail", error: job.provider === "infistar" ? infistarVideoFailureMessage(job.rawResponse) : (job.error || "视频生成失败，请查看生成历史或服务商后台。") });
     const provider = isUserProvider(job.provider) ? job.provider : "kie";
     const apiKey = await resolveGenerationStatusKey(auth.user.id, job.rawResponse, provider);
     if (!apiKey) return NextResponse.json({ error: "The original provider key is required to query this task", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
