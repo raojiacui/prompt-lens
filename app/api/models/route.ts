@@ -23,8 +23,9 @@ export async function GET(request: NextRequest) {
       try {
         const credential = await getUserCredential(session.user.id, "infistar");
         if (!credential) return NextResponse.json({ error: "请先保存 Infistar API Key。" }, { status: 400 });
-        // Validate credentials without hiding verified auto-group models absent from /models.
-        await listInfistarModels(credential.apiKey);
+        // Video selections are allowlisted locally. An upstream /models 502 must not
+        // prevent browsing video models; POST /videos verifies actual Key permissions.
+        if (category !== "video_generation") await listInfistarModels(credential.apiKey);
       } catch { return NextResponse.json({ error: "无法获取 Infistar 模型列表，请检查 Key 或稍后重试。" }, { status: 502 }); }
     }
     return NextResponse.json({ models, provider }, { headers: { "Cache-Control": "private, no-store" } });
