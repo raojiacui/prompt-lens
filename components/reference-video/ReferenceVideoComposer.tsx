@@ -1,6 +1,6 @@
 "use client";
 
-import type { UserProvider } from "@/lib/ai/providers";
+import { ownKeyPaymentLabel, type UserProvider } from "@/lib/ai/providers";
 
 import type { GenerationVariant } from "@/lib/reference-video/types";
 import {
@@ -1783,7 +1783,7 @@ export function ReferenceVideoComposer({
                   : t("create.button") || "Generate Video"}
                 {!isRunning && !pendingConfirmation && <span aria-live="polite">· {generationCostLabel}</span>}</span>
               </button>
-              <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning || pendingConfirmation} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform" disabled={commercialEnabled === false}>{zh ? "平台积分" : "Credits"}</option><option value="byok">{zh ? `自带 Key · ${creditStatus?.byokProvider === "infistar" ? "Infistar" : "KIE"}` : `Own key · ${creditStatus?.byokProvider === "infistar" ? "Infistar" : "KIE"}`}</option></select>
+              <select aria-label={zh ? "费用来源" : "Payment source"} title={zh ? "费用来源" : "Payment source"} value={generationPayer} disabled={isRunning || pendingConfirmation} onChange={(e) => setGenerationPayer(e.target.value)} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform" disabled={commercialEnabled === false}>{zh ? "平台积分" : "Credits"}</option><option value="byok">{ownKeyPaymentLabel(creditStatus?.byokProvider, zh ? "zh" : "en")}</option></select>
               </div>
             </div>
           </section>

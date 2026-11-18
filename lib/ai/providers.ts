@@ -11,3 +11,8 @@ export function isUserProvider(value: unknown): value is UserProvider {
 export function providerName(provider: string, locale?: string) {
   return provider === "infistar" ? (locale === "zh" ? "无限星河 Infistar" : "Infistar") : provider === "kie" ? "KIE" : provider;
 }
+
+export function ownKeyPaymentLabel(provider: unknown, locale: string) {
+  const label = locale === "zh" ? "自带 Key" : "Own key";
+  return isUserProvider(provider) ? `${label} · ${provider === "infistar" ? "Infistar" : "KIE"}` : label;
+}

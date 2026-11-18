@@ -15,6 +15,7 @@ import { workflowAnalysisPercent } from "@/lib/workflow/analysis-progress";
 import { fetchProjectList } from "@/lib/workflow/project-list-client";
 import { listModels } from "@/lib/ai/model-registry";
 import { FREE_TRIAL_ANALYSIS_MODEL_ID } from "@/lib/ai/free-trial-model";
+import { ownKeyPaymentLabel, type UserProvider } from "@/lib/ai/providers";
 import { buildRecreationPrompt } from "@/lib/workflow/recreation-prompt";
 import { VideoOverview } from "@/components/workflow/video-overview";
 import { LiveCreditBalanceLink } from "@/components/workflow/credit-balance-link";
@@ -93,6 +94,7 @@ type CreditStatus = {
   commercialConsumptionEnabled?: boolean;
   balance: number;
   hasUserApiKey?: boolean;
+  byokProvider?: UserProvider;
   commercial?: { enabled: boolean; credits?: number; rewrites?: number; heldRewrites?: number };
   mode: "admin" | "byok" | "platform_credits" | "trial";
   hasPaidVideoAnalysis?: boolean;
@@ -516,7 +518,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
         const detail = data.phase === "saving" ? (locale === "en" ? "Saving analysis results" : "正在保存分析结果")
           : data.totalScenes ? (locale === "en" ? `${data.completedScenes}/${data.totalScenes} shots processed` : `已处理 ${data.completedScenes}/${data.totalScenes} 个镜头`) : (locale === "en" ? "Preparing media" : "正在准备素材");
         setAnalysisProgress({ phase: "analysis", percent: workflowAnalysisPercent({ phase: data.phase, total: data.totalScenes || 0, finished: data.completedScenes || 0 }), label: locale === "en" ? "AI analysis" : "AI 分析", detail, startedAt: data.startedAt, automaticSplit: data.automaticSplit, mediaType: data.mediaType });
-      } catch (error) {
+      } catch {
         if (controller.signal.aborted) return;
         setError(taskSyncInterruptedMessage(locale));
       }
@@ -979,7 +981,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
             {loading ? <Spinner size="sm" /> : <WandSparkles className="h-5 w-5 shrink-0" />}
             {loading ? (locale === "en" ? "Preparing..." : "正在处理...") : mediaInputMode === "link" ? (locale === "en" ? "Import video · counts on success" : "导入视频 · 成功计次") : mediaType === "image" ? (locale === "en" ? "Analyze image" : "分析图片") : (locale === "en" ? "Analyze video" : "分析视频")}
           </button>
-          {showAnalysisPayer && <select aria-label={locale === "en" ? "Payment source" : "费用来源"} title={locale === "en" ? "Payment source" : "费用来源"} value={analysisPayer} disabled={loading || analysisQuoteLocked || Boolean(analysisTaskId)} onChange={event => changeAnalysisPayer(event.target.value === "byok" ? "byok" : "platform")} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{locale === "en" ? "Credits" : "平台积分"}</option><option value="byok">{locale === "en" ? "Own key" : "自带 Key"}</option></select>}
+          {showAnalysisPayer && <select aria-label={locale === "en" ? "Payment source" : "费用来源"} title={locale === "en" ? "Payment source" : "费用来源"} value={analysisPayer} disabled={loading || analysisQuoteLocked || Boolean(analysisTaskId)} onChange={event => changeAnalysisPayer(event.target.value === "byok" ? "byok" : "platform")} className="min-h-11 min-w-0 w-full rounded-lg border border-border bg-background px-2 text-sm disabled:opacity-50"><option value="platform">{locale === "en" ? "Credits" : "平台积分"}</option><option value="byok">{ownKeyPaymentLabel(creditStatus?.byokProvider, locale)}</option></select>}
           </div>
 
           {progress ? <p className="mt-3 text-sm text-muted-foreground">{progress}</p> : null}
