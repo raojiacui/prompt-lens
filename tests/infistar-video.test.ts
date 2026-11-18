@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { buildInfistarVideoPayload, createInfistarVideo, getInfistarVideoStatus } from "@/lib/ai/adapters/infistar-video";
-import { generationChoices, resolveGenerationModel } from "@/lib/ai/generation-models";
+import { generationChoices, generationDisplayName, resolveGenerationModel } from "@/lib/ai/generation-models";
 
 const storage = vi.hoisted(() => ({ cleanup: vi.fn(), upload: vi.fn() }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { insert: () => ({ values: storage.cleanup }) } }));
@@ -13,6 +13,26 @@ it("keeps KIE models and Infistar models separate", () => {
   expect(generationChoices("infistar").map(model => model.providerModelId)).toContain("kling-video-o1");
   expect(resolveGenerationModel("wan2.7-t2v", { hasImages: true, hasVideo: false }).providerModelId).toBe("wan2.7-i2v");
 });
+it("keeps Infistar Doubao Seedance separate from Jimeng Video 3.0, matching the official model square", () => {
+  const models = generationChoices("infistar");
+  const expected = [
+    ["doubao-seedance-2-0-260128", "豆包 Seedance 2.0", "Doubao Seedance"],
+    ["doubao-seedance-2-0-fast-260128", "豆包 Seedance 2.0 Fast", "Doubao Seedance"],
+    ["doubao-seedance-2.0-mini", "豆包 Seedance 2.0 Mini", "Doubao Seedance"],
+    ["jimeng-video-3.0", "即梦 视频 3.0", "Jimeng"],
+    ["jimeng-video-3.0-pro", "即梦 视频 3.0 Pro", "Jimeng"],
+  ] as const;
+  for (const [modelId, displayName, family] of expected) {
+    const entry = models.find(m => m.providerModelId === modelId);
+    expect(entry, modelId).toBeDefined();
+    expect(entry?.displayName).toBe(displayName);
+    expect(entry?.family).toBe(family);
+    expect(generationDisplayName(modelId)).toBe(displayName);
+  }
+  expect(models.filter(m => m.family === "Jimeng").every(m => m.providerModelId.startsWith("jimeng-"))).toBe(true);
+  expect(models.filter(m => m.family === "Doubao Seedance").every(m => m.providerModelId.startsWith("doubao-seedance-"))).toBe(true);
+});
+
 it("builds the exact accepted Seedance Mini request", () => {
   expect(buildInfistarVideoPayload({ model: "doubao-seedance-2.0-mini", prompt: "A cube", duration: 5, resolution: "720p", aspectRatio: "16:9" }))
     .toEqual({ model: "doubao-seedance-2.0-mini", prompt: "A cube", seconds: "5", size: "1280x720" });
