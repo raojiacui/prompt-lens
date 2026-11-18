@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
         videoUrl: status.videoUrl, error: status.error, raw: status.raw,
       });
       const updated = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.userId, session.user.id), eq(videoGeneration.taskId, taskId)) });
-      return NextResponse.json({ status: delivery.status === "success" ? "completed" : delivery.status === "fail" ? "failed" : delivery.status === "review" ? "review" : "processing", ...delivery, videoUrl: delivery.videoUrl, record: updated ? publicVideoRecord(updated) : undefined });
+      return NextResponse.json({ ...delivery, status: delivery.status === "success" ? "completed" : delivery.status === "fail" ? "failed" : delivery.status === "review" ? "review" : "processing", record: updated ? publicVideoRecord(updated) : undefined });
     }
     const progress = status.progress === undefined ? undefined : String(status.progress);
 
