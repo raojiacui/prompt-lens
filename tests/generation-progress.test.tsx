@@ -15,19 +15,19 @@ describe("generation submission checkpoints", () => {
     let finish!: () => void;
     const waiting = new Promise<void>(resolve => { finish = resolve; });
     const response = await generationSubmissionResponse(request(), async report => {
-      report("preparing"); report("moderating"); await waiting;
-      return Response.json({ code: "PROMPT_SCAN_UNAVAILABLE" }, { status: 503 });
+      report("preparing"); report("submitting"); await waiting;
+      return Response.json({ code: "UPSTREAM_UNAVAILABLE" }, { status: 503 });
     });
     const stages: string[] = [];
     const result = readGenerationSubmission(response, stage => stages.push(stage));
-    await vi.waitFor(() => expect(stages).toEqual(["preparing", "moderating"]));
+    await vi.waitFor(() => expect(stages).toEqual(["preparing", "submitting"]));
     finish();
-    expect(await result).toEqual({ status: 503, body: { code: "PROMPT_SCAN_UNAVAILABLE" } });
+    expect(await result).toEqual({ status: 503, body: { code: "UPSTREAM_UNAVAILABLE" } });
   });
   it("retains legacy JSON and HTTP semantics", async () => {
-    const response = await generationSubmissionResponse(request(false), async () => Response.json({ code: "PROMPT_BLOCKED" }, { status: 422 }));
+    const response = await generationSubmissionResponse(request(false), async () => Response.json({ code: "INVALID_REQUEST" }, { status: 422 }));
     expect(response.status).toBe(422);
-    expect(await readGenerationSubmission(response, vi.fn())).toEqual({ status: 422, body: { code: "PROMPT_BLOCKED" } });
+    expect(await readGenerationSubmission(response, vi.fn())).toEqual({ status: 422, body: { code: "INVALID_REQUEST" } });
   });
   it("decodes split UTF-8 and a final line without newline", async () => {
     const bytes = new TextEncoder().encode('{"type":"stage","stage":"submitting"}\n{"type":"result","status":200,"body":{"providerTaskId":"任务"}}');
@@ -53,12 +53,12 @@ describe("generation submission checkpoints", () => {
   });
   it("preserves per-output streamed quotes and confirms the original batch once", async () => {
     const batch: GenerationSubmissionBatch = { version: 1, request: {}, quantity: 2, quotes: [], confirmationStarted: false };
-    const quote = async (id: string) => generationSubmissionResponse(request(), async report => { report("moderating"); report("quoting"); return Response.json({ id, credits: 20 }); });
+    const quote = async (id: string) => generationSubmissionResponse(request(), async report => { report("submitting"); report("quoting"); return Response.json({ id, credits: 20 }); });
     const fetcher = vi.fn<typeof fetch>().mockResolvedValueOnce(await quote("one")).mockResolvedValueOnce(await quote("two"))
       .mockResolvedValueOnce(Response.json({ tasks: [{ id: "one", state: "queued" }, { id: "two", state: "queued" }] }));
     const onStage = vi.fn();
     expect(await submitCommercialGeneration(batch, true, vi.fn(), fetcher, onStage)).toEqual(["one", "two"]);
-    expect(onStage).toHaveBeenCalledWith(0, "moderating");
+    expect(onStage).toHaveBeenCalledWith(0, "submitting");
     expect(onStage).toHaveBeenCalledWith(1, "quoting");
     expect(onStage).toHaveBeenCalledWith(1, "submitting");
     expect(fetcher).toHaveBeenCalledTimes(3);
@@ -70,8 +70,8 @@ describe("generation stage UI", () => {
   function render(variant: GenerationVariant, zh = true) { return renderToStaticMarkup(<GenerationTaskProgress variant={variant} zh={zh} />); }
   it("stops at the failing safety check and does not present later stages as complete", () => {
     const preparing = advanceGenerationProgress(undefined, "preparing", 1000);
-    const lifecycle = { ...advanceGenerationProgress(preparing, "moderating", 2000), finishedAt: 4000 };
-    const html = render({ ...base, status: "failed", lifecycle, error: "提示词审核暂不可用" });
+    const lifecycle = { ...advanceGenerationProgress(preparing, "submitting", 2000), finishedAt: 4000 };
+    const html = render({ ...base, status: "failed", lifecycle, error: "模型服务暂不可用" });
     expect(html).toContain("生成未完成");
     expect(html).toContain('aria-current="step"');
     expect(html).toContain("失败");
