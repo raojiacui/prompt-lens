@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { buildInfistarVideoPayload, createInfistarVideo, getInfistarVideoStatus } from "@/lib/ai/adapters/infistar-video";
-import { generationChoices, resolveGenerationModel } from "@/lib/ai/generation-models";
+import { buildInfistarVideoPayload, createInfistarVideo, getInfistarVideoStatus, infistarVideoFailureMessage } from "@/lib/ai/adapters/infistar-video";
+import { generationChoices, generationDisplayName, resolveGenerationModel } from "@/lib/ai/generation-models";
 
 const storage = vi.hoisted(() => ({ cleanup: vi.fn(), upload: vi.fn() }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { insert: () => ({ values: storage.cleanup }) } }));
@@ -8,11 +8,63 @@ vi.mock("@/lib/cloudflare/r2", () => ({ uploadToR2: storage.upload }));
 vi.mock("@/lib/ai/reference-media-access", () => ({ assertReferenceMediaAccess: vi.fn(async () => undefined) }));
 vi.mock("@/lib/ai/infistar-media", () => ({ readInfistarMedia: vi.fn(async () => new Blob(["fixture-media"], { type: "video/mp4" })) }));
 afterEach(() => vi.unstubAllGlobals());
+it("returns a failed task with an error as a terminal status without resubmitting", async () => {
+  const fetcher = vi.fn().mockResolvedValue(Response.json({ id: "failed-task", status: "failed", error: { message: "private upstream details" } }));
+  vi.stubGlobal("fetch", fetcher);
+  expect(await getInfistarVideoStatus("failed-task", "fixture")).toMatchObject({ state: "fail", taskId: "failed-task" });
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(fetcher.mock.calls[0][1].method).toBe("GET");
+});
+it("explains upstream copyright-output failures without leaking raw provider details", async () => {
+  const failed = {
+    id: "failed-copyright-task",
+    status: "failed",
+    error: { code: "task_failed", message: "OutputVideoSensitiveContentDetected.PolicyViolation: copyright restrictions. Request id: private-request" },
+    metadata: { billing_status: "REFUNDED", final_quota: 0 },
+  };
+  const fetcher = vi.fn().mockResolvedValue(Response.json(failed));
+  vi.stubGlobal("fetch", fetcher);
+  const status = await getInfistarVideoStatus("failed-copyright-task", "fixture");
+  expect(status.state).toBe("fail");
+  expect(status.error).toContain("版权限制");
+  expect(status.error).toContain("已退款");
+  expect(status.error).not.toContain("private-request");
+  expect(infistarVideoFailureMessage({ data: failed })).toContain("版权限制");
+  expect(infistarVideoFailureMessage({ status: "failed", error: { message: "internal provider detail" } })).not.toContain("internal provider detail");
+});
+
+it("does not mistake an API error or a different task for a failed generation", async () => {
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ error: { message: "denied" } }))
+    .mockResolvedValueOnce(Response.json({ id: "another-task", status: "failed", error: { message: "denied" } }))
+    .mockResolvedValueOnce(Response.json({ id: "failed-task", status: "failed", error: {} }, { status: 503 }));
+  vi.stubGlobal("fetch", fetcher);
+  for (let i = 0; i < 3; i++) await expect(getInfistarVideoStatus("failed-task", "fixture")).rejects.toThrow("Infistar 请求失败");
+});
 it("keeps KIE models and Infistar models separate", () => {
   expect(generationChoices().every(model => model.provider === "kie")).toBe(true);
   expect(generationChoices("infistar").map(model => model.providerModelId)).toContain("kling-video-o1");
-  expect(resolveGenerationModel("wan2.7-t2v", { hasImages: true, hasVideo: false }).providerModelId).toBe("wan2.7-i2v");
+  expect(generationChoices("infistar").every(model => model.provider === "infistar")).toBe(true);
 });
+it("keeps Infistar Doubao Seedance separate from Jimeng Video 3.0, matching the official model square", () => {
+  const models = generationChoices("infistar");
+  const expected = [
+    ["doubao-seedance-2-0-260128", "豆包 Seedance 2.0", "Doubao Seedance"],
+    ["doubao-seedance-2-0-fast-260128", "豆包 Seedance 2.0 Fast", "Doubao Seedance"],
+    ["doubao-seedance-2.0-mini", "豆包 Seedance 2.0 Mini", "Doubao Seedance"],
+    ["jimeng-video-3.0", "即梦 视频 3.0", "Jimeng"],
+    ["jimeng-video-3.0-pro", "即梦 视频 3.0 Pro", "Jimeng"],
+  ] as const;
+  for (const [modelId, displayName, family] of expected) {
+    const entry = models.find(m => m.providerModelId === modelId);
+    expect(entry, modelId).toBeDefined();
+    expect(entry?.displayName).toBe(displayName);
+    expect(entry?.family).toBe(family);
+    expect(generationDisplayName(modelId)).toBe(displayName);
+  }
+  expect(models.filter(m => m.family === "Jimeng").every(m => m.providerModelId.startsWith("jimeng-"))).toBe(true);
+  expect(models.filter(m => m.family === "Doubao Seedance").every(m => m.providerModelId.startsWith("doubao-seedance-"))).toBe(true);
+});
+
 it("builds the exact accepted Seedance Mini request", () => {
   expect(buildInfistarVideoPayload({ model: "doubao-seedance-2.0-mini", prompt: "A cube", duration: 5, resolution: "720p", aspectRatio: "16:9" }))
     .toEqual({ model: "doubao-seedance-2.0-mini", prompt: "A cube", seconds: "5", size: "1280x720" });
@@ -22,8 +74,8 @@ it("uses the live-accepted Jimeng Pro profile and excludes unavailable Kling 2.6
   expect(() => buildInfistarVideoPayload({ model: "jimeng-video-3.0-pro", prompt: "A cube", duration: 5, resolution: "720p" })).toThrow("画质");
   expect(generationChoices("infistar").map(model => model.providerModelId)).not.toContain("kling-v2-6");
 });
-it("preserves image input and portrait dimensions", () => {
-  expect(buildInfistarVideoPayload({ model: "wan2.7-i2v", prompt: "A cube", duration: 5, aspectRatio: "9:16", imageUrls: ["https://media.example/image.png"] }))
+it("preserves image input and portrait dimensions for a remaining model", () => {
+  expect(buildInfistarVideoPayload({ model: "doubao-seedance-2.0-mini", prompt: "A cube", duration: 5, aspectRatio: "9:16", imageUrls: ["https://media.example/image.png"] }))
     .toMatchObject({ input_reference: "https://media.example/image.png", size: "720x1280" });
 });
 it("rejects unverified reference video parameters before any paid request", async () => {
@@ -45,17 +97,18 @@ it("reads the live Kling and Jimeng completed data-array response", async () => 
   expect(fetcher).toHaveBeenCalledTimes(1);
 });
 
-it("sends authorized MiniMax video references as binary multipart files", async () => {
-  const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ data: [{ id: "MiniMax-H3" }] })).mockResolvedValueOnce(Response.json({ id: "reference-task" }));
-  vi.stubGlobal("fetch", fetcher);
-  expect(await createInfistarVideo({ model: "MiniMax-H3", prompt: "Change the cube to blue", duration: 5, resolution: "2K", referenceVideoUrl: "https://media.example/source.mp4" }, "minimax-reference-fixture", { userId: "owner" })).toMatchObject({ taskId: "reference-task" });
-  const request = fetcher.mock.calls[1][1];
-  expect(request.body).toBeInstanceOf(FormData);
-  expect(request.body.get("input_reference")).toBeInstanceOf(Blob);
-  expect(request.body.get("model")).toBe("MiniMax-H3");
-  expect(request.body.get("size")).toBe("2K");
-  expect(request.headers["Content-Type"]).toBeUndefined();
-  expect(() => buildInfistarVideoPayload({ model: "MiniMax-H3", prompt: "Edit", duration: 5, resolution: "2K", aspectRatio: "9:16" })).toThrow("比例");
+it("removes unverified Wan 2.7 and MiniMax H3 options from Infistar and rejects retired submissions", async () => {
+  const retired = ["wan2.7-t2v", "wan2.7-i2v", "MiniMax-H3"];
+  const listed = generationChoices("infistar").map(model => model.providerModelId);
+  for (const id of retired) {
+    expect(listed).not.toContain(id);
+    expect(() => resolveGenerationModel(id, { hasImages: false, hasVideo: false })).toThrow("MODEL_UNAVAILABLE");
+    expect(() => buildInfistarVideoPayload({ model: id, prompt: "A cube", duration: 5 })).toThrow("请选择 Infistar 支持的视频模型");
+  }
+  const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
+  await expect(createInfistarVideo({ model: "MiniMax-H3", prompt: "Edit source video", referenceVideoUrl: "https://media.example/source.mp4" }, "fixture", { userId: "owner" }))
+    .rejects.toMatchObject({ outcome: "not_sent" });
+  expect(fetcher).not.toHaveBeenCalled();
 });
 
 it("registers cleanup before persisting authenticated-only video content", async () => {
