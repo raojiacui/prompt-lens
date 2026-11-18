@@ -37,6 +37,12 @@ CREATE INDEX IF NOT EXISTS "moderation_records_recent_idx" ON "moderation_record
 CREATE INDEX IF NOT EXISTS "moderation_records_task_idx" ON "moderation_records" ("task_id","created_at");
 CREATE INDEX IF NOT EXISTS "moderation_records_verdict_idx" ON "moderation_records" ("verdict","created_at");
 
+-- Server-only tables: the application connects with its privileged database role.
+-- Do not expose policy management or review metadata through the Supabase Data API.
+ALTER TABLE "moderation_terms" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "moderation_records" ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE "moderation_terms", "moderation_records" FROM PUBLIC, anon, authenticated;
+
 -- Seed a baseline only for the isolated test database. All entries are editable;
 -- maintainers must review and update them in the admin interface.
 INSERT INTO "moderation_terms" ("phrase","normalized_phrase","category","action","note")

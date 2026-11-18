@@ -14,6 +14,8 @@ https://docs.waffo.ai/zh/mor/account-reviews/aigc-compliance
 
 ## Event handling and privacy
 
+Database setup verified on 2026-11-18: the isolated test database has both moderation tables and 11 initial terms. Migration 0026 enables RLS and revokes direct access from PUBLIC, anon and authenticated; application access stays server-side. See ADR 0069 for evidence and pending end-to-end checks.
+
 - The test project runs local dynamic phrase checks before mandatory Waffo Prompt Sift, while retaining Waffo semantic enforcement. A local `review` or `block` result stops generation immediately.
 - Successful or failed Waffo prompt checks and Google-generated-video review verdicts are logged to `moderation_records`. Known user identity and task IDs are attached where available. For text, only the SHA-256 fingerprint is retained; no raw prompts, video URLs, API keys or provider raw response bodies are stored.
 - The new audit table is append-only through application endpoints. Database administrators should limit delete/update access to backups and maintenance.
