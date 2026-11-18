@@ -8,6 +8,17 @@ vi.mock("@/lib/cloudflare/r2", () => ({ uploadToR2: storage.upload }));
 vi.mock("@/lib/ai/reference-media-access", () => ({ assertReferenceMediaAccess: vi.fn(async () => undefined) }));
 vi.mock("@/lib/ai/infistar-media", () => ({ readInfistarMedia: vi.fn(async () => new Blob(["fixture-media"], { type: "video/mp4" })) }));
 afterEach(() => vi.unstubAllGlobals());
+it("submits an allowlisted video model directly without requiring Infistar /models", async () => {
+  const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ id: "created-1" }));
+  vi.stubGlobal("fetch", fetcher);
+  expect(await createInfistarVideo({
+    model: "doubao-seedance-2.0-mini", prompt: "An orange cat",
+    duration: 5, resolution: "720p", aspectRatio: "16:9",
+  }, "fixture")).toMatchObject({ taskId: "created-1" });
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect(fetcher.mock.calls[0][0]).toBe("https://infistar.cc/v1/videos");
+});
+
 it("returns a failed task with an error as a terminal status without resubmitting", async () => {
   const fetcher = vi.fn().mockResolvedValue(Response.json({ id: "failed-task", status: "failed", error: { message: "private upstream details" } }));
   vi.stubGlobal("fetch", fetcher);
