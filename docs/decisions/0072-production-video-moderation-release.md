@@ -1,7 +1,7 @@
 # ADR 0072：将已测试的视频审核与动态词库发布至主站
 
 - 日期：2026-11-18
-- 状态：负责人已授权正式站同步；本地验证、正式库迁移与审核凭据存在性核验完成，Git 发布核验中。
+- 状态：获授权的主站 Git 发布与公开页面核验完成；正式环境真实视频审核端到端验收仍待执行。
 - 关联：ADR 0069、0070、0071。
 
 ## 背景
@@ -46,3 +46,12 @@
 - 负责人回复“好了”，Vercel 正式项目 Production 实读存在四项 sensitive 变量：Google 服务账号 JSON、GCS 桶、Waffo merchant ID、private key；未读取或输出其值。受管项目强制开启提示词审核，不依赖额外启用标记。
 - 远端正式发布分支仍为 `82a4d9d8b47269d673315f1242daae991e59e32d`，待发布合并提交 `3e9ddbf` 包含该提交，未发现并发代码变更。
 - 本次推送前正式域名为 `dpl_4eNDZwYwNEQ8jPwAeu8dxCPsKGVQ`，测试域名为 `dpl_8DCZWEc3NwBo1UDD2SC5nqa7hVD4`。只向正式项目既有 Git 发布分支推送，测试分支不变。
+
+## 正式发布结果
+
+- 推送 GitHub prompt-lens-V2 成功，实读远端 SHA 为 `f2dd07f037dd02074679f80025dc309258461298`，与本地待发布提交一致，包含功能合并 3e9ddbf 与凭据就绪记录。
+- 正式部署 `dpl_BsQBJntLRmUAoJo3iWUzdudAobek` 为 READY，source=git、target=production，分支及 SHA 均匹配。`prompt-lens.cc.cd` 已指向该部署。
+- staging/v2 远端仍为 `4c18e50689e109ee118654216a6b416eb73846a7`，测试固定域名仍为 `dpl_8DCZWEc3NwBo1UDD2SC5nqa7hVD4`，未改变测试站版本。
+- 正式域名首页、独立定价页、条款、隐私、退款、登录页匿名 HTTP 全部 200，隐私正文含 Google Cloud Video Intelligence 披露，定价页内容存在；匿名管理员审核接口为 403。
+- 首次本机请求受沙箱代理限制，获只读联网执行权限后全部页面核验通过。没有创建订单、生成视频或修改线上词库；未使用 CLI 上传、手动提升或改动项目配置。
+- 这些结果只证明本次代码发布、公开页面与匿名权限正常；Google/Waffo 实际调用、主站管理员词库操作、付费交付以及 GitHub OAuth 仍需各自的实际验收证据。最终发布记录仅本地提交，不为文档重复触发主站构建。
