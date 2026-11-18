@@ -1,7 +1,7 @@
 # ADR 0071：支持删除误添加的违禁词并保留审计
 
 - 日期：2026-11-18
-- 状态：本地验证完成，测试站发布中。
+- 状态：本地验证与测试站 Git 发布完成；管理员线上点击验收待执行。
 - 关联：ADR 0069、0070。
 
 ## 背景
@@ -39,3 +39,10 @@
 - TypeScript、三个修改产品源码文件 ESLint、git diff --check 通过。
 - Node 24.13.0 生产构建通过，进程中使用不可用的隔离数据库地址。既有 ESLint 与 GitHub OAuth 凭据警告保持待办，不关闭功能绕过验证。
 - 无数据库结构或线上业务数据变更，未调用真实模型。正式域名发布前部署为 `dpl_BdMEywStff5ekZmV5Ff2kc2Yv87t`。
+
+## 发布核验
+
+- GitHub staging/v2 与本地功能提交均为 `4c18e50689e109ee118654216a6b416eb73846a7`。
+- 测试部署 `dpl_8DCZWEc3NwBo1UDD2SC5nqa7hVD4` 为 READY，source=git，分支及 SHA 一致；测试固定域名 `prompt-lens-v2-test.vercel.app` 已指向该部署。
+- 正式域名 `prompt-lens.cc.cd` 仍指向 `dpl_BdMEywStff5ekZmV5Ff2kc2Yv87t`，与发布前一致。未 CLI 上传、手动提升、修改 Vercel 配置或线上词库。
+- 本次验收证据为本地事务及接口测试、构建与域名绑定，尚未使用负责人线上管理员会话点击删除。发布记录仅补本地提交，不重复触发构建。
