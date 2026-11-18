@@ -35,6 +35,7 @@ export function GenerationTaskProgress({ variant, zh }: { variant: GenerationVar
   const title = variant.trackingStopped ? (zh ? "已停止跟踪，结果待核实" : "Tracking stopped; result unconfirmed")
     : variant.status === "queued" ? (zh ? "等待前序任务提交" : "Waiting for earlier submissions")
     : variant.status === "failed" ? (zh ? "生成未完成" : "Generation incomplete")
+    : variant.status === "review" && stage === "reviewing_output" ? (zh ? "输出内容审核待复核" : "Output awaiting safety review")
     : variant.status === "review" ? (zh ? "提交状态待核实" : "Submission unconfirmed")
       : interrupted ? (zh ? "状态同步中断" : "Status sync interrupted") : labels[stage][zh ? 0 : 1];
   return <div data-testid="generation-task-progress" className="mt-3 space-y-3 text-sm">
