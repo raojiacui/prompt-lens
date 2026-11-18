@@ -12,6 +12,7 @@ const labels: Record<GenerationStage, [string, string]> = {
   submitting: ["提交生成任务", "Submit generation"],
   queued: ["等待后台调度", "Waiting for dispatch"],
   generating: ["模型生成", "Model generation"],
+  reviewing_output: ["输出内容安全审核", "Output safety review"],
   complete: ["结果就绪", "Result ready"],
 };
 

@@ -13,6 +13,7 @@ import { getModelById, routeModel, type ModelRegistryEntry } from "@/lib/ai/mode
 import { resolveApiKeyForFeature } from "@/lib/billing/platform-access";
 import { generationKeyFingerprint } from "@/lib/billing/generation-key";
 import { kieErrorResponse } from "@/lib/reference-video/kie-veo";
+import { publicVideoRecord } from "@/lib/safety/video-output-delivery";
 
 const VIDEO_GENERATE_LIMIT = { limit: 3, windowMs: 60000 };
 const MIN_VIDEO_DURATION = 4;
@@ -161,7 +162,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: "Record not found" }, { status: 404 });
       }
 
-      return NextResponse.json({ record });
+      return NextResponse.json({ record: publicVideoRecord(record) });
     }
 
     const records = await db.query.videoGeneration.findMany({
@@ -170,7 +171,7 @@ export async function GET(request: NextRequest) {
       limit: 20,
     });
 
-    return NextResponse.json({ records });
+    return NextResponse.json({ records: records.map(publicVideoRecord) });
   } catch (error) {
     console.error("[video-generate/list] Error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
