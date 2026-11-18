@@ -340,8 +340,11 @@ export function ReferenceVideoComposer({
     return () => { cancelled = true; };
   }, [activeProvider]);
   useEffect(() => {
-    if (!models.some(item => item.id === model)) setModel(models[0]?.id || defaultGenerationModelId);
-  }, [models, model]);
+    if (!models.some(item => item.id === model)) {
+      const preferred = activeProvider === "infistar" ? "doubao-seedance-2.0-mini" : defaultGenerationModelId;
+      setModel(models.find(item => item.id === preferred)?.id || models[0]?.id || preferred);
+    }
+  }, [models, model, activeProvider]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submissionInFlight = useRef(false);
   const commercialBatchRef = useRef<GenerationSubmissionBatch | null>(null);
@@ -829,20 +832,18 @@ export function ReferenceVideoComposer({
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings) as Partial<{
-          model: ModelId;
           aspectRatio: AspectRatio;
           quality: Quality;
           duration: Duration;
           outputCount: OutputCount;
         }>;
-        if (!initialModel && parsed.model) setModel(models.some(item => item.id === generationChoiceId(parsed.model!)) ? generationChoiceId(parsed.model) : defaultGenerationModelId);
         if (aspectRatioOptions.some(option => option.value === parsed.aspectRatio)) setAspectRatio(parsed.aspectRatio!);
         if (parsed.quality) setQuality(parsed.quality);
         if (parsed.duration) setDuration(parsed.duration);
         if (parsed.outputCount) setOutputCount(parsed.outputCount);
       } catch {}
     }
-  }, [storageKey, initialModel]);
+  }, [storageKey]);
 
   useEffect(() => {
     if (hasStartedGeneration) window.localStorage.setItem(`reference-generation-${storageKey}`, JSON.stringify(variants));
@@ -1341,7 +1342,7 @@ export function ReferenceVideoComposer({
   function persistSettings() {
     window.localStorage.setItem(
       `reference-settings-${storageKey}`,
-      JSON.stringify({ model, aspectRatio, quality, duration, outputCount }),
+      JSON.stringify({ aspectRatio, quality, duration, outputCount }),
     );
     window.localStorage.setItem(`reference-prompt-${storageKey}`, prompt);
     window.localStorage.setItem(
@@ -1352,7 +1353,7 @@ export function ReferenceVideoComposer({
 
   useEffect(() => {
     persistSettings();
-  }, [model, aspectRatio, quality, duration, outputCount, prompt, assets]);
+  }, [aspectRatio, quality, duration, outputCount, prompt, assets]);
 
   return (
     <main className="min-h-[calc(100vh-5rem)] bg-background text-foreground">
