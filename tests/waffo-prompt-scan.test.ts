@@ -74,7 +74,8 @@ describe("Waffo AIGC text prompt scan", () => {
     try {
       await expect(assertPromptAllowed("a fictional orange cat", { fetcher })).resolves.toBeUndefined();
       expect(fetcher).toHaveBeenCalledTimes(1);
-      expect(JSON.parse(String(fetcher.mock.calls[0][1]?.body))).toEqual({
+      const [, request] = fetcher.mock.calls[0] as unknown as [string, RequestInit];
+      expect(JSON.parse(String(request.body))).toEqual({
         prompt: "a fictional orange cat", semantic: "enforce",
       });
       expect(log).toHaveBeenCalledWith("[prompt-scan] verdict", expect.objectContaining({
