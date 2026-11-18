@@ -1,5 +1,7 @@
 import { createProviderVideo, getProviderVideoStatus } from "@/lib/ai/video-client";
 import { infistarVideoFailureMessage } from "@/lib/ai/adapters/infistar-video";
+import { publicVideoRecord, reconcileVideoDelivery } from "@/lib/safety/video-output-delivery";
+import { requiresVideoOutputModeration } from "@/lib/safety/video-output-moderation";
 import { isUserProvider, type UserProvider } from "@/lib/ai/providers";
 import { NextResponse } from "next/server";
 import { generationSubmissionResponse } from "@/lib/reference-video/generation-submission-response";
@@ -271,19 +273,27 @@ export async function GET(request: Request) {
     if (jobId) {
       const job = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.id, jobId), eq(videoGeneration.userId, auth.user.id)) });
       if (!job) return NextResponse.json({ error: "Generation job not found" }, { status: 404 });
-      return NextResponse.json({ job });
+      return NextResponse.json({ job: publicVideoRecord(job) });
     }
 
     if (!taskId) return NextResponse.json({ error: "Missing taskId" }, { status: 400 });
 
     const job = await db.query.videoGeneration.findFirst({ where: and(eq(videoGeneration.taskId, taskId), eq(videoGeneration.userId, auth.user.id)) });
     if (!job) return NextResponse.json({ error: "Generation job not found" }, { status: 404 });
-    if (job.status === "completed" && job.videoUrl) return NextResponse.json({ provider: job.provider, providerTaskId: taskId, status: "success", videoUrl: job.videoUrl });
+    if (job.status === "completed" && job.videoUrl) {
+      const visible = publicVideoRecord(job);
+      if (visible.videoUrl) return NextResponse.json({ provider: job.provider, providerTaskId: taskId, status: "success", videoUrl: visible.videoUrl });
+    }
+    if (requiresVideoOutputModeration() && job.status === "review") return NextResponse.json({ provider: job.provider, providerTaskId: taskId, status: "review", stage: "reviewing_output", error: job.error || "视频需要进一步输出内容审核。" });
     if (job.status === "failed") return NextResponse.json({ provider: job.provider, providerTaskId: taskId, status: "fail", error: job.provider === "infistar" ? infistarVideoFailureMessage(job.rawResponse) : (job.error || "视频生成失败，请查看生成历史或服务商后台。") });
     const provider = isUserProvider(job.provider) ? job.provider : "kie";
     const apiKey = await resolveGenerationStatusKey(auth.user.id, job.rawResponse, provider);
     if (!apiKey) return NextResponse.json({ error: "The original provider key is required to query this task", code: "KIE_BYOK_REQUIRED" }, { status: 402 });
     const status = await getProviderVideoStatus(provider, taskId, job.model || undefined, apiKey);
+    if (requiresVideoOutputModeration()) {
+      const delivery = await reconcileVideoDelivery(job, status);
+      return NextResponse.json({ provider, providerTaskId: status.taskId, ...delivery });
+    }
     const normalizedStatus = status.state === "success" ? "completed" : status.state === "fail" ? "failed" : "processing";
 
     if (job) {
