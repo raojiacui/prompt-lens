@@ -1,7 +1,7 @@
 # ADR 0072：将已测试的视频审核与动态词库发布至主站
 
 - 日期：2026-11-18
-- 状态：负责人已授权正式站同步；本地验证与正式库迁移完成，等待主站审核凭据后发布。
+- 状态：负责人已授权正式站同步；本地验证、正式库迁移与审核凭据存在性核验完成，Git 发布核验中。
 - 关联：ADR 0069、0070、0071。
 
 ## 背景
@@ -40,3 +40,9 @@
 - 数据库 advisor 返回全部 40 张服务端表无浏览器策略的 INFO，符合现有架构；另有既有 public 扩展 WARN，未因审核迁移添加或移动扩展。说明：https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public 。
 - 主站 Vercel 实读仍缺 Google 和 Waffo 审核变量，已通知负责人通过控制台设置；未推送正式发布，当前正式域名部署保持不变。配置存在性、Git 发布与域名 SHA 核验待完成。
 - 负责人已口头确认原测试站测试通过；这不是本轮正式环境真实视频、付费交付或所有登录提供商的端到端证据。部署 READY 与配置存在不计作完整业务验收。
+
+## 凭据就绪后的发布准备
+
+- 负责人回复“好了”，Vercel 正式项目 Production 实读存在四项 sensitive 变量：Google 服务账号 JSON、GCS 桶、Waffo merchant ID、private key；未读取或输出其值。受管项目强制开启提示词审核，不依赖额外启用标记。
+- 远端正式发布分支仍为 `82a4d9d8b47269d673315f1242daae991e59e32d`，待发布合并提交 `3e9ddbf` 包含该提交，未发现并发代码变更。
+- 本次推送前正式域名为 `dpl_4eNDZwYwNEQ8jPwAeu8dxCPsKGVQ`，测试域名为 `dpl_8DCZWEc3NwBo1UDD2SC5nqa7hVD4`。只向正式项目既有 Git 发布分支推送，测试分支不变。
