@@ -57,7 +57,14 @@ type Bundle = {
 };
 
 type ModelOption = { id: string; displayName: string; family: string; provider: string; providerModelId: string; enabled: boolean; experimental?: boolean };
-const analysisModels: ModelOption[] = listModels("analysis").filter(model => model.enabled);
+const analysisModels: ModelOption[] = listModels("analysis")
+  .filter(model => model.enabled)
+  // Prioritize DeepSeek in the analysis dropdown only; keep other models
+  // in their existing order and leave the selected/default model unchanged.
+  .sort((a, b) =>
+    Number(b.id === "analysis-deepseek-v4-1-flash") -
+    Number(a.id === "analysis-deepseek-v4-1-flash")
+  );
 type ModelMode = "auto" | "manual";
 type ModelPriority = "fast" | "balanced" | "best_quality" | "lowest_cost";
 type AnalysisProgressPhase = "upload" | "project" | "analysis" | "complete";
