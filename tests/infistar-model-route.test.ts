@@ -21,12 +21,26 @@ it("keeps verified auto-group models visible even when the key catalog omits the
   expect(response.status).toBe(200);
   expect(body.models.map((model: { providerModelId: string }) => model.providerModelId)).toContain("kling-v3");
   expect(mocks.credential).toHaveBeenCalledWith("owner", "infistar");
+  expect(mocks.catalog).not.toHaveBeenCalled();
+});
+
+it("keeps video choices available if upstream /models returns 502", async () => {
+  mocks.catalog.mockRejectedValue(new Error("gateway 502"));
+  const res = await GET(request());
+  expect(res.status).toBe(200);
+  expect(mocks.catalog).not.toHaveBeenCalled();
+});
+
+it("preserves catalog checks for non-video models", async () => {
+  mocks.catalog.mockRejectedValue(new Error("gateway 502"));
+  const res = await GET(new NextRequest("https://local.example/api/models?provider=infistar&category=analysis"));
+  expect(res.status).toBe(502);
   expect(mocks.catalog).toHaveBeenCalledWith("catalog-fixture");
 });
 
-it("does not expose a configured catalog as a successful key check when credentials fail", async () => {
-  mocks.catalog.mockRejectedValue(new Error("Invalid key"));
-  expect((await GET(request())).status).toBe(502);
+it("still requires a saved key to list video models", async () => {
+  mocks.credential.mockResolvedValue(null);
+  expect((await GET(request())).status).toBe(400);
 });
 
 it("requires authentication before reading the saved key", async () => {

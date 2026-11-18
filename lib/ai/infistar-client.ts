@@ -36,10 +36,13 @@ export async function listInfistarModels(apiKey: string, options: { refresh?: bo
 }
 
 export async function assertInfistarModel(apiKey: string, modelId: string) {
+  // The allowlisted video models are verified against the generation endpoint,
+  // and some auto-group IDs never appear in the /models catalog. Avoid making
+  // a flaky catalog lookup a prerequisite for every video submission.
+  // POST /videos still enforces API key permissions and credit limits.
+  if (infistarModels.some(model => model.enabled && model.providerModelId === modelId)) return;
   const listed = (await listInfistarModels(apiKey)).some(model => model.id === modelId);
-  // Auto-group routing can accept verified video IDs omitted from /models.
-  const configuredVideo = infistarModels.some(model => model.enabled && model.providerModelId === modelId);
-  if (!listed && !configuredVideo) {
+  if (!listed) {
     throw new InfistarRequestError(`Infistar 当前 Key 无法调用 ${modelId}，请检查令牌分组或选择可用模型。`, undefined, "not_sent");
   }
 }
@@ -54,7 +57,13 @@ export async function infistarJson(path: string, apiKey: string, body?: unknown,
     });
   } catch (error) { throw new InfistarRequestError("Infistar 请求中断，请先核对任务状态再重试。", undefined, body === undefined ? "not_sent" : "unknown", error); }
   const payload = await response.json().catch(() => null);
-  if (!response.ok || payload?.error) {
+  // A failed video task includes an error describing the generation failure.
+  // Accept it only for a GET of that exact task, never for submission/API errors.
+  const task = payload?.data && !Array.isArray(payload.data) ? payload.data : payload;
+  const failedVideoTask = body === undefined && /^\/videos\/[^/]+$/.test(path)
+    && typeof task?.id === "string" && path === `/videos/${encodeURIComponent(task.id)}`
+    && task.status === "failed";
+  if (!response.ok || (payload?.error && !failedVideoTask)) {
     // Do not echo upstream response bodies: they can contain request details and credentials.
     throw new InfistarRequestError(`Infistar 请求失败 (${response.status})，请检查模型、参数、Key 权限及余额。`, response.status, response.status >= 500 ? "unknown" : "confirmed_failure");
   }

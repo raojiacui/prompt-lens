@@ -7,12 +7,35 @@ import { readInfistarMedia } from "../infistar-media";
 import { assertReferenceMediaAccess, type ReferenceMediaContext } from "../reference-media-access";
 import type { KieVideoGenerationRequest, KieVeoStatus } from "@/lib/reference-video/kie-veo";
 
+/** Return a bounded, user-safe explanation for task failures.
+ * Never forward arbitrary upstream error messages: they may contain user prompts
+ * or internal provider details. The provider's refund state is informational,
+ * not a guarantee of an account balance update.
+ */
+export function infistarVideoFailureMessage(raw: unknown): string {
+  const envelope = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : {};
+  const nested = envelope.data && typeof envelope.data === "object" && !Array.isArray(envelope.data)
+    ? envelope.data as Record<string, unknown> : envelope;
+  const failure = nested.error && typeof nested.error === "object" && !Array.isArray(nested.error)
+    ? nested.error as Record<string, unknown> : {};
+  const detail = typeof failure.message === "string" ? failure.message : "";
+  const metadata = nested.metadata && typeof nested.metadata === "object" && !Array.isArray(nested.metadata)
+    ? nested.metadata as Record<string, unknown> : {};
+  const refunded = metadata.billing_status === "REFUNDED";
+  const refundNote = refunded ? " 服务商任务状态显示已退款，可在 Infistar 后台核对。" : "";
+
+  if (/OutputVideoSensitiveContentDetected|copyright restrictions/i.test(detail)) {
+    return "Infistar 判定生成结果可能涉及版权限制，已终止此任务。可尝试改用原创人物、场景和素材。" + refundNote;
+  }
+  return "Infistar 视频生成失败，请到服务商后台查看任务原因。" + refundNote;
+}
+
 export function buildInfistarVideoPayload(input: KieVideoGenerationRequest) {
   const modelId = input.model || "doubao-seedance-2.0-mini";
   const model = getModelById(modelId);
   if (!model || model.provider !== "infistar" || !model.enabled) throw new InfistarRequestError("请选择 Infistar 支持的视频模型。", undefined, "not_sent");
   const images = [...new Set([...(input.imageUrls || []), input.referenceImageUrl].filter((url): url is string => Boolean(url)))];
-  if (input.referenceVideoUrl && !model.capabilities.includes("reference_video")) throw new InfistarRequestError("当前型号不支持视频输入，请选择 MiniMax H3。", undefined, "not_sent");
+  if (input.referenceVideoUrl && !model.capabilities.includes("reference_video")) throw new InfistarRequestError("当前 Infistar 可选模型暂不支持参考视频输入。", undefined, "not_sent");
   if (input.referenceVideoUrl && images.length) throw new InfistarRequestError("Infistar 当前文件接口一次接收一个参考素材，请保留参考视频或图片。", undefined, "not_sent");
   if (images.length > 1) throw new InfistarRequestError("Infistar 当前已核实的图生视频接口只接收一张参考图。", undefined, "not_sent");
   if (images.length && !model.capabilities.includes("reference_image")) throw new InfistarRequestError("当前型号不支持参考图片。", undefined, "not_sent");
@@ -73,5 +96,5 @@ export async function getInfistarVideoStatus(taskId: string, apiKey: string): Pr
     await db.insert(mediaCleanupJobs).values({ storageKey, nextAttemptAt: new Date(Date.now() + 7 * 86400000) });
     videoUrl = await uploadToR2(Buffer.concat(chunks), storageKey, "video/mp4");
   }
-  return { taskId, state, videoUrl, error: state === "fail" ? "Infistar 视频生成失败，请到服务商后台查看原因。" : undefined, raw };
+  return { taskId, state, videoUrl, error: state === "fail" ? infistarVideoFailureMessage(raw) : undefined, raw };
 }

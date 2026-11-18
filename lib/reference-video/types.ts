@@ -26,8 +26,11 @@ export type GenerationVariant = {
   videoUrl?: string;
   imageUrl?: string;
   providerTaskId?: string;
+  trackingStopped?: boolean;
+  syncFailures?: number;
   error?: string;
   notes: string;
+  lifecycle?: import("./generation-progress").GenerationProgress;
 };
 
 export type ReferenceVideoProject = {
