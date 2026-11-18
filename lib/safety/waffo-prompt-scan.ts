@@ -146,7 +146,7 @@ export async function assertPromptAllowed(prompt: string, options: {
   });
   // Do not label degraded/disabled semantic enforcement as a passed check.
   if (reasonCode === "service_degraded" ||
-    (semantic === "enforce" && (semanticStatus === "disabled" || semanticStatus === "provider_error"))) {
+    (semantic === "enforce" && semanticStatus !== "scored")) {
     throw new PromptModerationError("PROMPT_REVIEW_REQUIRED");
   }
   if (action === "allow") return;

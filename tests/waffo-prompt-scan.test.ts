@@ -87,7 +87,7 @@ describe("Waffo AIGC text prompt scan", () => {
   it("never submits when enforced semantic scoring is explicitly unavailable", async () => {
     withCredentials();
     process.env.VERCEL_PROJECT_ID = "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI";
-    for (const semanticStatus of ["disabled", "provider_error"]) {
+    for (const semanticStatus of ["disabled", "provider_error", "shadow_scored", undefined]) {
       const fetcher = vi.fn(async () => Response.json({ data: {
         action: "allow", reasonCode: "allowed", semanticStatus,
       } }));
