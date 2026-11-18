@@ -18,7 +18,7 @@ export function SiteFooter() {
         { label: t("footerAnalysis"), href: "/#video-analysis" },
         { label: t("footerRewrite"), href: "/#prompt-rewrite" },
         { label: t("footerGeneration"), href: "/#video-generation" },
-        { label: t("footerPricing"), href: "/#pricing" },
+        { label: t("footerPricing"), href: "/pricing" },
       ],
     },
     {

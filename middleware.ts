@@ -17,7 +17,7 @@ const SERVER_AUTH_PATHS = [
 ];
 
 // Public documents must remain readable before account creation, including on the invited test site.
-const PUBLIC_POLICY_PATHS = new Set(["/terms", "/privacy", "/refund"]);
+const PUBLIC_POLICY_PATHS = new Set(["/terms", "/privacy", "/refund", "/pricing"]);
 
 function isServerAuthPath(pathname: string) {
   return SERVER_AUTH_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));

@@ -113,7 +113,7 @@ export function SiteHeader({
   const navItems = [
     { href: "/#features", label: t("navFeatures") },
     { href: "/samples", label: t("navSamples") },
-    { href: "/#pricing", label: t("navPricing") },
+    { href: "/pricing", label: t("navPricing") },
     { href: "/guide", label: t("navDocs") },
   ];
 
