@@ -40,7 +40,7 @@ beforeEach(async () => {
   vi.stubEnv("WAFFO_STORE_ID", "STO_test"); vi.stubEnv("WAFFO_MERCHANT_ID", "MER_test"); vi.stubEnv("WAFFO_PRIVATE_KEY", "fixture");
   vi.stubEnv("WAFFO_TEST_PRODUCT_V6_TRIAL_200", "PROD_test"); vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://test.example.com");
   vi.stubEnv("WAFFO_WEBHOOK_TEST_PUBLIC_KEY", keys.publicKey.export({ type: "spki", format: "pem" }).toString());
-  await client.exec("TRUNCATE payment_orders,commercial_wallets,commercial_ledger CASCADE;");
+  await client.exec("TRUNCATE payment_orders,commercial_wallets,commercial_ledger,commercial_lots CASCADE;");
   state.create.mockResolvedValue({ sessionId: "CHK_test", checkoutUrl: "https://pancake.waffo.ai/test#token=secret", expiresAt: new Date(Date.now() + 86400000).toISOString() });
   state.token.mockResolvedValue({ token: "customer-secret" });
   state.session.mockResolvedValue({ user: { id: userId, email: "test@example.com" } });
@@ -76,6 +76,13 @@ it("persists server-owned price before checkout, reuses requests, and excludes c
   expect(saved.checkoutUrl).not.toContain("secret");
   expect(state.create.mock.calls[1][0]).toMatchObject({ buyerIdentity: userId, priceSnapshot: { amount: "34.90" } });
   expect(state.create.mock.calls[0][1]).toEqual(state.create.mock.calls[1][1]);
+});
+it("fulfills an earlier pricing snapshot without applying the current catalog allowances", async () => {
+  const saved = await order();
+  await database.update(schema.paymentOrders).set({ metadata: { ...saved.metadata as Record<string, unknown>, pricingVersion: "historical-v6", linkImports: 7 } }).where(eq(schema.paymentOrders.id, saved.id));
+  await applyWaffoEvent(event(saved));
+  const [grant] = await database.select().from(schema.commercialLedger);
+  expect(grant.metadata).toMatchObject({ linkImports: 7 });
 });
 it("grants exactly once for signed duplicates and separate delivery IDs", async () => {
   const saved = await order(), paid = event(saved);

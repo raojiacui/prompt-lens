@@ -17,7 +17,7 @@ export function waffoSnapshot(order: WaffoOrder): WaffoSnapshot {
   const value = order.metadata as Partial<WaffoSnapshot>;
   const config = waffoPaymentConfig();
   if (order.provider !== "waffo" || value.method !== "waffo" || value.environment !== config.environment || value.storeId !== config.storeId ||
-      !value.productId || !/^PROD_[a-zA-Z0-9]+$/.test(value.productId) || value.pricingVersion !== PRICING_VERSION ||
+      !value.productId || !/^PROD_[a-zA-Z0-9]+$/.test(value.productId) || typeof value.pricingVersion !== "string" || !value.pricingVersion ||
       !Number.isSafeInteger(value.rewrites) || Number(value.rewrites) < 0 || !Number.isSafeInteger(value.linkImports) || Number(value.linkImports) < 0 ||
       !value.buyerEmail || order.currency !== "cny") throw Error("WAFFO_ORDER_SCOPE_MISMATCH");
   return value as WaffoSnapshot;
