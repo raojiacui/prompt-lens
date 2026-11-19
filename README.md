@@ -9,7 +9,7 @@ PromptLens V2 是一个 AI 视频创作工作流工具，将参考视频或图�
 
 <table>
   <tr>
-    <td width="260" align="center">
+    <td width="260" align="left">
       <a href="https://www.infistar.cc/register?aff=PROMPTLENS&amp;ref_source=link"><img src="public/partners/infistar-brand-dark.png" alt="无限星河 Infistar" width="260" /></a>
     </td>
     <td>
@@ -20,7 +20,7 @@ PromptLens V2 是一个 AI 视频创作工作流工具，将参考视频或图�
     </td>
   </tr>
   <tr>
-    <td width="260" align="center">
+    <td width="260" align="left">
       <a href="https://kie.ai?ref=082d122f93c37c64ad05646afa7280bf"><img src="public/partners/kie-brand-dark.png" alt="KIE AI" width="260" /></a>
     </td>
     <td>
