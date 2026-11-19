@@ -11,7 +11,7 @@ import { SUPPORT_WECHAT } from "@/lib/support-contact";
 import { refreshWalletBalance, useWalletBalance } from "@/lib/billing/use-wallet-balance";
 import { formatPaymentAmount, paymentCurrency } from "@/lib/payments/currencies";
 
-type Order = { id: string; provider?: string; currency?: string; packageId: string; packageName: string; amountCents: number; status: string; createdAt: string };
+type Order = { id: string; provider?: string; currency?: string; packageId: string; packageName: string; amountCents: number; paidTotalMinor?: number | null; status: string; createdAt: string };
 type Account = {
   wallet: { credits: number; rewrites: number; heldCredits: number; heldRewrites: number; frozen: boolean };
   orders: Order[];
@@ -85,7 +85,7 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
       {account.orders.map((order) => {
         const refundInfo = account.refunds.find((r) => r.orderId === order.id);
         return <div key={order.id} className="flex flex-wrap items-center justify-between gap-4 border-b border-border py-5">
-          <div className="min-w-0"><p className="font-medium">{order.packageName} · {formatPaymentAmount(order.amountCents, order.currency || "CNY", zh ? "zh-CN" : "en-US")}</p><p className="mt-1 text-sm text-muted-foreground">{new Date(order.createdAt).toLocaleString(zh ? "zh-CN" : "en-US")}</p><p className="mt-1 break-all text-xs text-muted-foreground">{order.id}</p></div>
+          <div className="min-w-0"><p className="font-medium">{order.packageName} · {formatPaymentAmount(order.paidTotalMinor ?? order.amountCents, order.currency || "CNY", zh ? "zh-CN" : "en-US")}</p><p className="mt-1 text-sm text-muted-foreground">{new Date(order.createdAt).toLocaleString(zh ? "zh-CN" : "en-US")}</p><p className="mt-1 break-all text-xs text-muted-foreground">{order.id}</p></div>
           <div className="flex flex-wrap items-center gap-3 text-sm"><span>{status(refundInfo?.state || order.status)}</span>
             {order.status === "pending" && <button className="min-h-10 rounded-lg border border-border px-3" onClick={() => setSelected(order)}>{zh ? "查看订单" : "View order"}</button>}
             {refundInfo && <button disabled={busy} className="min-h-10 rounded-lg border border-border px-3" onClick={() => openRefund(order)}>{zh ? "查看工单" : "View ticket"}</button>}
@@ -100,14 +100,14 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
             if (order) openRefund(order);
           }} className="mt-2 min-h-11 w-full max-w-lg rounded-lg border border-border bg-background px-3 disabled:opacity-50">
             <option value="">{zh ? "选择订单并填写工单" : "Select an order to fill out your ticket"}</option>
-            {refundableOrders.map(order => <option key={order.id} value={order.id}>{order.packageName} · {formatPaymentAmount(order.amountCents, order.currency || "CNY", zh ? "zh-CN" : "en-US")} · {order.id.slice(-8)}{account.refunds.some(refund => refund.orderId === order.id) ? (zh ? " · 已有工单" : " · Existing ticket") : ""}</option>)}
+            {refundableOrders.map(order => <option key={order.id} value={order.id}>{order.packageName} · {formatPaymentAmount(order.paidTotalMinor ?? order.amountCents, order.currency || "CNY", zh ? "zh-CN" : "en-US")} · {order.id.slice(-8)}{account.refunds.some(refund => refund.orderId === order.id) ? (zh ? " · 已有工单" : " · Existing ticket") : ""}</option>)}
           </select>
         </label>
         {!refundableOrders.length && <p className="mt-3 text-sm text-muted-foreground">{zh ? "暂无已付款订单或退款工单，其他问题请联系微信客服。" : "No paid orders or refund tickets yet. Contact WeChat support for other questions."}</p>}
       </section>
       {refundOrder && <AccountActionDialog title={existingRefund ? (zh ? "退款工单详情" : "Refund ticket details") : (zh ? "提交退款申请" : "Submit a refund request")} busy={busy} onClose={() => { setRefundOrder(null); setError(""); }}>
         <form aria-label={zh ? "退款申请表单" : "Refund request form"} onSubmit={(event) => { event.preventDefault(); void refund(); }} className="space-y-4">
-        <p className="font-medium">{refundOrder.packageName} · {formatPaymentAmount(refundOrder.amountCents, refundOrder.currency || "CNY", zh ? "zh-CN" : "en-US")}</p>
+        <p className="font-medium">{refundOrder.packageName} · {formatPaymentAmount(refundOrder.paidTotalMinor ?? refundOrder.amountCents, refundOrder.currency || "CNY", zh ? "zh-CN" : "en-US")}</p>
         {existingRefund && <p role="status" className="text-sm">{status(existingRefund.state)} · {canEditRefund ? (zh ? "可以修改原因和联系方式，保存后仍是同一张工单。" : "You can edit the reason and contact details on this ticket.") : existingRefund.state === "succeeded" ? (zh ? "退款已完成，以下为原申请记录。" : "The refund is complete. Your original request is shown below.") : (zh ? "如需补充信息，请联系微信客服并提供订单号。" : "Contact WeChat support with your order ID to add information.")}</p>}
         {!existingRefund && <p className="text-sm text-muted-foreground">{zh ? `请填写表单后添加客服微信 ${SUPPORT_WECHAT}，提供订单号并沟通退款原因。提交申请不会自动退款；客服审核同意后才办理。审核期间该套餐权益暂停使用，未通过则恢复。已有消耗或处理中任务的订单请直接联系客服核对。` : `Complete the form, then add support on WeChat at ${SUPPORT_WECHAT} with your order ID and reason. Submitting does not issue a refund: support approval is required. Package benefits are paused during review and restored if declined. Contact support directly for used packages or pending tasks.`}</p>}
         <p className="break-all text-sm">{zh ? "订单号：" : "Order ID: "}{refundOrder.id}</p>

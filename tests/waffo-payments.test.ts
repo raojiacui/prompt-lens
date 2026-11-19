@@ -22,6 +22,7 @@ import { POST as webhook } from "@/app/api/payments/waffo/webhook/route";
 import { requestCommercialRefund, reviewCommercialRefund, reconcileCommercialRefund } from "@/lib/payments/commercial-refunds";
 import { GET as checkoutConfig, POST as checkoutPost } from "@/app/api/payments/waffo/checkout/route";
 import { paymentDecimal } from "@/lib/payments/currencies";
+import { GET as accountGet } from "@/app/api/payments/account/route";
 
 const client = new PGlite();
 const database = drizzle(client, { schema });
@@ -252,11 +253,17 @@ it.each(["missing", "expired", "reversed", "invalid"])("creates no foreign order
 it("refunds JPY in whole yen and confirms the actual original-currency amount", async () => {
   mockRate("JPY", "21.5");
   await createWaffoOrder(userId, "test@example.com", "v6_trial_200", randomUUID(), "JPY");
-  const saved = (await database.select().from(schema.paymentOrders))[0]; await applyWaffoEvent(event(saved));
+  const saved = (await database.select().from(schema.paymentOrders))[0];
+  const payment = event(saved);
+  payment.data.listPrice = { subtotal: "750", taxAmount: "75", total: "825" };
+  payment.data.chargedAmount = "825";
+  await applyWaffoEvent(payment);
+  const account = await (await accountGet(new NextRequest("https://test.example.com/api/payments/account"))).json();
+  expect(account.orders[0]).toMatchObject({ currency: "jpy", amountCents: 750, paidTotalMinor: 825 });
   const refund = await requestCommercialRefund(userId, saved.id, "不再需要");
   await reviewCommercialRefund("admin", refund.id, "approve", "核查完成");
-  expect(state.refund.mock.calls[0][0].requestedAmount).toEqual({ currency: "JPY", amount: "750" });
-  state.query.mockResolvedValue({ data: { refunds: [{ id: "REF_yen", status: "succeeded", orderMerchantExternalId: saved.providerOrderId, refundTicketMerchantExternalId: refund.id, pspAmountDetails: { currency: "JPY", amount: "750" } }] } });
+  expect(state.refund.mock.calls[0][0].requestedAmount).toEqual({ currency: "JPY", amount: "825" });
+  state.query.mockResolvedValue({ data: { refunds: [{ id: "REF_yen", status: "succeeded", orderMerchantExternalId: saved.providerOrderId, refundTicketMerchantExternalId: refund.id, pspAmountDetails: { currency: "JPY", amount: "825" } }] } });
   expect((await reconcileCommercialRefund("admin", refund.id)).state).toBe("succeeded");
   expect((await database.select().from(schema.commercialWallets))[0].credits).toBe(0);
 });
