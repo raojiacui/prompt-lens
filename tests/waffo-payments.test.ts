@@ -21,6 +21,7 @@ import { reconcileWaffoOrder } from "@/lib/payments/waffo-reconciliation";
 import { POST as webhook } from "@/app/api/payments/waffo/webhook/route";
 import { requestCommercialRefund, reviewCommercialRefund, reconcileCommercialRefund } from "@/lib/payments/commercial-refunds";
 import { GET as checkoutConfig, POST as checkoutPost } from "@/app/api/payments/waffo/checkout/route";
+import { paymentDecimal } from "@/lib/payments/currencies";
 
 const client = new PGlite();
 const database = drizzle(client, { schema });
@@ -37,7 +38,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   vi.stubEnv("WAFFO_PAYMENTS_ENABLED", "true"); vi.stubEnv("WAFFO_PAYMENT_ENVIRONMENT", "test");
   vi.stubEnv("VERCEL_PROJECT_ID", "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI");
-  vi.stubEnv("WAFFO_STORE_ID", "STO_test"); vi.stubEnv("WAFFO_MERCHANT_ID", "MER_test"); vi.stubEnv("WAFFO_PRIVATE_KEY", "fixture");
+  vi.stubEnv("WAFFO_STORE_ID", "STO_test"); vi.stubEnv("WAFFO_MERCHANT_ID", `MER_${randomUUID()}`); vi.stubEnv("WAFFO_PRIVATE_KEY", "fixture");
   vi.stubEnv("WAFFO_TEST_PRODUCT_V6_TRIAL_200", "PROD_test"); vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://test.example.com");
   vi.stubEnv("WAFFO_WEBHOOK_TEST_PUBLIC_KEY", keys.publicKey.export({ type: "spki", format: "pem" }).toString());
   await client.exec("TRUNCATE payment_orders,commercial_wallets,commercial_ledger,commercial_lots CASCADE;");
@@ -52,13 +53,16 @@ async function order() {
   return (await database.select().from(schema.paymentOrders).where(eq(schema.paymentOrders.id, result.orderId)))[0];
 }
 function event(order: typeof schema.paymentOrders.$inferSelect, type = "order.completed"): WebhookEvent<WebhookEventData> {
+  const subtotal = paymentDecimal(order.amountCents, order.currency);
+  const tax = order.currency === "cny" ? "3.49" : "0";
+  const total = order.currency === "cny" ? "38.39" : subtotal;
   return { id: randomUUID(), eventId: randomUUID(), timestamp: new Date().toISOString(), eventType: type, storeId: "STO_test", storeName: "Test", mode: "test", data: {
-    orderId: "ORD_test", orderStatus: "completed", buyerEmail: "test@example.com", currency: "CNY", productName: "Test",
+    orderId: "ORD_test", orderStatus: "completed", buyerEmail: "test@example.com", currency: order.currency.toUpperCase(), productName: "Test",
     merchantProvidedBuyerIdentity: userId, orderMerchantExternalId: order.providerOrderId,
     orderMetadata: { localOrderId: order.id, productId: "PROD_test", packageId: order.packageId, storeId: "STO_test" },
-    paymentId: "PAY_test", paymentStatus: "succeeded", chargedAmount: "38.39", amount: "38.39", taxAmount: "3.49",
-    listPrice: { subtotal: "34.90", taxAmount: "3.49", total: "38.39" },
-    originalPayment: { subtotal: "34.90", taxAmount: "3.49", total: "38.39" }, refundStatus: "succeeded", refundedAmount: "38.39",
+    paymentId: "PAY_test", paymentStatus: "succeeded", chargedAmount: total, amount: total, taxAmount: tax,
+    listPrice: { subtotal, taxAmount: tax, total },
+    originalPayment: { subtotal, taxAmount: tax, total }, refundStatus: "succeeded", refundedAmount: total,
   } } as WebhookEvent<WebhookEventData>;
 }
 async function deliver(value: WebhookEvent<WebhookEventData>, signed = true) {
@@ -208,4 +212,51 @@ it("advertises only configured packages and enforces authentication, origin and 
   vi.stubEnv("WAFFO_PAYMENTS_ENABLED", "false");
   expect(await (await checkoutConfig()).json()).toMatchObject({ enabled: false, packages: [] });
   expect((await checkoutRequest(body)).status).toBe(409);
+});
+function mockRate(currency: string, rate: string) {
+  state.query.mockResolvedValue({ data: { rate: { fromCurrency: "CNY", toCurrency: currency, standardRate: rate, rateRefId: "RATE_fixture", expiryTime: new Date(Date.now() + 600_000).toISOString() } } });
+}
+it.each([["USD", "0.14", 489], ["JPY", "21.5", 750], ["HKD", "1.09", 3804], ["EUR", "0.13", 454], ["GBP", "0.11", 384]])("locks %s prices, enables card checkout and fulfills without converting the credit grant", async (currency, rate, amount) => {
+  mockRate(String(currency), String(rate));
+  const result = await createWaffoOrder(userId, "test@example.com", "v6_trial_200", randomUUID(), currency);
+  expect(result).toMatchObject({ currency, amountMinor: amount });
+  expect(state.create.mock.calls[0][0]).toMatchObject({ currency, includePaymentMethods: ["card", "applepay", "googlepay"], priceSnapshot: { amount: paymentDecimal(Number(amount), String(currency)) } });
+  const saved = (await database.select().from(schema.paymentOrders))[0];
+  expect(saved.metadata).toMatchObject({ priceQuote: { baseCnyCents: 3490, rate, rateRefId: "RATE_fixture", amountMinor: amount } });
+  const mismatched = event(saved); mismatched.data.currency = "CNY";
+  await expect(applyWaffoEvent(mismatched)).rejects.toThrow("WAFFO_ORDER_IDENTITY_MISMATCH");
+  await applyWaffoEvent(event(saved)); await applyWaffoEvent(event(saved));
+  expect((await database.select().from(schema.commercialWallets))[0].credits).toBe(200);
+});
+it("retries a foreign order with its original locked price and rejects changing currency under the same request", async () => {
+  mockRate("USD", "0.14"); const requestId = randomUUID();
+  await createWaffoOrder(userId, "test@example.com", "v6_trial_200", requestId, "USD");
+  state.query.mockRejectedValue(Error("rates unavailable"));
+  await createWaffoOrder(userId, "test@example.com", "v6_trial_200", requestId, "USD");
+  expect(state.query).toHaveBeenCalledTimes(1);
+  expect(state.create.mock.calls[1][0].priceSnapshot.amount).toBe("4.89");
+  await expect(createWaffoOrder(userId, "test@example.com", "v6_trial_200", requestId, "CNY")).rejects.toThrow("CHECKOUT_REPLAY_MISMATCH");
+});
+it.each(["missing", "expired", "reversed", "invalid"])("creates no foreign order with a %s rate", async kind => {
+  mockRate("USD", "0.14");
+  const fixture = await state.query(); state.query.mockClear();
+  if (kind === "missing") fixture.data.rate = null;
+  if (kind === "expired") fixture.data.rate.expiryTime = new Date(Date.now() - 1).toISOString();
+  if (kind === "reversed") fixture.data.rate.fromCurrency = "USD";
+  if (kind === "invalid") fixture.data.rate.standardRate = "NaN";
+  state.query.mockResolvedValue(fixture);
+  await expect(createWaffoOrder(userId, "test@example.com", "v6_trial_200", randomUUID(), "USD")).rejects.toThrow();
+  expect(await database.select().from(schema.paymentOrders)).toHaveLength(0);
+  expect(state.create).not.toHaveBeenCalled();
+});
+it("refunds JPY in whole yen and confirms the actual original-currency amount", async () => {
+  mockRate("JPY", "21.5");
+  await createWaffoOrder(userId, "test@example.com", "v6_trial_200", randomUUID(), "JPY");
+  const saved = (await database.select().from(schema.paymentOrders))[0]; await applyWaffoEvent(event(saved));
+  const refund = await requestCommercialRefund(userId, saved.id, "不再需要");
+  await reviewCommercialRefund("admin", refund.id, "approve", "核查完成");
+  expect(state.refund.mock.calls[0][0].requestedAmount).toEqual({ currency: "JPY", amount: "750" });
+  state.query.mockResolvedValue({ data: { refunds: [{ id: "REF_yen", status: "succeeded", orderMerchantExternalId: saved.providerOrderId, refundTicketMerchantExternalId: refund.id, pspAmountDetails: { currency: "JPY", amount: "750" } }] } });
+  expect((await reconcileCommercialRefund("admin", refund.id)).state).toBe("succeeded");
+  expect((await database.select().from(schema.commercialWallets))[0].credits).toBe(0);
 });

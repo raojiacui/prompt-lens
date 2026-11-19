@@ -3,19 +3,20 @@ import type { WebhookEvent, WebhookEventData, WebhookAmountBreakdown } from "@wa
 import { and, eq, sql } from "drizzle-orm";
 import { db, paymentOrders, waffoPaymentEvents, commercialLots, commercialWallets, commercialLedger, commercialRefunds, commercialReservations } from "@/lib/db";
 import { grantCommercialPurchase } from "@/lib/billing/commercial-wallet";
-import { moneyCents, waffoPaymentConfig } from "./waffo-client";
+import { waffoPaymentConfig } from "./waffo-client";
+import { paymentMinorUnits } from "./currencies";
 import { waffoSnapshot, type WaffoOrder } from "./waffo-orders";
 
 function assertAmount(order: WaffoOrder, price: WebhookAmountBreakdown | undefined) {
   if (!price) throw Error("WAFFO_MISSING_PRICE_EVIDENCE");
-  const total = moneyCents(price.total), tax = moneyCents(price.taxAmount);
-  const subtotal = price.subtotal === undefined ? total - tax : moneyCents(price.subtotal);
+  const total = paymentMinorUnits(price.total, order.currency), tax = paymentMinorUnits(price.taxAmount, order.currency);
+  const subtotal = price.subtotal === undefined ? total - tax : paymentMinorUnits(price.subtotal, order.currency);
   if (subtotal !== order.amountCents || total !== subtotal + tax || tax < 0) throw Error("WAFFO_AMOUNT_MISMATCH");
   return { total, tax };
 }
 function assertIdentity(order: WaffoOrder, event: WebhookEvent<WebhookEventData>) {
   const snapshot = waffoSnapshot(order), data = event.data;
-  if (data.currency !== "CNY" || data.merchantProvidedBuyerIdentity !== order.userId ||
+  if (data.currency !== order.currency.toUpperCase() || data.merchantProvidedBuyerIdentity !== order.userId ||
       data.orderMerchantExternalId !== order.providerOrderId || !/^ORD_[a-zA-Z0-9]+$/.test(data.orderId) ||
       (snapshot.providerOrderId && snapshot.providerOrderId !== data.orderId) ||
       data.orderMetadata?.localOrderId !== order.id || data.orderMetadata?.productId !== snapshot.productId ||
@@ -44,7 +45,7 @@ export async function applyWaffoEvent(event: WebhookEvent<WebhookEventData>) {
     if (event.eventType === "order.completed") {
       if (snapshot.paymentReview) throw Error("WAFFO_PAYMENT_REQUIRES_REVIEW");
       const price = assertAmount(order, data.listPrice);
-      if (data.paymentStatus !== "succeeded" || data.orderStatus !== "completed" || !data.paymentId || moneyCents(data.chargedAmount) !== price.total) throw Error("WAFFO_PAYMENT_UNCONFIRMED");
+      if (data.paymentStatus !== "succeeded" || data.orderStatus !== "completed" || !data.paymentId || paymentMinorUnits(data.chargedAmount, order.currency) !== price.total) throw Error("WAFFO_PAYMENT_UNCONFIRMED");
       if (order.status === "pending") {
         await grantCommercialPurchase(tx, { userId: order.userId, orderId: order.id, packageId: order.packageId, credits: order.credits, rewrites: snapshot.rewrites, linkImports: snapshot.linkImports });
         await tx.update(paymentOrders).set({ status: "paid", paidAt: new Date(), updatedAt: new Date(), metadata: { ...snapshot, providerOrderId: data.orderId, paymentId: data.paymentId, paidTotalCents: price.total, paidTaxCents: price.tax, wallet: "commercial_v6" } }).where(eq(paymentOrders.id, order.id));
@@ -54,7 +55,7 @@ export async function applyWaffoEvent(event: WebhookEvent<WebhookEventData>) {
       const price = assertAmount(order, data.originalPayment);
       if (!data.paymentId || (snapshot.paymentId && data.paymentId !== snapshot.paymentId)) throw Error("WAFFO_PAYMENT_ID_MISMATCH");
       if (event.eventType === "refund.succeeded") {
-        if (data.refundStatus !== "succeeded" || moneyCents(data.refundedAmount) !== price.total) {
+        if (data.refundStatus !== "succeeded" || paymentMinorUnits(data.refundedAmount, order.currency) !== price.total) {
           // Partial or ambiguous refunds require manual accounting; do not restore spendable funds.
           await tx.insert(commercialWallets).values({ userId: order.userId, frozen: true }).onConflictDoUpdate({ target: commercialWallets.userId, set: { frozen: true, updatedAt: new Date() } });
           await tx.update(paymentOrders).set({ metadata: sql`${paymentOrders.metadata} || '{"paymentReview":"partial_refund"}'::jsonb`, updatedAt: new Date() }).where(eq(paymentOrders.id, order.id));

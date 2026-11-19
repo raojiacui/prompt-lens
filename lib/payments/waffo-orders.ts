@@ -4,6 +4,8 @@ import { and, eq, sql } from "drizzle-orm";
 import { db, paymentOrders } from "@/lib/db";
 import { COMMERCIAL_PACKAGES, PRICING_VERSION } from "@/lib/billing/pricing-v6";
 import { assertWaffoCheckoutUrl, waffoClient, waffoPaymentConfig, waffoProductId, type WaffoEnvironment } from "./waffo-client";
+import { paymentCurrency, paymentDecimal } from "./currencies";
+import { waffoPrices, type WaffoPrice } from "./waffo-pricing";
 
 export type WaffoOrder = typeof paymentOrders.$inferSelect;
 export type WaffoSnapshot = {
@@ -12,6 +14,7 @@ export type WaffoSnapshot = {
   providerOrderId?: string; paymentId?: string; paidTotalCents?: number; paidTaxCents?: number;
   cancellationRequested?: boolean; checkoutExpiresAt?: string;
   paymentReview?: string;
+  priceQuote?: WaffoPrice;
 };
 export function waffoSnapshot(order: WaffoOrder): WaffoSnapshot {
   const value = order.metadata as Partial<WaffoSnapshot>;
@@ -19,34 +22,45 @@ export function waffoSnapshot(order: WaffoOrder): WaffoSnapshot {
   if (order.provider !== "waffo" || value.method !== "waffo" || value.environment !== config.environment || value.storeId !== config.storeId ||
       !value.productId || !/^PROD_[a-zA-Z0-9]+$/.test(value.productId) || typeof value.pricingVersion !== "string" || !value.pricingVersion ||
       !Number.isSafeInteger(value.rewrites) || Number(value.rewrites) < 0 || !Number.isSafeInteger(value.linkImports) || Number(value.linkImports) < 0 ||
-      !value.buyerEmail || order.currency !== "cny") throw Error("WAFFO_ORDER_SCOPE_MISMATCH");
+      !value.buyerEmail) throw Error("WAFFO_ORDER_SCOPE_MISMATCH");
+  paymentCurrency(order.currency);
+  if (value.priceQuote && (value.priceQuote.currency !== order.currency.toUpperCase() || value.priceQuote.amountMinor !== order.amountCents || value.priceQuote.packageId !== order.packageId)) throw Error("WAFFO_ORDER_PRICE_MISMATCH");
   return value as WaffoSnapshot;
 }
-export async function createWaffoOrder(userId: string, email: string, packageId: string, requestId: string) {
+export async function createWaffoOrder(userId: string, email: string, packageId: string, requestId: string, requestedCurrency: unknown = "CNY") {
   const config = waffoPaymentConfig();
+  const currency = paymentCurrency(requestedCurrency);
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)) throw Error("INVALID_REQUEST_ID");
   const pack = COMMERCIAL_PACKAGES.find(p => p.id === packageId);
   if (!pack) throw Error("UNKNOWN_PACKAGE");
   const productId = waffoProductId(packageId);
   const externalId = "pl_" + config.environment + "_" + createHash("sha256").update(`${userId}:${requestId.toLowerCase()}`).digest("hex").slice(0, 40);
+  const existing = await db.query.paymentOrders.findFirst({ where: and(eq(paymentOrders.provider, "waffo"), eq(paymentOrders.providerOrderId, externalId), eq(paymentOrders.userId, userId)) });
+  if (existing) {
+    if (existing.packageId !== packageId || existing.currency !== currency.toLowerCase()) throw Error("CHECKOUT_REPLAY_MISMATCH");
+    return openWaffoOrder(existing);
+  }
+  const priceQuote = (await waffoPrices(currency)).find(price => price.packageId === packageId)!;
   await db.insert(paymentOrders).values({
     userId, provider: "waffo", providerOrderId: externalId, packageId: pack.id, packageName: pack.name,
-    amountCents: pack.priceCents, credits: pack.credits, currency: "cny", status: "pending",
-    metadata: { method: "waffo", ...config, productId, buyerEmail: email, pricingVersion: PRICING_VERSION, rewrites: pack.rewrites, linkImports: pack.linkImports },
+    amountCents: priceQuote.amountMinor, credits: pack.credits, currency: currency.toLowerCase(), status: "pending",
+    metadata: { method: "waffo", ...config, productId, buyerEmail: email, pricingVersion: PRICING_VERSION, rewrites: pack.rewrites, linkImports: pack.linkImports, priceQuote },
   }).onConflictDoNothing({ target: [paymentOrders.provider, paymentOrders.providerOrderId] });
   const order = await db.query.paymentOrders.findFirst({ where: and(eq(paymentOrders.provider, "waffo"), eq(paymentOrders.providerOrderId, externalId), eq(paymentOrders.userId, userId)) });
-  if (!order || order.packageId !== packageId) throw Error("CHECKOUT_REPLAY_MISMATCH");
+  if (!order || order.packageId !== packageId || order.currency !== currency.toLowerCase()) throw Error("CHECKOUT_REPLAY_MISMATCH");
   return openWaffoOrder(order);
 }
 export async function openWaffoOrder(order: WaffoOrder) {
   const snapshot = waffoSnapshot(order);
-  if (order.status !== "pending") return { orderId: order.id, status: order.status, checkoutUrl: null };
+  const price = { amountMinor: order.amountCents, currency: paymentCurrency(order.currency) };
+  if (order.status !== "pending") return { orderId: order.id, status: order.status, checkoutUrl: null, ...price };
   if (snapshot.cancellationRequested || Date.now() - order.createdAt.getTime() > 86400_000) throw Error("WAFFO_ORDER_NOT_PAYABLE");
   const origin = new URL(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "");
   if (origin.protocol !== "https:" || origin.username || origin.password) throw Error("INVALID_SITE_URL");
   const result = await waffoClient().checkout.authenticated.create({
-    productId: snapshot.productId, currency: "CNY", buyerIdentity: order.userId, buyerEmail: snapshot.buyerEmail,
-    priceSnapshot: { amount: (order.amountCents / 100).toFixed(2), taxCategory: TaxCategory.SaaS },
+    productId: snapshot.productId, currency: price.currency, buyerIdentity: order.userId, buyerEmail: snapshot.buyerEmail,
+    priceSnapshot: { amount: paymentDecimal(order.amountCents, price.currency), taxCategory: TaxCategory.SaaS },
+    ...(price.currency !== "CNY" ? { includePaymentMethods: ["card", "applepay", "googlepay"] } : {}),
     orderMerchantExternalId: order.providerOrderId, expiresInSeconds: 86400, allowPromotionCodes: false,
     metadata: { localOrderId: order.id, packageId: order.packageId, productId: snapshot.productId, storeId: snapshot.storeId },
     successUrl: `${origin.origin}/billing/payment/return?orderId=${encodeURIComponent(order.id)}`,
@@ -57,5 +71,5 @@ export async function openWaffoOrder(order: WaffoOrder) {
   await db.update(paymentOrders).set({ checkoutId: result.sessionId, checkoutUrl: storedUrl.toString(),
     metadata: sql`${paymentOrders.metadata} || ${JSON.stringify({ checkoutExpiresAt: result.expiresAt })}::jsonb`, updatedAt: new Date(),
   }).where(and(eq(paymentOrders.id, order.id), eq(paymentOrders.status, "pending")));
-  return { orderId: order.id, status: "pending", checkoutUrl: url };
+  return { orderId: order.id, status: "pending", checkoutUrl: url, ...price };
 }

@@ -42,8 +42,3 @@ export function assertWaffoCheckoutUrl(value: string) {
   if (url.protocol !== "https:" || url.hostname !== "pancake.waffo.ai" || url.username || url.password || url.port) throw Error("WAFFO_INVALID_CHECKOUT_URL");
   return url.toString();
 }
-export function moneyCents(value: unknown): number {
-  if (typeof value !== "string" || !/^\d{1,8}(?:\.\d{1,2})?$/.test(value)) throw Error("WAFFO_INVALID_AMOUNT");
-  const [whole, fraction = ""] = value.split(".");
-  return Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
-}

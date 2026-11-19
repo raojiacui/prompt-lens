@@ -1,5 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { assertWaffoCheckoutUrl, moneyCents, waffoAvailablePackages, waffoPaymentConfig } from "@/lib/payments/waffo-client";
+import { assertWaffoCheckoutUrl, waffoAvailablePackages, waffoPaymentConfig } from "@/lib/payments/waffo-client";
+import { paymentMinorUnits } from "@/lib/payments/currencies";
 afterEach(() => vi.unstubAllEnvs());
 it("requires an explicit environment, project and enable flag", () => {
   vi.stubEnv("WAFFO_PAYMENTS_ENABLED", "false");
@@ -10,9 +11,9 @@ it("requires an explicit environment, project and enable flag", () => {
   expect(() => waffoPaymentConfig()).toThrow("WAFFO_PAYMENTS_DISABLED");
 });
 it("parses financial values without float rounding or coercion", () => {
-  expect(moneyCents("34.90")).toBe(3490);
-  expect(moneyCents("199")).toBe(19900);
-  for (const value of ["34.901", "-1", "1e2", 34.9, "NaN"]) expect(() => moneyCents(value)).toThrow();
+  expect(paymentMinorUnits("34.90", "CNY")).toBe(3490);
+  expect(paymentMinorUnits("199", "CNY")).toBe(19900);
+  for (const value of ["34.901", "-1", "1e2", 34.9, "NaN"]) expect(() => paymentMinorUnits(value, "CNY")).toThrow();
 });
 it("rejects checkout redirects outside the official HTTPS origin", () => {
   expect(assertWaffoCheckoutUrl("https://pancake.waffo.ai/store/test/checkout/CHK_x#token=x")).toContain("pancake.waffo.ai");
