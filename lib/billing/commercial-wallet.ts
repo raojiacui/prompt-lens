@@ -20,7 +20,7 @@ async function lockWallet(tx: Transaction, userId: string) {
 }
 
 /** Call inside the same transaction as the order state transition. */
-export async function grantCommercialPurchase(tx: Transaction, input: Amounts & { userId: string; orderId: string; packageId: string }) {
+export async function grantCommercialPurchase(tx: Transaction, input: Amounts & { userId: string; orderId: string; packageId: string; linkImports?: number }) {
   validateAmounts(input);
   const wallet = await lockWallet(tx, input.userId);
   const eventKey = `purchase:${input.orderId}`;
@@ -31,7 +31,8 @@ export async function grantCommercialPurchase(tx: Transaction, input: Amounts & 
   }
   await tx.update(commercialWallets).set({ credits: wallet.credits + input.credits, rewrites: wallet.rewrites + input.rewrites, updatedAt: new Date() }).where(eq(commercialWallets.userId, input.userId));
   const pack = COMMERCIAL_PACKAGES.find((item) => item.id === input.packageId && item.credits === input.credits && item.rewrites === input.rewrites);
-  await tx.insert(commercialLedger).values({ userId: input.userId, eventKey, credits: input.credits, rewrites: input.rewrites, metadata: { orderId: input.orderId, packageId: input.packageId, linkImports: pack?.linkImports ?? 0 } });
+  if (input.linkImports !== undefined && (!Number.isSafeInteger(input.linkImports) || input.linkImports < 0)) throw Error("Invalid link import allowance");
+  await tx.insert(commercialLedger).values({ userId: input.userId, eventKey, credits: input.credits, rewrites: input.rewrites, metadata: { orderId: input.orderId, packageId: input.packageId, linkImports: input.linkImports ?? pack?.linkImports ?? 0 } });
   await tx.insert(commercialLots).values({ userId: input.userId, orderId: input.orderId, credits: input.credits, rewrites: input.rewrites, availableCredits: input.credits, availableRewrites: input.rewrites });
   return true;
 }

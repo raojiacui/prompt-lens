@@ -1,4 +1,4 @@
-import { WaffoPancake, verifyWebhook } from "@waffo/pancake-ts";
+import { WaffoPancake, verifyWebhook, type WebhookEventData } from "@waffo/pancake-ts";
 import { COMMERCIAL_PACKAGES } from "@/lib/billing/pricing-v6";
 
 export type WaffoEnvironment = "test" | "prod";
@@ -33,7 +33,7 @@ export function waffoClient() {
 }
 export function verifyWaffoPaymentWebhook(body: string, signature: string | null) {
   const config = waffoPaymentConfig();
-  const event = verifyWebhook(body, signature, { environment: config.environment });
+  const event = verifyWebhook<WebhookEventData>(body, signature, { environment: config.environment });
   if (event.mode !== config.environment || event.storeId !== config.storeId) throw Error("WAFFO_EVENT_SCOPE_MISMATCH");
   return event;
 }
