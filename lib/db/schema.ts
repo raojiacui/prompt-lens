@@ -534,7 +534,7 @@ export const creditLedger = pgTable(
 );
 
 // ============ 支付订单：积分包自动到账 ============
-export const paymentProviderEnum = pgEnum("payment_provider", ["creem", "xunhupay", "alipay", "manual_qr"]);
+export const paymentProviderEnum = pgEnum("payment_provider", ["creem", "xunhupay", "alipay", "manual_qr", "waffo"]);
 export const paymentOrderStatusEnum = pgEnum("payment_order_status", ["pending", "paid", "failed", "refunded", "cancelled"]);
 
 export const paymentOrders = pgTable(
@@ -571,6 +571,16 @@ export const paymentOrders = pgTable(
     providerOrderUnique: uniqueIndex("idx_payment_orders_provider_order_unique").on(table.provider, table.providerOrderId),
   })
 );
+export const waffoPaymentEvents = pgTable("waffo_payment_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  eventId: varchar("event_id", { length: 160 }).notNull(),
+  environment: varchar("environment", { length: 8 }).notNull(),
+  storeId: varchar("store_id", { length: 80 }).notNull(),
+  orderId: uuid("order_id").notNull().references(() => paymentOrders.id),
+  eventType: varchar("event_type", { length: 80 }).notNull(),
+  payloadHash: varchar("payload_hash", { length: 64 }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [uniqueIndex("waffo_payment_event_unique").on(t.environment, t.storeId, t.eventId), index("waffo_payment_event_order").on(t.orderId)]);
 // ============ 新增：Agentic Workflow (Create with Agent) ============
 
 export const agentRunStatusEnum = pgEnum("agent_run_status", [

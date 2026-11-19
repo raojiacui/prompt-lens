@@ -190,6 +190,13 @@
                         "when": 1794993600000,
                         "tag": "0026_moderation_controls",
                         "breakpoints": true
+                    },
+                    {
+                        "idx": 27,
+                        "version": "7",
+                        "when": 1795046400000,
+                        "tag": "0027_waffo_payments",
+                        "breakpoints": true
                     }
                 ]
 }

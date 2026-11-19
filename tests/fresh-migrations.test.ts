@@ -15,7 +15,7 @@ it("migrates an empty database and protects all application tables", async () =>
       }
     }
     const tables = await client.query<{ name: string; protected: boolean }>("SELECT relname AS name, relrowsecurity AS protected FROM pg_class JOIN pg_namespace ON pg_namespace.oid = relnamespace WHERE nspname = 'public' AND relkind = 'r'");
-    expect(tables.rows).toHaveLength(40);
+    expect(tables.rows).toHaveLength(41);
     expect(tables.rows.every((table) => table.protected)).toBe(true);
     expect(tables.rows.some((table) => table.name === "analysis_scene_jobs")).toBe(true);
     expect(tables.rows.some((table) => table.name === "analysis_provider_slots")).toBe(true);

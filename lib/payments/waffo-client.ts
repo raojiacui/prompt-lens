@@ -1,67 +1,49 @@
-import { createHash, createPrivateKey, createSign } from "node:crypto";
+import { WaffoPancake, verifyWebhook } from "@waffo/pancake-ts";
+import { COMMERCIAL_PACKAGES } from "@/lib/billing/pricing-v6";
 
-// Server-only Pancake transport. Merchant keys must never be used in the browser.
-// Signature format follows Waffo Pancake's published RSA-SHA256 request contract.
-type Envelope<T> = { data?: T | null; errors?: { message?: string }[] };
-function credentials() {
-  const merchantId = process.env.WAFFO_MERCHANT_ID;
-  const key = process.env.WAFFO_PRIVATE_KEY;
-  if (!merchantId || !key) throw new Error("WAFFO_NOT_CONFIGURED");
-  return { merchantId, key: createPrivateKey(key.replace(/\\n/g, "\n").trim()) };
+export type WaffoEnvironment = "test" | "prod";
+export function waffoPaymentConfig() {
+  const environment = process.env.WAFFO_PAYMENT_ENVIRONMENT;
+  const project = process.env.VERCEL_PROJECT_ID;
+  const allowed = environment === "test" ? project === "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI"
+    : environment === "prod" && project === "prj_LA38e0saqqVw1OkQ95AyoMx5vjIV" && process.env.VERCEL_ENV === "production";
+  const storeId = process.env.WAFFO_STORE_ID || "";
+  if (process.env.WAFFO_PAYMENTS_ENABLED !== "true" || !allowed || !/^STO_[a-zA-Z0-9]+$/.test(storeId)) throw Error("WAFFO_PAYMENTS_DISABLED");
+  if (!process.env.WAFFO_MERCHANT_ID || !process.env.WAFFO_PRIVATE_KEY) throw Error("WAFFO_NOT_CONFIGURED");
+  return { environment: environment as WaffoEnvironment, storeId };
 }
-async function signedPost<T>(path: string, data: Record<string, unknown>, idempotencyKey?: string): Promise<T> {
-  const { merchantId, key } = credentials();
-  const body = JSON.stringify(data);
-  const timestamp = String(Math.floor(Date.now() / 1000));
-  const canonical = ["POST", path, timestamp, createHash("sha256").update(body).digest("base64")].join("\n");
-  const signer = createSign("sha256");
-  signer.update(canonical);
-  const signature = signer.sign(key, "base64");
-  let response: Response;
+export function waffoProductId(packageId: string) {
+  const { environment } = waffoPaymentConfig();
+  if (!COMMERCIAL_PACKAGES.some(p => p.id === packageId)) throw Error("UNKNOWN_PACKAGE");
+  const value = process.env[`WAFFO_${environment === "test" ? "TEST" : "PROD"}_PRODUCT_${packageId.toUpperCase()}`];
+  if (!value || !/^PROD_[a-zA-Z0-9]+$/.test(value)) throw Error("WAFFO_PRODUCT_NOT_CONFIGURED");
+  return value;
+}
+export function waffoAvailablePackages() {
   try {
-    response = await fetch("https://api.waffo.ai" + path, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Merchant-Id": merchantId,
-        "X-Timestamp": timestamp,
-        "X-Signature": signature,
-        ...(idempotencyKey ? { "X-Idempotency-Key": idempotencyKey } : {}),
-      },
-      body,
-      signal: AbortSignal.timeout(12000),
-      cache: "no-store",
-    });
-  } catch {
-    throw new Error("WAFFO_NETWORK_UNAVAILABLE");
-  }
-  const result = await response.json().catch(() => null) as Envelope<T> | null;
-  if (!response.ok || !result?.data || result.errors?.length) throw new Error("WAFFO_GATEWAY_REJECTED");
-  return result.data;
+    waffoPaymentConfig();
+    return COMMERCIAL_PACKAGES.filter(p => { try { waffoProductId(p.id); return true; } catch { return false; } }).map(p => p.id);
+  } catch { return []; }
 }
-export async function createWaffoSandboxCheckout(input: {
-  productId: string; currency: "CNY"; amountCents: number; buyerIdentity: string; buyerEmail: string; externalOrderId: string;
-}) {
-  if (process.env.WAFFO_SANDBOX_CHECKOUT_ENABLED !== "true" || process.env.VERCEL_PROJECT_ID !== "prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI") {
-    throw new Error("WAFFO_SANDBOX_DISABLED");
-  }
-  if (!/^PROD_[A-Za-z0-9]+$/.test(input.productId) || !Number.isSafeInteger(input.amountCents) || input.amountCents <= 0
-    || !input.buyerIdentity || !input.buyerEmail || !/^[a-zA-Z0-9_-]{1,128}$/.test(input.externalOrderId)) throw new Error("WAFFO_INVALID_CHECKOUT");
-  const [token, session] = await Promise.all([
-    signedPost<{ token: string }>("/v1/actions/auth/issue-session-token", { productId: input.productId, buyerIdentity: input.buyerIdentity }),
-    signedPost<{ sessionId: string; checkoutUrl: string }>("/v1/actions/checkout/create-session", {
-      productId: input.productId,
-      buyerEmail: input.buyerEmail,
-      currency: input.currency,
-      priceSnapshot: { amount: (input.amountCents / 100).toFixed(2), taxCategory: "saas" },
-      orderMerchantExternalId: input.externalOrderId,
-      withTrial: false,
-    }, input.externalOrderId),
-  ]);
-  const url = new URL(session.checkoutUrl);
-  if (url.protocol !== "https:" || url.hostname !== "pancake.waffo.ai" || !token.token || !session.sessionId) {
-    throw new Error("WAFFO_INVALID_RESPONSE");
-  }
-  url.hash = "token=" + encodeURIComponent(token.token);
-  return { checkoutUrl: url.toString(), sessionId: session.sessionId };
+export function waffoClient() {
+  const { environment } = waffoPaymentConfig();
+  return new WaffoPancake({ merchantId: process.env.WAFFO_MERCHANT_ID!, privateKey: process.env.WAFFO_PRIVATE_KEY!, environment,
+    fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(15_000), cache: "no-store" }),
+  });
+}
+export function verifyWaffoPaymentWebhook(body: string, signature: string | null) {
+  const config = waffoPaymentConfig();
+  const event = verifyWebhook(body, signature, { environment: config.environment });
+  if (event.mode !== config.environment || event.storeId !== config.storeId) throw Error("WAFFO_EVENT_SCOPE_MISMATCH");
+  return event;
+}
+export function assertWaffoCheckoutUrl(value: string) {
+  const url = new URL(value);
+  if (url.protocol !== "https:" || url.hostname !== "pancake.waffo.ai" || url.username || url.password || url.port) throw Error("WAFFO_INVALID_CHECKOUT_URL");
+  return url.toString();
+}
+export function moneyCents(value: unknown): number {
+  if (typeof value !== "string" || !/^\d{1,8}(?:\.\d{1,2})?$/.test(value)) throw Error("WAFFO_INVALID_AMOUNT");
+  const [whole, fraction = ""] = value.split(".");
+  return Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
 }

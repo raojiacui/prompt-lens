@@ -38,6 +38,9 @@ importers:
       '@vercel/analytics':
         specifier: ^2.0.1
         version: 2.0.1(next@15.5.27(@babel/core@7.29.0)(@playwright/test@1.58.2)(@types/node@22.19.15)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(react@19.2.4)
+      '@waffo/pancake-ts':
+        specifier: 0.28.0
+        version: 0.28.0
       alipay-sdk:
         specifier: ^4.14.0
         version: 4.14.0
@@ -2532,6 +2535,10 @@ packages:
 
   '@vitest/utils@3.2.7':
     resolution: {integrity: sha512-x6BDOd7dyo3PFLY3I9/HJ25X/6OurhGXk2/B9gOZNPF7XDVjeBK4k01lQE5uvDpbuheErh91qYuE1E2OEjK3Rw==}
+
+  '@waffo/pancake-ts@0.28.0':
+    resolution: {integrity: sha512-0pR9qkXY7z2wSusFT55ZO2aviMNArxSS/pCpItkFgDCmVWzieV1GNSqCQCZqw/t7AkWUToxkTZhhylfypb/vcA==}
+    engines: {node: '>=20.0.0'}
 
   '@webassemblyjs/ast@1.14.1':
     resolution: {integrity: sha512-nuBEDgQfm1ccRp/8bCQrx1frohyufl4JlbMMZ4P1wpeOfDhF6FQkxZJ1b/e+PLwr6X1Nhw6OLme5usuBWYBvuQ==}
@@ -8016,6 +8023,8 @@ snapshots:
       '@vitest/pretty-format': 3.2.7
       loupe: 3.2.1
       tinyrainbow: 2.0.0
+
+  '@waffo/pancake-ts@0.28.0': {}
 
   '@webassemblyjs/ast@1.14.1':
     dependencies:
