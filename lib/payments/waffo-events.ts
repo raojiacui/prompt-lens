@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import type { WebhookEvent, WebhookEventData, WebhookAmountBreakdown } from "@waffo/pancake-ts";
 import { and, eq, sql } from "drizzle-orm";
-import { db, paymentOrders, waffoPaymentEvents, commercialLots, commercialWallets, commercialLedger, commercialRefunds } from "@/lib/db";
+import { db, paymentOrders, waffoPaymentEvents, commercialLots, commercialWallets, commercialLedger, commercialRefunds, commercialReservations } from "@/lib/db";
 import { grantCommercialPurchase } from "@/lib/billing/commercial-wallet";
 import { moneyCents, waffoPaymentConfig } from "./waffo-client";
 import { waffoSnapshot, type WaffoOrder } from "./waffo-orders";
@@ -29,7 +29,9 @@ export async function applyWaffoEvent(event: WebhookEvent<WebhookEventData>) {
   if (!["order.completed", "refund.succeeded", "refund.failed"].includes(event.eventType)) return { ignored: true };
   const ref = event.data?.orderMerchantExternalId;
   if (!ref || typeof ref !== "string") throw Error("WAFFO_ORDER_REFERENCE_MISSING");
-  const payloadHash = createHash("sha256").update(JSON.stringify({ eventType: event.eventType, eventId: event.eventId, mode: event.mode, storeId: event.storeId, data: event.data })).digest("hex");
+  const canonical = JSON.stringify({ eventType: event.eventType, eventId: event.eventId, mode: event.mode, storeId: event.storeId, data: event.data }, (_key, value) =>
+    value && typeof value === "object" && !Array.isArray(value) ? Object.fromEntries(Object.keys(value).sort().map(key => [key, value[key]])) : value);
+  const payloadHash = createHash("sha256").update(canonical).digest("hex");
   return db.transaction(async tx => {
     const [order] = await tx.select().from(paymentOrders).where(and(eq(paymentOrders.provider, "waffo"), eq(paymentOrders.providerOrderId, ref))).for("update");
     if (!order) throw Error("WAFFO_ORDER_NOT_FOUND");
@@ -54,14 +56,15 @@ export async function applyWaffoEvent(event: WebhookEvent<WebhookEventData>) {
       if (event.eventType === "refund.succeeded") {
         if (data.refundStatus !== "succeeded" || moneyCents(data.refundedAmount) !== price.total) {
           // Partial or ambiguous refunds require manual accounting; do not restore spendable funds.
-          await tx.update(commercialWallets).set({ frozen: true, updatedAt: new Date() }).where(eq(commercialWallets.userId, order.userId));
+          await tx.insert(commercialWallets).values({ userId: order.userId, frozen: true }).onConflictDoUpdate({ target: commercialWallets.userId, set: { frozen: true, updatedAt: new Date() } });
           await tx.update(paymentOrders).set({ metadata: sql`${paymentOrders.metadata} || '{"paymentReview":"partial_refund"}'::jsonb`, updatedAt: new Date() }).where(eq(paymentOrders.id, order.id));
         } else if (order.status !== "refunded") {
           const [wallet] = await tx.select().from(commercialWallets).where(eq(commercialWallets.userId, order.userId)).for("update");
           const [lot] = await tx.select().from(commercialLots).where(eq(commercialLots.orderId, order.id)).for("update");
           if (lot && wallet) {
             const alreadyHeld = lot.state === "refunding";
-            const review = Boolean(lot.usedCredits || lot.usedRewrites || lot.heldCredits || lot.heldRewrites);
+            const [importUsage] = await tx.select({ id: commercialReservations.id }).from(commercialReservations).where(and(eq(commercialReservations.userId, order.userId), sql`${commercialReservations.quote}->>'linkImportOrderId' = ${order.id}`, sql`(${commercialReservations.state} = 'held' OR ${commercialReservations.quote}->>'linkImportDelivered' = 'true')`)).limit(1);
+            const review = Boolean(lot.usedCredits || lot.usedRewrites || lot.heldCredits || lot.heldRewrites || importUsage);
             if (!alreadyHeld) {
               await tx.update(commercialWallets).set({ credits: wallet.credits - lot.availableCredits, rewrites: wallet.rewrites - lot.availableRewrites, frozen: wallet.frozen || review, updatedAt: new Date() }).where(eq(commercialWallets.userId, order.userId));
               await tx.insert(commercialLedger).values({ userId: order.userId, eventKey: `waffo-refund:${order.id}`, credits: -lot.availableCredits, rewrites: -lot.availableRewrites, metadata: { orderId: order.id, externalRefund: true, review } });

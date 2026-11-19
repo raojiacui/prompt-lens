@@ -80,6 +80,9 @@ it("persists server-owned price before checkout, reuses requests, and excludes c
 it("grants exactly once for signed duplicates and separate delivery IDs", async () => {
   const saved = await order(), paid = event(saved);
   expect((await deliver(paid)).status).toBe(200);
+  const reordered = structuredClone(paid);
+  reordered.data.orderMetadata = Object.fromEntries(Object.entries(paid.data.orderMetadata!).reverse());
+  expect((await deliver(reordered)).status).toBe(200);
   expect((await deliver(paid)).status).toBe(200);
   expect((await deliver({ ...paid, id: randomUUID() })).status).toBe(200);
   expect((await database.select().from(schema.commercialWallets))[0]).toMatchObject({ credits: 200, rewrites: 20 });
@@ -114,6 +117,15 @@ it("accepts a full refund before completion and prevents late credits", async ()
   await applyWaffoEvent(event(saved));
   expect((await database.select().from(schema.paymentOrders))[0].status).toBe("refunded");
   expect(await database.select().from(schema.commercialWallets)).toHaveLength(0);
+});
+it("freezes an account on a partial refund before fulfillment and rejects a changed replay", async () => {
+  const saved = await order(), partial = event(saved, "refund.succeeded");
+  partial.data.refundedAmount = "1.00";
+  await applyWaffoEvent(partial);
+  expect((await database.select().from(schema.commercialWallets))[0]).toMatchObject({ credits: 0, frozen: true });
+  await expect(applyWaffoEvent(event(saved))).rejects.toThrow("WAFFO_PAYMENT_REQUIRES_REVIEW");
+  partial.data.refundedAmount = "2.00";
+  await expect(applyWaffoEvent(partial)).rejects.toThrow("WAFFO_EVENT_REPLAY_MISMATCH");
 });
 it("revokes unused external refunds once and freezes ambiguous partial refunds", async () => {
   const saved = await order();
