@@ -26,7 +26,7 @@ PromptLens V2 是一个 AI 视频创作工作流工具，将参考视频或图�
     <td>
       <a href="https://kie.ai?ref=082d122f93c37c64ad05646afa7280bf"><strong>KIE</strong></a> 是面向开发者与创作者的多模型 API 平台，通过统一接口提供文本、图像、音频和视频模型。开发者可以在同一个账户中管理 API Key 和模型调用费用。<br />
       在 PromptLens 中，你可以在「设置 → API Key 配置」保存 KIE Key 并设为首选供应商，用于素材分析、提示词改写和视频生成。可用模型和参数以应用内的选项及账户权限为准。<br />
-      <strong>KIE 新用户可获得 80 试用积分，按官方定价约合 0.40 美元。</strong><br />
+      <strong>KIE 新用户可领取 80 免费试用积分。</strong><br />
       <a href="https://kie.ai?ref=082d122f93c37c64ad05646afa7280bf">使用 PromptLens 专属链接注册 KIE →</a>
     </td>
   </tr>
