@@ -1,13 +1,14 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db, paymentOrders, commercialWallets, commercialLots, commercialRefunds, commercialLedger, commercialReservations } from "@/lib/db";
 import { parseCny, queryAlipayRefund, refundAlipayTrade } from "./alipay";
+import { submitWaffoRefund, reconcileWaffoRefund } from "./waffo-refunds";
 
 // The documented gateway refunds whole orders, not arbitrary partial amounts.
 export async function requestCommercialRefund(userId: string, orderId: string, reason: string, contact?: string) {
   if (!reason.trim() || reason.length > 80) throw new Error("INVALID_REFUND_REASON");
   const result = await db.transaction(async (tx) => {
     const [order] = await tx.select().from(paymentOrders).where(and(eq(paymentOrders.id, orderId), eq(paymentOrders.userId, userId))).for("update");
-    if (!order || order.provider !== "alipay" || !order.packageId.startsWith("v6_")) throw new Error("ORDER_NOT_FOUND");
+    if (!order || !["alipay", "waffo"].includes(order.provider) || !order.packageId.startsWith("v6_")) throw new Error("ORDER_NOT_FOUND");
     const [existing] = await tx.select().from(commercialRefunds).where(eq(commercialRefunds.orderId, orderId));
     if (existing) return { order, refund: existing, created: false };
     if (order.status !== "paid") throw new Error("ORDER_NOT_PAID");
@@ -32,7 +33,7 @@ export async function updateCommercialRefundRequest(userId: string, orderId: str
   return db.transaction(async (tx) => {
     // Match the approval lock order so customer edits cannot race a review decision.
     const [order] = await tx.select().from(paymentOrders).where(and(eq(paymentOrders.id, orderId), eq(paymentOrders.userId, userId))).for("update");
-    if (!order || order.provider !== "alipay" || !order.packageId.startsWith("v6_")) throw new Error("ORDER_NOT_FOUND");
+    if (!order || !["alipay", "waffo"].includes(order.provider) || !order.packageId.startsWith("v6_")) throw new Error("ORDER_NOT_FOUND");
     const [refund] = await tx.select().from(commercialRefunds).where(and(eq(commercialRefunds.orderId, orderId), eq(commercialRefunds.userId, userId))).for("update");
     if (!refund) throw new Error("REFUND_NOT_FOUND");
     if (refund.state !== "requested") throw new Error("REFUND_ALREADY_REVIEWED");
@@ -52,7 +53,7 @@ export async function reviewCommercialRefund(actorId: string, refundId: string, 
     if (refund.state !== "requested") throw new Error("REFUND_ALREADY_REVIEWED");
     const [wallet] = await tx.select().from(commercialWallets).where(eq(commercialWallets.userId, refund.userId)).for("update");
     const [lot] = await tx.select().from(commercialLots).where(eq(commercialLots.orderId, refund.orderId)).for("update");
-    if (!order || order.status !== "paid" || order.provider !== "alipay" || !wallet || wallet.frozen || !lot || lot.state !== "refunding") throw new Error("REFUND_REQUIRES_REVIEW");
+    if (!order || order.status !== "paid" || !["alipay", "waffo"].includes(order.provider) || !wallet || wallet.frozen || !lot || lot.state !== "refunding") throw new Error("REFUND_REQUIRES_REVIEW");
     if (decision === "reject") {
       await tx.update(commercialWallets).set({ credits: wallet.credits + lot.availableCredits, rewrites: wallet.rewrites + lot.availableRewrites, updatedAt: new Date() }).where(eq(commercialWallets.userId, refund.userId));
       await tx.update(commercialLots).set({ state: "active" }).where(eq(commercialLots.id, lot.id));
@@ -62,6 +63,13 @@ export async function reviewCommercialRefund(actorId: string, refundId: string, 
     return { order, refund: updated };
   });
   if (decision === "reject") return result.refund;
+  if (result.order.provider === "waffo") {
+    try { await submitWaffoRefund(result.order, result.refund); }
+    catch {
+      await db.update(commercialRefunds).set({ state: "review", updatedAt: new Date() }).where(and(eq(commercialRefunds.id, result.refund.id), eq(commercialRefunds.state, "processing")));
+    }
+    return (await db.select().from(commercialRefunds).where(eq(commercialRefunds.id, result.refund.id)))[0];
+  }
   // The request is durable before the irreversible network call. An uncertain submission is never retried automatically.
   try {
     const data = await refundAlipayTrade({ outTradeNo: result.order.providerOrderId, outRequestNo: result.refund.id, amountCents: result.order.amountCents, reason: result.refund.reason }) as Record<string, unknown>;
@@ -97,7 +105,14 @@ export async function reconcileCommercialRefund(actorId: string, refundId: strin
   if (refund.state === "succeeded") return refund;
   if (!["processing", "review"].includes(refund.state) || (refund.evidence as Record<string, unknown>)?.decision !== "approve") throw new Error("REFUND_NOT_APPROVED");
   const order = await db.query.paymentOrders.findFirst({ where: eq(paymentOrders.id, refund.orderId) });
-  if (!order || order.provider !== "alipay" || order.status !== "paid") throw new Error("REFUND_REQUIRES_REVIEW");
+  if (!order || !["alipay", "waffo"].includes(order.provider) || order.status !== "paid") throw new Error("REFUND_REQUIRES_REVIEW");
+  if (order.provider === "waffo") {
+    try { await reconcileWaffoRefund(order, refund); }
+    catch {
+      await db.update(commercialRefunds).set({ state: "review", updatedAt: new Date() }).where(and(eq(commercialRefunds.id, refund.id), sql`${commercialRefunds.state} <> 'succeeded'`));
+    }
+    return (await db.select().from(commercialRefunds).where(eq(commercialRefunds.id, refund.id)))[0];
+  }
   const reconciliation = { actorId, checkedAt: new Date().toISOString() };
   try {
     const data = await queryAlipayRefund(order.providerOrderId, refund.id) as Record<string, unknown>;

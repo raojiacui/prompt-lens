@@ -7,16 +7,17 @@ import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
 import type { WebhookEvent, WebhookEventData } from "@waffo/pancake-ts";
 
-const state = vi.hoisted(() => ({ db: null as unknown, create: vi.fn(), query: vi.fn() }));
+const state = vi.hoisted(() => ({ db: null as unknown, create: vi.fn(), query: vi.fn(), refund: vi.fn(), token: vi.fn() }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return state.db; } }));
 vi.mock("@/lib/payments/waffo-client", async original => ({
   ...await original<typeof import("@/lib/payments/waffo-client")>(),
-  waffoClient: () => ({ checkout: { authenticated: { create: state.create } }, graphql: { query: state.query } }),
+  waffoClient: () => ({ checkout: { authenticated: { create: state.create } }, graphql: { query: state.query }, auth: { issueSessionToken: state.token }, customer: () => ({ createRefundTicket: state.refund }) }),
 }));
 import { createWaffoOrder } from "@/lib/payments/waffo-orders";
 import { applyWaffoEvent } from "@/lib/payments/waffo-events";
 import { reconcileWaffoOrder } from "@/lib/payments/waffo-reconciliation";
 import { POST as webhook } from "@/app/api/payments/waffo/webhook/route";
+import { requestCommercialRefund, reviewCommercialRefund, reconcileCommercialRefund } from "@/lib/payments/commercial-refunds";
 
 const client = new PGlite();
 const database = drizzle(client, { schema });
@@ -38,6 +39,8 @@ beforeEach(async () => {
   vi.stubEnv("WAFFO_WEBHOOK_TEST_PUBLIC_KEY", keys.publicKey.export({ type: "spki", format: "pem" }).toString());
   await client.exec("TRUNCATE payment_orders,commercial_wallets,commercial_ledger CASCADE;");
   state.create.mockResolvedValue({ sessionId: "CHK_test", checkoutUrl: "https://pancake.waffo.ai/test#token=secret", expiresAt: new Date(Date.now() + 86400000).toISOString() });
+  state.token.mockResolvedValue({ token: "customer-secret" });
+  state.refund.mockImplementation(async params => ({ ticket: { id: "TKT_test", subjectId: "PAY_test", status: "pending", refundTicketMerchantExternalId: params.refundTicketMerchantExternalId } }));
 });
 afterAll(async () => { vi.unstubAllEnvs(); await client.close(); });
 async function order() {
@@ -127,4 +130,37 @@ it("recovers a missed callback from provider evidence and throttles repeated que
   await reconcileWaffoOrder(saved.id, userId);
   expect(state.query).toHaveBeenCalledTimes(1);
   expect((await database.select().from(schema.paymentOrders))[0].status).toBe("paid");
+});
+it("holds an unused refund, submits one ticket on approval, and waits for actual execution", async () => {
+  const saved = await order(); await applyWaffoEvent(event(saved));
+  const refund = await requestCommercialRefund(userId, saved.id, "不再需要");
+  expect((await database.select().from(schema.commercialWallets))[0].credits).toBe(0);
+  const approved = await reviewCommercialRefund("admin", refund.id, "approve", "已核查未使用");
+  expect(approved.state).toBe("processing");
+  expect(state.refund).toHaveBeenCalledTimes(1);
+  expect(state.refund.mock.calls[0][0]).toMatchObject({ requestedAmount: { currency: "CNY", amount: "38.39" } });
+  expect((await database.select().from(schema.paymentOrders))[0].status).toBe("paid");
+  await expect(reviewCommercialRefund("admin", refund.id, "approve", "重复批准")).rejects.toThrow("REFUND_ALREADY_REVIEWED");
+  state.query.mockResolvedValue({ data: { refunds: [{ id: "REF_test", status: "succeeded", orderMerchantExternalId: saved.providerOrderId, refundTicketMerchantExternalId: refund.id, pspAmountDetails: { currency: "CNY", amount: "38.39" } }] } });
+  expect((await reconcileCommercialRefund("admin", refund.id)).state).toBe("succeeded");
+  expect((await database.select().from(schema.paymentOrders))[0].status).toBe("refunded");
+  expect(state.refund).toHaveBeenCalledTimes(1);
+});
+it("keeps an uncertain refund held and rejects a mismatched recovery amount", async () => {
+  const saved = await order(); await applyWaffoEvent(event(saved));
+  const refund = await requestCommercialRefund(userId, saved.id, "不再需要");
+  state.refund.mockRejectedValueOnce(Error("timeout"));
+  expect((await reviewCommercialRefund("admin", refund.id, "approve", "核查完成")).state).toBe("review");
+  state.query.mockResolvedValue({ data: { refunds: [{ id: "REF_test", status: "succeeded", orderMerchantExternalId: saved.providerOrderId, refundTicketMerchantExternalId: refund.id, pspAmountDetails: { currency: "CNY", amount: "1.00" } }] } });
+  expect((await reconcileCommercialRefund("admin", refund.id)).state).toBe("review");
+  expect((await database.select().from(schema.commercialWallets))[0].credits).toBe(0);
+  expect((await database.select().from(schema.paymentOrders))[0].status).toBe("paid");
+  expect(state.refund).toHaveBeenCalledTimes(1);
+});
+it("restores held entitlements when local review rejects the refund without a provider call", async () => {
+  const saved = await order(); await applyWaffoEvent(event(saved));
+  const refund = await requestCommercialRefund(userId, saved.id, "不再需要");
+  await reviewCommercialRefund("admin", refund.id, "reject", "用户撤销申请");
+  expect((await database.select().from(schema.commercialWallets))[0].credits).toBe(200);
+  expect(state.refund).not.toHaveBeenCalled();
 });
