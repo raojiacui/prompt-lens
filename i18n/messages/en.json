@@ -235,10 +235,11 @@
     "pricingRuleLongDesc": "Auto-splitting base fee: 3 credits + 1 credit per shot. A 20-shot long video costs about 23 credits.",
     "pricingRuleScopeTitle": "Scope",
     "pricingRuleScopeDesc": "Video analysis credits are only spent on shot analysis. Video generation, audio generation, and video editing do not use platform credits and require your own KIE API key.",
-    "announcementLabel": "New user API credit",
+    "announcementLabel": "{partner} partner announcement",
     "announcementOffer": "Register via our link and get ¥5 in API credit.",
+    "announcementKieOffer": "Use your own KIE API key for visual analysis and video creation.",
     "announcementRegister": "Register",
-    "announcementClose": "Dismiss announcement"
+    "announcementClose": "Dismiss {partner} announcement"
   },
   "language": {
     "switch": "Switch language",
@@ -371,7 +372,7 @@
     "replaceKey": "Replace API key",
     "placeholderInfistar": "Enter your Infistar API key",
     "infistarRegister": "Register via PromptLens · Get ¥5 API credit",
-    "kieGetKeyLink": "Get a KIE API key",
+    "kieRegister": "Register via PromptLens · Get a KIE API key",
     "validatingAndSaving": "Verifying and saving…",
     "keyValidationFailed": "Verification failed. Check the provider and API key or try again later. Your previous configuration is unchanged.",
     "saveRateLimited": "Too many save attempts. Please try again shortly.",

@@ -234,10 +234,11 @@
     "pricingRuleLongDesc": "自动拆镜基础费 3 积分 + 每个镜头 1 积分。20 镜头长视频约 23 积分。",
     "pricingRuleScopeTitle": "适用范围",
     "pricingRuleScopeDesc": "视频分析积分仅用于镜头分析。视频生成、音频生成和视频剪辑不使用平台积分，需配置你自己的 KIE API Key。",
-    "announcementLabel": "新用户体验额度",
+    "announcementLabel": "{partner} 合作推广",
     "announcementOffer": "通过专属链接注册，领取 ¥5 API 体验额度。",
+    "announcementKieOffer": "用自己的 KIE API Key 进行素材分析和视频创作。",
     "announcementRegister": "前往注册",
-    "announcementClose": "关闭公告"
+    "announcementClose": "关闭 {partner} 公告"
   },
   "language": {
     "switch": "切换语言",
@@ -370,7 +371,7 @@
     "replaceKey": "替换 API Key",
     "placeholderInfistar": "输入 Infistar API Key",
     "infistarRegister": "专属注册 · 领取 ¥5 API 体验额度",
-    "kieGetKeyLink": "前往 KIE 获取 API Key",
+    "kieRegister": "专属注册 · 获取 KIE API Key",
     "validatingAndSaving": "验证并保存中……",
     "keyValidationFailed": "验证失败，请检查供应商和 API Key，或稍后重试。原有配置未更改。",
     "saveRateLimited": "保存过于频繁，请稍后重试。",

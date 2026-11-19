@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { createHmac } from "node:crypto";
 
 const registration = "https://www.infistar.cc/register?aff=PROMPTLENS&ref_source=link";
+const kieRegistration = "https://kie.ai?ref=082d122f93c37c64ad05646afa7280bf";
 const verification = "https://mozhenzhen.com/go/prompt-lens";
 
 test.beforeEach(async ({ context, baseURL }) => {
@@ -22,18 +23,25 @@ for (const width of [1440, 390]) {
     // Users who dismissed the previous release must also see the announcement again.
     await context.addCookies([{ name: "promptlens-infistar-announcement-v1", value: "closed", domain: new URL(String(test.info().project.use.baseURL || "http://localhost:3000")).hostname, path: "/" }]);
     await page.goto("/");
-    const banner = page.getByRole("complementary", { name: "新用户体验额度" });
+    const banner = page.getByRole("complementary", { name: "Infistar 合作推广" });
+    const kieBanner = page.getByRole("complementary", { name: "KIE 合作推广" });
     await expect(banner).toBeVisible();
     await expect(banner.getByRole("link")).toHaveAttribute("href", registration);
     await expect(banner.locator('img[src*="prompt-lens-icon"]')).toBeVisible();
     await expect(banner.locator('img[src*="infistar-logo"]')).toBeVisible();
+    await expect(kieBanner.getByRole("link")).toHaveAttribute("href", kieRegistration);
+    await expect(kieBanner.locator('img[src*="kie-logo"]')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: `tmp/infistar/announcement-${width}.png` });
-    await page.getByRole("button", { name: "关闭公告" }).click();
+    await page.getByRole("button", { name: "关闭 KIE 公告" }).click();
+    await expect(kieBanner).toHaveCount(0);
+    await expect(banner).toBeVisible();
+    await page.getByRole("button", { name: "关闭 Infistar 公告" }).click();
     await expect(banner).toHaveCount(0);
     await page.reload();
     await expect(banner).toBeVisible();
-    await page.getByRole("button", { name: "关闭公告" }).click();
+    await expect(kieBanner).toBeVisible();
+    await page.getByRole("button", { name: "关闭 Infistar 公告" }).click();
     await page.goto("/login");
     await page.goto("/");
     await expect(banner).toBeVisible();
@@ -70,8 +78,9 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       await expect(logo).toBeVisible();
       await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     }
-    await expect(page.getByText(zh ? "推荐" : "Recommended", { exact: true })).toBeVisible();
+    await expect(page.getByText(zh ? "推荐" : "Recommended", { exact: true })).toHaveCount(2);
     await expect(page.locator(`a[href="${registration}"]`)).toHaveCount(1);
+    await expect(page.locator(`a[href="${kieRegistration}"]`)).toBeVisible();
     await expect(page.locator(`a[href="${verification}"]`)).toHaveAttribute("target", "_blank");
     await page.getByPlaceholder(zh ? "输入 Infistar API Key" : "Enter your Infistar API key").fill("sk-fake-test-key-not-real-1234");
     await expect(page.getByRole("button", { name: zh ? "测试连接" : "Test connection", exact: true })).toHaveCount(0);

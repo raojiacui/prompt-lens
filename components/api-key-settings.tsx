@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { INFISTAR_REGISTRATION_URL, MODEL_VERIFICATION_URL, USER_PROVIDERS, type UserProvider } from "@/lib/ai/providers";
+import { INFISTAR_REGISTRATION_URL, KIE_REGISTRATION_URL, MODEL_VERIFICATION_URL, USER_PROVIDERS, type UserProvider } from "@/lib/ai/providers";
 
 type ApiKey = { id: string; provider: UserProvider; isActive: boolean; apiKey: string; decryptError?: boolean };
 type Notice = { type: "success" | "error"; text: string };
@@ -59,14 +59,14 @@ export function ApiKeySettings() {
       const key = saved[0]; const current = preferred === provider;
       const name = provider === "infistar" ? "无限星河 Infistar" : "KIE";
       const notice = notices[provider];
-      return <Card key={provider} className={`overflow-hidden bg-[var(--color-bg-raised)] ${provider === "infistar" ? "border-[var(--color-accent-orange)]/35" : "border-[var(--color-border-default)]"}`}>
+      return <Card key={provider} className="overflow-hidden border-[var(--color-accent-orange)]/35 bg-[var(--color-bg-raised)]">
         <CardHeader className="gap-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap items-center gap-3"><Image src={provider === "infistar" ? "/partners/infistar-logo.jpg" : "/partners/kie-logo.png"} alt="" width={44} height={44} className="h-11 w-11 shrink-0 rounded-xl object-contain" /><CardTitle className="text-lg" style={{ fontFamily: "var(--font-heading)" }}>{name}</CardTitle>{provider === "infistar" && <span className="rounded-md bg-orange-100 px-2 py-1 text-xs font-medium text-orange-800">{t("recommended")}</span>}</div>
+            <div className="flex flex-wrap items-center gap-3"><Image src={provider === "infistar" ? "/partners/infistar-logo.jpg" : "/partners/kie-logo.png"} alt="" width={44} height={44} className="h-11 w-11 shrink-0 rounded-xl object-contain" /><CardTitle className="text-lg" style={{ fontFamily: "var(--font-heading)" }}>{name}</CardTitle><span className="rounded-md bg-orange-100 px-2 py-1 text-xs font-medium text-orange-800">{t("recommended")}</span></div>
             {current && <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-success)]"><Check size={14} />{t("preferred")}</span>}
           </div>
           <CardDescription className="leading-6">{t(provider === "infistar" ? "infistarDesc" : "kieDesc")}</CardDescription>
-          <a href={provider === "infistar" ? INFISTAR_REGISTRATION_URL : "https://kie.ai/"} target="_blank" rel="noopener noreferrer" className="inline-flex w-fit items-center gap-1 text-sm font-medium text-[var(--color-accent-orange)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">{t(provider === "infistar" ? "infistarRegister" : "kieGetKeyLink")}<ArrowUpRight size={15} /></a>
+          <a href={provider === "infistar" ? INFISTAR_REGISTRATION_URL : KIE_REGISTRATION_URL} target="_blank" rel="noopener noreferrer sponsored" className="inline-flex w-fit items-center gap-1 text-sm font-medium text-[var(--color-accent-orange)] hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4">{t(provider === "infistar" ? "infistarRegister" : "kieRegister")}<ArrowUpRight size={15} /></a>
         </CardHeader>
         <CardContent className="space-y-4">
           {loading ? <div className="flex items-center gap-2 text-sm text-[var(--color-text-muted)]"><Spinner size="sm" />{t("loadingKeys")}</div> : key && <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-base)] px-4 py-3">
