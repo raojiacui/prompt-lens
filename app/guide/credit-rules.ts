@@ -50,7 +50,7 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
   const generationDurations = [4, 5, 6, 8, 10, 15];
   const durationColumns = generationDurations.map(s => zh ? `${s} 秒` : `${s} sec`);
   return [
-    { title: zh ? "套餐包含哪些额度" : "Package allowances", paragraphs: [zh ? "三个套餐的通用积分适用于同一套已开放功能，不按套餐锁定模型。表内积分为 Prompt Lens 平台积分，与供应商账户余额分开计算。金额为人民币；每次使用仍需足够可用余额。" : "All packages use the same wallet and supported features. Prompt Lens credits and provider balances are separate. Prices are in CNY; each task needs sufficient available credits."], table: {
+    { title: zh ? "套餐包含哪些额度" : "Package allowances", paragraphs: [zh ? "三个套餐的通用积分适用于同一套已开放功能，不按套餐锁定模型。表内积分为 Prompt Lens 平台积分，与供应商账户余额分开计算。表内金额为人民币基价；外币付款按下单时汇率换算并锁定金额，税费在结账页展示。每次使用仍需足够可用余额。" : "All packages use the same wallet and supported features. Prompt Lens credits and provider balances are separate. This table shows CNY base prices; foreign-currency prices are converted and locked when ordering, with tax shown at checkout. Each task needs sufficient available credits."], table: {
       columns: zh ? ["套餐", "价格", "通用积分", "改写次数", "链接导入次数"] : ["Package", "CNY", "Credits", "Rewrites", "Link imports"],
       rows: COMMERCIAL_PACKAGES.map((p, i) => [zh ? p.name : ["Starter", "Creator", "Volume"][i], (p.priceCents / 100).toFixed(2), String(p.credits), String(p.rewrites), String(p.linkImports)]),
     } },

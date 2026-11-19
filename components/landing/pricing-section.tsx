@@ -8,6 +8,8 @@ import { COMMERCIAL_PACKAGES } from "@/lib/billing/pricing-v6";
 import { AlipayCheckoutDialog } from "@/components/payments/alipay-checkout-dialog";
 import { WaffoCheckoutDialog } from "@/components/payments/waffo-checkout-dialog";
 import { useSession } from "@/lib/auth/auth-client";
+import { PAYMENT_CURRENCIES, paymentCurrency, formatPaymentAmount, type PaymentCurrency } from "@/lib/payments/currencies";
+import type { WaffoPrice } from "@/lib/payments/waffo-pricing";
 
 export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
   const zh = useLocale() === "zh";
@@ -18,15 +20,34 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
   const [checkoutAttempt, setCheckoutAttempt] = useState(0);
   const [previousOrderUnconfirmed, setPreviousOrderUnconfirmed] = useState(false);
   const [waffoPackages, setWaffoPackages] = useState<string[]>([]);
+  const [currency, setCurrency] = useState<PaymentCurrency>("CNY");
+  const [selectedCurrency, setSelectedCurrency] = useState<PaymentCurrency>("CNY");
+  const [quotes, setQuotes] = useState<WaffoPrice[]>([]);
+  const [quoteError, setQuoteError] = useState(false);
+  const [quoteAttempt, setQuoteAttempt] = useState(0);
   useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/payments/waffo/checkout", { cache: "no-store", signal: controller.signal }).then(async response => {
       if (!response.ok) return;
       const data = await response.json();
       if (data.enabled && Array.isArray(data.packages)) setWaffoPackages(data.packages.filter((id: unknown): id is string => typeof id === "string"));
+      try { setCurrency(paymentCurrency(localStorage.getItem("promptlens:payment-currency") || data.suggestedCurrency || "CNY")); }
+      catch { setCurrency(paymentCurrency(data.suggestedCurrency || "CNY")); }
     }).catch(() => {});
     return () => controller.abort();
   }, []);
+  useEffect(() => {
+    if (!waffoPackages.length) return;
+    const controller = new AbortController();
+    setQuotes([]); setQuoteError(false);
+    void fetch(`/api/payments/waffo/checkout?currency=${currency}`, { cache: "no-store", signal: controller.signal }).then(async response => {
+      if (!response.ok) throw Error();
+      const data = await response.json();
+      if (!Array.isArray(data.quotes)) throw Error();
+      if (!controller.signal.aborted) setQuotes(data.quotes.filter((quote: WaffoPrice) => quote.currency === currency && Number.isSafeInteger(quote.amountMinor) && quote.amountMinor > 0));
+    }).catch(() => { if (!controller.signal.aborted) setQuoteError(true); });
+    return () => controller.abort();
+  }, [currency, waffoPackages, quoteAttempt]);
   const settings = authenticated ? "/dashboard?tab=settings" : "/login?next=%2Fdashboard%3Ftab%3Dsettings";
   return (
     <section id="pricing" className="bg-[#F7F1E8] py-16 md:py-24">
@@ -35,11 +56,23 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
           <h2 className="font-serif-display text-3xl text-[var(--color-text-primary)] md:text-4xl">{zh ? "按创作需要，灵活充值" : "Credits for your next creation"}</h2>
           <p className="mt-4 text-[var(--color-text-secondary)]">{zh ? "一次购买，按需使用。不自动续费。" : "One-time purchase. Pay as you create. No auto-renewal."}</p>
         </div>
+        {!!waffoPackages.length && <div className="mb-6 space-y-2 text-sm">
+          <label className="flex items-center justify-center gap-3">{zh ? "付款币种" : "Payment currency"}<select aria-label={zh ? "付款币种" : "Payment currency"} value={currency} onChange={event => {
+            const value = paymentCurrency(event.target.value); setCurrency(value);
+            try { localStorage.setItem("promptlens:payment-currency", value); } catch { /* Preserve the current selection in memory. */ }
+          }} className="min-h-11 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] px-3">
+            {PAYMENT_CURRENCIES.map(code => <option key={code} value={code}>{code}</option>)}
+          </select></label>
+          <p className="text-center text-[var(--color-text-secondary)]">{zh ? "海外银行卡请选择外币；外币价格按人民币基价换算，下单时锁定，税费在结账页展示。" : "Choose a foreign currency for card payments. Converted prices are locked when ordering; tax is shown at checkout."}</p>
+          {quoteError && <p role="alert" className="text-center text-red-700">{zh ? "暂时无法取得换算价格，请稍后重试。" : "Converted prices are unavailable. Please retry shortly."}<button type="button" onClick={() => setQuoteAttempt(value => value + 1)} className="ml-2 min-h-10 underline">{zh ? "重新获取价格" : "Refresh prices"}</button></p>}
+        </div>}
         <div className="grid gap-5 md:grid-cols-3">
-          {COMMERCIAL_PACKAGES.map((pack, index) => (
+          {COMMERCIAL_PACKAGES.map((pack, index) => {
+            const quote = quotes.find(price => price.packageId === pack.id && price.currency === currency);
+            return (
             <article key={pack.id} className="flex flex-col rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] p-6">
               <h3 className="text-xl font-semibold">{zh ? pack.name : ["Starter", "Creator", "Volume"][index]}</h3>
-              <p className="mt-5 text-3xl font-semibold">¥{(pack.priceCents / 100).toFixed(pack.priceCents % 100 === 0 ? 0 : 2)}</p>
+              <p className="mt-5 text-3xl font-semibold">{waffoPackages.includes(pack.id) ? quote ? formatPaymentAmount(quote.amountMinor, currency, zh ? "zh-CN" : "en-US") : (zh ? "价格确认中…" : "Checking price…") : `¥${(pack.priceCents / 100).toFixed(pack.priceCents % 100 === 0 ? 0 : 2)}`}</p>
               <p className="mt-2 text-sm text-[var(--color-text-secondary)]">{pack.credits.toLocaleString()} {zh ? "通用积分" : "credits"}</p>
               <ul className="my-6 space-y-3 text-sm text-[var(--color-text-secondary)]">
                 {[
@@ -50,19 +83,22 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
                   zh ? "自带 Key 也可购买套餐，套餐积分可用于自动拆镜服务" : "You can buy a package with your own API key and use its credits for automatic shot splitting",
                 ].map((line) => <li key={line} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[#4C7055]" /><span>{line}</span></li>)}
               </ul>
-              <button type="button" disabled={!pack.checkoutEnabled && !waffoPackages.includes(pack.id)} onClick={() => {
+              <button type="button" disabled={waffoPackages.includes(pack.id) ? !quotes.some(quote => quote.packageId === pack.id && quote.currency === currency) : !pack.checkoutEnabled} onClick={() => {
                 if (!pack.checkoutEnabled && !waffoPackages.includes(pack.id)) return;
                 if (!authenticated) { window.location.href = "/login?next=%2F%23pricing"; return; }
-                const storageKey = `promptlens:${waffoPackages.includes(pack.id) ? "waffo-checkout" : "checkout"}:${session?.user.id || "current"}:${pack.id}`;
-                try { requestIds.current[pack.id] ??= localStorage.getItem(storageKey) || crypto.randomUUID(); localStorage.setItem(storageKey, requestIds.current[pack.id]); }
-                catch { requestIds.current[pack.id] ??= crypto.randomUUID(); }
+                const waffo = waffoPackages.includes(pack.id);
+                const attemptKey = waffo ? `${pack.id}:${currency}` : pack.id;
+                const storageKey = `promptlens:${waffo ? "waffo-checkout" : "checkout"}:${session?.user.id || "current"}:${pack.id}${waffo ? `:${currency}` : ""}`;
+                try { requestIds.current[attemptKey] ??= localStorage.getItem(storageKey) || crypto.randomUUID(); localStorage.setItem(storageKey, requestIds.current[attemptKey]); }
+                catch { requestIds.current[attemptKey] ??= crypto.randomUUID(); }
+                setSelectedCurrency(currency);
                 setPreviousOrderUnconfirmed(false);
                 setSelected(pack);
               }} className="mt-auto min-h-11 rounded-lg bg-[#241915] px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50">
                 {!pack.checkoutEnabled && !waffoPackages.includes(pack.id) ? (zh ? "待开放" : "Coming soon") : authenticated ? waffoPackages.includes(pack.id) ? (zh ? "购买套餐" : "Buy package") : (zh ? "支付宝购买" : "Buy with Alipay") : (zh ? "登录后购买" : "Sign in to buy")}
               </button>
             </article>
-          ))}
+          ); })}
         </div>
         <div className="mt-8 grid gap-5 border-t border-[var(--color-border-subtle)] pt-6 md:grid-cols-2">
           <div>
@@ -76,9 +112,9 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
           </div>
         </div>
       </div>
-      {selected && waffoPackages.includes(selected.id) && <WaffoCheckoutDialog key={`waffo:${selected.id}`} pack={selected} requestId={requestIds.current[selected.id]} onClose={() => setSelected(null)} onPaid={() => {
-        delete requestIds.current[selected.id];
-        try { localStorage.removeItem(`promptlens:waffo-checkout:${session?.user.id || "current"}:${selected.id}`); } catch { /* A fresh request ID is kept in memory. */ }
+      {selected && waffoPackages.includes(selected.id) && <WaffoCheckoutDialog key={`waffo:${selected.id}:${selectedCurrency}`} pack={selected} currency={selectedCurrency} requestId={requestIds.current[`${selected.id}:${selectedCurrency}`]} onClose={() => setSelected(null)} onPaid={() => {
+        delete requestIds.current[`${selected.id}:${selectedCurrency}`];
+        try { localStorage.removeItem(`promptlens:waffo-checkout:${session?.user.id || "current"}:${selected.id}:${selectedCurrency}`); } catch { /* A fresh request ID is kept in memory. */ }
       }} />}
       {selected && !waffoPackages.includes(selected.id) && <AlipayCheckoutDialog key={`${selected.id}:${checkoutAttempt}`} pack={{ ...selected, name: zh ? selected.name : ["Starter", "Creator", "Volume"][COMMERCIAL_PACKAGES.findIndex((pack) => pack.id === selected.id)] }} requestId={requestIds.current[selected.id]} previousOrderUnconfirmed={previousOrderUnconfirmed} onClose={() => setSelected(null)} onNewOrder={(previous) => {
         setPreviousOrderUnconfirmed(previous?.status === "pending");

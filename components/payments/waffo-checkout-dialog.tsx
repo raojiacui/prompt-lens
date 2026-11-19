@@ -5,22 +5,24 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { X } from "lucide-react";
 import { refreshWalletBalance } from "@/lib/billing/use-wallet-balance";
+import { formatPaymentAmount, paymentCurrency, paymentDecimal, type PaymentCurrency } from "@/lib/payments/currencies";
 
-type Checkout = { orderId: string; status: string; checkoutUrl: string | null };
+type Checkout = { orderId: string; status: string; checkoutUrl: string | null; currency: PaymentCurrency; amountMinor: number };
 function paymentUrl(value: unknown) {
   try {
     const url = new URL(typeof value === "string" ? value : "");
     return url.protocol === "https:" && url.hostname === "pancake.waffo.ai" && !url.username && !url.password && !url.port ? url.href : null;
   } catch { return null; }
 }
-export function WaffoCheckoutDialog({ pack, requestId, existingOrderId, onClose, onPaid }: {
+export function WaffoCheckoutDialog({ pack, requestId, existingOrderId, currency = "CNY", onClose, onPaid }: {
   pack: { id: string; name?: string; priceCents: number }; requestId?: string; existingOrderId?: string;
-  onClose: () => void; onPaid: () => void;
+  currency?: PaymentCurrency; onClose: () => void; onPaid: () => void;
 }) {
   const zh = useLocale() === "zh";
   const dialog = useRef<HTMLDialogElement>(null);
   const originalRequestId = useRef(requestId).current;
   const [checkout, setCheckout] = useState<Checkout | null>(null);
+  const savedCheckout = useRef<Checkout | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -34,16 +36,22 @@ export function WaffoCheckoutDialog({ pack, requestId, existingOrderId, onClose,
     const timer = setTimeout(async () => {
       try {
         const response = await fetch("/api/payments/waffo/checkout", { method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(existingOrderId ? { orderId: existingOrderId } : { packageId: pack.id, requestId: originalRequestId }), signal: controller.signal });
+          body: JSON.stringify(existingOrderId || savedCheckout.current ? { orderId: existingOrderId || savedCheckout.current!.orderId } : { packageId: pack.id, requestId: originalRequestId, currency }), signal: controller.signal });
         if (!response.ok) throw Error();
         const data = await response.json();
         if (!/^[0-9a-f-]{36}$/i.test(data.orderId)) throw Error();
-        if (!stopped) setCheckout({ orderId: data.orderId, status: data.status, checkoutUrl: paymentUrl(data.checkoutUrl) });
+        const actualCurrency = paymentCurrency(data.currency);
+        paymentDecimal(data.amountMinor, actualCurrency);
+        if (!existingOrderId && actualCurrency !== currency) throw Error();
+        if (!stopped) {
+          const result = { orderId: data.orderId, status: data.status, checkoutUrl: paymentUrl(data.checkoutUrl), amountMinor: data.amountMinor, currency: actualCurrency };
+          savedCheckout.current = result; setCheckout(result);
+        }
       } catch { if (!stopped) setError(zh ? "暂时无法打开结账，请重试同一订单；已付款时请勿重复付款。" : "Unable to open checkout. Retry this order; do not pay again if already charged."); }
       finally { if (!stopped) setLoading(false); }
     }, 0);
     return () => { stopped = true; clearTimeout(timer); controller.abort(); };
-  }, [pack.id, originalRequestId, existingOrderId, attempt, zh]);
+  }, [pack.id, originalRequestId, existingOrderId, currency, attempt, zh]);
   const orderId = checkout?.orderId;
   useEffect(() => {
     if (!orderId) return;
@@ -68,8 +76,9 @@ export function WaffoCheckoutDialog({ pack, requestId, existingOrderId, onClose,
   const pending = checkout?.status === "pending";
   return <dialog ref={dialog} aria-label={zh ? "购买套餐" : "Buy package"} onCancel={event => { event.preventDefault(); onClose(); }} className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-lg border border-border bg-background p-6 text-foreground shadow-xl backdrop:bg-black/50">
     <header className="flex items-center justify-between gap-4"><h2 className="text-xl font-semibold">{pack.name}</h2><button type="button" aria-label={zh ? "关闭" : "Close"} onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-lg border border-border"><X size={18} /></button></header>
-    <p className="mt-5 text-2xl font-semibold">¥{(pack.priceCents / 100).toFixed(2)}</p>
+    {checkout && <p className="mt-5 text-2xl font-semibold">{formatPaymentAmount(checkout.amountMinor, checkout.currency, zh ? "zh-CN" : "en-US")}</p>}
     <p className="mt-2 text-sm text-muted-foreground">{zh ? "一次性购买，不自动续费。最终税费及支付方式以 Waffo 结账页为准。" : "One-time purchase, no renewal. Final tax and available payment methods are shown at Waffo checkout."}</p>
+    {checkout && checkout.currency !== "CNY" && <p className="mt-2 text-sm text-muted-foreground">{zh ? "以上金额已按下单时汇率锁定；可使用 Waffo 提供的银行卡或数字钱包付款。" : "This price is locked at the order exchange rate. Pay with a card or digital wallet offered by Waffo."}</p>}
     {loading && <p role="status" className="mt-5">{zh ? "正在准备结账…" : "Preparing checkout…"}</p>}
     {checkout?.status === "paid" && <p role="status" className="mt-5 text-green-700">{zh ? "支付成功，套餐权益已到账。" : "Payment confirmed. Your package is available."}</p>}
     {checkout && !pending && checkout.status !== "paid" && <p role="status" className="mt-5">{zh ? "请在订单页查看订单和退款状态。" : "View your order and refund status on the billing page."}</p>}

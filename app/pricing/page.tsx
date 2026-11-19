@@ -129,8 +129,8 @@ export default async function PricingPage() {
                 <p className="font-semibold">{zh ? "关于付款、退款和实际可用性" : "About payment, refunds and availability"}</p>
                 <p className="mt-2 text-[var(--color-text-secondary)]">
                   {zh
-                    ? "套餐为人民币一次性购买，不自动续费；标注「待开放」的套餐暂不可购买。平台积分、改写次数、链接导入次数和供应商余额互不等同。新任务以提交前确认报价为准，付款及退款以订单状态和公示政策为准。"
-                    : "Packages are one-time purchases in CNY, with no auto-renewal. Coming soon means not currently purchasable. Platform credits, rewrite allowances, link-import allowances and API-provider balances are separate. Confirm the quote for each task; payment and refunds follow your order status and the published policy."}
+                    ? "套餐以人民币为基价，一次性购买，不自动续费。开放付款后可选择支持的结账币种，外币按下单时汇率换算并锁价；税费在结账页展示。标注「待开放」的套餐暂不可购买。平台积分、改写次数、链接导入次数和供应商余额互不等同。新任务以提交前确认报价为准，付款及退款以订单状态和公示政策为准。"
+                    : "Packages use a CNY base price, with one-time purchases and no auto-renewal. When checkout is available, choose a supported currency; converted prices are locked when ordering and tax is shown at checkout. Coming soon means not currently purchasable. Platform credits, rewrite allowances, link-import allowances and API-provider balances are separate. Confirm each task quote; payment and refunds follow your order status and the published policy."}
                 </p>
                 <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
                   <Link href="/refund" className="underline underline-offset-4">{zh ? "退款政策" : "Refund policy"}</Link>

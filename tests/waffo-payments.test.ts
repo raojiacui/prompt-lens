@@ -195,7 +195,7 @@ function checkoutRequest(body: unknown, origin = "https://test.example.com") {
   return checkoutPost(new NextRequest("https://test.example.com/api/payments/waffo/checkout", { method: "POST", headers: { origin, "Content-Type": "application/json" }, body: JSON.stringify(body) }));
 }
 it("advertises only configured packages and enforces authentication, origin and ownership", async () => {
-  expect(await (await checkoutConfig()).json()).toMatchObject({ enabled: true, packages: ["v6_trial_200"] });
+  expect(await (await checkoutConfig(new NextRequest("https://test.example.com/api/payments/waffo/checkout"))).json()).toMatchObject({ enabled: true, packages: ["v6_trial_200"] });
   const body = { packageId: "v6_trial_200", requestId: randomUUID(), credits: 999999, amountCents: 1 };
   state.session.mockResolvedValueOnce(null);
   expect((await checkoutRequest(body)).status).toBe(401);
@@ -210,7 +210,7 @@ it("advertises only configured packages and enforces authentication, origin and 
   expect((await checkoutRequest({ orderId: saved.id })).status).toBe(200);
   expect(state.create.mock.calls[0][1]).toEqual(state.create.mock.calls[1][1]);
   vi.stubEnv("WAFFO_PAYMENTS_ENABLED", "false");
-  expect(await (await checkoutConfig()).json()).toMatchObject({ enabled: false, packages: [] });
+  expect(await (await checkoutConfig(new NextRequest("https://test.example.com/api/payments/waffo/checkout"))).json()).toMatchObject({ enabled: false, packages: [] });
   expect((await checkoutRequest(body)).status).toBe(409);
 });
 function mockRate(currency: string, rate: string) {
@@ -259,4 +259,14 @@ it("refunds JPY in whole yen and confirms the actual original-currency amount", 
   state.query.mockResolvedValue({ data: { refunds: [{ id: "REF_yen", status: "succeeded", orderMerchantExternalId: saved.providerOrderId, refundTicketMerchantExternalId: refund.id, pspAmountDetails: { currency: "JPY", amount: "750" } }] } });
   expect((await reconcileCommercialRefund("admin", refund.id)).state).toBe("succeeded");
   expect((await database.select().from(schema.commercialWallets))[0].credits).toBe(0);
+});
+it("suggests a regional currency, exposes server-calculated prices and ignores client amounts", async () => {
+  mockRate("JPY", "21.5");
+  const config = await checkoutConfig(new NextRequest("https://test.example.com/api/payments/waffo/checkout?currency=JPY", { headers: { "x-vercel-ip-country": "JP" } }));
+  expect(await config.json()).toMatchObject({ suggestedCurrency: "JPY", quotes: [{ currency: "JPY", amountMinor: 750 }] });
+  expect((await checkoutConfig(new NextRequest("https://test.example.com/api/payments/waffo/checkout?currency=SGD"))).status).toBe(400);
+  expect((await checkoutRequest({ packageId: "v6_trial_200", requestId: randomUUID(), currency: "SGD" })).status).toBe(400);
+  const response = await checkoutRequest({ packageId: "v6_trial_200", requestId: randomUUID(), currency: "JPY", amountMinor: 1, rate: "0.01" });
+  expect(await response.json()).toMatchObject({ currency: "JPY", amountMinor: 750 });
+  expect(state.query).toHaveBeenCalledTimes(1);
 });
