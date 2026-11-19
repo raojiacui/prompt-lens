@@ -236,7 +236,7 @@
     "pricingRuleScopeDesc": "视频分析积分仅用于镜头分析。视频生成、音频生成和视频剪辑不使用平台积分，需配置你自己的 KIE API Key。",
     "announcementLabel": "{partner} 合作推广",
     "announcementOffer": "通过专属链接注册，领取 ¥5 API 体验额度。",
-    "announcementKieOffer": "用自己的 KIE API Key 进行素材分析和视频创作。",
+    "announcementKieOffer": "KIE 新用户可获得 80 试用积分（约 0.40 美元）。",
     "announcementRegister": "前往注册",
     "announcementClose": "关闭 {partner} 公告"
   },
@@ -356,7 +356,7 @@
     "deleteConfirm": "确定要删除这个 API Key 吗？",
     "providerDocs": "使用规则",
     "kieName": "KIE",
-    "kieDesc": "使用自己的 KIE Key 调用现有分析、改写、生成和编辑模型。",
+    "kieDesc": "使用自己的 KIE Key 调用现有分析、改写、生成和编辑模型。KIE 新用户可获得 80 试用积分（约 0.40 美元）。",
     "kieLink": "Kie.ai",
     "kieGetKey": "获取 API Key。",
     "placeholderKie": "输入 KIE API Key",

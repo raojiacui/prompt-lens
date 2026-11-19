@@ -237,7 +237,7 @@
     "pricingRuleScopeDesc": "Video analysis credits are only spent on shot analysis. Video generation, audio generation, and video editing do not use platform credits and require your own KIE API key.",
     "announcementLabel": "{partner} partner announcement",
     "announcementOffer": "Register via our link and get ¥5 in API credit.",
-    "announcementKieOffer": "Use your own KIE API key for visual analysis and video creation.",
+    "announcementKieOffer": "New KIE users receive 80 trial credits (about US$0.40).",
     "announcementRegister": "Register",
     "announcementClose": "Dismiss {partner} announcement"
   },
@@ -357,7 +357,7 @@
     "deleteConfirm": "Are you sure you want to delete this API Key?",
     "providerDocs": "Usage Rules",
     "kieName": "KIE",
-    "kieDesc": "Use your KIE key for the existing analysis, rewrite, generation and editing models.",
+    "kieDesc": "Use your KIE key for the existing analysis, rewrite, generation and editing models. New KIE users receive 80 trial credits (about US$0.40).",
     "kieLink": "Kie.ai",
     "kieGetKey": "to get an API key.",
     "placeholderKie": "Enter KIE API Key",

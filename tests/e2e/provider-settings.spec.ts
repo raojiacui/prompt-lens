@@ -78,7 +78,9 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) {
       await expect(logo).toBeVisible();
       await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
     }
-    await expect(page.getByText(zh ? "推荐" : "Recommended", { exact: true })).toHaveCount(2);
+    const recommended = page.getByText(zh ? "推荐" : "Recommended", { exact: true });
+    await expect(recommended).toHaveCount(1);
+    await expect(recommended.locator("..").getByRole("heading", { name: "无限星河 Infistar" })).toBeVisible();
     await expect(page.locator(`a[href="${registration}"]`)).toHaveCount(1);
     await expect(page.locator(`a[href="${kieRegistration}"]`)).toBeVisible();
     await expect(page.locator(`a[href="${verification}"]`)).toHaveAttribute("target", "_blank");
