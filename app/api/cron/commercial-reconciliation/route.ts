@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
-import { analysisSceneJobs, apiRateLimits, db, paymentOrders, commercialTasks } from "@/lib/db";
+import { analysisSceneJobs, apiRateLimits, db, paymentOrders, commercialTasks, commercialRefunds } from "@/lib/db";
 import { expireTrialReservations } from "@/lib/usage/trial-quota";
 import { recoverAnalysisTasks, runAnalysisTask } from "@/lib/workflow/analysis-tasks";
 import { reconcileAlipayOrder } from "@/lib/payments/alipay-reconciliation";
@@ -13,6 +13,9 @@ import { escalateOverdueCommercialReviews, notifyDueCommercialReviews } from "@/
 import { expireProjectMedia } from "@/lib/workflow/media-retention";
 import { dispatchQueuedSceneJobs, reconcileTerminalIndependentAnalysis, recoverStaleAnalysisSceneJobs } from "@/lib/billing/independent-scene-analysis";
 import { pruneAnalysisProviderSlots } from "@/lib/billing/analysis-provider-limit";
+import { waffoPaymentConfig } from "@/lib/payments/waffo-client";
+import { reconcileWaffoOrder } from "@/lib/payments/waffo-reconciliation";
+import { reconcileCommercialRefund } from "@/lib/payments/commercial-refunds";
 
 export const maxDuration = 300;
 export async function GET(request: NextRequest) {
@@ -26,6 +29,14 @@ export async function GET(request: NextRequest) {
   const orders = await db.select({ id: paymentOrders.id }).from(paymentOrders).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"))).orderBy(sql`COALESCE((${paymentOrders.metadata}->>'queryAfter')::bigint, 0)`, asc(paymentOrders.createdAt)).limit(20);
   let checked = 0;
   for (const order of orders) { try { await reconcileAlipayOrder(order.id); checked++; } catch { /* Keep uncertain orders pending for the next run. */ } }
+  let waffoEnabled = false;
+  try { waffoPaymentConfig(); waffoEnabled = true; } catch { /* Payments remain disabled until configured. */ }
+  if (waffoEnabled) {
+    const pending = await db.select({ id: paymentOrders.id }).from(paymentOrders).where(and(eq(paymentOrders.provider, "waffo"), eq(paymentOrders.status, "pending"))).orderBy(sql`COALESCE((${paymentOrders.metadata}->>'queryAfter')::bigint, 0)`, asc(paymentOrders.createdAt)).limit(10);
+    for (const order of pending) { try { await reconcileWaffoOrder(order.id); checked++; } catch { /* Keep unconfirmed orders for review. */ } }
+    const refunds = await db.select({ id: commercialRefunds.id }).from(commercialRefunds).innerJoin(paymentOrders, eq(paymentOrders.id, commercialRefunds.orderId)).where(and(eq(paymentOrders.provider, "waffo"), inArray(commercialRefunds.state, ["processing", "review"]), sql`${commercialRefunds.evidence}->>'decision' = 'approve'`)).orderBy(asc(commercialRefunds.updatedAt)).limit(5);
+    for (const refund of refunds) { try { await reconcileCommercialRefund("system:waffo-reconciliation", refund.id); } catch { /* Retain held entitlements on uncertainty. */ } }
+  }
   await db.update(paymentOrders).set({ metadata: sql`${paymentOrders.metadata} || '{"reconciliation":"manual_review"}'::jsonb` }).where(and(eq(paymentOrders.provider, "alipay"), eq(paymentOrders.status, "pending"), sql`${paymentOrders.createdAt} < now() - interval '24 hours'`));
   if (commercialConsumptionEnabled()) {
     await escalateOverdueCommercialReviews(20);

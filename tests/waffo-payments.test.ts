@@ -6,8 +6,10 @@ import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
 import type { WebhookEvent, WebhookEventData } from "@waffo/pancake-ts";
+import { NextRequest } from "next/server";
 
-const state = vi.hoisted(() => ({ db: null as unknown, create: vi.fn(), query: vi.fn(), refund: vi.fn(), token: vi.fn() }));
+const state = vi.hoisted(() => ({ db: null as unknown, create: vi.fn(), query: vi.fn(), refund: vi.fn(), token: vi.fn(), session: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: state.session } } }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return state.db; } }));
 vi.mock("@/lib/payments/waffo-client", async original => ({
   ...await original<typeof import("@/lib/payments/waffo-client")>(),
@@ -18,6 +20,7 @@ import { applyWaffoEvent } from "@/lib/payments/waffo-events";
 import { reconcileWaffoOrder } from "@/lib/payments/waffo-reconciliation";
 import { POST as webhook } from "@/app/api/payments/waffo/webhook/route";
 import { requestCommercialRefund, reviewCommercialRefund, reconcileCommercialRefund } from "@/lib/payments/commercial-refunds";
+import { GET as checkoutConfig, POST as checkoutPost } from "@/app/api/payments/waffo/checkout/route";
 
 const client = new PGlite();
 const database = drizzle(client, { schema });
@@ -40,6 +43,7 @@ beforeEach(async () => {
   await client.exec("TRUNCATE payment_orders,commercial_wallets,commercial_ledger CASCADE;");
   state.create.mockResolvedValue({ sessionId: "CHK_test", checkoutUrl: "https://pancake.waffo.ai/test#token=secret", expiresAt: new Date(Date.now() + 86400000).toISOString() });
   state.token.mockResolvedValue({ token: "customer-secret" });
+  state.session.mockResolvedValue({ user: { id: userId, email: "test@example.com" } });
   state.refund.mockImplementation(async params => ({ ticket: { id: "TKT_test", subjectId: "PAY_test", status: "pending", refundTicketMerchantExternalId: params.refundTicketMerchantExternalId } }));
 });
 afterAll(async () => { vi.unstubAllEnvs(); await client.close(); });
@@ -163,4 +167,26 @@ it("restores held entitlements when local review rejects the refund without a pr
   await reviewCommercialRefund("admin", refund.id, "reject", "用户撤销申请");
   expect((await database.select().from(schema.commercialWallets))[0].credits).toBe(200);
   expect(state.refund).not.toHaveBeenCalled();
+});
+function checkoutRequest(body: unknown, origin = "https://test.example.com") {
+  return checkoutPost(new NextRequest("https://test.example.com/api/payments/waffo/checkout", { method: "POST", headers: { origin, "Content-Type": "application/json" }, body: JSON.stringify(body) }));
+}
+it("advertises only configured packages and enforces authentication, origin and ownership", async () => {
+  expect(await (await checkoutConfig()).json()).toMatchObject({ enabled: true, packages: ["v6_trial_200"] });
+  const body = { packageId: "v6_trial_200", requestId: randomUUID(), credits: 999999, amountCents: 1 };
+  state.session.mockResolvedValueOnce(null);
+  expect((await checkoutRequest(body)).status).toBe(401);
+  expect((await checkoutRequest(body, "https://evil.example")).status).toBe(403);
+  expect(state.create).not.toHaveBeenCalled();
+  expect((await checkoutRequest(body)).status).toBe(200);
+  expect(state.create.mock.calls[0][0].priceSnapshot.amount).toBe("34.90");
+  const [saved] = await database.select().from(schema.paymentOrders);
+  state.session.mockResolvedValueOnce({ user: { id: randomUUID(), email: "other@example.com" } });
+  expect((await checkoutRequest({ orderId: saved.id })).status).toBe(404);
+  expect(state.create).toHaveBeenCalledTimes(1);
+  expect((await checkoutRequest({ orderId: saved.id })).status).toBe(200);
+  expect(state.create.mock.calls[0][1]).toEqual(state.create.mock.calls[1][1]);
+  vi.stubEnv("WAFFO_PAYMENTS_ENABLED", "false");
+  expect(await (await checkoutConfig()).json()).toMatchObject({ enabled: false, packages: [] });
+  expect((await checkoutRequest(body)).status).toBe(409);
 });

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { Check } from "lucide-react";
 import { COMMERCIAL_PACKAGES } from "@/lib/billing/pricing-v6";
 import { AlipayCheckoutDialog } from "@/components/payments/alipay-checkout-dialog";
+import { WaffoCheckoutDialog } from "@/components/payments/waffo-checkout-dialog";
 import { useSession } from "@/lib/auth/auth-client";
 
 export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: boolean }) {
@@ -16,6 +17,16 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
   const requestIds = useRef<Record<string, string>>({});
   const [checkoutAttempt, setCheckoutAttempt] = useState(0);
   const [previousOrderUnconfirmed, setPreviousOrderUnconfirmed] = useState(false);
+  const [waffoPackages, setWaffoPackages] = useState<string[]>([]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch("/api/payments/waffo/checkout", { cache: "no-store", signal: controller.signal }).then(async response => {
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.enabled && Array.isArray(data.packages)) setWaffoPackages(data.packages.filter((id: unknown): id is string => typeof id === "string"));
+    }).catch(() => {});
+    return () => controller.abort();
+  }, []);
   const settings = authenticated ? "/dashboard?tab=settings" : "/login?next=%2Fdashboard%3Ftab%3Dsettings";
   return (
     <section id="pricing" className="bg-[#F7F1E8] py-16 md:py-24">
@@ -39,16 +50,16 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
                   zh ? "自带 Key 也可购买套餐，套餐积分可用于自动拆镜服务" : "You can buy a package with your own API key and use its credits for automatic shot splitting",
                 ].map((line) => <li key={line} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-[#4C7055]" /><span>{line}</span></li>)}
               </ul>
-              <button type="button" disabled={!pack.checkoutEnabled} onClick={() => {
-                if (!pack.checkoutEnabled) return;
+              <button type="button" disabled={!pack.checkoutEnabled && !waffoPackages.includes(pack.id)} onClick={() => {
+                if (!pack.checkoutEnabled && !waffoPackages.includes(pack.id)) return;
                 if (!authenticated) { window.location.href = "/login?next=%2F%23pricing"; return; }
-                const storageKey = `promptlens:checkout:${session?.user.id || "current"}:${pack.id}`;
+                const storageKey = `promptlens:${waffoPackages.includes(pack.id) ? "waffo-checkout" : "checkout"}:${session?.user.id || "current"}:${pack.id}`;
                 try { requestIds.current[pack.id] ??= localStorage.getItem(storageKey) || crypto.randomUUID(); localStorage.setItem(storageKey, requestIds.current[pack.id]); }
                 catch { requestIds.current[pack.id] ??= crypto.randomUUID(); }
                 setPreviousOrderUnconfirmed(false);
                 setSelected(pack);
               }} className="mt-auto min-h-11 rounded-lg bg-[#241915] px-4 py-2 text-sm text-white disabled:cursor-not-allowed disabled:opacity-50">
-                {!pack.checkoutEnabled ? (zh ? "待开放" : "Coming soon") : authenticated ? (zh ? "支付宝购买" : "Buy with Alipay") : (zh ? "登录后购买" : "Sign in to buy")}
+                {!pack.checkoutEnabled && !waffoPackages.includes(pack.id) ? (zh ? "待开放" : "Coming soon") : authenticated ? waffoPackages.includes(pack.id) ? (zh ? "购买套餐" : "Buy package") : (zh ? "支付宝购买" : "Buy with Alipay") : (zh ? "登录后购买" : "Sign in to buy")}
               </button>
             </article>
           ))}
@@ -65,7 +76,11 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
           </div>
         </div>
       </div>
-      {selected && <AlipayCheckoutDialog key={`${selected.id}:${checkoutAttempt}`} pack={{ ...selected, name: zh ? selected.name : ["Starter", "Creator", "Volume"][COMMERCIAL_PACKAGES.findIndex((pack) => pack.id === selected.id)] }} requestId={requestIds.current[selected.id]} previousOrderUnconfirmed={previousOrderUnconfirmed} onClose={() => setSelected(null)} onNewOrder={(previous) => {
+      {selected && waffoPackages.includes(selected.id) && <WaffoCheckoutDialog key={`waffo:${selected.id}`} pack={selected} requestId={requestIds.current[selected.id]} onClose={() => setSelected(null)} onPaid={() => {
+        delete requestIds.current[selected.id];
+        try { localStorage.removeItem(`promptlens:waffo-checkout:${session?.user.id || "current"}:${selected.id}`); } catch { /* A fresh request ID is kept in memory. */ }
+      }} />}
+      {selected && !waffoPackages.includes(selected.id) && <AlipayCheckoutDialog key={`${selected.id}:${checkoutAttempt}`} pack={{ ...selected, name: zh ? selected.name : ["Starter", "Creator", "Volume"][COMMERCIAL_PACKAGES.findIndex((pack) => pack.id === selected.id)] }} requestId={requestIds.current[selected.id]} previousOrderUnconfirmed={previousOrderUnconfirmed} onClose={() => setSelected(null)} onNewOrder={(previous) => {
         setPreviousOrderUnconfirmed(previous?.status === "pending");
         requestIds.current[selected.id] = crypto.randomUUID();
         try { localStorage.setItem(`promptlens:checkout:${session?.user.id || "current"}:${selected.id}`, requestIds.current[selected.id]); } catch { /* Keep the in-memory ID when storage is unavailable. */ }

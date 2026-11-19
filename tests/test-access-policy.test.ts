@@ -68,6 +68,13 @@ afterEach(() => {
 });
 
 describe("V2 test access policy", () => {
+  it("allows signed Waffo callbacks to reach their verifier while keeping checkout authenticated", async () => {
+    process.env.ACCESS_ALLOWED_EMAILS = "raojiacui@gmail.com,raojinbo@gmail.com,outreach@infistar.cc,489543971@qq.com";
+    const callback = await middleware(new NextRequest("https://test.example/api/payments/waffo/webhook", { method: "POST" }));
+    expect(callback.headers.get("x-middleware-next")).toBe("1");
+    const checkout = await middleware(new NextRequest("https://test.example/api/payments/waffo/checkout", { method: "POST" }));
+    expect(checkout.status).toBe(401);
+  });
   it.each(["/terms", "/privacy", "/refund"])("keeps %s public without bypassing other test access controls", async (path) => {
     process.env.ACCESS_ALLOWED_EMAILS = "raojiacui@gmail.com,raojinbo@gmail.com,outreach@infistar.cc,489543971@qq.com";
     const response = await middleware(new NextRequest(`https://test.example${path}`, { headers: { "accept-language": "en" } }));

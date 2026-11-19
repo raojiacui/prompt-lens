@@ -8,6 +8,7 @@ vi.mock("@/lib/auth", () => ({ auth: { api: { getSession: state.session } } }));
 vi.mock("@/lib/db", () => ({ db: { query: { paymentOrders: { findFirst: state.find } } }, paymentOrders: { id: "id", userId: "userId" } }));
 vi.mock("drizzle-orm", () => ({ eq: state.eq, and: (...parts: unknown[]) => parts }));
 vi.mock("@/lib/payments/alipay-reconciliation", () => ({ reconcileAlipayOrder: state.reconcile }));
+vi.mock("@/lib/payments/waffo-reconciliation", () => ({ reconcileWaffoOrder: vi.fn() }));
 import { GET } from "@/app/api/payments/orders/[id]/route";
 
 const id = "11111111-1111-4111-8111-111111111111";

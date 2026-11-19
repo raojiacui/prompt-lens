@@ -38,7 +38,7 @@ export default function CommercialReviewPage() {
       if (body.action === "query_refund" || body.action === "approve_refund") {
         const result = await response.json();
         setNotice(result.state === "succeeded"
-          ? (zh ? "支付宝已确认退款成功，订单已更新。" : "Alipay confirmed the refund. The order has been updated.")
+          ? (zh ? "支付渠道已确认退款成功，订单已更新。" : "The payment provider confirmed the refund. The order has been updated.")
           : (zh ? "尚未确认退款成功，保留待核对状态，未再次发起退款。" : "Refund remains unconfirmed. No refund was resubmitted."));
       }
       if (body.action === "reject_refund") setNotice(zh ? "已拒绝申请，套餐额度已恢复。" : "Request declined. Package balance restored.");
@@ -102,7 +102,7 @@ export default function CommercialReviewPage() {
           {selectedRefund === r.id && <div className="space-y-3" role="group" aria-label={zh ? "退款审核" : "Refund approval"}>
             <label className="flex items-start gap-2"><input type="checkbox" checked={customerContacted} onChange={(event) => setCustomerContacted(event.target.checked)} className="mt-1" />{zh ? "已与用户沟通并核对订单" : "I have contacted the customer and verified the order"}</label>
             <label className="block">{zh ? "处理备注（必填）" : "Review note (required)"}<textarea required minLength={1} maxLength={2000} value={reviewNote} onChange={(event) => setReviewNote(event.target.value)} className="mt-2 min-h-28 w-full rounded-lg border border-border bg-background p-3" /></label>
-            <label className="flex items-start gap-2"><input type="checkbox" checked={approveConfirmed} onChange={(event) => setApproveConfirmed(event.target.checked)} className="mt-1" />{zh ? `我同意退还此订单全额 ¥${(r.amountCents / 100).toFixed(2)}；点击同意将向支付宝发起真实退款` : `I approve a full refund of ¥${(r.amountCents / 100).toFixed(2)}; approving will send a real Alipay refund`}</label>
+            <label className="flex items-start gap-2"><input type="checkbox" checked={approveConfirmed} onChange={(event) => setApproveConfirmed(event.target.checked)} className="mt-1" />{zh ? `我同意退还此订单全额 ¥${(r.amountCents / 100).toFixed(2)}；点击同意将向支付渠道提交真实退款申请，最终结果以渠道确认为准` : `I approve a full refund of ¥${(r.amountCents / 100).toFixed(2)}; approving submits a real refund request, with final confirmation from the payment provider`}</label>
             {(!reviewNote.trim() || !customerContacted) && <p className="text-muted-foreground">{zh ? "请填写处理备注，并确认已与用户沟通。" : "Enter a review note and confirm customer contact."}</p>}
             <div className="flex flex-wrap gap-3">
               <button disabled={busy || !customerContacted || !approveConfirmed || !reviewNote.trim()} onClick={() => void act({ action: "approve_refund", refundId: r.id, evidence: reviewNote, customerContacted, approveConfirmed })} className="min-h-11 rounded-lg border border-border px-4 disabled:opacity-50">{busy ? (zh ? "处理中…" : "Processing…") : (zh ? "同意并执行退款" : "Approve and refund")}</button>
@@ -110,7 +110,7 @@ export default function CommercialReviewPage() {
             </div>
           </div>}
         </> : <>
-          <p className="text-red-700">{zh ? "退款处理中或结果待核对。请先核对支付宝商户记录，不要重复发起退款。" : "Refund processing or outcome uncertain. Verify Alipay merchant records; do not submit another refund."}</p>
+          <p className="text-red-700">{zh ? "退款处理中或结果待核对。请先核对支付渠道的商户记录；Waffo 工单需在 Waffo 后台继续审核处理。请勿重复发起退款。" : "Refund processing or unconfirmed. Check merchant records; Waffo tickets require review in the Waffo dashboard. Do not submit another refund."}</p>
           <button disabled={busy} onClick={() => void act({ action: "query_refund", refundId: r.id })} className="flex min-h-10 items-center gap-2 underline disabled:opacity-50"><RefreshCw size={16} />{zh ? "查询退款状态" : "Query refund status"}</button>
         </>}
       </div>)}

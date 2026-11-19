@@ -5,11 +5,12 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { ArrowLeft, RefreshCw, X } from "lucide-react";
 import { AlipayCheckoutDialog } from "@/components/payments/alipay-checkout-dialog";
+import { WaffoCheckoutDialog } from "@/components/payments/waffo-checkout-dialog";
 import { COMMERCIAL_PACKAGES } from "@/lib/billing/pricing-v6";
 import { SUPPORT_WECHAT } from "@/lib/support-contact";
 import { refreshWalletBalance, useWalletBalance } from "@/lib/billing/use-wallet-balance";
 
-type Order = { id: string; packageId: string; packageName: string; amountCents: number; status: string; createdAt: string };
+type Order = { id: string; provider?: string; packageId: string; packageName: string; amountCents: number; status: string; createdAt: string };
 type Account = {
   wallet: { credits: number; rewrites: number; heldCredits: number; heldRewrites: number; frozen: boolean };
   orders: Order[];
@@ -114,12 +115,12 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
         {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         <div className="flex flex-wrap gap-3">{canEditRefund && <button disabled={busy || !refundReason.trim() || refundContact.trim().length < 3} className="min-h-10 rounded-lg bg-foreground px-4 text-background disabled:opacity-50">{busy ? (zh ? "正在保存…" : "Saving…") : existingRefund ? (zh ? "保存修改" : "Save changes") : (zh ? "提交申请，等待客服审核" : "Submit for support review")}</button>}<button type="button" disabled={busy} onClick={() => { setRefundOrder(null); setError(""); }} className="px-4">{zh ? "关闭" : "Close"}</button></div>
       </form></AccountActionDialog>}
-      {account.refunds.some((refund) => refund.state === "requested") && <p className="my-5 text-sm">{zh ? `退款申请已提交，请添加客服微信 ${SUPPORT_WECHAT} 并提供订单号。审核通过前不会发起支付宝退款。` : `Request submitted. Contact WeChat support at ${SUPPORT_WECHAT} with your order ID. No Alipay refund is issued before approval.`}</p>}
+      {account.refunds.some((refund) => refund.state === "requested") && <p className="my-5 text-sm">{zh ? `退款申请已提交，请添加客服微信 ${SUPPORT_WECHAT} 并提供订单号。审核通过前不会发起退款。` : `Request submitted. Contact WeChat support at ${SUPPORT_WECHAT} with your order ID. No refund is issued before approval.`}</p>}
       <h2 className="mt-10 text-lg font-semibold">{zh ? "任务消费" : "Task usage"}</h2>
       {!account.tasks.length && <p className="py-6 text-sm text-muted-foreground">{zh ? "暂无任务消费" : "No task usage yet"}</p>}
       {account.tasks.map((task) => <div key={task.id} className="flex flex-wrap justify-between gap-3 border-b border-border py-4 text-sm"><div><p>{task.taskKey.startsWith("commercial:") ? <Link className="underline" href={`/billing/tasks/${task.taskKey.slice(11)}`}>{zh ? "查看创作任务" : "View creation task"}</Link> : task.taskKey.startsWith("rewrite:") ? (zh ? "AI 脚本改写" : "AI rewrite") : (zh ? "创作任务" : "Creation task")}</p><p className="mt-1 break-all text-xs text-muted-foreground">{task.id}</p></div><div>{status(task.state)} · {task.settledCredits ?? task.credits} {zh ? "积分" : "credits"} · {task.settledRewrites ?? task.rewrites} {zh ? "次改写" : "rewrites"}</div></div>)}
     </>}
-    {selected && pack && <AlipayCheckoutDialog pack={pack} requestId="" existingOrderId={selected.id} onClose={() => setSelected(null)} onPaid={() => void load()} />}
+    {selected && pack && (selected.provider === "waffo" ? <WaffoCheckoutDialog pack={pack} existingOrderId={selected.id} onClose={() => setSelected(null)} onPaid={() => void load()} /> : <AlipayCheckoutDialog pack={pack} requestId="" existingOrderId={selected.id} onClose={() => setSelected(null)} onPaid={() => void load()} />)}
   </Container>;
 }
 

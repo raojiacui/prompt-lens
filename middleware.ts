@@ -13,6 +13,7 @@ const SERVER_AUTH_PATHS = [
   "/api/cron",
   "/api/internal",
   "/api/payments/webhooks",
+  "/api/payments/waffo/webhook",
   "/api/session-refresh",
 ];
 

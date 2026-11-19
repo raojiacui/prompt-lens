@@ -37,7 +37,7 @@ export function PaymentReturnClient() {
   return <main className="mx-auto flex min-h-screen max-w-xl flex-col items-center justify-center px-6 text-center text-foreground">
     {paid ? <CheckCircle2 className="h-14 w-14 text-green-700" /> : failed ? <XCircle className="h-14 w-14 text-red-700" /> : <Clock3 className="h-14 w-14 text-amber-700" />}
     <h1 className="mt-5 text-2xl font-semibold">{paid ? (zh ? "支付成功" : "Payment confirmed") : failed ? (zh ? "订单未完成" : "Payment not completed") : (zh ? "正在确认支付结果" : "Confirming payment")}</h1>
-    <p className="mt-3 text-sm text-muted-foreground">{paid ? (zh ? "积分与改写次数已经到账。" : "Your credits and rewrites are now available.") : (zh ? "页面回跳不代表支付成功，系统正在向支付宝查询最终状态。" : "Returning to this page does not prove payment. We are checking the final status with Alipay.")}</p>
+    <p className="mt-3 text-sm text-muted-foreground">{paid ? (zh ? "积分与改写次数已经到账。" : "Your credits and rewrites are now available.") : failed ? (zh ? "请在订单页查看订单与退款状态。" : "View your order and refund status on the billing page.") : (zh ? "系统正在向支付服务确认最终状态，确认到账后会自动更新。" : "We are checking with the payment provider. This page updates after payment is confirmed.")}</p>
     {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
     <Link href="/billing" className="mt-7 rounded-lg border border-border px-5 py-3 text-sm">{zh ? "查看余额与订单" : "View balance and orders"}</Link>
   </main>;

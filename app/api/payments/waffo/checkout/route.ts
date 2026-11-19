@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
-import { createWaffoOrder } from "@/lib/payments/waffo-orders";
+import { createWaffoOrder, openWaffoOrder } from "@/lib/payments/waffo-orders";
+import { and, eq } from "drizzle-orm";
+import { db, paymentOrders } from "@/lib/db";
 import { waffoAvailablePackages } from "@/lib/payments/waffo-client";
 
 export const runtime = "nodejs";
@@ -13,6 +15,12 @@ export async function POST(request: NextRequest) {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (request.headers.get("origin") !== new URL(request.url).origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const body = await request.json().catch(() => null);
+  if (typeof body?.orderId === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.orderId)) {
+    const order = await db.query.paymentOrders.findFirst({ where: and(eq(paymentOrders.id, body.orderId), eq(paymentOrders.userId, session.user.id), eq(paymentOrders.provider, "waffo")) });
+    if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    try { return NextResponse.json(await openWaffoOrder(order), { headers: { "Cache-Control": "private, no-store" } }); }
+    catch { return NextResponse.json({ code: "CHECKOUT_STATUS_UNKNOWN" }, { status: 502 }); }
+  }
   if (typeof body?.packageId !== "string" || typeof body?.requestId !== "string" || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(body.requestId)) return NextResponse.json({ code: "INVALID_CHECKOUT_REQUEST" }, { status: 400 });
   if (!waffoAvailablePackages().includes(body.packageId)) return NextResponse.json({ code: "PACKAGE_NOT_OPEN" }, { status: 409 });
   try {
