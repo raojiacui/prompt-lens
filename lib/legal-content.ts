@@ -5,7 +5,7 @@ export type PolicyDocument = {
   sections: { id: string; title: string; paragraphs: string[] }[];
 };
 
-export const POLICY_UPDATED_AT = "2026-11-18";
+export const POLICY_UPDATED_AT = "2026-11-19";
 export const POLICY_LINKS = [
   { kind: "terms", href: "/terms", zh: "服务条款", en: "Terms of Service" },
   { kind: "privacy", href: "/privacy", zh: "隐私政策", en: "Privacy Policy" },
@@ -44,8 +44,9 @@ export const policyContent: Record<"zh" | "en", Record<PolicyKind, PolicyDocumen
           "（5）深度伪造／冒充他人：禁止真人换脸、伪造真实人物的身份、面容、声音、言论或行为；禁止将真实人物合成进虚构的亲密互动场景，或制作可能误导他人的真实人物影像。上述禁止情形不因当事人同意而自动例外；本产品不提供上述用途的许可。",
           "（6）侵犯版权／商标：禁止未经授权复制、仿制或利用受版权、商标、肖像、声音及其他知识产权或人格权保护的素材、人物形象、品牌标识或作品。",
           "真人素材来源：不得上传或使用未经素材中人物本人同意的照片、视频或声音。上传者应确保其拥有素材权利或已获得必要授权，并在必要时能够提供证明；获得授权也不意味着可以使用本站制作上述禁止的深度伪造内容。",
-          "内容审核与处置：本站可依据底层模型及服务商返回的安全拦截结果、用户举报和人工核查评估内容及使用行为，并视情况拒绝或停止任务、限制或暂停账号、删除本站控制范围内的违规内容；严重或反复违规时可封禁账号，并在适用法律要求时配合有关部门。现有审核不保证覆盖所有风险；尚未上线的独立自动提示词或输出扫描能力不应被理解为已启用。涉及已付费用或额度的处理，按照公示的计费、退款政策及适用法律核实，不因违规而当然清零。",
-          "举报与申诉：如发现疑似违规内容，或认为自己的内容／账号被错误处置，可使用本页下方公开客服邮箱提交举报或申诉，并提供相关链接、任务编号、具体问题及必要权利证明。我们会根据可核实的信息调查、在必要时要求补充材料，并通过客服渠道反馈可提供的处理结果。为保护他人隐私，反馈可能不包含全部调查细节。",
+          "内容审核与处置：视频生成前，本站使用动态违禁词库及 Waffo Prompt Sift 审核用户提示词；生成后、展示前，使用 Google Cloud Video Intelligence 对视频画面中的成人内容进行审核，未明确通过的结果暂缓展示，并保留自动审核与人工复核记录。自动检测不能覆盖全部暴力、音频、版权或真人伪造风险。我们结合服务商安全拦截结果、用户举报和人工核查评估内容及使用行为，并视情况拒绝或停止任务、限制或暂停账号、删除本站控制范围内的违规内容；严重或反复违规时可封禁账号，并在适用法律要求时配合有关部门。涉及已付费用或额度的处理，按照公示的计费、退款政策及适用法律核实，不因违规而当然清零。",
+          "举报与申诉：如发现疑似违规内容，或认为自己的内容／账号被错误处置，可使用本页下方公开客服邮箱提交举报或申诉，并提供相关链接、任务编号、具体问题及必要权利证明。我们根据可核实的信息调查，并在必要时要求补充材料。为保护他人隐私，反馈可能不包含全部调查细节。",
+          "处理时限：我们将在收到内容举报或申诉后 3 个工作日内完成初步核查，并通过提交时使用的客服渠道或联系邮箱反馈初步核查结果及已采取的处理措施。能够完成核查的案件，将同时告知处理结论；需要补充材料、联系第三方或进一步调查的复杂案件，将在上述 3 个工作日内说明待补材料、当前进展、延期原因及预计完成时间，并在核查完成后反馈最终处理结果。举报和申诉均适用此时限。工作日不含周末及中国大陆法定节假日。",
           "AI 生成结果可能不准确，也可能受到第三方权利限制。用户应在公开发布或商业使用前自行复核，并按照适用要求披露其 AI 生成属性。",
         ] },
         { id: "availability", title: "6. 服务可用性与素材保存", paragraphs: [
@@ -159,8 +160,9 @@ export const policyContent: Record<"zh" | "en", Record<PolicyKind, PolicyDocumen
           "(5) Deepfakes / impersonation: real-person face swaps; fabrication of a real person's identity, likeness, voice, statements or actions; synthetic intimate interactions involving real people; or misleading depictions of real persons. Consent does not create an exception for these prohibited deepfake uses. Prompt Lens does not authorize such uses.",
           "(6) Copyright / trademark infringement: unauthorized copying, imitation or exploitation of protected works, characters, brands, logos, likenesses, voices or other intellectual-property or personality rights.",
           "Real-person media: do not upload or use another person's image, video or voice without that person's consent. You must own or have necessary rights in uploaded materials and be able to substantiate authorization when needed. Consent does not permit the prohibited deepfake activities above.",
-          "Review and enforcement: we may evaluate provider safety responses, user reports and manual investigations, then reject or stop tasks, restrict or suspend accounts, remove content within our control, and ban accounts for serious or repeated violations. We may cooperate with competent authorities where required by law. Existing safeguards do not detect every violation; independent automated prompt/output screening not yet released should not be treated as active. Paid balances and refunds are handled under our published billing and refund policies and applicable law; violations do not automatically forfeit credits.",
-          "Reports and appeals: contact the public support email shown below to report prohibited content or appeal a moderation or account decision. Include a relevant link, task ID, explanation and necessary proof of rights. We will review available facts, request more information where needed, and respond through the support channel as appropriate, subject to third-party privacy considerations.",
+          "Review and enforcement: before video generation, we screen user prompts using our dynamic term rules and Waffo Prompt Sift. Before displaying generated videos, Google Cloud Video Intelligence reviews visual adult content; results without explicit approval are withheld. We retain automated moderation and human review records. Automated checks cannot cover all risks involving violence, audio, copyright or deepfakes. We consider provider safety responses, user reports and manual investigations, then may reject or stop tasks, restrict or suspend accounts, remove content within our control, and ban accounts for serious or repeated violations. We may cooperate with competent authorities where required by law. Paid balances and refunds are handled under our published billing and refund policies and applicable law; violations do not automatically forfeit credits.",
+          "Reports and appeals: contact the public support email shown below to report prohibited content or appeal a moderation or account decision. Include a relevant link, task ID, explanation and necessary proof of rights. We review available facts and may request supporting information. Responses may omit investigation details to protect third-party privacy.",
+          "Handling time: within 3 business days after receiving a content report or appeal, we will complete an initial review and respond through the support channel or contact email used for your submission with our initial findings and any measures taken. If the investigation can be completed, we will also provide the decision. For complex cases requiring additional information, third-party contact or further investigation, we will explain any required information, current progress, reasons for the extension and an estimated completion time within the same 3-business-day period, and provide the final outcome when the investigation is complete. This timeframe applies to both reports and appeals. Business days exclude weekends and statutory public holidays in mainland China.",
           "AI-generated results may be inaccurate or subject to third-party rights. Review results before publishing or commercial use and disclose AI generation where required.",
         ] },
         { id: "availability", title: "6. Availability and retention", paragraphs: [
