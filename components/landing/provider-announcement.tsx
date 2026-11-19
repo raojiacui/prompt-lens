@@ -19,11 +19,12 @@ export function ProviderAnnouncement() {
   return (
     <aside aria-label={t("announcementLabel")} className="relative border-b border-[#5B8193] bg-[#587F92] bg-cover bg-center px-11 py-2.5 text-center text-xs leading-5 text-white sm:text-sm" style={{ backgroundImage: "linear-gradient(rgba(18,48,66,0.25), rgba(18,48,66,0.25)), url('/partners/announcement-blue-texture.png')" }}>
       <div className="flex flex-col items-center justify-center gap-y-2 lg:flex-row">
-        <strong className="hidden items-center gap-1.5 whitespace-nowrap pr-4 font-semibold lg:inline-flex">
+        <strong className="hidden items-center gap-1.5 whitespace-nowrap font-semibold lg:inline-flex">
           <Image src="/prompt-lens-icon.png" alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0 object-contain" />PromptLens
+          <span aria-hidden="true" className="ml-2">×</span>
         </strong>
         {partners.map((partner) => (
-          <a key={partner.name} href={partner.href} target="_blank" rel="noopener noreferrer sponsored" className="inline-flex min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-0.5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/80 lg:border-l lg:border-white/40 lg:px-4">
+          <a key={partner.name} href={partner.href} target="_blank" rel="noopener noreferrer sponsored" className="inline-flex min-w-0 flex-wrap items-center justify-center gap-x-2 gap-y-0.5 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white/80 lg:border-white/40 lg:px-4 lg:[&:not(:first-of-type)]:border-l">
             <strong className="inline-flex items-center gap-1.5 whitespace-nowrap font-semibold">
               <Image src={partner.logo} alt="" width={22} height={22} className="h-[22px] w-[22px] shrink-0 rounded-md object-contain" />{partner.name}
             </strong>
