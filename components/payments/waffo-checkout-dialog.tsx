@@ -96,7 +96,9 @@ export function WaffoCheckoutDialog({ pack, requestId, existingOrderId, currency
     {error && <p role="alert" className="mt-5 text-sm text-red-700">{error}</p>}
     {pending && checkout.linkExpiresAt && !unavailable && !linkExpired && !error && <p className="mt-3 text-sm text-muted-foreground">{zh ? `付款链接有效至 ${deadline(checkout.linkExpiresAt)}` : `Payment link expires at ${deadline(checkout.linkExpiresAt)}`}</p>}
     {pending && (unavailable || linkExpired) && !error && <p role="status" className="mt-4 text-sm">{zh ? "付款链接已失效。如已扣款，请勿重复下单。" : "This payment link is unavailable. Do not place another order if already charged."}</p>}
-    {pending && checkout.checkoutUrl && !loading && !error && !linkExpired && !unavailable && <a href={checkout.checkoutUrl} target="_blank" rel="noopener noreferrer" className="mt-6 inline-flex min-h-11 items-center rounded-lg bg-foreground px-5 text-background">{zh ? "前往 Waffo 安全结账" : "Continue to Waffo checkout"}</a>}
-    {!loading && (pending || error) && <a href="/pricing?newCheckout=1#pricing" className="mt-4 inline-flex min-h-10 items-center rounded-lg border border-border px-4 text-sm">{zh ? "返回套餐页重新下单" : "Return to packages to place a new order"}</a>}
+    {!loading && (pending || error) && <div className="mt-6 flex flex-wrap items-center gap-3">
+      {pending && checkout.checkoutUrl && !error && !linkExpired && !unavailable && <a href={checkout.checkoutUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 items-center rounded-lg bg-foreground px-5 text-background">{zh ? "前往 Waffo 安全结账" : "Continue to Waffo checkout"}</a>}
+      <a href="/pricing?newCheckout=1#pricing" className="inline-flex min-h-11 items-center rounded-lg border border-border px-4 text-sm">{zh ? "返回套餐页重新下单" : "Return to packages to place a new order"}</a>
+    </div>}
   </dialog>;
 }
