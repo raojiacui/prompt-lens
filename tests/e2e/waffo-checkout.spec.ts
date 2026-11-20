@@ -28,16 +28,17 @@ for (const width of [390, 1440]) for (const currency of ["USD", "JPY"]) test(`Wa
   const dialog = page.getByRole("dialog", { name: "购买套餐" });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("link", { name: "前往 Waffo 安全结账" })).toHaveAttribute("href", "https://pancake.waffo.ai/fixture#token=fixture");
-  await expect(dialog).toContainText("最终税费");
   await expect(dialog).toContainText(currency);
   await expect(dialog).toContainText(currency === "JPY" ? "750" : "4.89");
   expect(requests[0].currency).toBe(currency);
   const bounds = await dialog.boundingBox();
   expect(bounds!.x).toBeGreaterThanOrEqual(0); expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(width);
-  await expect(dialog).toContainText("本次付款链接有效至");
-  await dialog.getByRole("button", { name: "重新获取付款链接" }).click();
+  await expect(dialog).toContainText("付款链接有效至");
+  await expect(dialog.getByRole("button", { name: "重新获取付款链接" })).toHaveCount(0);
+  await dialog.getByRole("button", { name: "关闭", exact: true }).click();
+  await page.locator("#pricing").getByRole("button", { name: "购买套餐", exact: true }).click();
   await expect.poll(() => requests.length).toBe(2);
-  expect(requests[1]).toMatchObject({ orderId });
+  expect(requests[1].requestId).toBe(requests[0].requestId);
   expect(requests[1].checkoutRequestId).not.toBe(requests[0].checkoutRequestId);
   paid = true;
   await expect(dialog).toContainText("支付成功，套餐权益已到账。", { timeout: 10000 });
@@ -68,7 +69,7 @@ test("Waffo stays unavailable with an unconfigured environment", async ({ page }
   for (const button of await page.locator("#pricing article button").all()) await expect(button).toBeDisabled();
 });
 
-test("hides expired payment links, renews the same order, and explicitly starts a new order from packages", async ({ page, context }) => {
+test("shows only the packages recovery action for expired links and starts a new order", async ({ page, context }) => {
   await context.addCookies([{ name: "NEXT_LOCALE", value: "zh", domain: "localhost", path: "/" }]);
   const requests: Record<string, unknown>[] = [];
   await page.route("**/api/**", async route => {
@@ -85,15 +86,13 @@ test("hides expired payment links, renews the same order, and explicitly starts 
   await page.goto("/pricing");
   await page.locator("#pricing").getByRole("button", { name: "购买套餐", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "购买套餐" });
-  await expect(dialog).toContainText("本次付款链接已过期");
+  await expect(dialog).toContainText("付款链接已失效");
   await expect(dialog.getByRole("link", { name: "前往 Waffo 安全结账" })).toHaveCount(0);
-  await dialog.getByRole("button", { name: "重新获取付款链接" }).click();
-  await expect(dialog.getByRole("link", { name: "前往 Waffo 安全结账" })).toHaveAttribute("href", "https://pancake.waffo.ai/fixture-2#token=fixture");
-  expect(requests[1].orderId).toBe(orderId);
-  expect(requests[1].checkoutRequestId).not.toBe(requests[0].checkoutRequestId);
+  await expect(dialog.getByRole("button", { name: "重新获取付款链接" })).toHaveCount(0);
+  await expect(dialog.getByRole("link")).toHaveCount(1);
   await dialog.getByRole("link", { name: "返回套餐页重新下单" }).click();
   await expect(page).toHaveURL(/newCheckout=1/);
   await page.locator("#pricing").getByRole("button", { name: "购买套餐", exact: true }).click();
-  await expect.poll(() => requests.length).toBe(3);
-  expect(requests[2].requestId).not.toBe(requests[0].requestId);
+  await expect.poll(() => requests.length).toBe(2);
+  expect(requests[1].requestId).not.toBe(requests[0].requestId);
 });
