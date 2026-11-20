@@ -92,6 +92,7 @@ it("renews an unavailable checkout session without changing the local order or l
   expect(state.create.mock.calls[0][0]).toEqual(state.create.mock.calls[1][0]);
   expect(state.create.mock.calls[0][1]).not.toEqual(state.create.mock.calls[1][1]);
   expect(state.create.mock.calls[1][1]).toEqual(state.create.mock.calls[2][1]);
+  for (const [, options] of state.create.mock.calls) expect(options.idempotencyKey).toMatch(/^[a-zA-Z0-9_-]{1,256}$/);
   expect(Date.parse(renewal.linkExpiresAt!)).toBeLessThanOrEqual(Date.now() + 300000);
   expect(Date.parse(renewal.orderExpiresAt)).toBeGreaterThan(Date.now() + 86390000);
 });

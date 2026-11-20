@@ -66,7 +66,7 @@ export async function openWaffoOrder(order: WaffoOrder, checkoutRequestId?: stri
     orderMerchantExternalId: order.providerOrderId, expiresInSeconds: 86400, allowPromotionCodes: false,
     metadata: { localOrderId: order.id, packageId: order.packageId, productId: snapshot.productId, storeId: snapshot.storeId },
     successUrl: `${origin.origin}/billing/payment/return?orderId=${encodeURIComponent(order.id)}`,
-  }, { idempotencyKey: checkoutRequestId ? `${order.providerOrderId}:link:${checkoutRequestId.toLowerCase()}` : order.providerOrderId });
+  }, { idempotencyKey: checkoutRequestId ? `${order.providerOrderId}_link_${checkoutRequestId.toLowerCase()}` : order.providerOrderId });
   const url = assertWaffoCheckoutUrl(result.checkoutUrl);
   const tokenExpiry = Date.parse(result.tokenExpiresAt);
   const sessionExpiry = Date.parse(result.expiresAt);
