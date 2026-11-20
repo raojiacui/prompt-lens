@@ -26,12 +26,16 @@ async function exchangeRate(currency: PaymentCurrency): Promise<Rate> {
   const running = pending.get(key);
   if (running) return running;
   const query = (async () => {
-    const result = await waffoClient().graphql.query<{ rate: { fromCurrency: string; toCurrency: string; standardRate: string | number; rateRefId: string; expiryTime: string } }>({
+    const result = await waffoClient().graphql.query<{ rate: { fromCurrency: string; toCurrency: string; standardRate: string | number; rateRefId: string; expiryTime: number | string } }>({
       query: "query ($from: CurrencyCode!, $to: CurrencyCode!) { rate(fromCurrency: $from, toCurrency: $to) { fromCurrency toCurrency standardRate rateRefId expiryTime } }",
       variables: { from: "CNY", to: currency },
     });
     const value = result.data?.rate;
-    if (result.errors?.length || !value || value.fromCurrency !== "CNY" || value.toCurrency !== currency || typeof value.rateRefId !== "string" || !value.rateRefId || !Number.isFinite(Date.parse(value.expiryTime)) || Date.parse(value.expiryTime) <= Date.now() + 5000) {
+    // The live GraphQL API returns epoch milliseconds; also accept ISO timestamps.
+    const expiry = typeof value?.expiryTime === "number"
+      ? (Number.isSafeInteger(value.expiryTime) ? value.expiryTime : NaN)
+      : typeof value?.expiryTime === "string" ? Date.parse(value.expiryTime) : NaN;
+    if (result.errors?.length || !value || value.fromCurrency !== "CNY" || value.toCurrency !== currency || typeof value.rateRefId !== "string" || !value.rateRefId || !Number.isFinite(expiry) || expiry <= Date.now() + 5000 || expiry > 8.64e15) {
       // Only rate fields and GraphQL notices: no request headers, keys or customer data.
       console.warn("waffo.exchange_rate.unavailable", { currency,
         errors: result.errors?.map(error => ({ message: error.message.slice(0, 400), layer: error.layer })),
@@ -41,7 +45,7 @@ async function exchangeRate(currency: PaymentCurrency): Promise<Rate> {
     }
     const rate = String(value.standardRate);
     convertCnyPrice(3490, currency, rate);
-    const locked = { currency, rate, rateRefId: value.rateRefId, expiresAt: new Date(Math.min(Date.parse(value.expiryTime), Date.now() + 300_000)).toISOString() };
+    const locked = { currency, rate, rateRefId: value.rateRefId, expiresAt: new Date(Math.min(expiry, Date.now() + 300_000)).toISOString() };
     rates.set(key, locked);
     return locked;
   })();

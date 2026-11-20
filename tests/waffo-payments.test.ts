@@ -238,11 +238,27 @@ it("retries a foreign order with its original locked price and rejects changing 
   expect(state.create.mock.calls[1][0].priceSnapshot.amount).toBe("4.89");
   await expect(createWaffoOrder(userId, "test@example.com", "v6_trial_200", requestId, "CNY")).rejects.toThrow("CHECKOUT_REPLAY_MISMATCH");
 });
-it.each(["missing", "expired", "reversed", "invalid"])("creates no foreign order with a %s rate", async kind => {
+it.each([["USD", "0.149853215900", 523], ["JPY", "23.875888148100", 833]])("accepts live %s rate responses with millisecond expiry and caps the quote lifetime", async (currency, rate, amount) => {
+  mockRate(String(currency), String(rate));
+  const fixture = await state.query(); state.query.mockClear();
+  fixture.data.rate.expiryTime = Date.now() + 21_600_000;
+  state.query.mockResolvedValue(fixture);
+  const result = await createWaffoOrder(userId, "test@example.com", "v6_trial_200", randomUUID(), currency);
+  expect(result).toMatchObject({ currency, amountMinor: amount });
+  const saved = (await database.select().from(schema.paymentOrders))[0];
+  const quote = (saved.metadata as { priceQuote: { expiresAt: string } }).priceQuote;
+  expect(Date.parse(quote.expiresAt)).toBeGreaterThan(Date.now() + 290_000);
+  expect(Date.parse(quote.expiresAt)).toBeLessThanOrEqual(Date.now() + 300_000);
+});
+it.each(["missing", "expired", "expiredMilliseconds", "seconds", "fractionalTimestamp", "invalidTimestamp", "reversed", "invalid"])("creates no foreign order with a %s rate", async kind => {
   mockRate("USD", "0.14");
   const fixture = await state.query(); state.query.mockClear();
   if (kind === "missing") fixture.data.rate = null;
   if (kind === "expired") fixture.data.rate.expiryTime = new Date(Date.now() - 1).toISOString();
+  if (kind === "expiredMilliseconds") fixture.data.rate.expiryTime = Date.now() - 1;
+  if (kind === "seconds") fixture.data.rate.expiryTime = Math.floor(Date.now() / 1000) + 600;
+  if (kind === "fractionalTimestamp") fixture.data.rate.expiryTime = Date.now() + 600_000.5;
+  if (kind === "invalidTimestamp") fixture.data.rate.expiryTime = "invalid";
   if (kind === "reversed") fixture.data.rate.fromCurrency = "USD";
   if (kind === "invalid") fixture.data.rate.standardRate = "NaN";
   state.query.mockResolvedValue(fixture);
