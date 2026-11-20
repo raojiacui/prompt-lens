@@ -40,3 +40,11 @@
 正式分支远端仍为 `6af28cce4dcc1fb5c88ccab3567f415898d4e88e`，主站仍为 `dpl_5pvcy1GTM9Txr7DoC9aGd6HcRiBF`；已验证测试部署为 `6546c7a8aaf63baf62dc2d8740eb230d2425b2dc`。在负责人配置正式变量和生产 Raw Webhook 前，不推送正式发布，不改动审核变量、部署保护或邀请限制。
 
 配置步骤见 `docs/waffo-production-setup.md`。另有一笔旧待付款订单记录过 `WAFFO_QUERY_UNCONFIRMED`，最新成功付款无该错误；支付状态补查仍须在正式启用前复核，不能仅凭成功回调宣告所有补偿查询均已验收。
+
+### 正式配置完成后的 Git 发布预检
+
+负责人确认正式变量及生产 Webhook 均已填写。元数据确认 prod 环境、门店、三档 PROD 商品、merchant/key 与开关均已出现在正式项目 Production，敏感值未读取或打印。补齐此前缺失的 `NEXT_PUBLIC_SITE_URL=https://prompt-lens.cc.cd`，复查为仅 Production 的 plain 变量；显式保持支付开关 false。
+
+正式发布使用隔离工作树 `tmp/waffo-production`，`.vercel/project.json` 明确绑定 prompt-lens / prj_LA38e0saqqVw1OkQ95AyoMx5vjIV，避免把原测试工作区误绑定正式站。49 项支付/配置/币种/迁移回归及类型检查通过。业务代码与已测试 6546c7a 一致，新增仅发布记录、配置测试与说明。
+
+发布前主站为负责人配置变量后 redeploy 的 `dpl_FnKwWPa2i3iSzMpZzQFU6y1hQXd4`，仍为旧业务 SHA 6af28cc；正式 Git 远端未发生其他更新。接下来只推送正式 Git 分支，不手动上传/提升。发布后验证收款关闭、主站地址和回调门禁，生产报价与实际交易仍待启用验收。
