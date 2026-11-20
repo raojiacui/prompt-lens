@@ -1,7 +1,7 @@
 # ADR 0081：Waffo 正式支付发布
 
 - 日期：2026-11-20
-- 状态：负责人授权生产发布；正式配置与沙箱成功到账证据待补齐。
+- 状态：负责人再次确认准备正式站；已有两笔沙箱美元支付及唯一到账证据，正式配置待补齐，主站未发布。
 
 ## 背景
 
@@ -30,3 +30,13 @@
 45 项支付、币种、配置及全新库迁移回归通过。正式库预检确认原 provider 不含 waffo、事件表不存在、订单主键为 UUID。已应用 `20261120075141 / waffo_payment_provider_and_events`，对应已验证的 0027；复查 RLS=true、三个索引、事件 0 行，anon/authenticated 无 SELECT/INSERT 权限。未修改任何历史订单、钱包或权益。
 
 安全 advisor 的事件表“RLS 开启无策略”为仅服务器访问的预期设计；其余既有表同类 INFO 共 41 项。另有既有 `pg_net` 扩展位于 public 的 WARN，本次未改动该扩展，参考 https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public 。没有新增开放读取策略。
+
+### 负责人完成测试付款后的复核
+
+2026-11-20 再次准备正式站时确认，体验包 USD 5.23 测试订单 `32f0c35b-45e1-4722-b7ca-1fefd9d16579` 和 `550fa448-802c-41e5-9b99-c61bd10bae02` 均 paid；每笔各有一条接受事件及一份商业权益批次。该证据覆盖测试付款与唯一发放，不等同于退款或正式资金验收。
+
+正式库复查事件表、RLS、anon 无读取权限、authenticated 无写权限符合预期，生产事件 0。正式项目环境变量元数据仍只有审核相关 merchant/key/scan 配置，缺支付环境、门店、三档正式商品和开关；缺失配置仍为启用生产收款的阻塞项。
+
+正式分支远端仍为 `6af28cce4dcc1fb5c88ccab3567f415898d4e88e`，主站仍为 `dpl_5pvcy1GTM9Txr7DoC9aGd6HcRiBF`；已验证测试部署为 `6546c7a8aaf63baf62dc2d8740eb230d2425b2dc`。在负责人配置正式变量和生产 Raw Webhook 前，不推送正式发布，不改动审核变量、部署保护或邀请限制。
+
+配置步骤见 `docs/waffo-production-setup.md`。另有一笔旧待付款订单记录过 `WAFFO_QUERY_UNCONFIRMED`，最新成功付款无该错误；支付状态补查仍须在正式启用前复核，不能仅凭成功回调宣告所有补偿查询均已验收。
