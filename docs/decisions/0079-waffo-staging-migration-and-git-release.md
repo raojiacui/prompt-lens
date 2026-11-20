@@ -1,7 +1,7 @@
 # ADR 0079：Waffo 测试库迁移与 Git 测试发布
 
 - 日期：2026-11-20
-- 状态：测试库迁移完成，测试 Git 发布准备中，实际交易未验收。
+- 状态：测试库迁移和 Git 测试发布完成；应用冒烟检查完成，实际交易未验收。
 
 ## 背景
 
@@ -36,3 +36,16 @@ Supabase 迁移 20261120064917 / waffo_payment_provider_and_events 已成功应�
 重新运行支付、币种、配置及空库迁移共 39 项测试通过。实际构建守卫矩阵通过：测试项目 staging/v2/production 返回 1（允许）；正式项目 staging/v2/production 返回 0（跳过）；测试项目 prompt-lens-V2/production 返回 0（跳过）。没有为通过测试更改既有守卫。
 
 无凭据 HTTP POST 空回调探测遇到网络连接超时，外部读取也不可达，不记为回调可达性通过。发布后仍须验证真实 Waffo 投递，且需要确认部署保护未拦截服务器通知。未修改部署保护、邀请白名单或验收标记。
+
+### Git 发布及域名核对
+
+- 本地提交 a0c6b72c0264c0368c4f315f5439d992b49df393 已仅推送 GitHub staging/v2，远端实读 SHA 一致；未推送正式分支。
+- 测试部署 dpl_41jPVJfPV5XCZ8twVEUeQngWkwka 为 READY、source=git、target=production，项目为 prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI；Git 分支及 SHA 与远端一致。固定域名 prompt-lens-v2-test.vercel.app 已指向此部署。
+- 发布后主站 prompt-lens.cc.cd 仍为 dpl_5pvcy1GTM9Txr7DoC9aGd6HcRiBF，Git SHA 仍为 6af28cce4dcc1fb5c88ccab3567f415898d4e88e，与发布前完全相同。
+- 没有 CLI 上传、手动提升、环境变量或部署保护变更。
+
+### 在线冒烟检查
+
+改用 Windows 系统网络路径后，无登录请求成功到达测试站：/pricing 返回 200 且有多币种计费说明；POST /api/payments/waffo/webhook 空 JSON 返回 503 / WAFFO_NOT_ACTIVE；GET /api/payments/waffo/checkout 返回 401 / Authorized test account required。早先网络超时不再代表路由不可达，实际已确认回调可到应用且购买端保留邀请鉴权。
+
+回调响应与负责人配置的关闭状态一致，但不代表门店、Key 和商品内容已经完成真实网关校验。下一步由负责人将测试项目 Production 的 WAFFO_PAYMENTS_ENABLED 改为 true 并重新部署，随后校验沙箱模式、真实汇率、各套餐及银行卡/钱包付款、签名通知、唯一到账和原币种退款。本轮没有触发支付、创建模拟订单或标记商业验收完成。此回执仅本地提交，线上业务代码继续以已核对的 a0c6b72 为准。

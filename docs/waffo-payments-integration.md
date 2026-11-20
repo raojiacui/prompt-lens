@@ -1,6 +1,6 @@
 # Waffo 一次性套餐支付接入
 
-状态：代码和本地验证已完成，线上迁移、环境配置、Waffo 沙箱交易及正式收款尚未验收。支付默认关闭。本次没有修改线上环境、迁移线上数据库或发起真实交易。
+状态：代码和本地验证已完成；2026-11-20 已迁移独立测试库并通过 Git 发布测试站。负责人已配置变量，具体门店、Key 和商品需真实网关校验。支付暂保持关闭，Waffo 沙箱交易及正式收款尚未验收。正式库和正式站本轮未变更。
 
 ## 已实现
 
@@ -119,5 +119,11 @@ NEXT_PUBLIC_SITE_URL=https://<主站域名>
 - Playwright 美元/日元在 390px 和 1440px 的切换、续付、到账及汇率失败/未配置状态共 6 项通过。使用独立本地端口和模拟接口，无真实付款。
 - 类型、变更代码 ESLint、生产构建通过。前述全量基线的三个已有失败保留记录；本轮未更改 BYOK 或部署分支守卫。
 - 正式实收与真实汇率/银行卡环境仍待配置及沙箱验收，本轮未推送部署。
+
+### 测试发布进展（2026-11-20）
+
+独立测试库已应用迁移 20261120064917 / waffo_payment_provider_and_events（对应 0027），RLS 及服务器私有权限复查通过。staging/v2 远端 a0c6b72c0264c0368c4f315f5439d992b49df393 已由 Git 集成部署为 dpl_41jPVJfPV5XCZ8twVEUeQngWkwka，固定测试域名已切换且主站部署 ID 未变。公开定价页 200，空回调 503/WAFFO_NOT_ACTIVE，未登录购买接口 401，均符合关闭支付且保留邀请限制的当前阶段。
+
+负责人下一步在测试项目 Production 将 WAFFO_PAYMENTS_ENABLED=true 并重新部署，然后进行真实网关和沙箱资金验收；真实验签、银行卡收款与退款仍未记为通过。详细回执见 [ADR 0079](decisions/0079-waffo-staging-migration-and-git-release.md)。
 
 参考：[官方 SDK](https://github.com/waffo-com/waffo-pancake-sdk-ts)、[Webhook 文档](https://github.com/waffo-com/waffo-pancake-sdk-ts/blob/main/docs/webhook-guide.md)、[查询文档](https://github.com/waffo-com/waffo-pancake-sdk-ts/blob/main/docs/graphql-guide.md)、[ADR 0077](decisions/0077-waffo-payment-integration.md)。
