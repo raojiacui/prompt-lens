@@ -28,3 +28,11 @@
 ### 测试库结果
 
 Supabase 迁移 20261120064917 / waffo_payment_provider_and_events 已成功应用于 mwczjgflbmzgvebfilnf。复查事件表及 waffo provider 存在，RLS=true，anon/authenticated 的 SELECT/INSERT/UPDATE/DELETE 权限均为 false；主键、事件唯一索引和订单索引共三项存在，事件初始行数为 0。未修改正式库，未创建模拟付款或发放权益。
+
+### 发布前核对
+
+已获取远端：staging/v2 为 4c18e50689e109ee118654216a6b416eb73846a7，正式 prompt-lens-V2 为 6af28cce4dcc1fb5c88ccab3567f415898d4e88e。正式分支的最新更新已合入本地 codex/waffo-payments，应用源码及依赖与已生产构建验证的 0777dde 完全相同。
+
+重新运行支付、币种、配置及空库迁移共 39 项测试通过。实际构建守卫矩阵通过：测试项目 staging/v2/production 返回 1（允许）；正式项目 staging/v2/production 返回 0（跳过）；测试项目 prompt-lens-V2/production 返回 0（跳过）。没有为通过测试更改既有守卫。
+
+无凭据 HTTP POST 空回调探测遇到网络连接超时，外部读取也不可达，不记为回调可达性通过。发布后仍须验证真实 Waffo 投递，且需要确认部署保护未拦截服务器通知。未修改部署保护、邀请白名单或验收标记。
