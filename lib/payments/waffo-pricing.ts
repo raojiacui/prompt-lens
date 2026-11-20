@@ -31,7 +31,14 @@ async function exchangeRate(currency: PaymentCurrency): Promise<Rate> {
       variables: { from: "CNY", to: currency },
     });
     const value = result.data?.rate;
-    if (result.errors?.length || !value || value.fromCurrency !== "CNY" || value.toCurrency !== currency || typeof value.rateRefId !== "string" || !value.rateRefId || !Number.isFinite(Date.parse(value.expiryTime)) || Date.parse(value.expiryTime) <= Date.now() + 5000) throw Error("WAFFO_EXCHANGE_RATE_UNAVAILABLE");
+    if (result.errors?.length || !value || value.fromCurrency !== "CNY" || value.toCurrency !== currency || typeof value.rateRefId !== "string" || !value.rateRefId || !Number.isFinite(Date.parse(value.expiryTime)) || Date.parse(value.expiryTime) <= Date.now() + 5000) {
+      // Only rate fields and GraphQL notices: no request headers, keys or customer data.
+      console.warn("waffo.exchange_rate.unavailable", { currency,
+        errors: result.errors?.map(error => ({ message: error.message.slice(0, 400), layer: error.layer })),
+        rate: value ? { from: value.fromCurrency, to: value.toCurrency, value: value.standardRate, referenceType: typeof value.rateRefId, expires: value.expiryTime, expiresType: typeof value.expiryTime } : null,
+      });
+      throw Error("WAFFO_EXCHANGE_RATE_UNAVAILABLE");
+    }
     const rate = String(value.standardRate);
     convertCnyPrice(3490, currency, rate);
     const locked = { currency, rate, rateRefId: value.rateRefId, expiresAt: new Date(Math.min(Date.parse(value.expiryTime), Date.now() + 300_000)).toISOString() };
@@ -39,7 +46,11 @@ async function exchangeRate(currency: PaymentCurrency): Promise<Rate> {
     return locked;
   })();
   pending.set(key, query);
-  try { return await query; } finally { pending.delete(key); }
+  try { return await query; }
+  catch (error) {
+    console.warn("waffo.exchange_rate.request_failed", { currency, code: error instanceof Error ? error.name : "UnknownError", status: error && typeof error === "object" && "status" in error ? error.status : undefined });
+    throw error;
+  } finally { pending.delete(key); }
 }
 export async function waffoPrices(value: unknown): Promise<WaffoPrice[]> {
   const currency = paymentCurrency(value), fx = await exchangeRate(currency);
