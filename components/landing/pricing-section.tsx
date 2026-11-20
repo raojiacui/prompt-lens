@@ -63,8 +63,7 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
           }} className="min-h-11 rounded-lg border border-[var(--color-border-subtle)] bg-[var(--color-bg-base)] px-3">
             {PAYMENT_CURRENCIES.map(code => <option key={code} value={code}>{code}</option>)}
           </select></label>
-          <p className="text-center text-[var(--color-text-secondary)]">{zh ? "海外银行卡请选择外币计价。价格按人民币基价换算，下单时锁定；税费在结账页展示。" : "Choose foreign-currency pricing for card payments. Prices are converted from CNY and locked when ordering; tax is shown at checkout."}</p>
-          <p className="text-center text-[var(--color-text-secondary)]">{zh ? "Waffo 可能按付款地区换成本币扣款；如发生换汇，最终金额及转换费用以收银台展示为准。" : "Waffo may convert the charge to your local currency. Any final conversion amount and fee are shown at checkout."}</p>
+          <p className="text-center text-[var(--color-text-secondary)]">{zh ? "请选择对应的付款币种。" : "Select your payment currency."}</p>
           {quoteError && <p role="alert" className="text-center text-red-700">{zh ? "暂时无法取得换算价格，请稍后重试。" : "Converted prices are unavailable. Please retry shortly."}<button type="button" onClick={() => setQuoteAttempt(value => value + 1)} className="ml-2 min-h-10 underline">{zh ? "重新获取价格" : "Refresh prices"}</button></p>}
         </div>}
         <div className="grid gap-5 md:grid-cols-3">
