@@ -80,7 +80,7 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
         {[ [zh ? "可用积分" : "Available credits", wallet?.credits], [zh ? "可用改写" : "Rewrites", wallet?.rewrites], [zh ? "任务预留积分" : "Reserved credits", wallet?.heldCredits], [zh ? "任务预留改写" : "Reserved rewrites", wallet?.heldRewrites] ].map(([label, value]) => <div key={label}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-2 text-2xl font-semibold">{walletFailed ? (zh ? "暂不可用" : "Unavailable") : value ?? "…"}</dd></div>)}
       </dl>
       {!!wallet?.refundHeldCredits && <p role="status" className="mb-5 text-sm text-muted-foreground">{zh ? `${wallet.refundHeldCredits} 积分正在退款审核中，暂不可使用；申请未通过后会恢复。` : `${wallet.refundHeldCredits} credits are unavailable during refund review and will be restored if the request is declined.`}</p>}
-      <div className="flex items-center justify-between"><h2 className="text-lg font-semibold">{zh ? "购买记录" : "Purchases"}</h2><Link href="/#pricing" className="text-sm underline">{zh ? "购买积分" : "Buy credits"}</Link></div>
+      <div className="flex items-center justify-between"><h2 className="text-lg font-semibold">{zh ? "购买记录" : "Purchases"}</h2><Link href="/pricing#pricing" className="text-sm underline">{zh ? "购买积分" : "Buy credits"}</Link></div>
       {!account.orders.length && <p className="py-6 text-sm text-muted-foreground">{zh ? "暂无购买记录" : "No purchases yet"}</p>}
       {account.orders.map((order) => {
         const refundInfo = account.refunds.find((r) => r.orderId === order.id);

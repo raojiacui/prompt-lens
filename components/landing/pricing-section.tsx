@@ -90,6 +90,12 @@ export function PricingSection({ isAuthenticated = false }: { isAuthenticated?: 
                 const waffo = waffoPackages.includes(pack.id);
                 const attemptKey = waffo ? `${pack.id}:${currency}` : pack.id;
                 const storageKey = `promptlens:${waffo ? "waffo-checkout" : "checkout"}:${session?.user.id || "current"}:${pack.id}${waffo ? `:${currency}` : ""}`;
+                const pageUrl = new URL(window.location.href);
+                if (waffo && pageUrl.searchParams.get("newCheckout") === "1") {
+                  requestIds.current[attemptKey] = crypto.randomUUID();
+                  pageUrl.searchParams.delete("newCheckout");
+                  window.history.replaceState(null, "", pageUrl.pathname + pageUrl.search + pageUrl.hash);
+                }
                 try { requestIds.current[attemptKey] ??= localStorage.getItem(storageKey) || crypto.randomUUID(); localStorage.setItem(storageKey, requestIds.current[attemptKey]); }
                 catch { requestIds.current[attemptKey] ??= crypto.randomUUID(); }
                 setSelectedCurrency(currency);
