@@ -38,7 +38,7 @@
   <text x="858" y="468" class="num">04 / CREATE</text>
   <text x="858" y="510" class="heading">生成视频</text>
   <text x="858" y="548" class="body">使用提示词，选择模型与参数</text>
-  <text x="858" y="576" class="body">确认费用后，生成新的视频作品</text>
+  <text x="858" y="576" class="body">生成新的视频作品</text>
   <rect class="card" x="448" y="432" width="304" height="174" rx="18"/>
   <text x="474" y="468" class="num">05 / SHARE</text>
   <text x="474" y="510" class="heading">发布与反馈</text>
