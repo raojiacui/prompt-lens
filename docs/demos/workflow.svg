@@ -16,5 +16,4 @@
   <g class="label" text-anchor="middle"><text x="130" y="257">图生视频</text><text x="480" y="257">参考图片 + 动作描述</text><text x="850" y="257">获取报价</text><text x="1132" y="257">确认后生成</text></g>
   <g class="node"><rect x="30" y="298" width="200" height="54" rx="12"/><rect x="275" y="298" width="410" height="54" rx="12"/><rect x="730" y="298" width="240" height="54" rx="12"/><rect x="1015" y="298" width="235" height="54" rx="12"/></g>
   <g class="label" text-anchor="middle"><text x="130" y="332">参考视频 / 编辑</text><text x="480" y="332">上传片段 + 参考或编辑要求</text><text x="850" y="332">检测时长并报价</text><text x="1132" y="332">确认后生成</text></g>
-  <text x="1250" y="376" text-anchor="end" class="small">下方操作演示止于费用确认页；历史结果单独展示。</text>
 </svg>
