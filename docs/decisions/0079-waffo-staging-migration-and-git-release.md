@@ -49,3 +49,9 @@ Supabase 迁移 20261120064917 / waffo_payment_provider_and_events 已成功应�
 改用 Windows 系统网络路径后，无登录请求成功到达测试站：/pricing 返回 200 且有多币种计费说明；POST /api/payments/waffo/webhook 空 JSON 返回 503 / WAFFO_NOT_ACTIVE；GET /api/payments/waffo/checkout 返回 401 / Authorized test account required。早先网络超时不再代表路由不可达，实际已确认回调可到应用且购买端保留邀请鉴权。
 
 回调响应与负责人配置的关闭状态一致，但不代表门店、Key 和商品内容已经完成真实网关校验。下一步由负责人将测试项目 Production 的 WAFFO_PAYMENTS_ENABLED 改为 true 并重新部署，随后校验沙箱模式、真实汇率、各套餐及银行卡/钱包付款、签名通知、唯一到账和原币种退款。本轮没有触发支付、创建模拟订单或标记商业验收完成。此回执仅本地提交，线上业务代码继续以已核对的 a0c6b72 为准。
+
+### 负责人启用沙箱开关后的核对
+
+负责人随后确认完成开关修改与重新部署。测试部署 dpl_6Tsnt5tZ31wkFFLZxL1qk92Xr9bn 已 READY，沿用 a0c6b72 业务代码；这是负责人为环境变量生效而发起的 redeploy，未使用 CLI 或提升其他部署。
+
+无凭据空 JSON 回调从 503/WAFFO_NOT_ACTIVE 变为 401/Invalid webhook，确认配置门禁已放行并进入验签入口，未签名请求被拒绝。不能据此宣告真实 RSA 通知、门店 Key、商品或汇率校验通过；下一步需在邀请账户登录会话中查看价格、打开 Waffo 测试结账页并使用沙箱付款工具完成交易。
