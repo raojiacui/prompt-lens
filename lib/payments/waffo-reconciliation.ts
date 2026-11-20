@@ -17,7 +17,14 @@ export async function reconcileWaffoOrder(id: string, userId?: string) {
       query: "query ($storeId: String!) { webhookDeliveries(storeId: $storeId, limit: 50) { payload } }",
       variables: { storeId: snapshot.storeId },
     });
-    if (response.errors?.length || !Array.isArray(response.data?.webhookDeliveries)) throw Error("WAFFO_QUERY_UNCONFIRMED");
+    if (response.errors?.length || !Array.isArray(response.data?.webhookDeliveries)) {
+      console.warn("waffo.reconciliation.response_invalid", {
+        errors: response.errors?.map(error => ({ message: error.message.slice(0, 350), layer: error.layer })),
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        deliveriesType: response.data?.webhookDeliveries === null ? "null" : typeof response.data?.webhookDeliveries,
+      });
+      throw Error("WAFFO_QUERY_UNCONFIRMED");
+    }
     for (const delivery of response.data.webhookDeliveries) {
       const event = (typeof delivery.payload === "string" ? JSON.parse(delivery.payload) : delivery.payload) as WebhookEvent<WebhookEventData> | null;
       if (event?.data?.orderMerchantExternalId === order.providerOrderId) await applyWaffoEvent(event);
