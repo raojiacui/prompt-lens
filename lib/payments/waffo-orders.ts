@@ -27,7 +27,7 @@ export function waffoSnapshot(order: WaffoOrder): WaffoSnapshot {
   if (value.priceQuote && (value.priceQuote.currency !== order.currency.toUpperCase() || value.priceQuote.amountMinor !== order.amountCents || value.priceQuote.packageId !== order.packageId)) throw Error("WAFFO_ORDER_PRICE_MISMATCH");
   return value as WaffoSnapshot;
 }
-export async function createWaffoOrder(userId: string, email: string, packageId: string, requestId: string, requestedCurrency: unknown = "CNY") {
+export async function createWaffoOrder(userId: string, email: string, packageId: string, requestId: string, requestedCurrency: unknown = "CNY", checkoutRequestId?: string) {
   const config = waffoPaymentConfig();
   const currency = paymentCurrency(requestedCurrency);
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requestId)) throw Error("INVALID_REQUEST_ID");
@@ -38,7 +38,7 @@ export async function createWaffoOrder(userId: string, email: string, packageId:
   const existing = await db.query.paymentOrders.findFirst({ where: and(eq(paymentOrders.provider, "waffo"), eq(paymentOrders.providerOrderId, externalId), eq(paymentOrders.userId, userId)) });
   if (existing) {
     if (existing.packageId !== packageId || existing.currency !== currency.toLowerCase()) throw Error("CHECKOUT_REPLAY_MISMATCH");
-    return openWaffoOrder(existing);
+    return openWaffoOrder(existing, checkoutRequestId);
   }
   const priceQuote = (await waffoPrices(currency)).find(price => price.packageId === packageId)!;
   await db.insert(paymentOrders).values({
@@ -48,13 +48,15 @@ export async function createWaffoOrder(userId: string, email: string, packageId:
   }).onConflictDoNothing({ target: [paymentOrders.provider, paymentOrders.providerOrderId] });
   const order = await db.query.paymentOrders.findFirst({ where: and(eq(paymentOrders.provider, "waffo"), eq(paymentOrders.providerOrderId, externalId), eq(paymentOrders.userId, userId)) });
   if (!order || order.packageId !== packageId || order.currency !== currency.toLowerCase()) throw Error("CHECKOUT_REPLAY_MISMATCH");
-  return openWaffoOrder(order);
+  return openWaffoOrder(order, checkoutRequestId);
 }
-export async function openWaffoOrder(order: WaffoOrder) {
+export async function openWaffoOrder(order: WaffoOrder, checkoutRequestId?: string) {
+  if (checkoutRequestId !== undefined && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(checkoutRequestId)) throw Error("INVALID_CHECKOUT_REQUEST");
   const snapshot = waffoSnapshot(order);
   const price = { amountMinor: order.amountCents, currency: paymentCurrency(order.currency) };
-  if (order.status !== "pending") return { orderId: order.id, status: order.status, checkoutUrl: null, ...price };
-  if (snapshot.cancellationRequested || Date.now() - order.createdAt.getTime() > 86400_000) throw Error("WAFFO_ORDER_NOT_PAYABLE");
+  const orderExpiresAt = new Date(order.createdAt.getTime() + 86400_000).toISOString();
+  if (order.status !== "pending") return { orderId: order.id, status: order.status, checkoutUrl: null, linkExpiresAt: null, orderExpiresAt, ...price };
+  if (snapshot.cancellationRequested || Date.now() >= Date.parse(orderExpiresAt)) return { orderId: order.id, status: order.status, checkoutUrl: null, linkExpiresAt: null, orderExpiresAt, unavailableReason: snapshot.cancellationRequested ? "cancelled" : "expired", ...price };
   const origin = new URL(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "");
   if (origin.protocol !== "https:" || origin.username || origin.password) throw Error("INVALID_SITE_URL");
   const result = await waffoClient().checkout.authenticated.create({
@@ -64,12 +66,17 @@ export async function openWaffoOrder(order: WaffoOrder) {
     orderMerchantExternalId: order.providerOrderId, expiresInSeconds: 86400, allowPromotionCodes: false,
     metadata: { localOrderId: order.id, packageId: order.packageId, productId: snapshot.productId, storeId: snapshot.storeId },
     successUrl: `${origin.origin}/billing/payment/return?orderId=${encodeURIComponent(order.id)}`,
-  }, { idempotencyKey: order.providerOrderId });
+  }, { idempotencyKey: checkoutRequestId ? `${order.providerOrderId}:link:${checkoutRequestId.toLowerCase()}` : order.providerOrderId });
   const url = assertWaffoCheckoutUrl(result.checkoutUrl);
+  const tokenExpiry = Date.parse(result.tokenExpiresAt);
+  const sessionExpiry = Date.parse(result.expiresAt);
+  if (!Number.isFinite(tokenExpiry) || !Number.isFinite(sessionExpiry)) throw Error("WAFFO_INVALID_CHECKOUT_EXPIRY");
+  const linkExpiresAt = new Date(Math.min(tokenExpiry, sessionExpiry, Date.parse(orderExpiresAt))).toISOString();
+  if (Date.parse(linkExpiresAt) <= Date.now()) throw Error("WAFFO_CHECKOUT_EXPIRED");
   // Persist session identity but never the short-lived customer token.
   const storedUrl = new URL(url); storedUrl.hash = "";
   await db.update(paymentOrders).set({ checkoutId: result.sessionId, checkoutUrl: storedUrl.toString(),
     metadata: sql`${paymentOrders.metadata} || ${JSON.stringify({ checkoutExpiresAt: result.expiresAt })}::jsonb`, updatedAt: new Date(),
   }).where(and(eq(paymentOrders.id, order.id), eq(paymentOrders.status, "pending")));
-  return { orderId: order.id, status: "pending", checkoutUrl: url, ...price };
+  return { orderId: order.id, status: "pending", checkoutUrl: url, linkExpiresAt, orderExpiresAt, ...price };
 }

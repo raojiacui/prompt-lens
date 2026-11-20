@@ -15,7 +15,7 @@ vi.mock("@/lib/payments/waffo-client", async original => ({
   ...await original<typeof import("@/lib/payments/waffo-client")>(),
   waffoClient: () => ({ checkout: { authenticated: { create: state.create } }, graphql: { query: state.query }, auth: { issueSessionToken: state.token }, customer: () => ({ createRefundTicket: state.refund }) }),
 }));
-import { createWaffoOrder } from "@/lib/payments/waffo-orders";
+import { createWaffoOrder, openWaffoOrder } from "@/lib/payments/waffo-orders";
 import { applyWaffoEvent } from "@/lib/payments/waffo-events";
 import { reconcileWaffoOrder } from "@/lib/payments/waffo-reconciliation";
 import { POST as webhook } from "@/app/api/payments/waffo/webhook/route";
@@ -43,7 +43,7 @@ beforeEach(async () => {
   vi.stubEnv("WAFFO_TEST_PRODUCT_V6_TRIAL_200", "PROD_test"); vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://test.example.com");
   vi.stubEnv("WAFFO_WEBHOOK_TEST_PUBLIC_KEY", keys.publicKey.export({ type: "spki", format: "pem" }).toString());
   await client.exec("TRUNCATE payment_orders,commercial_wallets,commercial_ledger,commercial_lots CASCADE;");
-  state.create.mockResolvedValue({ sessionId: "CHK_test", checkoutUrl: "https://pancake.waffo.ai/test#token=secret", expiresAt: new Date(Date.now() + 86400000).toISOString() });
+  state.create.mockResolvedValue({ sessionId: "CHK_test", checkoutUrl: "https://pancake.waffo.ai/test#token=secret", expiresAt: new Date(Date.now() + 86400000).toISOString(), tokenExpiresAt: new Date(Date.now() + 300000).toISOString() });
   state.token.mockResolvedValue({ token: "customer-secret" });
   state.session.mockResolvedValue({ user: { id: userId, email: "test@example.com" } });
   state.refund.mockImplementation(async params => ({ ticket: { id: "TKT_test", subjectId: "PAY_test", status: "pending", refundTicketMerchantExternalId: params.refundTicketMerchantExternalId } }));
@@ -81,6 +81,31 @@ it("persists server-owned price before checkout, reuses requests, and excludes c
   expect(saved.checkoutUrl).not.toContain("secret");
   expect(state.create.mock.calls[1][0]).toMatchObject({ buyerIdentity: userId, priceSnapshot: { amount: "34.90" } });
   expect(state.create.mock.calls[0][1]).toEqual(state.create.mock.calls[1][1]);
+});
+it("renews an unavailable checkout session without changing the local order or locked price", async () => {
+  const requestId = randomUUID(), firstLink = randomUUID(), nextLink = randomUUID();
+  const initial = await createWaffoOrder(userId, "test@example.com", "v6_trial_200", requestId, "CNY", firstLink);
+  const renewal = await createWaffoOrder(userId, "test@example.com", "v6_trial_200", requestId, "CNY", nextLink);
+  await createWaffoOrder(userId, "test@example.com", "v6_trial_200", requestId, "CNY", nextLink);
+  expect(renewal.orderId).toBe(initial.orderId);
+  expect(await database.select().from(schema.paymentOrders)).toHaveLength(1);
+  expect(state.create.mock.calls[0][0]).toEqual(state.create.mock.calls[1][0]);
+  expect(state.create.mock.calls[0][1]).not.toEqual(state.create.mock.calls[1][1]);
+  expect(state.create.mock.calls[1][1]).toEqual(state.create.mock.calls[2][1]);
+  expect(Date.parse(renewal.linkExpiresAt!)).toBeLessThanOrEqual(Date.now() + 300000);
+  expect(Date.parse(renewal.orderExpiresAt)).toBeGreaterThan(Date.now() + 86390000);
+});
+it("returns a clear non-payable result for expired orders and never creates another session", async () => {
+  const saved = await order();
+  saved.createdAt = new Date(Date.now() - 86400001);
+  state.create.mockClear();
+  expect(await openWaffoOrder(saved, randomUUID())).toMatchObject({ status: "pending", unavailableReason: "expired", checkoutUrl: null, linkExpiresAt: null });
+  expect(state.create).not.toHaveBeenCalled();
+});
+it("does not expose a link with an expired provider token", async () => {
+  const saved = await order();
+  state.create.mockResolvedValue({ sessionId: "CHK_old", checkoutUrl: "https://pancake.waffo.ai/test#token=secret", expiresAt: new Date(Date.now() + 86400000).toISOString(), tokenExpiresAt: new Date(Date.now() - 1).toISOString() });
+  await expect(openWaffoOrder(saved, randomUUID())).rejects.toThrow("WAFFO_CHECKOUT_EXPIRED");
 });
 it("fulfills an earlier pricing snapshot without applying the current catalog allowances", async () => {
   const saved = await order();
