@@ -5,6 +5,62 @@
 
 PromptLens V2 是一个 AI 视频创作工作流工具，将参考视频或图片整理成可编辑的画面分析和复刻提示词，帮助你理解镜头、改写创意并生成自己的视频。
 
+## 功能概览
+
+- **参考素材分析**：上传视频、图片，或粘贴 TikTok、抖音、Bilibili 公开视频链接。
+- **自动拆镜**：检测画面切换，生成带时间范围的镜头列表，支持预览和选择要分析的镜头。
+- **逐镜头解读**：分析主体、角色、环境、动作、构图、运镜、光线、色彩和画面风格。
+- **复刻提示词**：将画面信息整理成可复制、可编辑的视频生成提示词。
+- **AI 改写与版本回看**：按文字要求修改单个镜头，保留版本，便于比较和继续调整。
+- **做同款与视频生成**：将分析出的提示词带入生成页，支持文生视频、图生视频、参考视频生成和视频编辑。
+- **项目与历史记录**：保存分析结果与生成记录；失败镜头可单独重试，已完成的镜头保留。
+
+## V2 操作演示
+
+以公开样例「动物城邦」为素材，展示上传或粘贴链接、自动拆镜、镜头预览与选择，以及完整分析结果和复刻提示词。
+
+![动物城邦的上传、拆镜、镜头选择和完整提示词](docs/demos/01-video-analysis.gif)
+
+动图录制于 2026-10-11，样例约 27 秒、11 个镜头，已缩短等待时间；分析结果使用已有项目。当前界面细节可能与录制时有所不同。
+
+## 从参考素材到新视频
+
+```text
+上传视频 / 图片，或粘贴视频链接
+                ↓
+        保存素材并创建项目
+                ↓
+  视频：自动拆镜或作为整段分析
+  图片：作为单场景参考图
+                ↓
+     选择镜头，准备分析素材
+                ↓
+     AI 分析 → 结构化画面信息
+                ↓
+       复刻提示词与改写版本
+                ↓
+     复制使用，或进入视频生成
+```
+
+视频链接解析使用 EasyDown。
+
+## 使用方式
+
+### 分析参考素材
+
+1. 登录后进入「视频分析」。
+2. 上传视频、图片，或切换到「粘贴链接」。
+3. 视频可选择「拆镜分析」或「整段分析」，并选择分析模型。
+4. 查看拆镜预览，勾选需要分析的镜头并提交。
+5. 等待结果陆续返回，查看画面解读和复刻提示词。
+6. 复制提示词、输入要求进行 AI 改写，或点击「做同款」。
+
+图片作为单场景参考图分析，无需进行视频切镜。
+
+### 生成视频
+
+填写提示词，按需上传参考图片或视频，选择模型、画幅、分辨率、时长及数量后提交。可在页面查看任务进度和生成历史，完成后下载视频。
+
 ## 合作伙伴
 
 <table>
@@ -39,83 +95,66 @@ PromptLens V2 是一个 AI 视频创作工作流工具，将参考视频或图�
 
 在「设置 → API Key 配置」中分别管理 Infistar 与 KIE 密钥；新任务自动使用首选供应商，已提交的任务保留原供应商。不同供应商提供的模型和参数范围会有差异，可用性以当前 Key 的权限为准。配置页也提供[模真真模型价格与验真入口](https://mozhenzhen.com/go/prompt-lens)。
 
-## 功能概览
+## 技术栈
 
-- **参考素材分析**：上传视频、图片，或粘贴 TikTok、抖音、Bilibili 公开视频链接。
-- **自动拆镜**：检测画面切换，生成带时间范围的镜头列表，支持预览和选择要分析的镜头。
-- **逐镜头解读**：分析主体、角色、环境、动作、构图、运镜、光线、色彩和画面风格。
-- **复刻提示词**：将画面信息整理成可复制、可编辑的视频生成提示词。
-- **AI 改写与版本回看**：按文字要求修改单个镜头，保留版本，便于比较和继续调整。
-- **做同款与视频生成**：将分析出的提示词带入生成页，支持文生视频、图生视频、参考视频生成和视频编辑。
-- **项目与历史记录**：保存分析结果与生成记录；失败镜头可单独重试，已完成的镜头保留。
+- **应用**：Next.js 15、React 19、TypeScript
+- **界面**：Tailwind CSS、shadcn/ui、lucide-react
+- **数据与认证**：PostgreSQL、Drizzle ORM、better-auth
+- **媒体存储**：Cloudflare R2
+- **视频处理**：FFmpeg、ffprobe、PySceneDetect
+- **AI 分析与视频生成**：Kie.ai
+- **测试**：Vitest、Playwright
 
-## V2 操作演示
+## 本地开发
 
-以公开样例「动物城邦」为素材：约 27 秒、11 个镜头。动图录制于 2026-10-11，来自实际页面操作，已缩短等待时间。分析部分展示已有项目结果，视频生成部分展示参数设置，未提交新的生成任务。当前界面细节可能与录制时有所不同。
+需要 Node.js 20+、pnpm、PostgreSQL，以及可用的媒体存储和模型服务配置。运行本地媒体 worker 还需要 FFmpeg、ffprobe；使用 PySceneDetect 检测时需要 Python 和 `scenedetect-headless`。
 
-![视频分析与视频生成工作流概览](docs/demos/workflow.svg)
-
-### 视频分析：上传或粘贴链接 → 拆镜 → 选择镜头 → 提示词
-
-展示素材输入、11 个镜头的预览与选择，以及完整分析结果和复刻提示词。
-
-![动物城邦的上传、拆镜、镜头选择和完整提示词](docs/demos/01-video-analysis.gif)
-
-### AI 改写与做同款
-
-输入修改要求，查看改写版本并回看原版；点击「做同款」将当前提示词带入生成页。
-
-![AI 改写、提示词版本切换与做同款](docs/demos/02-rewrite-remake.gif)
-
-### 文生视频
-
-填写提示词，选择模型、画幅、分辨率、时长和数量。
-
-![文生视频参数设置](docs/demos/03-text-to-video.gif)
-
-### 图生视频
-
-上传参考图片，页面自动切换为图生视频，再结合提示词设置生成参数。
-
-![参考图上传与图生视频模式](docs/demos/04-image-to-video.gif)
-
-### 参考视频生成与视频编辑
-
-上传参考片段，描述希望保留或修改的动作、场景和运镜。选择支持视频编辑的模型时，上传片段会作为被编辑素材。
-
-![参考视频上传与视频编辑](docs/demos/05-reference-video.gif)
-
-<details>
-<summary>查看已有生成历史</summary>
-
-展示已有生成记录、提示词与结果查看入口。生成的视频建议及时下载保存，历史媒体链接可能失效。
-
-![已有生成历史与结果入口](docs/demos/06-generation-history.gif)
-
-</details>
-
-## 从参考素材到新视频
-
-```text
-上传视频 / 图片，或粘贴视频链接
-                ↓
-        保存素材并创建项目
-                ↓
-  视频：自动拆镜或作为整段分析
-  图片：作为单场景参考图
-                ↓
-     选择镜头，准备分析素材
-                ↓
-     AI 分析 → 结构化画面信息
-                ↓
-       复刻提示词与改写版本
-                ↓
-     复制使用，或进入视频生成
+```powershell
+pnpm install
+Copy-Item .env.example .env.local
 ```
 
-视频链接解析使用 EasyDown。
+按 [.env.example](.env.example) 填写你自己的数据库、媒体存储和模型服务配置，并将所有本地真实配置统一保存在 `.env.local`。不要在仓库内保存 `.env`、环境快照或密钥备份；线上部署配置以对应 Vercel 项目的环境变量为准。示例使用 3001 端口，站点与认证地址需与实际端口一致。
+
+配置完成后，对 `DATABASE_URL` 指定的数据库应用迁移并启动应用：
+
+```powershell
+node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate
+pnpm dev --port 3001
+```
+
+访问 [视频分析](http://localhost:3001/dashboard?tab=analyze) 或 [视频生成](http://localhost:3001/dashboard?tab=video-gen)。
+
+使用本地媒体 worker 时，另开终端运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-worker.ps1
+```
+
+worker 配置与运行说明见 [FFmpeg Worker README](workers/ffmpeg-worker/README.md)。
+
+## 项目结构
+
+```text
+prompt-lens/
+├── app/                         # 页面与后端路由
+├── components/workflow/         # 分析、改写与生成界面
+├── lib/
+│   ├── ai/                      # 模型调用与响应处理
+│   ├── auth/                    # 用户认证
+│   ├── db/                      # 数据库结构与查询
+│   ├── ffmpeg-worker/           # 媒体 worker 客户端
+│   └── workflow/                # 项目、镜头分析与提示词服务
+├── workers/ffmpeg-worker/       # 视频检查、拆镜和素材提取
+├── scripts/                     # 开发与评估脚本
+├── docs/demos/                  # 操作演示素材
+└── tests/                       # 自动化测试
+```
 
 ## 自动拆镜的技术实现
+
+<details>
+<summary>展开查看镜头检测、素材提取、逐镜头分析与适用局限</summary>
 
 拆镜由独立的媒体 worker 执行，主要使用 FFmpeg、ffprobe 和 PySceneDetect。Next.js 负责页面、项目管理和任务协调，媒体 worker 负责视频解码、镜头边界检测及素材提取。
 
@@ -176,78 +215,7 @@ PySceneDetect 未启用或运行失败时，worker 回退到 **FFmpeg 的 scene 
 
 相关实现：[镜头检测](workers/ffmpeg-worker/scene-detect.py)、[长片段分段与代表帧采样](workers/ffmpeg-worker/scene-segments.mjs)、[媒体 worker](workers/ffmpeg-worker/server.mjs)、[镜头分析](lib/workflow/scene-analysis.ts)。
 
-## 使用方式
-
-### 分析参考素材
-
-1. 登录后进入「视频分析」。
-2. 上传视频、图片，或切换到「粘贴链接」。
-3. 视频可选择「拆镜分析」或「整段分析」，并选择分析模型。
-4. 查看拆镜预览，勾选需要分析的镜头并提交。
-5. 等待结果陆续返回，查看画面解读和复刻提示词。
-6. 复制提示词、输入要求进行 AI 改写，或点击「做同款」。
-
-图片作为单场景参考图分析，无需进行视频切镜。
-
-### 生成视频
-
-填写提示词，按需上传参考图片或视频，选择模型、画幅、分辨率、时长及数量后提交。可在页面查看任务进度和生成历史，完成后下载视频。
-
-## 技术栈
-
-- **应用**：Next.js 15、React 19、TypeScript
-- **界面**：Tailwind CSS、shadcn/ui、lucide-react
-- **数据与认证**：PostgreSQL、Drizzle ORM、better-auth
-- **媒体存储**：Cloudflare R2
-- **视频处理**：FFmpeg、ffprobe、PySceneDetect
-- **AI 分析与视频生成**：Kie.ai
-- **测试**：Vitest、Playwright
-
-## 本地开发
-
-需要 Node.js 20+、pnpm、PostgreSQL，以及可用的媒体存储和模型服务配置。运行本地媒体 worker 还需要 FFmpeg、ffprobe；使用 PySceneDetect 检测时需要 Python 和 `scenedetect-headless`。
-
-```powershell
-pnpm install
-Copy-Item .env.example .env.local
-```
-
-按 [.env.example](.env.example) 填写你自己的数据库、媒体存储和模型服务配置，并将所有本地真实配置统一保存在 `.env.local`。不要在仓库内保存 `.env`、环境快照或密钥备份；线上部署配置以对应 Vercel 项目的环境变量为准。示例使用 3001 端口，站点与认证地址需与实际端口一致。
-
-配置完成后，对 `DATABASE_URL` 指定的数据库应用迁移并启动应用：
-
-```powershell
-node --env-file=.env.local node_modules/drizzle-kit/bin.cjs migrate
-pnpm dev --port 3001
-```
-
-访问 [视频分析](http://localhost:3001/dashboard?tab=analyze) 或 [视频生成](http://localhost:3001/dashboard?tab=video-gen)。
-
-使用本地媒体 worker 时，另开终端运行：
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-local-ffmpeg-worker.ps1
-```
-
-worker 配置与运行说明见 [FFmpeg Worker README](workers/ffmpeg-worker/README.md)。
-
-## 项目结构
-
-```text
-prompt-lens/
-├── app/                         # 页面与后端路由
-├── components/workflow/         # 分析、改写与生成界面
-├── lib/
-│   ├── ai/                      # 模型调用与响应处理
-│   ├── auth/                    # 用户认证
-│   ├── db/                      # 数据库结构与查询
-│   ├── ffmpeg-worker/           # 媒体 worker 客户端
-│   └── workflow/                # 项目、镜头分析与提示词服务
-├── workers/ffmpeg-worker/       # 视频检查、拆镜和素材提取
-├── scripts/                     # 开发与评估脚本
-├── docs/demos/                  # 操作演示素材
-└── tests/                       # 自动化测试
-```
+</details>
 
 ## License
 
