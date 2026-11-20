@@ -1,0 +1,52 @@
+<svg fill="#34231d" xmlns="http://www.w3.org/2000/svg" width="1200" height="660" viewBox="0 0 1200 660" role="img" aria-labelledby="title desc">
+  <title id="title">PromptLens 创作闭环</title>
+  <desc id="desc">按箭头从左上方开始：发现灵感，反推提示词，二次创作，生成视频，发布与反馈，再带着新想法开始下一轮创作。</desc>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M1 1L6 4L1 7" fill="none" stroke="#b56a4b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+  </defs>
+  <style>
+    text{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+    .heading{font-size:24px;font-weight:700}.body{font-size:17px;fill:#78685c}.num{font-size:15px;font-weight:700;fill:#a65a3d;letter-spacing:1px}
+    .card{fill:#fffdf8;stroke:#e2d5c6;stroke-width:1.5}.line{fill:none;stroke:#b56a4b;stroke-width:2;marker-end:url(#arrow)}
+  </style>
+  <rect width="1200" height="660" rx="24" fill="#f5efe5"/>
+  <text x="48" y="60" font-size="15" fill="#a65a3d" letter-spacing="3">PROMPTLENS / CREATIVE LOOP</text>
+  <text x="48" y="108" font-size="34" font-weight="700">让每一次灵感，走向自己的作品</text>
+  <text x="48" y="143" class="body">从参考中学习，在创作中表达，在反馈中继续生长。</text>
+  <path class="line" d="M368 287H432"/>
+  <path class="line" d="M752 287H816"/>
+  <path class="line" d="M992 374V432"/>
+  <path class="line" d="M832 519H768"/>
+  <path class="line" d="M448 519H384"/>
+  <path class="line" d="M48 519H24V287H48" stroke-dasharray="5 6"/>
+  <rect class="card" x="48" y="200" width="320" height="174" rx="18"/>
+  <text x="74" y="236" class="num">01 / DISCOVER</text>
+  <text x="74" y="278" class="heading">发现灵感</text>
+  <text x="74" y="316" class="body">找到喜欢的视频或画面</text>
+  <text x="74" y="344" class="body">上传素材，或粘贴公开视频链接</text>
+  <rect class="card" x="448" y="200" width="304" height="174" rx="18"/>
+  <text x="474" y="236" class="num">02 / UNDERSTAND</text>
+  <text x="474" y="278" class="heading">反推提示词</text>
+  <text x="474" y="316" class="body">自动拆镜，选择镜头进行分析</text>
+  <text x="474" y="344" class="body">理解画面，提炼可复用的提示词</text>
+  <rect class="card" x="832" y="200" width="320" height="174" rx="18"/>
+  <text x="858" y="236" class="num">03 / REIMAGINE</text>
+  <text x="858" y="278" class="heading">二次创作</text>
+  <text x="858" y="316" class="body">调整角色、场景、风格与动作</text>
+  <text x="858" y="344" class="body">AI 改写，把参考变成自己的表达</text>
+  <rect class="card" x="832" y="432" width="320" height="174" rx="18"/>
+  <text x="858" y="468" class="num">04 / CREATE</text>
+  <text x="858" y="510" class="heading">生成视频</text>
+  <text x="858" y="548" class="body">带入提示词，选择模型与参数</text>
+  <text x="858" y="576" class="body">确认费用后，生成新的视频作品</text>
+  <rect class="card" x="448" y="432" width="304" height="174" rx="18"/>
+  <text x="474" y="468" class="num">05 / SHARE</text>
+  <text x="474" y="510" class="heading">发布与反馈</text>
+  <text x="474" y="548" class="body">下载作品，分享至你的视频平台</text>
+  <text x="474" y="576" class="body">观察反馈，积累下一次创作方向</text>
+  <rect x="48" y="432" width="320" height="174" rx="18" fill="#34231d"/>
+  <text x="74" y="468" font-size="15" fill="#e6b89d" letter-spacing="1">NEXT / KEEP CREATING</text>
+  <text x="74" y="510" font-size="24" font-weight="700" fill="#fffaf3">带着新想法，再出发</text>
+  <text x="74" y="548" font-size="17" fill="#e3d3c6">新的灵感 · 更好的提示词</text>
+  <text x="74" y="576" font-size="17" fill="#e3d3c6">让下一部作品，更接近你的想象</text>
+</svg>
