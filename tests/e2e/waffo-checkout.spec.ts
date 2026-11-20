@@ -22,7 +22,7 @@ for (const width of [390, 1440]) for (const currency of ["USD", "JPY"]) test(`Wa
     return route.fulfill({ json: {} });
   });
   await page.goto("/pricing");
-  await page.getByLabel("付款币种", { exact: true }).selectOption(currency);
+  await page.getByLabel("计价币种", { exact: true }).selectOption(currency);
   await expect(page.locator("#pricing article").first()).toContainText(currency);
   await page.locator("#pricing").getByRole("button", { name: "购买套餐", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "购买套餐" });
