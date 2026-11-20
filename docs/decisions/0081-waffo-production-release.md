@@ -48,3 +48,11 @@
 正式发布使用隔离工作树 `tmp/waffo-production`，`.vercel/project.json` 明确绑定 prompt-lens / prj_LA38e0saqqVw1OkQ95AyoMx5vjIV，避免把原测试工作区误绑定正式站。49 项支付/配置/币种/迁移回归及类型检查通过。业务代码与已测试 6546c7a 一致，新增仅发布记录、配置测试与说明。
 
 发布前主站为负责人配置变量后 redeploy 的 `dpl_FnKwWPa2i3iSzMpZzQFU6y1hQXd4`，仍为旧业务 SHA 6af28cc；正式 Git 远端未发生其他更新。接下来只推送正式 Git 分支，不手动上传/提升。发布后验证收款关闭、主站地址和回调门禁，生产报价与实际交易仍待启用验收。
+
+### 正式代码发布结果
+
+- 发布提交 `303e446edf2e692b4ae95b5abaad7a3124c0a803` 已推送 `prompt-lens-V2`，远端 SHA 一致。部署 `dpl_BpJPckbRfTyTAjjL2zQJmnEBeA9B` 为 READY / source=git / production，正式域名 prompt-lens.cc.cd 指向同一 Git 提交。
+- 自动审批初次将授权理解为仅准备而拦截推送；补充负责人前文明确“可以上生产”和随后确认配置完成的完整授权证据后，同一 Git 推送通过复核。未绕过审批或改用其他发布方式。
+- 无登录真实 HTTP 检查：/pricing 为 200；/api/payments/waffo/checkout 为 200、enabled=false、packages=[]；POST 空 JSON 至正式 Webhook 为 503 / WAFFO_NOT_ACTIVE，符合收款尚未启用状态。网络沙箱默认代理端口 9 导致初次探测失败，使用获准网络执行后才取得上述证据。
+- 正式新部署错误日志查询为空。测试固定域名仍为 `dpl_14basz1JhvjXfU4FoWXPiupfMg5A` / `6546c7a8aaf63baf62dc2d8740eb230d2425b2dc`，测试开关和数据未改动。
+- 本次仅代码上线及关闭门禁验证；正式商品/密钥的真实网关校验、生产外币报价、真实付款与原币退款仍待开启后验收。没有代负责人发起真实扣款。
