@@ -21,6 +21,8 @@ PromptLens V2 是一个 AI 视频创作工作流工具，将参考视频或图�
 
 ![PromptLens V2 操作流程概览](docs/demos/workflow-overview.svg)
 
+[参观案例 →](https://prompt-lens.cc.cd/samples)
+
 ## 创作闭环流程
 
 发现灵感、理解镜头、加入自己的创意，再生成和发布作品，让反馈成为下一次创作的起点。
