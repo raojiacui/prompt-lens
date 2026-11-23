@@ -1,7 +1,7 @@
 # ADR 0083：后台发放有期限的 V2 套餐权益
 
 - 日期：2026-11-23
-- 状态：测试库迁移和 Git 测试发布完成，等待管理员实际发放验收
+- 状态：测试与正式发布完成；正式真实发放和接收人登录验收待执行
 
 ## 背景
 
@@ -61,3 +61,9 @@
 - 正式 Supabase `vxlwqiohliynbtjwivte` 已应用相同 `expiring_admin_entitlements` 迁移。迁移前后保持 4 个批次、2 个钱包、215 可用积分、40 次改写；新增字段 3 个，带到期时间的历史批次为零。RLS 仍开启，anon SELECT 和 authenticated UPDATE 仍被拒绝。未发放实际权益。
 - 使用绑定 `prompt-lens` / `prj_LA38e0saqqVw1OkQ95AyoMx5vjIV` 的隔离正式工作区，仅推 `prompt-lens-V2` 触发 Git 构建；不手动上传或提升。
 - 正式回退基线：部署 `dpl_4nPg31qFBjyyAZ4B9WrzmHB4xThX` / Git `7095409`。应用回退可保留向后兼容的新字段；已经发生的赠送、消费与账本流水不得通过删字段或恢复旧余额回滚。
+
+## 正式发布结果
+
+- 正式分支远端与部署 Git SHA 均为 `436f21943958fafbb7f0e16f4f5809184c0d78ba`，正式部署 `dpl_4CPFgnxzPqXtYUBzF1JWB46ye1Bn` 为 READY，source=git，`prompt-lens.cc.cd` 已绑定该部署。
+- 正式首页、账户页面及既有 Search Console 验证文件返回 200；未登录请求新管理员接口返回 403，账户数据接口返回 401。未为冒烟检查发放实际权益。
+- 这是发布与权限可达性证据；正式管理员真实发放、接收人登录查看与实际消费不在此次只读冒烟结论内。既有视频进度测试限制继续保留。
