@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, desc, eq, like, sql } from "drizzle-orm";
 import { auth } from "@/lib/auth";
-import { db, commercialWallets, commercialLots, commercialReservations, commercialLedger, commercialRefunds, paymentOrders } from "@/lib/db";
+import { db, commercialLots, commercialReservations, commercialLedger, commercialRefunds, paymentOrders } from "@/lib/db";
+
+import { refreshCommercialWallet } from "@/lib/billing/commercial-wallet";
 
 export async function GET(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const userId = session.user.id;
-  const [wallet] = await db.select().from(commercialWallets).where(eq(commercialWallets.userId, userId));
+  const wallet = await refreshCommercialWallet(userId);
   const [refundHold] = await db.select({ credits: sql<number>`coalesce(sum(${commercialLots.availableCredits}), 0)::int` }).from(commercialLots).where(and(eq(commercialLots.userId, userId), eq(commercialLots.state, "refunding")));
   const balance = { ...(wallet ?? { credits: 0, rewrites: 0, heldCredits: 0, heldRewrites: 0, frozen: false }), refundHeldCredits: refundHold?.credits ?? 0 };
   if (request.nextUrl.searchParams.get("balanceOnly") === "1") {

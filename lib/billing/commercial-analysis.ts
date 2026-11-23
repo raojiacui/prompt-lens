@@ -11,7 +11,7 @@ import { generationKeyFingerprint } from "./generation-key";
 import type { FfmpegBreakdownResult } from "@/lib/ffmpeg-worker/client";
 import { getProjectBundle } from "@/lib/workflow/service";
 import { buildFallbackSceneBlueprint, type SceneBlueprintDraft } from "@/lib/workflow/scene-analysis";
-import { settleCommercialTaskInTransaction } from "./commercial-wallet";
+import { refreshCommercialWallet, settleCommercialTaskInTransaction } from "./commercial-wallet";
 import { resolveModelSelection } from "@/lib/ai/model-registry";
 import { taskErrorDetails } from "./task-diagnostics";
 import { dispatchQueuedAnalysis } from "@/lib/workflow/analysis-dispatch";
@@ -52,6 +52,7 @@ export async function prepareCommercialAnalysis(userId: string, input: { project
   const linkedVideo = await isOwnedLinkedVideo(userId, input.mediaUrl);
   if (linkedVideo && !input.automaticSplit) throw new Error("INVALID_ANALYSIS_SOURCE_MODE");
   if (input.automaticSplit) {
+    await refreshCommercialWallet(userId);
     const purchase = await db.query.commercialLots.findFirst({ where: and(eq(commercialLots.userId, userId), eq(commercialLots.state, "active"), sql`${commercialLots.availableCredits} > 0`) });
     if (!purchase) throw new Error("SPLIT_PAYMENT_REQUIRED");
   }

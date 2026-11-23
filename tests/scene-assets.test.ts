@@ -21,7 +21,7 @@ let jobs: (typeof schema.analysisSceneJobs.$inferSelect)[];
 let sceneIds: string[];
 
 beforeAll(async () => {
-  for (const name of ["0000_dear_prism", "0003_blushing_thor", "0005_v2_workflow", "0007_foamy_lily_hollister", "0008_payment_orders", "0010_commercial_wallets", "0011_commercial_purchase_lots", "0012_commercial_tasks", "0016_trial_analysis_usage", "0017_request_reservations", "0018_workflow_analysis_tasks", "0023_analysis_scene_jobs"]) {
+  for (const name of ["0000_dear_prism", "0003_blushing_thor", "0005_v2_workflow", "0007_foamy_lily_hollister", "0008_payment_orders", "0010_commercial_wallets", "0011_commercial_purchase_lots", "0028_expiring_admin_entitlements", "0012_commercial_tasks", "0016_trial_analysis_usage", "0017_request_reservations", "0018_workflow_analysis_tasks", "0023_analysis_scene_jobs"]) {
     await client.exec(readFileSync(`drizzle/${name}.sql`, "utf8"));
   }
 });

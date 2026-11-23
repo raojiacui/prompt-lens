@@ -65,6 +65,9 @@ export const commercialLots = pgTable("commercial_lots", {
   heldRewrites: integer("held_rewrites").notNull().default(0),
   usedCredits: integer("used_credits").notNull().default(0),
   usedRewrites: integer("used_rewrites").notNull().default(0),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  expiredCredits: integer("expired_credits").notNull().default(0),
+  expiredRewrites: integer("expired_rewrites").notNull().default(0),
   state: varchar("state", { length: 24 }).notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [uniqueIndex("commercial_lot_order_unique").on(t.orderId), index("commercial_lot_user_idx").on(t.userId)]);

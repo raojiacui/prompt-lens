@@ -31,7 +31,7 @@ import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnal
 import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
-import { grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
+import { grantCommercialGift, refreshCommercialWallet, grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
 import { acknowledgeCommercialReview, escalateOverdueCommercialReviews, notifyDueCommercialReviews, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
 import { flushReadyAnalysisSceneResults, reconcileTerminalIndependentAnalysis, recoverStaleAnalysisSceneJobs, resumeIndependentAnalysis, resumeLocalIndependentAnalyses, runIndependentSceneJob } from "@/lib/billing/independent-scene-analysis";
 import { generationKeyFingerprint } from "@/lib/billing/generation-key";
@@ -96,6 +96,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await client.exec(readFileSync("drizzle/0015_alipay_official_provider.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0010_commercial_wallets.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0011_commercial_purchase_lots.sql", "utf8"));
+    await client.exec(readFileSync("drizzle/0028_expiring_admin_entitlements.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0002_video_generation.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0006_generation_workflow_links.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0012_commercial_tasks.sql", "utf8"));
@@ -123,6 +124,45 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await client.exec("TRUNCATE video_generation, commercial_tasks, commercial_refunds, commercial_allocations, commercial_lots, commercial_ledger, commercial_reservations, commercial_wallets, payment_orders, credit_ledger, user_credits CASCADE");
   });
   afterAll(async () => { await client.close(); });
+
+  it("grants a gift once without creating a paid order and includes all three benefits", async () => {
+    const input = { userId, actorId: userId, grantId: randomUUID(), packageId: "custom", credits: 50, rewrites: 8, linkImports: 3, days: 7, note: "friend" };
+    const issue = () => testDb.transaction(tx => grantCommercialGift(tx as unknown as Parameters<typeof grantCommercialGift>[0], input));
+    expect((await issue()).created).toBe(true);
+    expect((await issue()).created).toBe(false);
+    expect((await balance()).credits).toBe(50);
+    expect((await balance()).rewrites).toBe(8);
+    expect((await getIncludedLinkImportUsage(userId)).remaining).toBe(3);
+    expect(await testDb.select().from(schema.paymentOrders)).toHaveLength(0);
+    await expect(testDb.transaction(tx => grantCommercialGift(tx as unknown as Parameters<typeof grantCommercialGift>[0], { ...input, days: 30 }))).rejects.toThrow("GIFT_REPLAY_MISMATCH");
+  });
+
+  it("expires only unused gifted benefits and preserves purchased benefits", async () => {
+    await grant();
+    const giftId = randomUUID();
+    await testDb.transaction(tx => grantCommercialGift(tx as unknown as Parameters<typeof grantCommercialGift>[0], { userId, actorId: userId, grantId: giftId, packageId: "custom", credits: 50, rewrites: 8, linkImports: 3, days: 1, note: "" }));
+    await reserveCommercialTask({ userId, taskKey: "before-expiry", credits: 20, rewrites: 2, quote: {} });
+    const [held] = await testDb.select().from(schema.commercialAllocations);
+    const lots = await testDb.select().from(schema.commercialLots);
+    expect(lots.find(lot => lot.id === held.lotId)?.orderId).toBe(giftId);
+    await testDb.update(schema.commercialLots).set({ expiresAt: new Date(Date.now() - 1000) }).where(eq(schema.commercialLots.orderId, giftId));
+    await refreshCommercialWallet(userId);
+    expect((await balance()).credits).toBe(200);
+    expect((await balance()).rewrites).toBe(20);
+    expect((await balance()).heldCredits).toBe(20);
+    expect((await getIncludedLinkImportUsage(userId)).remaining).toBe(12);
+    // Releasing a task after expiry cannot resurrect the gifted balance.
+    await settleCommercialTask({ userId, taskKey: "before-expiry", credits: 5, rewrites: 0 });
+    await settleCommercialTask({ userId, taskKey: "before-expiry", credits: 5, rewrites: 0 });
+    expect((await balance()).credits).toBe(200);
+    expect((await balance()).heldCredits).toBe(0);
+    const gift = (await testDb.select().from(schema.commercialLots)).find(lot => lot.orderId === giftId)!;
+    expect(gift).toMatchObject({ state: "expired", availableCredits: 0, expiredCredits: 45, usedCredits: 5, expiredRewrites: 8 });
+    const ledger = await testDb.select().from(schema.commercialLedger);
+    expect(ledger.reduce((sum, row) => sum + row.credits, 0)).toBe(200);
+    await refreshCommercialWallet(userId);
+    expect((await testDb.select().from(schema.commercialLedger)).filter(row => row.eventKey.startsWith("expire:"))).toHaveLength(1);
+  });
 
   it("allows one durable execution row per selected scene", async () => {
     const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", input: {}, expiresAt: new Date(Date.now() + 600_000) }).returning();

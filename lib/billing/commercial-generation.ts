@@ -13,7 +13,7 @@ import { buildKIEVeoPayload, isKIEVeoModel } from "@/lib/ai/adapters/kie-video";
 import { getPlatformKieApiKey } from "./platform-access";
 import { generationKeyFingerprint } from "./generation-key";
 import { estimateGeneration } from "./pricing-v6";
-import { settleCommercialTaskInTransaction } from "./commercial-wallet";
+import { refreshCommercialWallet, settleCommercialTaskInTransaction } from "./commercial-wallet";
 import { getKieVeoGenerationStatus } from "@/lib/reference-video/kie-veo";
 import { assertOwnedUploadedVideo, commercialMediaRequest, type MediaPreview } from "./commercial-media";
 
@@ -66,6 +66,7 @@ export async function quoteCommercialGeneration(userId: string, body: Record<str
   let generationBody = body;
   if (video) {
     const sourceKey = await assertOwnedUploadedVideo(userId, video);
+    await refreshCommercialWallet(userId);
     const preparation = await db.transaction(async (tx) => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${`media-preview:${userId}`}))`);
       const wallet = await tx.query.commercialWallets.findFirst({ where: eq(commercialWallets.userId, userId) });

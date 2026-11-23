@@ -40,7 +40,7 @@ async function oldProject(days = 8) {
 
 describe("project R2 media cleanup", () => {
   beforeAll(async () => {
-    for (const migration of ["0000_dear_prism", "0003_blushing_thor", "0005_v2_workflow", "0006_generation_workflow_links", "0007_foamy_lily_hollister", "0008_payment_orders", "0010_commercial_wallets", "0011_commercial_purchase_lots", "0012_commercial_tasks", "0017_request_reservations", "0018_workflow_analysis_tasks", "0019_media_cleanup_jobs"]) {
+    for (const migration of ["0000_dear_prism", "0003_blushing_thor", "0005_v2_workflow", "0006_generation_workflow_links", "0007_foamy_lily_hollister", "0008_payment_orders", "0010_commercial_wallets", "0011_commercial_purchase_lots", "0028_expiring_admin_entitlements", "0012_commercial_tasks", "0017_request_reservations", "0018_workflow_analysis_tasks", "0019_media_cleanup_jobs"]) {
       await client.exec(readFileSync(`drizzle/${migration}.sql`, "utf8"));
     }
   });

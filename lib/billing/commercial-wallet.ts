@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, lte, or, isNull, gt, sql } from "drizzle-orm";
 import { db, commercialWallets, commercialReservations, commercialLedger, commercialLots, commercialAllocations } from "@/lib/db";
 import { COMMERCIAL_PACKAGES } from "./pricing-v6";
 import { LINK_IMPORT_PRICING_VERSION } from "./link-import-pricing";
@@ -16,7 +16,61 @@ function validateAmounts(amount: Amounts) {
 async function lockWallet(tx: Transaction, userId: string) {
   await tx.insert(commercialWallets).values({ userId }).onConflictDoNothing();
   const [wallet] = await tx.select().from(commercialWallets).where(eq(commercialWallets.userId, userId)).for("update");
+  const now = new Date();
+  const expired = await tx.select().from(commercialLots).where(and(
+    eq(commercialLots.userId, userId), eq(commercialLots.state, "active"), lte(commercialLots.expiresAt, now),
+  )).for("update");
+  let credits = 0, rewrites = 0;
+  for (const lot of expired) {
+    credits += lot.availableCredits;
+    rewrites += lot.availableRewrites;
+    await tx.update(commercialLots).set({ state: "expired", availableCredits: 0, availableRewrites: 0,
+      expiredCredits: lot.expiredCredits + lot.availableCredits, expiredRewrites: lot.expiredRewrites + lot.availableRewrites,
+    }).where(eq(commercialLots.id, lot.id));
+    await tx.insert(commercialLedger).values({ userId, eventKey: `expire:${lot.id}`, credits: -lot.availableCredits,
+      rewrites: -lot.availableRewrites, metadata: { lotId: lot.id, expiresAt: lot.expiresAt?.toISOString() } });
+  }
+  if (credits || rewrites) {
+    const [updated] = await tx.update(commercialWallets).set({ credits: wallet.credits - credits, rewrites: wallet.rewrites - rewrites,
+      updatedAt: now }).where(eq(commercialWallets.userId, userId)).returning();
+    return updated;
+  }
   return wallet;
+}
+
+/** Lazy expiration is authoritative at reads/reservation/settlement; no cron dependency. */
+export async function refreshCommercialWallet(userId: string) {
+  return db.transaction(tx => lockWallet(tx, userId));
+}
+
+export type CommercialGiftInput = Amounts & { userId: string; actorId: string; grantId: string;
+  packageId: string; linkImports: number; days: number; note: string };
+
+/** Server-only gift grant: distinct from payment orders, idempotent by request UUID. */
+export async function grantCommercialGift(tx: Transaction, input: CommercialGiftInput) {
+  validateAmounts(input);
+  if (!Number.isSafeInteger(input.linkImports) || input.linkImports < 0 || input.linkImports > 10000
+    || !Number.isSafeInteger(input.days) || input.days < 1 || input.days > 365
+    || input.credits > 100000 || input.rewrites > 10000 || !(input.credits || input.rewrites || input.linkImports)) throw new Error("INVALID_GIFT");
+  const wallet = await lockWallet(tx, input.userId);
+  const eventKey = `admin-grant:${input.grantId}`;
+  const [existing] = await tx.select().from(commercialLedger).where(eq(commercialLedger.eventKey, eventKey));
+  if (existing) {
+    const metadata = existing.metadata as Record<string, unknown>;
+    if (existing.userId !== input.userId || existing.credits !== input.credits || existing.rewrites !== input.rewrites
+      || metadata.actorId !== input.actorId || metadata.days !== input.days || metadata.packageId !== input.packageId
+      || metadata.linkImports !== input.linkImports || metadata.note !== input.note) throw new Error("GIFT_REPLAY_MISMATCH");
+    return { created: false, grantId: input.grantId, expiresAt: String(metadata.expiresAt) };
+  }
+  const expiresAt = new Date(Date.now() + input.days * 86400000);
+  const [lot] = await tx.insert(commercialLots).values({ userId: input.userId, orderId: input.grantId,
+    credits: input.credits, rewrites: input.rewrites, availableCredits: input.credits, availableRewrites: input.rewrites, expiresAt }).returning();
+  await tx.update(commercialWallets).set({ credits: wallet.credits + input.credits, rewrites: wallet.rewrites + input.rewrites,
+    updatedAt: new Date() }).where(eq(commercialWallets.userId, input.userId));
+  await tx.insert(commercialLedger).values({ userId: input.userId, eventKey, credits: input.credits, rewrites: input.rewrites,
+    metadata: { source: "admin-gift", actorId: input.actorId, packageId: input.packageId, linkImports: input.linkImports,
+      days: input.days, note: input.note, lotId: lot.id, expiresAt: expiresAt.toISOString() } });
+  return { created: true, grantId: input.grantId, expiresAt: expiresAt.toISOString() };
 }
 
 /** Call inside the same transaction as the order state transition. */
@@ -42,14 +96,14 @@ export async function reserveCommercialTask(input: Amounts & { userId: string; t
 }
 
 export async function getIncludedLinkImportUsage(userId: string, connection: Pick<Transaction, "select"> = db) {
-  const lots = await connection.select().from(commercialLots).where(and(eq(commercialLots.userId, userId), eq(commercialLots.state, "active"))).orderBy(asc(commercialLots.createdAt), asc(commercialLots.id));
+  const lots = await connection.select().from(commercialLots).where(and(eq(commercialLots.userId, userId), eq(commercialLots.state, "active"), or(isNull(commercialLots.expiresAt), gt(commercialLots.expiresAt, new Date())))).orderBy(sql`${commercialLots.expiresAt} ASC NULLS LAST`, asc(commercialLots.createdAt), asc(commercialLots.id));
   const grants = await connection.select().from(commercialLedger).where(eq(commercialLedger.userId, userId));
   const reservations = await connection.select().from(commercialReservations).where(eq(commercialReservations.userId, userId));
   let total = 0;
   let used = 0;
   let nextOrderId: string | undefined;
   for (const lot of lots) {
-    const grant = grants.find((item) => item.eventKey === `purchase:${lot.orderId}`) || grants.find((item) => {
+    const grant = grants.find((item) => item.eventKey === `purchase:${lot.orderId}` || (item.eventKey === `admin-grant:${lot.orderId}` && (item.metadata as Record<string, unknown>).source === "admin-gift")) || grants.find((item) => {
       // Explicit server-issued V2 test entitlements use the same reservation and
       // settlement rules without fabricating a paid purchase or payment order.
       const metadata = item.metadata as Record<string, unknown>;
@@ -102,7 +156,7 @@ export async function reserveCommercialTaskInTransaction(tx: Transaction, input:
       quote.linkImportOrderId = allowance.nextOrderId;
     }
     const [reservation] = await tx.insert(commercialReservations).values({ userId: input.userId, taskKey: input.taskKey, credits: input.credits, rewrites: input.rewrites, quote }).returning();
-    const lots = await tx.select().from(commercialLots).where(and(eq(commercialLots.userId, input.userId), eq(commercialLots.state, "active"))).orderBy(asc(commercialLots.createdAt), asc(commercialLots.id)).for("update");
+    const lots = await tx.select().from(commercialLots).where(and(eq(commercialLots.userId, input.userId), eq(commercialLots.state, "active"))).orderBy(sql`${commercialLots.expiresAt} ASC NULLS LAST`, asc(commercialLots.createdAt), asc(commercialLots.id)).for("update");
     let creditsLeft = input.credits;
     let rewritesLeft = input.rewrites;
     for (const lot of lots) {
@@ -144,24 +198,39 @@ export async function settleCommercialTaskInTransaction(tx: Transaction, input: 
     const allocations = await tx.select({ allocation: commercialAllocations, lot: commercialLots }).from(commercialAllocations)
       .innerJoin(commercialLots, eq(commercialAllocations.lotId, commercialLots.id))
       .where(eq(commercialAllocations.reservationId, reservation.id))
-      .orderBy(asc(commercialLots.createdAt), asc(commercialLots.id));
+      .orderBy(sql`${commercialLots.expiresAt} ASC NULLS LAST`, asc(commercialLots.createdAt), asc(commercialLots.id));
     if (allocations.reduce((n, a) => n + a.allocation.credits, 0) !== reservation.credits || allocations.reduce((n, a) => n + a.allocation.rewrites, 0) !== reservation.rewrites) throw new Error("COMMERCIAL_LOT_RECONCILIATION_REQUIRED");
     let creditsLeft = input.credits;
     let rewritesLeft = input.rewrites;
+    let expiredCredits = 0, expiredRewrites = 0;
     for (const { allocation, lot } of allocations) {
       const credits = Math.min(creditsLeft, allocation.credits);
       const rewrites = Math.min(rewritesLeft, allocation.rewrites);
-      await tx.update(commercialLots).set({ availableCredits: lot.availableCredits + allocation.credits - credits, availableRewrites: lot.availableRewrites + allocation.rewrites - rewrites, heldCredits: lot.heldCredits - allocation.credits, heldRewrites: lot.heldRewrites - allocation.rewrites, usedCredits: lot.usedCredits + credits, usedRewrites: lot.usedRewrites + rewrites }).where(eq(commercialLots.id, lot.id));
+      const expired = lot.expiresAt !== null && lot.expiresAt.getTime() <= Date.now();
+      const expiredCreditReturn = expired ? allocation.credits - credits : 0;
+      const expiredRewriteReturn = expired ? allocation.rewrites - rewrites : 0;
+      expiredCredits += expiredCreditReturn;
+      expiredRewrites += expiredRewriteReturn;
+      await tx.update(commercialLots).set({
+        availableCredits: lot.availableCredits + allocation.credits - credits - expiredCreditReturn,
+        availableRewrites: lot.availableRewrites + allocation.rewrites - rewrites - expiredRewriteReturn,
+        expiredCredits: lot.expiredCredits + expiredCreditReturn, expiredRewrites: lot.expiredRewrites + expiredRewriteReturn,
+        heldCredits: lot.heldCredits - allocation.credits, heldRewrites: lot.heldRewrites - allocation.rewrites,
+        usedCredits: lot.usedCredits + credits, usedRewrites: lot.usedRewrites + rewrites,
+      }).where(eq(commercialLots.id, lot.id));
       creditsLeft -= credits;
       rewritesLeft -= rewrites;
     }
     await tx.update(commercialWallets).set({
-      credits: wallet.credits + reservation.credits - input.credits,
-      rewrites: wallet.rewrites + reservation.rewrites - input.rewrites,
+      credits: wallet.credits + reservation.credits - input.credits - expiredCredits,
+      rewrites: wallet.rewrites + reservation.rewrites - input.rewrites - expiredRewrites,
       heldCredits: wallet.heldCredits - reservation.credits,
       heldRewrites: wallet.heldRewrites - reservation.rewrites, updatedAt: new Date(),
     }).where(eq(commercialWallets.userId, input.userId));
     const [updated] = await tx.update(commercialReservations).set({ state: "settled", settledCredits: input.credits, settledRewrites: input.rewrites, ...(includedImport ? { quote: { ...quote, linkImportDelivered: input.linkImportDelivered === true } } : {}), updatedAt: new Date() }).where(eq(commercialReservations.id, reservation.id)).returning();
     await tx.insert(commercialLedger).values({ userId: input.userId, eventKey: `settle:${reservation.id}`, credits: -input.credits, rewrites: -input.rewrites, metadata: { reservationId: reservation.id, taskKey: input.taskKey } });
+    if (expiredCredits || expiredRewrites) await tx.insert(commercialLedger).values({ userId: input.userId,
+      eventKey: `expire-release:${reservation.id}`, credits: -expiredCredits, rewrites: -expiredRewrites,
+      metadata: { reservationId: reservation.id, taskKey: input.taskKey } });
     return { reservation: updated, settled: true };
 }
