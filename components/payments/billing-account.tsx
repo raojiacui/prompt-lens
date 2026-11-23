@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ReceivedGifts, type ReceivedGift } from "./received-gifts";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { ArrowLeft, RefreshCw, X } from "lucide-react";
@@ -15,6 +16,7 @@ type Order = { id: string; provider?: string; currency?: string; packageId: stri
 type Account = {
   wallet: { credits: number; rewrites: number; heldCredits: number; heldRewrites: number; frozen: boolean };
   orders: Order[];
+  gifts?: ReceivedGift[];
   refunds: { id: string; orderId: string; state: string; reason?: string; contact?: string; createdAt?: string }[];
   tasks: { id: string; taskKey: string; state: string; credits: number; rewrites: number; settledCredits: number | null; settledRewrites: number | null; createdAt: string }[];
 };
@@ -80,6 +82,7 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
         {[ [zh ? "可用积分" : "Available credits", wallet?.credits], [zh ? "可用改写" : "Rewrites", wallet?.rewrites], [zh ? "任务预留积分" : "Reserved credits", wallet?.heldCredits], [zh ? "任务预留改写" : "Reserved rewrites", wallet?.heldRewrites] ].map(([label, value]) => <div key={label}><dt className="text-sm text-muted-foreground">{label}</dt><dd className="mt-2 text-2xl font-semibold">{walletFailed ? (zh ? "暂不可用" : "Unavailable") : value ?? "…"}</dd></div>)}
       </dl>
       {!!wallet?.refundHeldCredits && <p role="status" className="mb-5 text-sm text-muted-foreground">{zh ? `${wallet.refundHeldCredits} 积分正在退款审核中，暂不可使用；申请未通过后会恢复。` : `${wallet.refundHeldCredits} credits are unavailable during refund review and will be restored if the request is declined.`}</p>}
+      <ReceivedGifts gifts={account.gifts ?? []} zh={zh} />
       <div className="flex items-center justify-between"><h2 className="text-lg font-semibold">{zh ? "购买记录" : "Purchases"}</h2><Link href="/pricing#pricing" className="text-sm underline">{zh ? "购买积分" : "Buy credits"}</Link></div>
       {!account.orders.length && <p className="py-6 text-sm text-muted-foreground">{zh ? "暂无购买记录" : "No purchases yet"}</p>}
       {account.orders.map((order) => {

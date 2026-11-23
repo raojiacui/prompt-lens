@@ -31,6 +31,7 @@ import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnal
 import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
+import { listReceivedGifts } from "@/lib/billing/gift-history";
 import { issueEntitlementGift, listEntitlementGifts } from "@/lib/admin/entitlement-grants";
 import { grantCommercialGift, refreshCommercialWallet, grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
 import { acknowledgeCommercialReview, escalateOverdueCommercialReviews, notifyDueCommercialReviews, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
@@ -136,6 +137,12 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const records = await listEntitlementGifts();
     expect(records).toHaveLength(1);
     expect(records[0]).toMatchObject({ email: "friend@example.com", credits: 20, availableCredits: 20 });
+    const received = await listReceivedGifts(userId);
+    expect(received).toHaveLength(1);
+    expect(received[0]).toMatchObject({ credits: 20, rewrites: 2, linkImports: 1, note: "trial", availableCredits: 20 });
+    expect(received[0]).not.toHaveProperty("metadata");
+    expect(received[0]).not.toHaveProperty("actorId");
+    expect(await listReceivedGifts(randomUUID())).toEqual([]);
   });
 
   it("grants a gift once without creating a paid order and includes all three benefits", async () => {
