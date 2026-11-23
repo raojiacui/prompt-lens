@@ -9,7 +9,10 @@ const script = resolve("scripts/vercel-ignore-build.mjs");
 
 describe("Vercel release build boundary", () => {
   it.each([
-    [testProject, "prompt-lens-V2", "production", 1],
+    [testProject, "prompt-lens-V2", "production", 0],
+    [testProject, "staging/v2", "production", 1],
+    [testProject, "staging/v2", "preview", 1],
+    [liveProject, "staging/v2", "production", 0],
     [liveProject, "prompt-lens-V2", "production", 1],
     [testProject, "main", "production", 0],
     [liveProject, "main", "production", 0],

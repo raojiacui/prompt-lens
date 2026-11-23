@@ -31,6 +31,7 @@ import { prepareCommercialAnalysis, quoteCommercialAnalysis, quoteCommercialAnal
 import { confirmCommercialTask, confirmCommercialTaskInTransaction, runCommercialTask } from "@/lib/billing/commercial-task-runner";
 import { buildCommercialGenerationPayload, quoteCommercialGeneration, reconcileCommercialGeneration } from "@/lib/billing/commercial-generation";
 import { rewriteSceneVersion } from "@/lib/workflow/service";
+import { issueEntitlementGift, listEntitlementGifts } from "@/lib/admin/entitlement-grants";
 import { grantCommercialGift, refreshCommercialWallet, grantCommercialPurchase, reserveCommercialTask, settleCommercialTask, getIncludedLinkImportUsage } from "@/lib/billing/commercial-wallet";
 import { acknowledgeCommercialReview, escalateOverdueCommercialReviews, notifyDueCommercialReviews, releaseUnfulfilledCommercialAnalysis } from "@/lib/billing/commercial-review";
 import { flushReadyAnalysisSceneResults, reconcileTerminalIndependentAnalysis, recoverStaleAnalysisSceneJobs, resumeIndependentAnalysis, resumeLocalIndependentAnalyses, runIndependentSceneJob } from "@/lib/billing/independent-scene-analysis";
@@ -88,7 +89,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   beforeAll(async () => {
     // Migrations explicitly use public enums. This opt-in URL is restricted to the disposable local database above.
     if (nativeClient) await nativeClient.unsafe("DROP SCHEMA public CASCADE; CREATE SCHEMA public;");
-    await client.exec('CREATE TABLE "user" (id uuid PRIMARY KEY);');
+    await client.exec('CREATE TABLE "user" (id uuid PRIMARY KEY, email text, banned boolean, is_anonymous boolean default false);');
     await client.exec(readFileSync("drizzle/0005_v2_workflow.sql", "utf8"));
     await client.exec("CREATE TYPE log_action AS ENUM ('video.edit.start');");
     await client.exec(readFileSync("drizzle/0007_foamy_lily_hollister.sql", "utf8"));
@@ -103,7 +104,8 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await client.exec(readFileSync("drizzle/0019_media_cleanup_jobs.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0023_analysis_scene_jobs.sql", "utf8"));
     await client.exec(readFileSync("drizzle/0024_analysis_provider_slots.sql", "utf8"));
-    await client.query('INSERT INTO "user" (id) VALUES ($1)', [userId]);
+    await client.query('INSERT INTO "user" (id,email) VALUES ($1, \'friend@example.com\')', [userId]);
+    await client.exec("CREATE TABLE operation_logs (id uuid primary key default gen_random_uuid(), user_id uuid, action text, resource_type text, resource_id uuid, metadata jsonb default '{}', ip_address text, user_agent text, created_at timestamptz default now());");
   });
   beforeEach(async () => {
     vi.unstubAllEnvs();
@@ -115,7 +117,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     vi.mocked(getUserCredential).mockReset().mockResolvedValue(null);
     vi.mocked(copyR2Object).mockClear();
     vi.mocked(sendEmail).mockReset().mockResolvedValue(undefined);
-    await client.exec("TRUNCATE media_cleanup_jobs");
+    await client.exec("TRUNCATE media_cleanup_jobs, operation_logs");
     vi.mocked(queryAlipayTrade).mockReset();
     vi.mocked(closeAlipayTrade).mockReset();
     vi.mocked(refundAlipayTrade).mockReset();
@@ -124,6 +126,17 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await client.exec("TRUNCATE video_generation, commercial_tasks, commercial_refunds, commercial_allocations, commercial_lots, commercial_ledger, commercial_reservations, commercial_wallets, payment_orders, credit_ledger, user_credits CASCADE");
   });
   afterAll(async () => { await client.close(); });
+
+  it("resolves registered users, audits once and exposes gift history", async () => {
+    const gift = { email: "friend@example.com", grantId: randomUUID(), packageId: "custom", credits: 20, rewrites: 2, linkImports: 1, days: 7, note: "trial" };
+    await expect(issueEntitlementGift({ ...gift, email: "missing@example.com" }, userId)).rejects.toThrow("GIFT_USER_NOT_FOUND");
+    expect((await issueEntitlementGift(gift, userId)).created).toBe(true);
+    expect((await issueEntitlementGift(gift, userId)).created).toBe(false);
+    expect(await testDb.select().from(schema.operationLogs)).toHaveLength(1);
+    const records = await listEntitlementGifts();
+    expect(records).toHaveLength(1);
+    expect(records[0]).toMatchObject({ email: "friend@example.com", credits: 20, availableCredits: 20 });
+  });
 
   it("grants a gift once without creating a paid order and includes all three benefits", async () => {
     const input = { userId, actorId: userId, grantId: randomUUID(), packageId: "custom", credits: 50, rewrites: 8, linkImports: 3, days: 7, note: "friend" };

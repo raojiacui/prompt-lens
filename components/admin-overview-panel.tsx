@@ -7,6 +7,7 @@ import { useLocale } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { AdminUserDirectory } from "@/components/admin-user-directory";
+import { AdminEntitlementGrants } from "@/components/admin-entitlement-grants";
 import { AdminModerationControls } from "@/components/admin-moderation-controls";
 
 function formatNumber(value: number, locale: string) {
@@ -214,6 +215,7 @@ export function AdminOverviewPanel() {
         </div>
       </Section>
 
+      <AdminEntitlementGrants />
       <AdminModerationControls />
       <AdminUserDirectory />
       {showPurchases && <dialog ref={purchasesDialog} aria-label={copy.paidTitle} onCancel={event => { event.preventDefault(); setShowPurchases(false); }} className="fixed inset-0 m-auto max-h-[90dvh] w-[calc(100%-2rem)] max-w-6xl overflow-y-auto rounded-lg border border-border bg-background p-5 text-foreground shadow-xl backdrop:bg-black/50">
