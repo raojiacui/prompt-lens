@@ -1,7 +1,7 @@
 # ADR 0083：后台发放有期限的 V2 套餐权益
 
 - 日期：2026-11-23
-- 状态：实现与本地验证完成，测试库迁移完成；待 Git 测试发布
+- 状态：测试库迁移和 Git 测试发布完成，等待管理员实际发放验收
 
 ## 背景
 
@@ -36,3 +36,10 @@
 - 全量 Vitest 首轮 1226 项通过、5 项失败、2 项跳过。已修正本次钱包刷新带来的两个旧 mock，并把发布边界断言更新到 ADR 0079 的实际 staging/v2 链路；独立回归通过。剩余两条 `credits-byok-integration` 视频进度用例在等待旧错误文案时超时，涉及本次未修改的视频页面，不作为新赠送入口已端到端验收的依据；未关闭产品功能或修改这些断言。
 - 仅在测试 Supabase `mwczjgflbmzgvebfilnf` 应用 `expiring_admin_entitlements`：三个新字段存在，原批次仍为 5 条，到期批次为零；RLS 继续开启，anon SELECT 与 authenticated UPDATE 均为 false。未向实际账户发放测试权益。
 - 发布前正式域名部署 ID：`dpl_4nPg31qFBjyyAZ4B9WrzmHB4xThX`。实际 Git 集成仍为测试 `staging/v2`、正式 `prompt-lens-V2`，本轮仅推测试分支。
+
+## 测试发布结果
+
+- 测试分支远端 SHA 与发布提交均为 `fad2000095057cf1c4e54c4e45adac734e3be8cd`，测试部署 `dpl_HT4yFCWPxrEy9AoCd5yW5S2xvYrw` 为 READY，source=git，分支 staging/v2。
+- 固定测试域名 `prompt-lens-v2-test.vercel.app` 已指向该部署；未登录访问跳转登录页，新管理员接口未登录请求返回 401。
+- 正式域名仍为 `dpl_4nPg31qFBjyyAZ4B9WrzmHB4xThX`，正式数据库未迁移、正式分支未推送。
+- 已授权测试站发布，不代表已完成用户真实发放验收。本轮未修改线上钱包、未用真实用户发放探针权益；管理员登录后发放、目标用户到账展示和实际消费需负责人验收。完整测试集中的两条既有进度用例限制保留如上，不标记为全部通过。
