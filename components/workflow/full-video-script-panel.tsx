@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Check, ChevronDown, ChevronUp, Download, Loader2, Send, Undo2 } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Download, Film, Loader2, Send, Undo2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useFullVideoScript } from "./use-full-video-script";
 import { scriptTime, type FullVideoScript } from "@/lib/workflow/full-video-script";
+import { ScriptVideoPanel } from "./script-video-panel";
 
 function ScriptField({ label, value, onChange, disabled, title = false }: {
   label: string; value: string; onChange: (value: string) => void; disabled: boolean; title?: boolean;
@@ -32,6 +33,8 @@ export function FullVideoScriptPanel({ projectId, versionId, language, preview, 
   const text = (cn: string, en: string) => zh ? cn : en;
   const [expanded, setExpanded] = useState(false);
   const [formatOpen, setFormatOpen] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
+  const [preparingVideo, setPreparingVideo] = useState(false);
   const [instruction, setInstruction] = useState("");
   const [scope, setScope] = useState<"all" | "selected">("all");
   const [sceneIds, setSceneIds] = useState<string[]>([]);
@@ -42,7 +45,7 @@ export function FullVideoScriptPanel({ projectId, versionId, language, preview, 
   const draft = script.draft;
   const expansionKey = `promptlens:script-expanded:${projectId}:${versionId}`;
   useEffect(() => { try { setExpanded(localStorage.getItem(expansionKey) === "true"); } catch { /* Default collapsed. */ } }, [expansionKey]);
-  useEffect(() => { onDirtyChange?.(script.dirty || script.busy); return () => onDirtyChange?.(false); }, [script.dirty, script.busy, onDirtyChange]);
+  useEffect(() => { onDirtyChange?.(script.dirty || script.busy || preparingVideo); return () => onDirtyChange?.(false); }, [script.dirty, script.busy, preparingVideo, onDirtyChange]);
   useEffect(() => {
     if (!formatOpen) return;
     const close = (event: PointerEvent) => { if (!menuRef.current?.contains(event.target as Node)) setFormatOpen(false); };
@@ -131,9 +134,18 @@ export function FullVideoScriptPanel({ projectId, versionId, language, preview, 
                 <p className="px-2 py-1 text-xs text-muted-foreground">{text("导出已保存的完整脚本", "Export the saved full script")}</p>
                 {(["md", "txt", "json"] as const).map(format => <button key={format} type="button" onClick={() => { setFormatOpen(false); void script.download(format); }} className="block min-h-10 w-full rounded-md px-2 text-left text-sm hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring">{format === "md" ? "Markdown (.md)" : format === "txt" ? text("纯文本 (.txt)", "Plain text (.txt)") : "JSON (.json)"}</button>)}
               </div>}
+              <div className="group relative">
+                <button type="button" aria-label={text("预览并生成长视频", "Preview and generate video")} title={text("预览并生成长视频", "Preview and generate video")} disabled={script.busy || preparingVideo || script.status === "conflict"}
+                  onClick={async () => { setPreparingVideo(true); try { if (await script.flush()) setVideoOpen(true); } finally { setPreparingVideo(false); } }}
+                  className="flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-40">
+                  {preparingVideo ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : <Film className="h-[18px] w-[18px]" />}
+                </button>
+                <span role="tooltip" className="pointer-events-none absolute right-0 top-full z-20 mt-2 hidden w-max max-w-[220px] rounded-md bg-foreground px-3 py-2 text-xs text-background shadow-sm group-hover:block group-focus-within:block">{text("预览并生成长视频", "Preview and generate video")}</span>
+              </div>
             </div>
           </aside>
         </div>
+        {videoOpen && script.document && <ScriptVideoPanel projectId={projectId} versionId={versionId} revision={script.document.revision} language={language} expiresAt={script.document.expiresAt} dirty={script.dirty || script.busy} onClose={() => setVideoOpen(false)} />}
         <div className="mt-6 border-t border-border pt-5">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
             <h4 className="text-sm font-semibold">{text("用 AI 改写脚本", "Rewrite with AI")}</h4>

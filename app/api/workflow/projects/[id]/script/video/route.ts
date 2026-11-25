@@ -17,6 +17,7 @@ function failure(error: unknown) {
   const messages: Record<string, string> = {
     SCRIPT_VIDEO_TOO_LONG: "原脚本时间线超过目标时长，请调整脚本或使用逐镜头生成；不会截断脚本。 / The script exceeds the output duration.",
     SCRIPT_VIDEO_PROMPT_TOO_LONG: "提示词超过 20,480 字符，请精简脚本后重试；原稿已保留。 / Prompt exceeds 20,480 characters.",
+    SCRIPT_VIDEO_REVIEW_LIMIT: "当前安全审核最多支持 10,000 字符，请精简生成提示词并重新预览；原稿已保留。 / Current safety review accepts up to 10,000 characters.",
     SCRIPT_VIDEO_INCOMPLETE: "请先补全脚本中的镜头内容。 / Complete the scene scripts first.",
     SCRIPT_VIDEO_INVALID_TIMING: "镜头时间点重叠或顺序异常，请检查原始分析。 / Scene timing is invalid.",
     SCRIPT_VIDEO_INVALID_PREVIEW: "预览无效，请重新预览。 / Invalid preview.",

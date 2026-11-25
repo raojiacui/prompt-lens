@@ -102,4 +102,25 @@ describe("signed script-video previews and durable BYOK submissions", () => {
     const [job] = await testDb.select().from(schema.workflowJobs).where(eq(schema.workflowJobs.id, snapshot.generationId));
     expect((job.input as { snapshot: { scriptRevisionId: string } }).snapshot.scriptRevisionId).toBe(`${input.versionId}:1`);
   });
+  it("allows full preview but blocks a prompt beyond the mandatory review limit before any job or supplier call", async () => {
+    const input = await fixture();
+    const preview = await previewScriptVideo({ ...input, editedPrompt: "Safe scene. ".repeat(1000) });
+    expect(preview.snapshot.prompt.length).toBeGreaterThan(10000);
+    await expect(submitScriptVideo(userId, input.projectId, preview.token)).rejects.toThrow("SCRIPT_VIDEO_REVIEW_LIMIT");
+    expect(await testDb.select().from(schema.workflowJobs)).toHaveLength(0);
+    expect(createProviderVideo).not.toHaveBeenCalled();
+  });
+  it("never submits twice while the first provider request is still in flight", async () => {
+    const input = await fixture(); const preview = await previewScriptVideo(input);
+    let finish!: (value: { taskId: string; raw: unknown }) => void;
+    vi.mocked(createProviderVideo).mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const pending = submitScriptVideo(userId, input.projectId, preview.token);
+    await vi.waitFor(() => expect(createProviderVideo).toHaveBeenCalledTimes(1));
+    const second = await submitScriptVideo(userId, input.projectId, preview.token);
+    expect(second.providerTaskId).toBeNull();
+    expect(second.stage).toBe("submitting");
+    finish({ taskId: "single-task", raw: {} });
+    expect((await pending).providerTaskId).toBe("single-task");
+    expect(createProviderVideo).toHaveBeenCalledTimes(1);
+  });
 });

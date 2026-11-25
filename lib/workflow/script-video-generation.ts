@@ -7,7 +7,7 @@ import { createProviderVideo } from "@/lib/ai/video-client";
 import { KieProviderError } from "@/lib/reference-video/kie-veo";
 import { readFullVideoScript, lockedScriptVersion } from "./full-video-script-store";
 import { signScriptVideoPreview, verifyScriptVideoPreview, type ScriptVideoSnapshot } from "./script-video-preview";
-import { SCRIPT_VIDEO_MODEL, type ScriptVideoSettings } from "./script-video-compiler";
+import { SCRIPT_VIDEO_MODEL, SCRIPT_VIDEO_REVIEW_LIMIT, type ScriptVideoSettings } from "./script-video-compiler";
 
 type Job = typeof workflowJobs.$inferSelect;
 type SnapshotInput = { kind: "full_script_video"; snapshot: ScriptVideoSnapshot; keyFingerprint: string };
@@ -51,6 +51,7 @@ export async function submitScriptVideo(userId: string, projectId: string, token
   const existing = await db.query.workflowJobs.findFirst({ where: eq(workflowJobs.id, snapshot.generationId) });
   if (existing) return readScriptVideoJob(userId, projectId, snapshot.generationId);
   if (snapshot.expiresAt <= Date.now()) throw new Error("SCRIPT_VIDEO_PREVIEW_EXPIRED");
+  if (snapshot.prompt.length > SCRIPT_VIDEO_REVIEW_LIMIT) throw new Error("SCRIPT_VIDEO_REVIEW_LIMIT");
   const credential = await getUserCredential(userId, "kie");
   if (!credential) throw new Error("SCRIPT_VIDEO_KIE_KEY_REQUIRED");
   const fingerprint = generationKeyFingerprint(credential.apiKey);

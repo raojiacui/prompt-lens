@@ -5,6 +5,8 @@ import { scriptTime, type FullVideoScript } from "./full-video-script";
 
 export const SCRIPT_VIDEO_MODEL = "bytedance/seedance-2-5";
 export const SCRIPT_VIDEO_PROMPT_LIMIT = 20480;
+// Current mandatory Waffo review accepts at most 10,000 characters per prompt.
+export const SCRIPT_VIDEO_REVIEW_LIMIT = 10000;
 export const scriptVideoSettingsSchema = z.object({
   duration: z.number().int().min(4).max(30), resolution: z.enum(["480p", "720p", "1080p"]),
   aspectRatio: z.enum(["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"]), generateAudio: z.boolean(),
