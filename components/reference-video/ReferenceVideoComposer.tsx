@@ -327,8 +327,8 @@ export function ReferenceVideoComposer({
   const activeProvider = generationPayer === "byok" ? creditStatus?.byokProvider || "kie" : "kie";
   const [infistarModelIds, setInfistarModelIds] = useState<string[] | null>(null);
   const [modelLoadError, setModelLoadError] = useState("");
-  const models = useMemo(() => generationChoices(activeProvider)
-    .filter(entry => activeProvider !== "infistar" || !infistarModelIds || infistarModelIds.includes(entry.providerModelId)).map(generationOption), [activeProvider, infistarModelIds]);
+  const models = useMemo(() => generationChoices(activeProvider, generationPayer === "byok" ? "byok" : "platform")
+    .filter(entry => activeProvider !== "infistar" || !infistarModelIds || infistarModelIds.includes(entry.providerModelId)).map(generationOption), [activeProvider, infistarModelIds, generationPayer]);
   useEffect(() => {
     if (activeProvider !== "infistar") return;
     let cancelled = false;

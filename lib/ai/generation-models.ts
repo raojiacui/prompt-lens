@@ -11,8 +11,8 @@ export function generationChoiceId(id: string) {
   return providerId;
 }
 
-export function generationChoices(provider: UserProvider = "kie") {
-  return modelRegistry.filter(m => m.provider === provider && m.enabled && ["video_generation", "video_edit"].includes(m.category) && generationChoiceId(m.providerModelId) === m.providerModelId);
+export function generationChoices(provider: UserProvider = "kie", payer: "platform" | "byok" = "platform") {
+  return modelRegistry.filter(m => m.provider === provider && m.enabled && (!m.billingModes || m.billingModes.includes(payer)) && ["video_generation", "video_edit"].includes(m.category) && generationChoiceId(m.providerModelId) === m.providerModelId);
 }
 
 export function resolveGenerationModel(id: string, materials: GenerationMaterials) {

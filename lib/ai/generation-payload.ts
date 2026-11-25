@@ -20,7 +20,10 @@ export function buildMarketGenerationPayload(request: MarketGenerationInput, ima
       (editing ? duration !== 0 && (duration < 2 || duration > 10) : !entry.durationOptions?.includes(duration)) ||
       (aspect && !entry.aspectRatios?.includes(aspect)) || images.length > 9) fail();
   const input: { prompt: string; [key: string]: unknown } = { prompt: request.prompt, resolution, nsfw_checker: true };
-  if (model.startsWith("bytedance/seedance-2")) {
+  if (model === "bytedance/seedance-2-5") {
+    if (images.length || video || !request.prompt.trim() || request.prompt.length > 20480) fail();
+    Object.assign(input, { duration, aspect_ratio: aspect || "16:9", generate_audio: request.generateAudio === true, output_format: "mp4" });
+  } else if (model.startsWith("bytedance/seedance-2")) {
     Object.assign(input, { duration, aspect_ratio: aspect || "adaptive", generate_audio: request.generateAudio === true,
       ...(images.length ? { reference_image_urls: images } : {}), ...(video ? { reference_video_urls: [video] } : {}) });
   } else if (model.startsWith("wan/2-6-")) {

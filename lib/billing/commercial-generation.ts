@@ -34,6 +34,7 @@ export function buildCommercialGenerationPayload(body: Record<string, unknown>, 
   if (requested && requested !== "auto" && (!registry?.enabled || registry.provider !== "kie" || !["video_generation", "video_edit"].includes(registry.category))) throw new Error("PAID_MODEL_NOT_VERIFIED");
   const selected = registry?.providerModelId || (video ? "bytedance/seedance-2-fast" : images.length ? "wan/2-6-image-to-video" : "wan/2-6-text-to-video");
   const entry = resolveGenerationModel(selected, { hasImages: images.length > 0, hasVideo: Boolean(video) });
+  if (entry.billingModes && !entry.billingModes.includes("platform")) throw new Error("BYOK_ONLY_MODEL");
   const model = entry.providerModelId;
   const duration = Number(body.duration);
   const resolution = typeof body.quality === "string" ? body.quality.toLowerCase() : "720p";

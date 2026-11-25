@@ -37,6 +37,7 @@ export interface ModelRegistryEntry {
   qualityLevel: 1 | 2 | 3 | 4 | 5;
   costLevel: 1 | 2 | 3 | 4 | 5;
   experimental?: boolean;
+  billingModes?: Array<"byok" | "platform">;
 }
 
 export interface ModelRouteRequest {
@@ -60,6 +61,16 @@ export interface ModelSelectionInput {
 
 export const modelRegistry: ModelRegistryEntry[] = [
   ...infistarModels,
+  {
+    id: "seedance-2-5", displayName: "Seedance 2.5", family: "Seedance",
+    category: "video_generation", provider: "kie", providerModelId: "bytedance/seedance-2-5",
+    enabled: true, experimental: true, billingModes: ["byok"],
+    capabilities: ["text", "multi_shot", "native_audio"],
+    maxDuration: 30, durationOptions: Array.from({ length: 27 }, (_, i) => i + 4),
+    aspectRatios: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"],
+    resolutionOptions: ["480p", "720p", "1080p"],
+    speedLevel: 3, qualityLevel: 5, costLevel: 4,
+  },
   {
     id: "kling-2-6-image-video", displayName: "Kling 2.6", family: "Kling",
     category: "video_generation", provider: "kie", providerModelId: "kling-2.6/image-to-video",
