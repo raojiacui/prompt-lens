@@ -38,6 +38,7 @@ export function localizedStatus(status: string | undefined, locale: string, fall
     generating: ["生成中", "Generating"], uploading: ["上传中", "Uploading"],
     analyzing: ["分析中", "Analyzing"], completed: ["已完成", "Completed"],
     review: ["待核实", "Needs review"], failed: ["失败", "Failed"], cancelled: ["已取消", "Cancelled"],
+    archived: ["已过期", "Expired"],
   };
   const pair = statuses[status || "ready"];
   return pair ? pair[zh ? 0 : 1] : (zh ? "状态待更新" : "Status unavailable");
