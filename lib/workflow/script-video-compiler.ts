@@ -16,7 +16,7 @@ export function compileScriptVideo(content: FullVideoScript, settings: ScriptVid
   scriptVideoSettingsSchema.parse(settings);
   const model = getModelById(SCRIPT_VIDEO_MODEL);
   if (!model?.enabled || !model.capabilities.includes("multi_shot") || !model.durationOptions?.includes(settings.duration)) throw new Error("SCRIPT_VIDEO_UNAVAILABLE");
-  if (!content.scenes.length || content.scenes.some(s => !s.text.trim() || s.endMs <= s.startMs)) throw new Error("SCRIPT_VIDEO_INCOMPLETE");
+  if (!content.scenes.length || content.scenes.some(s => !s.text.trim() || s.endMs <= s.startMs || /此镜头分析未完成，暂无可靠脚本|Analysis is incomplete; no reliable script/.test(s.text))) throw new Error("SCRIPT_VIDEO_INCOMPLETE");
   if (content.scenes.some((s, i) => i > 0 && s.startMs < content.scenes[i - 1].endMs)) throw new Error("SCRIPT_VIDEO_INVALID_TIMING");
   if (Math.max(...content.scenes.map(s => s.endMs)) > settings.duration * 1000) throw new Error("SCRIPT_VIDEO_TOO_LONG");
   const prompt = editedPrompt?.trim() ?? [
