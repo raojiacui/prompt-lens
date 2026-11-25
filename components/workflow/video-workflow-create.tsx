@@ -322,6 +322,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
   const promptSaveTimersRef = useRef<Record<string, number>>({});
   const [projects, setProjects] = useState<Project[]>([]);
   const [bundle, setBundle] = useState<Bundle | null>(null);
+  const scriptDirtyRef = useRef(false);
   const [file, setFile] = useState<File | null>(null);
   const [mediaInputMode, setMediaInputMode] = useState<MediaInputMode>("upload");
   const [preferredUploadAnalysisMode, setUploadAnalysisMode] = useState<"whole" | "split">("split");
@@ -358,9 +359,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
     const refresh = () => { void loadCreditStatus(); };
     const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
     window.addEventListener("focus", refresh);
+    window.addEventListener("credits-updated", refresh);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
       window.removeEventListener("focus", refresh);
+      window.removeEventListener("credits-updated", refresh);
       document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
@@ -470,6 +473,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
   }
   async function loadProject(projectId: string, signal?: AbortSignal) {
     if (retryBusy.current || retryConfirmationPending || analysisTaskId) return;
+    if (scriptDirtyRef.current && projectId !== bundle?.project.id && !window.confirm(locale === "en" ? "The script has unsaved changes or an operation in progress. Switch projects? Local edits are kept on this device." : "脚本有未保存修改或正在处理的操作，确定切换项目？本机编辑稿会保留。")) return;
     setError("");
     const response = await fetchWithSessionRefresh(`/api/workflow/projects/${encodeURIComponent(projectId)}`, { signal, cache: "no-store" });
     const data = await response.json();
@@ -1052,7 +1056,12 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
 
               </div>
 
-              <VideoOverview overview={bundle.activeVersion?.overview || {}} scenes={bundle.sceneVersions} image={projectMediaType === "image"} />
+              <VideoOverview key={`${bundle.project.id}:${bundle.activeVersion?.id}`} overview={bundle.activeVersion?.overview || {}} scenes={bundle.sceneVersions} image={projectMediaType === "image"}
+                script={bundle.activeVersion && projectMediaType !== "image" ? {
+                  projectId: bundle.project.id, versionId: bundle.activeVersion.id,
+                  commercialEnabled: Boolean(creditStatus?.commercial?.enabled), remainingRewrites: creditStatus?.commercial?.rewrites ?? 0,
+                  hasUserApiKey: Boolean(creditStatus?.hasUserApiKey), onDirtyChange: dirty => { scriptDirtyRef.current = dirty; },
+                } : undefined} />
 
               <div className="grid gap-4">
                 {bundle.sceneVersions.map((latestSceneVersion) => {

@@ -14,7 +14,7 @@ export const scriptContentSchema = z.object({
 export type FullVideoScript = z.infer<typeof scriptContentSchema>;
 export type ScriptRevision = { revision: number; content: FullVideoScript; savedAt: string };
 export type ScriptCandidate = { requestId: string; fingerprint: string; sourceRevision: number; content: FullVideoScript; sceneIds: string[] };
-export type ScriptDocument = ScriptRevision & { history: ScriptRevision[]; candidates: ScriptCandidate[]; pending?: { taskKey: string; until: number } };
+export type ScriptDocument = ScriptRevision & { history: ScriptRevision[]; candidates: ScriptCandidate[]; expiresAt?: string; pending?: { taskKey: string; until: number } };
 
 type SourceScene = { id: string; sceneIndex: number; startTime: number; endTime: number };
 type SourceVersion = {

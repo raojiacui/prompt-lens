@@ -16,9 +16,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (request.headers.get("origin") !== request.nextUrl.origin) return NextResponse.json({ error: "Invalid origin" }, { status: 403 });
   const parsed = bodySchema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return NextResponse.json({ error: "Invalid rewrite request" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "Invalid rewrite request", final: true }, { status: 400 });
   const body = parsed.data;
-  if (body.payer === "included" && !commercialRewriteEnabled()) return NextResponse.json({ error: "套餐改写暂不可用 / Included rewrites unavailable" }, { status: 403 });
+  if (body.payer === "included" && !commercialRewriteEnabled()) return NextResponse.json({ error: "套餐改写暂不可用 / Included rewrites unavailable", final: true }, { status: 403 });
   try {
     const credential = body.payer === "byok" ? await getUserCredential(session.user.id) : null;
     const apiKey = body.payer === "included" ? getPlatformKieApiKey() : credential?.apiKey;

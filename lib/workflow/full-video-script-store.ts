@@ -27,7 +27,7 @@ export async function readFullVideoScript(userId: string, projectId: string, ver
   if (existing) return existing;
   const versions = bundle.allSceneVersions.filter(v => v.projectVersionId === versionId)
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-  const latest = [...new Map(versions.map(v => v.originalSceneId).map(id => [id, versions.find(v => v.originalSceneId === id)!])).values()];
+  const latest = versions.filter((v, index) => versions.findIndex(other => other.originalSceneId === v.originalSceneId) === index);
   if (!bundle.scenes.length) throw new Error("SCRIPT_NO_SCENES");
   const content = buildFullVideoScript(bundle.project.title, version.overview as Record<string, unknown>, bundle.scenes, latest.map(v => ({ ...v,
     story: v.story as Record<string, unknown>, visual: v.visual as Record<string, unknown>, audio: v.audio as Record<string, unknown>,
@@ -37,7 +37,10 @@ export async function readFullVideoScript(userId: string, projectId: string, ver
     const row = await lockedScriptVersion(tx, userId, projectId, versionId);
     const saved = storedScript(row.metadata);
     if (saved) return saved;
-    const document: ScriptDocument = { revision: 1, content, savedAt: new Date().toISOString(), history: [], candidates: [] };
+    const contentCreatedAt = Math.max(bundle.project.createdAt.getTime(), ...bundle.versions.map(v => v.createdAt.getTime()),
+      ...bundle.allSceneVersions.map(v => v.createdAt.getTime()), ...bundle.referenceVideos.map(v => v.createdAt.getTime()));
+    const document: ScriptDocument = { revision: 1, content, savedAt: new Date().toISOString(),
+      expiresAt: new Date(contentCreatedAt + 7 * 86400000).toISOString(), history: [], candidates: [] };
     await writeScript(tx, row, document);
     return document;
   });
