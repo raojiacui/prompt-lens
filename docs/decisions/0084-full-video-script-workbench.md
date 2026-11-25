@@ -37,3 +37,11 @@
 - 浏览器测试使用独立本地签名密钥、仅本机有效的测试会话和受拦截的测试接口；保留受邀邮箱门禁与线上功能开关，不连接线上数据库写入测试数据。已检查中英文桌面与手机截图，预览及截图均未提交。
 - TypeScript、相关源码 ESLint 和完整 Next 生产构建通过。构建仍有既有文件的 lint 警告，本次新增源码相关检查无错误。
 - 测试站当前浏览器没有登录会话；真实账号的线上持久化、跨设备操作及供应商真实 AI 改写仍待验收，不能标为端到端全部通过。
+
+## 测试发布结果
+
+- 已推送 `staging/v2`；远端实读 SHA 为 `a81fba01061cf2becf9793fde00831c3803d0e06`。
+- Vercel 部署 `dpl_6NE7HqTRx77LRAAnB9oEg2M9QsNf` 状态 READY，source=git，Git 分支及 SHA 与远端一致，项目为 `prompt-lens-v2-test` / `prj_wGvOLlXsOzpVUGZiK3spsAIxXAjI`。
+- 固定测试域名 `prompt-lens-v2-test.vercel.app` 已指向此部署。上线后未登录访问分析页返回 307 并跳转登录；完整脚本导出返回 401。直连网络不可达后，通过本机既有开发代理完成检查，未修改站点鉴权或部署保护。
+- 发布前后正式域名 `prompt-lens.cc.cd` 的部署均为 `dpl_4CPFgnxzPqXtYUBzF1JWB46ye1Bn`，本轮未推送正式分支、未执行手动上传或提升、无数据库迁移。
+- 在线构建日志仍提示已有 GitHub OAuth 凭据缺失。本轮没有更改登录配置；完整登录提供商验收、真实账号保存及 AI 调用继续列为未验收项。
