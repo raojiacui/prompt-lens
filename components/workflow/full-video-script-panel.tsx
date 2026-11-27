@@ -156,7 +156,7 @@ export function FullVideoScriptPanel({ projectId, versionId, language, preview, 
               <option value="all">{text("整篇脚本", "Whole script")}</option><option value="selected">{text("指定镜头", "Selected scenes")}</option>
             </select>
             <select aria-label={text("脚本改写费用来源", "Script rewrite payment source")} value={effectivePayer} disabled={script.busy || Boolean(script.pending)} onChange={event => setPayer(event.target.value === "byok" ? "byok" : "included")} className="min-h-10 max-w-full rounded-lg border border-border bg-background px-2 text-sm">
-              {commercialEnabled && <option value="included">{text("套餐改写额度", "Included rewrites")} · {remainingRewrites}</option>}
+              {commercialEnabled && <option value="included">{text(`套餐改写 · 剩余 ${remainingRewrites} 次`, `Included rewrites · ${remainingRewrites} left`)}</option>}
               <option value="byok" disabled={!hasUserApiKey}>{text("自带 API Key", "Own API key")}</option>
             </select>
             <span className="leading-5 text-muted-foreground">{effectivePayer === "included" ? text("成功生成候选消耗 1 次，不另扣积分", "1 rewrite per successful candidate, no extra credits") : text("调用费用由你的供应商账户承担", "Calls are billed to your provider account")}</span>
