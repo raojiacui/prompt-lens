@@ -5,7 +5,7 @@ import { drizzle } from "drizzle-orm/pglite";
 import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
 
-const mocks = vi.hoisted(() => ({ db: null as unknown, mode: "trial", provider: "kie", analyze: vi.fn(), probe: vi.fn() }));
+const mocks = vi.hoisted(() => ({ db: null as unknown, mode: "trial", provider: "kie", ownKey: true, analyze: vi.fn(), probe: vi.fn() }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return mocks.db; } }));
 vi.mock("@/lib/auth", () => ({ isAdminProfile: () => false }));
 vi.mock("@/lib/billing/video-analysis", () => ({
@@ -15,7 +15,7 @@ vi.mock("@/lib/billing/video-analysis", () => ({
   getVideoAnalysisChargeUnits: ({ sceneCount, longVideo }: { sceneCount: number; longVideo: boolean }) => sceneCount + (longVideo ? 3 : 0),
 }));
 vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "platform-test", resolveApiKeyForFeature: async () => ({ apiKey: "own-test", source: "user", provider: mocks.provider }) }));
-vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: async (_user: string, provider?: string) => ({ apiKey: "own-test", provider: provider || mocks.provider }) }));
+vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: async (_user: string, provider?: string) => mocks.ownKey ? ({ apiKey: "own-test", provider: provider || mocks.provider }) : null }));
 vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: async () => "owned", commercialMediaRequest: mocks.probe }));
 vi.mock("@/lib/workflow/scene-analysis", () => ({ analyzeImageBlueprint: mocks.analyze, analyzeSceneBlueprint: mocks.analyze, buildFallbackSceneBlueprint: (_: unknown, reason: string) => ({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "", metadata: { analysisProvider: "fallback", fallbackReason: reason } }) }));
 vi.mock("@/lib/workflow/transcription", () => ({ buildSceneAudioContexts: () => new Map(), transcribeMedia: async () => null }));
@@ -51,6 +51,7 @@ describe("durable analysis", () => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "false");
     mocks.mode = "trial";
     mocks.provider = "kie";
+    mocks.ownKey = true;
     mocks.analyze.mockReset().mockResolvedValue(blueprint);
     mocks.probe.mockReset();
     userId = randomUUID(); projectId = randomUUID();
@@ -101,6 +102,39 @@ describe("durable analysis", () => {
     expect((await drain(queued.id)).state).toBe("completed");
     expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ analysisProvider: "infistar", analysisApiKey: "own-test" });
     expect((await task(queued.id)).result).toMatchObject({ successful: 1, failed: 0 });
+  });
+
+  it.each([undefined, "platform"])("keeps admin platform image analysis on KIE despite a preferred Infistar key (payer=%s)", async payer => {
+    mocks.mode = "admin";
+    mocks.provider = "infistar";
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png", payer });
+    expect(queued.input).toMatchObject({ mode: "admin", provider: "kie", keySource: "platform" });
+    await drain(queued.id);
+    expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ analysisProvider: "kie", analysisApiKey: "platform-test", forceFreeTrialKie: false });
+  });
+
+  it("honors an administrator explicitly selecting their own Infistar key for an image", async () => {
+    mocks.mode = "admin";
+    mocks.provider = "infistar";
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png", payer: "byok" });
+    expect(queued.input).toMatchObject({ mode: "admin", provider: "infistar", keySource: "user" });
+    await drain(queued.id);
+    expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ analysisProvider: "infistar", analysisApiKey: "own-test" });
+  });
+
+  it("rejects unquoted platform consumption instead of falling back to a personal key", async () => {
+    mocks.mode = "byok";
+    mocks.provider = "infistar";
+    await expect(enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png", payer: "platform" })).rejects.toThrow("CONFIRMED_QUOTE_REQUIRED");
+    expect(mocks.analyze).not.toHaveBeenCalled();
+  });
+
+  it("never substitutes a platform key when an admin selects BYOK without a saved key", async () => {
+    mocks.mode = "admin";
+    mocks.ownKey = false;
+    await expect(enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png", payer: "byok" })).rejects.toThrow("KIE_BYOK_REQUIRED");
+    expect(mocks.analyze).not.toHaveBeenCalled();
   });
 
   it("settles only delivered scenes, including after a worker disappears", async () => {

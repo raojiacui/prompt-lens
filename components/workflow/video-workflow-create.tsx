@@ -368,7 +368,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
   const canSplitUpload = Boolean(creditStatus?.commercialConsumptionEnabled && (creditStatus.commercial?.credits ?? 0) > 0);
   const usesFreeTrialModel = creditStatus?.mode === "trial" && (mediaType === "image" || !canSplitUpload);
   const uploadAnalysisMode = canSplitUpload ? preferredUploadAnalysisMode : "whole";
-  const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (canSplitUpload || creditStatus.hasUserApiKey || creditStatus.mode !== "trial") && (mediaInputMode === "link" || mediaType !== "image"));
+  const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (canSplitUpload || creditStatus.hasUserApiKey || creditStatus.mode !== "trial") && (mediaInputMode === "link" || mediaType !== "image" || creditStatus.mode === "admin"));
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
   const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
   const rewriteBusyRef = useRef(false);
@@ -705,7 +705,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
       const breakdownRes = await fetchWithSessionRefresh(`/api/workflow/projects/${projectData.project.id}/breakdown`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mediaUrl: prepared.url, mediaName: prepared.filename, storageKey: prepared.key, mediaType: prepared.mediaType, ...analysisSelectionPayload() }),
+        body: JSON.stringify({ mediaUrl: prepared.url, mediaName: prepared.filename, storageKey: prepared.key, mediaType: prepared.mediaType, ...(showAnalysisPayer ? { payer: analysisPayer } : {}), ...analysisSelectionPayload() }),
       });
       const breakdownData = await readJsonResponse(breakdownRes, "Breakdown failed");
       if (!breakdownData.taskId) throw new Error("Analysis task was not created");
