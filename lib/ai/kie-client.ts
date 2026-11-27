@@ -41,11 +41,11 @@ function nativeGeminiBody(messages: Array<{ role: string; content: unknown }>) {
       if (part.type === "image_url" && typeof part.image_url?.url === "string") {
         const url = part.image_url.url;
         const data = /^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/]+={0,2})$/.exec(url);
-        if (data) return { inlineData: { mimeType: data[1], data: data[2] } };
+        if (data) return { inline_data: { mime_type: data[1], data: data[2] } };
         const path = new URL(url).pathname.toLowerCase();
         const mimeType = path.endsWith(".mp4") ? "video/mp4" : path.endsWith(".m4a") ? "audio/mp4" : undefined;
         if (!mimeType) throw new KieRequestError("Gemini image input must contain inline image bytes");
-        return { fileData: { mimeType, fileUri: url } };
+        return { file_data: { mime_type: mimeType, file_uri: url } };
       }
       throw new KieRequestError("Unsupported Gemini message content");
     });

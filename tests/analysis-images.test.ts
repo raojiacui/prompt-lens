@@ -7,7 +7,7 @@ const bytes = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQ
 const messages = [{ role: "user", content: [{ type: "text", text: "Describe the image" }, { type: "image_url", image_url: { url: "https://our-storage.example/image" } }] }];
 afterEach(() => { vi.unstubAllGlobals(); vi.clearAllMocks(); });
 describe("analysis image delivery", () => {
-  it("delivers downloaded bytes as native Gemini inlineData without leaking the provider key to storage", async () => {
+  it("delivers downloaded bytes with KIE's documented inline_data fields without leaking the provider key to storage", async () => {
     storage.key.mockReturnValue("uploads/owned.png");
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(bytes))
       .mockResolvedValueOnce(Response.json({ candidates: [{ content: { parts: [{ text: "visible image" }] } }] }));
@@ -15,7 +15,7 @@ describe("analysis image delivery", () => {
     expect(await requestProviderChat({ apiKey: "private-key", modelId: "gemini-3-8-flash-openai", messages })).toBe("visible image");
     expect(fetcher.mock.calls[0][1]).toMatchObject({ redirect: "error" });
     expect(fetcher.mock.calls[0][1].headers).toBeUndefined();
-    expect(JSON.parse(fetcher.mock.calls[1][1].body).contents[0].parts[1]).toEqual({ inlineData: { mimeType: "image/png", data: bytes.toString("base64") } });
+    expect(JSON.parse(fetcher.mock.calls[1][1].body).contents[0].parts[1]).toEqual({ inline_data: { mime_type: "image/png", data: bytes.toString("base64") } });
   });
   it("never fetches an untrusted URL or submits inference for it", async () => {
     storage.key.mockReturnValue(null);
