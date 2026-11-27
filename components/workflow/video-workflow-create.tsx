@@ -1154,7 +1154,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
                           {creditStatus?.commercial?.enabled && (
                             <div className="order-last mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                               <select aria-label={locale === "en" ? "Rewrite payment source" : "改写费用来源"} value={rewritePayer} onChange={(event) => setRewritePayer(event.target.value === "byok" ? "byok" : "included")} disabled={Boolean(rewritingSceneId)} className="h-8 max-w-full rounded-lg border border-border bg-background px-2">
-                                <option value="included">{locale === "en" ? "Included rewrites" : "套餐改写额度"} · {creditStatus.commercial.rewrites ?? 0}</option>
+                                <option value="included">{locale === "en" ? `Included rewrites · ${creditStatus.commercial.rewrites ?? 0} left` : `套餐改写 · 剩余 ${creditStatus.commercial.rewrites ?? 0} 次`}</option>
                                 <option value="byok" disabled={!creditStatus.hasUserApiKey}>{locale === "en" ? "Own API key" : "自带 API Key"}</option>
                               </select>
                               <span>{rewritePayer === "included" ? (locale === "en" ? "1 rewrite · No extra credits" : "消耗 1 次 · 不另扣积分") : (locale === "en" ? "Billed to your provider account" : "费用由你的供应商账户承担")}</span>
