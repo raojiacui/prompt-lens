@@ -5,7 +5,7 @@ import { getPlatformKieApiKey } from "@/lib/billing/platform-access";
 import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } from "@/lib/ai/model-registry";
 import { FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/billing/video-analysis";
 import { DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, KieEmptyResultError, KieRequestError } from "@/lib/ai/kie-client";
-import { InvalidSceneAnalysisResult, validateSceneAnalysis } from "./scene-analysis-result";
+import { assertVisualEvidence, InvalidSceneAnalysisResult, validateSceneAnalysis } from "./scene-analysis-result";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
 import { buildRecreationPrompt } from "./recreation-prompt";
@@ -233,6 +233,7 @@ async function callAnalysisChatJson(params: {
         throw new InvalidSceneAnalysisResult("KIE returned invalid JSON scene analysis");
       }
       params.validateJson?.(json);
+      if (params.content.some(part => part.type === "image_url")) assertVisualEvidence(json);
       return { json, ...selected, resultAttempts: attempt, providerAttemptUnconfirmed };
     } catch (error) {
       const invalid = error instanceof KieEmptyResultError ? new InvalidSceneAnalysisResult("KIE returned an empty scene analysis") : error;

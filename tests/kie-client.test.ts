@@ -67,8 +67,8 @@ describe("KIE transport", () => {
     const body = events.map(event => `data: ${JSON.stringify(event)}\r\n\r\n`).join("") + "data: [DONE]\r\n\r\n";
     const fetchMock = vi.fn<typeof fetch>(async () => new Response(body, { headers: { "Content-Type": "text/event-stream" } }));
     vi.stubGlobal("fetch", fetchMock);
-    expect(await requestKieChat({ ...input, messages: [{ role: "system", content: "JSON only" }, { role: "user", content: [{ type: "text", text: "Analyze" }, { type: "image_url", image_url: { url: "https://example.com/keyframe.jpg" } }] }] })).toBe("中文结果");
-    expect(JSON.parse(fetchMock.mock.calls[0][1]!.body as string)).toMatchObject({ systemInstruction: { parts: [{ text: "JSON only" }] }, contents: [{ role: "user", parts: [{ text: "Analyze" }, { fileData: { mimeType: "image/jpeg", fileUri: "https://example.com/keyframe.jpg" } }] }] });
+    expect(await requestKieChat({ ...input, messages: [{ role: "system", content: "JSON only" }, { role: "user", content: [{ type: "text", text: "Analyze" }, { type: "image_url", image_url: { url: "data:image/jpeg;base64,/9j/" } }] }] })).toBe("中文结果");
+    expect(JSON.parse(fetchMock.mock.calls[0][1]!.body as string)).toMatchObject({ systemInstruction: { parts: [{ text: "JSON only" }] }, contents: [{ role: "user", parts: [{ text: "Analyze" }, { inlineData: { mimeType: "image/jpeg", data: "/9j/" } }] }] });
   });
   it("rejects a truncated stream instead of accepting partial analysis", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response('data: {"candidates":[{"content":{"parts":[{"text":"partial"}]}}]}\n\n', { headers: { "Content-Type": "text/event-stream" } })));
