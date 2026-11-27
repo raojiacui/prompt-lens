@@ -54,20 +54,30 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
   const entitlement = process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true"
     ? await getWorkflowAnalysisEntitlement(userId)
     : await assertCanStartVideoAnalysis(userId, { longVideo: false });
+  if (body.payer !== undefined && body.payer !== "platform" && body.payer !== "byok") throw new Error("INVALID_ANALYSIS_PAYER");
+  // Explicit platform payment must never silently select a preferred BYOK key.
+  // Non-admin platform consumption belongs to the confirmed commercial quote path.
+  if (body.payer === "platform" && entitlement.mode !== "admin") throw new Error("CONFIRMED_QUOTE_REQUIRED");
   if (requiresAnalysisQuote({ commercialEnabled: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true", mediaType, mode: entitlement.mode, trialRemaining: entitlement.trial.remaining })) throw new Error("CONFIRMED_QUOTE_REQUIRED");
-  const access = entitlement.mode === "trial" ? { apiKey: getPlatformKieApiKey(), source: "platform", provider: "kie" as const } : await resolveApiKeyForFeature(userId, { requiredPackageScope: "video_analysis", allowPaidPlatformKey: entitlement.mode === "platform_credits" });
+  const explicitOwnKey = body.payer === "byok";
+  const own = explicitOwnKey ? await getUserCredential(userId) : null;
+  if (explicitOwnKey && !own) throw new Error("KIE_BYOK_REQUIRED");
+  const access = explicitOwnKey ? { apiKey: own!.apiKey, source: "user", provider: own!.provider }
+    : entitlement.mode === "trial" || entitlement.mode === "admin"
+      ? { apiKey: getPlatformKieApiKey(), source: "platform", provider: "kie" as const }
+      : await resolveApiKeyForFeature(userId, { requiredPackageScope: "video_analysis", allowPaidPlatformKey: entitlement.mode === "platform_credits" });
   if (!access.apiKey) throw new Error("KIE API Key is not configured");
   const selection = parseWorkflowModelSelection(body);
-  const modelId = entitlement.mode === "trial" ? FREE_TRIAL_ANALYSIS_MODEL : resolveModelSelection("analysis", { mode: selection.modelMode, modelId: selection.modelId, priority: selection.modelPriority }).model.providerModelId;
+  const modelId = entitlement.mode === "trial" && !explicitOwnKey ? FREE_TRIAL_ANALYSIS_MODEL : resolveModelSelection("analysis", { mode: selection.modelMode, modelId: selection.modelId, priority: selection.modelPriority }).model.providerModelId;
   const id = randomUUID();
   let reservation: string | null = null;
   try {
-    if (entitlement.mode === "trial") reservation = await reserveTrialAnalysis(userId, `analysis:${id}`);
+    if (entitlement.mode === "trial" && !explicitOwnKey) reservation = await reserveTrialAnalysis(userId, `analysis:${id}`);
     return await db.transaction(async (tx) => {
       const [project] = await tx.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).for("update");
       if (!project || project.status !== "draft") throw new Error("PROJECT_NOT_READY");
       const input: Input = { projectId, mediaUrl, mediaType, mediaName: typeof body.mediaName === "string" ? body.mediaName : undefined,
-        mode: entitlement.mode, modelId, provider: access.provider || "kie", outputLanguage: body.outputLanguage === "en" ? "en" : "zh",
+        mode: explicitOwnKey && entitlement.mode === "trial" ? "byok" : entitlement.mode, modelId, provider: access.provider || "kie", outputLanguage: body.outputLanguage === "en" ? "en" : "zh",
         longVideoAllowed: false,
         keySource: access.source === "user" ? "user" : "platform", keyFingerprint: generationKeyFingerprint(access.apiKey!), trialReservationId: reservation };
       const result: Progress = { phase: "prepare", cursor: 0, successful: 0, failed: 0, heldCredits: 0, projectId };

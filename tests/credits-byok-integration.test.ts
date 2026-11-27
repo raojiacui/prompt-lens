@@ -68,7 +68,7 @@ async function buildAnalysisPage() {
       builder.onResolve({ filter: /^next\/link$/ }, () => ({ path: "link", namespace: "fixture" }));
       builder.onResolve({ filter: /lib\/r2-upload-client$/ }, () => ({ path: "upload", namespace: "fixture" }));
       builder.onLoad({ filter: /.*/, namespace: "fixture" }, args => ({ loader: "js", resolveDir: process.cwd(), contents: args.path === "locale" ? "export const useLocale=()=> 'zh';"
-        : args.path === "link" ? "import React from 'react';export default function Link({children,...props}){return React.createElement('a',props,children);}" : "export const uploadMediaToR2=async(file)=>({url:'https://media.fixture/reference.mp4',filename:file.name,mediaType:'video',size:file.size,key:'fixture-video'});" }));
+        : args.path === "link" ? "import React from 'react';export default function Link({children,...props}){return React.createElement('a',props,children);}" : "export const uploadMediaToR2=async(file)=>({url:'https://media.fixture/reference',filename:file.name,mediaType:file.type.startsWith('image/')?'image':'video',size:file.size,key:'fixture-media'});" }));
     } }],
   });
 }
@@ -162,10 +162,44 @@ it.each(["byok", "trial"])("keeps whole-video progress accurate and submits the 
     expect(await page.getByRole("progressbar").getAttribute("aria-valuenow")).toBe("65");
     failed = true;
     await page.clock.runFor(4500);
-    await page.getByText("该镜头分析中断", { exact: true }).waitFor();
+    await page.getByText(/^任务未完成，请查看任务详情后重试。/).waitFor();
     const stopped = polls;
     await page.clock.runFor(5000);
     expect(polls).toBe(stopped);
     expect(submissions).toBe(1);
+  } finally { await browser.close(); }
+}, 30_000);
+
+it.each(["platform", "byok"])("keeps the admin image payer visible and submits %s after upload", async payer => {
+  saveFixture("infistar");
+  const status = await (await credits(new NextRequest("https://fixture.test/api/credits/me"))).json();
+  const bundle = await buildAnalysisPage();
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage({ viewport: { width: 390, height: 900 } });
+    page.setDefaultTimeout(5000);
+    page.on("pageerror", error => console.error("image-payer-browser-error", error.stack));
+    let submitted: Record<string, unknown> | undefined;
+    let quotes = 0;
+    await page.route("**/*", route => {
+      const request = route.request(); const url = new URL(request.url());
+      if (url.origin !== "https://fixture.test") return route.fulfill({ status: 404 });
+      if (url.pathname === "/") return route.fulfill({ contentType: "text/html", body: '<div id="root"></div>' });
+      if (url.pathname === "/api/credits/me") return route.fulfill({ json: status });
+      if (url.pathname === "/api/workflow/projects") return route.fulfill({ json: request.method() === "POST" ? { project: { id: "fixture-image" } } : { projects: [] } });
+      if (url.pathname.endsWith("/breakdown")) { submitted = request.postDataJSON(); return route.fulfill({ json: { taskId: "fixture-task" } }); }
+      if (url.pathname.startsWith("/api/commercial/analysis")) quotes++;
+      if (url.pathname === "/api/commercial/tasks/fixture-task") return route.fulfill({ json: { state: "running", totalScenes: 1, completedScenes: 0, mediaType: "image" } });
+      return route.fulfill({ status: 400, json: { code: "UNEXPECTED_TEST_REQUEST" } });
+    });
+    await page.goto("https://fixture.test/");
+    await page.addScriptTag({ content: bundle.outputFiles[0].text });
+    await page.locator('input[type="file"]').setInputFiles({ name: "fixture.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=", "base64") });
+    await page.getByLabel("费用来源", { exact: true }).selectOption(payer);
+    expect(await page.getByLabel("费用来源", { exact: true }).isVisible()).toBe(true);
+    expect(await page.getByLabel("费用来源", { exact: true }).inputValue()).toBe(payer);
+    await page.getByRole("button", { name: "分析图片", exact: true }).click();
+    await vi.waitFor(() => expect(submitted).toMatchObject({ mediaType: "image", payer, modelId: "analysis-gemini-3-8-flash" }));
+    expect(quotes).toBe(0);
   } finally { await browser.close(); }
 }, 30_000);
