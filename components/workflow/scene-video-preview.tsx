@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Loader2, Maximize, Pause, Play, RotateCcw, Volume2, VolumeX } from "lucide-react";
+import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
 
 function timeLabel(seconds: number) {
   return `${Math.floor(seconds / 60)}:${(seconds % 60).toFixed(1).padStart(4, "0")}`;
@@ -117,7 +118,7 @@ function SceneVideoPlayer({ mediaUrl, startUs, endUs, label, zh, onPlay, clipReq
     setBuffering(true);
     try {
       if (clipRequestUrl && !cachedClip.current) {
-        const response = await fetch(clipRequestUrl, { method: "POST", cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(180000)]) });
+        const response = await fetchWithSessionRefresh(clipRequestUrl, { method: "POST", cache: "no-store", signal: AbortSignal.any([controller.signal, AbortSignal.timeout(180000)]) });
         if (!response.ok || !response.headers.get("content-type")?.startsWith("video/")) throw new Error("Shot clip unavailable");
         const blob = await response.blob();
         if (controller.signal.aborted) return;

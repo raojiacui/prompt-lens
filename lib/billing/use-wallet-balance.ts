@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/auth/auth-client";
+import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
 
 export type WalletBalance = { credits: number; rewrites: number; heldCredits: number; heldRewrites: number; frozen: boolean; refundHeldCredits?: number };
 export const WALLET_CHANGED = "wallet-balance-changed";
@@ -26,7 +27,7 @@ export function useWalletBalance() {
       request = current;
       timeout = setTimeout(() => current.abort(), 15000);
       try {
-        const response = await fetch("/api/payments/account?balanceOnly=1", { cache: "no-store", signal: current.signal });
+        const response = await fetchWithSessionRefresh("/api/payments/account?balanceOnly=1", { cache: "no-store", signal: current.signal });
         if (!response.ok) throw new Error("Balance unavailable");
         const { wallet } = await response.json();
         if (!wallet || !Number.isFinite(wallet.credits)) throw new Error("Invalid balance");
