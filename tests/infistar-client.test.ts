@@ -8,7 +8,7 @@ it("maps existing analysis names to exact Infistar IDs", () => {
   expect(infistarChatModel("deepseek-v4-1-flash")).toBe("deepseek-v4.1-flash");
 });
 it("routes Infistar vision messages only to Infistar with the exact available model", async () => {
-  const messages = [{ role: "user", content: [{ type: "text", text: "Describe this frame" }, { type: "image_url", image_url: { url: "https://media.example/frame.jpg" } }] }];
+  const messages = [{ role: "user", content: [{ type: "text", text: "Describe this frame" }, { type: "image_url", image_url: { url: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg==" } }] }];
   const fetcher = vi.fn().mockResolvedValueOnce(Response.json({ data: [{ id: "gemini-3.8-flash" }] }))
     .mockResolvedValueOnce(Response.json({ choices: [{ message: { content: "A red cube" } }] }));
   vi.stubGlobal("fetch", fetcher);

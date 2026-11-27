@@ -5,7 +5,7 @@ vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: async () => ({ pro
 vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "test-key" }));
 const input = {
   userId: "test", modelMode: "manual" as const, modelId: "gemini-3-8-flash-openai",
-  scene: { sceneIndex: 1, startTime: 0, endTime: 3.507, duration: 3.507, clipUrl: "https://example.com/clip.mp4", keyframeUrls: ["https://example.com/frame.jpg"] },
+  scene: { sceneIndex: 1, startTime: 0, endTime: 3.507, duration: 3.507, clipUrl: "https://example.com/clip.mp4", keyframeUrls: ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg=="] },
   context: { sceneCount: 1 }, outputLanguage: "zh" as const,
 };
 const response = {
@@ -20,6 +20,13 @@ function mock(value: unknown) {
 }
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("scene analysis response compatibility", () => {
+  it("does not deliver an image analysis that says its reference image is unreadable", async () => {
+    mock({ story: { summary: "图片无法读取" }, visual: { sceneDescription: "未知，参考图片无法打开", subject: "未知" }, generationPrompt: "请上传可以读取的图片。" });
+    const result = await analyzeImageBlueprint(input);
+    expect(result.metadata?.analysisProvider).toBe("fallback");
+    expect(result.generationPrompt).toBe("");
+    expect(result.metadata?.failureCode).toBe("KIE_INVALID_RESULT");
+  });
   it("bounds platform-paid scene retries after an ambiguous KIE 524", async () => {
     const fetchMock = vi.fn<typeof fetch>()
       .mockImplementation(async () => new Response("gateway timeout", { status: 524 }));
