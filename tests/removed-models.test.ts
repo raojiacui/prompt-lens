@@ -4,7 +4,7 @@ import { buildKIEJobPayload } from "@/lib/ai/adapters/kie-video";
 import { buildCommercialGenerationPayload } from "@/lib/billing/commercial-generation";
 
 describe("removed model choices", () => {
-  it.each(["analysis-gemini-2-5-flash", "gemini-2.5-flash"])("removes %s from analysis choices and routing", modelId => {
+  it.each(["analysis-gemini-2-5-flash", "gemini-2.5-flash", ...["3-5", "3-7", "3-8"].flatMap(version => [`analysis-gemini-${version}-flash`, `gemini-${version}-flash-openai`])])("removes %s from analysis choices and routing", modelId => {
     expect(getModelById(modelId)).toBeUndefined();
     expect(listModels("analysis").some(model => model.id === modelId || model.providerModelId === modelId)).toBe(false);
     expect(() => resolveModelSelection("analysis", { mode: "manual", modelId })).toThrow();
@@ -17,8 +17,12 @@ describe("removed model choices", () => {
   it.each(["grok-imagine/text-to-video", "grok-imagine-video-1-5-preview", "happyhorse/video-edit", "kling-omni/transformation", "kling-3.0-omni/transformation"])("rejects direct KIE submission for %s", modelId => {
     expect(() => buildKIEJobPayload({ modelId, prompt: "A cinematic landscape" })).toThrow("MODEL_UNAVAILABLE");
   });
+  it("defaults to DeepSeek while retaining Gemini 3.6 as an explicit choice", () => {
+    expect(resolveModelSelection("analysis", undefined).model.id).toBe("analysis-deepseek-v4-1-flash");
+    expect(resolveModelSelection("analysis", { mode: "manual", modelId: "analysis-gemini-3-6-flash" }).model.enabled).toBe(true);
+  });
   it("keeps other Kling, Wan and Gemini models available", () => {
-    expect(listModels("analysis").some(m => m.providerModelId === "gemini-3-8-flash-openai")).toBe(true);
+    expect(listModels("analysis").some(m => m.providerModelId === "gemini-3-6-flash-openai")).toBe(true);
     expect(getModelById("kling-3.0/video")?.enabled).toBe(true);
     expect(getModelById("wan/2-7-videoedit")?.enabled).toBe(true);
   });

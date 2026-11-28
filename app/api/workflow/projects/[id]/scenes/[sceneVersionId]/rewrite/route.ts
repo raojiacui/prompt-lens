@@ -42,7 +42,7 @@ export async function POST(
         userId: session.user.id, projectId: id, sceneVersionId, instruction,
         currentPrompt: typeof body?.currentPrompt === "string" && body.currentPrompt.trim() ? body.currentPrompt.trim() : undefined,
         outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale,
-        modelMode: "manual", modelId: "analysis-gemini-3-8-flash", modelPriority: "balanced",
+        modelMode: "manual", modelId: "analysis-deepseek-v4-1-flash", modelPriority: "balanced",
         analysisProvider: credential?.provider || "kie", analysisApiKey: key,
         rewriteKeySource: payer === "included" ? "platform" : "user",
         allowPlatformKeyForRewrite: payer === "included",

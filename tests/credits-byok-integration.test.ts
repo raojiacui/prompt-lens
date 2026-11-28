@@ -147,7 +147,7 @@ it.each(["byok", "trial"])("keeps whole-video progress accurate and submits the 
     await page.locator('input[type="file"]').setInputFiles({ name: "fixture.mp4", mimeType: "video/mp4", buffer: video });
     await page.getByRole("radio", { name: "整段分析", exact: true }).check();
     if (mode === "byok") await page.getByLabel("费用来源", { exact: true }).selectOption("byok");
-    const expectedModel = mode === "trial" ? "analysis-deepseek-v4-1-flash" : "analysis-gemini-3-8-flash";
+    const expectedModel = "analysis-deepseek-v4-1-flash";
     expect(await page.getByLabel("分析模型").inputValue()).toBe(expectedModel);
     await page.getByRole("button", { name: "分析视频", exact: true }).click();
     await page.getByText("已处理 0/1 个镜头", { exact: true }).waitFor();
@@ -199,7 +199,7 @@ it.each(["platform", "byok"])("keeps the admin image payer visible and submits %
     expect(await page.getByLabel("费用来源", { exact: true }).isVisible()).toBe(true);
     expect(await page.getByLabel("费用来源", { exact: true }).inputValue()).toBe(payer);
     await page.getByRole("button", { name: "分析图片", exact: true }).click();
-    await vi.waitFor(() => expect(submitted).toMatchObject({ mediaType: "image", payer, modelId: "analysis-gemini-3-8-flash" }));
+    await vi.waitFor(() => expect(submitted).toMatchObject({ mediaType: "image", payer, modelId: "analysis-deepseek-v4-1-flash" }));
     expect(quotes).toBe(0);
   } finally { await browser.close(); }
 }, 30_000);

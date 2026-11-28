@@ -14,11 +14,11 @@ const input = { apiKey: "test-key", modelId: "deepseek-v4-1-flash", messages: [{
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("additive V2 DeepSeek analysis", () => {
-  it("adds a manual image model while preserving all existing automatic routes", () => {
+  it("supports DeepSeek and retains explicit Gemini routing priorities", () => {
     expect(listModels("analysis").filter(model => model.enabled)).toEqual(expect.arrayContaining([expect.objectContaining({ id: "analysis-deepseek-v4-1-flash", providerModelId: "deepseek-v4-1-flash" })]));
     expect(resolveModelSelection("analysis", { mode: "manual", modelId: "analysis-deepseek-v4-1-flash" }).model.capabilities).toEqual(["text", "image"]);
-    for (const priority of ["balanced", "fast", "best_quality", "lowest_cost"] as const) expect(routeModel({ category: "analysis", priority })?.id).toBe("analysis-gemini-3-8-flash");
-    expect(resolveModelSelection("analysis", { mode: "manual", modelId: "gemini-3-8-flash-openai" }).model.providerModelId).toBe("gemini-3-8-flash-openai");
+    for (const priority of ["fast", "best_quality", "lowest_cost"] as const) expect(routeModel({ category: "analysis", priority })?.id).toBe("analysis-gemini-3-6-flash");
+    expect(resolveModelSelection("analysis", { mode: "manual", modelId: "gemini-3-6-flash-openai" }).model.providerModelId).toBe("gemini-3-6-flash-openai");
   });
   it("sends system text and images using Responses, excluding reasoning from the final result", async () => {
     const fetcher = vi.fn(async (_url: unknown, _options?: RequestInit) => Response.json(completed())); vi.stubGlobal("fetch", fetcher);

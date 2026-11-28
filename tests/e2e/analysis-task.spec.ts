@@ -26,20 +26,20 @@ for (const width of [1440, 390]) {
       let body: unknown = {};
       if (path.includes("/auth/get-session")) body = { user: { id: "test", email: "test@example.com", name: "Test" }, session: { id: "test", token: "test", expiresAt: new Date(Date.now() + 3600000).toISOString() } };
       else if (path === "/api/credits/me") body = { commercialConsumptionEnabled: true, balance: 0, mode: "trial", trial: { limit: 2, used: 0, remaining: 2 }, commercial: { enabled: true, credits: 0, rewrites: 0 } };
-      else if (path === "/api/models") body = { models: [{ id: "analysis-gemini-3-8-flash", displayName: "Gemini 3.8 Flash", enabled: true, provider: "kie" }] };
+      else if (path === "/api/models") body = { models: [{ id: "analysis-deepseek-v4-1-flash", displayName: "DeepSeek V4.1 Flash", enabled: true, provider: "kie" }] };
       else if (path === "/api/workflow/projects") body = route.request().method() === "POST" ? { project: { id: projectId } } : { projects: polls > 1 ? [project] : [] };
       else if (path === "/api/upload") body = { presignedUrl: "https://example.com/upload", publicUrl: "https://example.com/image.png", key: "uploads/test/image.png" };
       else if (path === `/api/workflow/projects/${projectId}/breakdown`) {
         submissions++;
-        expect(route.request().postDataJSON()).toMatchObject({ modelMode: "manual", modelId: "analysis-gemini-3-8-flash" });
+        expect(route.request().postDataJSON()).toMatchObject({ modelMode: "manual", modelId: "analysis-deepseek-v4-1-flash" });
         body = { taskId, state: "queued" };
       } else if (path === "/api/commercial/image-analysis") {
         quotes++;
-        expect(route.request().postDataJSON()).toMatchObject({ modelId: "analysis-gemini-3-8-flash", projectId });
-        body = { id: taskId, credits: 4, expiresAt: new Date(Date.now() + 600000).toISOString() };
+        expect(route.request().postDataJSON()).toMatchObject({ modelId: "analysis-deepseek-v4-1-flash", projectId });
+        body = { id: taskId, credits: 2, expiresAt: new Date(Date.now() + 600000).toISOString() };
       } else if (path === `/api/commercial/tasks/${taskId}` && route.request().method() === "POST") {
         submissions++;
-        body = { id: taskId, state: "queued", credits: 4 };
+        body = { id: taskId, state: "queued", credits: 2 };
       } else if (path === `/api/commercial/tasks/${taskId}`) {
         polls++;
         body = polls < 2 ? { state: "running", totalScenes: 1, completedScenes: 0 } : { state: "completed", bundle };
@@ -51,7 +51,7 @@ for (const width of [1440, 390]) {
     await page.locator('input[type="file"]').first().setInputFiles({ name: "image.png", mimeType: "image/png", buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jWZkAAAAASUVORK5CYII=", "base64") });
     await page.getByRole("button", { name: "分析图片", exact: true }).click();
     await expect(page.getByRole("region", { name: "图片分析报价" })).toBeVisible();
-    await expect(page.getByText("图片分析 · 1 张 · 4 积分")).toBeVisible();
+    await expect(page.getByText("图片分析 · 1 张 · 2 积分")).toBeVisible();
     expect(submissions).toBe(0);
     expect(polls).toBe(0);
     await page.getByRole("button", { name: "确认并分析", exact: true }).click();

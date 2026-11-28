@@ -75,7 +75,7 @@ describe("durable analysis", () => {
   it.each([true, false])("settles a paid image exactly once after durable delivery (success=%s)", async success => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     await testDb.transaction(tx => grantCommercialPurchase(tx as never, { userId, orderId: randomUUID(), packageId: "v6_trial_200", credits: 200, rewrites: 20 }));
-    const source = { projectId, mediaUrl: "https://r2.example/a.png", modelId: "analysis-gemini-3-8-flash" };
+    const source = { projectId, mediaUrl: "https://r2.example/a.png", modelId: "analysis-gemini-3-6-flash" };
     const quote = await quoteImageAnalysis(userId, source);
     expect(quote.credits).toBe(4);
     expect((await quoteImageAnalysis(userId, source)).id).toBe(quote.id);
@@ -131,14 +131,6 @@ describe("durable analysis", () => {
     await client.query("UPDATE commercial_tasks SET expires_at=now()-interval '1 minute' WHERE id=$1", [quote.id]);
     await expect(confirmCommercialTask(userId, quote.id)).rejects.toThrow("QUOTE_EXPIRED");
     expect((await testDb.select().from(schema.commercialReservations)).filter(r => r.userId === userId)).toHaveLength(0);
-    expect(mocks.analyze).not.toHaveBeenCalled();
-  });
-
-  it("quotes KIE 3.7 at the 3.8 rate and persists the requested and actual models", async () => {
-    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
-    const quote = await quoteImageAnalysis(userId, { projectId, mediaUrl: "https://r2.example/a.png", modelId: "analysis-gemini-3-7-flash" });
-    expect(quote).toMatchObject({ credits: 4, modelId: "analysis-gemini-3-7-flash" });
-    expect((await task(quote.id)).input).toMatchObject({ modelId: "gemini-3-8-flash-openai", commercialImage: { modelId: "analysis-gemini-3-7-flash", version: "2026-11-28-image-v2" } });
     expect(mocks.analyze).not.toHaveBeenCalled();
   });
 

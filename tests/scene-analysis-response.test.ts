@@ -4,7 +4,7 @@ import { analyzeSceneBlueprint, analyzeImageBlueprint } from "@/lib/workflow/sce
 vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: async () => ({ provider: "kie", apiKey: "test-key" }) }));
 vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "test-key" }));
 const input = {
-  userId: "test", modelMode: "manual" as const, modelId: "gemini-3-8-flash-openai",
+  userId: "test", modelMode: "manual" as const, modelId: "gemini-3-6-flash-openai",
   scene: { sceneIndex: 1, startTime: 0, endTime: 3.507, duration: 3.507, clipUrl: "https://example.com/clip.mp4", keyframeUrls: ["data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScLbtAAAAABJRU5ErkJggg=="] },
   context: { sceneCount: 1 }, outputLanguage: "zh" as const,
 };

@@ -190,7 +190,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const s
     await expect(second).toBeChecked();
     await expect(panel.getByText(locale === "zh" ? `${totalCredits} 积分` : `${totalCredits} credits`, { exact: true })).toBeVisible();
     expect(quoteRequest).toMatchObject({ payer: pricing.payer, sceneIds: scenes.map(s => s.id) });
-    if (pricing.payer === "byok_split") expect(quoteRequest).toMatchObject({ modelId: "analysis-gemini-3-8-flash" });
+    if (pricing.payer === "byok_split") expect(quoteRequest).toMatchObject({ modelId: "analysis-gemini-3-6-flash" });
     expect(confirmations).toBe(0);
     const box = await panel.boundingBox();
     expect(box!.x).toBeGreaterThanOrEqual(0); expect(box!.x + box!.width).toBeLessThanOrEqual(width);

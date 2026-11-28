@@ -16,7 +16,7 @@ it("bounds circular causes", () => {
 });
 
 it("keeps HTTP status separate from provider errors and removes endpoint query parameters", () => {
-  const error = Object.assign(new Error("Server exception"), { status: 200, providerCode: 500, modelId: "gemini-3-8-flash-openai", endpoint: "/gemini/v1/models/gemini-3-8-flash:streamGenerateContent?key=private" });
-  expect(taskErrorDetails(error)).toMatchObject({ httpStatus: 200, providerCode: 500, modelId: "gemini-3-8-flash-openai", endpoint: "/gemini/v1/models/gemini-3-8-flash:streamGenerateContent" });
+  const error = Object.assign(new Error("Server exception"), { status: 200, providerCode: 500, modelId: "gemini-3-6-flash-openai", endpoint: "/gemini/v1/models/gemini-3-6-flash:streamGenerateContent?key=private" });
+  expect(taskErrorDetails(error)).toMatchObject({ httpStatus: 200, providerCode: 500, modelId: "gemini-3-6-flash-openai", endpoint: "/gemini/v1/models/gemini-3-6-flash:streamGenerateContent" });
   expect(JSON.stringify(taskErrorDetails(error))).not.toContain("private");
 });

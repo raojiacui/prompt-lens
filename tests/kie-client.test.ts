@@ -3,7 +3,7 @@ import { requestKieChat } from "@/lib/ai/kie-client";
 
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("KIE transport", () => {
-  const input = { apiKey: "test", modelId: "gemini-3-8-flash-openai", messages: [{ role: "user", content: "test" }] };
+  const input = { apiKey: "test", modelId: "gemini-3-6-flash-openai", messages: [{ role: "user", content: "test" }] };
   it.each(["UND_ERR_CONNECT_TIMEOUT", "ECONNREFUSED", "ENOTFOUND", "EAI_AGAIN"])("retries %s before any inference reaches the server", async code => {
     const cause = Object.assign(new Error("connection unavailable"), { code });
     const fetchMock = vi.fn().mockRejectedValueOnce(new TypeError("fetch failed", { cause }))
@@ -46,11 +46,16 @@ describe("KIE transport", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(vi.getTimerCount()).toBe(0);
   });
-  it.each(["3-5", "3-6", "3-7", "3-8"])("uses the native Gemini %s endpoint and normalizes the response", async version => {
+  it.each(["3-6"])("uses the native Gemini %s endpoint and normalizes the response", async version => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "answer" }] } }] })));
     vi.stubGlobal("fetch", fetchMock);
     expect(await requestKieChat({ ...input, modelId: `gemini-${version}-flash-openai` })).toBe("answer");
     expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining(`/gemini/v1/models/gemini-${version}-flash:streamGenerateContent`), expect.objectContaining({ body: JSON.stringify({ stream: true, contents: [{ role: "user", parts: [{ text: "test" }] }] }) }));
+  });
+  it.each(["3-5", "3-7", "3-8"])("rejects removed Gemini %s before a provider request", async version => {
+    const fetchMock = vi.fn(); vi.stubGlobal("fetch", fetchMock);
+    await expect(requestKieChat({ ...input, modelId: `gemini-${version}-flash-openai` })).rejects.toMatchObject({ message: "ANALYSIS_MODEL_UNAVAILABLE", outcome: "not_sent" });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
   it("keeps other models on their documented compatibility endpoints", async () => {
     const fetchMock = vi.fn(async () => new Response(JSON.stringify({ choices: [{ message: { content: "answer" } }] })));
@@ -133,6 +138,6 @@ describe("KIE transport", () => {
   });
   it("recognizes a provider error inside an HTTP 200 response", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ code: 500, msg: "upstream unavailable" }))));
-    await expect(requestKieChat(input)).rejects.toMatchObject({ message: "upstream unavailable", status: 200, providerCode: 500, modelId: "gemini-3-8-flash-openai", endpoint: "/gemini/v1/models/gemini-3-8-flash:streamGenerateContent" });
+    await expect(requestKieChat(input)).rejects.toMatchObject({ message: "upstream unavailable", status: 200, providerCode: 500, modelId: "gemini-3-6-flash-openai", endpoint: "/gemini/v1/models/gemini-3-6-flash:streamGenerateContent" });
   });
 });

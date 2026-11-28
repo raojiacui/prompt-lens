@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { ImageAnalysisQuotePanel, type ImageAnalysisSource } from "@/components/payments/image-analysis-quote-panel";
-import { IMAGE_ANALYSIS_PRICES, imageAnalysisModelLabel } from "@/lib/billing/image-analysis-pricing";
+import { IMAGE_ANALYSIS_PRICES } from "@/lib/billing/image-analysis-pricing";
 import { AnalysisQuotePanel } from "@/components/payments/analysis-quote-panel";
 import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
@@ -344,7 +344,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
   const [rewriteDrafts, setRewriteDrafts] = useState<Record<string, string>>({});
   const [selectedSceneVersionIndexes, setSelectedSceneVersionIndexes] = useState<Record<string, number>>({});
   const [copiedSceneVersionId, setCopiedSceneVersionId] = useState("");
-  const [analysisModelValue, setAnalysisModelValue] = useState("analysis-gemini-3-8-flash");
+  const [analysisModelValue, setAnalysisModelValue] = useState("analysis-deepseek-v4-1-flash");
   const [analysisPayer, setAnalysisPayer] = useState<"platform" | "byok">("platform");
   const [analysisQuoteLocked, setAnalysisQuoteLocked] = useState(false);
   const [analysisTaskId, setAnalysisTaskId] = useState("");
@@ -374,7 +374,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
   const uploadAnalysisMode = canSplitUpload ? preferredUploadAnalysisMode : "whole";
   const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (mediaType === "image" || canSplitUpload || creditStatus.hasUserApiKey || creditStatus.mode !== "trial"));
   useEffect(() => {
-    if (paidImage && !(analysisModelValue in IMAGE_ANALYSIS_PRICES)) setAnalysisModelValue("analysis-gemini-3-8-flash");
+    if (paidImage && !(analysisModelValue in IMAGE_ANALYSIS_PRICES)) setAnalysisModelValue("analysis-deepseek-v4-1-flash");
   }, [paidImage, analysisModelValue]);
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
   const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
@@ -969,7 +969,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
             <ModelSelector
               label={ui.analysisModel}
               value={usesFreeTrialModel ? FREE_TRIAL_ANALYSIS_MODEL_ID : analysisModelValue}
-              models={paidImage ? analysisModels.filter(model => model.id in IMAGE_ANALYSIS_PRICES).map(model => ({ ...model, displayName: imageAnalysisModelLabel(model.id, model.displayName, locale === "en") })) : analysisModels}
+              models={paidImage ? analysisModels.filter(model => model.id in IMAGE_ANALYSIS_PRICES) : analysisModels}
               onChange={setAnalysisModelValue}
               disabled={usesFreeTrialModel || loading || analysisQuoteLocked || Boolean(commercialSource) || Boolean(analysisTaskId)}
             />

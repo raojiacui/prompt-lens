@@ -23,7 +23,7 @@ import { dispatchQueuedAnalysis } from "./analysis-dispatch";
 import { safeDiagnosticText, taskErrorDetails } from "@/lib/billing/task-diagnostics";
 import { analysisSaveTimeouts, retryableAnalysisSaveError, ANALYSIS_RESULT_RECOVERY_MS } from "@/lib/billing/analysis-save-policy";
 import { hasUsablePrompt } from "./scene-analysis-result";
-import { imageAnalysisPrice, imageAnalysisExecutionModelId } from "@/lib/billing/image-analysis-pricing";
+import { imageAnalysisPrice } from "@/lib/billing/image-analysis-pricing";
 import { settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
 import { copyR2Object, getR2ObjectSize } from "@/lib/cloudflare/r2";
 import { mediaCleanupJobs } from "@/lib/db";
@@ -85,7 +85,7 @@ export async function quoteImageAnalysis(userId: string, source: { projectId: st
     const bytes = await getR2ObjectSize(sourceKey);
     if (!bytes || bytes > 8 * 1024 * 1024) throw new Error("ANALYSIS_IMAGE_TOO_LARGE");
     const mediaUrl = await copyR2Object(sourceKey, storageKey);
-    const input: Input = { projectId: source.projectId, mediaUrl, originalImageUrl: source.mediaUrl, mediaType: "image", mediaName: source.mediaName?.slice(0, 200), mode: "platform_credits", modelId: imageAnalysisExecutionModelId(source.modelId, model.providerModelId), provider: "kie", keySource: "platform", keyFingerprint: generationKeyFingerprint(key), outputLanguage, longVideoAllowed: false, trialReservationId: null, commercialImage };
+    const input: Input = { projectId: source.projectId, mediaUrl, originalImageUrl: source.mediaUrl, mediaType: "image", mediaName: source.mediaName?.slice(0, 200), mode: "platform_credits", modelId: model.providerModelId, provider: "kie", keySource: "platform", keyFingerprint: generationKeyFingerprint(key), outputLanguage, longVideoAllowed: false, trialReservationId: null, commercialImage };
     const result: Progress = { phase: "prepare", cursor: 0, successful: 0, failed: 0, heldCredits: 0, projectId: source.projectId };
     const [task] = await tx.insert(commercialTasks).values({ id, userId, kind: "workflow_analysis", state: "quoted", credits: commercialImage.credits, input, result, expiresAt: new Date(Date.now() + 600000) }).returning();
     return { id: task.id, credits: task.credits, modelId: source.modelId, expiresAt: task.expiresAt };

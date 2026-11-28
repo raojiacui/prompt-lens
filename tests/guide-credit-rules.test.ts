@@ -11,7 +11,7 @@ describe("Published credit rules", () => {
   it.each(["zh", "en"] as const)("publishes live pricing and allowances in %s", locale => {
     const topics = guideContent[locale].find(s => s.id === "credits")!.topics;
     const image = topics.find(t => /图片分析积分|Image analysis credits/.test(t.title))!.table!;
-    expect(image.rows).toEqual([["DeepSeek V4.1 Flash", "2"], ["Gemini 3.8 Flash", "4"], ["Gemini 3.7 Flash", "4"], ["Gemini 3.6 Flash", "4"]]);
+    expect(image.rows).toEqual([["DeepSeek V4.1 Flash", "2"], ["Gemini 3.6 Flash", "4"]]);
     const tables = topics.filter(t => t.table && !/图片分析积分|Image analysis credits/.test(t.title)).map(t => t.table!);
     expect(tables).toHaveLength(7);
     for (const table of tables) for (const row of table.rows) expect(row).toHaveLength(table.columns.length);
@@ -23,7 +23,7 @@ describe("Published credit rules", () => {
     expect(tables[6].rows.find(r => r[0] === "Wan 2.7")?.[4]).toBe("-");
     expect(tables[1].rows.map(r => r[1])).toEqual(["1", "2", "5", "10"]);
     expect(tables[2].columns).toHaveLength(2);
-    expect(tables[2].columns[1]).toContain("Gemini 3.8 Flash");
+    expect(tables[2].columns[1]).toContain("Gemini 3.6 Flash");
     expect(tables[2].rows.map(r => r.slice(1))).toEqual([["2"], ["3"], ["5"]]);
     expect(JSON.stringify(topics)).not.toMatch(/Gemini 2\.5 Pro|HappyHorse|Grok|Kling Omni/i);
     expect(tables[2].columns.join(" ")).not.toMatch(/总积分|total/i);

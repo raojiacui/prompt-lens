@@ -35,10 +35,11 @@ function retainedPreparationSource(task: typeof commercialTasks.$inferSelect | u
 }
 
 export function quotedAnalysisModel(input: { payer: string; model: string; modelId?: string }) {
-  const platformFlashModel = input.modelId === "analysis-deepseek-v4-1-flash" ? input.modelId : "analysis-gemini-3-8-flash";
+  if (input.modelId && /^analysis-gemini-3-[578]-flash$/.test(input.modelId)) throw new Error("ANALYSIS_MODEL_UNAVAILABLE");
+  const platformFlashModel = input.modelId === "analysis-gemini-3-6-flash" ? input.modelId : "analysis-deepseek-v4-1-flash";
   const modelId = input.payer === "platform"
     ? input.model === "flash" ? platformFlashModel : "analysis-gemini-2-5-pro"
-    : input.modelId || "analysis-gemini-3-8-flash";
+    : input.modelId || "analysis-deepseek-v4-1-flash";
   return resolveModelSelection("analysis", { mode: "manual", modelId }).model.providerModelId;
 }
 

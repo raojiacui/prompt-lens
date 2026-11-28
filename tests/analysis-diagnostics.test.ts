@@ -3,7 +3,7 @@ import { buildAnalysisDiagnostics } from "@/lib/billing/analysis-diagnostics";
 
 const now = Date.parse("2026-11-03T09:00:00Z");
 const task = () => ({ id: "task", state: "running", createdAt: new Date(now - 120000), updatedAt: new Date(now - 60000),
-  input: { modelId: "gemini-3-8-flash-openai", keyFingerprint: "secret-fingerprint", mediaUrl: "https://private.test/?signature=secret", pricing: { scenes: [{ id: "a" }, { id: "b" }, { id: "c" }] } },
+  input: { modelId: "gemini-3-6-flash-openai", keyFingerprint: "secret-fingerprint", mediaUrl: "https://private.test/?signature=secret", pricing: { scenes: [{ id: "a" }, { id: "b" }, { id: "c" }] } },
   result: { assets: { scenes: [{ keyframeUrls: [] }, { keyframeUrls: ["private-frame"] }, { keyframeUrls: [] }] } },
 });
 const job = (sceneIndex: number, state: string, result: unknown = {}) => ({ sceneIndex, state, result, createdAt: new Date(now - 100000), updatedAt: new Date(now - 10000) });

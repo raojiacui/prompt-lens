@@ -57,12 +57,12 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
     { title: zh ? "图片分析积分（每张）" : "Image analysis credits (per image)", paragraphs: zh ? [
       "选择平台积分时使用平台 KIE。每张图片先展示报价，确认后开始分析；有效分析结果保存成功后才扣费，失败不扣积分。同一任务重复确认不会重复扣费。",
       "图片不占用两次视频免费试用。选择自带 Key 时使用设置中保存的首选供应商 Key，模型费用由该供应商账户承担，平台图片分析积分为 0。管理员沿用免扣规则。",
-      "当前平台图片分析支持下表模型，单张图片最大 8MB。Gemini 3.7 已由 KIE 转为 3.8 执行，报价和确认页会标明；Gemini 3.5 已在 KIE 停用，不提供平台报价。报价有效期 10 分钟，历史任务按确认时的价格结算。",
+      "当前平台图片分析支持下表模型，单张图片最大 8MB。默认选择 DeepSeek，可选 Gemini 3.6 Flash。报价有效期 10 分钟，历史任务按确认时的价格结算。",
     ] : [
       "Platform credits use the platform KIE account. Review a quote before confirming. Credits are charged only when a valid analysis result is saved. Failed analysis is not charged. Reconfirming the same task does not duplicate the charge.",
       "Images do not consume the two video trials. Your own key uses your saved preferred provider, with model charges paid to that provider and zero platform image-analysis credits. Existing administrator exemptions remain.",
-      "Platform image analysis supports the models below, up to 8MB per image. KIE serves Gemini 3.7 with 3.8, as shown before confirmation. Gemini 3.5 is unavailable on KIE and has no platform quote. Quotes last 10 minutes; confirmed tasks retain their original price.",
-    ], table: { columns: zh ? ["模型", "积分/张"] : ["Model", "Credits/image"], rows: [["DeepSeek V4.1 Flash", "2"], ["Gemini 3.8 Flash", "4"], ["Gemini 3.7 Flash", "4"], ["Gemini 3.6 Flash", "4"]] } },
+      "Platform image analysis supports the models below, up to 8MB per image. DeepSeek is selected by default; Gemini 3.6 Flash is also available. Quotes last 10 minutes; confirmed tasks retain their original price.",
+    ], table: { columns: zh ? ["模型", "积分/张"] : ["Model", "Credits/image"], rows: [["DeepSeek V4.1 Flash", "2"], ["Gemini 3.6 Flash", "4"]] } },
     { title: zh ? "自动拆镜费用（不含模型分析）" : "Automatic splitting (analysis not included)", paragraphs: zh ? [
       "自动拆镜按原视频完整时长收费，与选用哪个分析模型、拆出多少个镜头无关。下表仅列拆镜费用，不包含任何镜头分析费。",
       "不使用自动拆镜、直接分析上传的完整单镜头文件：拆镜费为 0。使用自动拆镜处理 10 秒视频：拆镜费为 2 积分。这是两种操作，不是同一种操作有两个价格。已支付且可复用的拆镜结果不重复收费。",
@@ -72,19 +72,19 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
     ], table: { columns: zh ? ["原视频时长", "自动拆镜积分"] : ["Source duration", "Splitting credits"], rows: [5, 10, 30, 60].map(seconds => [zh ? `${seconds} 秒` : `${seconds} sec`, String(splitCredits(seconds * 1e6))]) } },
     { title: zh ? "分析一个镜头扣多少积分" : "Analysis credits for one shot", paragraphs: zh ? [
       "下表每个数字都是用对应模型成功分析一个镜头所需的平台积分，不含拆镜费，不是整条视频的合计费用。镜头时长指这一个镜头自身的时长，不是原视频时长。",
-      "例如，一个 10 秒镜头：Gemini 3.8 Flash 扣 5 积分。平台积分分析使用 Gemini 3.8 Flash；使用自己的 Key 时，可选择页面上其他已开放的分析模型，不扣平台分析积分。",
+      "例如，一个 10 秒镜头：Gemini 3.6 Flash 扣 5 积分。平台积分分析默认使用 DeepSeek，也可选择 Gemini 3.6 Flash；使用自己的 Key 时，可选择页面上其他已开放的分析模型，不扣平台分析积分。",
       "可以全选或只分析某几个镜头，未选中的镜头不收分析费。其他镜头时长、一次选择多个镜头时，以分析按钮和确认页的报价为准。",
       "部分镜头失败只收成功镜头的分析费用；平台分析全部失败不收本次拆镜和分析费用。失败重试不重复收已支付的拆镜费和成功镜头费用。自带 Key 的模型分析不扣平台积分，自动拆镜仍按原视频时长收费。",
       "上传视频文件最大 100MB，不限制时长，可选择整段分析或拆镜分析。整段分析不收拆镜费，建议上传完整单镜头片段，多镜头长视频可能影响准确性。拆镜需使用已购买的平台积分；文件与链接视频沿用相同拆镜价格，分析费只计算所选镜头。",
       "新账号的两次免费体验用于符合条件的视频整段分析，不包含图片分析、拆镜和视频生成。试用用完后，不会自动继续使用平台 Key；需要购买额度或选择自己的 Key。",
     ] : [
       "Each number is the platform credit cost of successfully analyzing one shot with the named model. Splitting is not included; these are not full-video totals. Duration means the length of that individual shot, not the full source.",
-      "One 10-second shot costs 5 credits with Gemini 3.8 Flash. Platform-credit analysis uses Gemini 3.8 Flash. With your own key, other available analysis models charge your provider account, not platform analysis credits.",
+      "One 10-second shot costs 5 credits with Gemini 3.6 Flash. Platform-credit analysis defaults to DeepSeek; Gemini 3.6 Flash is also available. With your own key, other available analysis models charge your provider account, not platform analysis credits.",
       "Analyze all shots or a selected subset. Unselected shots incur no analysis fee. For other shot lengths or multiple selected shots, use the quote on the analysis button and confirmation page.",
       "Failed shots incur no analysis charge. If all platform analysis fails, neither splitting nor analysis is charged for that attempt. Retries do not charge paid splitting or successful shots again. Your own key pays model costs through the corresponding provider; automatic splitting still uses platform credits.",
       "Video files up to 100MB have no duration limit. Whole-video analysis has no splitting fee; a complete single-shot clip is recommended because long videos with multiple shots may reduce accuracy. Splitting requires purchased platform credits, at the same rate for files and links. Analysis fees cover only selected shots.",
       "Two introductory trials apply to eligible whole-video analysis, excluding splitting and generation. After trials, purchase credits or explicitly use your own key; the platform key is not an automatic fallback.",
-    ], table: { columns: zh ? ["单个镜头时长", "Gemini 3.8 Flash（积分/镜头）"] : ["Single-shot duration", "Gemini 3.8 Flash (credits/shot)"], rows: analysisRows } },
+    ], table: { columns: zh ? ["单个镜头时长", "Gemini 3.6 Flash（积分/镜头）"] : ["Single-shot duration", "Gemini 3.6 Flash (credits/shot)"], rows: analysisRows } },
     { title: zh ? "文字、图片生成积分表（每条）" : "Text and image generation (per output)", paragraphs: zh ? [
       "下表每个数字都是生成一条视频的积分。Wan 2.6、Wan 2.7、Kling 2.6 的文字与图片生成同配置价格相同；Seedance 文字和图片参考使用同一档价格。素材数量、比例等仍需符合模型限制。",
       "Wan 2.6 支持 5、10、15 秒；Wan 2.7 文字与图片生成支持 2–15 秒，参考视频生成支持 2–10 秒；Seedance 支持 4–15 秒，Fast 和 Mini 仅支持 480p、720p；Kling 2.6 支持 5、10 秒，仅支持 1080p；Kling 3 支持 3–15 秒。表中“-”表示当前未支持该组合，不代表免费。其他支持时长的积分会显示在生成按钮与确认报价中。",

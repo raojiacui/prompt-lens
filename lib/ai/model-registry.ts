@@ -93,32 +93,6 @@ export const modelRegistry: ModelRegistryEntry[] = [
     speedLevel: 3, qualityLevel: 4, costLevel: 3,
   },
   {
-    id: "analysis-gemini-3-8-flash",
-    displayName: "Gemini 3.8 Flash",
-    family: "Gemini",
-    category: "analysis",
-    provider: "kie",
-    providerModelId: "gemini-3-8-flash-openai",
-    enabled: true,
-    capabilities: ["text", "image", "video"],
-    speedLevel: 5,
-    qualityLevel: 5,
-    costLevel: 2,
-  },
-  {
-    id: "analysis-gemini-3-7-flash",
-    displayName: "Gemini 3.7 Flash",
-    family: "Gemini",
-    category: "analysis",
-    provider: "kie",
-    providerModelId: "gemini-3-7-flash-openai",
-    enabled: true,
-    capabilities: ["text", "image", "video"],
-    speedLevel: 5,
-    qualityLevel: 4,
-    costLevel: 2,
-  },
-  {
     id: "analysis-gemini-3-6-flash",
     displayName: "Gemini 3.6 Flash",
     family: "Gemini",
@@ -130,19 +104,6 @@ export const modelRegistry: ModelRegistryEntry[] = [
     speedLevel: 5,
     qualityLevel: 4,
     costLevel: 2,
-  },
-  {
-    id: "analysis-gemini-3-5-flash",
-    displayName: "Gemini 3.5 Flash",
-    family: "Gemini",
-    category: "analysis",
-    provider: "kie",
-    providerModelId: "gemini-3-5-flash-openai",
-    enabled: true,
-    capabilities: ["text", "image", "video"],
-    speedLevel: 4,
-    qualityLevel: 4,
-    costLevel: 4,
   },
   {
     id: "analysis-deepseek-v4-1-flash", displayName: "DeepSeek V4.1 Flash", family: "DeepSeek",
@@ -456,5 +417,9 @@ export function routeModel(request: ModelRouteRequest) {
     .filter((model) => !request.aspectRatio || request.aspectRatio === "auto" || !model.aspectRatios || model.aspectRatios.includes(request.aspectRatio));
 
   if (!candidates.length) return null;
+  if (request.category === "analysis" && priority === "balanced") {
+    const defaultAnalysis = candidates.find(model => model.id === "analysis-deepseek-v4-1-flash");
+    if (defaultAnalysis) return defaultAnalysis;
+  }
   return candidates.sort((a, b) => priorityScore(b, priority) - priorityScore(a, priority))[0];
 }

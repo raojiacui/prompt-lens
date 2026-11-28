@@ -1,7 +1,7 @@
 import { getKieResponseText } from "./kie-response";
 import { kieResponsesBody, KieResponsesError, readKieResponses } from "./kie-responses";
 
-export const DEFAULT_KIE_CHAT_MODEL = "gemini-3-8-flash-openai";
+export const DEFAULT_KIE_CHAT_MODEL = "deepseek-v4-1-flash";
 export const DEFAULT_KIE_ANALYSIS_TIMEOUT_MS = 180_000;
 
 export class KieRequestError extends Error {
@@ -132,9 +132,10 @@ export async function requestKieChat(input: {
 }) {
   if (!input.apiKey) throw new KieRequestError("KIE API Key is not configured");
   if (!/^[a-zA-Z0-9._-]+$/.test(input.modelId)) throw new KieRequestError("Invalid KIE chat model");
+  if (/^gemini-3-[578]-flash(?:-openai)?$/.test(input.modelId)) throw new KieRequestError("ANALYSIS_MODEL_UNAVAILABLE", undefined, "not_sent");
   const baseUrl = (process.env.KIE_AI_BASE_URL || process.env.KIE_API_BASE_URL || "https://api.kie.ai").replace(/\/$/, "");
   // Preserve stored model IDs while using the documented native Gemini protocol.
-  const nativeGemini = /^gemini-3-[5678]-flash(?:-openai)?$/.test(input.modelId);
+  const nativeGemini = /^gemini-3-6-flash(?:-openai)?$/.test(input.modelId);
   const nativeModelId = input.modelId.replace(/-openai$/, "");
   const responses = input.modelId === "deepseek-v4-1-flash";
   const endpoint = responses ? "/openai/v1/responses" : nativeGemini ? `/gemini/v1/models/${nativeModelId}:streamGenerateContent` : `/${input.modelId}/v1/chat/completions`;

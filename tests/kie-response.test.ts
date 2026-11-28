@@ -12,7 +12,7 @@ describe("KIE analysis models", () => {
 
   it("uses the current KIE model for automatic analysis", () => {
     expect(routeModel({ category: "analysis", requiredCapabilities: ["text", "image"] })?.id)
-      .toBe("analysis-gemini-3-8-flash");
+      .toBe("analysis-deepseek-v4-1-flash");
   });
 });
 

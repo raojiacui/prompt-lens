@@ -12,7 +12,7 @@ describe("analysis image delivery", () => {
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(bytes))
       .mockResolvedValueOnce(Response.json({ candidates: [{ content: { parts: [{ text: "visible image" }] } }] }));
     vi.stubGlobal("fetch", fetcher);
-    expect(await requestProviderChat({ apiKey: "private-key", modelId: "gemini-3-8-flash-openai", messages })).toBe("visible image");
+    expect(await requestProviderChat({ apiKey: "private-key", modelId: "gemini-3-6-flash-openai", messages })).toBe("visible image");
     expect(fetcher.mock.calls[0][1]).toMatchObject({ redirect: "error" });
     expect(fetcher.mock.calls[0][1].headers).toBeUndefined();
     expect(JSON.parse(fetcher.mock.calls[1][1].body).contents[0].parts[1]).toEqual({ inline_data: { mime_type: "image/png", data: bytes.toString("base64") } });
@@ -20,13 +20,13 @@ describe("analysis image delivery", () => {
   it("never fetches an untrusted URL or submits inference for it", async () => {
     storage.key.mockReturnValue(null);
     const fetcher = vi.fn(); vi.stubGlobal("fetch", fetcher);
-    await expect(requestProviderChat({ apiKey: "key", modelId: "gemini-3-8-flash-openai", messages })).rejects.toMatchObject({ outcome: "not_sent" });
+    await expect(requestProviderChat({ apiKey: "key", modelId: "gemini-3-6-flash-openai", messages })).rejects.toMatchObject({ outcome: "not_sent" });
     expect(fetcher).not.toHaveBeenCalled();
   });
   it.each([new Response("HTML error", { headers: { "Content-Type": "image/png" } }), new Response("missing", { status: 404 }), new Response("", { headers: { "Content-Length": String(9 * 1024 * 1024) } })])("rejects inaccessible, invalid or oversized images before inference", async response => {
     storage.key.mockReturnValue("uploads/owned.png");
     const fetcher = vi.fn().mockResolvedValueOnce(response); vi.stubGlobal("fetch", fetcher);
-    await expect(requestProviderChat({ apiKey: "key", modelId: "gemini-3-8-flash-openai", messages })).rejects.toMatchObject({ outcome: "not_sent" });
+    await expect(requestProviderChat({ apiKey: "key", modelId: "gemini-3-6-flash-openai", messages })).rejects.toMatchObject({ outcome: "not_sent" });
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
   it("caps streamed bytes even without a content length", async () => {

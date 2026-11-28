@@ -25,7 +25,7 @@ export function AnalysisQuotePanel({ source, onClose, onComplete, onPartial, onL
   const automaticSplit = source.automaticSplit;
   const payer = source.payer ?? "platform";
   const model = "flash";
-  const selectedModelId = source.modelId || "analysis-gemini-3-8-flash";
+  const selectedModelId = source.modelId || "analysis-deepseek-v4-1-flash";
   const modelName = listModels("analysis").find(item => item.id === selectedModelId)?.displayName || selectedModelId;
   const [preparation, setPreparation] = useState<AnalysisPreparation | null>(null);
   const [downloading, setDownloading] = useState(false);

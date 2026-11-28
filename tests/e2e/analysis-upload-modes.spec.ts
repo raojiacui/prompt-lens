@@ -21,7 +21,7 @@ for (const locale of ["zh", "en"]) for (const width of [1440, 390]) for (const p
     });
     await page.goto("/dashboard?tab=analyze");
     await expect(page.locator('select option[value="auto"]')).toHaveCount(0);
-    await expect(page.getByLabel(locale === "zh" ? "分析模型" : "Analysis model")).toHaveValue("analysis-gemini-3-8-flash");
+    await expect(page.getByLabel(locale === "zh" ? "分析模型" : "Analysis model")).toHaveValue("analysis-deepseek-v4-1-flash");
     const expectedModels = modelRegistry.filter(model => model.category === "analysis" && model.enabled);
     await expect(page.getByLabel(locale === "zh" ? "分析模型" : "Analysis model").locator("option")).toHaveText(expectedModels.map(model => model.displayName));
     expect(modelRequests).toBe(0);

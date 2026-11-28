@@ -3,7 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
 import { listModels } from "@/lib/ai/model-registry";
-import { imageAnalysisModelLabel } from "@/lib/billing/image-analysis-pricing";
 
 export type ImageAnalysisSource = { projectId: string; mediaUrl: string; mediaName: string; modelId: string; outputLanguage: "zh" | "en" };
 export function ImageAnalysisQuotePanel({ source, onConfirmed, onClose }: { source: ImageAnalysisSource; onConfirmed: (id: string) => void; onClose: () => void }) {
@@ -41,7 +40,7 @@ export function ImageAnalysisQuotePanel({ source, onConfirmed, onClose }: { sour
   }
   return <section className="rounded-xl border border-border p-5 space-y-3" aria-label={zh ? "图片分析报价" : "Image analysis quote"}>
     <p className="font-semibold">{zh ? "图片分析 · 1 张" : "Image analysis · 1 image"}{quote ? ` · ${quote.credits} ${zh ? "积分" : "credits"}` : ""}</p>
-    <p className="text-sm">{imageAnalysisModelLabel(source.modelId, listModels("analysis").find(model => model.id === source.modelId)?.displayName || source.modelId, !zh)} · {zh ? "平台 KIE" : "Platform KIE"}</p>
+    <p className="text-sm">{listModels("analysis").find(model => model.id === source.modelId)?.displayName || source.modelId} · {zh ? "平台 KIE" : "Platform KIE"}</p>
     <p className="text-sm text-muted-foreground">{zh ? "确认后预留积分，有效分析结果保存成功才扣费；失败释放。图片不使用视频免费试用次数。" : "Credits are reserved on confirmation and charged only after a valid result is saved. Failure releases the reservation. Video trials do not cover images."}</p>
     {error && <p role="alert" className="text-sm text-destructive">{error === "INSUFFICIENT_COMMERCIAL_BALANCE" ? (zh ? "积分不足，请先充值后再确认。" : "Insufficient credits. Top up before confirming.") : error}</p>}
     {uncertain && error && <p className="text-sm">{zh ? "确认状态暂未核实，请重试确认同一任务，避免重复提交。" : "Confirmation is uncertain. Retry this same task."}</p>}

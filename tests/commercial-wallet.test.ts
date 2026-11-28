@@ -537,7 +537,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const [scene] = await testDb.insert(schema.videoScenes).values({ projectId: project.id, sceneIndex: 1, startTime: 0, endTime: 2, duration: 2 }).returning();
     const [original] = await testDb.insert(schema.sceneVersions).values({ projectId: project.id, projectVersionId: version.id, originalSceneId: scene.id, sceneIndex: 1, generationPrompt: "Original", duration: 2 }).returning();
     vi.mocked(rewriteSceneBlueprint).mockResolvedValue({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Rewritten" });
-    return { userId, projectId: project.id, sceneVersionId: original.id, instruction: "Change the main character", modelId: "analysis-gemini-3-8-flash", modelMode: "manual" as const, rewriteKeySource: "platform" as const, allowPlatformKeyForRewrite: true, commercialTaskKey: "rewrite:test" };
+    return { userId, projectId: project.id, sceneVersionId: original.id, instruction: "Change the main character", modelId: "analysis-gemini-3-6-flash", modelMode: "manual" as const, rewriteKeySource: "platform" as const, allowPlatformKeyForRewrite: true, commercialTaskKey: "rewrite:test" };
   }
   async function paidOrder() {
     const row = await order();
@@ -704,7 +704,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     await drain(quote.id);
     await runCommercialTask(quote.id);
     expect(analyzeSceneBlueprint).toHaveBeenCalledTimes(2);
-    expect(vi.mocked(analyzeSceneBlueprint).mock.calls[0][0]).toMatchObject({ analysisKeySource: "platform", forceFreeTrialKie: false, modelId: "gemini-3-8-flash-openai" });
+    expect(vi.mocked(analyzeSceneBlueprint).mock.calls[0][0]).toMatchObject({ analysisKeySource: "platform", forceFreeTrialKie: false, modelId: "deepseek-v4-1-flash" });
     expect(await balance()).toMatchObject({ credits: 196, heldCredits: 0 });
     const task = (await testDb.select().from(schema.commercialTasks)).find((t) => t.id === quote.id)!;
     expect(task.state).toBe("completed");
@@ -768,7 +768,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const [version] = await testDb.insert(schema.projectVersions).values({ projectId: project.id, versionNumber: 0, label: "Original" }).returning();
     const [scene] = await testDb.insert(schema.videoScenes).values({ projectId: project.id, sceneIndex: 1, startTime: 0, endTime: 5, duration: 5 }).returning();
     const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "running", credits: 5, expiresAt: new Date(Date.now() + 600_000),
-      input: { projectId: project.id, pricing: { payer: "platform", model: "flash", sourceDurationUs: 5_000_000, automaticSplit: false, paidSplitReusable: false, scenes: [{ id: "one", startUs: 0, endUs: 5_000_000 }] }, modelId: "gemini-3-8-flash-openai", outputLanguage: "zh", keyFingerprint: generationKeyFingerprint("platform-test-key") },
+      input: { projectId: project.id, pricing: { payer: "platform", model: "flash", sourceDurationUs: 5_000_000, automaticSplit: false, paidSplitReusable: false, scenes: [{ id: "one", startUs: 0, endUs: 5_000_000 }] }, modelId: "gemini-3-6-flash-openai", outputLanguage: "zh", keyFingerprint: generationKeyFingerprint("platform-test-key") },
       result: { executionId: randomUUID(), sceneJobMode: "independent_v1", versionId: version.id, sceneRecords: { one: scene.id }, assets: { scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] } },
     }).returning();
     await reserveCommercialTask({ userId, taskKey: `commercial:${task.id}`, credits: 5, rewrites: 0, quote: { kind: "analysis" } });
@@ -797,7 +797,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const [version] = await testDb.insert(schema.projectVersions).values({ projectId: project.id, versionNumber: 0, label: "Original" }).returning();
     const [scene] = await testDb.insert(schema.videoScenes).values({ projectId: project.id, sceneIndex: 1, startTime: 0, endTime: 5, duration: 5 }).returning();
     const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "running", credits: 5, expiresAt: new Date(Date.now() + 600_000),
-      input: { projectId: project.id, pricing: { payer: "platform", model: "flash", sourceDurationUs: 5_000_000, automaticSplit: false, paidSplitReusable: false, scenes: [{ id: "one", startUs: 0, endUs: 5_000_000 }] }, modelId: "gemini-3-8-flash-openai", outputLanguage: "zh", keyFingerprint: generationKeyFingerprint("platform-test-key") },
+      input: { projectId: project.id, pricing: { payer: "platform", model: "flash", sourceDurationUs: 5_000_000, automaticSplit: false, paidSplitReusable: false, scenes: [{ id: "one", startUs: 0, endUs: 5_000_000 }] }, modelId: "gemini-3-6-flash-openai", outputLanguage: "zh", keyFingerprint: generationKeyFingerprint("platform-test-key") },
       result: { executionId: randomUUID(), sceneJobMode: "independent_v1", versionId: version.id, sceneRecords: { one: scene.id }, assets: { scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: [] }] } },
     }).returning();
     await reserveCommercialTask({ userId, taskKey: `commercial:${task.id}`, credits: 5, rewrites: 0, quote: { kind: "analysis" } });
@@ -915,7 +915,7 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     const [secondScene] = await testDb.insert(schema.videoScenes).values({ projectId: project.id, sceneIndex: 2, startTime: 5, endTime: 10, duration: 5 }).returning();
     const [thirdScene] = await testDb.insert(schema.videoScenes).values({ projectId: project.id, sceneIndex: 3, startTime: 10, endTime: 15, duration: 5 }).returning();
     const intervals = [{ id: "one", startUs: 0, endUs: 5_000_000 }, { id: "two", startUs: 5_000_000, endUs: 10_000_000 }, { id: "three", startUs: 10_000_000, endUs: 15_000_000 }];
-    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "running", credits: 12, input: { projectId: project.id, pricing: { payer: "platform", model: "flash", sourceDurationUs: 15_000_000, automaticSplit: false, paidSplitReusable: false, scenes: intervals }, modelId: "gemini-3-8-flash-openai", outputLanguage: "zh", keyFingerprint: generationKeyFingerprint("platform-test-key"), executionMode: "scene_jobs_v1" }, result: { executionId: randomUUID(), sceneJobMode: "independent_v1", versionId: version.id, sceneRecords: { one: firstScene.id, two: secondScene.id, three: thirdScene.id }, assets: { scenes: intervals.map((interval, index) => ({ sceneIndex: index + 1, startTime: interval.startUs / 1e6, endTime: interval.endUs / 1e6, duration: 5, clipUrl: `https://example.com/${index}.mp4`, keyframeUrls: [] })) } }, expiresAt: new Date(Date.now() + 600_000) }).returning();
+    const [task] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "analysis", state: "running", credits: 12, input: { projectId: project.id, pricing: { payer: "platform", model: "flash", sourceDurationUs: 15_000_000, automaticSplit: false, paidSplitReusable: false, scenes: intervals }, modelId: "gemini-3-6-flash-openai", outputLanguage: "zh", keyFingerprint: generationKeyFingerprint("platform-test-key"), executionMode: "scene_jobs_v1" }, result: { executionId: randomUUID(), sceneJobMode: "independent_v1", versionId: version.id, sceneRecords: { one: firstScene.id, two: secondScene.id, three: thirdScene.id }, assets: { scenes: intervals.map((interval, index) => ({ sceneIndex: index + 1, startTime: interval.startUs / 1e6, endTime: interval.endUs / 1e6, duration: 5, clipUrl: `https://example.com/${index}.mp4`, keyframeUrls: [] })) } }, expiresAt: new Date(Date.now() + 600_000) }).returning();
     const jobs = await testDb.insert(schema.analysisSceneJobs).values([{ taskId: task.id, sceneId: "one", sceneIndex: 1 }, { taskId: task.id, sceneId: "two", sceneIndex: 2 }, { taskId: task.id, sceneId: "three", sceneIndex: 3 }]).returning();
     let finishFirst!: (blueprint: Awaited<ReturnType<typeof analyzeSceneBlueprint>>) => void;
     let finishSecond!: (blueprint: Awaited<ReturnType<typeof analyzeSceneBlueprint>>) => void;
@@ -1092,10 +1092,10 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
   });
 
   it("snapshots the real analysis model without accepting a platform tier override", () => {
-    expect(quotedAnalysisModel({ payer: "platform", model: "flash", modelId: "analysis-gemini-2-5-pro" })).toBe("gemini-3-8-flash-openai");
+    expect(quotedAnalysisModel({ payer: "platform", model: "flash", modelId: "analysis-gemini-2-5-pro" })).toBe("deepseek-v4-1-flash");
     expect(quotedAnalysisModel({ payer: "platform", model: "flash", modelId: "analysis-deepseek-v4-1-flash" })).toBe("deepseek-v4-1-flash");
     expect(quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "analysis-deepseek-v4-1-flash" })).toBe("deepseek-v4-1-flash");
-    expect(quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "analysis-gemini-3-5-flash" })).toBe("gemini-3-5-flash-openai");
+    expect(() => quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "analysis-gemini-3-5-flash" })).toThrow("ANALYSIS_MODEL_UNAVAILABLE");
     expect(() => quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "nonexistent" })).toThrow();
     expect(() => quotedAnalysisModel({ payer: "platform", model: "pro" })).toThrow();
     expect(() => quotedAnalysisModel({ payer: "byok", model: "flash", modelId: "analysis-gemini-2-5-pro" })).toThrow();
@@ -1113,18 +1113,18 @@ describe("Commercial wallet transactions on isolated Postgres", () => {
     };
     const first = await prepare("Existing Gemini");
     const second = await prepare("New DeepSeek");
-    const gemini = await quoteCommercialAnalysis(userId, { preparationId: first.id, sceneIds: ["one"], payer: "platform", model: "flash", outputLanguage: "zh" });
+    const gemini = await quoteCommercialAnalysis(userId, { preparationId: first.id, sceneIds: ["one"], payer: "platform", model: "flash", modelId: "analysis-gemini-3-6-flash", outputLanguage: "zh" });
     await confirmCommercialTask(userId, gemini.id);
     const deepseek = await quoteCommercialAnalysis(userId, { preparationId: second.id, sceneIds: ["one"], payer: "platform", model: "flash", modelId: "analysis-deepseek-v4-1-flash", outputLanguage: "zh" });
     expect(deepseek).toMatchObject({ modelId: "deepseek-v4-1-flash", credits: gemini.credits });
-    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, gemini.id)))[0].input).toMatchObject({ modelId: "gemini-3-8-flash-openai" });
+    expect((await testDb.select().from(schema.commercialTasks).where(eq(schema.commercialTasks.id, gemini.id)))[0].input).toMatchObject({ modelId: "gemini-3-6-flash-openai" });
     const assets = { metadata: {}, scenes: [{ sceneIndex: 1, startTime: 0, endTime: 5, duration: 5, keyframeUrls: ["https://example.com/frame.jpg"] }] };
     vi.mocked(commercialMediaRequest).mockResolvedValue(assets);
     vi.mocked(analyzeSceneBlueprint).mockResolvedValue({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "Valid result", metadata: { analysisProvider: "kie" } });
     await drain(gemini.id);
     await confirmCommercialTask(userId, deepseek.id);
     await drain(deepseek.id);
-    expect(vi.mocked(analyzeSceneBlueprint).mock.calls.map(call => call[0].modelId)).toEqual(["gemini-3-8-flash-openai", "deepseek-v4-1-flash"]);
+    expect(vi.mocked(analyzeSceneBlueprint).mock.calls.map(call => call[0].modelId)).toEqual(["gemini-3-6-flash-openai", "deepseek-v4-1-flash"]);
     expect(await balance()).toMatchObject({ credits: 200 - 2 * gemini.credits, heldCredits: 0 });
   });
 

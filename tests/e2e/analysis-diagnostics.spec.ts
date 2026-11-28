@@ -21,7 +21,7 @@ for (const width of [1440, 390]) test(`task diagnostics and interrupted status s
     if (url.pathname === `/api/commercial/tasks/${id}`) {
       observedDiagnostics ||= url.searchParams.get("diagnostics") === "1";
       if (interrupted) { await route.fulfill({ status: 503, json: { code: "UNAVAILABLE" } }); return; }
-      await route.fulfill({ json: { id, kind: "analysis", state: "running", credits: 27, diagnostics: { taskId: id, state: "running", stage: "analyzing", modelId: "gemini-3-8-flash-openai", createdAt: now - 360000, updatedAt: now - 180000, observedAt: now, scenes: [
+      await route.fulfill({ json: { id, kind: "analysis", state: "running", credits: 27, diagnostics: { taskId: id, state: "running", stage: "analyzing", modelId: "gemini-3-6-flash-openai", createdAt: now - 360000, updatedAt: now - 180000, observedAt: now, scenes: [
         { index: 1, stage: "completed", queueMs: 2000, preparationMs: 18000, modelMs: 90000, saveMs: 2000 },
         { index: 2, stage: "analyzing", queueMs: 2000, preparationMs: 22000, startedAt: now - 120000 },
         { index: 3, stage: "queued" },
