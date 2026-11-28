@@ -21,6 +21,8 @@ import { attachBackgroundMusicToBlueprint, deriveProjectTitle } from "./service"
 import { AnalysisExecutionLost, executionCondition, lockAnalysisExecution } from "@/lib/billing/analysis-execution";
 import { dispatchQueuedAnalysis } from "./analysis-dispatch";
 import { safeDiagnosticText, taskErrorDetails } from "@/lib/billing/task-diagnostics";
+import { analysisSaveTimeouts, retryableAnalysisSaveError, ANALYSIS_RESULT_RECOVERY_MS } from "@/lib/billing/analysis-save-policy";
+import { hasUsablePrompt } from "./scene-analysis-result";
 
 type Task = typeof commercialTasks.$inferSelect;
 type Input = {
@@ -140,15 +142,25 @@ function hasFinishedCheckpoint(progress: Progress) {
 }
 
 async function savePendingWorkflowScene(task: Task) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try { await savePendingWorkflowSceneAttempt(task, attempt); return; }
+    catch (error) {
+      console.error("workflow.analysis.save_failed", { taskId: task.id, attempt, error: taskErrorDetails(error) });
+      if (attempt === 2 || !retryableAnalysisSaveError(error)) throw error;
+    }
+  }
+}
+
+async function savePendingWorkflowSceneAttempt(task: Task, attempt: number) {
   const input = task.input as Input;
   const started = Date.now();
   let stage = "acquire_connection";
-  const slow = setTimeout(() => console.warn("workflow.analysis.save_slow", { taskId: task.id, stage, elapsedMs: Date.now() - started }), 5000);
+  const slow = setTimeout(() => console.warn("workflow.analysis.save_slow", { taskId: task.id, attempt, stage, elapsedMs: Date.now() - started }), 5000);
   slow.unref();
   try {
     const saved = await db.transaction(async tx => {
       stage = "configure_transaction";
-      await tx.execute(sql`SELECT set_config('lock_timeout', '5s', true), set_config('statement_timeout', '15s', true)`);
+      await tx.execute(analysisSaveTimeouts);
       stage = "lock_task";
       const current = await lockAnalysisExecution(tx, task);
       const progress = current.result as Progress;
@@ -156,6 +168,10 @@ async function savePendingWorkflowScene(task: Task) {
       if (!pending || pending.cursor !== progress.cursor || !progress.versionId || !progress.sceneIds?.[progress.cursor]) throw new Error("INVALID_SCENE_CHECKPOINT");
       const scene = progress.assets?.scenes[progress.cursor];
       if (!scene) throw new Error("INVALID_SCENE_CHECKPOINT");
+      if (isUserProvider(pending.blueprint.metadata?.analysisProvider) && !hasUsablePrompt(pending.blueprint.generationPrompt)) {
+        const fallback = buildFallbackSceneBlueprint(scene, "Analysis returned no usable generation prompt", undefined, input.outputLanguage);
+        pending.blueprint = { ...fallback, metadata: { ...fallback.metadata, failureCode: "KIE_INVALID_RESULT", providerOutcome: "confirmed_failure" } };
+      }
       const succeeded = isUserProvider(pending.blueprint.metadata?.analysisProvider);
       stage = "save_scene";
       await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId, originalSceneId: progress.sceneIds[progress.cursor], sceneIndex: scene.sceneIndex, duration: scene.duration, ...pending.blueprint });
@@ -168,7 +184,7 @@ async function savePendingWorkflowScene(task: Task) {
       return true;
     });
     if (saved !== true) throw new Error("SCENE_SAVE_NOT_CONFIRMED");
-    console.info("workflow.analysis.scene_saved", { taskId: task.id, elapsedMs: Date.now() - started });
+    console.info("workflow.analysis.scene_saved", { taskId: task.id, attempt, elapsedMs: Date.now() - started });
   } finally { clearTimeout(slow); }
 }
 
@@ -190,7 +206,8 @@ async function finishAnalysisCheckpoint(task: Task, progress: Progress) {
 /** Finish durable results without needing a live provider key or another inference. */
 export async function finalizeCheckpointedWorkflow(task: Task, now = Date.now()) {
   if (task.kind !== "workflow_analysis" || !["queued", "running"].includes(task.state) || (!(task.result as Progress).pendingScene && !hasFinishedCheckpoint(task.result as Progress))) return false;
-  if (task.state === "running" && task.updatedAt.getTime() > now - 60_000) return false;
+  const recoveryMs = (task.result as Progress).pendingScene ? ANALYSIS_RESULT_RECOVERY_MS : 60_000;
+  if (task.state === "running" && task.updatedAt.getTime() > now - recoveryMs) return false;
   const [claimed] = await db.update(commercialTasks).set({ state: "running", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionId: randomUUID() })}::jsonb`, updatedAt: new Date() })
     .where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, task.state), eq(commercialTasks.updatedAt, task.updatedAt))).returning();
   if (!claimed) return false;
@@ -304,7 +321,7 @@ export async function runAnalysisTask(id: string) {
 }
 
 export async function recoverAnalysisTasks(options: { dispatch?: boolean; limit?: number; deadline?: number } = {}) {
-  const abandoned = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "workflow_analysis"), sql`((${commercialTasks.state} = 'running' AND ${commercialTasks.updatedAt} < now() - ${LEASE_MS} * interval '1 millisecond') OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.expiresAt} < now()))`, sql`(${commercialTasks.result}->>'recoveryRetryAt' IS NULL OR (${commercialTasks.result}->>'recoveryRetryAt')::timestamptz <= now())`)).orderBy(asc(commercialTasks.updatedAt)).limit(options.limit ?? 20);
+  const abandoned = await db.select().from(commercialTasks).where(and(eq(commercialTasks.kind, "workflow_analysis"), sql`((${commercialTasks.state} = 'running' AND (${commercialTasks.updatedAt} < now() - ${LEASE_MS} * interval '1 millisecond' OR (jsonb_typeof(${commercialTasks.result}->'pendingScene') = 'object' AND ${commercialTasks.updatedAt} < now() - ${ANALYSIS_RESULT_RECOVERY_MS} * interval '1 millisecond'))) OR (${commercialTasks.state} = 'queued' AND ${commercialTasks.expiresAt} < now()))`, sql`(${commercialTasks.result}->>'recoveryRetryAt' IS NULL OR (${commercialTasks.result}->>'recoveryRetryAt')::timestamptz <= now())`)).orderBy(asc(commercialTasks.updatedAt)).limit(options.limit ?? 20);
   for (const task of abandoned) {
     if (options.deadline && Date.now() >= options.deadline) break;
     try {
