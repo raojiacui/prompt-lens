@@ -15,6 +15,7 @@ vi.mock("@/lib/billing/video-analysis", () => ({
   getVideoAnalysisChargeUnits: ({ sceneCount, longVideo }: { sceneCount: number; longVideo: boolean }) => sceneCount + (longVideo ? 3 : 0),
 }));
 vi.mock("@/lib/billing/platform-access", () => ({ getPlatformKieApiKey: () => "platform-test", resolveApiKeyForFeature: async () => ({ apiKey: "own-test", source: "user", provider: mocks.provider }) }));
+vi.mock("@/lib/cloudflare/r2", () => ({ getR2ObjectSize: async () => 500, copyR2Object: async (_source: string, key: string) => `https://r2.example/${key}` }));
 vi.mock("@/lib/byok/credentials", () => ({ getUserCredential: async (_user: string, provider?: string) => mocks.ownKey ? ({ apiKey: "own-test", provider: provider || mocks.provider }) : null }));
 vi.mock("@/lib/billing/commercial-media", () => ({ assertOwnedUploadedVideo: async () => "owned", commercialMediaRequest: mocks.probe }));
 vi.mock("@/lib/workflow/scene-analysis", () => ({ analyzeImageBlueprint: mocks.analyze, analyzeSceneBlueprint: mocks.analyze, buildFallbackSceneBlueprint: (_: unknown, reason: string) => ({ story: {}, visual: {}, dialogue: [], narration: [], subtitle: [], audio: {}, transition: {}, generationPrompt: "", metadata: { analysisProvider: "fallback", fallbackReason: reason } }) }));
@@ -22,7 +23,9 @@ vi.mock("@/lib/workflow/transcription", () => ({ buildSceneAudioContexts: () => 
 vi.mock("@/lib/workflow/music-recognition", () => ({ recognizeBackgroundMusic: async () => ({ status: "disabled" }) }));
 vi.mock("@/lib/workflow/service", () => ({ attachBackgroundMusicToBlueprint: (blueprint: unknown) => blueprint, deriveProjectTitle: () => "Analyzed project" }));
 
-import { enqueueAnalysis, recoverAnalysisTasks, runAnalysisTask, finalizeCheckpointedWorkflow } from "@/lib/workflow/analysis-tasks";
+import { quoteImageAnalysis, enqueueAnalysis, recoverAnalysisTasks, runAnalysisTask, finalizeCheckpointedWorkflow } from "@/lib/workflow/analysis-tasks";
+import { confirmCommercialTask } from "@/lib/billing/commercial-task-runner";
+import { grantCommercialPurchase } from "@/lib/billing/commercial-wallet";
 import { getUserTrialUsage } from "@/lib/usage/trial-quota";
 import { requiresAnalysisQuote } from "@/lib/workflow/analysis-routing";
 
@@ -43,7 +46,7 @@ async function drain(id: string) {
 
 describe("durable analysis", () => {
   beforeAll(async () => {
-    for (const migration of ["0000_dear_prism", "0003_blushing_thor", "0005_v2_workflow", "0007_foamy_lily_hollister", "0008_payment_orders", "0010_commercial_wallets", "0011_commercial_purchase_lots", "0028_expiring_admin_entitlements", "0012_commercial_tasks", "0016_trial_analysis_usage", "0017_request_reservations", "0018_workflow_analysis_tasks"]) {
+    for (const migration of ["0000_dear_prism", "0003_blushing_thor", "0005_v2_workflow", "0007_foamy_lily_hollister", "0008_payment_orders", "0010_commercial_wallets", "0011_commercial_purchase_lots", "0028_expiring_admin_entitlements", "0012_commercial_tasks", "0016_trial_analysis_usage", "0017_request_reservations", "0018_workflow_analysis_tasks", "0019_media_cleanup_jobs"]) {
       await client.exec(readFileSync(`drizzle/${migration}.sql`, "utf8"));
     }
   });
@@ -53,12 +56,91 @@ describe("durable analysis", () => {
     mocks.provider = "kie";
     mocks.ownKey = true;
     mocks.analyze.mockReset().mockResolvedValue(blueprint);
-    mocks.probe.mockReset();
+    mocks.probe.mockReset().mockImplementation(async (_url: string, body: { mode: string }) => body.mode === "preview"
+      ? { durationUs: 3_000_000, bytes: 500, sourceHash: "a".repeat(64), scenes: [{ id: "1", startUs: 0, endUs: 3_000_000 }] }
+      : { scenes: [{ sceneIndex: 1, startTime: 0, endTime: 3, duration: 3, keyframeUrls: ["https://r2.example/frame.png"] }], metadata: { duration: 3 } });
     userId = randomUUID(); projectId = randomUUID();
     await testDb.insert(schema.user).values({ id: userId, email: `${userId}@example.com`, emailVerified: true });
     await testDb.insert(schema.projects).values({ id: projectId, userId, title: "test" });
   });
   afterAll(async () => { vi.unstubAllEnvs(); await client.close(); });
+
+  it("requires a confirmed paid quote for images and leaves video trials untouched", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    await expect(enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" })).rejects.toThrow("CONFIRMED_QUOTE_REQUIRED");
+    expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
+    expect(mocks.analyze).not.toHaveBeenCalled();
+  });
+
+  it.each([true, false])("settles a paid image exactly once after durable delivery (success=%s)", async success => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    await testDb.transaction(tx => grantCommercialPurchase(tx as never, { userId, orderId: randomUUID(), packageId: "v6_trial_200", credits: 200, rewrites: 20 }));
+    const source = { projectId, mediaUrl: "https://r2.example/a.png", modelId: "analysis-gemini-3-8-flash" };
+    const quote = await quoteImageAnalysis(userId, source);
+    expect(quote.credits).toBe(4);
+    expect((await quoteImageAnalysis(userId, source)).id).toBe(quote.id);
+    await expect(quoteImageAnalysis(userId, { ...source, modelId: "analysis-deepseek-v4-1-flash" })).rejects.toThrow("IMAGE_QUOTE_CONFLICT");
+    expect((await task(quote.id)).state).toBe("quoted");
+    await runAnalysisTask(quote.id);
+    expect(mocks.analyze).not.toHaveBeenCalled();
+    await confirmCommercialTask(userId, quote.id);
+    await confirmCommercialTask(userId, quote.id);
+    expect((await testDb.select().from(schema.commercialWallets)).find(w => w.userId === userId)).toMatchObject({ credits: 196, heldCredits: 4 });
+    if (!success) mocks.analyze.mockRejectedValueOnce(new Error("Unreadable image"));
+    const finished = await drain(quote.id);
+    expect(finished.state).toBe(success ? "completed" : "failed");
+    expect(finished.result).toMatchObject({ chargedCredits: success ? 4 : 0 });
+    await runAnalysisTask(quote.id);
+    expect((await testDb.select().from(schema.commercialWallets)).find(w => w.userId === userId)).toMatchObject({ credits: success ? 196 : 200, heldCredits: 0 });
+    const reservations = (await testDb.select().from(schema.commercialReservations)).filter(r => r.userId === userId);
+    expect(reservations).toHaveLength(1);
+    expect(reservations[0]).toMatchObject({ state: "settled", settledCredits: success ? 4 : 0 });
+    expect((await testDb.select().from(schema.commercialLedger)).filter(l => l.userId === userId && l.eventKey.startsWith("settle:"))).toHaveLength(1);
+    expect((await testDb.select().from(schema.creditLedger)).filter(l => l.userId === userId)).toHaveLength(0);
+    expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
+    expect(mocks.analyze).toHaveBeenCalledTimes(1);
+    expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ analysisProvider: "kie", analysisApiKey: "platform-test" });
+  });
+
+  it("recovers a paid image checkpoint and charges once without another inference", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    await testDb.transaction(tx => grantCommercialPurchase(tx as never, { userId, orderId: randomUUID(), packageId: "v6_trial_200", credits: 200, rewrites: 20 }));
+    const quote = await quoteImageAnalysis(userId, { projectId, mediaUrl: "https://r2.example/a.png", modelId: "analysis-deepseek-v4-1-flash" });
+    await confirmCommercialTask(userId, quote.id);
+    await runAnalysisTask(quote.id); await runAnalysisTask(quote.id);
+    let interrupted!: { mockRestore(): void };
+    mocks.analyze.mockImplementationOnce(async () => {
+      interrupted = vi.spyOn(testDb, "transaction").mockResolvedValueOnce(undefined as never);
+      return blueprint;
+    });
+    await runAnalysisTask(quote.id); interrupted.mockRestore();
+    expect((await task(quote.id))).toMatchObject({ state: "running", result: { pendingScene: { blueprint: { generationPrompt: "real prompt" } } } });
+    expect((await testDb.select().from(schema.commercialWallets)).find(w => w.userId === userId)).toMatchObject({ credits: 198, heldCredits: 2 });
+    await client.query("UPDATE commercial_tasks SET updated_at=now()-interval '25 seconds' WHERE id=$1", [quote.id]);
+    await recoverAnalysisTasks({ dispatch: false });
+    await drain(quote.id);
+    expect((await task(quote.id))).toMatchObject({ state: "completed", result: { chargedCredits: 2 } });
+    expect((await testDb.select().from(schema.commercialWallets)).find(w => w.userId === userId)).toMatchObject({ credits: 198, heldCredits: 0 });
+    expect(mocks.analyze).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects expired and other-user image quotes without reserving funds", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const quote = await quoteImageAnalysis(userId, { projectId, mediaUrl: "https://r2.example/a.png", modelId: "analysis-deepseek-v4-1-flash" });
+    await expect(confirmCommercialTask(randomUUID(), quote.id)).rejects.toThrow("TASK_NOT_FOUND");
+    await client.query("UPDATE commercial_tasks SET expires_at=now()-interval '1 minute' WHERE id=$1", [quote.id]);
+    await expect(confirmCommercialTask(userId, quote.id)).rejects.toThrow("QUOTE_EXPIRED");
+    expect((await testDb.select().from(schema.commercialReservations)).filter(r => r.userId === userId)).toHaveLength(0);
+    expect(mocks.analyze).not.toHaveBeenCalled();
+  });
+
+  it("does not start an image without sufficient purchased credits", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const quote = await quoteImageAnalysis(userId, { projectId, mediaUrl: "https://r2.example/a.png", modelId: "analysis-deepseek-v4-1-flash" });
+    await expect(confirmCommercialTask(userId, quote.id)).rejects.toThrow("INSUFFICIENT_COMMERCIAL_BALANCE");
+    expect((await task(quote.id)).state).toBe("quoted");
+    expect(mocks.analyze).not.toHaveBeenCalled();
+  });
 
   it("keeps introductory trials direct and requires a quote for BYOK and splitting", () => {
     const input = { commercialEnabled: true, mediaType: "video" as const, trialRemaining: 2 };
@@ -71,7 +153,7 @@ describe("durable analysis", () => {
 
   it("reuses a task on resubmission and consumes exactly one trial", async () => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
-    const body = { mediaType: "image", mediaUrl: "https://r2.example/a.png", modelMode: "manual", modelId: "analysis-gemini-2-5-pro" };
+    const body = { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png", modelMode: "manual", modelId: "analysis-gemini-2-5-pro" };
     const queued = await enqueueAnalysis(userId, projectId, body);
     expect((await enqueueAnalysis(userId, projectId, body)).id).toBe(queued.id);
     await Promise.all([runAnalysisTask(queued.id), runAnalysisTask(queued.id)]);
@@ -85,7 +167,7 @@ describe("durable analysis", () => {
 
   it("returns failed trials and never persists a fabricated successful prompt", async () => {
     mocks.analyze.mockRejectedValue(new Error("provider unavailable"));
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png" });
     expect((await drain(queued.id)).state).toBe("failed");
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
     const rows = await testDb.select().from(schema.sceneVersions);
@@ -96,7 +178,7 @@ describe("durable analysis", () => {
     mocks.mode = "byok";
     mocks.provider = "infistar";
     mocks.analyze.mockResolvedValue({ ...blueprint, metadata: { analysisProvider: "infistar" } });
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png" });
     expect(queued.input).toMatchObject({ provider: "infistar", keySource: "user" });
     mocks.provider = "kie"; // Preference can change while the queued task is waiting.
     expect((await drain(queued.id)).state).toBe("completed");
@@ -108,7 +190,7 @@ describe("durable analysis", () => {
     mocks.mode = "admin";
     mocks.provider = "infistar";
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png", payer });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png", payer });
     expect(queued.input).toMatchObject({ mode: "admin", provider: "kie", keySource: "platform" });
     await drain(queued.id);
     expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ analysisProvider: "kie", analysisApiKey: "platform-test", forceFreeTrialKie: false });
@@ -117,8 +199,8 @@ describe("durable analysis", () => {
   it("honors an administrator explicitly selecting their own Infistar key for an image", async () => {
     mocks.mode = "admin";
     mocks.provider = "infistar";
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png", payer: "byok" });
-    expect(queued.input).toMatchObject({ mode: "admin", provider: "infistar", keySource: "user" });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png", payer: "byok" });
+    expect(queued.input).toMatchObject({ mode: "byok", provider: "infistar", keySource: "user" });
     await drain(queued.id);
     expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ analysisProvider: "infistar", analysisApiKey: "own-test" });
   });
@@ -126,14 +208,14 @@ describe("durable analysis", () => {
   it("rejects unquoted platform consumption instead of falling back to a personal key", async () => {
     mocks.mode = "byok";
     mocks.provider = "infistar";
-    await expect(enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png", payer: "platform" })).rejects.toThrow("CONFIRMED_QUOTE_REQUIRED");
+    await expect(enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png", payer: "platform" })).rejects.toThrow("CONFIRMED_QUOTE_REQUIRED");
     expect(mocks.analyze).not.toHaveBeenCalled();
   });
 
   it("never substitutes a platform key when an admin selects BYOK without a saved key", async () => {
     mocks.mode = "admin";
     mocks.ownKey = false;
-    await expect(enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png", payer: "byok" })).rejects.toThrow("KIE_BYOK_REQUIRED");
+    await expect(enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png", payer: "byok" })).rejects.toThrow("KIE_BYOK_REQUIRED");
     expect(mocks.analyze).not.toHaveBeenCalled();
   });
 
@@ -215,7 +297,7 @@ describe("durable analysis", () => {
   });
 
   it("does not refund a delivered trial when the final settlement was interrupted", async () => {
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png" });
     for (let i = 0; i < 3; i++) await runAnalysisTask(queued.id);
     expect((await task(queued.id)).result).toMatchObject({ successful: 1 });
     await client.query("UPDATE trial_analysis_reservations SET expires_at = now() - interval '1 minute' WHERE user_id = $1", [userId]);
@@ -226,7 +308,7 @@ describe("durable analysis", () => {
   });
 
   it("expires queued analysis without calling the provider or consuming a trial", async () => {
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png" });
     await client.query("UPDATE commercial_tasks SET expires_at = now() - interval '1 minute' WHERE id = $1", [queued.id]);
     await runAnalysisTask(queued.id);
     expect((await task(queued.id)).state).toBe("failed");
@@ -236,7 +318,7 @@ describe("durable analysis", () => {
 
   it("finalizes an interrupted failed checkpoint once without another model call", async () => {
     mocks.analyze.mockRejectedValue(new Error("provider interrupted"));
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png" });
     for (let index = 0; index < 3; index++) await runAnalysisTask(queued.id);
     await client.query("UPDATE commercial_tasks SET state='running', updated_at=now()-interval '70 seconds' WHERE id=$1", [queued.id]);
     const stale = await task(queued.id);
@@ -248,7 +330,7 @@ describe("durable analysis", () => {
   });
 
   it("settles a delivered checkpoint after its reservation expires without losing the result", async () => {
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png" });
     for (let index = 0; index < 3; index++) await runAnalysisTask(queued.id);
     await client.query("UPDATE trial_analysis_reservations SET expires_at=now()-interval '1 minute' WHERE user_id=$1", [userId]);
     expect(await finalizeCheckpointedWorkflow(await task(queued.id))).toBe(true);
@@ -258,7 +340,7 @@ describe("durable analysis", () => {
   });
 
   it("rejects a late result after recovery has released its trial", async () => {
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png" });
     await runAnalysisTask(queued.id);
     await runAnalysisTask(queued.id);
     let deliver!: (value: typeof blueprint) => void;
@@ -279,7 +361,7 @@ describe("durable analysis", () => {
   });
 
   it.each([true, false])("recovers a checkpoint without repeating inference and validates its prompt (usable=%s)", async usable => {
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png" });
     await runAnalysisTask(queued.id); await runAnalysisTask(queued.id);
     let interrupted: { mockRestore(): void };
     mocks.analyze.mockImplementationOnce(async () => {
@@ -304,7 +386,7 @@ describe("durable analysis", () => {
   });
 
   it.each(["40001", "23514"])("retries only a retryable save failure (%s), never inference", async code => {
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png" });
     await runAnalysisTask(queued.id); await runAnalysisTask(queued.id);
     let restore!: () => void;
     let count!: () => number;

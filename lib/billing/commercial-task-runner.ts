@@ -15,9 +15,16 @@ export async function confirmCommercialTask(userId: string, taskId: string) {
 
 export async function confirmCommercialTaskInTransaction(tx: Parameters<Parameters<typeof db.transaction>[0]>[0], userId: string, taskId: string) {
     const [task] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.id, taskId), eq(commercialTasks.userId, userId))).for("update");
-    if (!task || !["analysis", "generation"].includes(task.kind)) throw new Error("TASK_NOT_FOUND");
+    const image = task?.input as { mediaType?: string; commercialImage?: { credits: number }; projectId?: string } | undefined;
+    const paidImage = task?.kind === "workflow_analysis" && image?.mediaType === "image" && image.commercialImage?.credits === task.credits && task.credits > 0;
+    if (!task || (!["analysis", "generation"].includes(task.kind) && !paidImage)) throw new Error("TASK_NOT_FOUND");
     if (task.state !== "quoted") return task;
     if (task.expiresAt.getTime() < Date.now()) throw new Error("QUOTE_EXPIRED");
+    if (paidImage) {
+      const [project] = await tx.select().from(projects).where(and(eq(projects.id, image!.projectId!), eq(projects.userId, userId))).for("update");
+      if (!project || project.status !== "draft" || (project.metadata as Record<string, unknown>)?.retentionExpiredAt) throw new Error("PROJECT_NOT_READY");
+      await tx.update(projects).set({ status: "analyzing", metadata: sql`${projects.metadata} || ${JSON.stringify({ analysisTaskId: task.id, mediaType: "image" })}::jsonb`, updatedAt: new Date() }).where(eq(projects.id, project.id));
+    }
     if (task.kind === "generation") {
       const projectId = (task.input as { projectId?: string }).projectId;
       if (projectId) {
@@ -37,7 +44,7 @@ export async function confirmCommercialTaskInTransaction(tx: Parameters<Paramete
       await tx.update(projects).set({ status: "analyzing", metadata: sql`${projects.metadata} || ${JSON.stringify({ analysisTaskId: task.id, analysisTaskKind: "analysis" })}::jsonb`, updatedAt: new Date() }).where(eq(projects.id, project.id));
     }
     await reserveCommercialTaskInTransaction(tx, { userId, taskKey: `commercial:${task.id}`, credits: task.credits, rewrites: 0, quote: task.input as Record<string, unknown> });
-    const [queued] = await tx.update(commercialTasks).set({ state: "queued", updatedAt: new Date() }).where(eq(commercialTasks.id, task.id)).returning();
+    const [queued] = await tx.update(commercialTasks).set({ state: "queued", ...(paidImage ? { expiresAt: new Date(Date.now() + 24 * 3600000) } : {}), updatedAt: new Date() }).where(eq(commercialTasks.id, task.id)).returning();
     return queued;
 }
 

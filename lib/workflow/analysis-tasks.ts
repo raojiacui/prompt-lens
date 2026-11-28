@@ -23,12 +23,18 @@ import { dispatchQueuedAnalysis } from "./analysis-dispatch";
 import { safeDiagnosticText, taskErrorDetails } from "@/lib/billing/task-diagnostics";
 import { analysisSaveTimeouts, retryableAnalysisSaveError, ANALYSIS_RESULT_RECOVERY_MS } from "@/lib/billing/analysis-save-policy";
 import { hasUsablePrompt } from "./scene-analysis-result";
+import { imageAnalysisPrice } from "@/lib/billing/image-analysis-pricing";
+import { settleCommercialTaskInTransaction } from "@/lib/billing/commercial-wallet";
+import { copyR2Object, getR2ObjectSize } from "@/lib/cloudflare/r2";
+import { mediaCleanupJobs } from "@/lib/db";
 
 type Task = typeof commercialTasks.$inferSelect;
 type Input = {
   projectId: string; mediaUrl: string; mediaName?: string; mediaType: "image" | "video";
   mode: VideoAnalysisBillingMode; modelId: string; provider?: UserProvider; keySource: "user" | "platform"; keyFingerprint: string;
   outputLanguage: "zh" | "en"; longVideoAllowed: boolean; trialReservationId: string | null;
+  commercialImage?: ReturnType<typeof imageAnalysisPrice>;
+  originalImageUrl?: string;
 };
 type Progress = {
   phase: "prepare" | "assets" | "transcription" | "music" | "scenes" | "settle";
@@ -46,6 +52,46 @@ async function taskKey(input: Input, userId: string) {
   return key;
 }
 
+export async function quoteImageAnalysis(userId: string, source: { projectId: string; mediaUrl: string; mediaName?: string; modelId: string; outputLanguage?: string }) {
+  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED !== "true") throw new Error("COMMERCIAL_NOT_ENABLED");
+  const commercialImage = imageAnalysisPrice(source.modelId);
+  const model = resolveModelSelection("analysis", { mode: "manual", modelId: source.modelId }).model;
+  const key = getPlatformKieApiKey();
+  if (!key) throw new Error("KIE_KEY_REQUIRED");
+  const sourceKey = await assertOwnedUploadedVideo(userId, source.mediaUrl, "image");
+  const outputLanguage = source.outputLanguage === "en" ? "en" : "zh";
+  const ownedProject = await db.query.projects.findFirst({ where: and(eq(projects.id, source.projectId), eq(projects.userId, userId)) });
+  if (!ownedProject) throw new Error("PROJECT_NOT_READY");
+  const recentQuotes = await db.select({ id: commercialTasks.id }).from(commercialTasks).where(and(eq(commercialTasks.userId, userId), eq(commercialTasks.kind, "workflow_analysis"), sql`${commercialTasks.createdAt} > now() - interval '1 hour'`)).limit(30);
+  if (recentQuotes.length >= 30) throw new Error("IMAGE_QUOTE_RATE_LIMIT");
+  const id = randomUUID();
+  const storageKey = `analysis-image-input/${userId}/${id}`;
+  // Outside the quote transaction so rollback cannot orphan a copied object.
+  await db.insert(mediaCleanupJobs).values({ storageKey, nextAttemptAt: new Date(Date.now() + 7 * 86400000) });
+  return db.transaction(async tx => {
+    // Serialize quote creation against project confirmation and duplicate requests.
+    const [project] = await tx.select().from(projects).where(and(eq(projects.id, source.projectId), eq(projects.userId, userId))).for("update");
+    if (!project || (project.metadata as Record<string, unknown>)?.retentionExpiredAt) throw new Error("PROJECT_NOT_READY");
+    const [existing] = await tx.select().from(commercialTasks).where(and(eq(commercialTasks.userId, userId), eq(commercialTasks.kind, "workflow_analysis"), sql`${commercialTasks.input}->>'projectId' = ${source.projectId}`));
+    if (existing) {
+      const saved = existing.input as Input;
+      if (!saved.commercialImage || saved.originalImageUrl !== source.mediaUrl || saved.commercialImage.modelId !== source.modelId || saved.outputLanguage !== outputLanguage) throw new Error("IMAGE_QUOTE_CONFLICT");
+      if (existing.state === "quoted" && existing.expiresAt.getTime() <= Date.now()) throw new Error("QUOTE_EXPIRED");
+      return { id: existing.id, credits: existing.credits, modelId: source.modelId, expiresAt: existing.expiresAt };
+    }
+    if (project.status !== "draft") throw new Error("PROJECT_NOT_READY");
+    const recent = await tx.select({ id: commercialTasks.id }).from(commercialTasks).where(and(eq(commercialTasks.userId, userId), eq(commercialTasks.kind, "workflow_analysis"), sql`${commercialTasks.createdAt} > now() - interval '1 hour'`)).limit(30);
+    if (recent.length >= 30) throw new Error("IMAGE_QUOTE_RATE_LIMIT");
+    const bytes = await getR2ObjectSize(sourceKey);
+    if (!bytes || bytes > 8 * 1024 * 1024) throw new Error("ANALYSIS_IMAGE_TOO_LARGE");
+    const mediaUrl = await copyR2Object(sourceKey, storageKey);
+    const input: Input = { projectId: source.projectId, mediaUrl, originalImageUrl: source.mediaUrl, mediaType: "image", mediaName: source.mediaName?.slice(0, 200), mode: "platform_credits", modelId: model.providerModelId, provider: "kie", keySource: "platform", keyFingerprint: generationKeyFingerprint(key), outputLanguage, longVideoAllowed: false, trialReservationId: null, commercialImage };
+    const result: Progress = { phase: "prepare", cursor: 0, successful: 0, failed: 0, heldCredits: 0, projectId: source.projectId };
+    const [task] = await tx.insert(commercialTasks).values({ id, userId, kind: "workflow_analysis", state: "quoted", credits: commercialImage.credits, input, result, expiresAt: new Date(Date.now() + 600000) }).returning();
+    return { id: task.id, credits: task.credits, modelId: source.modelId, expiresAt: task.expiresAt };
+  });
+}
+
 export async function enqueueAnalysis(userId: string, projectId: string, body: Record<string, unknown>) {
   // One initial analysis per project makes retries of a lost submission idempotent.
   const existing = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.userId, userId), eq(commercialTasks.kind, "workflow_analysis"), sql`${commercialTasks.input}->>'projectId' = ${projectId}`) });
@@ -58,6 +104,7 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
     ? await getWorkflowAnalysisEntitlement(userId)
     : await assertCanStartVideoAnalysis(userId, { longVideo: false });
   if (body.payer !== undefined && body.payer !== "platform" && body.payer !== "byok") throw new Error("INVALID_ANALYSIS_PAYER");
+  if (mediaType === "image" && entitlement.mode !== "admin" && body.payer !== "byok" && entitlement.mode !== "byok") throw new Error("CONFIRMED_QUOTE_REQUIRED");
   // Explicit platform payment must never silently select a preferred BYOK key.
   // Non-admin platform consumption belongs to the confirmed commercial quote path.
   if (body.payer === "platform" && entitlement.mode !== "admin") throw new Error("CONFIRMED_QUOTE_REQUIRED");
@@ -80,7 +127,7 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
       const [project] = await tx.select().from(projects).where(and(eq(projects.id, projectId), eq(projects.userId, userId))).for("update");
       if (!project || project.status !== "draft") throw new Error("PROJECT_NOT_READY");
       const input: Input = { projectId, mediaUrl, mediaType, mediaName: typeof body.mediaName === "string" ? body.mediaName : undefined,
-        mode: explicitOwnKey && entitlement.mode === "trial" ? "byok" : entitlement.mode, modelId, provider: access.provider || "kie", outputLanguage: body.outputLanguage === "en" ? "en" : "zh",
+        mode: explicitOwnKey ? "byok" : entitlement.mode, modelId, provider: access.provider || "kie", outputLanguage: body.outputLanguage === "en" ? "en" : "zh",
         longVideoAllowed: false,
         keySource: access.source === "user" ? "user" : "platform", keyFingerprint: generationKeyFingerprint(access.apiKey!), trialReservationId: reservation };
       const result: Progress = { phase: "prepare", cursor: 0, successful: 0, failed: 0, heldCredits: 0, projectId };
@@ -114,9 +161,10 @@ async function settleAnalysisTask(task: Task, progress: Progress, recovering = f
     }
     progress = { ...current.result as Progress, error: progress.error };
     progress.failed = Math.max(progress.failed, (progress.assets?.scenes.length || 0) - progress.successful);
-    const chargedCredits = input.mode === "platform_credits" && progress.successful > 0
+    const chargedCredits = input.commercialImage ? (progress.successful > 0 ? current.credits : 0) : input.mode === "platform_credits" && progress.successful > 0
       ? getVideoAnalysisChargeUnits({ sceneCount: progress.successful, longVideo: (progress.preview?.durationUs || 0) > 10_750_000 }) : 0;
-    const refund = progress.heldCredits - chargedCredits;
+    if (input.commercialImage) await settleCommercialTaskInTransaction(tx, { userId: task.userId, taskKey: `commercial:${task.id}`, credits: chargedCredits, rewrites: 0 });
+    const refund = input.commercialImage ? 0 : progress.heldCredits - chargedCredits;
     if (refund < 0) throw new Error("Analysis settlement exceeds reservation");
     if (refund) {
       const [wallet] = await tx.update(userCredits).set({ balance: sql`${userCredits.balance} + ${refund}`, lifetimeUsed: sql`${userCredits.lifetimeUsed} - ${refund}`, updatedAt: new Date() }).where(eq(userCredits.userId, task.userId)).returning();
@@ -248,7 +296,7 @@ async function runAnalysisTaskStep(id: string) {
       const assets = progress.assets || await commercialMediaRequest<FfmpegBreakdownResult>(input.mediaUrl, { mode: "assets", sourceHash: progress.preview!.sourceHash, scenes: progress.preview!.scenes });
       if (!assets.scenes.length) throw new Error("INVALID_SCENE_ASSETS");
       if (progress.preview && (assets.scenes.length !== progress.preview.scenes.length || assets.scenes.some((scene, index) => Math.abs(scene.startTime * 1_000_000 - progress.preview!.scenes[index].startUs) > 1000 || Math.abs(scene.endTime * 1_000_000 - progress.preview!.scenes[index].endUs) > 1000))) throw new Error("SPLIT_ASSET_MISMATCH");
-      const heldCredits = input.mode === "platform_credits" ? getVideoAnalysisChargeUnits({ sceneCount: assets.scenes.length, longVideo: (progress.preview?.durationUs || 0) > 10_750_000 }) : 0;
+      const heldCredits = input.mode === "platform_credits" && !input.commercialImage ? getVideoAnalysisChargeUnits({ sceneCount: assets.scenes.length, longVideo: (progress.preview?.durationUs || 0) > 10_750_000 }) : 0;
       await db.transaction(async (tx) => {
         await lockAnalysisExecution(tx, task);
         if (heldCredits) {

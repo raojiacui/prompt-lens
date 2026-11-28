@@ -54,6 +54,15 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       columns: zh ? ["套餐", "价格", "通用积分", "改写次数", "链接导入次数"] : ["Package", "CNY", "Credits", "Rewrites", "Link imports"],
       rows: COMMERCIAL_PACKAGES.map((p, i) => [zh ? p.name : ["Starter", "Creator", "Volume"][i], (p.priceCents / 100).toFixed(2), String(p.credits), String(p.rewrites), String(p.linkImports)]),
     } },
+    { title: zh ? "图片分析积分（每张）" : "Image analysis credits (per image)", paragraphs: zh ? [
+      "选择平台积分时使用平台 KIE。每张图片先展示报价，确认后开始分析；有效分析结果保存成功后才扣费，失败不扣积分。同一任务重复确认不会重复扣费。",
+      "图片不占用两次视频免费试用。选择自带 Key 时使用设置中保存的首选供应商 Key，模型费用由该供应商账户承担，平台图片分析积分为 0。管理员沿用免扣规则。",
+      "当前平台图片分析支持下表模型，单张图片最大 8MB。其他已开放分析模型可选择自带 Key。报价有效期 10 分钟，历史任务按确认时的价格结算。",
+    ] : [
+      "Platform credits use the platform KIE account. Review a quote before confirming. Credits are charged only when a valid analysis result is saved. Failed analysis is not charged. Reconfirming the same task does not duplicate the charge.",
+      "Images do not consume the two video trials. Your own key uses your saved preferred provider, with model charges paid to that provider and zero platform image-analysis credits. Existing administrator exemptions remain.",
+      "Platform image analysis supports the models below, up to 8MB per image. Other enabled models remain available with your own key. Quotes last 10 minutes; confirmed tasks retain their original price.",
+    ], table: { columns: zh ? ["模型", "积分/张"] : ["Model", "Credits/image"], rows: [["DeepSeek V4.1 Flash", "2"], ["Gemini 3.8 Flash", "4"], ["Gemini 3.6 Flash", "4"]] } },
     { title: zh ? "自动拆镜费用（不含模型分析）" : "Automatic splitting (analysis not included)", paragraphs: zh ? [
       "自动拆镜按原视频完整时长收费，与选用哪个分析模型、拆出多少个镜头无关。下表仅列拆镜费用，不包含任何镜头分析费。",
       "不使用自动拆镜、直接分析上传的完整单镜头文件：拆镜费为 0。使用自动拆镜处理 10 秒视频：拆镜费为 2 积分。这是两种操作，不是同一种操作有两个价格。已支付且可复用的拆镜结果不重复收费。",
@@ -67,7 +76,7 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
       "可以全选或只分析某几个镜头，未选中的镜头不收分析费。其他镜头时长、一次选择多个镜头时，以分析按钮和确认页的报价为准。",
       "部分镜头失败只收成功镜头的分析费用；平台分析全部失败不收本次拆镜和分析费用。失败重试不重复收已支付的拆镜费和成功镜头费用。自带 Key 的模型分析不扣平台积分，自动拆镜仍按原视频时长收费。",
       "上传视频文件最大 100MB，不限制时长，可选择整段分析或拆镜分析。整段分析不收拆镜费，建议上传完整单镜头片段，多镜头长视频可能影响准确性。拆镜需使用已购买的平台积分；文件与链接视频沿用相同拆镜价格，分析费只计算所选镜头。",
-      "新账号的两次免费体验用于符合条件的整段分析，不包含拆镜和视频生成。试用用完后，不会自动继续使用平台 Key；需要购买额度或选择自己的 Key。",
+      "新账号的两次免费体验用于符合条件的视频整段分析，不包含图片分析、拆镜和视频生成。试用用完后，不会自动继续使用平台 Key；需要购买额度或选择自己的 Key。",
     ] : [
       "Each number is the platform credit cost of successfully analyzing one shot with the named model. Splitting is not included; these are not full-video totals. Duration means the length of that individual shot, not the full source.",
       "One 10-second shot costs 5 credits with Gemini 3.8 Flash. Platform-credit analysis uses Gemini 3.8 Flash. With your own key, other available analysis models charge your provider account, not platform analysis credits.",

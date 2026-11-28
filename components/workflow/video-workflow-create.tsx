@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
+import { ImageAnalysisQuotePanel, type ImageAnalysisSource } from "@/components/payments/image-analysis-quote-panel";
+import { IMAGE_ANALYSIS_PRICES } from "@/lib/billing/image-analysis-pricing";
 import { AnalysisQuotePanel } from "@/components/payments/analysis-quote-panel";
 import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
@@ -366,9 +368,14 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
   }, []);
   const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer: "platform" | "byok"; modelId: string } | null>(null);
   const canSplitUpload = Boolean(creditStatus?.commercialConsumptionEnabled && (creditStatus.commercial?.credits ?? 0) > 0);
-  const usesFreeTrialModel = creditStatus?.mode === "trial" && (mediaType === "image" || !canSplitUpload);
+  const [imageQuoteSource, setImageQuoteSource] = useState<ImageAnalysisSource | null>(null);
+  const paidImage = mediaType === "image" && analysisPayer === "platform" && creditStatus?.mode !== "admin";
+  const usesFreeTrialModel = creditStatus?.mode === "trial" && mediaType !== "image" && !canSplitUpload;
   const uploadAnalysisMode = canSplitUpload ? preferredUploadAnalysisMode : "whole";
-  const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (canSplitUpload || creditStatus.hasUserApiKey || creditStatus.mode !== "trial") && (mediaInputMode === "link" || mediaType !== "image" || creditStatus.mode === "admin"));
+  const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (mediaType === "image" || canSplitUpload || creditStatus.hasUserApiKey || creditStatus.mode !== "trial"));
+  useEffect(() => {
+    if (paidImage && !(analysisModelValue in IMAGE_ANALYSIS_PRICES)) setAnalysisModelValue("analysis-gemini-3-8-flash");
+  }, [paidImage, analysisModelValue]);
   const [rewritePayer, setRewritePayer] = useState<"included" | "byok">("included");
   const rewriteRequestsRef = useRef<Record<string, { fingerprint: string; id: string }>>({});
   const rewriteBusyRef = useRef(false);
@@ -439,7 +446,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
     }
   }
   function analysisSelectionPayload() {
-    if (creditStatus?.mode === "trial") {
+    if (usesFreeTrialModel) {
       return { modelMode: "manual" as ModelMode, modelId: FREE_TRIAL_ANALYSIS_MODEL_ID, modelPriority, outputLanguage: analysisOutputLanguage };
     }
     const manualModelId = analysisModelValue;
@@ -646,14 +653,11 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
       if (automaticSplit && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.commercial?.credits ?? 0) <= 0)) {
         throw new Error(locale === "en" ? "Shot splitting requires purchased credits. Top up or analyze the whole video." : "拆镜需要已购买的平台积分，请充值或选择整段分析。");
       }
-      if (selectedMediaType === "video" && latestStatus?.commercialConsumptionEnabled && (automaticSplit || latestStatus.mode !== "trial") && analysisPayer === "byok" && !latestStatus.hasUserApiKey) {
+      if (latestStatus?.commercialConsumptionEnabled && (selectedMediaType === "image" || automaticSplit || latestStatus.mode !== "trial") && analysisPayer === "byok" && !latestStatus.hasUserApiKey) {
         throw new Error(locale === "en" ? "Configure your own API key in Settings first." : "请先在设置中配置自己的 API Key。");
       }
       if (isLinkedMedia && (!latestStatus?.commercialConsumptionEnabled || (latestStatus.linkImports?.remaining ?? 0) < 1)) {
         throw new Error(locale === "en" ? "Your account has no included video link imports remaining. Top up or upload a file." : "当前账号的套餐视频链接导入次数不足，请充值或改用本地文件上传。");
-      }
-      if (selectedMediaType === "image" && latestStatus?.mode === "trial" && (latestStatus.trial.remaining || 0) <= 0) {
-        throw new Error(locale === "zh" ? "两次免费试用已用完，请先到设置中配置自己的 API Key。" : "Your two free trials are used. Add your own API key in Settings to continue.");
       }
       const prepared: PreparedMedia = isLinkedMedia
         ? await resolveLinkedMedia()
@@ -688,6 +692,10 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
       });
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
       setBundle(null);
+      if (prepared.mediaType === "image" && analysisPayer === "platform" && latestStatus?.mode !== "admin") {
+        setImageQuoteSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage, modelId: analysisModelValue });
+        setAnalysisQuoteLocked(true); setAnalysisProgress(null); setProgress(""); return;
+      }
       if (automaticSplit || (prepared.mediaType === "video" && latestStatus?.commercialConsumptionEnabled && ((latestStatus.commercial?.credits ?? 0) > 0 || latestStatus.mode !== "trial") && analysisPayer === "platform") || requiresAnalysisQuote({ commercialEnabled: Boolean(latestStatus?.commercialConsumptionEnabled), mediaType: prepared.mediaType, mode: latestStatus?.mode || "trial", automaticSplit, trialRemaining: latestStatus?.trial.remaining || 0 })) {
         setCommercialSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage, automaticSplit, payer: analysisPayer, modelId: analysisModelValue });
         setAnalysisProgress(null);
@@ -909,9 +917,9 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
                   <FileUp className="h-6 w-6 text-muted-foreground" />
                   <span className="font-semibold">{preview ? (locale === "en" ? "Replace file" : "更换文件") : (locale === "en" ? "Choose a video or image" : "选择视频或图片")}</span>
                 </button>
-                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{locale === "en" ? "Video files up to 100MB, with no duration limit." : "视频文件最大 100MB，不限制时长。"}</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{mediaType === "image" ? (locale === "en" ? "Image analysis supports files up to 8MB." : "图片分析文件最大 8MB。") : (locale === "en" ? "Video files up to 100MB, with no duration limit." : "视频文件最大 100MB，不限制时长。")}</p>
                 {mediaType !== "image" && <>
-                  <fieldset className="mt-3" disabled={loading || Boolean(commercialSource) || Boolean(analysisTaskId)}>
+                  <fieldset className="mt-3" disabled={loading || analysisQuoteLocked || Boolean(commercialSource) || Boolean(analysisTaskId)}>
                     <legend className="mb-2 text-sm font-medium">{locale === "en" ? "Analysis mode" : "分析方式"}</legend>
                     <div className="grid grid-cols-2 gap-2">
                       <label className="flex min-h-9 items-center gap-2 text-sm"><input type="radio" name="upload-analysis-mode" value="whole" checked={uploadAnalysisMode === "whole"} onChange={() => setUploadAnalysisMode("whole")} className="h-4 w-4 accent-primary" />{locale === "en" ? "Whole video" : "整段分析"}</label>
@@ -961,9 +969,9 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
             <ModelSelector
               label={ui.analysisModel}
               value={usesFreeTrialModel ? FREE_TRIAL_ANALYSIS_MODEL_ID : analysisModelValue}
-              models={analysisModels}
+              models={paidImage ? analysisModels.filter(model => model.id in IMAGE_ANALYSIS_PRICES) : analysisModels}
               onChange={setAnalysisModelValue}
-              disabled={creditStatus?.mode === "trial" || loading || Boolean(commercialSource) || Boolean(analysisTaskId)}
+              disabled={usesFreeTrialModel || loading || analysisQuoteLocked || Boolean(commercialSource) || Boolean(analysisTaskId)}
             />
             <LanguageSelector
               value={analysisOutputLanguage}
@@ -1030,6 +1038,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
         <div className="relative min-h-0">
           <section className="rounded-2xl border border-border bg-card p-4 shadow-sm xl:flex xl:h-full xl:min-h-0 xl:flex-col xl:overflow-hidden">
           <div className="space-y-5 xl:min-h-0 xl:flex-1 xl:overflow-y-auto xl:pr-2">
+          {imageQuoteSource && <ImageAnalysisQuotePanel key={imageQuoteSource.projectId} source={imageQuoteSource} onClose={() => { setImageQuoteSource(null); setAnalysisQuoteLocked(false); }} onConfirmed={id => { setAnalysisTaskId(id); setImageQuoteSource(null); setAnalysisQuoteLocked(false); void loadCreditStatus(); }} />}
           {commercialSource && <AnalysisQuotePanel key={commercialSource.projectId} source={commercialSource} onPartial={(result) => setBundle(result as Bundle)} onLockChange={setAnalysisQuoteLocked} onClose={() => { setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); }} onComplete={(result, notice) => { setError(notice || ""); setBundle(result as Bundle); setCommercialSource(null); setAnalysisQuoteLocked(false); setProgress(""); void loadCreditStatus(); void loadProjects({ force: true }); }} />}
           {!commercialSource && loading && analysisProgress && bundle && <AnalysisProgressPanel progress={analysisProgress} automaticSplit={mediaInputMode === "link" || uploadAnalysisMode === "split"} mediaType={mediaType} />}
           {!commercialSource && !bundle ? (

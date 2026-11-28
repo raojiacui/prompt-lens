@@ -10,7 +10,9 @@ describe("Published credit rules", () => {
 
   it.each(["zh", "en"] as const)("publishes live pricing and allowances in %s", locale => {
     const topics = guideContent[locale].find(s => s.id === "credits")!.topics;
-    const tables = topics.filter(t => t.table).map(t => t.table!);
+    const image = topics.find(t => /图片分析积分|Image analysis credits/.test(t.title))!.table!;
+    expect(image.rows).toEqual([["DeepSeek V4.1 Flash", "2"], ["Gemini 3.8 Flash", "4"], ["Gemini 3.6 Flash", "4"]]);
+    const tables = topics.filter(t => t.table && !/图片分析积分|Image analysis credits/.test(t.title)).map(t => t.table!);
     expect(tables).toHaveLength(7);
     for (const table of tables) for (const row of table.rows) expect(row).toHaveLength(table.columns.length);
     expect(tables[0].rows.map(r => r.slice(1))).toEqual([["34.90", "200", "20", "12"], ["89.90", "650", "60", "30"], ["199.00", "1500", "150", "61"]]);

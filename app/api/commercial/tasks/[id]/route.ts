@@ -28,7 +28,7 @@ export async function POST(request: NextRequest, { params }: Context) {
     if (task.state === "queued" && task.kind === "generation") {
       await runCommercialTask(task.id);
       task = (await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) }))!;
-    } else if (task.state === "queued") after(() => runCommercialTask(task.id));
+    } else if (task.state === "queued") after(() => task.kind === "workflow_analysis" ? runAnalysisTask(task.id) : runCommercialTask(task.id));
     return NextResponse.json({ id: task.id, state: task.state, credits: task.credits });
   } catch (e) {
     const code = e instanceof Error ? e.message : "TASK_CONFIRMATION_UNKNOWN";
