@@ -18,7 +18,7 @@ type Account = {
   orders: Order[];
   gifts?: ReceivedGift[];
   refunds: { id: string; orderId: string; state: string; reason?: string; contact?: string; createdAt?: string }[];
-  tasks: { id: string; taskKey: string; state: string; credits: number; rewrites: number; settledCredits: number | null; settledRewrites: number | null; createdAt: string }[];
+  tasks: { id: string; taskKey: string; state: string; credits: number; rewrites: number; settledCredits: number | null; settledRewrites: number | null; refundedCredits?: number; refundNote?: string | null; refundNoteEn?: string | null; createdAt: string }[];
 };
 
 export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
@@ -122,7 +122,7 @@ export function BillingAccount({ embedded = false }: { embedded?: boolean }) {
       {account.refunds.some((refund) => refund.state === "requested") && <p className="my-5 text-sm">{zh ? `退款申请已提交，请添加客服微信 ${SUPPORT_WECHAT} 并提供订单号。审核通过前不会发起退款。` : `Request submitted. Contact WeChat support at ${SUPPORT_WECHAT} with your order ID. No refund is issued before approval.`}</p>}
       <h2 className="mt-10 text-lg font-semibold">{zh ? "任务消费" : "Task usage"}</h2>
       {!account.tasks.length && <p className="py-6 text-sm text-muted-foreground">{zh ? "暂无任务消费" : "No task usage yet"}</p>}
-      {account.tasks.map((task) => <div key={task.id} className="flex flex-wrap justify-between gap-3 border-b border-border py-4 text-sm"><div><p>{task.taskKey.startsWith("commercial:") ? <Link className="underline" href={`/billing/tasks/${task.taskKey.slice(11)}`}>{zh ? "查看创作任务" : "View creation task"}</Link> : task.taskKey.startsWith("rewrite:") ? (zh ? "AI 脚本改写" : "AI rewrite") : (zh ? "创作任务" : "Creation task")}</p><p className="mt-1 break-all text-xs text-muted-foreground">{task.id}</p></div><div>{status(task.state)} · {task.settledCredits ?? task.credits} {zh ? "积分" : "credits"} · {task.settledRewrites ?? task.rewrites} {zh ? "次改写" : "rewrites"}</div></div>)}
+      {account.tasks.map((task) => <div key={task.id} className="flex flex-wrap justify-between gap-3 border-b border-border py-4 text-sm"><div><p>{task.taskKey.startsWith("commercial:") ? <Link className="underline" href={`/billing/tasks/${task.taskKey.slice(11)}`}>{zh ? "查看创作任务" : "View creation task"}</Link> : task.taskKey.startsWith("rewrite:") ? (zh ? "AI 脚本改写" : "AI rewrite") : (zh ? "创作任务" : "Creation task")}</p><p className="mt-1 break-all text-xs text-muted-foreground">{task.id}</p>{task.refundNote && <p className="mt-2 text-sm text-muted-foreground">{zh ? task.refundNote : task.refundNoteEn || "Analysis credits returned."}</p>}</div><div>{status(task.state)} · {Math.max(0, (task.settledCredits ?? task.credits) - (task.refundedCredits ?? 0))} {zh ? "积分" : "credits"} · {task.settledRewrites ?? task.rewrites} {zh ? "次改写" : "rewrites"}</div></div>)}
     </>}
     {selected && pack && (selected.provider === "waffo" ? <WaffoCheckoutDialog pack={pack} currency={paymentCurrency(selected.currency || "CNY")} existingOrderId={selected.id} onClose={() => setSelected(null)} onPaid={() => void load()} /> : <AlipayCheckoutDialog pack={pack} requestId="" existingOrderId={selected.id} onClose={() => setSelected(null)} onPaid={() => void load()} />)}
   </Container>;

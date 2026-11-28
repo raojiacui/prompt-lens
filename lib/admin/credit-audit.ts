@@ -65,7 +65,7 @@ export async function queryFinancialEntries(userId: string, kind: "orders" | "le
     from credit_ledger l left join "user" a on a.id=l.actor_user_id where l.user_id=${userId}
     union all
     select id,'commercial' as kind,created_at as "createdAt",event_key as status,null::text as "packageName",null::text as provider,
-      metadata->>'orderId' as reference,null::integer as "amountCents",null::text as currency,credits,null::text as note,null::text as "actorEmail",
+      metadata->>'orderId' as reference,null::integer as "amountCents",null::text as currency,credits,metadata->>'note' as note,null::text as "actorEmail",
       null::timestamptz as "paidAt",null::text as "tradeReference"
     from commercial_ledger where user_id=${userId}`;
   const [result] = await adminQuery<{ entries: AdminFinancialEntry[]; total: number }>(sql`
