@@ -278,7 +278,7 @@ describe("durable analysis", () => {
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
   });
 
-  it("recovers a checkpoint when a save transaction returns without confirmation and never calls the model twice", async () => {
+  it.each([true, false])("recovers a checkpoint without repeating inference and validates its prompt (usable=%s)", async usable => {
     const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
     await runAnalysisTask(queued.id); await runAnalysisTask(queued.id);
     let interrupted: { mockRestore(): void };
@@ -290,12 +290,38 @@ describe("durable analysis", () => {
     interrupted!.mockRestore();
     expect((await task(queued.id))).toMatchObject({ state: "running", result: { cursor: 0, pendingScene: { cursor: 0, blueprint: { generationPrompt: "real prompt" } } } });
     expect(mocks.analyze).toHaveBeenCalledTimes(1);
-    await client.query("UPDATE commercial_tasks SET updated_at=now()-interval '70 seconds' WHERE id=$1", [queued.id]);
+    expect(await finalizeCheckpointedWorkflow(await task(queued.id))).toBe(false);
+    if (!usable) await client.query("UPDATE commercial_tasks SET result=jsonb_set(result,'{pendingScene,blueprint,generationPrompt}','\"\"'::jsonb) WHERE id=$1", [queued.id]);
+    await client.query("UPDATE commercial_tasks SET updated_at=now()-interval '25 seconds' WHERE id=$1", [queued.id]);
     mocks.ownKey = false;
-    expect(await finalizeCheckpointedWorkflow(await task(queued.id))).toBe(true);
+    await recoverAnalysisTasks({ dispatch: false });
+    expect((await task(queued.id))).toMatchObject({ state: "queued", result: { cursor: 1 } });
     await drain(queued.id);
-    expect((await task(queued.id)).state).toBe("completed");
+    expect((await task(queued.id)).state).toBe(usable ? "completed" : "failed");
+    expect(await getUserTrialUsage(userId)).toMatchObject({ used: usable ? 1 : 0 });
     expect(mocks.analyze).toHaveBeenCalledTimes(1);
     expect((await testDb.select().from(schema.sceneVersions)).filter(row => row.projectId === projectId)).toHaveLength(1);
+  });
+
+  it.each(["40001", "23514"])("retries only a retryable save failure (%s), never inference", async code => {
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    await runAnalysisTask(queued.id); await runAnalysisTask(queued.id);
+    let restore!: () => void;
+    let count!: () => number;
+    mocks.analyze.mockImplementationOnce(async () => {
+      const spy = vi.spyOn(testDb, "transaction").mockRejectedValueOnce(Object.assign(new Error("save failure"), { code }));
+      restore = () => spy.mockRestore(); count = () => spy.mock.calls.length;
+      return blueprint;
+    });
+    await runAnalysisTask(queued.id);
+    expect(count()).toBe(code === "40001" ? 2 : 1);
+    restore();
+    expect(mocks.analyze).toHaveBeenCalledTimes(1);
+    if (code === "40001") {
+      expect((await drain(queued.id)).state).toBe("completed");
+      expect((await testDb.select().from(schema.sceneVersions)).filter(row => row.projectId === projectId)).toHaveLength(1);
+    } else {
+      expect((await task(queued.id))).toMatchObject({ state: "running", result: { cursor: 0, pendingScene: { blueprint: { generationPrompt: "real prompt" } } } });
+    }
   });
 });

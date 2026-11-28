@@ -15,22 +15,15 @@ import { releaseAnalysisProviderSlot, reserveAnalysisProviderSlot } from "./anal
 import { analysisDispatchTarget, dispatchAnalysisInvocation } from "@/lib/workflow/analysis-dispatch";
 import { hasUsablePrompt } from "@/lib/workflow/scene-analysis-result";
 import { prepareIndependentSceneAsset } from "./scene-assets";
+import { analysisSaveTimeouts, retryableAnalysisSaveError, ANALYSIS_RESULT_RECOVERY_MS } from "./analysis-save-policy";
 
 type Progress = { assets?: FfmpegBreakdownResult; versionId?: string; sceneRecords?: Record<string, string>; splitDelivered?: boolean; sceneJobMode?: string };
 
 const recoveryDue = sql`(
   (jsonb_typeof(${analysisSceneJobs.result}->'pendingBlueprint') = 'object'
-    AND ${analysisSceneJobs.updatedAt} < now() - interval '20 seconds')
+    AND ${analysisSceneJobs.updatedAt} < now() - ${ANALYSIS_RESULT_RECOVERY_MS} * interval '1 millisecond')
   OR ${analysisSceneJobs.updatedAt} < now() - interval '6 minutes'
 )`;
-
-// Retry only the fenced database operation, never the model request.
-function retryableSaveError(error: unknown, depth = 0): boolean {
-  if (!error || typeof error !== "object" || depth > 3) return false;
-  const value = error as { code?: string; cause?: unknown };
-  return ["40001", "40P01", "55P03", "57014", "08006", "CONNECTION_CLOSED", "CONNECTION_ENDED", "CONNECT_TIMEOUT", "ECONNRESET"].includes(value.code || "")
-    || retryableSaveError(value.cause, depth + 1);
-}
 
 function traceSceneSave(sceneJobId: string, attempt: number, recovery: boolean, initialStage = "acquire_connection") {
   const startedAt = Date.now();
@@ -58,7 +51,7 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string, delivery
     try {
       const saved = await db.transaction(async tx => {
         trace.mark("configure_transaction");
-        await tx.execute(sql`SELECT set_config('lock_timeout', '5s', true), set_config('statement_timeout', '15s', true), set_config('idle_in_transaction_session_timeout', '20s', true)`);
+        await tx.execute(analysisSaveTimeouts);
         trace.mark("lock_scene_job");
         const [current] = await tx.select().from(analysisSceneJobs).where(and(
           eq(analysisSceneJobs.id, jobId), eq(analysisSceneJobs.state, "running"),
@@ -129,7 +122,7 @@ async function saveSceneCheckpoint(jobId: string, executionId?: string, delivery
       return saved;
     } catch (error) {
       console.error("commercial.scene.save_failed", { sceneJobId: jobId, attempt, recovery: !executionId, ...trace.snapshot(), error: taskErrorDetails(error) });
-      if (attempt === 2 || !retryableSaveError(error)) throw error;
+      if (attempt === 2 || !retryableAnalysisSaveError(error)) throw error;
     } finally {
       trace.stop();
     }
