@@ -34,6 +34,7 @@ type Progress = {
   cursor: number; successful: number; failed: number; heldCredits: number; chargedCredits?: number;
   transcription?: TranscriptionResult | null; transcriptionError?: string; music?: BackgroundMusicRecognition;
   error?: string; projectId?: string; partial?: boolean; executionId?: string;
+  pendingScene?: { cursor: number; blueprint: SceneBlueprintDraft; returnedAt: string };
 };
 const LEASE_MS = 6 * 60_000;
 
@@ -138,6 +139,39 @@ function hasFinishedCheckpoint(progress: Progress) {
     && progress.successful + progress.failed === total;
 }
 
+async function savePendingWorkflowScene(task: Task) {
+  const input = task.input as Input;
+  const started = Date.now();
+  let stage = "acquire_connection";
+  const slow = setTimeout(() => console.warn("workflow.analysis.save_slow", { taskId: task.id, stage, elapsedMs: Date.now() - started }), 5000);
+  slow.unref();
+  try {
+    const saved = await db.transaction(async tx => {
+      stage = "configure_transaction";
+      await tx.execute(sql`SELECT set_config('lock_timeout', '5s', true), set_config('statement_timeout', '15s', true)`);
+      stage = "lock_task";
+      const current = await lockAnalysisExecution(tx, task);
+      const progress = current.result as Progress;
+      const pending = progress.pendingScene;
+      if (!pending || pending.cursor !== progress.cursor || !progress.versionId || !progress.sceneIds?.[progress.cursor]) throw new Error("INVALID_SCENE_CHECKPOINT");
+      const scene = progress.assets?.scenes[progress.cursor];
+      if (!scene) throw new Error("INVALID_SCENE_CHECKPOINT");
+      const succeeded = isUserProvider(pending.blueprint.metadata?.analysisProvider);
+      stage = "save_scene";
+      await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId, originalSceneId: progress.sceneIds[progress.cursor], sceneIndex: scene.sceneIndex, duration: scene.duration, ...pending.blueprint });
+      await tx.update(videoScenes).set({ status: succeeded ? "completed" : "failed", error: succeeded ? null : String(pending.blueprint.metadata?.fallbackReason || "Analysis failed"), updatedAt: new Date() }).where(eq(videoScenes.id, progress.sceneIds[progress.cursor]));
+      const { pendingScene: _pending, ...rest } = progress;
+      stage = "save_progress";
+      const [updated] = await tx.update(commercialTasks).set({ state: "queued", result: { ...rest, cursor: progress.cursor + 1, successful: progress.successful + Number(succeeded), failed: progress.failed + Number(!succeeded) }, updatedAt: new Date() }).where(executionCondition(task)).returning({ id: commercialTasks.id });
+      if (!updated) throw new AnalysisExecutionLost();
+      stage = "commit";
+      return true;
+    });
+    if (saved !== true) throw new Error("SCENE_SAVE_NOT_CONFIRMED");
+    console.info("workflow.analysis.scene_saved", { taskId: task.id, elapsedMs: Date.now() - started });
+  } finally { clearTimeout(slow); }
+}
+
 async function finishAnalysisCheckpoint(task: Task, progress: Progress) {
   const input = task.input as Input;
   if (progress.versionId) {
@@ -155,11 +189,15 @@ async function finishAnalysisCheckpoint(task: Task, progress: Progress) {
 
 /** Finish durable results without needing a live provider key or another inference. */
 export async function finalizeCheckpointedWorkflow(task: Task, now = Date.now()) {
-  if (task.kind !== "workflow_analysis" || !["queued", "running"].includes(task.state) || !hasFinishedCheckpoint(task.result as Progress)) return false;
+  if (task.kind !== "workflow_analysis" || !["queued", "running"].includes(task.state) || (!(task.result as Progress).pendingScene && !hasFinishedCheckpoint(task.result as Progress))) return false;
   if (task.state === "running" && task.updatedAt.getTime() > now - 60_000) return false;
   const [claimed] = await db.update(commercialTasks).set({ state: "running", result: sql`${commercialTasks.result} || ${JSON.stringify({ executionId: randomUUID() })}::jsonb`, updatedAt: new Date() })
     .where(and(eq(commercialTasks.id, task.id), eq(commercialTasks.state, task.state), eq(commercialTasks.updatedAt, task.updatedAt))).returning();
   if (!claimed) return false;
+  if ((claimed.result as Progress).pendingScene) {
+    await savePendingWorkflowScene(claimed);
+    return true;
+  }
   await finishAnalysisCheckpoint(claimed, claimed.result as Progress);
   return true;
 }
@@ -172,6 +210,7 @@ async function runAnalysisTaskStep(id: string) {
   let progress = task.result as Progress;
   try {
     if (hasFinishedCheckpoint(progress)) { await finishAnalysisCheckpoint(task, progress); return; }
+    if (progress.pendingScene) { await savePendingWorkflowScene(task); return; }
     const apiKey = await taskKey(input, task.userId);
     if (input.trialReservationId) {
       const [renewed] = await db.update(trialAnalysisReservations).set({ expiresAt: new Date(Date.now() + 30 * 60_000) }).where(and(eq(trialAnalysisReservations.id, input.trialReservationId), eq(trialAnalysisReservations.state, "pending"))).returning();
@@ -237,13 +276,10 @@ async function runAnalysisTaskStep(id: string) {
       console.info("workflow.analysis.model_returned", { taskId: id, sceneIndex: scene.sceneIndex, succeeded });
       if (!succeeded) console.warn("workflow.analysis.model_failed", { taskId: id, sceneIndex: scene.sceneIndex,
         diagnostic: blueprint.metadata?.analysisError || { message: safeDiagnosticText(String(blueprint.metadata?.fallbackReason || "Analysis failed")) }, failureCode: blueprint.metadata?.failureCode });
-      await db.transaction(async (tx) => {
-        await lockAnalysisExecution(tx, task);
-        await tx.insert(sceneVersions).values({ projectId: input.projectId, projectVersionId: progress.versionId!, originalSceneId: progress.sceneIds![progress.cursor], sceneIndex: scene.sceneIndex, duration: scene.duration, ...blueprint });
-        await tx.update(videoScenes).set({ status: succeeded ? "completed" : "failed", error: succeeded ? null : String(blueprint.metadata?.fallbackReason || "Analysis failed"), updatedAt: new Date() }).where(eq(videoScenes.id, progress.sceneIds![progress.cursor]));
-        progress = { ...progress, cursor: progress.cursor + 1, successful: progress.successful + Number(succeeded), failed: progress.failed + Number(!succeeded) };
-        await tx.update(commercialTasks).set({ state: "queued", result: progress, updatedAt: new Date() }).where(eq(commercialTasks.id, task.id));
-      });
+      const [checkpoint] = await db.update(commercialTasks).set({ result: sql`${commercialTasks.result} || ${JSON.stringify({ pendingScene: { cursor: progress.cursor, blueprint, returnedAt: new Date().toISOString() } })}::jsonb`, updatedAt: new Date() }).where(executionCondition(task)).returning();
+      if (!checkpoint) throw new AnalysisExecutionLost();
+      console.info("workflow.analysis.result_checkpointed", { taskId: id, sceneIndex: scene.sceneIndex });
+      await savePendingWorkflowScene(checkpoint);
       return;
     }
     await finishAnalysisCheckpoint(task, progress);
@@ -252,6 +288,10 @@ async function runAnalysisTaskStep(id: string) {
     console.error("workflow.analysis.step_failed", { taskId: id, phase: progress.phase, cursor: progress.cursor, error: taskErrorDetails(error) });
     // Read the last committed checkpoint: a failed DB transaction may have rolled back a hold.
     const current = await db.query.commercialTasks.findFirst({ where: eq(commercialTasks.id, id) });
+    if ((current?.result as Progress | undefined)?.pendingScene) {
+      // The provider result is durable. Retry saving, never inference or settlement.
+      return;
+    }
     if (current) await settleAnalysisTask(task, { ...current.result as Progress, error: error instanceof Error ? error.message : "Analysis failed" }).catch((settlementError) => {
       if (!(settlementError instanceof AnalysisExecutionLost)) throw settlementError;
     });

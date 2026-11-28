@@ -43,9 +43,13 @@ export async function GET(request: NextRequest, { params }: Context) {
   let task = await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) });
   if (!task) return NextResponse.json({ code: "TASK_NOT_FOUND" }, { status: 404 });
   if (task.kind === "workflow_analysis") {
-    try {
-      if (await finalizeCheckpointedWorkflow(task)) task = (await db.query.commercialTasks.findFirst({ where: and(eq(commercialTasks.id, id), eq(commercialTasks.userId, session.user.id)) }))!;
-    } catch { console.error("workflow.analysis.finalization_failed", { taskId: id }); }
+    const snapshot = task;
+    // A status read must not wait for a save/settlement transaction to acquire
+    // a connection or lock. Publish the current durable state immediately.
+    after(async () => {
+      try { await finalizeCheckpointedWorkflow(snapshot); }
+      catch { console.error("workflow.analysis.finalization_failed", { taskId: id }); }
+    });
   }
   if (task.kind === "analysis" && task.state === "running" && (task.result as { sceneJobMode?: string }).sceneJobMode === "independent_v1") {
     try { await flushReadyAnalysisSceneResults(id); }
@@ -97,7 +101,7 @@ export async function GET(request: NextRequest, { params }: Context) {
   }
   const partial = task.kind === "workflow_analysis" ? Boolean(result.partial) : success > 0 && success < (input.pricing?.scenes.length || 0);
   const phase = task.kind === "analysis" ? !result.assets ? "preparing" : completedScenes < totalScenes ? "analyzing" : "saving"
-    : task.kind === "workflow_analysis" ? !result.assets ? "preparing" : completedScenes >= totalScenes ? "saving" : result.phase === "scenes" ? "analyzing" : "preparing" : undefined;
+    : task.kind === "workflow_analysis" ? result.pendingScene ? "saving" : !result.assets ? "preparing" : completedScenes >= totalScenes ? "saving" : result.phase === "scenes" ? "analyzing" : "preparing" : undefined;
   const saveRecoveryPending = task.kind === "analysis" && task.state === "review" && Boolean(result.pendingResult);
   const diagnostics = request.nextUrl.searchParams.get("diagnostics") === "1" && task.kind === "analysis"
     ? buildAnalysisDiagnostics(task, await db.select({

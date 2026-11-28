@@ -65,15 +65,16 @@ it("also returns intermediate results for uploaded-file workflow tasks", async (
   mocks.find.mockResolvedValue({ ...task, kind: "workflow_analysis", input: { longVideoAllowed: false, mediaType: "video" }, result: { cursor: 1, assets: { scenes: [1, 2] } } });
   expect(await (await call()).json()).toMatchObject({ state: "running", completedScenes: 1, automaticSplit: false, mediaType: "video", bundle: { sceneVersions: [{ id: "completed-shot" }] } });
 });
-it("returns the settled terminal status when an owned workflow checkpoint can be finalized", async () => {
+it("returns the current snapshot without waiting for workflow finalization", async () => {
   const task = await mocks.find();
   const result = { cursor: 1, successful: 0, failed: 1, assets: { scenes: [1] }, phase: "scenes", error: "Analysis interrupted" };
-  mocks.find.mockResolvedValueOnce({ ...task, kind: "workflow_analysis", result })
-    .mockResolvedValueOnce({ ...task, kind: "workflow_analysis", state: "failed", result: { ...result, phase: "settle" } });
+  mocks.find.mockResolvedValue({ ...task, kind: "workflow_analysis", result });
   mocks.finalize.mockResolvedValueOnce(true);
-  expect(await (await call()).json()).toMatchObject({ state: "failed", phase: "saving", error: "Analysis interrupted", startedAt: task.createdAt.getTime() });
+  expect(await (await call()).json()).toMatchObject({ state: "running", phase: "saving", error: "Analysis interrupted", startedAt: task.createdAt.getTime() });
+  expect(mocks.finalize).not.toHaveBeenCalled();
+  await mocks.after.mock.calls[0][0]();
   expect(mocks.finalize).toHaveBeenCalledOnce();
-  expect(mocks.after).not.toHaveBeenCalled();
+  expect(mocks.after).toHaveBeenCalledOnce();
 });
 it("does not load a project before any scene is processed", async () => {
   const task = await mocks.find();
