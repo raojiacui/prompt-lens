@@ -20,6 +20,15 @@ function mock(value: unknown) {
 }
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 describe("scene analysis response compatibility", () => {
+  it("saves a valid image correction from the same response without another paid request", async () => {
+    const failed = { story: { summary: "图片不可见" }, visual: { subject: "未知", sceneDescription: "参考图像无法打开" }, generationPrompt: "请重新上传图片。" };
+    const fetchMock = vi.fn<typeof fetch>(async () => Response.json({ candidates: [{ content: { parts: [{ text: "```json\n" + JSON.stringify(failed) + "\n```\n```json\n" + JSON.stringify(response) + "\n```" }] } }] }));
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await analyzeImageBlueprint(input);
+    expect(result.metadata?.analysisProvider).toBe("kie");
+    expect(result.generationPrompt).toContain("牛仔猫");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
   it("does not deliver an image analysis that says its reference image is unreadable", async () => {
     mock({ story: { summary: "图片无法读取" }, visual: { sceneDescription: "未知，参考图片无法打开", subject: "未知" }, generationPrompt: "请上传可以读取的图片。" });
     const result = await analyzeImageBlueprint(input);

@@ -6,6 +6,7 @@ import { resolveModelSelection, type ModelPriority, type ModelSelectionMode } fr
 import { FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/billing/video-analysis";
 import { DEFAULT_KIE_ANALYSIS_TIMEOUT_MS, KieEmptyResultError, KieRequestError } from "@/lib/ai/kie-client";
 import { assertVisualEvidence, InvalidSceneAnalysisResult, validateSceneAnalysis } from "./scene-analysis-result";
+import { parseSceneAnalysisJson } from "./scene-analysis-json";
 import type { FfmpegSceneAsset } from "@/lib/ffmpeg-worker/client";
 import type { SceneAudioContext } from "@/lib/workflow/transcription";
 import { buildRecreationPrompt } from "./recreation-prompt";
@@ -227,8 +228,9 @@ async function callAnalysisChatJson(params: {
         retryUnopenedConnection: !params.validateJson,
       });
       let json: Record<string, unknown>;
-      try { json = parseJsonObject(content); }
+      try { json = params.content.some(part => part.type === "image_url") ? parseSceneAnalysisJson(content) : parseJsonObject(content); }
       catch (error) {
+        if (error instanceof InvalidSceneAnalysisResult) throw error;
         if (!params.validateJson) throw error;
         throw new InvalidSceneAnalysisResult("KIE returned invalid JSON scene analysis");
       }
