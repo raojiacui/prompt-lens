@@ -277,4 +277,25 @@ describe("durable analysis", () => {
     expect((await testDb.select().from(schema.sceneVersions)).filter(row => row.projectId === projectId)).toMatchObject([{ generationPrompt: "", metadata: { failureCode: "ANALYSIS_INTERRUPTED", providerOutcome: "unknown" } }]);
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 0 });
   });
+
+  it("recovers a checkpoint when a save transaction returns without confirmation and never calls the model twice", async () => {
+    const queued = await enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png" });
+    await runAnalysisTask(queued.id); await runAnalysisTask(queued.id);
+    let interrupted: { mockRestore(): void };
+    mocks.analyze.mockImplementationOnce(async () => {
+      interrupted = vi.spyOn(testDb, "transaction").mockResolvedValueOnce(undefined as never);
+      return blueprint;
+    });
+    await runAnalysisTask(queued.id);
+    interrupted!.mockRestore();
+    expect((await task(queued.id))).toMatchObject({ state: "running", result: { cursor: 0, pendingScene: { cursor: 0, blueprint: { generationPrompt: "real prompt" } } } });
+    expect(mocks.analyze).toHaveBeenCalledTimes(1);
+    await client.query("UPDATE commercial_tasks SET updated_at=now()-interval '70 seconds' WHERE id=$1", [queued.id]);
+    mocks.ownKey = false;
+    expect(await finalizeCheckpointedWorkflow(await task(queued.id))).toBe(true);
+    await drain(queued.id);
+    expect((await task(queued.id)).state).toBe("completed");
+    expect(mocks.analyze).toHaveBeenCalledTimes(1);
+    expect((await testDb.select().from(schema.sceneVersions)).filter(row => row.projectId === projectId)).toHaveLength(1);
+  });
 });
