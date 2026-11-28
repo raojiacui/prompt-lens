@@ -1,8 +1,9 @@
 // Dedicated immutable image tariff; video and generation snapshots are unchanged.
-export const IMAGE_ANALYSIS_PRICING_VERSION = "2026-11-28-image-v1";
+export const IMAGE_ANALYSIS_PRICING_VERSION = "2026-11-28-image-v2";
 export const IMAGE_ANALYSIS_PRICES = {
   "analysis-deepseek-v4-1-flash": { credits: 2, inputUsdPerMillion: 0.12, outputUsdPerMillion: 0.475, inputTokens: 16384, outputTokens: 16384 },
   "analysis-gemini-3-8-flash": { credits: 4, inputUsdPerMillion: 0.45, outputUsdPerMillion: 2.25, inputTokens: 16384, outputTokens: 8192 },
+  "analysis-gemini-3-7-flash": { credits: 4, inputUsdPerMillion: 0.45, outputUsdPerMillion: 2.25, inputTokens: 16384, outputTokens: 8192 },
   "analysis-gemini-3-6-flash": { credits: 4, inputUsdPerMillion: 0.45, outputUsdPerMillion: 2.25, inputTokens: 16384, outputTokens: 8192 },
 } as const;
 export function imageAnalysisPrice(modelId: string) {
@@ -10,6 +11,16 @@ export function imageAnalysisPrice(modelId: string) {
   const price = IMAGE_ANALYSIS_PRICES[modelId as keyof typeof IMAGE_ANALYSIS_PRICES];
   if (!price) throw new Error("IMAGE_MODEL_NOT_PRICED");
   return { ...price, modelId, version: IMAGE_ANALYSIS_PRICING_VERSION, imageCount: 1 };
+}
+
+// KIE retired 3.7 and serves its old endpoint with 3.8 at the same price.
+// Record and execute the actual model instead of disguising the replacement.
+export function imageAnalysisExecutionModelId(modelId: string, providerModelId: string) {
+  return modelId === "analysis-gemini-3-7-flash" ? "gemini-3-8-flash-openai" : providerModelId;
+}
+export function imageAnalysisModelLabel(modelId: string, displayName: string, english = false) {
+  return modelId === "analysis-gemini-3-7-flash"
+    ? `${displayName}${english ? " (KIE runs 3.8)" : "（KIE 实际使用 3.8）"}` : displayName;
 }
 
 export function imageAnalysisCostBudget(modelId: string) {

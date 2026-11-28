@@ -134,6 +134,14 @@ describe("durable analysis", () => {
     expect(mocks.analyze).not.toHaveBeenCalled();
   });
 
+  it("quotes KIE 3.7 at the 3.8 rate and persists the requested and actual models", async () => {
+    vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
+    const quote = await quoteImageAnalysis(userId, { projectId, mediaUrl: "https://r2.example/a.png", modelId: "analysis-gemini-3-7-flash" });
+    expect(quote).toMatchObject({ credits: 4, modelId: "analysis-gemini-3-7-flash" });
+    expect((await task(quote.id)).input).toMatchObject({ modelId: "gemini-3-8-flash-openai", commercialImage: { modelId: "analysis-gemini-3-7-flash", version: "2026-11-28-image-v2" } });
+    expect(mocks.analyze).not.toHaveBeenCalled();
+  });
+
   it("does not start an image without sufficient purchased credits", async () => {
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
     const quote = await quoteImageAnalysis(userId, { projectId, mediaUrl: "https://r2.example/a.png", modelId: "analysis-deepseek-v4-1-flash" });

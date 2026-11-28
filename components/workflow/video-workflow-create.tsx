@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "next-intl";
 import { ImageAnalysisQuotePanel, type ImageAnalysisSource } from "@/components/payments/image-analysis-quote-panel";
-import { IMAGE_ANALYSIS_PRICES } from "@/lib/billing/image-analysis-pricing";
+import { IMAGE_ANALYSIS_PRICES, imageAnalysisModelLabel } from "@/lib/billing/image-analysis-pricing";
 import { AnalysisQuotePanel } from "@/components/payments/analysis-quote-panel";
 import { fetchWithSessionRefresh } from "@/lib/auth/session-fetch";
 import { ShotDownloadButton } from "@/components/workflow/shot-download-button";
@@ -969,7 +969,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
             <ModelSelector
               label={ui.analysisModel}
               value={usesFreeTrialModel ? FREE_TRIAL_ANALYSIS_MODEL_ID : analysisModelValue}
-              models={paidImage ? analysisModels.filter(model => model.id in IMAGE_ANALYSIS_PRICES) : analysisModels}
+              models={paidImage ? analysisModels.filter(model => model.id in IMAGE_ANALYSIS_PRICES).map(model => ({ ...model, displayName: imageAnalysisModelLabel(model.id, model.displayName, locale === "en") })) : analysisModels}
               onChange={setAnalysisModelValue}
               disabled={usesFreeTrialModel || loading || analysisQuoteLocked || Boolean(commercialSource) || Boolean(analysisTaskId)}
             />
