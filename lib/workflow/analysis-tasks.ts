@@ -104,16 +104,16 @@ export async function enqueueAnalysis(userId: string, projectId: string, body: R
     ? await getWorkflowAnalysisEntitlement(userId)
     : await assertCanStartVideoAnalysis(userId, { longVideo: false });
   if (body.payer !== undefined && body.payer !== "platform" && body.payer !== "byok") throw new Error("INVALID_ANALYSIS_PAYER");
-  if (mediaType === "image" && entitlement.mode !== "admin" && body.payer !== "byok" && entitlement.mode !== "byok") throw new Error("CONFIRMED_QUOTE_REQUIRED");
+  if (mediaType === "image" && body.payer !== "byok" && entitlement.mode !== "byok") throw new Error("CONFIRMED_QUOTE_REQUIRED");
   // Explicit platform payment must never silently select a preferred BYOK key.
   // Non-admin platform consumption belongs to the confirmed commercial quote path.
-  if (body.payer === "platform" && entitlement.mode !== "admin") throw new Error("CONFIRMED_QUOTE_REQUIRED");
+  if (body.payer === "platform") throw new Error("CONFIRMED_QUOTE_REQUIRED");
   if (requiresAnalysisQuote({ commercialEnabled: process.env.COMMERCIAL_CONSUMPTION_ENABLED === "true", mediaType, mode: entitlement.mode, trialRemaining: entitlement.trial.remaining })) throw new Error("CONFIRMED_QUOTE_REQUIRED");
   const explicitOwnKey = body.payer === "byok";
   const own = explicitOwnKey ? await getUserCredential(userId) : null;
   if (explicitOwnKey && !own) throw new Error("KIE_BYOK_REQUIRED");
   const access = explicitOwnKey ? { apiKey: own!.apiKey, source: "user", provider: own!.provider }
-    : entitlement.mode === "trial" || entitlement.mode === "admin"
+    : entitlement.mode === "trial"
       ? { apiKey: getPlatformKieApiKey(), source: "platform", provider: "kie" as const }
       : await resolveApiKeyForFeature(userId, { requiredPackageScope: "video_analysis", allowPaidPlatformKey: entitlement.mode === "platform_credits" });
   if (!access.apiKey) throw new Error("KIE API Key is not configured");

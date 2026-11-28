@@ -1,4 +1,3 @@
-import { isAdmin } from "@/lib/auth";
 import { FREE_TRIAL_ANALYSIS_PROVIDER, FREE_TRIAL_ANALYSIS_MODEL } from "@/lib/ai/free-trial-model";
 import { assertHasCredits, creditErrorResponse, deductCreditsFromUser, getCreditBalance } from "@/lib/billing/credits";
 import { getPlatformKieApiKey, hasPaidPackageAccess, resolveApiKeyForFeature } from "@/lib/billing/platform-access";
@@ -10,7 +9,7 @@ export const VIDEO_ANALYSIS_LONG_VIDEO_BASE_CREDITS = 3;
 export const VIDEO_ANALYSIS_PER_SCENE_CREDITS = 1;
 export { FREE_TRIAL_ANALYSIS_PROVIDER, FREE_TRIAL_ANALYSIS_MODEL };
 
-export type VideoAnalysisBillingMode = "admin" | "byok" | "platform_credits" | "trial";
+export type VideoAnalysisBillingMode = "byok" | "platform_credits" | "trial";
 
 export type VideoAnalysisEntitlement = {
   mode: VideoAnalysisBillingMode;
@@ -44,20 +43,6 @@ export class LongVideoAccessError extends Error {
   }
 }
 
-function fallbackAdminTrialUsage(): Awaited<ReturnType<typeof getUserTrialUsage>> {
-  const parsed = Number(process.env.TRIAL_USAGE_LIMIT || 2);
-  const limit = Number.isFinite(parsed) && parsed >= 0 ? Math.floor(parsed) : 2;
-  return { limit, used: 0, remaining: Number.POSITIVE_INFINITY, isAdmin: true };
-}
-
-async function getAdminSafeCreditBalance(userId: string) {
-  try {
-    return await getCreditBalance(userId);
-  } catch (error) {
-    console.warn("[billing] Failed to load admin credit balance; continuing as unlimited admin:", error);
-    return { userId, balance: 0, lifetimeGranted: 0, lifetimeUsed: 0, metadata: {}, createdAt: new Date(), updatedAt: new Date() };
-  }
-}
 async function getSafeNonChargingBalance(userId: string, entitlement: VideoAnalysisEntitlement) {
   try {
     return await getCreditBalance(userId);
@@ -76,39 +61,6 @@ async function getSafeNonChargingBalance(userId: string, entitlement: VideoAnaly
 }
 
 export async function getVideoAnalysisEntitlement(userId: string): Promise<VideoAnalysisEntitlement> {
-  const adminUser = await isAdmin(userId);
-
-  if (adminUser) {
-    const [trial, credits, keyAccess] = await Promise.all([
-      getUserTrialUsage(userId).catch(() => fallbackAdminTrialUsage()),
-      getAdminSafeCreditBalance(userId),
-      resolveApiKeyForFeature(userId),
-    ]);
-
-    return {
-      mode: "admin",
-      balance: credits.balance,
-      hasPaidVideoAnalysis: true,
-      hasUserApiKey: keyAccess.hasUserApiKey,
-      canUsePlatformKie: true,
-      platformKieConfigured: Boolean(getPlatformKieApiKey()),
-      trial: { ...trial, used: 0, remaining: Number.POSITIVE_INFINITY, isAdmin: true },
-      capabilities: {
-        videoAnalysis: {
-          shortVideoMaxSeconds: VIDEO_ANALYSIS_SHORT_MAX_SECONDS,
-          durationToleranceSeconds: VIDEO_ANALYSIS_DURATION_TOLERANCE_SECONDS,
-          canUseLongVideo: true,
-          longVideoRequiresPayment: false,
-          longVideoBaseCredits: VIDEO_ANALYSIS_LONG_VIDEO_BASE_CREDITS,
-          perSceneCredits: VIDEO_ANALYSIS_PER_SCENE_CREDITS,
-          canSelectAnalysisModel: true,
-          freeTrialProvider: FREE_TRIAL_ANALYSIS_PROVIDER,
-          freeTrialModel: FREE_TRIAL_ANALYSIS_MODEL,
-        },
-      },
-    };
-  }
-
   const [trial, credits, hasPaidVideoAnalysis, keyAccess] = await Promise.all([
     getUserTrialUsage(userId),
     getCreditBalance(userId),
@@ -168,7 +120,7 @@ export async function assertCanStartVideoAnalysis(userId: string, options: numbe
 
 export async function getWorkflowAnalysisEntitlement(userId: string): Promise<VideoAnalysisEntitlement> {
   const entitlement = await getVideoAnalysisEntitlement(userId);
-  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED !== "true" || entitlement.mode === "admin") return entitlement;
+  if (process.env.COMMERCIAL_CONSUMPTION_ENABLED !== "true") return entitlement;
   const mode = entitlement.hasUserApiKey ? "byok" : "trial";
   return {
     ...entitlement,

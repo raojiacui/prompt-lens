@@ -1,11 +1,10 @@
 import { and, eq, gt, isNotNull } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
 import { getCreditPackage, type CreditPackageScope } from "@/lib/billing/credit-packages";
-import { getUserCredential, type UserCredential } from "@/lib/byok/credentials";
+import { getUserCredential } from "@/lib/byok/credentials";
 import type { UserProvider } from "@/lib/ai/providers";
 import { creditLedger, db } from "@/lib/db";
 
-export type ApiKeySource = "user" | "platform_admin" | "platform_paid";
+export type ApiKeySource = "user" | "platform_paid";
 
 export type ResolvedApiKey = {
   apiKey: string | null;
@@ -13,7 +12,6 @@ export type ResolvedApiKey = {
   source: ApiKeySource | null;
   hasUserApiKey: boolean;
   hasPaidPackage: boolean;
-  isAdmin: boolean;
   platformKeyConfigured: boolean;
 };
 
@@ -36,17 +34,10 @@ export async function resolveApiKeyForFeature(
   userId: string,
   options: { allowPaidPlatformKey?: boolean; requiredPackageScope?: CreditPackageScope } = {},
 ): Promise<ResolvedApiKey> {
-  const adminUser = await isAdmin(userId);
   const platformKey = getPlatformKieApiKey();
   const platformKeyConfigured = Boolean(platformKey);
 
-  let credential: UserCredential | null = null;
-  try {
-    credential = await getUserCredential(userId);
-  } catch (error) {
-    if (!adminUser) throw error;
-    console.warn("[billing] Failed to load admin BYOK key; continuing with platform/admin access:", error);
-  }
+  const credential = await getUserCredential(userId);
 
   if (credential) {
     return {
@@ -55,30 +46,11 @@ export async function resolveApiKeyForFeature(
       source: "user",
       hasUserApiKey: true,
       hasPaidPackage: false,
-      isAdmin: adminUser,
       platformKeyConfigured,
     };
   }
 
-  if (platformKey && adminUser) {
-    return {
-      apiKey: platformKey,
-      provider: "kie",
-      source: "platform_admin",
-      hasUserApiKey: false,
-      hasPaidPackage: true,
-      isAdmin: true,
-      platformKeyConfigured,
-    };
-  }
-
-  let hasPaidPackage = false;
-  try {
-    hasPaidPackage = await hasPaidPackageAccess(userId, options.requiredPackageScope ? [options.requiredPackageScope] : []);
-  } catch (error) {
-    if (!adminUser) throw error;
-    console.warn("[billing] Failed to load paid package access for admin; continuing as admin:", error);
-  }
+  const hasPaidPackage = await hasPaidPackageAccess(userId, options.requiredPackageScope ? [options.requiredPackageScope] : []);
 
   if (platformKey && hasPaidPackage && options.allowPaidPlatformKey === true) {
     return {
@@ -87,7 +59,6 @@ export async function resolveApiKeyForFeature(
       source: "platform_paid",
       hasUserApiKey: false,
       hasPaidPackage: true,
-      isAdmin: false,
       platformKeyConfigured,
     };
   }
@@ -98,7 +69,6 @@ export async function resolveApiKeyForFeature(
     source: null,
     hasUserApiKey: false,
     hasPaidPackage,
-    isAdmin: adminUser,
     platformKeyConfigured,
   };
 }

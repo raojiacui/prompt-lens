@@ -98,7 +98,7 @@ type CreditStatus = {
   hasUserApiKey?: boolean;
   byokProvider?: UserProvider;
   commercial?: { enabled: boolean; credits?: number; rewrites?: number; heldRewrites?: number };
-  mode: "admin" | "byok" | "platform_credits" | "trial";
+  mode: "byok" | "platform_credits" | "trial";
   hasPaidVideoAnalysis?: boolean;
   trial: { limit: number; used: number; remaining: number; isAdmin: boolean };
 };
@@ -369,7 +369,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
   const [commercialSource, setCommercialSource] = useState<{ projectId: string; mediaUrl: string; mediaName: string; outputLanguage: "zh" | "en"; automaticSplit: boolean; payer: "platform" | "byok"; modelId: string } | null>(null);
   const canSplitUpload = Boolean(creditStatus?.commercialConsumptionEnabled && (creditStatus.commercial?.credits ?? 0) > 0);
   const [imageQuoteSource, setImageQuoteSource] = useState<ImageAnalysisSource | null>(null);
-  const paidImage = mediaType === "image" && analysisPayer === "platform" && creditStatus?.mode !== "admin";
+  const paidImage = mediaType === "image" && analysisPayer === "platform";
   const usesFreeTrialModel = creditStatus?.mode === "trial" && mediaType !== "image" && !canSplitUpload;
   const uploadAnalysisMode = canSplitUpload ? preferredUploadAnalysisMode : "whole";
   const showAnalysisPayer = Boolean(creditStatus?.commercialConsumptionEnabled && (mediaType === "image" || canSplitUpload || creditStatus.hasUserApiKey || creditStatus.mode !== "trial"));
@@ -692,7 +692,7 @@ export function VideoWorkflowCreate({ onSendToGenerate, initialProjectId }: Prop
       });
       const projectData = await readJsonResponse(projectRes, "Project creation failed");
       setBundle(null);
-      if (prepared.mediaType === "image" && analysisPayer === "platform" && latestStatus?.mode !== "admin") {
+      if (prepared.mediaType === "image" && analysisPayer === "platform") {
         setImageQuoteSource({ projectId: projectData.project.id, mediaUrl: prepared.url, mediaName: prepared.filename, outputLanguage: analysisOutputLanguage, modelId: analysisModelValue });
         setAnalysisQuoteLocked(true); setAnalysisProgress(null); setProgress(""); return;
       }

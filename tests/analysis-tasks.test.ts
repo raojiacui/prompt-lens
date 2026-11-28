@@ -186,18 +186,22 @@ describe("durable analysis", () => {
     expect((await task(queued.id)).result).toMatchObject({ successful: 1, failed: 0 });
   });
 
-  it.each([undefined, "platform"])("keeps admin platform image analysis on KIE despite a preferred Infistar key (payer=%s)", async payer => {
-    mocks.mode = "admin";
-    mocks.provider = "infistar";
+  it("requires an administrator to confirm a platform image quote", async () => {
+    mocks.mode = "byok"; mocks.provider = "infistar";
     vi.stubEnv("COMMERCIAL_CONSUMPTION_ENABLED", "true");
-    const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png", payer });
-    expect(queued.input).toMatchObject({ mode: "admin", provider: "kie", keySource: "platform" });
-    await drain(queued.id);
-    expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ analysisProvider: "kie", analysisApiKey: "platform-test", forceFreeTrialKie: false });
+    await client.query('UPDATE "user" SET email=$1, role=$2 WHERE id=$3', ['raojiacui@gmail.com', 'admin', userId]);
+    await expect(enqueueAnalysis(userId, projectId, { mediaType: "image", mediaUrl: "https://r2.example/a.png", payer: "platform" })).rejects.toThrow("CONFIRMED_QUOTE_REQUIRED");
+    await testDb.transaction(tx => grantCommercialPurchase(tx as never, { userId, orderId: randomUUID(), packageId: "v6_trial_200", credits: 200, rewrites: 20 }));
+    const quote = await quoteImageAnalysis(userId, { projectId, mediaUrl: "https://r2.example/a.png", modelId: "analysis-deepseek-v4-1-flash" });
+    await confirmCommercialTask(userId, quote.id);
+    await drain(quote.id);
+    expect((await task(quote.id)).result).toMatchObject({ chargedCredits: 2 });
+    expect((await testDb.select().from(schema.commercialWallets)).find(w => w.userId === userId)).toMatchObject({ credits: 198, heldCredits: 0 });
+    expect(mocks.analyze.mock.calls[0][0]).toMatchObject({ analysisProvider: "kie", analysisApiKey: "platform-test" });
   });
 
   it("honors an administrator explicitly selecting their own Infistar key for an image", async () => {
-    mocks.mode = "admin";
+    mocks.mode = "byok";
     mocks.provider = "infistar";
     const queued = await enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png", payer: "byok" });
     expect(queued.input).toMatchObject({ mode: "byok", provider: "infistar", keySource: "user" });
@@ -213,7 +217,7 @@ describe("durable analysis", () => {
   });
 
   it("never substitutes a platform key when an admin selects BYOK without a saved key", async () => {
-    mocks.mode = "admin";
+    mocks.mode = "byok";
     mocks.ownKey = false;
     await expect(enqueueAnalysis(userId, projectId, { mediaType: mocks.mode === "trial" ? "video" : "image", mediaUrl: "https://r2.example/a.png", payer: "byok" })).rejects.toThrow("KIE_BYOK_REQUIRED");
     expect(mocks.analyze).not.toHaveBeenCalled();
@@ -280,7 +284,7 @@ describe("durable analysis", () => {
     expect(mocks.analyze).not.toHaveBeenCalled();
   });
 
-  it.each(["trial", "byok", "platform_credits", "admin"])("analyzes a sixty-second upload as one shot for %s", async mode => {
+  it.each(["trial", "byok", "platform_credits"])("analyzes a sixty-second upload as one shot for %s", async mode => {
     mocks.mode = mode;
     if (mode === "platform_credits") await testDb.insert(schema.userCredits).values({ userId, balance: 100 });
     mocks.probe.mockResolvedValueOnce({ durationUs: 60_000_000, bytes: 500, sourceHash: "a".repeat(64), scenes: [{ id: "1", startUs: 0, endUs: 60_000_000 }] }).mockResolvedValueOnce({ scenes: [{ sceneIndex: 1, startTime: 0, endTime: 60, duration: 60, keyframeUrls: ["https://r2.example/frame.png"] }], metadata: { duration: 60 } });

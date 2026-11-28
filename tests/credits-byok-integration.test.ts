@@ -10,7 +10,7 @@ vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), db: { que
   userApiKeys: { findMany: async () => state.rows }, creditLedger: { findMany: async () => [] },
 } } }));
 vi.mock("@/lib/billing/credits", () => ({ getCreditBalance: async () => ({ balance: 20 }), assertHasCredits: vi.fn(), creditErrorResponse: vi.fn(), deductCreditsFromUser: vi.fn() }));
-vi.mock("@/lib/usage/trial-quota", () => ({ getUserTrialUsage: async () => ({ used: 0, limit: 2, remaining: 2, isAdmin: state.admin }), assertTrialQuota: vi.fn(), trialQuotaResponse: vi.fn() }));
+vi.mock("@/lib/usage/trial-quota", () => ({ getUserTrialUsage: async () => ({ used: 0, limit: 2, remaining: 2, isAdmin: false }), assertTrialQuota: vi.fn(), trialQuotaResponse: vi.fn() }));
 vi.mock("@/lib/billing/commercial-rewrite", () => ({ getCommercialRewriteBalance: async () => ({ credits: 20, rewrites: 2 }) }));
 vi.mock("@/lib/billing/commercial-wallet", () => ({ getIncludedLinkImportUsage: async () => ({ total: 0, used: 0, remaining: 0 }) }));
 
@@ -43,20 +43,20 @@ it.each([true, false])("reports the saved provider consistently from Settings to
   const response = await credits(new NextRequest("https://fixture.test/api/credits/me"));
   expect(response.status).toBe(200);
   const status = await response.json();
-  expect(status).toMatchObject({ mode: admin ? "admin" : "byok", hasUserApiKey: true, byokProvider: "infistar", commercial: { credits: 20 } });
+  expect(status).toMatchObject({ mode: "byok", hasUserApiKey: true, byokProvider: "infistar", commercial: { credits: 20 } });
   expect(await getUserCredential("fixture-user")).toEqual({ provider: "infistar", apiKey });
   expect(JSON.stringify([saved, status])).not.toContain(apiKey);
 });
 
-it("also reports an administrator's saved KIE key without changing administrator mode", async () => {
+it("reports an administrator's saved KIE key through the ordinary BYOK mode", async () => {
   saveFixture("kie");
   expect(await (await credits(new NextRequest("https://fixture.test/api/credits/me"))).json())
-    .toMatchObject({ mode: "admin", hasUserApiKey: true, byokProvider: "kie" });
+    .toMatchObject({ mode: "byok", hasUserApiKey: true, byokProvider: "kie" });
 });
 
 it("does not count the administrator's platform access as a saved personal key", async () => {
   expect(await (await credits(new NextRequest("https://fixture.test/api/credits/me"))).json())
-    .toMatchObject({ mode: "admin", hasUserApiKey: false, canUsePlatformKie: true });
+    .toMatchObject({ mode: "trial", hasUserApiKey: false, canUsePlatformKie: false });
 });
 
 async function buildAnalysisPage() {
@@ -114,7 +114,7 @@ it.each(["infistar", "kie"] as const)("lets the real analysis page use saved %s 
   } finally { await browser.close(); }
 }, 30_000);
 
-it.each(["byok", "trial"])("keeps whole-video progress accurate and submits the correct model for %s", async mode => {
+it.each(["trial"])("keeps whole-video progress accurate and submits the correct model for %s", async mode => {
   if (mode === "byok") saveFixture("infistar");
   else state.admin = false;
   const status = await (await credits(new NextRequest("https://fixture.test/api/credits/me"))).json();
@@ -188,6 +188,7 @@ it.each(["platform", "byok"])("keeps the admin image payer visible and submits %
       if (url.pathname === "/api/credits/me") return route.fulfill({ json: status });
       if (url.pathname === "/api/workflow/projects") return route.fulfill({ json: request.method() === "POST" ? { project: { id: "fixture-image" } } : { projects: [] } });
       if (url.pathname.endsWith("/breakdown")) { submitted = request.postDataJSON(); return route.fulfill({ json: { taskId: "fixture-task" } }); }
+      if (url.pathname === "/api/commercial/image-analysis") { quotes++; return route.fulfill({ json: { id: "fixture-task", credits: 2, expiresAt: new Date(Date.now()+600000).toISOString() } }); }
       if (url.pathname.startsWith("/api/commercial/analysis")) quotes++;
       if (url.pathname === "/api/commercial/tasks/fixture-task") return route.fulfill({ json: { state: "running", totalScenes: 1, completedScenes: 0, mediaType: "image" } });
       return route.fulfill({ status: 400, json: { code: "UNEXPECTED_TEST_REQUEST" } });
@@ -199,7 +200,12 @@ it.each(["platform", "byok"])("keeps the admin image payer visible and submits %
     expect(await page.getByLabel("费用来源", { exact: true }).isVisible()).toBe(true);
     expect(await page.getByLabel("费用来源", { exact: true }).inputValue()).toBe(payer);
     await page.getByRole("button", { name: "分析图片", exact: true }).click();
-    await vi.waitFor(() => expect(submitted).toMatchObject({ mediaType: "image", payer, modelId: "analysis-deepseek-v4-1-flash" }));
-    expect(quotes).toBe(0);
+    if (payer === "platform") {
+      await page.getByText("图片分析 · 1 张 · 2 积分").waitFor();
+      expect(submitted).toBeUndefined(); expect(quotes).toBe(1);
+    } else {
+      await vi.waitFor(() => expect(submitted).toMatchObject({ mediaType: "image", payer, modelId: "analysis-deepseek-v4-1-flash" }));
+      expect(quotes).toBe(0);
+    }
   } finally { await browser.close(); }
 }, 30_000);

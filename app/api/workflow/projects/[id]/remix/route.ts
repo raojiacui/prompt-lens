@@ -32,7 +32,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       projectId: id,
       sourceVersionId,
       remixPrompt,
-      allowPlatformKeyForAnalysis: keyAccess.source === "platform_admin" || keyAccess.source === "platform_paid",
+      allowPlatformKeyForAnalysis: keyAccess.source === "platform_paid",
       analysisProvider: keyAccess.provider, analysisApiKey: keyAccess.apiKey,
       analysisKeySource: keyAccess.source === "user" ? "user" : "platform",
       ...modelSelection,

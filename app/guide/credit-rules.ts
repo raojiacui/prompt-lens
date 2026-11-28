@@ -56,11 +56,11 @@ export function creditRuleTopics(zh: boolean): GuideTopic[] {
     } },
     { title: zh ? "图片分析积分（每张）" : "Image analysis credits (per image)", paragraphs: zh ? [
       "选择平台积分时使用平台 KIE。每张图片先展示报价，确认后开始分析；有效分析结果保存成功后才扣费，失败不扣积分。同一任务重复确认不会重复扣费。",
-      "图片不占用两次视频免费试用。选择自带 Key 时使用设置中保存的首选供应商 Key，模型费用由该供应商账户承担，平台图片分析积分为 0。管理员沿用免扣规则。",
+      "图片不占用两次视频免费试用。选择自带 Key 时使用设置中保存的首选供应商 Key，模型费用由该供应商账户承担，平台图片分析积分为 0。管理员使用相同计费和自带 Key 规则。",
       "当前平台图片分析支持下表模型，单张图片最大 8MB。默认选择 DeepSeek，可选 Gemini 3.6 Flash。报价有效期 10 分钟，历史任务按确认时的价格结算。",
     ] : [
       "Platform credits use the platform KIE account. Review a quote before confirming. Credits are charged only when a valid analysis result is saved. Failed analysis is not charged. Reconfirming the same task does not duplicate the charge.",
-      "Images do not consume the two video trials. Your own key uses your saved preferred provider, with model charges paid to that provider and zero platform image-analysis credits. Existing administrator exemptions remain.",
+      "Images do not consume the two video trials. Your own key uses your saved preferred provider, with model charges paid to that provider and zero platform image-analysis credits. Administrators use the same billing and own-key rules.",
       "Platform image analysis supports the models below, up to 8MB per image. DeepSeek is selected by default; Gemini 3.6 Flash is also available. Quotes last 10 minutes; confirmed tasks retain their original price.",
     ], table: { columns: zh ? ["模型", "积分/张"] : ["Model", "Credits/image"], rows: [["DeepSeek V4.1 Flash", "2"], ["Gemini 3.6 Flash", "4"]] } },
     { title: zh ? "自动拆镜费用（不含模型分析）" : "Automatic splitting (analysis not included)", paragraphs: zh ? [

@@ -86,7 +86,7 @@ export async function POST(
       instruction,
       currentPrompt: typeof body?.currentPrompt === "string" && body.currentPrompt.trim() ? body.currentPrompt.trim() : undefined,
       outputLanguage: isLocale(body?.outputLanguage) ? body.outputLanguage : defaultLocale,
-      allowPlatformKeyForRewrite: keyAccess.source === "platform_admin" || keyAccess.source === "platform_paid",
+      allowPlatformKeyForRewrite: keyAccess.source === "platform_paid",
       analysisProvider: keyAccess.provider, analysisApiKey: keyAccess.apiKey,
       ...modelSelection,
     });

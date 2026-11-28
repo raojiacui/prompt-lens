@@ -7,7 +7,6 @@ import * as schema from "@/lib/db/schema";
 
 const isolated = vi.hoisted(() => ({ db: null as unknown }));
 vi.mock("@/lib/db", async () => ({ ...await import("@/lib/db/schema"), get db() { return isolated.db; } }));
-vi.mock("@/lib/auth", () => ({ isAdminProfile: () => false }));
 
 import { completeTrialAnalysis, getUserTrialUsage, releaseTrialAnalysis, reserveTrialAnalysis, TrialQuotaError } from "@/lib/usage/trial-quota";
 import { checkRateLimit } from "@/lib/utils/rate-limit";
@@ -93,6 +92,14 @@ describe("trial reservation", () => {
     await client.query("UPDATE trial_analysis_reservations SET expires_at = now() - interval '1 minute' WHERE state = 'pending'");
     expect(await getUserTrialUsage(userId)).toMatchObject({ used: 1, remaining: 1 });
     await expect(completeTrialAnalysis(reservationId)).resolves.toBeUndefined();
+  });
+
+  it("applies the same two-call trial limit to the verified administrator", async () => {
+    const ownerId = randomUUID();
+    await client.query('INSERT INTO "user" (id,email,email_verified,role) VALUES ($1,$2,true,$3)', [ownerId, 'raojiacui@gmail.com', 'admin']);
+    expect(await getUserTrialUsage(ownerId)).toMatchObject({ limit: 2, used: 0, remaining: 2, isAdmin: false });
+    await reserveTrialAnalysis(ownerId, "owner-first"); await reserveTrialAnalysis(ownerId, "owner-second");
+    await expect(reserveTrialAnalysis(ownerId, "owner-third")).rejects.toBeInstanceOf(TrialQuotaError);
   });
 
   it("shares a rate limit across concurrent requests and resets expired windows", async () => {

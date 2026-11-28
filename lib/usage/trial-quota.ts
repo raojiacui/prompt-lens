@@ -1,7 +1,6 @@
 import { and, eq, lt, sql } from "drizzle-orm";
 import { commercialTasks, db, operationLogs, trialAnalysisReservations, trialAnalysisUsage, user } from "@/lib/db";
 import { randomUUID } from "node:crypto";
-import { isAdminProfile } from "@/lib/auth";
 
 const DEFAULT_TRIAL_LIMIT = 2;
 
@@ -32,10 +31,6 @@ export async function getUserTrialUsage(userId: string) {
     throw new Error("VERIFIED_ACCOUNT_REQUIRED");
   }
 
-  if (isAdminProfile(currentUser)) {
-    return { limit, used: 0, remaining: Number.POSITIVE_INFINITY, isAdmin: true };
-  }
-
   await expireTrialReservations(userId);
   const usage = await db.query.trialAnalysisUsage.findFirst({ where: eq(trialAnalysisUsage.userId, userId) });
   if (usage) return { limit, used: usage.used, remaining: Math.max(0, limit - usage.used), isAdmin: false };
@@ -46,7 +41,6 @@ export async function getUserTrialUsage(userId: string) {
 
 export async function reserveTrialAnalysis(userId: string, taskKey: string = randomUUID()) {
   const quota = await getUserTrialUsage(userId);
-  if (quota.isAdmin) return null;
   return db.transaction(async (tx) => {
     await tx.insert(trialAnalysisUsage).values({ userId, used: quota.used }).onConflictDoNothing();
     const [usage] = await tx.select().from(trialAnalysisUsage).where(eq(trialAnalysisUsage.userId, userId)).for("update");
@@ -97,7 +91,7 @@ export async function expireTrialReservations(userId?: string) {
 
 export async function assertTrialQuota(userId: string) {
   const quota = await getUserTrialUsage(userId);
-  if (!quota.isAdmin && quota.used >= quota.limit) {
+  if (quota.used >= quota.limit) {
     throw new TrialQuotaError(quota.limit, quota.used);
   }
   return quota;
