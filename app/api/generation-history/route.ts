@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { requireReferenceVideoUser } from "@/lib/reference-video/auth";
+import { isAdmin } from "@/lib/auth";
 
 export async function GET(request: Request) {
   const access = await requireReferenceVideoUser(request.headers);
@@ -10,8 +11,8 @@ export async function GET(request: Request) {
   const page = Math.max(1, Math.min(10000, Number(params.get("page")) || 1));
   if (!Number.isSafeInteger(page)) return NextResponse.json({ error: "Invalid page" }, { status: 400 });
   const limit = 20;
-  const retained = process.env.NODE_ENV === "production";
   try {
+    const retained = process.env.NODE_ENV === "production" && !await isAdmin(access.user.id);
     // Commercial rows include failed submissions without a provider task. Exclude their provider copies.
     const history = await db.execute(sql`
       select * from (

@@ -1,14 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { NextResponse } from "next/server";
-const mocks = vi.hoisted(() => ({ auth: vi.fn(), execute: vi.fn(), transaction: vi.fn() }));
+const mocks = vi.hoisted(() => ({ auth: vi.fn(), admin: vi.fn(), execute: vi.fn(), transaction: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ isAdmin: mocks.admin }));
 vi.mock("@/lib/reference-video/auth", () => ({ requireReferenceVideoUser: mocks.auth }));
 vi.mock("@/lib/db", async () => ({ ...(await import("@/lib/db/schema")), db: { execute: mocks.execute, transaction: mocks.transaction } }));
 import { GET } from "@/app/api/generation-history/route";
 import { expireGenerationHistory } from "@/lib/workflow/generation-retention";
 
 describe("generation history", () => {
-  beforeEach(() => { vi.clearAllMocks(); vi.stubEnv("NODE_ENV", "development"); mocks.auth.mockResolvedValue({ user: { id: "owner" }, response: null }); mocks.execute.mockResolvedValue([]); });
+  beforeEach(() => { vi.clearAllMocks(); mocks.admin.mockResolvedValue(false); vi.stubEnv("NODE_ENV", "development"); mocks.auth.mockResolvedValue({ user: { id: "owner" }, response: null }); mocks.execute.mockResolvedValue([]); });
   afterEach(() => vi.unstubAllEnvs());
   it("requires authentication before reading records", async () => {
     mocks.auth.mockResolvedValue({ response: NextResponse.json({}, { status: 401 }) });
@@ -41,6 +42,12 @@ describe("generation history", () => {
     expect(query.params.filter(p => p === false)).toHaveLength(2);
     expect(query.sql).toContain("interval '7 days'");
     expect(query.sql).toContain("'queued','running','review'");
+  });
+  it("keeps administrator history visible beyond seven days in production", async () => {
+    vi.stubEnv("NODE_ENV", "production"); mocks.admin.mockResolvedValue(true);
+    expect(await (await GET(new Request("http://localhost/api/generation-history"))).json()).toMatchObject({ retentionDays: null });
+    const query = new PgDialect().sqlToQuery(mocks.execute.mock.calls[0][0]);
+    expect(query.params.filter(p => p === true)).toHaveLength(2);
   });
   it("never clears local testing history", async () => {
     expect(await expireGenerationHistory()).toEqual({ expiredGenerations: 0 });

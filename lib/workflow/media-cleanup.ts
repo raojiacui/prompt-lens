@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, or, sql } from "drizzle-orm";
 import { commercialTasks, db, mediaCleanupJobs, projectAssets, referenceVideos, sceneVersions, videoGeneration, videoScenes, workflowJobs } from "@/lib/db";
 import { deleteFromR2, getR2PublicUrl } from "@/lib/cloudflare/r2";
 import { hasPublicSampleMedia } from "@/lib/samples/public-workflow-samples";
+import { adminRetainsMedia } from "./media-retention-policy";
 
 async function hasLiveReference(key: string) {
   const url = getR2PublicUrl(key);
@@ -20,15 +21,17 @@ async function hasLiveReference(key: string) {
     db.select({ id: sceneVersions.id }).from(sceneVersions).where(inArray(sceneVersions.generatedVideoUrl, [url, key])).limit(1),
     db.select({ id: projectAssets.id }).from(projectAssets).where(or(eq(projectAssets.storageKey, key), inArray(projectAssets.url, [url, key]))).limit(1),
     db.select({ id: commercialTasks.id }).from(commercialTasks).where(and(
-      sql`(${commercialTasks.state} in ('queued','running','review') or (${commercialTasks.state} = 'quoted' and ${commercialTasks.expiresAt} > now()))`,
+      sql`(${commercialTasks.state} in ('queued','running','review') or (${commercialTasks.state} = 'quoted' and ${commercialTasks.expiresAt} > now())
+        or (${adminRetainsMedia(commercialTasks.userId)} and (${commercialTasks.input}->>'projectId' is null
+          or exists (select 1 from projects retained_project where retained_project.id::text = ${commercialTasks.input}->>'projectId' and retained_project.user_id = ${commercialTasks.userId}))))`,
       sql`(strpos(${commercialTasks.input}::text, ${JSON.stringify(url)}) > 0 or strpos(${commercialTasks.input}::text, ${JSON.stringify(key)}) > 0
         or strpos(${commercialTasks.result}::text, ${JSON.stringify(url)}) > 0 or strpos(${commercialTasks.result}::text, ${JSON.stringify(key)}) > 0)`,
     )).limit(1),
     db.select({ id: videoGeneration.id }).from(videoGeneration).where(and(
-      inArray(videoGeneration.status, ["pending", "queued", "processing", "running"]),
+      or(inArray(videoGeneration.status, ["pending", "queued", "processing", "running"]), adminRetainsMedia(videoGeneration.userId)),
       sql`(strpos(${videoGeneration.rawResponse}::text, ${JSON.stringify(url)}) > 0 or strpos(${videoGeneration.rawResponse}::text, ${JSON.stringify(key)}) > 0)`,
     )).limit(1),
-    db.select({ id: workflowJobs.id }).from(workflowJobs).where(and(inArray(workflowJobs.status, ["queued", "processing"]),
+    db.select({ id: workflowJobs.id }).from(workflowJobs).where(and(or(inArray(workflowJobs.status, ["queued", "processing"]), adminRetainsMedia(sql`(select job_project.user_id from projects job_project where job_project.id = ${workflowJobs.projectId})`)),
       sql`(strpos(${workflowJobs.input}::text, ${JSON.stringify(url)}) > 0 or strpos(${workflowJobs.input}::text, ${JSON.stringify(key)}) > 0)`,
     )).limit(1),
   ]);

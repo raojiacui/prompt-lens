@@ -1,6 +1,7 @@
 import { and, asc, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { commercialTasks, db, mediaCleanupJobs, projectAssets, projects, projectVersions, referenceVideos, sceneVersions, videoGeneration, videoScenes, workflowJobs } from "@/lib/db";
 import { collectProjectR2Keys } from "./service";
+import { adminRetainsMedia } from "./media-retention-policy";
 
 export const MEDIA_RETENTION_DAYS = 7;
 
@@ -16,6 +17,7 @@ const contentCreatedAt = sql`greatest(
 )`;
 
 const eligible = sql`${projects.metadata}->>'retentionExpiredAt' is null
+  and not (${adminRetainsMedia(projects.userId)})
   and ${projects.status} <> 'analyzing'
   and ${contentCreatedAt} <= now() - interval '7 days'
   and not exists (select 1 from commercial_tasks where user_id = ${projects.userId}

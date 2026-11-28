@@ -15,6 +15,7 @@ vi.mock("@/lib/cloudflare/r2", () => ({
 }));
 import { deleteProjectForUser } from "@/lib/workflow/service";
 import { processMediaCleanupJobs } from "@/lib/workflow/media-cleanup";
+import { expireGenerationHistory } from "@/lib/workflow/generation-retention";
 import { expireProjectMedia } from "@/lib/workflow/media-retention";
 
 const client = new PGlite();
@@ -92,6 +93,37 @@ describe("project R2 media cleanup", () => {
     expect((await deleteProjectForUser(projectId, userId)).deletedR2Objects).toBe(0);
     expect(mocks.remove).not.toHaveBeenCalled();
     expect(mocks.publicMedia).toHaveBeenCalledWith(`https://media.example/${key}`);
+  });
+
+  it("preserves an administrator's old analysis and referenced files, while allowing manual deletion", async () => {
+    await client.query('UPDATE "user" SET email=$1, email_verified=true WHERE id=$2', ['raojiacui@gmail.com', userId]);
+    const old = await oldProject(30);
+    const standalone = `generation-input/${userId}/saved.png`;
+    await testDb.insert(schema.mediaCleanupJobs).values({ storageKey: standalone });
+    const [generation] = await testDb.insert(schema.commercialTasks).values({ userId, kind: "generation", state: "completed", input: { image: `https://media.example/${standalone}` }, result: { videoUrl: "https://provider.example/video.mp4" }, createdAt: old.createdAt, expiresAt: old.createdAt }).returning();
+    await testDb.insert(schema.videoGeneration).values({ userId, taskId: randomUUID(), status: "completed", prompt: "Keep this history", createdAt: old.createdAt });
+    vi.stubEnv("NODE_ENV", "production");
+    try { expect(await expireGenerationHistory()).toEqual({ expiredGenerations: 0 }); }
+    finally { vi.unstubAllEnvs(); }
+    expect((await testDb.select().from(schema.commercialTasks)).find(row => row.id === generation.id)?.result).toMatchObject({ videoUrl: "https://provider.example/video.mp4" });
+    expect(await expireProjectMedia(50, true)).toMatchObject({ expired: 0 });
+    await expireProjectMedia(50);
+    expect((await testDb.select().from(schema.sceneVersions)).some(row => row.projectId === old.project.id)).toBe(true);
+    await testDb.insert(schema.mediaCleanupJobs).values({ storageKey: old.key });
+    await processMediaCleanupJobs(50);
+    expect(mocks.remove).not.toHaveBeenCalledWith(old.key);
+    expect(mocks.remove).not.toHaveBeenCalledWith(standalone);
+    const deleted = await deleteProjectForUser(old.project.id, userId);
+    expect(deleted.deletedR2Objects).toBeGreaterThan(0);
+    expect(mocks.remove).toHaveBeenCalledWith(old.key);
+  });
+
+  it("does not grant retention exemption to a non-owner with an admin role", async () => {
+    await client.query('UPDATE "user" SET role=$1, email_verified=true WHERE id=$2', ['admin', userId]);
+    const old = await oldProject();
+    await expireProjectMedia(50);
+    expect((await testDb.select().from(schema.sceneVersions)).some(row => row.projectId === old.project.id)).toBe(false);
+    await processMediaCleanupJobs(50);
   });
 
   it("expires seven-day content without deleting balances or provider-hosted results", async () => {
