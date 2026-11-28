@@ -9,6 +9,8 @@ const maxConnections = Number.parseInt(process.env.DATABASE_MAX_CONNECTIONS || "
 
 const client = postgres(connectionString, {
   ...getDatabaseTlsOptions(connectionString),
+  // Supavisor transaction pooling cannot retain named statements across leases.
+  prepare: false,
   max: Number.isFinite(maxConnections) && maxConnections > 0 ? maxConnections : 5,
   connect_timeout: 10,
   idle_timeout: 20,
